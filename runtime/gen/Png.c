@@ -25407,16 +25407,16 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
       m9_raise (err, &Png_Error);
       goto L_ret;
     }
-    bool m9t8 = (Zip_Crc32 (({ __typeof__(file) m9t7 = file; int64_t m9t7a = m9_add_i64 (at, INT64_C(4), err), m9t7n = m9_add_i64 (INT64_C(4), n, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), err) != Png_Get4 (file, m9_add_i64 (m9_add_i64 (at, INT64_C(8), err), n, err), err));
+    bool m9t7 = (Zip_Crc32 (({ __typeof__(file) m9t6 = file; int64_t m9t6a = m9_add_i64 (at, INT64_C(4), err), m9t6n = m9_add_i64 (INT64_C(4), n, err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err) != Png_Get4 (file, m9_add_i64 (m9_add_i64 (at, INT64_C(8), err), n, err), err));
     if (err->exc) goto L_ret;
-    if (m9t8) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s87, 34 })) m9t9 = ((m9_sl_CHAR){ (uint32_t *) m9s87, 34 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
+    if (m9t7) {
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s87, 34 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s87, 34 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
       m9_raise (err, &Png_Error);
       goto L_ret;
     }
-    bool m9t10 = Png_IsKind (file, m9_add_i64 (at, INT64_C(4), err), ((m9_sl_CHAR){ (uint32_t *) m9s88, 4 }), err);
+    bool m9t9 = Png_IsKind (file, m9_add_i64 (at, INT64_C(4), err), ((m9_sl_CHAR){ (uint32_t *) m9s88, 4 }), err);
     if (err->exc) goto L_ret;
-    if (m9t10) {
+    if (m9t9) {
       { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a33 = m9_add_i64 (at, INT64_C(8), err);
         if (err->exc) goto L_ret;
       { __typeof__((*width)) m9v = Png_Get4 (file, m9a33, err);
@@ -25439,18 +25439,18 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
         if (err->exc) goto L_ret;
         ctype = m9v;
       }
-      bool m9t11 = ((int64_t)((*(uint8_t *) m9_at (file.p, m9_add_i64 (at, INT64_C(20), err), file.len, sizeof (uint8_t), err))) != INT64_C(0));
+      bool m9t10 = ((int64_t)((*(uint8_t *) m9_at (file.p, m9_add_i64 (at, INT64_C(20), err), file.len, sizeof (uint8_t), err))) != INT64_C(0));
       if (err->exc) goto L_ret;
-      if (m9t11) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s89, 43 })) m9t12 = ((m9_sl_CHAR){ (uint32_t *) m9s89, 43 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
+      if (m9t10) {
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s89, 43 })) m9t11 = ((m9_sl_CHAR){ (uint32_t *) m9s89, 43 }); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
         m9_raise (err, &Png_Error);
         goto L_ret;
       }
       seenHead = true;
     } else {
-      bool m9t13 = Png_IsKind (file, m9_add_i64 (at, INT64_C(4), err), ((m9_sl_CHAR){ (uint32_t *) m9s90, 4 }), err);
+      bool m9t12 = Png_IsKind (file, m9_add_i64 (at, INT64_C(4), err), ((m9_sl_CHAR){ (uint32_t *) m9s90, 4 }), err);
       if (err->exc) goto L_ret;
-      if (m9t13) {
+      if (m9t12) {
         { __typeof__(total) m9v = m9_add_i64 (total, n, err);
           if (err->exc) goto L_ret;
           total = m9v;
@@ -25462,12 +25462,12 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
     }
   }
   if ((!seenHead)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s91, 28 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s91, 28 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s91, 28 })) m9t13 = ((m9_sl_CHAR){ (uint32_t *) m9s91, 28 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
     m9_raise (err, &Png_Error);
     goto L_ret;
   }
   if (((depth != INT64_C(8)) || (((ctype != INT64_C(2)) && (ctype != INT64_C(6)))))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s92, 61 })) m9t15 = ((m9_sl_CHAR){ (uint32_t *) m9s92, 61 }); err->s[0].p = m9t15.p; err->s[0].len = m9t15.len; m9_pay_keep (err, 0, sizeof (*m9t15.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s92, 61 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s92, 61 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
     m9_raise (err, &Png_Error);
     goto L_ret;
   }
@@ -25478,21 +25478,21 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
   at = INT64_C(8);
   w = INT64_C(0);
   for (;;) {
-    bool m9t16 = (m9_add_i64 (at, INT64_C(12), err) <= (file).len);
+    bool m9t15 = (m9_add_i64 (at, INT64_C(12), err) <= (file).len);
     if (err->exc) goto L_ret;
-    if (!(m9t16)) break;
+    if (!(m9t15)) break;
     { __typeof__(n) m9v = Png_Get4 (file, at, err);
       if (err->exc) goto L_ret;
       n = m9v;
     }
-    bool m9t17 = Png_IsKind (file, m9_add_i64 (at, INT64_C(4), err), ((m9_sl_CHAR){ (uint32_t *) m9s93, 4 }), err);
+    bool m9t16 = Png_IsKind (file, m9_add_i64 (at, INT64_C(4), err), ((m9_sl_CHAR){ (uint32_t *) m9s93, 4 }), err);
     if (err->exc) goto L_ret;
-    if (m9t17) {
-      { int64_t m9t18to;
+    if (m9t16) {
+      { int64_t m9t17to;
       k = INT64_C(0);
-      m9t18to = m9_sub_i64 (n, INT64_C(1), err);
+      m9t17to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t18to; k += 1) {
+      for (; k <= m9t17to; k += 1) {
         { __typeof__((*(uint8_t *) m9_at (idat.p, m9_add_i64 (w, k, err), idat.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (file.p, m9_add_i64 (m9_add_i64 (at, INT64_C(8), err), k, err), file.len, sizeof (uint8_t), err));
           if (err->exc) goto L_ret;
           (*(uint8_t *) m9_at (idat.p, m9_add_i64 (w, k, err), idat.len, sizeof (uint8_t), err)) = m9v;
@@ -25521,27 +25521,27 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
     if (err->exc) goto L_ret;
     row = m9v;
   }
-  bool m9t19 = ((rows).len != m9_mul_i64 ((*height), (m9_add_i64 (row, INT64_C(1), err)), err));
+  bool m9t18 = ((rows).len != m9_mul_i64 ((*height), (m9_add_i64 (row, INT64_C(1), err)), err));
   if (err->exc) goto L_ret;
-  if (m9t19) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s94, 45 })) m9t20 = ((m9_sl_CHAR){ (uint32_t *) m9s94, 45 }); err->s[0].p = m9t20.p; err->s[0].len = m9t20.len; m9_pay_keep (err, 0, sizeof (*m9t20.p)); }
+  if (m9t18) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s94, 45 })) m9t19 = ((m9_sl_CHAR){ (uint32_t *) m9s94, 45 }); err->s[0].p = m9t19.p; err->s[0].len = m9t19.len; m9_pay_keep (err, 0, sizeof (*m9t19.p)); }
     m9_raise (err, &Png_Error);
     goto L_ret;
   }
-  { int64_t m9t21to;
+  { int64_t m9t20to;
   y = INT64_C(0);
-  m9t21to = m9_sub_i64 ((*height), INT64_C(1), err);
+  m9t20to = m9_sub_i64 ((*height), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; y <= m9t21to; y += 1) {
+  for (; y <= m9t20to; y += 1) {
     { __typeof__(kind) m9v = (int64_t)((*(uint8_t *) m9_at (rows.p, m9_mul_i64 (y, (m9_add_i64 (row, INT64_C(1), err)), err), rows.len, sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
       kind = m9v;
     }
-    { int64_t m9t22to;
+    { int64_t m9t21to;
     x = INT64_C(0);
-    m9t22to = m9_sub_i64 (row, INT64_C(1), err);
+    m9t21to = m9_sub_i64 (row, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; x <= m9t22to; x += 1) {
+    for (; x <= m9t21to; x += 1) {
       { __typeof__(v) m9v = (int64_t)((*(uint8_t *) m9_at (rows.p, m9_add_i64 (m9_add_i64 (m9_mul_i64 (y, (m9_add_i64 (row, INT64_C(1), err)), err), INT64_C(1), err), x, err), rows.len, sizeof (uint8_t), err)));
         if (err->exc) goto L_ret;
         v = m9v;
@@ -25592,7 +25592,7 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
           }
       } else {
         if ((kind != INT64_C(0))) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s95, 35 })) m9t23 = ((m9_sl_CHAR){ (uint32_t *) m9s95, 35 }); err->s[0].p = m9t23.p; err->s[0].len = m9t23.len; m9_pay_keep (err, 0, sizeof (*m9t23.p)); }
+          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s95, 35 })) m9t22 = ((m9_sl_CHAR){ (uint32_t *) m9s95, 35 }); err->s[0].p = m9t22.p; err->s[0].len = m9t22.len; m9_pay_keep (err, 0, sizeof (*m9t22.p)); }
           m9_raise (err, &Png_Error);
           goto L_ret;
       } } } } }
@@ -25607,16 +25607,16 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
     if (err->exc) goto L_ret;
     out = m9v;
   }
-  { int64_t m9t24to;
+  { int64_t m9t23to;
   y = INT64_C(0);
-  m9t24to = m9_sub_i64 ((*height), INT64_C(1), err);
+  m9t23to = m9_sub_i64 ((*height), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; y <= m9t24to; y += 1) {
-    { int64_t m9t25to;
+  for (; y <= m9t23to; y += 1) {
+    { int64_t m9t24to;
     x = INT64_C(0);
-    m9t25to = m9_sub_i64 ((*width), INT64_C(1), err);
+    m9t24to = m9_sub_i64 ((*width), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; x <= m9t25to; x += 1) {
+    for (; x <= m9t24to; x += 1) {
       { __typeof__(at) m9v = m9_add_i64 (m9_add_i64 (m9_mul_i64 (y, (m9_add_i64 (row, INT64_C(1), err)), err), INT64_C(1), err), m9_mul_i64 (bpp, x, err), err);
         if (err->exc) goto L_ret;
         at = m9v;
@@ -25628,10 +25628,10 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
           alpha = m9v;
         }
       }
-      { int64_t m9t26to;
+      { int64_t m9t25to;
       k = INT64_C(0);
-      m9t26to = INT64_C(2);
-      for (; k <= m9t26to; k += 1) {
+      m9t25to = INT64_C(2);
+      for (; k <= m9t25to; k += 1) {
         { __typeof__(v) m9v = m9_div_i64 ((m9_add_i64 (m9_add_i64 (m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (rows.p, m9_add_i64 (at, k, err), rows.len, sizeof (uint8_t), err))), alpha, err), m9_mul_i64 (INT64_C(255), (m9_sub_i64 (INT64_C(255), alpha, err)), err), err), INT64_C(127), err)), INT64_C(255), err);
           if (err->exc) goto L_ret;
           v = m9v;

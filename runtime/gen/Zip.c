@@ -2298,24 +2298,24 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
       if (err->exc) goto L_ret;
       at = m9v;
     }
-    bool m9t10 = (Zip_Crc32 (({ __typeof__(buf) m9t9 = buf; int64_t m9t9a = start, m9t9n = m9_sub_i64 (total, start, err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; }), err) != crc);
+    bool m9t9 = (Zip_Crc32 (({ __typeof__(buf) m9t8 = buf; int64_t m9t8a = start, m9t8n = m9_sub_i64 (total, start, err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; }), err) != crc);
     if (err->exc) goto L_ret;
-    if (m9t10) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 37 })) m9t11 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 37 }); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
+    if (m9t9) {
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 37 })) m9t10 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 37 }); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; m9_pay_keep (err, 0, sizeof (*m9t10.p)); }
       m9_raise (err, &Zip_Error);
       goto L_ret;
     }
-    bool m9t12 = (m9_mod_i64 ((m9_sub_i64 (total, start, err)), INT64_C(4294967296), err) != size);
+    bool m9t11 = (m9_mod_i64 ((m9_sub_i64 (total, start, err)), INT64_C(4294967296), err) != size);
     if (err->exc) goto L_ret;
-    if (m9t12) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 40 })) m9t13 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 40 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
+    if (m9t11) {
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 40 })) m9t12 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 40 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
       m9_raise (err, &Zip_Error);
       goto L_ret;
     }
   }
   if (direct) {
     err->res = m9res;
-    m9ret = ({ __typeof__(first) m9t14 = first; int64_t m9t14a = INT64_C(0), m9t14n = total; (__typeof__(m9t14)){ m9t14.p + m9_chk_slice (m9t14a, m9t14n, m9t14.len, err), m9t14n }; });
+    m9ret = ({ __typeof__(first) m9t13 = first; int64_t m9t13a = INT64_C(0), m9t13n = total; (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; });
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -2323,11 +2323,11 @@ m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
     if (err->exc) goto L_ret;
     out = m9v;
   }
-  { int64_t m9t15to;
+  { int64_t m9t14to;
   k = INT64_C(0);
-  m9t15to = m9_sub_i64 (total, INT64_C(1), err);
+  m9t14to = m9_sub_i64 (total, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; k <= m9t15to; k += 1) {
+  for (; k <= m9t14to; k += 1) {
     { __typeof__((*(uint8_t *) m9_at (out.p, k, out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (buf.p, k, buf.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (out.p, k, out.len, sizeof (uint8_t), err)) = m9v;

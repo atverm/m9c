@@ -1,0 +1,29 @@
+(* EXPECT: cannot select from an answer of type I64: a field needs a record, a subscript a slice, array or grid *)
+(* A call's answer may be selected from -- F (x).f, F (x)[i] (par 10,
+   Factor; 2026-10-09) -- when its declared type has what the selector
+   needs.  The legal forms first: a field of a record answer, a
+   subscript of a slice answer, a chain.  Then a field of an I64. *)
+MODULE m ;
+TYPE
+  Pair = RECORD a, b : I64 END ;
+PROCEDURE MkPair (n: I64) : Pair =
+VAR p : Pair ;
+BEGIN
+  p.a := n ;
+  p.b := n ;
+  RETURN p
+END MkPair ;
+PROCEDURE Nums (n: I64) : SLICE OF I64 =
+BEGIN
+  RETURN NEW (I64, n)
+END Nums ;
+PROCEDURE One () : I64 =
+BEGIN
+  RETURN 1
+END One ;
+VAR
+  k : I64 ;
+BEGIN
+  k := MkPair (2).a + Nums (3)[1] ;
+  k := One ().a
+END m.

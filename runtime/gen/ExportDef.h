@@ -8,12 +8,30 @@
 void ExportDef_m9init (m9_state *err);
 
 typedef struct ExportDef_Box ExportDef_Box;
+typedef struct ExportDef_Shade ExportDef_Shade;
+typedef struct ExportDef_Cell ExportDef_Cell;
+
+typedef struct ExportDef_Shade ExportDef_Shade;
+struct ExportDef_Shade { int32_t tag; };
+#define ExportDef_Shade_Light 0
+static const uint32_t ExportDef_Shade_nm0[] = { 76u, 105u, 103u, 104u, 116u };
+#define ExportDef_Shade_Dark 1
+static const uint32_t ExportDef_Shade_nm1[] = { 68u, 97u, 114u, 107u };
+static const m9_sl_CHAR __attribute__((__unused__)) ExportDef_Shade_names[] = {
+  { (uint32_t *) ExportDef_Shade_nm0, 5 },
+  { (uint32_t *) ExportDef_Shade_nm1, 4 },
+};
 
 #define ExportDef_Width INT64_C(4)
 
 typedef struct ExportDef_Box ExportDef_Box;
 struct ExportDef_Box {
   int64_t n;
+};
+
+typedef struct ExportDef_Cell ExportDef_Cell;
+struct ExportDef_Cell {
+  ExportDef_Shade shade;
 };
 
 extern int64_t * const ExportDef_count;

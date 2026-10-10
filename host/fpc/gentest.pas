@@ -3,7 +3,7 @@ program gentest;
   This program only generates; runtime/test/build.sh compiles the
   output against m9rt and runs the driver.  Exit 1 on gen errors. }
 {$mode objfpc}{$H+}
-uses SysUtils, Classes, M9AST, M9Parse, M9Gen;
+uses SysUtils, Classes, M9AST, M9Parse, M9Sem, M9Gen;
 
 function LoadFile (const fn: string): string;
 var sl : TStringList;
@@ -28,6 +28,7 @@ var
   p, dp : TParser;
   root, droot : TNode;
   g : TGen;
+  sem : TSem;
   i, k : Integer;
 begin
   p := TParser.Create (LoadFile ('../../corpus/' + m + '.m9'));
@@ -39,15 +40,22 @@ begin
     Exit;
   end;
 
+  { the checker first, as m9c runs it: it records the types the
+    generator reads (the typed tree, 2026-10-09); its diagnostics are
+    not this tool's business -- semdiff holds them }
+  sem := TSem.Create;
   g := TGen.Create;
   for k := 0 to High (deps) do
   begin
     dp := TParser.Create (LoadFile ('../../corpus/' + deps[k] + '.m9'));
     droot := dp.ParseFile;
+    sem.LoadFile (droot);
     for i := 0 to High (droot.kids) do
       g.LoadExtern (droot.kids[i]);
     dp.Free;
   end;
+  sem.LoadFile (root);
+  sem.CheckFile (root);
   for i := 0 to High (root.kids) do
     g.LoadUnit (root.kids[i]);
   g.Emit (m);

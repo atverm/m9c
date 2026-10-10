@@ -1,0 +1,19 @@
+MODULE GfSliceOfCall ;
+
+(* WANT: a slice of an array a call answers: 2 *)
+
+IMPORT Io, Fmt ;
+
+PROCEDURE Mk () : ARRAY 4 OF I64 =
+VAR a : ARRAY 4 OF I64 ;
+BEGIN
+  RETURN a
+END Mk ;
+
+VAR
+  s : SLICE OF I64 ;
+
+BEGIN
+  s := SLICE (Mk (), 0, 2) ;
+  Io.WriteLine ('a slice of an array a call answers: ' + Fmt.I64Str (LEN (s)))
+END GfSliceOfCall.

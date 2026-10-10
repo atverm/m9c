@@ -320,6 +320,17 @@ ValueRange is the CHAR/octet boundary: netCDF text attributes
 are bytes, so a scalar past 255 raises here rather than
 reaching the file as mojibake.
 
+### PutAttText (f: PTR File ; varid: I64 ; RO name: STR ; RO value: STR) RAISES Error, ValueRange
+
+a TEXT attribute, NC_CHAR, written as UTF-8: GetAttText's
+mirror, and what CF says a text attribute carries.  PutAttStr
+writes one octet per CHAR, so a unit like `°C` reached the file
+as the single byte B0, which no UTF-8 reader decodes; here it is
+C2 B0 43.  Found by the cp-kernel's NetCDF renditions
+(2026-10-09), whose units `°C` and `µmol m-2 s-1` come from the
+ICOS metadata.  PutAttStr keeps its octet contract for a caller
+that means bytes.
+
 ### EndDef (f: PTR File) RAISES Error
 
 leaves define mode and commits the header.  Nothing may be

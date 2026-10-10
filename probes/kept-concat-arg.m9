@@ -1,4 +1,4 @@
-(* EXPECT: argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1) *)
+(* EXPECT: argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1); give it storage that outlives the call: a string through Text.Keep (pool, s), an allocation through NEW (pool, T) *)
 MODULE m ;
 VAR last : STR ;
 PROCEDURE Note (RO KEPT msg: STR) =

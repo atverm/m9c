@@ -32,7 +32,8 @@ else
 fi
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Lex.c ../gen/Ast.c \
-    ../gen/Parse.c ../gen/Text.c ../gen/Gen.c gendump_m9.c -o gendump_m9
+    ../gen/Parse.c ../gen/Text.c ../gen/Print.c ../gen/Sem.c ../gen/Gen.c \
+    gendump_m9.c -o gendump_m9
 ( cd ../../host/fpc && fpc -O2 gendump.pas >/dev/null )
 n=0
 run () {
@@ -115,6 +116,10 @@ grep -q '^int64_t \* const ExportDef_count = &count;$' /tmp/gen_fpc.txt \
 run ExportUse ExportDef Io Fmt
 grep -q '(\*ExportDef_count)' /tmp/gen_fpc.txt \
   || { echo "ExportUse: the write through ExportDef_count NOT generated"; exit 1; }
+# An imported record's enumeration field against an imported member:
+# a tag compare, not a C struct == (cp-kernel's finding on 0.19.0).
+grep -q '((c->shade).tag == ' /tmp/gen_fpc.txt \
+  || { echo "ExportUse: the cross-module enumeration compare NOT by tag"; exit 1; }
 # ShareUse is the assignment of a raising call (par 5): the answer
 # into a temporary, the error slot read, THEN the store and the share
 # copy.  The grep holds the order; two generators storing first
@@ -146,6 +151,8 @@ grep -q 'some = (o != NULL);' /tmp/gen_fpc.txt && grep -q 'none = (o == NULL);' 
   || { echo "ShareUse: IS SOME / IS NONE as an expression is not a NULL test -- in BOTH generators"; exit 1; }
 grep -q 'case ShareUse_Store_Irods:' /tmp/gen_fpc.txt \
   || { echo "ShareUse: a CASE label spelled Store.Irods is not its member's case -- in BOTH generators"; exit 1; }
+grep -q '#define ShareUse_Folded INT64_C(19)' /tmp/gen_fpc.txt && grep -q 'if (0) { m9xit1: break; }' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: a CONST expression is not folded, or an EXIT from a CASE arm has no label at its loop's end -- in BOTH generators"; exit 1; }
 grep -q 'UINT64_C(18446744073709551615)' /tmp/gen_fpc.txt \
   || { echo "ShareUse: a U64 literal past 2^63 is not UINT64_C -- in BOTH generators"; exit 1; }
 run Sem Ast DynStr Print Text

@@ -220,6 +220,8 @@ VAR
   handled : SLICE OF STR ;
   nhandled : I64 ;
   strNode : Ast.Kid ;         (* the SLICE OF CHAR that STR names *)
+  loopsOpen : I64 ;           (* LOOPs around the statement walked *)
+  finSinceLoop : I64 ;        (* FINALLY-protected blocks since the innermost LOOP *)
   forNames : SLICE OF STR ;   (* the control variables of the FORs being
                                  walked, innermost last (issue 3) *)
   forLines : SLICE OF I64 ;
@@ -593,7 +595,18 @@ BEGIN
                         + n.a + ' declares no such type')
         END
     | Ast.NPtrType : CheckTypeNode (n.kids[0], ctx)
-    | Ast.NOptType : CheckTypeNode (n.kids[0], ctx)
+    | Ast.NOptType :
+        CheckTypeNode (n.kids[0], ctx) ;
+        (* OPT holds what can be absent: a pointer or a procedure
+           value, emitted as a C pointer that may be NULL.  Over a
+           value type it was accepted here and refused by the
+           generator ("dereference of a non-pointer"; until
+           2026-10-09) *)
+        IF OptOverValue (n.kids[0]) THEN
+          ErrN (n, ctx, S3 ('OPT holds a pointer or a procedure value, and ',
+            Print.TypeText (pool, n.kids[0]),
+            ' is neither: keep a BOOL beside the value, or OPT PTR to it (par 2.2)'))
+        END
     | Ast.NSharedType : CheckTypeNode (n.kids[0], ctx)
     | Ast.NSliceType :
         CheckTypeNode (n.kids[0], ctx) ;
@@ -1331,6 +1344,20 @@ END ProcSig ;
    refusals of par 2.2.3 ask this: a variable or field of procedure
    type must be OPT, because a procedure value has no zero and a
    zeroed one would be a call into nothing. *)
+(* is t a type OPT cannot hold: a value, not a pointer or procedure *)
+PROCEDURE OptOverValue (t: Ast.Kid) : BOOL =
+BEGIN
+  IF ResolveType (t) IS SOME r THEN
+    RETURN r.kind # Ast.NPtrType AND r.kind # Ast.NProcType AND r.kind # Ast.NSharedType
+  END ;
+  IF t IS SOME n THEN
+    IF n.kind = Ast.NQualident AND LEN (n.b) = 0 THEN
+      RETURN Text.OneOf (n.a, BuiltinTys) OR Text.Eq (n.a, 'POOL')
+    END
+  END ;
+  RETURN FALSE
+END OptOverValue ;
+
 PROCEDURE IsBareProc (t: Ast.Kid) : BOOL =
 BEGIN
   IF ResolveType (t) IS SOME r THEN
@@ -2850,7 +2877,45 @@ END FlushPend ;
 (* the declared type a designator lands on, following selectors and
    dereferencing pointers on the way.  NONE when it cannot be known,
    because an unknown type must never diagnose.                     *)
+(* the declared result type of the procedure a call names, qualified
+   in the callee's module when that is another one (InMod: the
+   designator walk's convention, which the generator reads); NONE for a call through a procedure value
+   or a callee the checker does not know *)
+PROCEDURE CallResultNode (k: Ast.Kid) : Ast.Kid =
+VAR
+  pr : ProcInfo ;
+  found : BOOL ;
+BEGIN
+  IF k IS SOME ce THEN
+    IF ce.kind = Ast.NCallExpr THEN
+      IF ce.kids[0] IS SOME cd THEN
+        pr := LookupProc (DesigName (cd), found) ;
+        IF found THEN
+          IF pr.node IS SOME pn THEN
+            IF pn.nkids > 1 THEN
+              IF pn.kids[1] IS SOME rt THEN
+                RETURN InMod (pn.kids[1], pr.modName)
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END CallResultNode ;
+
 PROCEDURE DesigDeclType (d: PTR Ast.Node ; RO ctx: STR) : Ast.Kid =
+BEGIN
+  RETURN SelWalk (d, ctx, ScopeType (d.a), 0)
+END DesigDeclType ;
+
+(* the selectors of d from kid FROM on, walked from the type START:
+   a designator's from its name's declared type (DesigDeclType), a
+   call's answer -- F (x).f, NCallSel -- from the callee's declared
+   result.  Each step's type is recorded for the generator. *)
+PROCEDURE SelWalk (d: PTR Ast.Node ; RO ctx: STR ; KEPT start: Ast.Kid ;
+                   from: I64) : Ast.Kid =
 VAR
   j, q : I64 ;
   it, eb, tmod : STR ;
@@ -2858,8 +2923,8 @@ VAR
   deref, known : BOOL ;
 BEGIN
   tmod := '' ;
-  declN := ScopeType (d.a) ;
-  FOR j := 0 TO d.nkids - 1 DO
+  declN := start ;
+  FOR j := from TO d.nkids - 1 DO
     (* every axis of every subscript is an index *)
     IF d.kids[j] IS SOME isel THEN
       IF isel.kind = Ast.NSelIndex THEN
@@ -2941,7 +3006,7 @@ BEGIN
                while `j.w.next` reaches past it, and a second monitor
                parameter is a different lock. *)
             IF Text.Eq (boundMon, '') OR NOT Text.Eq (d.a, boundMon) OR
-               j # 0 THEN
+               j # from THEN
               ErrN (d, ctx, S3 ('monitor field ', sel.a,
                 ' is reached from outside a procedure bound to the monitor (par 6)'))
             END ;
@@ -2978,10 +3043,13 @@ BEGIN
       END
     ELSE
       RETURN NONE
-    END
+    END ;
+    (* the typed tree: what this selector reaches, qualified where it
+       was declared, for the generator to read (Ast.SetType) *)
+    IF d.kids[j] IS SOME stp THEN Ast.SetType (stp.id, declN) END
   END ;
   RETURN declN
-END DesigDeclType ;
+END SelWalk ;
 
 PROCEDURE DesigCanon (k: Ast.Kid ; RO ctx: STR) : STR =
 BEGIN
@@ -3473,6 +3541,10 @@ END AggType ;
 
 (* the type of a module-level CONST: literals and literal
    arithmetic, an aggregate of literals, and nothing fancier *)
+CONST
+  IntOps = ['+', '-', '*', 'DIV', 'MOD'] ;
+  RealOps = ['+', '-', '*', '/'] ;
+
 PROCEDURE LitType (k: Ast.Kid) : STR =
 VAR l, r : STR ;
 BEGIN
@@ -3493,10 +3565,14 @@ BEGIN
     | Ast.NBin :
         l := LitType (e.kids[0]) ;
         r := LitType (e.kids[1]) ;
-        IF Text.Eq (l, '<int>') AND Text.Eq (r, '<int>') THEN
+        (* the arithmetic each kind has, and nothing else: a CONST of
+           2 < 3 or 1 / 2 is no number the generator can write *)
+        IF Text.Eq (l, '<int>') AND Text.Eq (r, '<int>') AND
+           Text.OneOf (e.a, IntOps) THEN
           RETURN '<int>'
         END ;
-        IF Text.Eq (l, '<real>') AND Text.Eq (r, '<real>') THEN
+        IF Text.Eq (l, '<real>') AND Text.Eq (r, '<real>') AND
+           Text.OneOf (e.a, RealOps) THEN
           RETURN '<real>'
         END ;
         (* `+' over string and CHAR literals is one string literal
@@ -3511,6 +3587,20 @@ BEGIN
   END ;
   RETURN ''
 END LitType ;
+
+(* an expression a generator folds, not a literal it writes as is: a
+   binary operation, parentheses, or a minus over something that is not
+   itself a literal *)
+PROCEDURE IsConstExpr (e: PTR Ast.Node) : BOOL =
+BEGIN
+  IF e.kind = Ast.NBin OR e.kind = Ast.NParen THEN RETURN TRUE END ;
+  IF e.kind = Ast.NUn AND e.nkids > 0 THEN
+    IF e.kids[0] IS SOME k THEN
+      RETURN k.kind # Ast.NInt AND k.kind # Ast.NReal
+    END
+  END ;
+  RETURN FALSE
+END IsConstExpr ;
 
 PROCEDURE IsStrLit (RO t: STR) : BOOL =
 BEGIN
@@ -3625,7 +3715,7 @@ END CheckRecordConst ;
 
 PROCEDURE CheckAggregate (cd: PTR Ast.Node ; RO ctx: STR ; where: I64) =
 VAR
-  i : I64 ;
+  i, cv : I64 ;
   t0, t : STR ;
 BEGIN
   IF cd.kids[0] IS SOME rc THEN
@@ -3651,6 +3741,16 @@ BEGIN
     IF LEN (LitType (SOME (ce))) = 0 THEN
       ErrN (cd, ctx, S3 ('CONST ', cd.a,
         ': a constant is a literal, a negated number, or + over string and CHAR literals -- compute anything else in a procedure (par 2.2.4)'))
+    ELSIF Text.Eq (LitType (SOME (ce)), '<int>') AND IsConstExpr (ce) THEN
+      (* folded by the generators with the runtime's arithmetic:
+         what the program would raise at run time is refused here *)
+      IF NOT Ast.FoldInt (SOME (ce), cv) THEN
+        ErrN (cd, ctx, S3 ('CONST ', cd.a,
+          ': the expression overflows I64 or divides by zero (par 2.2.4)'))
+      ELSIF cv = -9223372036854775807 - 1 THEN
+        ErrN (cd, ctx, S3 ('CONST ', cd.a,
+          ': the smallest I64 cannot be written as a constant; give it a procedure (par 2.2.4)'))
+      END
     END
   END ;
   IF cd.kids[0] IS SOME ag THEN
@@ -4591,7 +4691,7 @@ BEGIN
   RETURN 'frame'
 END NewForm ;
 
-PROCEDURE ExprType (k: Ast.Kid ; RO ctx: STR) : STR =
+PROCEDURE ExprType0 (k: Ast.Kid ; RO ctx: STR) : STR =
 VAR
   t, u, form : STR ;
   j, ext0, nx : I64 ;
@@ -4928,6 +5028,29 @@ BEGIN
         END ;
         RETURN DesigStrType (e, FALSE, ctx)
     | Ast.NCallExpr : RETURN CallType (e.kids[0], e.kids[1], e, ctx)
+    | Ast.NCallSel :
+        (* F (x).f, F (x)[i]: the call checked as any call, then its
+           answer's declared type walked by the selectors as a
+           designator's is; the answer's type recorded for the
+           generator (2026-10-09, cp-kernel's stages 4b and 6a) *)
+        t := ExprType (e.kids[0], ctx) ;
+        res := CallResultNode (e.kids[0]) ;
+        IF res IS SOME r0 THEN
+          Ast.SetType (e.id, res) ;
+          j := nerrs ;
+          tyk := SelWalk (e, ctx, res, 1) ;
+          IF tyk IS SOME t1 THEN RETURN CanonT (tyk, 0) END ;
+          IF nerrs = j THEN
+            ErrN (e, ctx, Cat (Cat ('cannot select from an answer of type ',
+              TyName (t)), ': a field needs a record, a subscript a slice, array or grid'))
+          END
+        ELSIF LEN (t) > 0 THEN
+          (* a call through a procedure value: no declaration to read
+             the answer's type node from *)
+          ErrN (e, ctx,
+            'select from the answer of a procedure value through a variable: assign the answer first')
+        END ;
+        RETURN ''
     ELSE
       FOR j := 0 TO e.nkids - 1 DO
         t := ExprType (e.kids[j], ctx)
@@ -4936,6 +5059,16 @@ BEGIN
     END
   END ;
   RETURN ''
+END ExprType0 ;
+
+(* the typed tree's stage 3: every expression's type, recorded as the
+   checker computes it, for the generator to read (Ast.SetTyStr) *)
+PROCEDURE ExprType (k: Ast.Kid ; RO ctx: STR) : STR =
+VAR t : STR ;
+BEGIN
+  t := ExprType0 (k, ctx) ;
+  IF k IS SOME e THEN Ast.SetTyStr (e.id, t) END ;
+  RETURN t
 END ExprType ;
 
 (* the oracle OVERWRITES an existing binding in place -- a name
@@ -5254,6 +5387,57 @@ BEGIN
       ' argument(s), got ', ItoA (got)))
   END
 END Arity ;
+
+(* a RAISE's payload held to its EXCEPTION's fields, as a record
+   aggregate's arguments are held to its fields (par 5): the count, and
+   each value against its field's type.  Until 2026-10-09 nothing held
+   it -- `RAISE Bad ('oops', 5)' against `Bad (code : I64 ; what : STR)'
+   compiled and ran, each value landing in the slot of its OWN type, and
+   `RAISE Bad (1, 2, 3)' against one field dropped two (found by the
+   typed tree's measurement: the payload had no recorded types).  An
+   exception with no declaration to read -- the predeclared, or one the
+   checker does not know -- is left as it was. *)
+PROCEDURE CheckRaisePayload (xn: PTR Ast.Node ; args: Ast.Kid ;
+                             RO ctx: STR) =
+VAR
+  decl : Ast.Kid ;
+  owner, name, at, ft : STR ;
+  nf, na, k : I64 ;
+  arg : Ast.Kid ;
+BEGIN
+  IF LEN (xn.b) > 0 THEN
+    decl := ExcDeclOf (xn.a, xn.b, owner) ;
+    name := Cat (Cat (xn.a, '.'), xn.b)
+  ELSE
+    decl := ExcDeclOf ('', xn.a, owner) ;
+    name := xn.a
+  END ;
+  IF decl IS SOME d0 THEN
+    nf := 0 ;
+    WHILE ExcFieldType (decl, owner, nf) IS SOME f0 DO nf := nf + 1 END ;
+    na := 0 ;
+    IF args IS SOME al THEN na := al.nkids END ;
+    (* the predeclared IndexError raised bare: its two fields are the
+       synthetic declaration the handler binders read (they bind 0) *)
+    IF na = 0 AND LEN (owner) = 0 AND Text.Eq (name, 'IndexError') THEN
+      RETURN
+    END ;
+    Arity (xn, ctx, name, nf, na) ;
+    FOR k := 0 TO na - 1 DO
+      IF k < nf THEN
+        arg := NONE ;
+        IF args IS SOME al2 THEN arg := al2.kids[k] END ;
+        at := ExprType (arg, ctx) ;
+        ft := CanonT (ExcFieldType (decl, owner, k), 0) ;
+        IF LEN (at) > 0 AND LEN (ft) > 0 AND NOT Compat (ft, at) THEN
+          ErrN (xn, ctx, S5 ('field ', ItoA (k + 1), ' of ', name,
+            S4 (': cannot give ', TyName (at), ' where ',
+                Cat (TyName (ft), ' is expected'))))
+        END
+      END
+    END
+  END
+END CheckRaisePayload ;
 
 PROCEDURE IsTotalWideningTo64 (RO t: STR) : BOOL =
 BEGIN
@@ -5968,7 +6152,8 @@ BEGIN
        NOT PoolAmong (args, KindPool (what)) THEN
       ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
         S4 (name, ': a KEPT parameter cannot take ', what,
-            ' -- it dies with this frame (par 4.1)')))
+            Cat (' -- it dies with this frame (par 4.1); give it storage that outlives the call: ',
+              'a string through Text.Keep (pool, s), an allocation through NEW (pool, T)'))))
     END ;
     (* a record value carries what its fields hold (TyBearing,
        decision 34), and a CONSTRUCTOR wrapping a borrow hands the
@@ -7036,7 +7221,8 @@ BEGIN
         dmode := ScopeMode (lhs.a) ;
         IF Text.Eq (dmode, ModeModule) AND NOT curInBody THEN
           ErrN (frhs, ctx, S4 (what, ' dies with this frame; it cannot be stored in module variable ',
-            lhs.a, S3 (' (par ', par, ')')))
+            lhs.a, S4 (' (par ', par, ')',
+              ' -- allocate it in a module pool (VAR mpool : POOL ; NEW (mpool, T)), or copy a string: Text.Keep (mpool, s)')))
         ELSIF Text.Eq (dmode, ModeRo) OR
               ((Text.Eq (dmode, ModeVar) OR Text.Eq (dmode, ModeOwn) OR
                 Text.Eq (dmode, ModeVal)) AND lhs.nkids > 0) THEN
@@ -7202,9 +7388,20 @@ BEGIN
   END
 END CheckAssign ;
 
+PROCEDURE HasFinally (st: PTR Ast.Node) : BOOL =
+VAR j : I64 ;
+BEGIN
+  FOR j := 1 TO st.nkids - 1 DO
+    IF st.kids[j] IS SOME part THEN
+      IF part.kind = Ast.NFinally THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END HasFinally ;
+
 PROCEDURE WalkStmt (k: Ast.Kid ; RO ctx: STR) =
 VAR
-  j, hk, npre, nacc, narm2 : I64 ;
+  j, hk, npre, nacc, narm2, sv : I64 ;
   xowner : STR ;
   xdecl : Ast.Kid ;
   pre, acc, arm2 : SLICE OF Binding ;
@@ -7224,7 +7421,8 @@ BEGIN
         IF st.kids[0] IS SOME xn THEN
           CheckExcName (xn, ctx) ;
           IF LEN (xn.b) > 0 THEN RaisedAdd (xn.b, 'RAISE')
-          ELSE RaisedAdd (xn.a, 'RAISE') END
+          ELSE RaisedAdd (xn.a, 'RAISE') END ;
+          CheckRaisePayload (xn, st.kids[1], ctx)
         END ;
         WalkArgs (st.kids[1], ctx)
     | Ast.NReturn :
@@ -7261,7 +7459,9 @@ BEGIN
         OwnMergeMoves (acc, nacc)
     | Ast.NWhile :
         CheckCond (st.kids[0], ctx) ;
-        WalkSeq (st.kids[1], ctx)
+        sv := finSinceLoop ; finSinceLoop := 0 ; loopsOpen := loopsOpen + 1 ;
+        WalkSeq (st.kids[1], ctx) ;
+        loopsOpen := loopsOpen - 1 ; finSinceLoop := sv
     | Ast.NFor :
         CheckForBounds (st, ctx) ;
         (* a FOR inside a FOR over the SAME control variable clobbers
@@ -7276,6 +7476,7 @@ BEGIN
               Cat (ItoA (forLines[j]), ' (par 2.1)')))
           END
         END ;
+        sv := finSinceLoop ; finSinceLoop := 0 ; loopsOpen := loopsOpen + 1 ;
         IF nforActive < LEN (forNames) THEN
           forNames[nforActive] := Text.Keep (pool, st.a) ;   (* a copy: module state keeps no view of the tree *)
           forLines[nforActive] := st.line ;
@@ -7284,13 +7485,30 @@ BEGIN
           nforActive := nforActive - 1
         ELSE
           WalkSeq (st.kids[3], ctx)
-        END
+        END ;
+        loopsOpen := loopsOpen - 1 ; finSinceLoop := sv
     | Ast.NLoop :
-        WalkSeq (st.kids[0], ctx)
+        (* EXIT leaves the innermost LOOP, WHILE or FOR -- from inside a
+           CASE arm too (report par 5); the FINALLY blocks entered since
+           that loop are counted, because an EXIT across one would skip
+           its cleanup *)
+        sv := finSinceLoop ;
+        finSinceLoop := 0 ;
+        loopsOpen := loopsOpen + 1 ;
+        WalkSeq (st.kids[0], ctx) ;
+        loopsOpen := loopsOpen - 1 ;
+        finSinceLoop := sv
+    | Ast.NExit :
+        IF loopsOpen = 0 THEN
+          ErrN (st, ctx, 'EXIT outside a loop: EXIT leaves the innermost LOOP, WHILE or FOR (par 5)')
+        ELSIF finSinceLoop > 0 THEN
+          ErrN (st, ctx, 'EXIT across a FINALLY would skip its cleanup: leave the protected block first, or move the loop inside it (par 5)')
+        END
     | Ast.NBlock :
         (* handlers are collected BEFORE the guarded sequence is
            walked: what a block catches, it catches for everything
            inside it *)
+        IF HasFinally (st) THEN finSinceLoop := finSinceLoop + 1 END ;
         FOR j := 1 TO st.nkids - 1 DO
           IF st.kids[j] IS SOME h THEN
             IF h.kind = Ast.NHandler THEN
@@ -7327,13 +7545,17 @@ BEGIN
                 END
               END ;
               WalkSeq (part.kids[2], ctx)
-            ELSIF part.kind = Ast.NFinally THEN WalkSeq (part.kids[0], ctx)
+            ELSIF part.kind = Ast.NFinally THEN
+              (* the cleanup itself is outside its protected block *)
+              finSinceLoop := finSinceLoop - 1 ;
+              WalkSeq (part.kids[0], ctx)
             END
           END
         END
     | Ast.NCase :
         CheckCaseLabels (st, ctx) ;
         CheckCaseTotal (st, ctx) ;
+        CheckCaseElse (st, ctx) ;
         FOR j := 1 TO st.nkids - 1 DO
           IF st.kids[j] IS SOME arm THEN
             IF arm.kind = Ast.NCaseArm THEN
@@ -7409,11 +7631,37 @@ BEGIN
   END
 END CheckForVar ;
 
+(* a FOR step that is a constant: what Ast.ScalarConst folds, or a
+   name -- this module's CONST, or an imported Mod.N *)
+PROCEDURE StepConst (s: PTR Ast.Node) : BOOL =
+VAR
+  v : I64 ;
+  ch, found : BOOL ;
+  t : STR ;
+BEGIN
+  IF Ast.ScalarConst (SOME (s), v, ch) THEN RETURN NOT ch END ;
+  IF s.kind = Ast.NDesignator THEN
+    IF s.nkids = 0 THEN RETURN IsConstHere (s.a) END ;
+    IF s.nkids = 1 THEN
+      IF s.kids[0] IS SOME sf THEN
+        IF sf.kind = Ast.NSelField THEN
+          t := ModConstType (s.a, sf.a, found) ;
+          RETURN found
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END StepConst ;
+
 PROCEDURE CheckForBounds (KEPT st: PTR Ast.Node ; RO ctx: STR) =
   (* integer bounds, or two bounds of ONE enumeration: FOR c :=
      Colour.Red TO Colour.Blue walks the members in declaration order.
      A step is only for the integer form (docs/enum-plan.md, part 2). *)
-VAR t, u : STR ;
+VAR
+  t, u : STR ;
+  sv : I64 ;
+  sch : BOOL ;
 BEGIN
   t := ExprType (st.kids[0], ctx) ;
   u := ExprType (st.kids[1], ctx) ;
@@ -7438,14 +7686,45 @@ BEGIN
     t := ExprType (st.kids[2], ctx) ;
     IF NOT IsIntish (t) THEN
       ErrN (st, ctx, Cat ('FOR step must be an integer, not ', TyName (t)))
+    ELSIF NOT StepConst (step) THEN
+      (* par 10: FOR ... BY ConstExpr.  The step decides which way the
+         loop runs, so it is known when the loop is written (refused by
+         the generator alone until the typed tree's stage 3) *)
+      ErrN (st, ctx,
+        'a FOR step is a constant: BY takes a literal, a CONST or an expression of them (par 10)')
+    ELSIF Ast.ScalarConst (st.kids[2], sv, sch) THEN
+      IF sv = 0 THEN
+        ErrN (st, ctx, 'a FOR step of 0 never reaches its bound')
+      END
     END
   END ;
   CheckForVar (st, ctx, '', FALSE)
 END CheckForBounds ;
 
+
 (* a scalar CASE label must be comparable with the selector.  The
    variant labels of a CASE RECORD are names, not values, and are
    judged by CheckCaseTotal instead. *)
+(* a CASE over a CHAR or an integer names some of its values; one no
+   label names must have somewhere to go (report par 8: the generator
+   refused it, "unmatched-label semantics undecided", until 2026-10-09)
+   -- an enumeration or CASE RECORD is held TOTAL instead *)
+PROCEDURE CheckCaseElse (st: PTR Ast.Node ; RO ctx: STR) =
+VAR
+  t : STR ;
+  j : I64 ;
+BEGIN
+  t := ExprType (st.kids[0], ctx) ;
+  IF NOT (Text.Eq (t, 'CHAR') OR IsIntStr (t) OR Text.Eq (t, 'BYTE')) THEN RETURN END ;
+  FOR j := 1 TO st.nkids - 1 DO
+    IF st.kids[j] IS SOME arm THEN
+      IF arm.kind # Ast.NCaseArm THEN RETURN END
+    END
+  END ;
+  ErrN (st, ctx, S3 ('a CASE over ', TyName (t),
+    ' needs an ELSE: a value no label names would have nowhere to go (par 8)'))
+END CheckCaseElse ;
+
 PROCEDURE CheckCaseLabels (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   selTy, t, lblTxt : STR ;
@@ -7621,12 +7900,14 @@ PROCEDURE EndsSeq (k: Ast.Kid) : BOOL ;
 
 PROCEDURE HasExit (k: Ast.Kid) : BOOL =
   (* an EXIT that belongs to the LOOP whose body this is: a nested
-     LOOP owns its own *)
+     LOOP, WHILE or FOR owns its own -- EXIT leaves the innermost of
+     them (until 2026-10-09 this counted an EXIT inside a nested WHILE
+     or FOR as the LOOP's, which the generator never did) *)
 VAR i : I64 ;
 BEGIN
   IF k IS SOME n THEN
     IF n.kind = Ast.NExit THEN RETURN TRUE END ;
-    IF n.kind = Ast.NLoop THEN RETURN FALSE END ;
+    IF n.kind = Ast.NLoop OR n.kind = Ast.NWhile OR n.kind = Ast.NFor THEN RETURN FALSE END ;
     FOR i := 0 TO n.nkids - 1 DO
       IF HasExit (n.kids[i]) THEN RETURN TRUE END
     END
@@ -8042,8 +8323,13 @@ BEGIN
             shownRaises := Text.Keep (pool, shownRaises + raised[i].name + ' ')
           END
         ELSIF NOT ok THEN
-          ErrN (body, ctx, Cat (Cat (Cat ('unhandled RAISES ',
-            raised[i].name), ' from '), raised[i].mode))
+          (* the edit, said (cp-kernel: the KEPT and RAISES refusals
+             were 14 of stage 4b's 32 red runs, each fixed by the one
+             line the message could have named) *)
+          ErrN (body, ctx, Cat (Cat (Cat (Cat (Cat ('unhandled RAISES ',
+            raised[i].name), ' from '), raised[i].mode),
+            " -- add it to this procedure's RAISES, or handle it: EXCEPT | "),
+            Cat (raised[i].name, ' : ...')))
         END
       END
     END

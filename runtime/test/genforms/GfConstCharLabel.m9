@@ -1,0 +1,19 @@
+MODULE GfConstCharLabel ;
+
+(* WANT: a CHAR CONST as a CASE label *)
+
+IMPORT Io ;
+
+CONST
+  B = 078C ;
+
+VAR
+  c : CHAR ;
+
+BEGIN
+  c := 'x' ;
+  CASE c OF
+  | B : Io.WriteLine ('a CHAR CONST as a CASE label')
+  ELSE  Io.WriteLine ('ELSE')
+  END
+END GfConstCharLabel.

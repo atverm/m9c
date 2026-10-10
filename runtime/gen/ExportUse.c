@@ -27,12 +27,15 @@ extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
 
 static m9_arr_4_double row;
+static ExportDef_Cell * c;
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[22] = { 69u, 120u, 112u, 111u, 114u, 116u, 85u, 115u, 101u, 32u, 114u, 101u, 97u, 100u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 32u };
-static const uint32_t m9s1[9] = { 44u, 32u, 76u, 69u, 78u, 32u, 120u, 115u, 32u };
-static const uint32_t m9s2[10] = { 44u, 32u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 32u };
-static const uint32_t m9s3[10] = { 44u, 32u, 76u, 69u, 78u, 32u, 114u, 111u, 119u, 32u };
+static const uint32_t m9s0[41] = { 69u, 120u, 112u, 111u, 114u, 116u, 85u, 115u, 101u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 115u, 32u, 97u, 32u, 83u, 104u, 97u, 100u, 101u, 32u, 97u, 99u, 114u, 111u, 115u, 115u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 115u };
+static const uint32_t m9s1[16] = { 97u, 110u, 100u, 32u, 105u, 116u, 115u, 32u, 110u, 101u, 103u, 97u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s2[22] = { 69u, 120u, 112u, 111u, 114u, 116u, 85u, 115u, 101u, 32u, 114u, 101u, 97u, 100u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 32u };
+static const uint32_t m9s3[9] = { 44u, 32u, 76u, 69u, 78u, 32u, 120u, 115u, 32u };
+static const uint32_t m9s4[10] = { 44u, 32u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 32u };
+static const uint32_t m9s5[10] = { 44u, 32u, 76u, 69u, 78u, 32u, 114u, 111u, 119u, 32u };
 
 
 int main (int argc, char **argv)
@@ -44,7 +47,20 @@ int main (int argc, char **argv)
   ExportDef_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (INT64_C(4), err), err)) m9a1 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (INT64_C(4), err), err);
+  { __typeof__(c) m9v = (ExportDef_Cell *) m9_pool_alloc (err->res, sizeof (ExportDef_Cell), 1, err);
+    if (err->exc) goto L_hdl_m9t1;
+    c = m9v;
+  }
+  c->shade = ((ExportDef_Shade){ .tag = ExportDef_Shade_Dark });
+  if (((c->shade).tag == (((ExportDef_Shade){ .tag = ExportDef_Shade_Dark })).tag)) {
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s0, 41 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  }
+  if (((c->shade).tag != (((ExportDef_Shade){ .tag = ExportDef_Shade_Light })).tag)) {
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s1, 16 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  }
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err)) m9a1 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err);
     if (err->exc) goto L_hdl_m9t1;
   Io_WriteLine (m9a1, err);
   if (err->exc) goto L_hdl_m9t1;

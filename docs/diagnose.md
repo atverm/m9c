@@ -28,10 +28,12 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `unknown name: x` | a bare name on the left of := is declared nowhere -- not a local, parameter, module variable, or a CONST (writing a CONST is its own refusal); until 2026-10-08 only the generator said so, as `gen: unknown name' | declare it (VAR in the procedure or at module level), or spell the name as declared -- names are case sensitive | `assign-to-undeclared` |
 | `BYTE is a raw octet: no arithmetic` | BYTE is a raw octet, not a number: no +, -, comparison as magnitude | convert with U8 (b) or I64 (b) first, and back with BYTE (x), each of which RAISES ValueRange | `byte-arithmetic` |
 | `ByteSize needs a slice, not I64` | ByteSize answers the bytes a slice's elements occupy, so its argument must be a slice | for a scalar or record use SizeOf (x); for the data behind a slice, ByteSize (s) = LEN (s) * SizeOf (element) | `bytesize-not-slice` |
+| `cannot select from an answer of type I64: a field needs a record, a subscript a slice, array or grid` | a call's answer is selected from -- F (x).f, F (x)[i] -- and its declared type has no such field or subscript (an I64, a pointer to a non-record); or (`a procedure value') the call goes through a variable, which has no declaration to read the answer's type from | select only what the answer has; for a call through a procedure variable, assign the answer to a variable of its type first, then select (par 10) | `call-select-not-composite` |
 | `CASE label is a CHAR/string literal but the selector is I64` | the CASE label's type is not the selector's type | labels must be literals or CONSTs of the selector's type; a CHAR selector takes 'x' or 41C | `case-label-mismatch` |
 | `CASE label 200 appears twice` | the same scalar label appears in two arms; the second is dead and one of the two is a typo -- decided at compile time | remove the duplicate, or widen it to a range if that was meant | `case-label-twice` |
 | `CASE over CASE RECORD is not total (missing Irods)` | a CASE over an enumeration or CASE RECORD has no arm for a member and no ELSE -- the labels may be bare (Fs) or qualified (Store.Fs), and both are counted | add an arm for the member the message names, or an ELSE that says what the others do | `case-qualified-label-total` |
 | `CASE RECORD is reached by CASE, not by selection` | the variant payload of a CASE RECORD is reached only through a CASE arm that binds it | write CASE v OF | Kind.Str (s) : ... END; never v.field on the variant part | `case-record-selected` |
+| `a CASE over I64 needs an ELSE: a value no label names would have nowhere to go (par 8)` | a CASE over a CHAR or an integer has labels for some values and no ELSE for the others | add an ELSE that says what the other values do -- RAISE ValueRange if none may occur | `case-scalar-without-else` |
 | `no '=' between two values of type ARRAY 3 OF I64` | two arrays, records, slices or grids are compared with an operator; an operator compares scalars -- numbers, characters, booleans, enumeration values, pointers -- and the generated C has no == for a struct | compare what is inside: the fields by name, the elements in a loop; for arrays of reals the question is usually 'near', not 'equal' (Check.NearF64s in a test) (par 2.3) | `compare-composite` |
 | `cannot compare I64 with SLICE OF CHAR` | the two sides of a comparison have different types and nothing converts implicitly | convert one side explicitly; for strings use DynStr.Eq / Text.Eq, not = (par 2.1) | `compare-mismatch` |
 | `no '=' between two strings: Text.Eq (a, b) answers equality` | two strings are compared with = or #, or ordered with < and its kin; a STR is a slice (a pointer and a length), no operator compares two of them, and until 2026-10-02 the checker passed this on to a C compiler that refused it | Text.Eq (a, b) for equality (IF Text.Eq (name, 'cancel') THEN ...); a CHAR against a one-character literal is still =; there is no ordering operator for strings -- Sort.Strs sorts, and a comparison of two strings is written out or taken from a library (par 2.3) | `compare-strings` |
@@ -41,6 +43,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `condition must be BOOL, not I64` | IF/WHILE/ELSIF take a BOOL; an integer is not implicitly a truth value | write the comparison out: IF n # 0 THEN | `cond-not-bool` |
 | `use of s after it was consumed by SHARED` | SHARED (s) consumed s on one arm, so after the join s may be gone (moved in ANY arm = moved after) | share on every path, or share before the branch; see par 4.2 | `conditional-move` |
 | `argument 1 of Bump: the CONST Pi cannot be passed to a VAR or OWN parameter` | a CONST is passed to a VAR or OWN parameter, which exists to be written through; there is nothing to write | pass a variable holding the value, or make the parameter by-value or RO if the callee only reads | `const-as-var-argument` |
+| `CONST Big: the expression overflows I64 or divides by zero (par 2.2.4)` | an integer CONST expression is folded with the run-time arithmetic, and this one overflows I64 or divides by zero (or a CONST is a form no generator writes: a name, a call, a comparison) | compute the value in a procedure, or split the expression so each part fits I64 | `const-expression-overflow` |
 | `argument 1 of Up: the CONST Names can be lent only to an RO parameter` | a string CONST, or an element of a constant table, is passed to a by-value slice parameter that is not RO; a constant is read-only data | declare the parameter RO, or copy the constant into a variable first (par 2.4) | `const-string-to-writable` |
 | `the CONST table Primes can only be indexed, measured with LEN, or lent to an RO parameter` | a constant table is named bare where its value would be aliased -- assigned to a slice, cut with SLICE, RETURNed -- and whatever held the alias could write the constant | index it (X[i]), measure it (LEN (X)), or lend it whole to an RO parameter; those three are everything a table does (par 2.2.4) | `const-table-aliased` |
 | `argument 1 of Fill: the CONST table Primes can be lent only to an RO parameter` | a constant table is passed to a parameter that is not RO; a slice parameter can be written through, and the table is read-only data | declare the parameter RO if the callee only reads; if it writes, it needs a variable, not a constant (par 2.2.4) | `const-table-lent-writable` |
@@ -52,12 +55,15 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `the pool owns p; free the pool` | PTR T IN pool is carved from a pool and the pool frees it as a whole | never DISPOSE a pool-interior pointer; free the pool (par 4.3, docs/pools.md) | `dispose-pool-interior` |
 | `DIV is integer division` | DIV and MOD are integer operators | use / for floats; Math.Fmod for a float remainder | `div-on-float` |
 | `unhandled RAISES ValueRange from Colour conversion` | an integer-to-enumeration conversion, Colour (i) or Mod.Type (i), can turn an integer that names no member into a value, so it RAISES ValueRange -- and a procedure that converts without declaring or handling that failure is refused, the same as I64 (x) on a value that might not fit | add RAISES ValueRange to the signature, or handle it with EXCEPT; the conversion is the checked inverse of ORD, and the exhaustive RAISES accounting reaches it like every other narrowing | `enum-conversion-no-raises` |
+| `EXIT across a FINALLY would skip its cleanup: leave the protected block first, or move the loop inside it (par 5)` | EXIT would leave its loop from inside a block with a FINALLY that the loop is outside of, skipping the cleanup | leave the protected block first (set a flag and test it after the block), or put the loop inside the block | `exit-across-finally` |
+| `EXIT outside a loop: EXIT leaves the innermost LOOP, WHILE or FOR (par 5)` | EXIT leaves the innermost LOOP, WHILE or FOR, and this one is in none of them | end the WHILE or FOR by its condition, or wrap the work in a LOOP | `exit-outside-loop` |
 | `a frame allocation dies with this frame; it cannot be stored in module variable Lib.box` | another module's variable outlives this procedure as the module's own do: a frame value stored there would dangle (par 4.3, decision 28) | allocate where the exporter lives: NEW (HEAP, T), a pool the exporter owns, or assign from the module body | `export-var-frame-ptr` |
 | `cannot write through the RO variable Lib.limits` | a VAR RO export is read-only storage to every module, its importers included (par 2.4, decision 28) | write through a writable export, or have the module that owns it change it | `export-var-ro-write` |
 | `cannot assign a real literal to I64` | another module's exported variable Mod.v has the type its definition declares, and nothing converts implicitly (decision 28, par 3) | convert explicitly to the declared type, or read the definition: m9c --json Mod | `export-var-typed` |
 | `FOR over an enumeration needs both bounds of one type, not m.Colour and m.Fruit` | a FOR loop over an enumeration walks the members of ONE enumeration in declaration order, so its two bounds must name that same type; giving Colour.Red as the low bound and a member of a different enumeration as the high bound has no meaning, since members of unrelated enumerations are not comparable | make both bounds members of the one type -- FOR c := Colour.Red TO Colour.Blue; a loop that must cross two enumerations is two loops, or a conversion through ORD if the ordinals really are meant to line up | `for-enum-bounds-differ` |
 | `FOR over an enumeration takes no BY step` | BY names an integer stride and an enumeration's members are not numbers to step over -- the loop already visits every member from the low bound to the high one, with nothing between them to skip -- so BY on an enumeration bound is refused | drop the BY: FOR c := Colour.Red TO Colour.Blue visits Red, Green, Blue in order; if you need to skip members, guard the body with an IF or CASE rather than striding the loop | `for-enum-takes-no-step` |
 | `FOR variable j is the control variable of the enclosing FOR at line 12 (par 2.1)` | a FOR inside a FOR over the SAME control variable: the inner loop assigns the outer count (cp-kernel's Shacl.m9 ran its outer loop once, 2026-10-09) | give the inner loop its own variable (declare it); a second FOR over the same variable AFTER the first is fine | `for-nested-same-variable` |
+| `a FOR step is a constant: BY takes a literal, a CONST or an expression of them (par 10)` | the FOR names its BY step by a variable (or anything else that is no constant); the grammar takes a ConstExpr there, because the step decides which way the loop runs | write the step as a literal, a CONST or an expression of them; a step known only at run time is a WHILE with its own test (par 10) | `for-step-not-constant` |
 | `FOR variable k is I64, and its bounds are m.Colour` | a FOR loop over an enumeration (FOR c := Colour.Red TO Colour.Blue) has a variable of another type; the variable takes each member in turn, so it is that enumeration | declare it of the enumeration: VAR c : Colour ; | `for-variable-enum-mismatch` |
 | `cannot assign I64 to F64 (no implicit conversions, par 2.1)` | a loop variable is used where another type is wanted -- assigned to an F64, added to one -- and that is an implicit conversion like any other; the refusal is the ordinary one.  Until 2026-10-02 the checker held a loop variable to no type at all inside its loop, so `x := x + i` with x an F64 compiled and ran (museum/implicit-through-loop-variable.m9) | write the conversion: x := x + F64 (i).  NOT SOURCE COMPATIBLE for a program that leaned on the gap; none was found in this repository or the FLEXPART port | `for-variable-keeps-its-type` |
 | `FOR variable x is F64: a loop over integers counts in an integer variable` | the variable of a FOR loop over integer bounds is declared with a type that is not an integer -- an F64, a STR; a loop counts in an integer | declare the loop variable I64 (or another integer width), and convert inside the body where a real is wanted: F64 (i) | `for-variable-not-integer` |
@@ -70,7 +76,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `a frame allocation dies with this frame; it cannot be stored through n, which is declared IN a pool (par 4.3)` | a local declared IN a pool has a target that outlives the frame, so a component of it may not hold a frame value (par 4.3) | allocate the component in the pool the local is declared in: NEW (pool, T), or a callee that takes the pool | `frame-ptr-pooled-component` |
 | `the answer of Make dies with this frame; it cannot be stored in module variable tab (par 2.3)` | a frame value stored into a COMPONENT of a local (a record field, a pointer's target) taints the local as a whole, so copying that local into a module variable would hand the module storage that dies with the frame (par 2.3) | keep the record in the frame, or build the component in the pool the module variable owns: NEW (pool, T), or a callee that takes the pool | `frame-ptr-record-copy` |
 | `SHARED needs an OWN allocation; s lives in the frame` | SHARED needs the rc header only NEW (OWN, T) carries; a frame allocation has none and dies with the frame (par 4.2) | s := NEW (OWN, T) ; g := SHARED (s) | `frame-ptr-shared` |
-| `a frame allocation dies with this frame; it cannot be stored in module variable saved` | NEW (T) with no pool allocates from the procedure's frame, which dies when the frame returns; a module variable outlives it and would point at freed storage (par 4.3, docs/pool-elision-plan.md) | allocate it where the reader lives: NEW (HEAP, T) for the process's lifetime, NEW (pool, T) in a pool the caller owns, or return it -- a returned frame pointer keeps its storage | `frame-ptr-to-modvar` |
+| `a frame allocation dies with this frame; it cannot be stored in module variable saved (par 2.3) -- allocate it in a module pool (VAR mpool : POOL ; NEW (mpool, T)), or copy a string: Text.Keep (mpool, s)` | NEW (T) with no pool allocates from the procedure's frame, which dies when the frame returns; a module variable outlives it and would point at freed storage (par 4.3, docs/pool-elision-plan.md) | allocate it where the reader lives: NEW (HEAP, T) for the process's lifetime, NEW (pool, T) in a pool the caller owns, or return it -- a returned frame pointer keeps its storage | `frame-ptr-to-modvar` |
 | `THREAD (Work): cannot hand a frame allocation to a thread` | a frame allocation dies when this frame returns, and a thread does not wait for that | allocate what a thread receives with NEW (OWN, T): the thread owns it and DISPOSEs it (par 4.2, 6) | `frame-ptr-to-thread` |
 | `a frame allocation dies with this frame; it cannot be stored through n, which outlives it` | a frame allocation stored into a COMPONENT reached through a reference parameter (a field, an element, a pointer's target) is not seen by the exit adoption, which looks at the parameter itself, so the caller would hold freed storage (par 4.3) | assign the whole VAR parameter (its target is adopted at exit), or allocate in the pool the object lives in: NEW (pool, T) | `frame-ptr-via-var-component` |
 | `is an M9 module -- use IMPORT lib` | FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way) | use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later | `from-m9-module` |
@@ -92,7 +98,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `IS SOME needs an OPT operand` | `x IS SOME` or `x IS NONE` (no binder, a BOOL since 2026-10-09) was asked of a value that is not an OPT -- only an OPT can be absent | ask it of the OPT (the field, the variable, the call answering OPT), or drop the test: a value that is not OPT is always there | `is-some-expression` |
 | `IS SOME needs an OPT operand` | IS SOME is the guard for OPT; the operand is not OPT (a cross-module PTR T IN pool may type as unknown and NOT be diagnosed -- check the declaration) | declare the type OPT PTR T, or drop the guard if it cannot be absent | `is-some-on-non-opt` |
 | `argument 1 of Note: borrowed msg is kept by the callee -- declare KEPT msg (par 4.1)` | a borrowed parameter is passed to a parameter the callee declares KEPT, so the caller is retaining it too | declare the caller's own parameter KEPT as well -- the declaration composes upward, exactly as RAISES does (par 4.1, docs/retention.md) | `kept-borrow-arg` |
-| `argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1)` | a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument | build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1) | `kept-concat-arg` |
+| `argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1); give it storage that outlives the call: a string through Text.Keep (pool, s), an allocation through NEW (pool, T)` | a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument | build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1) | `kept-concat-arg` |
 | `argument 2 of Keep: borrowed v is kept by the callee -- declare KEPT v (par 4.1)` | a PROCEDURE is declared inside another procedure's body; the grammar parses it (par 10) and neither checker nor generator supports it -- until 2026-10-08 the first call of it was `unknown procedure' | declare the procedure at module level and hand it what it used of the enclosing procedure as parameters | `kept-constructor-arg` |
 | `undeclared retention: borrowed p reaches module state -- declare KEPT p (par 4.1)` | a RECORD handed by value whose fields hold references (a STR, a slice, a pointer) is stored in module state, through a VAR parameter or into the answer; since 2026-10-08 a record value counts as the references it holds | declare the parameter KEPT; a record of scalars needs nothing | `kept-record-value` |
 | `undeclared retention: borrowed msg reaches module state -- declare KEPT msg (par 4.1)` | a borrowed parameter is stored somewhere that outlives the call -- module state, the caller's storage, or the answer -- and the signature does not say so | declare the parameter KEPT so every caller can see the retention, or copy the bytes instead of keeping the borrow (par 4.1, docs/retention.md) | `kept-undeclared` |
@@ -118,6 +124,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `unknown type: Nosuch` | the type position of a NEW names a type no module declares -- a bare name declared nowhere, or Mod.T where the loaded module Mod has no T; until 2026-10-08 the checker passed it and the generator refused the C | name the type as declared, qualified by its module where it is imported; a type is declared in this module or imported, never guessed | `new-type-unknown` |
 | `no field w` | the record has no field of that name | read the record in docs/modules/<M>.md; a variant's payload is reached through CASE | `no-such-field` |
 | `opaque type not defined in the implementation` | the DEFINITION declares an opaque TYPE the IMPLEMENTATION never completes | TYPE T = RECORD ... END in the implementation | `opaque-not-defined` |
+| `OPT holds a pointer or a procedure value, and I64 is neither: keep a BOOL beside the value, or OPT PTR to it (par 2.2)` | OPT holds what can be absent -- a pointer or a procedure value, a C pointer that may be NULL -- and the type named is a value | write OPT PTR T for a value that may be absent, or keep a BOOL beside the value | `opt-over-value` |
 | `OPT value used without IS SOME guard` | an OPT field was read without IS SOME; OPT is traced through fields, not only names | IF r.f IS SOME p THEN ... END, and use p inside (par 2.2) | `opt-through-field` |
 | `cannot pass SLICE OF CHAR where I64 is expected` | a parameter (or a local) has the name of a module CONST and is used as the parameter it is; the refusal shown is an ordinary type error, and the point is that the checker now reads the name as the PARAMETER -- until 2026-10-01 it read it as the constant, so the type error went unseen and the generated C used the parameter | nothing to change in a correct program; give the parameter another name if the shadowing confuses the reader | `param-shadows-const` |
 | `d is declared IN scratch but allocated in p (par 4.3)` | the IN clause of a declaration is the pool rule 2 hands to every callee that grows the object, so it must be the pool the object was allocated in; a buffer grown in the declared pool while the head lives in another dies at the wrong time (par 4.3) | declare the variable IN the pool it is allocated in, or allocate it in the pool it is declared in | `pool-clause-disagrees` |
@@ -132,13 +139,14 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot pass POOL where I64 is expected` | a POOL is passed where the parameter is some other type (or the other way round); POOL is a type like any other to an argument and its parameter -- until 2026-10-01 it had no canonical form and such a call was accepted | pass what the parameter declares; a pool goes to a VAR pool: POOL parameter and nowhere else (par 4.3) | `pool-where-a-value-is-wanted` |
 | `a field of procedure type must be OPT (par 2.2.3)` | a record field of procedure type starts zeroed like every field, and a zero procedure value cannot be called | declare the field OPT and read it through IS SOME (par 2.2.3) | `proc-field-must-be-opt` |
 | `PURE procedure calls through the procedure value k (par 3.2)` | a PURE body may call only PURE procedures, and a procedure value names no procedure the checker could look at | take the value out of the PURE procedure, or make the computation a named PURE procedure (par 3.2) | `proc-value-call-in-pure` |
-| `unhandled RAISES ValueRange from call to k` | a call through a procedure value raises what the TYPE declares, since nothing is known about which procedure runs | handle it, or add the exception to the caller's own RAISES (par 2.2.3, par 5) | `proc-value-call-raises` |
+| `unhandled RAISES ValueRange from call to k -- add it to this procedure's RAISES, or handle it: EXCEPT \| ValueRange : ...` | a call through a procedure value raises what the TYPE declares, since nothing is known about which procedure runs | handle it, or add the exception to the caller's own RAISES (par 2.2.3, par 5) | `proc-value-call-raises` |
 | `argument 1 of At: cannot pass PROCEDURE (F64) : F64 RAISES Odd, ValueRange where PROCEDURE (F64) : F64 RAISES ValueRange is expected` | the procedure may raise an exception the procedure type does not declare; a caller of the value handles what the TYPE says, so this one could arrive unhandled.  The probe holds what must stay LEGAL before it: since 2026-10-02 a procedure that raises LESS than the type allows fits it, a quiet one included | handle the extra exception inside the procedure, or declare it in the type's RAISES (par 2.2.3) | `proc-value-raises-more` |
 | `cannot assign OPT PROCEDURE (I64 ; I64) : I64 to OPT PROCEDURE (I64 ; I64) : BOOL (no implicit conversions, par 2.1)` | a procedure fits a procedure type only when its head renders the same text -- modes, types and result, to the letter -- and it raises no more than the type allows | assign a procedure with exactly the declared parameters and result, or change the type (par 2.2.3) | `proc-value-signature-differs` |
 | `a variable of procedure type must be OPT (par 2.2.3)` | a procedure value has no zero: a zeroed variable of procedure type would be a call into nothing | declare it OPT Less and take the value through IS SOME; a PARAMETER of procedure type needs no OPT (par 2.2.3) | `proc-var-must-be-opt` |
 | `cannot allocate from the pool pool in a PURE procedure (par 3.2)` | NEW from a pool the CALLER owns consumes the caller's storage and answers a slice into the caller's arena -- an effect (par 3.2) | use a local VAR scratch: POOL, or drop [PURE] | `pure-allocates` |
 | `PURE procedure calls Note, which is not PURE (par 3.2)` | a PURE procedure may call only PURE procedures -- which is what makes 'no I/O' true without the checker knowing what I/O is, since a foreign procedure is [SERIAL] or [REENTRANT] and never [PURE] | declare the callee [PURE] too if it really is, or drop [PURE] from the caller | `pure-calls-impure` |
 | `cannot write through the VAR parameter acc in a PURE procedure (par 3.2)` | a PURE procedure has no observable effect (par 3.2), and writing through a caller's VAR binding is precisely what the caller observes | answer a value instead of writing through a parameter, or drop [PURE] | `pure-writes-var` |
+| `field 1 of Bad: cannot give SLICE OF CHAR where I64 is expected` | a RAISE gives its EXCEPTION a value of another type than the field declares (or, with `expects N argument(s)', another number of values) -- the payload is held to the declaration as a record aggregate's arguments are | give the fields in their declared order and types; a handler binds them by position, so a value in the wrong place is read as another field (par 5) | `raise-payload-mismatch` |
 | `Row expects 2 argument(s), got 1` | a record aggregate Row (...) gives fewer or more values than the record has fields; it is positional and every field must be given (report par 2.2.4, 2026-10-05) | give every field, in declaration order: Row (code, text) | `record-aggregate-arity` |
 | `Ext: an aggregate of an extended record is not built` | a record aggregate names an extended record (RECORD (Base) ...): its base fields would have to come first, which the first cut of the aggregate does not do | declare a variable of the extended type and set its fields one by one | `record-aggregate-extended` |
 | `field 1 of Row: cannot give SLICE OF CHAR where I64 is expected` | a value of a record aggregate does not have its field type -- often two fields given in the wrong order, which is what a positional aggregate cannot otherwise notice when the types differ | give each field a value of its type, in declaration order; the message names the field by position | `record-aggregate-field-type` |
@@ -382,6 +390,41 @@ BEGIN
 END m.
 ```
 
+### call-select-not-composite
+
+`cannot select from an answer of type I64: a field needs a record, a subscript a slice, array or grid`
+
+```
+(* A call's answer may be selected from -- F (x).f, F (x)[i] (par 10,
+   Factor; 2026-10-09) -- when its declared type has what the selector
+   needs.  The legal forms first: a field of a record answer, a
+   subscript of a slice answer, a chain.  Then a field of an I64. *)
+MODULE m ;
+TYPE
+  Pair = RECORD a, b : I64 END ;
+PROCEDURE MkPair (n: I64) : Pair =
+VAR p : Pair ;
+BEGIN
+  p.a := n ;
+  p.b := n ;
+  RETURN p
+END MkPair ;
+PROCEDURE Nums (n: I64) : SLICE OF I64 =
+BEGIN
+  RETURN NEW (I64, n)
+END Nums ;
+PROCEDURE One () : I64 =
+BEGIN
+  RETURN 1
+END One ;
+VAR
+  k : I64 ;
+BEGIN
+  k := MkPair (2).a + Nums (3)[1] ;
+  k := One ().a
+END m.
+```
+
 ### case-label-mismatch
 
 `CASE label is a CHAR/string literal but the selector is I64`
@@ -467,6 +510,34 @@ TYPE T = CASE RECORD | A : x: I64 | B END ;
 TYPE R = RECORD t : T END ;
 VAR r : R ; y : I64 ;
 BEGIN y := r.t.x END m.
+```
+
+### case-scalar-without-else
+
+`a CASE over I64 needs an ELSE: a value no label names would have nowhere to go (par 8)`
+
+```
+(* A CASE over a CHAR or an integer names some of its values; one no
+   label names must have somewhere to go.  The generator refused it
+   ("unmatched-label semantics undecided") and the checker passed it;
+   since 2026-10-09 the checker says so.  An enumeration or CASE RECORD
+   is held total instead.  The legal forms first. *)
+MODULE m ;
+TYPE
+  Colour = (Red, Green) ;
+VAR
+  k : I64 ;
+  c : CHAR ;
+  col : Colour ;
+BEGIN
+  k := 5 ;
+  c := 'a' ;
+  col := Colour.Red ;
+  CASE k OF | 1 : k := 2 ELSE k := 0 END ;
+  CASE c OF | 'a' : k := 1 ELSE k := 2 END ;
+  CASE col OF | Red : k := 1 | Green : k := 2 END ;
+  CASE k OF | 1 : k := 2 | 2 : k := 3 END
+END m.
 ```
 
 ### compare-composite
@@ -601,6 +672,28 @@ PROCEDURE F () =
 BEGIN
   Bump (Pi)
 END F ;
+END m.
+```
+
+### const-expression-overflow
+
+`CONST Big: the expression overflows I64 or divides by zero (par 2.2.4)`
+
+```
+(* A CONST over an integer expression is folded by the generators
+   with the runtime's arithmetic (2026-10-09; it was accepted here and
+   refused by the generator as `const form unsupported yet'), so what
+   the program would raise at run time is refused here.  The legal
+   forms first; the last overflows. *)
+MODULE m ;
+CONST
+  A = 2 * 3 + 1 ;
+  B = -(4 - 1) ;
+  C = 0x10 * 2 ;
+  D = 7 DIV 2 - 7 MOD 2 ;
+  R = 1.5 * 2.0 ;
+  Big = 9223372036854775807 + 1 ;
+BEGIN
 END m.
 ```
 
@@ -826,6 +919,63 @@ BEGIN
 END m.
 ```
 
+### exit-across-finally
+
+`EXIT across a FINALLY would skip its cleanup: leave the protected block first, or move the loop inside it (par 5)`
+
+```
+(* An EXIT that would leave a loop from inside a FINALLY-protected
+   block would skip the cleanup (the generator refused it as such).
+   The legal forms first: a loop inside the protected block, and an
+   EXIT in the cleanup's own statements. *)
+MODULE m ;
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  BEGIN
+    LOOP i := i + 1 ; IF i = 3 THEN EXIT END END
+  FINALLY
+    i := 0
+  END ;
+  LOOP
+    BEGIN
+      i := i + 1
+    FINALLY
+      IF i > 2 THEN i := 0 END
+    END ;
+    IF i = 0 THEN EXIT END
+  END ;
+  LOOP
+    BEGIN
+      i := i + 1 ;
+      IF i = 3 THEN EXIT END
+    FINALLY
+      i := 0
+    END
+  END
+END m.
+```
+
+### exit-outside-loop
+
+`EXIT outside a loop: EXIT leaves the innermost LOOP, WHILE or FOR (par 5)`
+
+```
+(* EXIT leaves the innermost LOOP, WHILE or FOR -- from a CASE arm
+   too since 2026-10-09 -- and outside every loop it has nothing to
+   leave (the generator wrote a `break' C refused).  The legal forms
+   first. *)
+MODULE m ;
+VAR i, k : I64 ;
+BEGIN
+  i := 0 ;
+  LOOP i := i + 1 ; IF i = 3 THEN EXIT END END ;
+  WHILE i < 10 DO i := i + 1 ; IF i = 5 THEN EXIT END END ;
+  FOR k := 0 TO 9 DO CASE k OF | 4 : EXIT ELSE i := k END END ;
+  IF i > 0 THEN EXIT END
+END m.
+```
+
 ### export-var-frame-ptr
 
 `a frame allocation dies with this frame; it cannot be stored in module variable Lib.box`
@@ -986,6 +1136,33 @@ BEGIN
     FOR j := 0 TO 1 DO n := n + j END
   END ;
   FOR j := 0 TO 1 DO n := n + j END
+END m.
+```
+
+### for-step-not-constant
+
+`a FOR step is a constant: BY takes a literal, a CONST or an expression of them (par 10)`
+
+```
+(* The grammar says FOR ... BY ConstExpr: the step decides which way
+   the loop runs, so it is known where the loop is written.  The
+   checker passed a variable step and the generator refused it ("FOR BY
+   step form unsupported yet"); since 2026-10-09 the checker says so.
+   The legal forms first: a literal, a negative one, a CONST, an
+   expression of literals. *)
+MODULE m ;
+CONST
+  Two = 2 ;
+VAR
+  i, k, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 0 TO 9 BY 3 DO s := s + i END ;
+  FOR i := 9 TO 0 BY -1 DO s := s + i END ;
+  FOR i := 0 TO 9 BY Two DO s := s + i END ;
+  FOR i := 0 TO 9 BY 2 * 2 DO s := s + i END ;
+  k := 2 ;
+  FOR i := 0 TO 9 BY k DO s := s + i END
 END m.
 ```
 
@@ -1188,7 +1365,7 @@ END m.
 
 ### frame-ptr-to-modvar
 
-`a frame allocation dies with this frame; it cannot be stored in module variable saved`
+`a frame allocation dies with this frame; it cannot be stored in module variable saved (par 2.3) -- allocate it in a module pool (VAR mpool : POOL ; NEW (mpool, T)), or copy a string: Text.Keep (mpool, s)`
 
 ```
 MODULE m ;
@@ -1592,7 +1769,7 @@ END m.
 
 ### kept-concat-arg
 
-`argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1)`
+`argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1); give it storage that outlives the call: a string through Text.Keep (pool, s), an allocation through NEW (pool, T)`
 
 ```
 MODULE m ;
@@ -2147,6 +2324,28 @@ IMPLEMENTATION MODULE d ;
 END d.
 ```
 
+### opt-over-value
+
+`OPT holds a pointer or a procedure value, and I64 is neither: keep a BOOL beside the value, or OPT PTR to it (par 2.2)`
+
+```
+(* OPT holds what can be absent -- a pointer or a procedure value,
+   a C pointer that may be NULL.  Over a value type it was accepted
+   here and refused by the generator (`dereference of a non-pointer');
+   since 2026-10-09 it is refused here.  The legal forms first. *)
+MODULE m ;
+TYPE
+  Box = RECORD n : I64 END ;
+  Less = PROCEDURE (a, b: I64) : BOOL ;
+VAR
+  p : OPT PTR Box ;
+  s : OPT SHARED PTR Box ;
+  f : OPT Less ;
+  n : OPT I64 ;
+BEGIN
+END m.
+```
+
 ### opt-through-field
 
 `OPT value used without IS SOME guard`
@@ -2396,7 +2595,7 @@ END m.
 
 ### proc-value-call-raises
 
-`unhandled RAISES ValueRange from call to k`
+`unhandled RAISES ValueRange from call to k -- add it to this procedure's RAISES, or handle it: EXCEPT | ValueRange : ...`
 
 ```
 MODULE m ;
@@ -2569,6 +2768,35 @@ BEGIN
   a := 0 ;
   a := Add (a, 1)
 END PureWritesVar.
+```
+
+### raise-payload-mismatch
+
+`field 1 of Bad: cannot give SLICE OF CHAR where I64 is expected`
+
+```
+(* A RAISE's payload is held to its EXCEPTION's fields, as a record
+   aggregate's arguments are: the count and each value's type (par 5).
+   Until 2026-10-09 nothing held it: the values swapped compiled and
+   ran, each landing in the slot of its own type.  The legal forms
+   first -- the fields in order, a literal that adapts, the predeclared
+   IndexError raised bare and with its two values. *)
+MODULE m ;
+EXCEPTION
+  Bad (code : I64 ; what : STR) ;
+PROCEDURE Ok (n : I64) RAISES Bad, IndexError =
+BEGIN
+  IF n = 1 THEN RAISE Bad (n, 'one') END ;
+  IF n = 2 THEN RAISE Bad (2, 'two') END ;
+  IF n = 3 THEN RAISE IndexError END ;
+  RAISE IndexError (n, 4)
+END Ok ;
+PROCEDURE Swapped () RAISES Bad =
+BEGIN
+  RAISE Bad ('oops', 5)
+END Swapped ;
+BEGIN
+END m.
 ```
 
 ### record-aggregate-arity

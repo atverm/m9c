@@ -88,7 +88,7 @@ export M9CACHE="$RW/cache"
   # the exporter sees the writes -- the same storage, not a copy
   "$M9C" --run "$M9LIBRARY/ExportUse.m9" < /dev/null > o8.txt 2>&1 ||
     { echo "FAIL: ExportUse did not run:"; tail -3 o8.txt; exit 1; }
-  printf 'ExportUse reads count 40, LEN xs 3, version 2, LEN row 4\nExportDef sees count 42, xs[1] 9.50, box.n 7, version 2\n' > want8.txt
+  printf 'ExportUse compares a Shade across modules\nand its negation\nExportUse reads count 40, LEN xs 3, version 2, LEN row 4\nExportDef sees count 42, xs[1] 9.50, box.n 7, version 2\n' > want8.txt
   cmp -s o8.txt want8.txt || { echo "FAIL: ExportUse said:"; cat o8.txt; exit 1; }
   # a RAISE's strings outlive the frame that built them (report par 5,
   # 2026-10-06): four ways, a thousand raises each, every message read

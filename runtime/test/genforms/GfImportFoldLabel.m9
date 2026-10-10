@@ -1,0 +1,16 @@
+MODULE GfImportFoldLabel ;
+
+(* WANT: an imported folded CONST as a CASE label *)
+
+IMPORT Io, GfKc ;
+
+VAR
+  i : I64 ;
+
+BEGIN
+  i := 16 ;
+  CASE i OF
+  | GfKc.Sixteen : Io.WriteLine ('an imported folded CONST as a CASE label')
+  ELSE Io.WriteLine ('ELSE')
+  END
+END GfImportFoldLabel.

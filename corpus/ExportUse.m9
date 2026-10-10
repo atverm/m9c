@@ -7,8 +7,17 @@ MODULE ExportUse ;
 IMPORT Io ;
 IMPORT Fmt ;
 IMPORT ExportDef ;
-VAR row : ARRAY ExportDef.Width OF F64 ;   (* an imported CONST as a bound *)
+VAR
+  row : ARRAY ExportDef.Width OF F64 ;   (* an imported CONST as a bound *)
+  c : PTR ExportDef.Cell ;
 BEGIN
+  (* a field of an imported record compared with an imported
+     enumeration's member: `c.shade = ExportDef.Shade.Dark' was a C
+     struct == until 2026-10-09 (cp-kernel's Jv.Kind finding) *)
+  c := NEW (ExportDef.Cell) ;
+  c.shade := ExportDef.Shade.Dark ;
+  IF c.shade = ExportDef.Shade.Dark THEN Io.WriteLine ('ExportUse compares a Shade across modules') END ;
+  IF c.shade # ExportDef.Shade.Light THEN Io.WriteLine ('and its negation') END ;
   Io.WriteLine ('ExportUse reads count ' + Fmt.I64Str (ExportDef.count) +
                 ', LEN xs ' + Fmt.I64Str (LEN (ExportDef.xs)) +
                 ', version ' + Fmt.I64Str (ExportDef.version) +

@@ -310,6 +310,17 @@ PROCEDURE PutAttF64 (f: PTR File ; varid: I64 ; RO name: STR ;
      are bytes, so a scalar past 255 raises here rather than
      reaching the file as mojibake.                                *)
 
+PROCEDURE PutAttText (f: PTR File ; varid: I64 ; RO name: STR ;
+                      RO value: STR) RAISES Error, ValueRange ;
+  (* a TEXT attribute, NC_CHAR, written as UTF-8: GetAttText's
+     mirror, and what CF says a text attribute carries.  PutAttStr
+     writes one octet per CHAR, so a unit like `°C` reached the file
+     as the single byte B0, which no UTF-8 reader decodes; here it is
+     C2 B0 43.  Found by the cp-kernel's NetCDF renditions
+     (2026-10-09), whose units `°C` and `µmol m-2 s-1` come from the
+     ICOS metadata.  PutAttStr keeps its octet contract for a caller
+     that means bytes.                                              *)
+
 PROCEDURE EndDef (f: PTR File) RAISES Error ;
   (* leaves define mode and commits the header.  Nothing may be
      declared afterwards and nothing may be written before.        *)
@@ -1398,7 +1409,7 @@ BEGIN
                GetAttStr (scratch, f, varid, name), FALSE))
   END ;
   IF len # 1 THEN
-    RAISE Error ('an NC_STRING attribute of more than one element')
+    RAISE Error ('GetAttText', 'an NC_STRING attribute of more than one element', 0)
   END ;
   ptrs := NEW (scratch, C.ConstPtr, len) ;
   Check ('nc_get_att_string',
@@ -1457,6 +1468,19 @@ BEGIN
     I64 (NcPutAttText (C.Int (f.ncid), C.Int (varid), ADR (nb),
                        C.SizeT (LEN (vb)), ADR (vb))))
 END PutAttStr ;
+
+PROCEDURE PutAttText (f: PTR File ; varid: I64 ; RO name: STR ;
+                      RO value: STR) RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb, vb : SLICE OF BYTE ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  vb := DynStr.Utf8 (scratch, value) ;
+  Check ('nc_put_att_text',
+    I64 (NcPutAttText (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                       C.SizeT (LEN (vb)), ADR (vb))))
+END PutAttText ;
 
 PROCEDURE PutAttF64 (f: PTR File ; varid: I64 ; RO name: STR ;
                      value: F64) RAISES Error, ValueRange =

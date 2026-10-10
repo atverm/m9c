@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.19.0, 2026-10-09
+## Report — revision 0.20.0, 2026-10-10
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -33,9 +33,9 @@ to reduce, so the list is meant to shrink.
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
 | **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
 | **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); flow-sensitive `OPT`; a loop-carried use after move, an owned field, a pool value stored beyond a direct `RETURN` or in a module variable (§4) |
-| **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided) |
+| **Accepted by the checker, refused by the generator** | `SLICE` over the array a call answers (`SLICE (Mk (), 0, 2)`).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` (§6); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.19.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
+| **Release** | 0.20.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
 
@@ -237,7 +237,8 @@ RECORD ... END         (* product type *)
 RECORD (Base) ... END  (* Oberon type extension: single, checked *)
 CASE RECORD ... END    (* tagged union; CASE over it must be total *)
 PTR T                  (* non-nil pointer *)
-OPT T                  (* T or NONE; must be guarded before use *)
+OPT T                  (* T or NONE; must be guarded before use;
+                          T a pointer or a procedure type *)
 STR                    (* predeclared alias for SLICE OF CHAR *)
 ```
 
@@ -379,7 +380,19 @@ Not in the language: a slice or array of procedure values (refused
 §9.6), a procedure answering a procedure value, comparing two values,
 an anonymous procedure type in a parameter list (name it).
 
-### 2.2.4 Constant tables — the aggregate
+### 2.2.4 Constants and constant tables — the aggregate
+
+A `CONST` is a literal, a negated number, `+` over string and `CHAR`
+literals (one string), or an expression over integer literals with
+`+ - * DIV MOD` or over real literals with `+ - * /`.  An integer
+expression is FOLDED with the runtime's arithmetic — checked, `DIV`
+and `MOD` truncating — so `N = 2 * 3 + 1` is the literal 7, and one
+that overflows or divides by zero is refused where it is declared; a
+real one is the C expression of its literals, evaluated in double.
+Anything else — a name, a call, a comparison — is refused by name:
+compute it in a procedure.  *(Built 2026-10-09: until then the checker
+accepted a `CONST` over an expression and the generator refused it,
+"const form unsupported yet", which reads as a compiler fault.)*
 
 ```
 CONST
@@ -1332,6 +1345,15 @@ No other allocation exists. `malloc` is visible or absent.
 
 ## 5. Errors
 
+*(`EXIT`, the loop's own exit, first: it leaves the innermost `LOOP`,
+`WHILE` or `FOR` — the meaning the library has always written, a
+`WHILE` left early.  From inside a `CASE` arm too, since 2026-10-09:
+it was refused there, because C's `break` would have left the switch.
+Outside every loop it is refused, and across a `FINALLY` — between
+the `EXIT` and its loop — too, since the cleanup would be skipped.
+A `LOOP` ends only by an `EXIT` of its own (§3 rule 4), and an `EXIT`
+inside a nested `WHILE` or `FOR` is that loop's, not the `LOOP`'s.)*
+
 `RAISE FormatError('dtype is not <f8')` unwinds to the nearest
 matching `EXCEPT` clause; `FINALLY` blocks on the way run
 unconditionally. **A call that raised answered nothing**: in
@@ -1840,7 +1862,7 @@ MulOp       = "*" | "/" | "*%" | "DIV" | "MOD" .
 Factor      = number | string | "TRUE" | "FALSE" | "NONE"
             | "SOME" "(" Expr ")" | "SHARED" "(" Expr ")"
             | NewExpr | SliceExpr | GridExpr
-            | Designator [ "(" [ ExprList ] ")" ]
+            | Designator [ "(" [ ExprList ] ")" { "." ident | "[" Expr "]" } ]
             | "(" Expr ")" | "NOT" Factor .
 NewExpr     = "NEW" "(" ( "OWN" "," Qualident | Designator { "," Expr } ) ")" .
 SliceExpr   = "SLICE" "(" Expr "," Expr "," Expr ")" .
@@ -1885,6 +1907,14 @@ Notes, each a decision:
 8. **A source file holds one or more units** — the corpus keeps a
    definition, its foreign modules, and its implementation together
    in one file, and the grammar follows the corpus.
+9. **A call's answer may be selected from** — `F (x).f`, `F (x)[i]`,
+   `Mk (n).p.b` — in an expression, never as a target: it has no
+   storage to assign to.  The answer's type is the callee's DECLARED
+   result, so a call through a procedure value is not selected from
+   (assign the answer first).  The answer is held in a temporary, and
+   a call that raised is not selected from.  Added 2026-10-09: an
+   agent porting to M9 wrote it three times in two stages, and naming
+   the intermediate each time was a round of its own.
 
 ---
 

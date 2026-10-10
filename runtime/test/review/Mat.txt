@@ -3,7 +3,7 @@ REVIEW Mat -- 50 procedures with a body, 25 of them functions; 29 headings in a 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              25
   assignments                                   313
-  arguments                                     310
+  arguments                                     341
   RETURN values                                  28
   operands of a comparison or an operator       334
   CASE labels                                     0

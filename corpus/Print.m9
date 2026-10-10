@@ -213,6 +213,11 @@ BEGIN
         DynStr.Append (d, ' (') ;
         Args (d, n.kids[1]) ;
         DynStr.AppendChar (d, ')')
+    | Ast.NCallSel :
+        (* F (x).f: the call, then the selectors -- Desig skips the
+           call kid and prints the node's empty name *)
+        E (d, n.kids[0]) ;
+        Desig (d, n)
     | Ast.NDesignator :
         Desig (d, n)
     | Ast.NQualident :

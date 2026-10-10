@@ -13,6 +13,10 @@ TYPE
   Box = RECORD
     n : I64 ;
   END ;
+  Shade = (Light, Dark) ;         (* compared across modules by ExportUse *)
+  Cell = RECORD
+    shade : Shade ;
+  END ;
 
 VAR
   count : I64 ;

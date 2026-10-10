@@ -24,8 +24,11 @@ cd "$(dirname "$0")" || exit 1
 SRC=$(cd ../../corpus && pwd)
 RT=$(cd .. && pwd)
 HERE=$(pwd)
-W=/tmp/m9test-gate
-rm -rf "$W"; mkdir -p "$W"
+# a work directory of this run's own: a fixed /tmp/m9test-gate was
+# shared by every checkout on a machine, and on 2026-10-09 two sessions'
+# runs overlapped in it -- one reported ParquetTest PASS with 29 checks
+# where the test makes 44, having run the other tree's binary
+W=$(mktemp -d /tmp/m9test-gate.XXXXXX)
 
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
@@ -155,3 +158,4 @@ if [ "$fail" != 0 ]; then
   exit 1
 fi
 echo "m9test: $n tests, $checks checks, the failing control fails; $n of $lib installed modules have a test in M9"
+rm -rf "$W"

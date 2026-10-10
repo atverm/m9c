@@ -1,0 +1,18 @@
+MODULE GfCasePtrField ;
+
+(* WANT: case through a pointer to an imported record: arr *)
+
+IMPORT Io, GfJv ;
+
+VAR
+  q : PTR GfJv.Node ;
+
+BEGIN
+  q := NEW (GfJv.Node) ;
+  q.kind := GfJv.Kind.Arr ;
+  CASE q.kind OF
+  | GfJv.Kind.Obj : Io.WriteLine ('case through a pointer to an imported record: obj')
+  | GfJv.Kind.Arr : Io.WriteLine ('case through a pointer to an imported record: arr')
+  | GfJv.Kind.Str : Io.WriteLine ('case through a pointer to an imported record: str')
+  END
+END GfCasePtrField.

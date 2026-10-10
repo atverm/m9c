@@ -156,7 +156,8 @@ CONST
      the gate that holds it instead *)
   NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
                'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
-               'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml', 'Hash', 'Smtp', 'Rsa', 'Map'] ;
+               'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml', 'Hash', 'Smtp', 'Rsa', 'Map',
+               'Parquet'] ;
   NoBatteryWhy = ['lexdiff, comdiff and the token-count golden',
                   'parsediff (every node kind printed back)',
                   'parsediff and the parse probes',
@@ -183,7 +184,8 @@ CONST
                   'm9test (HashTest, against hashlib goldens)',
                   'smtp.sh (SmtpFix against aiosmtpd, judged by Python email) and m9test (SmtpTest, the message against goldens)',
                   'm9test (RsaTest, against signatures and forgeries from Python cryptography)',
-                  'm9test (MapTest, against pyproj, numpy and the Natural Earth file)'] ;
+                  'm9test (MapTest, against pyproj, numpy and the Natural Earth file)',
+                  "m9test (ParquetTest, pyarrow's files against what pyarrow reads) and columnar.sh (pyarrow reads what the writer wrote)"] ;
   GendiffFixtures = ['LibmGate', 'KindUse', 'EnumUse', 'Palette'] ;
 
 TYPE

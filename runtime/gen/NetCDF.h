@@ -102,6 +102,7 @@ int64_t NetCDF_DefDim (NetCDF_File * f, m9_sl_CHAR name, int64_t extent, m9_stat
 int64_t NetCDF_DefVar (NetCDF_File * f, m9_sl_CHAR name, int64_t nctype, m9_sl_I64 dims, m9_state *err);
 void NetCDF_PutAttStr (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err);
 void NetCDF_PutAttF64 (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, double value, m9_state *err);
+void NetCDF_PutAttText (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err);
 void NetCDF_EndDef (NetCDF_File * f, m9_state *err);
 void NetCDF_PutF64 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 count, m9_sl_F64 data, m9_state *err);
 void NetCDF_FillF32 (NetCDF_File * f, int64_t varid, float fill, m9_state *err);

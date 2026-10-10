@@ -377,6 +377,14 @@ so that nothing that walks a unit by position
 moves; kids are NString nodes, a the word.
 2026-10-09
 
+### CONST NCallSel
+
+F (x).f, F (x)[i]: a call's answer selected
+from (par 10, Factor); kids[0] the NCallExpr,
+the rest NSelField / NSelIndex as a designator
+has them.  An expression, never a target.
+2026-10-09, cp-kernel's stages 4b and 6a
+
 ### TYPE Kid
 
 named so NEW can say it;
@@ -408,4 +416,43 @@ line, col -- where the construct STARTS.  There is no end
 
 ### Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid)
 
+_(undocumented)_
+
+### ScalarConst (k: Kid ; VAR v: I64 ; VAR ch: BOOL) : BOOL
+
+_(documented with the group below)_
+
+### CharCode (RO lit: STR) : I64
+
+a CHAR literal's code: its hex digits, the C suffix dropped
+
+### SetType (id: I64 ; KEPT t: Kid)
+
+_(undocumented)_
+
+### TypeAt (id: I64) : Kid
+
+_(undocumented)_
+
+### SetTyStr (id: I64 ; RO t: STR)
+
+_(documented with the group below)_
+
+### TyStrAt (id: I64) : STR
+
 NONE is a legal child: absence with a position
+
+### FoldInt (k: Kid ; VAR v: I64) : BOOL
+
+the value of an integer CONSTANT EXPRESSION -- literals (decimal
+or 0x hex), parentheses, unary minus and + - * DIV MOD -- with
+the runtime's arithmetic: checked, DIV and MOD truncating.  FALSE
+for any other form, an overflow, a division by zero.  Shared by
+both checkers' refusal and both generators' folding (a CONST over
+an expression was accepted by the checker and refused by the
+generator until 2026-10-09)
+
+### IntText (v: I64 ; VAR buf: ARRAY 24 OF CHAR) : I64
+
+v's decimal digits WITHOUT the sign into buf, answering how many;
+the smallest I64 has no positive twin and answers 0

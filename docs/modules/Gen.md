@@ -4,9 +4,9 @@ The C11 code generator, in M9 -- restated from host/fpc/M9Gen.pas
 for P5 stage 2.  The FPC generator is the differential oracle:
 both must emit byte-identical .h and .c for every corpus module,
 including this one.  Faithfulness outranks taste: the oracle's
-warts are replicated deliberately (TagOfExpr recomputes via DES
-and CallC WITH their side effects -- temp counters, literal pool
-entries -- so those side effects are part of the bytes).
+warts are replicated deliberately.  (TagOfExpr recomputed via DES
+and CallC, side effects and all, until the typed tree's stage 3
+made the checker's recorded type the answer, 2026-10-09.)
 Errors are counted; the message table is stage-2 driver work.
 One generator instance per process: state is module-level and the
 pool is never reset, exactly one module per run.

@@ -1,4 +1,4 @@
-DEFINITION MODULE Ast ;
+STATEFUL DEFINITION MODULE Ast ;
 
 (* M9 abstract syntax, in M9 -- restated from host/fpc/M9AST.pas for
    the P5 self-hosted parser.  One homogeneous node: kind codes
@@ -59,6 +59,11 @@ CONST
                         so that nothing that walks a unit by position
                         moves; kids are NString nodes, a the word.
                         2026-10-09 *)
+  NCallSel = 87 ;    (* F (x).f, F (x)[i]: a call's answer selected
+                        from (par 10, Factor); kids[0] the NCallExpr,
+                        the rest NSelField / NSelIndex as a designator
+                        has them.  An expression, never a target.
+                        2026-10-09, cp-kernel's stages 4b and 6a *)
 
 TYPE
   Kid = OPT PTR Node ;               (* named so NEW can say it;
@@ -74,6 +79,8 @@ TYPE
                                    also RO *)
     kids : SLICE OF Kid ;
     nkids : I64 ;
+    id : I64 ;                  (* the node's number, given by
+                                   NewNode: the key of the typed tree *)
   END ;
 
 PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
@@ -93,12 +100,59 @@ PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
                     far a declaration reached.                     *)
 
 PROCEDURE Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid) ;
+
+(* THE TYPED TREE (2026-10-09, the review's decision): the checker
+   records the type it resolved at a node -- on a designator's
+   selector, the component the selector reaches, as a type node
+   qualified in its declaring module -- and the generator reads it
+   instead of working the type out a second time.  A table beside the
+   tree, keyed by the node's id, and not a field in it: the checker
+   walks the tree through borrowed pointers, which par 4.1 makes
+   read-only.  NONE where no checker has run or it did not know; the
+   generator then works the type out itself.  One table per process:
+   m9lsp runs a fresh m9c for every check.                           *)
+(* A constant's VALUE, one evaluator for every place C needs one --
+   a CASE label, an array bound (the typed tree's stage 2, 2026-10-09):
+   an integer literal or an expression of them (FoldInt), a CHAR
+   literal, a one-character string.  ch says the value is a character
+   (C spells it with u).  FALSE for anything else. *)
+PROCEDURE ScalarConst (k: Kid ; VAR v: I64 ; VAR ch: BOOL) : BOOL ;
+PROCEDURE CharCode (RO lit: STR) : I64 ;
+  (* a CHAR literal's code: its hex digits, the C suffix dropped *)
+
+PROCEDURE SetType (id: I64 ; KEPT t: Kid) ;
+PROCEDURE TypeAt (id: I64) : Kid ;
+
+(* stage 3: an EXPRESSION's type, as the checker's canonical string
+   ('I64', 'PTR Mod.T', '<str1>', ...), copied into this module's pool;
+   '' where none was recorded *)
+PROCEDURE SetTyStr (id: I64 ; RO t: STR) ;
+PROCEDURE TyStrAt (id: I64) : STR ;
   (* NONE is a legal child: absence with a position *)
+
+PROCEDURE FoldInt (k: Kid ; VAR v: I64) : BOOL ;
+  (* the value of an integer CONSTANT EXPRESSION -- literals (decimal
+     or 0x hex), parentheses, unary minus and + - * DIV MOD -- with
+     the runtime's arithmetic: checked, DIV and MOD truncating.  FALSE
+     for any other form, an overflow, a division by zero.  Shared by
+     both checkers' refusal and both generators' folding (a CONST over
+     an expression was accepted by the checker and refused by the
+     generator until 2026-10-09) *)
+
+PROCEDURE IntText (v: I64 ; VAR buf: ARRAY 24 OF CHAR) : I64 ;
+  (* v's decimal digits WITHOUT the sign into buf, answering how many;
+     the smallest I64 has no positive twin and answers 0 *)
 
 END Ast.
 
 
 IMPLEMENTATION MODULE Ast ;
+
+VAR
+  nextId : I64 ;                (* the next node's number *)
+  tys    : SLICE OF Kid ;       (* the typed tree, by node id *)
+  tstr   : SLICE OF STR ;       (* stage 3: expression types, by id *)
+  typool : POOL ;
 
 PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
   : PTR Node IN pool =
@@ -110,8 +164,63 @@ BEGIN
   n.col := col ;
   n.kids := NEW (pool, Kid, 4) ;
   n.nkids := 0 ;
+  n.id := nextId ;
+  nextId := nextId + 1 ;
   RETURN n
 END NewNode ;
+
+PROCEDURE SetType (id: I64 ; KEPT t: Kid) =
+VAR
+  grown : SLICE OF Kid ;
+  i, n : I64 ;
+BEGIN
+  IF id < 0 THEN RETURN END ;
+  IF id >= LEN (tys) THEN
+    n := 2 * LEN (tys) ;
+    IF n < id + 4096 THEN n := id + 4096 END ;
+    grown := NEW (typool, Kid, n) ;
+    FOR i := 0 TO LEN (tys) - 1 DO grown[i] := tys[i] END ;
+    tys := grown
+  END ;
+  tys[id] := t
+END SetType ;
+
+PROCEDURE TypeAt (id: I64) : Kid =
+BEGIN
+  IF id >= 0 AND id < LEN (tys) THEN RETURN tys[id] END ;
+  RETURN NONE
+END TypeAt ;
+
+PROCEDURE SetTyStr (id: I64 ; RO t: STR) =
+VAR
+  grown : SLICE OF STR ;
+  c : STR ;
+  i, n : I64 ;
+BEGIN
+  IF id < 0 THEN RETURN END ;
+  IF id >= LEN (tstr) THEN
+    n := 2 * LEN (tstr) ;
+    IF n < id + 4096 THEN n := id + 4096 END ;
+    grown := NEW (typool, STR, n) ;
+    FOR i := 0 TO LEN (tstr) - 1 DO grown[i] := tstr[i] END ;
+    tstr := grown
+  END ;
+  IF LEN (t) = LEN (tstr[id]) THEN
+    IF LEN (t) = 0 THEN RETURN END ;
+    i := 0 ;
+    WHILE i < LEN (t) AND t[i] = tstr[id][i] DO i := i + 1 END ;
+    IF i = LEN (t) THEN RETURN END              (* the same: no copy *)
+  END ;
+  c := NEW (typool, CHAR, LEN (t)) ;
+  FOR i := 0 TO LEN (t) - 1 DO c[i] := t[i] END ;
+  tstr[id] := c
+END SetTyStr ;
+
+PROCEDURE TyStrAt (id: I64) : STR =
+BEGIN
+  IF id >= 0 AND id < LEN (tstr) THEN RETURN tstr[id] END ;
+  RETURN ''
+END TyStrAt ;
 
 PROCEDURE Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid) =
 VAR
@@ -126,5 +235,124 @@ BEGIN
   n.kids[n.nkids] := kid ;
   n.nkids := n.nkids + 1
 END Add ;
+
+PROCEDURE Is (RO a: STR ; RO b: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (a) - 1 DO IF a[i] # b[i] THEN RETURN FALSE END END ;
+  RETURN TRUE
+END Is ;
+
+PROCEDURE LitInt (RO s: STR ; VAR v: I64) : BOOL RAISES Overflow =
+VAR i, d, base, from : I64 ;
+BEGIN
+  base := 10 ;
+  from := 0 ;
+  IF LEN (s) > 2 AND s[0] = '0' AND (s[1] = 'x' OR s[1] = 'X') THEN base := 16 ; from := 2 END ;
+  IF LEN (s) <= from THEN RETURN FALSE END ;
+  v := 0 ;
+  FOR i := from TO LEN (s) - 1 DO
+    IF s[i] >= '0' AND s[i] <= '9' THEN d := ORD (s[i]) - 48
+    ELSIF base = 16 AND s[i] >= 'a' AND s[i] <= 'f' THEN d := ORD (s[i]) - 87
+    ELSIF base = 16 AND s[i] >= 'A' AND s[i] <= 'F' THEN d := ORD (s[i]) - 55
+    ELSE RETURN FALSE
+    END ;
+    v := v * base + d
+  END ;
+  RETURN TRUE
+END LitInt ;
+
+PROCEDURE FoldInt (k: Kid ; VAR v: I64) : BOOL =
+VAR a, b : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = NInt THEN RETURN LitInt (e.a, v) END ;
+    IF e.nkids < 1 THEN RETURN FALSE END ;
+    IF e.kind = NParen THEN RETURN FoldInt (e.kids[0], v) END ;
+    IF e.kind = NUn AND Is (e.a, '-') THEN
+      IF NOT FoldInt (e.kids[0], a) THEN RETURN FALSE END ;
+      v := 0 - a ;
+      RETURN TRUE
+    END ;
+    IF e.kind = NBin AND e.nkids = 2 THEN
+      IF NOT FoldInt (e.kids[0], a) THEN RETURN FALSE END ;
+      IF NOT FoldInt (e.kids[1], b) THEN RETURN FALSE END ;
+      IF Is (e.a, '+') THEN v := a + b ; RETURN TRUE END ;
+      IF Is (e.a, '-') THEN v := a - b ; RETURN TRUE END ;
+      IF Is (e.a, '*') THEN v := a * b ; RETURN TRUE END ;
+      IF Is (e.a, 'DIV') OR Is (e.a, 'MOD') THEN
+        IF b = 0 THEN RETURN FALSE END ;
+        IF b = -1 AND a = -9223372036854775807 - 1 THEN RETURN FALSE END ;
+        IF Is (e.a, 'DIV') THEN v := a DIV b ELSE v := a MOD b END ;
+        RETURN TRUE
+      END
+    END
+  END ;
+  RETURN FALSE
+EXCEPT
+| Overflow : RETURN FALSE
+END FoldInt ;
+
+PROCEDURE CharCode (RO lit: STR) : I64 =
+VAR
+  v, i, dg : I64 ;
+  c : CHAR ;
+BEGIN
+  v := 0 ;
+  FOR i := 0 TO LEN (lit) - 2 DO
+    c := lit[i] ;
+    IF c >= '0' AND c <= '9' THEN dg := ORD (c) - 48
+    ELSE dg := ORD (c) - 55 END ;
+    v := v * 16 + dg
+  END ;
+  RETURN v
+EXCEPT
+| Overflow : RETURN -1
+| IndexError : RETURN -1
+END CharCode ;
+
+PROCEDURE ScalarConst (k: Kid ; VAR v: I64 ; VAR ch: BOOL) : BOOL =
+BEGIN
+  ch := FALSE ;
+  IF k IS SOME e THEN
+    IF e.kind = NChar THEN
+      v := CharCode (e.a) ;
+      ch := TRUE ;
+      RETURN v >= 0
+    END ;
+    IF e.kind = NString THEN
+      IF LEN (e.a) # 1 THEN RETURN FALSE END ;
+      v := ORD (e.a[0]) ;
+      ch := TRUE ;
+      RETURN TRUE
+    END ;
+    IF e.kind = NParen AND e.nkids = 1 THEN RETURN ScalarConst (e.kids[0], v, ch) END
+  END ;
+  RETURN FoldInt (k, v)
+EXCEPT
+| IndexError : RETURN FALSE
+END ScalarConst ;
+
+PROCEDURE IntText (v: I64 ; VAR buf: ARRAY 24 OF CHAR) : I64 =
+VAR
+  tmp : ARRAY 24 OF CHAR ;
+  n, i : I64 ;
+BEGIN
+  IF v = -9223372036854775807 - 1 THEN RETURN 0 END ;
+  IF v < 0 THEN v := 0 - v END ;
+  n := 0 ;
+  LOOP
+    tmp[n] := CHR (48 + v MOD 10) ;
+    n := n + 1 ;
+    v := v DIV 10 ;
+    IF v = 0 THEN EXIT END
+  END ;
+  FOR i := 0 TO n - 1 DO buf[i] := tmp[n - 1 - i] END ;
+  RETURN n
+EXCEPT
+| ValueRange : RETURN 0
+| Overflow : RETURN 0
+END IntText ;
 
 END Ast.

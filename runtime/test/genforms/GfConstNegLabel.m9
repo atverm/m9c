@@ -1,0 +1,19 @@
+MODULE GfConstNegLabel ;
+
+(* WANT: a negative CONST as a CASE label *)
+
+IMPORT Io ;
+
+CONST
+  Empty = -1 ;
+
+VAR
+  i : I64 ;
+
+BEGIN
+  i := -1 ;
+  CASE i OF
+  | Empty : Io.WriteLine ('a negative CONST as a CASE label')
+  ELSE Io.WriteLine ('ELSE')
+  END
+END GfConstNegLabel.

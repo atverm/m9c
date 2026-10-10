@@ -4,9 +4,9 @@ STATEFUL DEFINITION MODULE Gen ;
    for P5 stage 2.  The FPC generator is the differential oracle:
    both must emit byte-identical .h and .c for every corpus module,
    including this one.  Faithfulness outranks taste: the oracle's
-   warts are replicated deliberately (TagOfExpr recomputes via DES
-   and CallC WITH their side effects -- temp counters, literal pool
-   entries -- so those side effects are part of the bytes).
+   warts are replicated deliberately.  (TagOfExpr recomputed via DES
+   and CallC, side effects and all, until the typed tree's stage 3
+   made the checker's recorded type the answer, 2026-10-09.)
    Errors are counted; the message table is stage-2 driver work.
    One generator instance per process: state is module-level and the
    pool is never reset, exactly one module per run.                  *)
@@ -124,9 +124,8 @@ VAR
                               or above it, the procedure's own *)
   inited : BOOL ;
   nerrV, tmpN, inSwitch, finDepth : I64 ;
-  dry : I64 ;              (* >0 inside TagOfExpr's recomputation:
-                              answering a type must not emit code
-                              (dead string literals otherwise)      *)
+  loopDepth, xitN : I64 ;          (* loops entered; EXIT labels made *)
+  xitLbl : STR ;                   (* the innermost loop's exit label, '' until an EXIT needs it *)
   litN, tdefN, sprotoN, hdrConstN : I64 ;
   stRaise : BOOL ;
   hoistOk : BOOL ;         (* HoistArg may emit: inside an assignment,
@@ -383,11 +382,9 @@ END SetDebugSource ;
 (* One directive per statement, at column 0 and into the procedure
    buffer, so the C compiler attributes the code that follows to the
    M9 line it came from.  Nothing is emitted when dbgSrc is empty
-   (the default) or during TagOfExpr's dry recomputation, which must
-   not emit anything at all.                                        *)
+   (the default).                                                   *)
 PROCEDURE DbgLine (n: PTR Ast.Node) =
 BEGIN
-  IF dry > 0 THEN RETURN END ;
   IF LEN (dbgSrc) = 0 THEN RETURN END ;
   Line (KPbuf, 0, S5 ('#line ', ItoA (n.line), ' "', dbgSrc, '"')) ;
   (* and record the raise site for an unhandled exception's
@@ -435,6 +432,7 @@ BEGIN
 END MInit ;
 
 PROCEDURE CharVal (RO lit: STR) : I64 ;
+PROCEDURE IsNegLit (e: PTR Ast.Node ; kind: I64) : BOOL ;
 
 (* a CONST built with `+' over string and CHAR literals is FOLDED into
    one literal where it is registered (2026-10-09, cp-kernel's issue
@@ -459,7 +457,9 @@ END StrLeaf ;
 PROCEDURE FoldStr (k: Ast.Kid) : Ast.Kid =
 VAR
   d : PTR DynStr.DString IN gpool ;
-  n : PTR Ast.Node IN gpool ;
+  n, u : PTR Ast.Node IN gpool ;
+  iv, nd, i : I64 ;
+  ibuf : ARRAY 24 OF CHAR ;
 BEGIN
   IF k IS SOME e THEN
     IF e.kind = Ast.NBin AND Text.Eq (e.a, '+') THEN
@@ -469,10 +469,58 @@ BEGIN
         n.a := DynStr.View (d) ;
         RETURN SOME (n)
       END
+    END ;
+    (* an integer CONST over an expression (2 * 3 + 1) is folded to its
+       literal with the runtime's arithmetic (Ast.FoldInt); a bare or
+       negated literal is left as written, so its C is unchanged *)
+    IF e.kind = Ast.NBin OR e.kind = Ast.NParen OR
+       (e.kind = Ast.NUn AND NOT IsNegLit (e, Ast.NInt) AND NOT IsNegLit (e, Ast.NReal)) THEN
+      IF Ast.FoldInt (k, iv) THEN
+        nd := Ast.IntText (iv, ibuf) ;
+        IF nd > 0 THEN
+          n := Ast.NewNode (gpool, Ast.NInt, e.line, e.col) ;
+          n.a := NEW (gpool, CHAR, nd) ;
+          FOR i := 0 TO nd - 1 DO n.a[i] := ibuf[i] END ;
+          IF iv < 0 THEN
+            u := Ast.NewNode (gpool, Ast.NUn, e.line, e.col) ;
+            u.a := '-' ;
+            Ast.Add (gpool, u, SOME (n)) ;
+            RETURN SOME (u)
+          END ;
+          RETURN SOME (n)
+        END
+      END
     END
   END ;
   RETURN k
 END FoldStr ;
+
+(* a real CONST over an expression of real literals -- ( ) unary - and
+   + - * / -- as the C expression of those literals, evaluated by the C
+   compiler in double: '' for any other form *)
+PROCEDURE RealC (k: Ast.Kid) : STR =
+VAR l, r : STR ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NReal THEN RETURN S3 ('(', e.a, ')') END ;
+    IF e.nkids < 1 THEN RETURN '' END ;
+    IF e.kind = Ast.NParen THEN RETURN RealC (e.kids[0]) END ;
+    IF e.kind = Ast.NUn AND Text.Eq (e.a, '-') THEN
+      l := RealC (e.kids[0]) ;
+      IF LEN (l) = 0 THEN RETURN '' END ;
+      RETURN S3 ('(-', l, ')')
+    END ;
+    IF e.kind = Ast.NBin AND e.nkids = 2 THEN
+      IF Text.Eq (e.a, '+') OR Text.Eq (e.a, '-') OR Text.Eq (e.a, '*') OR Text.Eq (e.a, '/') THEN
+        l := RealC (e.kids[0]) ;
+        r := RealC (e.kids[1]) ;
+        IF LEN (l) = 0 OR LEN (r) = 0 THEN RETURN '' END ;
+        RETURN S7 ('(', l, ' ', e.a, ' ', r, ')')
+      END
+    END
+  END ;
+  RETURN ''
+END RealC ;
 
 PROCEDURE MAdd (VAR m: Map ; RO KEPT k: STR ;
                 KEPT v: Ast.Kid ; RO KEPT t: STR) =
@@ -642,6 +690,14 @@ CONST
   ] ;
   (* the conversions that narrow, each with its own checked helper *)
   WidthConvs = ['I8', 'I16', 'I32', 'U8', 'U16', 'U32', 'U64'] ;
+  (* the integer types besides I64 a CASE may switch over *)
+  CaseInts = ['I8', 'I16', 'I32', 'U8', 'U16', 'U32', 'U64', 'BYTE'] ;
+  (* C's integer types a result or local may be declared with *)
+  CIntNames = ['int8_t', 'int16_t', 'int32_t', 'int64_t', 'uint8_t',
+               'uint16_t', 'uint32_t', 'uint64_t', 'size_t', 'ssize_t'] ;
+  (* the builtin types, which are their own canonical type and tag *)
+  CanonBuiltins = ['I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64',
+                   'F32', 'F64', 'BYTE', 'BOOL', 'CHAR'] ;
 
   (* libm functions a FOR-C unit may bind (C99 math.h, double + float):
      a LOCAL named like one shadows the extern -- `float cosf;` beside
@@ -882,7 +938,10 @@ BEGIN
 END ArrEnumBoundNode ;
 
 PROCEDURE ArrCount (e: PTR Ast.Node) : STR =
-VAR ci : I64 ;
+VAR
+  ci, v : I64 ;
+  ch : BOOL ;
+  src : Ast.Kid ;
 BEGIN
   IF e.kind = Ast.NInt THEN RETURN e.a END ;
   (* ARRAY Colour OF T: the count is the number of members *)
@@ -910,6 +969,13 @@ BEGIN
         END
       END
     END
+  END ;
+  (* any other constant: an imported CONST folded from an expression,
+     an expression of literals *)
+  src := SOME (e) ;
+  IF ConstValue (SOME (e)) IS SOME cv2 THEN src := ConstValue (SOME (e)) END ;
+  IF Ast.ScalarConst (src, v, ch) THEN
+    IF NOT ch AND v > 0 THEN RETURN ItoA (v) END
   END ;
   Err2 (e.line, 'array count form unsupported yet') ;
   RETURN '0'
@@ -946,6 +1012,62 @@ BEGIN
   END ;
   RETURN NONE
 END ConstValue ;
+
+(* a constant where C needs one -- a CASE label, an array bound --
+   through the one evaluator, Ast.ScalarConst, after a CONST's name is
+   followed to its value (this module's or an imported one's: an
+   imported CONST is registered unfolded, so `Mod.N' with N = 4 * 4 is
+   folded here).  '' when it is not a constant (the typed tree's stage
+   2, 2026-10-09; until then a negative, an expression, a range, a CHAR
+   or string CONST and an imported folded CONST were all `form
+   unsupported') *)
+PROCEDURE ScalarC (k: Ast.Kid) : STR =
+VAR
+  src : Ast.Kid ;
+  v : I64 ;
+  ch : BOOL ;
+BEGIN
+  src := k ;
+  IF ConstValue (k) IS SOME cv THEN src := ConstValue (k) END ;
+  IF NOT Ast.ScalarConst (src, v, ch) THEN RETURN '' END ;
+  IF ch THEN RETURN S2 (ItoA (v), 'u') END ;
+  IF v = -9223372036854775807 - 1 THEN
+    RETURN '(-INT64_C(9223372036854775807) - 1)'
+  END ;
+  RETURN S3 ('INT64_C(', ItoA (v), ')')
+END ScalarC ;
+
+(* MAX of a builtin type, as C *)
+PROCEDURE MaxC (RO t: STR) : STR =
+BEGIN
+  IF DynStr.Eq (t, 'I64') THEN RETURN 'INT64_MAX' END ;
+  IF DynStr.Eq (t, 'I32') THEN RETURN 'INT32_MAX' END ;
+  IF DynStr.Eq (t, 'I16') THEN RETURN 'INT16_MAX' END ;
+  IF DynStr.Eq (t, 'I8') THEN RETURN 'INT8_MAX' END ;
+  IF DynStr.Eq (t, 'U64') THEN RETURN 'UINT64_MAX' END ;
+  IF DynStr.Eq (t, 'U32') THEN RETURN 'UINT32_MAX' END ;
+  IF DynStr.Eq (t, 'U16') THEN RETURN 'UINT16_MAX' END ;
+  IF DynStr.Eq (t, 'U8') OR DynStr.Eq (t, 'BYTE') THEN RETURN 'UINT8_MAX' END ;
+  IF DynStr.Eq (t, 'F64') THEN RETURN '1.7976931348623157e308' END ;
+  IF DynStr.Eq (t, 'F32') THEN RETURN '3.40282347e38f' END ;
+  IF DynStr.Eq (t, 'CHAR') THEN RETURN '1114111u' END ;
+  IF DynStr.Eq (t, 'BOOL') THEN RETURN 'true' END ;
+  RETURN ''
+END MaxC ;
+
+(* a FOR step's value as C text, signed, '' when it is no constant *)
+PROCEDURE StepC (k: Ast.Kid) : STR =
+VAR
+  src : Ast.Kid ;
+  v : I64 ;
+  ch : BOOL ;
+BEGIN
+  src := k ;
+  IF ConstValue (k) IS SOME cv THEN src := ConstValue (k) END ;
+  IF NOT Ast.ScalarConst (src, v, ch) THEN RETURN '' END ;
+  IF ch OR v = 0 THEN RETURN '' END ;
+  RETURN ItoA (v)
+END StepC ;
 
 PROCEDURE IsAdaptive (k: Ast.Kid) : BOOL =
 BEGIN
@@ -986,16 +1108,6 @@ BEGIN
   IF e.kids[0] IS SOME lit THEN RETURN lit.a END ;
   RETURN '0'
 END NegLitText ;
-
-PROCEDURE HasSub (RO s: STR ;
-                  RO p: STR) : BOOL =
-VAR i : I64 ;
-BEGIN
-  FOR i := 0 TO LEN (s) - LEN (p) DO
-    IF DynStr.Eq (SLICE (s, i, LEN (p)), p) THEN RETURN TRUE END
-  END ;
-  RETURN FALSE
-END HasSub ;
 
 PROCEDURE SliceTy (elem: Ast.Kid) : STR ;
 PROCEDURE TagOfType (t: Ast.Kid) : STR ;
@@ -1127,7 +1239,7 @@ BEGIN
             END
           END ;
           s := DynStr.View (da) ;
-          IF MFind (arrSeen, s) < 0 AND dry = 0 THEN
+          IF MFind (arrSeen, s) < 0 THEN
             MAdd (arrSeen, s, NONE, '') ;
             (* each typedef defines a fresh anonymous struct, so two
                modules emitting the same name are conflicting types,
@@ -1171,7 +1283,7 @@ BEGIN
     ELSIF ec[i] # ' ' THEN DynStr.AppendChar (d, ec[i]) END
   END ;
   nm := DynStr.View (d) ;
-  IF MFind (arrSeen, nm) < 0 AND dry = 0 THEN
+  IF MFind (arrSeen, nm) < 0 THEN
     MAdd (arrSeen, nm, NONE, '') ;
     Line (KTdefs, 0, S2 ('#ifndef M9SL_', nm)) ;
     Line (KTdefs, 0, S2 ('#define M9SL_', nm)) ;
@@ -1201,7 +1313,7 @@ BEGIN
     ELSIF ec[i] # ' ' THEN DynStr.AppendChar (d, ec[i]) END
   END ;
   nm := DynStr.View (d) ;
-  IF MFind (arrSeen, nm) < 0 AND dry = 0 THEN
+  IF MFind (arrSeen, nm) < 0 THEN
     MAdd (arrSeen, nm, NONE, '') ;
     Line (KTdefs, 0, S2 ('#ifndef M9SL_', nm)) ;
     Line (KTdefs, 0, S2 ('#define M9SL_', nm)) ;
@@ -1746,18 +1858,8 @@ BEGIN
 END AdoptEmit ;
 
 PROCEDURE CharVal (RO lit: STR) : I64 =
-VAR
-  v, i, dg : I64 ;
-  c : CHAR ;
 BEGIN
-  v := 0 ;
-  FOR i := 0 TO LEN (lit) - 2 DO
-    c := lit[i] ;
-    IF c >= '0' AND c <= '9' THEN dg := ORD (c) - 48
-    ELSE dg := ORD (c) - 55 END ;
-    v := v * 16 + dg
-  END ;
-  RETURN v
+  RETURN Ast.CharCode (lit)
 END CharVal ;
 
 PROCEDURE StrCodes (RO s: STR) : STR =
@@ -2244,10 +2346,21 @@ BEGIN
 END ConstLbl ;
 
 (* the declared type node a designator lands on (no code emitted) *)
+(* the type a selector reaches: the checker's, from the typed tree,
+   when it recorded one; else what this generator worked out itself
+   (the review of 2026-10-09: one computation, the checker's) *)
+PROCEDURE Checked (sel: PTR Ast.Node ; KEPT own: Ast.Kid) : Ast.Kid =
+VAR ck : Ast.Kid ;
+BEGIN
+  ck := Ast.TypeAt (sel.id) ;
+  IF ck IS SOME cx THEN RETURN ck END ;
+  RETURN own
+END Checked ;
+
 PROCEDURE DesigDecl (d: PTR Ast.Node) : Ast.Kid =
 VAR
   j : I64 ;
-  cur, rk : Ast.Kid ;
+  cur, rk, px : Ast.Kid ;
   tmod : STR ;
 BEGIN
   tmod := '' ;
@@ -2257,7 +2370,13 @@ BEGIN
     rk := Resolve (cur) ;
     LOOP
       IF rk IS SOME rr THEN
-        IF IsPtrK (rr.kind) THEN rk := Resolve (InMod (rr.kids[0], tmod)) ELSE EXIT END
+        IF IsPtrK (rr.kind) THEN
+          px := InMod (rr.kids[0], tmod) ;
+          NoteMod (px, tmod) ;
+          rk := Resolve (px)
+        ELSE
+          EXIT
+        END
       ELSE
         EXIT
       END
@@ -2267,13 +2386,14 @@ BEGIN
         IF sel.kind = Ast.NSelField THEN
           IF r2.kind = Ast.NRecordType OR
              r2.kind = Ast.NMonitorType THEN
-            cur := InMod (FieldType (r2, sel.a), tmod)
+            cur := Checked (sel, InMod (FieldType (r2, sel.a), tmod))
           ELSE
             RETURN NONE
           END
         ELSIF sel.kind = Ast.NSelIndex THEN
-          IF r2.kind = Ast.NSliceType THEN cur := InMod (r2.kids[0], tmod)
-          ELSIF r2.kind = Ast.NArrayType THEN cur := InMod (r2.kids[1], tmod)
+          IF r2.kind = Ast.NSliceType THEN cur := Checked (sel, InMod (r2.kids[0], tmod))
+          ELSIF r2.kind = Ast.NArrayType THEN cur := Checked (sel, InMod (r2.kids[1], tmod))
+          ELSIF r2.kind = Ast.NGridType THEN cur := Checked (sel, InMod (r2.kids[1], tmod))
           ELSE RETURN NONE END
         END
       END
@@ -2424,11 +2544,71 @@ BEGIN
   RETURN res
 END OptInner ;
 
-PROCEDURE TagOfExpr (k: Ast.Kid) : STR =
+(* the typed tree's stage 3: the generator's tag for the checker's
+   canonical type string -- one map, so that the tag is read off what
+   the checker decided instead of worked out again.  A named type is
+   fully qualified there (Mod.T, aliases resolved), so it is looked up
+   by its whole name: this module's own, or an imported one's.  '?' for
+   what has no tag (unknown, C.*, <void>) *)
+PROCEDURE TagOfCanon (RO s: STR) : STR =
 VAR
-  t2, u2, res, dc, sh : STR ;
-  ci, ext0, nx : I64 ;
-  tyk : Ast.Kid ;
+  dot, i, ei : I64 ;
+  m, t : STR ;
+  n : Ast.Kid ;
+BEGIN
+  IF LEN (s) = 0 THEN RETURN '?' END ;
+  IF DynStr.Eq (s, '<int>') THEN RETURN 'I64' END ;
+  IF DynStr.Eq (s, '<real>') THEN RETURN 'F64' END ;
+  IF DynStr.Eq (s, '<str1>') THEN RETURN 'STR1' END ;
+  IF DynStr.Eq (s, '<none>') THEN RETURN 'OPTPTR' END ;
+  IF DynStr.Eq (s, 'POOL') THEN RETURN 'POOL' END ;
+  IF Text.OneOf (s, CanonBuiltins) THEN RETURN s END ;
+  IF StartsW (s, 'SLICE OF ') THEN RETURN 'SLICE' END ;
+  IF StartsW (s, 'GRID ') THEN RETURN 'GRID' END ;
+  IF StartsW (s, 'ARRAY ') THEN RETURN 'ARR' END ;
+  IF StartsW (s, 'PTR ') THEN RETURN 'PTR' END ;
+  IF StartsW (s, 'SHARED PTR ') THEN RETURN 'SHARED' END ;
+  IF StartsW (s, 'OPT ') THEN RETURN 'OPTPTR' END ;
+  IF StartsW (s, 'PROCEDURE') THEN RETURN 'PROC' END ;
+  IF StartsW (s, '<') OR StartsW (s, 'C.') THEN RETURN '?' END ;
+  dot := -1 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = ' ' THEN RETURN '?' END ;
+    IF s[i] = '.' AND dot < 0 THEN dot := i END
+  END ;
+  IF dot <= 0 THEN RETURN '?' END ;
+  m := SLICE (s, 0, dot) ;
+  t := SLICE (s, dot + 1, LEN (s) - dot - 1) ;
+  n := NONE ;
+  IF DynStr.Eq (m, modName) THEN
+    n := FindTypeN (t)
+  ELSE
+    ei := MFind (extTypes, s) ;
+    IF ei >= 0 THEN n := extTypes.es[ei].v END
+  END ;
+  IF n IS SOME nd THEN
+    IF nd.kind = Ast.NCaseRecordType OR nd.kind = Ast.NEnumType THEN
+      IF DynStr.Eq (m, modName) THEN RETURN S2 ('CR:', t) END ;
+      RETURN S2 ('CR:', s)
+    END ;
+    IF nd.kind = Ast.NRecordType OR nd.kind = Ast.NMonitorType THEN
+      RETURN 'REC'
+    END
+  END ;
+  RETURN '?'
+END TagOfCanon ;
+
+(* what the checker did not record: a literal it typed by another
+   path (a CONST's expression, an argument checked against its
+   parameter), and the operators over such values.  Everything else --
+   a designator, a call, a NEW, SLICE, GRID, NONE -- the checker
+   records; until the typed tree's stage 3 this procedure worked those
+   out too, by re-running DES and CallC "dry", and measured over the
+   library and 160 files of the three applications it contributed
+   nothing once the RAISE payload was typed (decision 43) *)
+PROCEDURE TagOfExprOwn (k: Ast.Kid) : STR =
+VAR
+  t2, u2, res : STR ;
 BEGIN
   IF k IS SOME e THEN
     res := '?' ;
@@ -2441,18 +2621,6 @@ BEGIN
     | Ast.NTrue : res := 'BOOL'
     | Ast.NFalse : res := 'BOOL'
     | Ast.NParen : res := TagOfExpr (e.kids[0])
-    | Ast.NDesignator :
-        t2 := '?' ;
-        dry := dry + 1 ;               (* recompute, emit nothing *)
-        dc := DES (e, t2) ;
-        dry := dry - 1 ;
-        res := t2
-    | Ast.NCallExpr :
-        t2 := '?' ;
-        dry := dry + 1 ;
-        dc := CallC (e.kids[0], e.kids[1], t2) ;
-        dry := dry - 1 ;
-        res := t2
     | Ast.NBin :
         IF DynStr.Eq (e.a, 'AND') OR DynStr.Eq (e.a, 'OR') OR
            DynStr.Eq (e.a, '=') OR DynStr.Eq (e.a, '#') OR
@@ -2479,29 +2647,28 @@ BEGIN
     | Ast.NUn :
         IF DynStr.Eq (e.a, 'NOT') THEN res := 'BOOL'
         ELSE res := TagOfExpr (e.kids[0]) END
-    | Ast.NNewExpr :
-        sh := NewShape (e, tyk, ext0) ;
-        nx := 0 ;
-        FOR ci := ext0 TO e.nkids - 1 DO
-          IF e.kids[ci] IS SOME dm1 THEN nx := nx + 1 END
-        END ;
-        IF nx > 1 THEN res := 'GRID'
-        ELSIF nx = 1 THEN res := 'SLICE'
-        ELSE res := 'PTR' END
-    | Ast.NSliceOf3 : res := 'SLICE'
-    | Ast.NGridOf : res := 'GRID'
-    | Ast.NNoneLit : res := 'OPTPTR'
     ELSE
       res := '?'
-    END ;
-    IF e.kind = Ast.NDesignator AND DynStr.Eq (res, '?') AND
-       e.nkids = 0 THEN
-      ci := MFind (consts, e.a) ;
-      IF ci >= 0 THEN res := TagOfExpr (consts.es[ci].v) END
     END ;
     RETURN res
   END ;
   RETURN '?'
+END TagOfExprOwn ;
+
+(* an expression's tag: the checker's type, recorded where it computed
+   it (stage 3), when there is one; else the generator works it out --
+   for a literal the checker typed by another path, a CONST's
+   expression, and anything the checker did not know.  Measured over
+   the library the day it was built: where both answered, they agreed
+   but at one binder, where the checker's was the more precise *)
+PROCEDURE TagOfExpr (k: Ast.Kid) : STR =
+VAR t : STR ;
+BEGIN
+  IF k IS SOME e THEN
+    t := TagOfCanon (Ast.TyStrAt (e.id)) ;
+    IF NOT DynStr.Eq (t, '?') THEN RETURN t END
+  END ;
+  RETURN TagOfExprOwn (k)
 END TagOfExpr ;
 
 (* ---- designators ---- *)
@@ -2573,17 +2740,193 @@ BEGIN
   RETURN 'err->res'
 END OriginPool ;
 
+(* the selectors of d from kid FROM on, applied to the C expression
+   RES of type TND: a designator's from its name (DES), a call's
+   answer -- F (x).f, NCallSel -- from the temporary holding it *)
+PROCEDURE DESSel (d: PTR Ast.Node ; from: I64 ; RO KEPT res0: STR ;
+                  KEPT tnd0: Ast.Kid ; VAR tag: STR) : STR =
+VAR
+  j, jj, rk : I64 ;
+  tnd, r2, px : Ast.Kid ;
+  res, base, ix, ec, cnt, tmod : STR ;
+  dg, dns : PTR DynStr.DString IN gpool ;
+  fldOk, enumIx : BOOL ;
+BEGIN
+  res := res0 ;
+  tnd := tnd0 ;
+  tmod := '' ;
+  FOR j := from TO d.nkids - 1 DO
+    NoteMod (tnd, tmod) ;
+    r2 := Resolve (tnd) ;
+    (* a subscript through a pointer reaches what it points to, as the
+       checker's DesigDeclType has it; a field through a pointer is
+       the -> below *)
+    IF d.kids[j] IS SOME s0 THEN
+      IF s0.kind = Ast.NSelIndex THEN
+        IF r2 IS SOME rp THEN
+          IF IsPtrK (rp.kind) THEN
+            px := InMod (rp.kids[0], tmod) ;
+            NoteMod (px, tmod) ;
+            r2 := Resolve (px) ;
+            res := S3 ('(*', res, ')')
+          END
+        END
+      END
+    END ;
+    IF r2 IS SOME r THEN
+      IF d.kids[j] IS SOME sel THEN
+        IF sel.kind = Ast.NSelField THEN
+          IF IsPtrK (r.kind) THEN
+            (* the target's module noted, so that its fields' bare type
+               names are read where they were declared -- the step the
+               checker took and this generator did not, until the
+               review of 2026-10-09 (the enumeration compare of b6e7507
+               and `CASE q.kind' were both this) *)
+            px := InMod (r.kids[0], tmod) ;
+            NoteMod (px, tmod) ;
+            IF Resolve (px) IS SOME inner THEN
+              IF inner.kind # Ast.NRecordType AND
+                 inner.kind # Ast.NMonitorType THEN
+                Err2 (d.line,
+                  'selection through a non-record unsupported yet') ;
+                RETURN '0'
+              END ;
+              res := S3 (res, '->', CN (sel.a)) ;
+              tnd := Checked (sel, InMod (FieldType (inner, sel.a), tmod))
+            ELSE
+              Err2 (d.line, 'field base type unresolvable') ;
+              RETURN '0'
+            END
+          ELSIF r.kind = Ast.NRecordType OR
+                r.kind = Ast.NMonitorType THEN
+            res := S3 (res, '.', CN (sel.a)) ;
+            tnd := Checked (sel, InMod (FieldType (r, sel.a), tmod))
+          ELSE
+            Err2 (d.line,
+              'selection through a non-record unsupported yet') ;
+            RETURN '0'
+          END ;
+          fldOk := FALSE ;
+          IF tnd IS SOME t1 THEN fldOk := TRUE END ;
+          IF NOT fldOk THEN
+            Err2 (d.line, S2 ('unknown record field: ', sel.a)) ;
+            RETURN '0'
+          END
+        ELSIF sel.kind = Ast.NSelIndex THEN
+          IF r.kind = Ast.NGridType THEN
+            (* every axis against its own extent: the check a
+               hand-rolled d[r * cols + c] cannot make *)
+            base := res ;
+            ec := TyC (r.kids[1]) ;
+            dg := DynStr.New (gpool) ;
+            FOR jj := 0 TO sel.nkids - 1 DO
+              IF jj > 0 THEN DynStr.Append (dg, ', ') END ;
+              DynStr.Append (dg, EX (sel.kids[jj], ''))
+            END ;
+            cnt := ArrCount2 (r.kids[0]) ;
+            rk := sel.nkids ;
+            IF rk >= 1 AND rk <= 4 THEN
+              (* ranks 1..4 go to the written-out form: extents and
+                 strides by value, no index array, no loop over the
+                 rank.  2.60x -> 1.29x on the port's kernel, with
+                 the same checks -- see runtime/m9rt.h and
+                 the port's gat_cost.c. *)
+              dns := DynStr.New (gpool) ;
+              DynStr.Append (dns, '(*(') ;
+              DynStr.Append (dns, ec) ;
+              DynStr.Append (dns, ' *) m9_gat') ;
+              DynStr.Append (dns, ItoA (rk)) ;
+              DynStr.Append (dns, ' (') ;
+              DynStr.Append (dns, base) ;
+              DynStr.Append (dns, '.p, sizeof (') ;
+              DynStr.Append (dns, ec) ;
+              DynStr.Append (dns, '), ') ;
+              FOR jj := 0 TO rk - 1 DO
+                DynStr.Append (dns, base) ;
+                DynStr.Append (dns, '.n[') ;
+                DynStr.Append (dns, ItoA (jj)) ;
+                DynStr.Append (dns, '], ')
+              END ;
+              FOR jj := 0 TO rk - 1 DO
+                DynStr.Append (dns, base) ;
+                DynStr.Append (dns, '.s[') ;
+                DynStr.Append (dns, ItoA (jj)) ;
+                DynStr.Append (dns, '], ')
+              END ;
+              DynStr.Append (dns, DynStr.View (dg)) ;
+              DynStr.Append (dns, ', err))') ;
+              res := DynStr.View (dns)
+            ELSE
+              res := S9 ('(*(', ec, ' *) m9_gat (', base, '.p, sizeof (',
+                ec, '), ', base,
+                S9 ('.n, ', base, '.s, (int64_t[]){', DynStr.View (dg),
+                    '}, ', cnt, ', err))', '', ''))
+            END ;
+            stRaise := TRUE ;
+            tnd := Checked (sel, InMod (r.kids[1], tmod))
+          ELSE
+          ix := EX (sel.kids[0], '') ;
+          IF r.kind = Ast.NSliceType THEN
+            base := res ;
+            ec := TyC (r.kids[0]) ;
+            res := S9 ('(*(', ec, ' *) m9_at (', base, '.p, ', ix,
+              ', ', base, S5 ('.len, sizeof (', ec, '), err))', '', '')) ;
+            stRaise := TRUE ;
+            tnd := Checked (sel, InMod (r.kids[0], tmod))
+          ELSIF r.kind = Ast.NArrayType THEN
+            base := res ;
+            ec := TyC (r.kids[1]) ;
+            (* ARRAY Colour OF T: the subscript is an enum value, its
+               tag 0..n-1 by construction -- no runtime bounds check,
+               a.v[(k).tag] directly.  Detect it from the SUBSCRIPT's
+               type, not the array's bound: an imported enum indexes an
+               imported record's field the same way, where the bound
+               name resolves only in its own module (docs/enum-plan.md,
+               part 2) *)
+            enumIx := FALSE ;
+            IF ArrEnumBoundNode (r.kids[0]) IS SOME earr THEN
+              enumIx := TRUE
+            END ;
+            IF NOT enumIx THEN
+              IF sel.nkids >= 1 THEN
+                enumIx := StartsW (TagOfExpr (sel.kids[0]), 'CR:')
+              END
+            END ;
+            IF enumIx THEN
+              res := S5 ('(', base, '.v[(', ix, ').tag])') ;
+              tnd := Checked (sel, InMod (r.kids[1], tmod))
+            ELSE
+              cnt := ArrCount2 (r.kids[0]) ;
+              res := S9 ('(*(', ec, ' *) m9_at (', base, '.v, ', ix,
+                ', INT64_C(', cnt, S5 ('), sizeof (', ec, '), err))',
+                '', '')) ;
+              stRaise := TRUE ;
+              tnd := Checked (sel, InMod (r.kids[1], tmod))
+            END
+          ELSE
+            Err2 (d.line, 'index into a non-array unsupported yet') ;
+            RETURN '0'
+          END
+          END
+        END
+      END
+    ELSE
+      Err2 (d.line, 'selector form unsupported yet') ;
+      RETURN '0'
+    END
+  END ;
+  tag := TagOfType (tnd) ;
+  RETURN res
+END DESSel ;
+
 PROCEDURE DES (d: PTR Ast.Node ; VAR tag: STR) : STR =
 VAR
-  ci, j, jj, rk : I64 ;
-  tnd, r2 : Ast.Kid ;
-  res, base, ix, ec, cnt : STR ;
-  dg, dns : PTR DynStr.DString IN gpool ;
-  known, fldOk, enumIx : BOOL ;
-  tmod : STR ;
+  ci, j : I64 ;
+  tnd : Ast.Kid ;
+  res, base, ix : STR ;
+  known : BOOL ;
 BEGIN
   tag := '?' ;
-  tmod := '' ;
   tnd := ScopeNode (d.a) ;
   known := FALSE ;
   IF tnd IS SOME t0 THEN known := TRUE END ;
@@ -2693,153 +3036,14 @@ BEGIN
      DynStr.Eq (ScopeMode (d.a), 'o') THEN
     res := S3 ('(*', CN (d.a), ')')
   END ;
-  FOR j := 0 TO d.nkids - 1 DO
-    NoteMod (tnd, tmod) ;
-    r2 := Resolve (tnd) ;
-    IF r2 IS SOME r THEN
-      IF d.kids[j] IS SOME sel THEN
-        IF sel.kind = Ast.NSelField THEN
-          IF IsPtrK (r.kind) THEN
-            IF Resolve (InMod (r.kids[0], tmod)) IS SOME inner THEN
-              IF inner.kind # Ast.NRecordType AND
-                 inner.kind # Ast.NMonitorType THEN
-                Err2 (d.line,
-                  'selection through a non-record unsupported yet') ;
-                RETURN '0'
-              END ;
-              res := S3 (res, '->', CN (sel.a)) ;
-              tnd := InMod (FieldType (inner, sel.a), tmod)
-            ELSE
-              Err2 (d.line, 'field base type unresolvable') ;
-              RETURN '0'
-            END
-          ELSIF r.kind = Ast.NRecordType OR
-                r.kind = Ast.NMonitorType THEN
-            res := S3 (res, '.', CN (sel.a)) ;
-            tnd := InMod (FieldType (r, sel.a), tmod)
-          ELSE
-            Err2 (d.line,
-              'selection through a non-record unsupported yet') ;
-            RETURN '0'
-          END ;
-          fldOk := FALSE ;
-          IF tnd IS SOME t1 THEN fldOk := TRUE END ;
-          IF NOT fldOk THEN
-            Err2 (d.line, S2 ('unknown record field: ', sel.a)) ;
-            RETURN '0'
-          END
-        ELSIF sel.kind = Ast.NSelIndex THEN
-          IF r.kind = Ast.NGridType THEN
-            (* every axis against its own extent: the check a
-               hand-rolled d[r * cols + c] cannot make *)
-            base := res ;
-            ec := TyC (r.kids[1]) ;
-            dg := DynStr.New (gpool) ;
-            FOR jj := 0 TO sel.nkids - 1 DO
-              IF jj > 0 THEN DynStr.Append (dg, ', ') END ;
-              DynStr.Append (dg, EX (sel.kids[jj], ''))
-            END ;
-            cnt := ArrCount2 (r.kids[0]) ;
-            rk := sel.nkids ;
-            IF rk >= 1 AND rk <= 4 THEN
-              (* ranks 1..4 go to the written-out form: extents and
-                 strides by value, no index array, no loop over the
-                 rank.  2.60x -> 1.29x on the port's kernel, with
-                 the same checks -- see runtime/m9rt.h and
-                 the port's gat_cost.c. *)
-              dns := DynStr.New (gpool) ;
-              DynStr.Append (dns, '(*(') ;
-              DynStr.Append (dns, ec) ;
-              DynStr.Append (dns, ' *) m9_gat') ;
-              DynStr.Append (dns, ItoA (rk)) ;
-              DynStr.Append (dns, ' (') ;
-              DynStr.Append (dns, base) ;
-              DynStr.Append (dns, '.p, sizeof (') ;
-              DynStr.Append (dns, ec) ;
-              DynStr.Append (dns, '), ') ;
-              FOR jj := 0 TO rk - 1 DO
-                DynStr.Append (dns, base) ;
-                DynStr.Append (dns, '.n[') ;
-                DynStr.Append (dns, ItoA (jj)) ;
-                DynStr.Append (dns, '], ')
-              END ;
-              FOR jj := 0 TO rk - 1 DO
-                DynStr.Append (dns, base) ;
-                DynStr.Append (dns, '.s[') ;
-                DynStr.Append (dns, ItoA (jj)) ;
-                DynStr.Append (dns, '], ')
-              END ;
-              DynStr.Append (dns, DynStr.View (dg)) ;
-              DynStr.Append (dns, ', err))') ;
-              res := DynStr.View (dns)
-            ELSE
-              res := S9 ('(*(', ec, ' *) m9_gat (', base, '.p, sizeof (',
-                ec, '), ', base,
-                S9 ('.n, ', base, '.s, (int64_t[]){', DynStr.View (dg),
-                    '}, ', cnt, ', err))', '', ''))
-            END ;
-            stRaise := TRUE ;
-            tnd := InMod (r.kids[1], tmod)
-          ELSE
-          ix := EX (sel.kids[0], '') ;
-          IF r.kind = Ast.NSliceType THEN
-            base := res ;
-            ec := TyC (r.kids[0]) ;
-            res := S9 ('(*(', ec, ' *) m9_at (', base, '.p, ', ix,
-              ', ', base, S5 ('.len, sizeof (', ec, '), err))', '', '')) ;
-            stRaise := TRUE ;
-            tnd := InMod (r.kids[0], tmod)
-          ELSIF r.kind = Ast.NArrayType THEN
-            base := res ;
-            ec := TyC (r.kids[1]) ;
-            (* ARRAY Colour OF T: the subscript is an enum value, its
-               tag 0..n-1 by construction -- no runtime bounds check,
-               a.v[(k).tag] directly.  Detect it from the SUBSCRIPT's
-               type, not the array's bound: an imported enum indexes an
-               imported record's field the same way, where the bound
-               name resolves only in its own module (docs/enum-plan.md,
-               part 2) *)
-            enumIx := FALSE ;
-            IF ArrEnumBoundNode (r.kids[0]) IS SOME earr THEN
-              enumIx := TRUE
-            END ;
-            IF NOT enumIx THEN
-              IF sel.nkids >= 1 THEN
-                enumIx := StartsW (TagOfExpr (sel.kids[0]), 'CR:')
-              END
-            END ;
-            IF enumIx THEN
-              res := S5 ('(', base, '.v[(', ix, ').tag])') ;
-              tnd := InMod (r.kids[1], tmod)
-            ELSE
-              cnt := ArrCount2 (r.kids[0]) ;
-              res := S9 ('(*(', ec, ' *) m9_at (', base, '.v, ', ix,
-                ', INT64_C(', cnt, S5 ('), sizeof (', ec, '), err))',
-                '', '')) ;
-              stRaise := TRUE ;
-              tnd := InMod (r.kids[1], tmod)
-            END
-          ELSE
-            Err2 (d.line, 'index into a non-array unsupported yet') ;
-            RETURN '0'
-          END
-          END
-        END
-      END
-    ELSE
-      Err2 (d.line, 'selector form unsupported yet') ;
-      RETURN '0'
-    END
-  END ;
-  tag := TagOfType (tnd) ;
-  RETURN res
+  RETURN DESSel (d, 0, res, tnd, tag)
 END DES ;
 
 (* ---- expressions ---- *)
 
 PROCEDURE EX (k: Ast.Kid ; RO want: STR) : STR =
 VAR
-  svHoist : BOOL ;
+  svHoist, svRaise, callRaise : BOOL ;
   l, r, lt, rt, w, tg, cop, a1, a2, cnt, res, sh : STR ;
   d2 : PTR DynStr.DString IN gpool ;
   jj, rk, ext0, nx : I64 ;
@@ -2866,8 +3070,6 @@ BEGIN
           RETURN S2 (ItoA (ORD (e.a[0])), 'u')
         ELSIF LEN (e.a) = 0 THEN
           RETURN '(m9_sl_CHAR){ NULL, 0 }'
-        ELSIF dry > 0 THEN
-          RETURN 'm9s_dry'             (* a type answer, not code *)
         ELSE
           (* static storage, never a stack compound literal: a returned
              literal (Reason's 'Not Found') must not dangle *)
@@ -2887,6 +3089,16 @@ BEGIN
         RETURN S5 ('((__typeof__(', l, ')) m9_share (', l, '))')
     | Ast.NParen : RETURN S3 ('(', EX (e.kids[0], want), ')')
     | Ast.NDesignator :
+        (* a one-character string CONST where a CHAR is wanted is that
+           character, as the literal itself is (a C error until
+           2026-10-09: the CONST's slice macro landed in a uint32_t) *)
+        IF DynStr.Eq (want, 'CHAR') THEN
+          IF ConstValue (k) IS SOME cvc THEN
+            IF cvc.kind = Ast.NString AND LEN (cvc.a) = 1 THEN
+              RETURN S2 (ItoA (ORD (cvc.a[0])), 'u')
+            END
+          END
+        END ;
         tg := '?' ;
         res := DES (e, tg) ;
         (* a CONST is a C macro holding a double literal, so in an
@@ -2901,6 +3113,28 @@ BEGIN
     | Ast.NCallExpr :
         tg := '?' ;
         RETURN CallC (e.kids[0], e.kids[1], tg)
+    | Ast.NCallSel :
+        (* F (x).f, F (x)[i]: the answer into a temporary of the
+           callee's declared result type -- the checker recorded it on
+           this node -- the error slot read before anything is
+           selected, then the selectors as a designator's (DESSel) *)
+        IF Ast.TypeAt (e.id) IS SOME rty THEN
+          svRaise := stRaise ;
+          stRaise := FALSE ;
+          l := EX (e.kids[0], '') ;
+          callRaise := stRaise ;
+          w := NewTmp () ;
+          tg := '?' ;
+          r := DESSel (e, 1, w, Ast.TypeAt (e.id), tg) ;
+          res := S5 ('({ ', TyC (Ast.TypeAt (e.id)), ' ', w, S3 (' = ', l, '; ')) ;
+          IF callRaise THEN
+            res := S4 (res, 'if (err->exc) goto ', raiseLbl, '; ')
+          END ;
+          stRaise := svRaise OR callRaise OR stRaise ;
+          RETURN S3 (res, r, '; })')
+        END ;
+        Err2 (e.line, "selection from this call's answer unsupported yet") ;
+        RETURN '0'
     | Ast.NNewExpr :
         stRaise := TRUE ;
         sh := NewShape (e, tyk, ext0) ;
@@ -3216,10 +3450,14 @@ BEGIN
         ELSIF DynStr.Eq (cop, '*%') THEN
           RETURN S5 ('m9_mulw_i64 (', l, ', ', r, ')')
         ELSIF (DynStr.Eq (cop, '==') OR DynStr.Eq (cop, '!=')) AND
-              StartsW (lt, 'CR:') THEN
+              (StartsW (lt, 'CR:') OR StartsW (TagOfExpr (e.kids[1]), 'CR:')) THEN
           (* two enumeration (or case-record) values compare by tag:
              `k = Kind.Int' is a struct == in C, which gcc refuses --
-             the tag is what carries identity (docs/enum-plan.md) *)
+             the tag is what carries identity (docs/enum-plan.md).
+             EITHER side says so: a field of an IMPORTED record
+             (`c.shade = ExportDef.Shade.Dark') has a tag the left side
+             does not report, and was a struct == until 2026-10-09
+             (cp-kernel's Jv.Kind finding) *)
           RETURN S7 ('((', l, ').tag ', cop, ' (', r, ').tag)')
         ELSE
           RETURN S5 ('(', l, S3 (' ', cop, ' '), r, ')')
@@ -3338,12 +3576,11 @@ END RecordAt ;
    goto L;' and F gets m9a1.  Only where the statement is evaluated
    once -- an assignment, a call statement, a RETURN: a hoist out of
    a WHILE's condition or an ELSIF's would evaluate it once where the
-   program evaluates it each time or never.  Nothing when answering a
-   type (dry). *)
+   program evaluates it each time or never. *)
 PROCEDURE HoistArg (RO a: STR) : STR =
 VAR tmp : STR ;
 BEGIN
-  IF NOT hoistOk OR dry > 0 THEN RETURN a END ;
+  IF NOT hoistOk THEN RETURN a END ;
   nhoist := nhoist + 1 ;
   tmp := S2 ('m9a', ItoA (nhoist)) ;
   Line (KPbuf, hoistInd, S6 ('{ __typeof__(', a, ') ', tmp, ' = ', S2 (a, ';'))) ;
@@ -3618,7 +3855,12 @@ BEGIN
     IF DynStr.Eq (name, 'MAX') THEN
       IF al.kids[0] IS SOME m0 THEN
         tag := m0.a ;
-        IF DynStr.Eq (m0.a, 'I64') THEN RETURN 'INT64_MAX' END
+        (* every builtin type's largest value: the checker takes MAX
+           of any (only I64 until the typed tree's stage 3); a real's
+           is the largest finite one, written out so that no float.h
+           is needed; a CHAR's is the largest scalar *)
+        res := MaxC (m0.a) ;
+        IF LEN (res) > 0 THEN RETURN res END
       END ;
       Err2 (eln, 'MAX of this type unsupported yet') ;
       RETURN '0'
@@ -4168,12 +4410,64 @@ PROCEDURE EmitCaseCR (st: PTR Ast.Node ; RO w: STR ;
                       RO tg: STR ; ind: I64) ;
 PROCEDURE EmitCaseScalar (st: PTR Ast.Node ; RO w: STR ;
                           ind: I64) ;
-PROCEDURE EmitBlock (st: PTR Ast.Node ; ind: I64) ;
+PROCEDURE EmitBlock (KEPT st: PTR Ast.Node ; ind: I64) ;
 PROCEDURE EmitDispose (st: PTR Ast.Node ; ind: I64) ;
 PROCEDURE EmitRaise (st: PTR Ast.Node ; ind: I64) ;
 
+(* the end of a loop body an EXIT inside a CASE arm jumps to: the
+   break there leaves the loop the body belongs to *)
+PROCEDURE LoopExit (ind: I64) =
+BEGIN
+  IF LEN (xitLbl) > 0 THEN
+    Line (KPbuf, ind, S3 ('if (0) { ', xitLbl, ': break; }'))
+  END
+END LoopExit ;
+
+(* does this IF hold an ELSIF that IS SOME makes the generator nest *)
+PROCEDURE NeedsSplit (st: PTR Ast.Node) : BOOL =
+VAR j : I64 ; elsif, some : BOOL ;
+BEGIN
+  elsif := FALSE ;
+  some := IsSomeCond (st.kids[0]) ;
+  FOR j := 2 TO st.nkids - 1 DO
+    IF st.kids[j] IS SOME tail THEN
+      IF tail.kind = Ast.NElsif THEN
+        elsif := TRUE ;
+        IF IsSomeCond (tail.kids[0]) THEN some := TRUE END
+      END
+    END
+  END ;
+  RETURN elsif AND some
+END NeedsSplit ;
+
+(* IF c1 THEN s1 ELSIF c2 THEN s2 <rest> END as IF c1 THEN s1 ELSE
+   IF c2 THEN s2 <rest> END END; the inner IF is split again if it
+   needs it *)
+PROCEDURE SplitIf (KEPT st: PTR Ast.Node) : PTR Ast.Node =
+VAR
+  outer, inner, els, seq : PTR Ast.Node IN gpool ;
+  j : I64 ;
+BEGIN
+  inner := Ast.NewNode (gpool, Ast.NIf, st.line, st.col) ;
+  IF st.kids[2] IS SOME first THEN
+    Ast.Add (gpool, inner, first.kids[0]) ;
+    Ast.Add (gpool, inner, first.kids[1])
+  END ;
+  FOR j := 3 TO st.nkids - 1 DO Ast.Add (gpool, inner, st.kids[j]) END ;
+  seq := Ast.NewNode (gpool, Ast.NStmtSeq, st.line, st.col) ;
+  Ast.Add (gpool, seq, SOME (inner)) ;
+  els := Ast.NewNode (gpool, Ast.NElse, st.line, st.col) ;
+  Ast.Add (gpool, els, SOME (seq)) ;
+  outer := Ast.NewNode (gpool, Ast.NIf, st.line, st.col) ;
+  Ast.Add (gpool, outer, st.kids[0]) ;
+  Ast.Add (gpool, outer, st.kids[1]) ;
+  Ast.Add (gpool, outer, SOME (els)) ;
+  RETURN outer
+END SplitIf ;
+
 PROCEDURE EmitStmt (k: Ast.Kid ; ind: I64) =
 VAR
+  savedXit : STR ;
   l, r, tg, w, cnd, stp, bname, thrPool : STR ;
   j, j2, savedScope, sv, sf, thrPi : I64 ;
   vtN, vd : Ast.Kid ;
@@ -4240,6 +4534,14 @@ BEGIN
         END ;
         CloseHoists (ind)
     | Ast.NIf :
+        (* an ELSIF chain with IS SOME in it -- at its head or in an arm
+           -- is emitted as the nested IF it means: IF c1 THEN s1 ELSE
+           IF c2 THEN s2 ... END END (ELSIF after IS SOME was refused
+           until 2026-10-09; every other IF keeps its C) *)
+        IF NeedsSplit (st) THEN
+          EmitStmt (SOME (SplitIf (st)), ind) ;
+          RETURN
+        END ;
         (* IF x IS SOME p THEN: bind the payload, test for NULL *)
         IF IsSomeCond (st.kids[0]) THEN
           IF st.kids[0] IS SOME isn THEN
@@ -4340,7 +4642,10 @@ BEGIN
               MAdd (scope, bname, vtN, 'b') ;
               sv := inSwitch ; inSwitch := 0 ;
               sf := finDepth ; finDepth := 0 ;
+              savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
               EmitSeq (st.kids[1], ind + 1) ;
+              LoopExit (ind + 1) ;
+              loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
               inSwitch := sv ; finDepth := sf ;
               scope.n := savedScope ;
               Line (KPbuf, ind, '}')
@@ -4362,7 +4667,10 @@ BEGIN
         Line (KPbuf, ind + 1, S3 ('if (!(', cnd, ')) break;')) ;
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
+        savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
         EmitSeq (st.kids[1], ind + 1) ;
+        LoopExit (ind + 1) ;
+        loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
         inSwitch := sv ; finDepth := sf ;
         Line (KPbuf, ind, '}')
     | Ast.NFor :
@@ -4381,7 +4689,10 @@ BEGIN
             'to; ', CN (st.a), '.tag++', ') {', '')) ;
           sv := inSwitch ; inSwitch := 0 ;
           sf := finDepth ; finDepth := 0 ;
+          savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
           EmitSeq (st.kids[3], ind + 1) ;
+          LoopExit (ind + 1) ;
+          loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
           inSwitch := sv ; finDepth := sf ;
           Line (KPbuf, ind, '} }') ;
           RETURN
@@ -4397,15 +4708,21 @@ BEGIN
         END ;
         stp := '1' ;
         IF st.kids[2] IS SOME by THEN
+          stp := '' ;
           IF by.kind = Ast.NInt THEN
             stp := by.a
           ELSIF by.kind = Ast.NUn AND DynStr.Eq (by.a, '-') THEN
             IF by.kids[0] IS SOME bl THEN
-              IF bl.kind = Ast.NInt THEN stp := S2 ('-', bl.a)
-              ELSE Err2 (st.line, 'FOR BY step form unsupported yet') END
+              IF bl.kind = Ast.NInt THEN stp := S2 ('-', bl.a) END
             END
-          ELSE
-            Err2 (st.line, 'FOR BY step form unsupported yet')
+          END ;
+          (* any other constant step -- a CONST, an imported one, an
+             expression of literals -- through the one evaluator; the
+             checker has refused a step that is not a constant (par 10) *)
+          IF LEN (stp) = 0 THEN stp := StepC (st.kids[2]) END ;
+          IF LEN (stp) = 0 THEN
+            Err2 (st.line, 'FOR BY step form unsupported yet') ;
+            stp := '1'
           END
         END ;
         IF stp[0] = '-' THEN
@@ -4417,26 +4734,45 @@ BEGIN
         END ;
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
+        savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
         EmitSeq (st.kids[3], ind + 1) ;
+        LoopExit (ind + 1) ;
+        loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
         inSwitch := sv ; finDepth := sf ;
         Line (KPbuf, ind, '} }')
     | Ast.NLoop :
+        (* EXIT leaves the innermost LOOP, WHILE or FOR (report par 5):
+           a C `break' where that loop is the innermost breakable
+           construct, else -- inside a CASE arm's switch -- a goto to
+           `if (0) { m9xitN: break; }' at the end of the loop's body,
+           made only when such an EXIT is met (refused until
+           2026-10-09: the break would have left the switch) *)
         Line (KPbuf, ind, 'for (;;) {') ;
         sv := inSwitch ; inSwitch := 0 ;
         sf := finDepth ; finDepth := 0 ;
+        savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
         EmitSeq (st.kids[0], ind + 1) ;
+        LoopExit (ind + 1) ;
+        loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
         inSwitch := sv ; finDepth := sf ;
         Line (KPbuf, ind, '}')
     | Ast.NExit :
-        IF inSwitch > 0 THEN
-          Err2 (st.line,
-            'EXIT inside a CASE arm refused (it would break the switch)')
+        IF loopDepth = 0 THEN
+          Err2 (st.line, 'EXIT outside a loop')
         END ;
         IF finDepth > 0 THEN
           Err2 (st.line,
             'EXIT across FINALLY refused (it would skip the cleanup)')
         END ;
-        Line (KPbuf, ind, 'break;')
+        IF inSwitch > 0 THEN
+          IF LEN (xitLbl) = 0 THEN
+            xitN := xitN + 1 ;
+            xitLbl := S2 ('m9xit', ItoA (xitN))
+          END ;
+          Line (KPbuf, ind, S3 ('goto ', xitLbl, ';'))
+        ELSE
+          Line (KPbuf, ind, 'break;')
+        END
     | Ast.NBlock : EmitBlock (st, ind)
     | Ast.NCase :
         stRaise := FALSE ;
@@ -4450,7 +4786,11 @@ BEGIN
         END ;
         IF StartsW (tg, 'CR:') THEN
           EmitCaseCR (st, w, tg, ind)
-        ELSIF DynStr.Eq (tg, 'CHAR') OR DynStr.Eq (tg, 'I64') THEN
+        ELSIF DynStr.Eq (tg, 'CHAR') OR DynStr.Eq (tg, 'I64') OR
+              Text.OneOf (tg, CaseInts) THEN
+          (* every integer type switches the same way: C converts each
+             label to the selector's type, and the checker has held the
+             labels to it *)
           EmitCaseScalar (st, w, ind)
         ELSE
           Err2 (st.line, 'CASE over this selector unsupported yet')
@@ -4598,7 +4938,31 @@ BEGIN
   END
 END EmitStmt ;
 
-PROCEDURE EmitBlock (st: PTR Ast.Node ; ind: I64) =
+(* BEGIN s EXCEPT h FINALLY f END as BEGIN BEGIN s EXCEPT h END FINALLY f END *)
+PROCEDURE SplitFinally (KEPT st: PTR Ast.Node) : PTR Ast.Node =
+VAR
+  outer, inner, seq : PTR Ast.Node IN gpool ;
+  j : I64 ;
+BEGIN
+  inner := Ast.NewNode (gpool, Ast.NBlock, st.line, st.col) ;
+  outer := Ast.NewNode (gpool, Ast.NBlock, st.line, st.col) ;
+  Ast.Add (gpool, inner, st.kids[0]) ;
+  seq := Ast.NewNode (gpool, Ast.NStmtSeq, st.line, st.col) ;
+  Ast.Add (gpool, seq, SOME (inner)) ;
+  Ast.Add (gpool, outer, SOME (seq)) ;
+  FOR j := 1 TO st.nkids - 1 DO
+    IF st.kids[j] IS SOME part THEN
+      IF part.kind = Ast.NFinally THEN
+        Ast.Add (gpool, outer, st.kids[j])
+      ELSE
+        Ast.Add (gpool, inner, st.kids[j])
+      END
+    END
+  END ;
+  RETURN outer
+END SplitFinally ;
+
+PROCEDURE EmitBlock (KEPT st: PTR Ast.Node ; ind: I64) =
 VAR
   w, l, cnd, tg, savedExit, savedRq : STR ;
   j : I64 ;
@@ -4615,8 +4979,11 @@ BEGIN
   END ;
   IF hasHdl THEN
     IF fin IS SOME f0 THEN
-      Err2 (st.line,
-        'EXCEPT and FINALLY on one block unsupported yet') ;
+      (* EXCEPT and FINALLY on one block: the handlers on an inner
+         block, the FINALLY on an outer one around it -- the cleanup
+         runs after a handler as after the sequence (refused until
+         2026-10-09) *)
+      EmitBlock (SplitFinally (st), ind) ;
       RETURN
     END ;
     (* handlers: raises inside the sequence jump to the dispatch;
@@ -4791,7 +5158,7 @@ END EmitCaseCR ;
 PROCEDURE EmitCaseScalar (st: PTR Ast.Node ; RO w: STR ;
                           ind: I64) =
 VAR
-  r : STR ;
+  r, lo, hi : STR ;
   j, i2 : I64 ;
   hadElse, single : BOOL ;
 BEGIN
@@ -4819,7 +5186,15 @@ BEGIN
                     r := S3 ('INT64_C(', lv.a, ')')
                   ELSIF lv.kind = Ast.NDesignator THEN
                     r := ConstLbl (lv)
-                  END
+                  END ;
+                  IF LEN (r) = 0 THEN r := ScalarC (lbl.kids[0]) END
+                END
+              ELSIF lbl.kind = Ast.NLabelRange THEN
+                (* lo .. hi: the GNU C case range, both ends constants *)
+                lo := ScalarC (lbl.kids[0]) ;
+                hi := ScalarC (lbl.kids[1]) ;
+                IF LEN (lo) > 0 AND LEN (hi) > 0 THEN
+                  r := S3 (lo, ' ... ', hi)
                 END
               END ;
               IF LEN (r) = 0 THEN
@@ -4993,7 +5368,11 @@ BEGIN
     RETURN ' = 0'
   END ;
   IF DynStr.Eq (cty, 'bool') THEN RETURN ' = false' END ;
-  IF HasSub (cty, '_t') THEN RETURN ' = 0' END ;
+  (* the fixed-width integers by NAME: `contains _t' also matched
+     m9_arr_4_int64_t, and a function answering an ARRAY declared
+     `m9_arr_4_int64_t m9ret = 0' -- invalid C (found 2026-10-09
+     building F (x)[i] over an array answer) *)
+  IF Text.OneOf (cty, CIntNames) THEN RETURN ' = 0' END ;
   RETURN ' = {0}'
 END ZeroInit ;
 
@@ -5816,6 +6195,9 @@ BEGIN
       ELSIF e.kind = Ast.NReal THEN
         Line (KHdrConsts, 0, S7 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' (', e.a, ')'))
+      ELSIF LEN (RealC (consts.es[ci].v)) > 0 THEN
+        Line (KHdrConsts, 0, S7 ('#define ', CP (modName), '_',
+          consts.es[ci].k, ' ', RealC (consts.es[ci].v), ''))
       (* a BOOLEAN constant.  the ported model's parameter module has four of them and
          Fortran calls them parameters, which is what they are: a
          switch a program cannot flip at run time *)
@@ -5830,8 +6212,12 @@ BEGIN
           consts.es[ci].k, '_d[', ItoA (LEN (e.a)), '] = { ',
           StrCodes (e.a), ' };')) ;
         Line (KHdrConsts, 0, S9 ('#define ', CP (modName), '_',
-          consts.es[ci].k, ' ((m9_sl_CHAR){ (uint32_t *) ', modName,
+          consts.es[ci].k, ' ((m9_sl_CHAR){ (uint32_t *) ', CP (modName),
           '_', consts.es[ci].k, S4 ('_d, ', ItoA (LEN (e.a)), ' })', '')))
+      (* the empty string: no storage, as the literal '' has none *)
+      ELSIF e.kind = Ast.NString THEN
+        Line (KHdrConsts, 0, S5 ('#define ', CP (modName), '_',
+          consts.es[ci].k, ' ((m9_sl_CHAR){ NULL, 0 })'))
       (* a CHAR constant: one code point, emitted like the char
          literal it names -- <cp>u -- so `s + NL` joins it as a code
          point the way `s + 0AC` does (par 2.2) *)

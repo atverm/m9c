@@ -1,0 +1,19 @@
+MODULE GfConstStrLabel ;
+
+(* WANT: a one-character string CONST as a CASE label *)
+
+IMPORT Io ;
+
+CONST
+  A = 'x' ;
+
+VAR
+  c : CHAR ;
+
+BEGIN
+  c := 'x' ;
+  CASE c OF
+  | A : Io.WriteLine ('a one-character string CONST as a CASE label')
+  ELSE  Io.WriteLine ('ELSE')
+  END
+END GfConstStrLabel.

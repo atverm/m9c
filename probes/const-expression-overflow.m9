@@ -1,0 +1,16 @@
+(* EXPECT: CONST Big: the expression overflows I64 or divides by zero (par 2.2.4) *)
+(* A CONST over an integer expression is folded by the generators
+   with the runtime's arithmetic (2026-10-09; it was accepted here and
+   refused by the generator as `const form unsupported yet'), so what
+   the program would raise at run time is refused here.  The legal
+   forms first; the last overflows. *)
+MODULE m ;
+CONST
+  A = 2 * 3 + 1 ;
+  B = -(4 - 1) ;
+  C = 0x10 * 2 ;
+  D = 7 DIV 2 - 7 MOD 2 ;
+  R = 1.5 * 2.0 ;
+  Big = 9223372036854775807 + 1 ;
+BEGIN
+END m.

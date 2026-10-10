@@ -151,6 +151,7 @@ begin
                     E (n.kids[1]) + ', ' + E (n.kids[2]) + ')';
     nkCallExpr  : Result := DesigStr (n.kids[0]) + ' (' +
                     ArgsStr (n.kids[1]) + ')';
+    nkCallSel   : Result := E (n.kids[0]) + DesigStr (n);
     nkDesignator: Result := DesigStr (n);
     nkQualident : Result := QualStr (n);
     nkIdent     : Result := n.a;

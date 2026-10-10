@@ -8,6 +8,10 @@ typedef struct ShareUse_Box ShareUse_Box;
 typedef struct ShareUse_Store ShareUse_Store;
 
 
+#define ShareUse_Folded INT64_C(19)
+#define ShareUse_Neg INT64_C(-3)
+#define ShareUse_Half ((1.5) / (3.0))
+
 #ifndef M9SL_m9_gd2_double
 #define M9SL_m9_gd2_double
 M9_GRID_T (m9_gd2_double, double, 2)

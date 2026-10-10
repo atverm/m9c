@@ -71,6 +71,10 @@ typedef struct { m9_sl_CHAR v[13]; } m9_arr_13_m9_sl_CHAR;
 #define M9SL_m9_arr_7_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[7]; } m9_arr_7_m9_sl_CHAR;
 #endif
+#ifndef M9SL_m9_arr_10_m9_sl_CHAR
+#define M9SL_m9_arr_10_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[10]; } m9_arr_10_m9_sl_CHAR;
+#endif
 #ifndef M9SL_m9_arr_102_m9_sl_CHAR
 #define M9SL_m9_arr_102_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[102]; } m9_arr_102_m9_sl_CHAR;
@@ -78,6 +82,10 @@ typedef struct { m9_sl_CHAR v[102]; } m9_arr_102_m9_sl_CHAR;
 #ifndef M9SL_m9_arr_39_m9_sl_CHAR
 #define M9SL_m9_arr_39_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[39]; } m9_arr_39_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_24_uint32_t
+#define M9SL_m9_arr_24_uint32_t
+typedef struct { uint32_t v[24]; } m9_arr_24_uint32_t;
 #endif
 
 void Gen_LoadUnit (Ast_Node * u, m9_state *err);

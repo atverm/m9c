@@ -1,0 +1,16 @@
+MODULE GfNegLabel ;
+
+(* WANT: a negative literal as a CASE label *)
+
+IMPORT Io ;
+
+VAR
+  i : I64 ;
+
+BEGIN
+  i := -2 ;
+  CASE i OF
+  | -2 : Io.WriteLine ('a negative literal as a CASE label')
+  ELSE   Io.WriteLine ('ELSE')
+  END
+END GfNegLabel.

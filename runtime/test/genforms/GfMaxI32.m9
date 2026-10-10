@@ -1,0 +1,13 @@
+MODULE GfMaxI32 ;
+
+(* WANT: MAX of an I32: 2147483647 *)
+
+IMPORT Io, Fmt ;
+
+VAR
+  x : I32 ;
+
+BEGIN
+  x := MAX (I32) ;
+  Io.WriteLine ('MAX of an I32: ' + Fmt.I64Str (I64 (x)))
+END GfMaxI32.

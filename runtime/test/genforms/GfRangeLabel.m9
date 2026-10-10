@@ -1,0 +1,16 @@
+MODULE GfRangeLabel ;
+
+(* WANT: a range as a CASE label *)
+
+IMPORT Io ;
+
+VAR
+  i : I64 ;
+
+BEGIN
+  i := 5 ;
+  CASE i OF
+  | 1 .. 9 : Io.WriteLine ('a range as a CASE label')
+  ELSE       Io.WriteLine ('ELSE')
+  END
+END GfRangeLabel.

@@ -1,0 +1,31 @@
+(* EXPECT: EXIT across a FINALLY would skip its cleanup: leave the protected block first, or move the loop inside it (par 5) *)
+(* An EXIT that would leave a loop from inside a FINALLY-protected
+   block would skip the cleanup (the generator refused it as such).
+   The legal forms first: a loop inside the protected block, and an
+   EXIT in the cleanup's own statements. *)
+MODULE m ;
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  BEGIN
+    LOOP i := i + 1 ; IF i = 3 THEN EXIT END END
+  FINALLY
+    i := 0
+  END ;
+  LOOP
+    BEGIN
+      i := i + 1
+    FINALLY
+      IF i > 2 THEN i := 0 END
+    END ;
+    IF i = 0 THEN EXIT END
+  END ;
+  LOOP
+    BEGIN
+      i := i + 1 ;
+      IF i = 3 THEN EXIT END
+    FINALLY
+      i := 0
+    END
+  END
+END m.

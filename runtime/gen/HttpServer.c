@@ -1573,7 +1573,7 @@ static bool HttpServer_WriteAll (int64_t fd, m9_sl_BYTE b, m9_state *err)
   done = INT64_C(0);
   for (;;) {
     if (!((done < (b).len))) break;
-    { __typeof__(n) m9v = (int64_t)(tcp_write (((int)(fd)), ((void *)(({ __typeof__(b) m9t2 = b; int64_t m9t2a = done, m9t2n = m9_sub_i64 ((b).len, done, err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })).p), ((size_t)(m9_sub_i64 ((b).len, done, err)))));
+    { __typeof__(n) m9v = (int64_t)(tcp_write (((int)(fd)), ((void *)(({ __typeof__(b) m9t1 = b; int64_t m9t1a = done, m9t1n = m9_sub_i64 ((b).len, done, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })).p), ((size_t)(m9_sub_i64 ((b).len, done, err)))));
       if (err->exc) goto L_ret;
       n = m9v;
     }
@@ -2377,9 +2377,9 @@ static bool HttpServer_HasToken (m9_sl_CHAR list, m9_sl_CHAR lower, m9_state *er
     bool m9t2 = ((i == (list).len) || ((*(uint32_t *) m9_at (list.p, i, list.len, sizeof (uint32_t), err)) == 44u));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      bool m9t5 = HttpServer_SameCi (HttpServer_Trimmed (({ __typeof__(list) m9t4 = list; int64_t m9t4a = a, m9t4n = m9_sub_i64 (i, a, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err), lower, err);
+      bool m9t4 = HttpServer_SameCi (HttpServer_Trimmed (({ __typeof__(list) m9t3 = list; int64_t m9t3a = a, m9t3n = m9_sub_i64 (i, a, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err), lower, err);
       if (err->exc) goto L_ret;
-      if (m9t5) {
+      if (m9t4) {
         err->res = m9res;
         m9ret = true;
         goto L_ret;
@@ -2412,7 +2412,7 @@ static int64_t HttpServer_Fill (HttpServer_Conn *c, m9_pool *c_pool, m9_state *e
     m9ret = INT64_C(0);
     goto L_ret;
   }
-  { __typeof__(n) m9v = (int64_t)(tcp_read (((int)((*c).fd)), ((void *)(({ __typeof__((*c).cb) m9t2 = (*c).cb; int64_t m9t2a = (*c).have, m9t2n = m9_sub_i64 (((*c).cb).len, (*c).have, err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })).p), ((size_t)(m9_sub_i64 (((*c).cb).len, (*c).have, err)))));
+  { __typeof__(n) m9v = (int64_t)(tcp_read (((int)((*c).fd)), ((void *)(({ __typeof__((*c).cb) m9t1 = (*c).cb; int64_t m9t1a = (*c).have, m9t1n = m9_sub_i64 (((*c).cb).len, (*c).have, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })).p), ((size_t)(m9_sub_i64 (((*c).cb).len, (*c).have, err)))));
     if (err->exc) goto L_ret;
     n = m9v;
   }
@@ -2934,9 +2934,9 @@ static bool HttpServer_Compressible (m9_sl_CHAR ctype, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t9 = (((t).len > INT64_C(5)) && ((HttpServer_SameCi (({ __typeof__(t) m9t7 = t; int64_t m9t7a = m9_sub_i64 ((t).len, INT64_C(5), err), m9t7n = INT64_C(5); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s121, 5 }), err) || HttpServer_SameCi (({ __typeof__(t) m9t8 = t; int64_t m9t8a = m9_sub_i64 ((t).len, INT64_C(4), err), m9t8n = INT64_C(4); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s122, 4 }), err))));
+  bool m9t8 = (((t).len > INT64_C(5)) && ((HttpServer_SameCi (({ __typeof__(t) m9t6 = t; int64_t m9t6a = m9_sub_i64 ((t).len, INT64_C(5), err), m9t6n = INT64_C(5); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s121, 5 }), err) || HttpServer_SameCi (({ __typeof__(t) m9t7 = t; int64_t m9t7a = m9_sub_i64 ((t).len, INT64_C(4), err), m9t7n = INT64_C(4); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s122, 4 }), err))));
   if (err->exc) goto L_ret;
-  if (m9t9) {
+  if (m9t8) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
@@ -4092,9 +4092,9 @@ static bool HttpServer_InList (m9_sl_CHAR a, m9_sl_CHAR list, m9_state *err)
     bool m9t2 = ((i == (list).len) || ((*(uint32_t *) m9_at (list.p, i, list.len, sizeof (uint32_t), err)) == 44u));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      bool m9t5 = DynStr_Eq (HttpServer_Trimmed (({ __typeof__(list) m9t4 = list; int64_t m9t4a = s0, m9t4n = m9_sub_i64 (i, s0, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err), a, err);
+      bool m9t4 = DynStr_Eq (HttpServer_Trimmed (({ __typeof__(list) m9t3 = list; int64_t m9t3a = s0, m9t3n = m9_sub_i64 (i, s0, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err), a, err);
       if (err->exc) goto L_ret;
-      if (m9t5) {
+      if (m9t4) {
         err->res = m9res;
         m9ret = true;
         goto L_ret;
@@ -4383,7 +4383,7 @@ static bool HttpServer_ReadFixed (HttpServer_Conn *c, m9_pool *c_pool, m9_sl_BYT
   if (err->exc) goto L_ret;
   for (;;) {
     if (!((got < (body).len))) break;
-    { __typeof__(n) m9v = (int64_t)(tcp_read (((int)((*c).fd)), ((void *)(({ __typeof__(body) m9t2 = body; int64_t m9t2a = got, m9t2n = m9_sub_i64 ((body).len, got, err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })).p), ((size_t)(m9_sub_i64 ((body).len, got, err)))));
+    { __typeof__(n) m9v = (int64_t)(tcp_read (((int)((*c).fd)), ((void *)(({ __typeof__(body) m9t1 = body; int64_t m9t1a = got, m9t1n = m9_sub_i64 ((body).len, got, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })).p), ((size_t)(m9_sub_i64 ((body).len, got, err)))));
       if (err->exc) goto L_ret;
       n = m9v;
     }

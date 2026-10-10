@@ -1,0 +1,16 @@
+(* EXPECT: OPT holds a pointer or a procedure value, and I64 is neither: keep a BOOL beside the value, or OPT PTR to it (par 2.2) *)
+(* OPT holds what can be absent -- a pointer or a procedure value,
+   a C pointer that may be NULL.  Over a value type it was accepted
+   here and refused by the generator (`dereference of a non-pointer');
+   since 2026-10-09 it is refused here.  The legal forms first. *)
+MODULE m ;
+TYPE
+  Box = RECORD n : I64 END ;
+  Less = PROCEDURE (a, b: I64) : BOOL ;
+VAR
+  p : OPT PTR Box ;
+  s : OPT SHARED PTR Box ;
+  f : OPT Less ;
+  n : OPT I64 ;
+BEGIN
+END m.

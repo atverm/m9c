@@ -450,7 +450,7 @@ BEGIN
 END PNew ;
 
 PROCEDURE PFactor (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
-VAR n, d : PTR Ast.Node ;
+VAR n, d, cs : PTR Ast.Node ;
 BEGIN
   IF p.cur.kind = TkInt THEN
     n := Nn (pool, p, Ast.NInt) ; n.a := p.cur.text ; Bump (p)
@@ -522,7 +522,14 @@ BEGIN
       ELSE
         Ast.Add (pool, n, SOME (PArgList (pool, p)))
       END ;
-      Expect (p, TkRParen)
+      Expect (p, TkRParen) ;
+      (* F (x).f, F (x)[i]: the call's answer selected from *)
+      IF p.cur.kind = TkDot OR p.cur.kind = TkLBrack THEN
+        cs := Nn (pool, p, Ast.NCallSel) ;
+        Ast.Add (pool, cs, SOME (n)) ;
+        PSels (pool, p, cs) ;
+        n := cs
+      END
     ELSE
       n := d
     END
@@ -653,10 +660,19 @@ END PExpr ;
 
 PROCEDURE PDesignator (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node =
-VAR n, sel : PTR Ast.Node ;
+VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NDesignator) ;
   n.a := TakeIdent (p, 'name') ;
+  PSels (pool, p, n) ;
+  RETURN n
+END PDesignator ;
+
+(* the selectors that follow a name -- or a call's closing parenthesis
+   (NCallSel, 2026-10-09) -- appended to n *)
+PROCEDURE PSels (VAR pool: POOL ; VAR KEPT p: Parser ; VAR n: PTR Ast.Node) =
+VAR sel : PTR Ast.Node ;
+BEGIN
   WHILE p.cur.kind = TkDot OR p.cur.kind = TkLBrack DO
     IF p.cur.kind = TkDot THEN
       Bump (p) ;
@@ -676,9 +692,8 @@ BEGIN
       Expect (p, TkRBrack) ;
       Ast.Add (pool, n, SOME (sel))
     END
-  END ;
-  RETURN n
-END PDesignator ;
+  END
+END PSels ;
 
 PROCEDURE PAttribOpt (VAR pool: POOL ; VAR p: Parser) : Ast.Kid =
 VAR n : PTR Ast.Node ;

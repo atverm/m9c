@@ -3,7 +3,7 @@ REVIEW NbCells -- 17 procedures with a body, 11 of them functions; 10 headings i
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
   assignments                                    22
-  arguments                                     132
+  arguments                                     138
   RETURN values                                  17
   operands of a comparison or an operator        22
   CASE labels                                     3

@@ -1,0 +1,281 @@
+MODULE NetCDFTest ;
+
+(* NetCDF.m9's write path against its read path, and its refusals.
+
+   The ROUND TRIP writes a 4 x 5 grid with the M9 write path and reads
+   it back with the M9 read path, every value to the bit, a hyperslab,
+   ReadGrid2 and its own axis checks.  A round trip through one binding
+   proves only that it is self-consistent -- a binding that swapped two
+   axes would be too -- so the outside witness is
+   runtime/test/columnar.sh: netCDF4-python, and libnetcdf's own
+   nc_get_att_text for an attribute's octets, read the files
+   columnarout.m9 wrote (columnarcheck.py netcdf).
+
+   TEXT ATTRIBUTES both ways: PutAttText writes UTF-8 (`°C` is C2 B0
+   43, three octets, as GetAttStr shows them one CHAR an octet) and
+   GetAttText reads it back as two characters; PutAttStr keeps its
+   octet contract.  The refusals: a buffer smaller than the slab, a
+   negative offset, a missing variable (the operation and the
+   library's own message carried), a missing file.  Was
+   runtime/test/netcdf_driver.c. *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT NetCDF ;
+IMPORT System ;
+IMPORT Text ;
+
+CONST
+  NLat = 4 ;
+  NLon = 5 ;
+  Sections = 3 ;   (* Write, Read, Texts, each counted at its end *)
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  data : SLICE OF F64 ;
+  gridPath, textPath : STR ;   (* per run: two runs at once write two files *)
+  ran : I64 ;                  (* sections that reached their end *)
+
+PROCEDURE Fill () =
+VAR i, j : I64 ;
+BEGIN
+  data := NEW (pool, F64, NLat * NLon) ;
+  FOR i := 0 TO NLat - 1 DO
+    FOR j := 0 TO NLon - 1 DO
+      data[i * NLon + j] := 100.0 * F64 (i) + F64 (j) / 8.0
+    END
+  END
+END Fill ;
+
+PROCEDURE Two (a, b: I64) : SLICE OF I64 =
+VAR s : SLICE OF I64 ;
+BEGIN
+  s := NEW (pool, I64, 2) ;
+  s[0] := a ; s[1] := b ;
+  RETURN s
+END Two ;
+
+PROCEDURE Write () RAISES NetCDF.Error, ValueRange, Faults.SizeError =
+VAR
+  f : PTR NetCDF.File IN pool ;
+  v : I64 ;
+BEGIN
+  f := NetCDF.Create (pool, gridPath, TRUE) ;
+  v := NetCDF.DefVar (f, 't2m', NetCDF.TypeDouble,
+                      Two (NetCDF.DefDim (f, 'lat', NLat), NetCDF.DefDim (f, 'lon', NLon))) ;
+  NetCDF.PutAttStr (f, v, 'units', 'K') ;
+  NetCDF.PutAttF64 (f, v, 'scale_factor', 0.5) ;
+  NetCDF.PutAttStr (f, NetCDF.Global, 'title', 'written by M9') ;
+  NetCDF.EndDef (f) ;
+  NetCDF.PutF64 (f, v, Two (0, 0), Two (NLat, NLon), data) ;
+  NetCDF.Close (f) ;
+  Check.That (t, 'write: Create, DefDim, DefVar, the attributes, EndDef, PutF64, Close', TRUE) ;
+  ran := ran + 1
+END Write ;
+
+PROCEDURE Read () RAISES NetCDF.Error, ValueRange, Faults.SizeError =
+VAR
+  f : PTR NetCDF.File IN pool ;
+  back, row : SLICE OF F64 ;
+  shape : SLICE OF I64 ;
+  grid : GRID 2 OF F64 ;
+  v : I64 ;
+BEGIN
+  f := NetCDF.Open (pool, gridPath) ;
+  Check.EqI64 (t, 'read: DimLenOf lat', NetCDF.DimLenOf (f, 'lat'), NLat) ;
+  Check.EqI64 (t, 'read: DimLenOf lon', NetCDF.DimLenOf (f, 'lon'), NLon) ;
+  v := NetCDF.VarId (f, 't2m') ;
+  Check.EqI64 (t, 'read: VarRank', NetCDF.VarRank (f, v), 2) ;
+  shape := NetCDF.VarShape (f, v) ;
+  Check.EqI64s (t, 'read: VarShape', shape, Two (NLat, NLon)) ;
+  back := NEW (pool, F64, NLat * NLon) ;
+  NetCDF.GetF64 (f, v, Two (0, 0), Two (NLat, NLon), back) ;
+  Check.NearF64s (t, 'read: every value survived the round trip, to the bit', back, data, 0.0, 0.0) ;
+  Check.EqF64 (t, 'read: GetAttF64', NetCDF.GetAttF64 (f, v, 'scale_factor'), 0.5) ;
+  Check.EqStr (t, 'read: GetAttStr', NetCDF.GetAttStr (pool, f, v, 'units'), 'K') ;
+  Check.EqStr (t, 'read: the global attribute',
+               NetCDF.GetAttStr (pool, f, NetCDF.Global, 'title'), 'written by M9') ;
+  Check.That (t, 'read: HasVar says yes', NetCDF.HasVar (f, 't2m')) ;
+  Check.That (t, 'read: HasVar says no without raising', NOT NetCDF.HasVar (f, 'nope')) ;
+  row := NEW (pool, F64, NLon) ;
+  NetCDF.GetF64 (f, v, Two (2, 0), Two (1, NLon), row) ;
+  Check.NearF64s (t, 'read: a hyperslab reads the row it names', row,
+                  SLICE (data, 2 * NLon, NLon), 0.0, 0.0) ;
+  grid := NetCDF.ReadGrid2 (f, 't2m') ;
+  Check.EqI64 (t, 'ReadGrid2: rows', LEN (grid, 0), NLat) ;
+  Check.EqI64 (t, 'ReadGrid2: columns', LEN (grid, 1), NLon) ;
+  Check.EqF64 (t, 'ReadGrid2: a value indexed per axis', grid[3, 4], data[3 * NLon + 4]) ;
+  Check.Raises (t, 'ReadGrid2: and the grid checks its own axes', OffGrid, 'IndexError') ;
+  Check.EqStr (t, 'refused: a buffer smaller than the slab is SizeError (2 for 20)',
+               SmallBuffer (f, v), 'SizeError 2 20') ;
+  Check.EqStr (t, 'refused: a negative offset is ValueRange, not a huge size_t',
+               NegativeOffset (f, v), 'ValueRange') ;
+  Check.EqStr (t, 'refused: a missing variable is Error, carrying the operation',
+               MissingVar (f), 'nc_inq_varid') ;
+  NetCDF.Close (f) ;
+  Check.EqStr (t, 'refused: opening a missing file is Error, not a halt',
+               MissingFile (), 'Error') ;
+  Check.That (t, 'the grid file removed', Io.Remove (gridPath)) ;
+  ran := ran + 1
+END Read ;
+
+PROCEDURE OffGrid () RAISES ValueRange =
+  (* one column past the grid's last, read from the file again: an
+     Action takes no arguments *)
+VAR
+  f : PTR NetCDF.File IN pool ;
+  g : GRID 2 OF F64 ;
+  x : F64 ;
+BEGIN
+  f := NetCDF.Open (pool, gridPath) ;
+  g := NetCDF.ReadGrid2 (f, 't2m') ;
+  NetCDF.Close (f) ;
+  x := g[0, NLon]
+EXCEPT
+| NetCDF.Error (op, detail, status) :
+| Faults.SizeError (got, want) :
+END OffGrid ;
+
+PROCEDURE SmallBuffer (f: PTR NetCDF.File ; v: I64) : STR =
+VAR small : SLICE OF F64 ;
+BEGIN
+  small := NEW (pool, F64, 2) ;
+  NetCDF.GetF64 (f, v, Two (0, 0), Two (NLat, NLon), small) ;
+  RETURN 'read'
+EXCEPT
+| Faults.SizeError (got, want) :
+    RETURN 'SizeError ' + Text.Keep (pool, I64Text (got)) + ' ' + Text.Keep (pool, I64Text (want))
+| NetCDF.Error (op, detail, status) : RETURN 'Error'
+| ValueRange : RETURN 'ValueRange'
+END SmallBuffer ;
+
+PROCEDURE NegativeOffset (f: PTR NetCDF.File ; v: I64) : STR =
+VAR back : SLICE OF F64 ;
+BEGIN
+  back := NEW (pool, F64, NLat * NLon) ;
+  NetCDF.GetF64 (f, v, Two (-1, 0), Two (NLat, NLon), back) ;
+  RETURN 'read'
+EXCEPT
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| NetCDF.Error (op, detail, status) : RETURN 'Error'
+| ValueRange : RETURN 'ValueRange'
+END NegativeOffset ;
+
+PROCEDURE MissingVar (f: PTR NetCDF.File) : STR =
+  (* the operation, when the library's own message is carried too *)
+VAR
+  v : I64 ;
+  o, d : STR ;
+BEGIN
+  v := NetCDF.VarId (f, 'absent') ;
+  RETURN 'found'
+EXCEPT
+| NetCDF.Error (op, detail, status) :
+    o := op ;
+    d := detail ;
+    IF Text.Contains (d, 'not found') THEN RETURN o + '' END ;
+    RETURN "without the library's message: " + d
+| ValueRange : RETURN 'ValueRange'
+END MissingVar ;
+
+PROCEDURE MissingFile () : STR =
+VAR f : PTR NetCDF.File IN pool ;
+BEGIN
+  f := NetCDF.Open (pool, '/nonexistent/nope.nc') ;
+  RETURN 'opened'
+EXCEPT
+| NetCDF.Error (op, detail, status) : RETURN 'Error'
+| ValueRange : RETURN 'ValueRange'
+END MissingFile ;
+
+PROCEDURE I64Text (v: I64) : STR =
+VAR s : STR ;
+    x : I64 ;
+BEGIN
+  IF v = 0 THEN RETURN '0' END ;
+  s := '' ;
+  x := v ;
+  WHILE x > 0 DO s := CHR (48 + x MOD 10) + s ; x := x DIV 10 END ;
+  RETURN s
+EXCEPT
+| ValueRange : RETURN '?'
+END I64Text ;
+
+(* the octets of a text as CHARs 0..255, as GetAttStr answers them *)
+PROCEDURE Octets (RO s: STR) : SLICE OF I64 RAISES ValueRange =
+VAR
+  o : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  o := NEW (pool, I64, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO o[i] := I64 (ORD (s[i])) END ;
+  RETURN o
+END Octets ;
+
+PROCEDURE Three (a, b, c: I64) : SLICE OF I64 =
+VAR s : SLICE OF I64 ;
+BEGIN
+  s := NEW (pool, I64, 3) ;
+  s[0] := a ; s[1] := b ; s[2] := c ;
+  RETURN s
+END Three ;
+
+PROCEDURE Texts () RAISES NetCDF.Error, ValueRange =
+VAR
+  f : PTR NetCDF.File IN pool ;
+  dims : SLICE OF I64 ;
+  v : I64 ;
+BEGIN
+  f := NetCDF.Create4 (pool, textPath, TRUE) ;
+  dims := NEW (pool, I64, 1) ;
+  dims[0] := NetCDF.DefDim (f, 'time', 3) ;
+  v := NetCDF.DefVar (f, 'TA', NetCDF.TypeFloat, dims) ;
+  NetCDF.PutAttText (f, v, 'units', '°C') ;
+  NetCDF.PutAttText (f, NetCDF.Global, 'title', 'µmol m-2 s-1 — CO₂') ;
+  NetCDF.PutAttText (f, NetCDF.Global, 'plain', 'ASCII') ;
+  NetCDF.PutAttStr (f, NetCDF.Global, 'latin1', 'µ') ;
+  NetCDF.EndDef (f) ;
+  NetCDF.Close (f) ;
+  f := NetCDF.Open (pool, textPath) ;
+  v := NetCDF.VarId (f, 'TA') ;
+  Check.EqI64s (t, 'PutAttText: °C is the UTF-8 octets C2 B0 43',
+                Octets (NetCDF.GetAttStr (pool, f, v, 'units')), Three (194, 176, 67)) ;
+  Check.EqStr (t, 'PutAttText: and GetAttText reads °C back',
+               NetCDF.GetAttText (pool, f, v, 'units'), '°C') ;
+  Check.EqStr (t, 'PutAttText: two- and three-octet sequences, a global attribute',
+               NetCDF.GetAttText (pool, f, NetCDF.Global, 'title'), 'µmol m-2 s-1 — CO₂') ;
+  Check.EqI64 (t, 'PutAttText: the title is 23 octets for 18 characters',
+               LEN (NetCDF.GetAttStr (pool, f, NetCDF.Global, 'title')), 23) ;
+  Check.EqStr (t, 'PutAttText: ASCII is ASCII', NetCDF.GetAttStr (pool, f, NetCDF.Global, 'plain'), 'ASCII') ;
+  Check.EqStr (t, 'PutAttStr: still one octet a CHAR (µ is the single octet B5)',
+               NetCDF.GetAttStr (pool, f, NetCDF.Global, 'latin1'), 'µ') ;
+  NetCDF.Close (f) ;
+  Check.That (t, 'the text file removed', Io.Remove (textPath)) ;
+  ran := ran + 1
+END Texts ;
+
+BEGIN
+  gridPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-grid.nc') ;
+  textPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-text.nc') ;
+  Fill () ;
+  Write () ;
+  Read () ;
+  Texts () ;
+  (* a section cut short did not count itself: a smaller PASS would
+     hide the checks that did not run *)
+  Check.EqI64 (t, 'every section ran to its end', ran, Sections) ;
+  Io.Halt (Check.Done (t, 'NetCDF'))
+EXCEPT
+| NetCDF.Error (op, detail, status) :
+    Check.That (t, 'no NetCDF.Error escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'NetCDF'))
+| Faults.SizeError (got, want) :
+    Check.That (t, 'no SizeError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'NetCDF'))
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'NetCDF'))
+END NetCDFTest.

@@ -1,0 +1,20 @@
+(* EXPECT-ERROR: Error expects 3 argument(s), got 1 *)
+(* A RAISE that gives fewer values than its EXCEPTION declares.
+   Observed 2026-10-09 in the shipped library: NetCDF.GetAttText raised
+   `Error ('an NC_STRING attribute of more than one element')' where
+   Error is (op, detail, status) -- the sentence landed in `op', and a
+   handler reading `detail' or `status' read nothing anybody wrote.  It
+   compiled because nothing held a RAISE's payload to the declaration;
+   found by the typed tree's measurement, which saw payload values with
+   no recorded type. *)
+MODULE m ;
+EXCEPTION
+  Error (op, detail : STR ; status : I64) ;
+PROCEDURE Attr (n : I64) RAISES Error =
+BEGIN
+  IF n # 1 THEN
+    RAISE Error ('an NC_STRING attribute of more than one element')
+  END
+END Attr ;
+BEGIN
+END m.

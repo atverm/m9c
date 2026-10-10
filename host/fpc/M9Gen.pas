@@ -62,15 +62,14 @@ type
     tmpN : Integer;
     inSwitch : Integer;         { EXIT inside a switch would break
                                   the wrong thing: refuse loudly }
+    loopDepth, xitN : Integer;  { LOOPs entered; EXIT labels made }
+    xitLbl : string;            { the innermost LOOP's exit label }
     finDepth : Integer;         { EXIT across a FINALLY boundary
                                   would skip the cleanup: refuse }
     stRaise : Boolean;
     hoistOk : Boolean;                 { HoistArg may emit: an assignment,
                                          a call statement, a RETURN }
     hoistInd, nhoist, hoistOpen : Integer;
-    dry : Integer;              { >0 inside TagOfExpr's recomputation:
-                                  answering a type must not emit code
-                                  (dead string literals otherwise) }
     curRetTag : string;
     exitLbl : string;           { where RETURNs jump: L_ret, or the
                                   innermost FINALLY label }
@@ -94,6 +93,8 @@ type
     function ExtBare (const nm: string): Integer;
     function Resolve (t: TNode): TNode;
     function ConstValue (e: TNode): TNode;
+    function ScalarC (e: TNode): string;
+    function StepC (e: TNode): string;
     function IsAdaptive (e: TNode): Boolean;
     function BuiltinC (const n: string): string;
     function ISuf (const t: string): string;
@@ -110,6 +111,8 @@ type
     function CRNode (const tn: string): TNode;
     function TagOfType (t: TNode): string;
     function TagOfExpr (e: TNode): string;
+    function TagOfExprOwn (e: TNode): string;
+    function TagOfCanon (const s: string): string;
     function ScopeFind (const n: string): Integer;
     procedure ModuleScope;
     function QualIn (t: TNode; const inMod: string): TNode;
@@ -134,6 +137,7 @@ type
     function CharVal (const lit: string): Int64;
     function StrLeaf (e: TNode; var s: string): Boolean;
     function FoldStr (e: TNode): TNode;
+    function RealC (e: TNode): string;
     function StrCodes (const s: string; n: TNode): string;
     procedure AddAgg (const nm: string; ag: TNode);
     function RecordConstQual (e: TNode): TNode;
@@ -144,6 +148,8 @@ type
     procedure PushAggs;
     procedure EmitAggs (tgt: TStringList);
     function DES (d: TNode; out tag: string): string;
+    function DESSel (d: TNode; from: Integer; const res0: string;
+                     tnd0: TNode; out tag: string): string;
     function EX (e: TNode; const want: string): string;
     function HoistArg (const a: string): string;
     procedure CloseHoists (ind: Integer);
@@ -151,11 +157,13 @@ type
     function RecordAt (const name: string; out ctype: string): TNode;
     function CallC (dnode, argl, site: TNode; out tag: string): string;
     function ConstLbl (d: TNode): string;
+    function Checked (sel, own: TNode): TNode;
     function DesigDecl (d: TNode): TNode;
     function ExcRef (const qual, nm: string; out fields: TNode): string;
     function OptInner (e: TNode): TNode;
     procedure EmitHandler (h: TNode; const dlbl: string; ind: Integer);
     procedure EmitStmt (st: TNode; ind: Integer);
+    procedure LoopExit (ind: Integer);
     procedure EmitSeq (s: TNode; ind: Integer);
     procedure Line (sl: TStringList; ind: Integer; const s: string);
     procedure GenProc (const gp: TGProc);
@@ -738,7 +746,7 @@ begin
         for i := 1 to Length (nested) do
           if nested[i] = '*' then s := s + 'p'
           else if nested[i] <> ' ' then s := s + nested[i];
-        if (arrSeen.IndexOf (s) < 0) and (dry = 0) then
+        if (arrSeen.IndexOf (s) < 0) then
         begin
           arrSeen.Add (s);
           { each typedef defines a fresh anonymous struct, so two
@@ -774,7 +782,7 @@ begin
   for i := 1 to Length (ec) do
     if ec[i] = '*' then nm := nm + 'p'
     else if ec[i] <> ' ' then nm := nm + ec[i];
-  if (arrSeen.IndexOf (nm) < 0) and (dry = 0) then
+  if (arrSeen.IndexOf (nm) < 0) then
   begin
     arrSeen.Add (nm);
     tdefs.Add ('#ifndef M9SL_' + nm);
@@ -808,7 +816,7 @@ begin
   for i := 1 to Length (ec) do
     if ec[i] = '*' then nm := nm + 'p'
     else if ec[i] <> ' ' then nm := nm + ec[i];
-  if (arrSeen.IndexOf (nm) < 0) and (dry = 0) then
+  if (arrSeen.IndexOf (nm) < 0) then
   begin
     arrSeen.Add (nm);
     tdefs.Add ('#ifndef M9SL_' + nm);
@@ -847,7 +855,7 @@ begin
 end;
 
 function TGen.ArrCount (e: TNode): string;
-var ci : Integer; et : TNode;
+var ci : Integer; et, cv0 : TNode; v : Int64; ch : Boolean;
 begin
   if e.kind = nkInt then Exit (e.a);
   et := ArrEnumBoundNode (e);
@@ -866,6 +874,12 @@ begin
     if (ci >= 0) and (TNode (extConsts.Objects[ci]).kind = nkInt) then
       Exit (TNode (extConsts.Objects[ci]).a);
   end;
+  { any other constant: an imported CONST folded from an expression,
+    an expression of literals (mirrors Gen.ArrCount) }
+  cv0 := e;
+  if ConstValue (e) <> nil then cv0 := ConstValue (e);
+  if ScalarConst (cv0, v, ch) and not ch and (v > 0) then
+    Exit (IntToStr (v));
   Err (e, 'array bound must be a literal or literal CONST');
   Result := '0';
 end;
@@ -1383,11 +1397,76 @@ begin
   Result := 'err->res';
 end;
 
-function TGen.TagOfExpr (e: TNode): string;
+{ the typed tree's stage 3: the generator's tag for the checker's
+  canonical type string -- one map, so that the tag is read off what
+  the checker decided instead of worked out again.  A named type is
+  fully qualified there (Mod.T, aliases resolved), so it is looked up
+  by its whole name: this module's own, or an imported one's.  '?' for
+  what has no tag (unknown, C.*, <void>) }
+function TGen.TagOfCanon (const s: string): string;
 var
-  t, u, sh : string;
-  ci, ext0, nx : Integer;
-  tyk : TNode;
+  dot : Integer;
+  m, t : string;
+  n : TNode;
+begin
+  Result := '?';
+  if s = '' then Exit;
+  if s = '<int>' then Exit ('I64');
+  if s = '<real>' then Exit ('F64');
+  if s = '<str1>' then Exit ('STR1');
+  if s = '<none>' then Exit ('OPTPTR');
+  if s = 'POOL' then Exit ('POOL');
+  if (s = 'I8') or (s = 'I16') or (s = 'I32') or (s = 'I64') or
+     (s = 'U8') or (s = 'U16') or (s = 'U32') or (s = 'U64') or
+     (s = 'F32') or (s = 'F64') or (s = 'BYTE') or (s = 'BOOL') or
+     (s = 'CHAR') then Exit (s);
+  if Copy (s, 1, 9) = 'SLICE OF ' then Exit ('SLICE');
+  if Copy (s, 1, 5) = 'GRID ' then Exit ('GRID');
+  if Copy (s, 1, 6) = 'ARRAY ' then Exit ('ARR');
+  if Copy (s, 1, 4) = 'PTR ' then Exit ('PTR');
+  if Copy (s, 1, 11) = 'SHARED PTR ' then Exit ('SHARED');
+  if Copy (s, 1, 4) = 'OPT ' then Exit ('OPTPTR');
+  if Copy (s, 1, 9) = 'PROCEDURE' then Exit ('PROC');
+  if (Copy (s, 1, 1) = '<') or (Copy (s, 1, 2) = 'C.') then Exit;
+  dot := Pos ('.', s);
+  if (dot = 0) or (Pos (' ', s) > 0) then Exit;
+  m := Copy (s, 1, dot - 1);
+  t := Copy (s, dot + 1, Length (s));
+  if m = modName then n := FindType (t)
+  else
+  begin
+    n := nil;
+    if extTypes.IndexOf (s) >= 0 then n := TNode (extTypes.Objects[extTypes.IndexOf (s)]);
+  end;
+  if n = nil then Exit;
+  if n.kind in [nkCaseRecordType, nkEnumType] then
+  begin
+    if m = modName then Exit ('CR:' + t);
+    Exit ('CR:' + s);
+  end;
+  if n.kind in [nkRecordType, nkMonitorType] then Exit ('REC');
+end;
+
+{ an expression's tag: the checker's type, recorded where it computed
+  it (stage 3), when there is one; else the generator works it out --
+  for a literal the checker typed by another path, a CONST's
+  expression, and anything the checker did not know.  Measured over
+  the library the day it was built: where both answered, they agreed
+  but at one binder, where the checker's was the more precise }
+function TGen.TagOfExpr (e: TNode): string;
+begin
+  if e = nil then Exit ('?');
+  Result := TagOfCanon (TyStrAt (e));
+  if Result = '?' then Result := TagOfExprOwn (e);
+end;
+
+{ what the checker did not record: a literal it typed by another path,
+  and the operators over such values (mirrors Gen.TagOfExprOwn: the
+  designator, call, NEW, SLICE, GRID and NONE arms, which re-ran DES and
+  CallC "dry", were measured to contribute nothing and removed) }
+function TGen.TagOfExprOwn (e: TNode): string;
+var
+  t, u : string;
 begin
   Result := '?';
   if e = nil then Exit;
@@ -1399,16 +1478,6 @@ begin
       if Utf8Len (e.a) = 1 then Result := 'STR1' else Result := 'SLICE';
     nkTrue, nkFalse : Result := 'BOOL';
     nkParen : Result := TagOfExpr (e.kids[0]);
-    nkDesignator :
-      begin
-        Inc (dry); DES (e, t); Dec (dry);   { recompute, emit nothing }
-        Result := t;
-      end;
-    nkCallExpr :
-      begin
-        Inc (dry); CallC (e.kids[0], e.kids[1], e, t); Dec (dry);
-        Result := t;
-      end;
     nkBin :
       begin
         if (e.a = 'AND') or (e.a = 'OR') or (e.a = '=') or (e.a = '#') or
@@ -1431,25 +1500,6 @@ begin
     nkUn :
       if e.a = 'NOT' then Result := 'BOOL'
       else Result := TagOfExpr (e.kids[0]);
-    nkNewExpr :
-      begin
-        sh := NewShape (e, tyk, ext0);
-        nx := 0;
-        for ci := ext0 to High (e.kids) do
-          if e.kids[ci] <> nil then Inc (nx);
-        if nx > 1 then Result := 'GRID'
-        else if nx = 1 then Result := 'SLICE'
-        else Result := 'PTR';
-      end;
-    nkSliceOf3 : Result := 'SLICE';
-    nkGridOf : Result := 'GRID';
-    nkNoneLit : Result := 'OPTPTR';
-  end;
-  if (e.kind = nkDesignator) and (Result = '?') and
-     (Length (e.kids) = 0) then
-  begin
-    ci := consts.IndexOf (e.a);
-    if ci >= 0 then Result := TagOfExpr (TNode (consts.Objects[ci]));
   end;
 end;
 
@@ -1478,6 +1528,37 @@ end;
   CONST whose value is one -- M9's CONST is an untyped literal, not a
   typed constant, which is the whole reason `Satfwb * p` is legal at
   either width. }
+{ a constant where C needs one -- a CASE label, an array bound --
+  through the one evaluator, M9AST.ScalarConst, after a CONST's name is
+  followed to its value (mirrors Gen.ScalarC) }
+function TGen.ScalarC (e: TNode): string;
+var
+  cv0 : TNode;
+  v : Int64;
+  ch : Boolean;
+begin
+  cv0 := e;
+  if ConstValue (e) <> nil then cv0 := ConstValue (e);
+  if not ScalarConst (cv0, v, ch) then Exit ('');
+  if ch then Exit (IntToStr (v) + 'u');
+  if v = Low (Int64) then Exit ('(-INT64_C(9223372036854775807) - 1)');
+  Result := 'INT64_C(' + IntToStr (v) + ')';
+end;
+
+{ a FOR step's value as C text, signed, '' when it is no constant
+  (mirrors Gen.StepC) }
+function TGen.StepC (e: TNode): string;
+var
+  cv0 : TNode;
+  v : Int64;
+  ch : Boolean;
+begin
+  cv0 := e;
+  if ConstValue (e) <> nil then cv0 := ConstValue (e);
+  if not ScalarConst (cv0, v, ch) or ch or (v = 0) then Exit ('');
+  Result := IntToStr (v);
+end;
+
 function TGen.IsAdaptive (e: TNode): Boolean;
 var v : TNode;
 begin
@@ -1507,23 +1588,69 @@ begin
 end;
 
 function TGen.FoldStr (e: TNode): TNode;
-var s : string; n : TNode;
+var s : string; n, u : TNode; iv : Int64;
 begin
   Result := e;
-  if (e = nil) or (e.kind <> nkBin) or (e.a <> '+') then Exit;
-  s := '';
-  if StrLeaf (e, s) then
+  if e = nil then Exit;
+  if (e.kind = nkBin) and (e.a = '+') then
   begin
-    n := TNode.Create (nkString);
-    n.a := s; n.line := e.line; n.col := e.col;
-    Result := n;
+    s := '';
+    if StrLeaf (e, s) then
+    begin
+      n := TNode.Create (nkString);
+      n.a := s; n.line := e.line; n.col := e.col;
+      Exit (n);
+    end;
+  end;
+  { an integer CONST over an expression folded to its literal (mirrors
+    Gen.FoldStr; Ast.FoldInt / M9AST.FoldInt) }
+  if (e.kind = nkBin) or (e.kind = nkParen) or
+     ((e.kind = nkUn) and not ((e.a = '-') and (Length (e.kids) = 1) and (e.kids[0] <> nil) and
+                               (e.kids[0].kind in [nkInt, nkReal]))) then
+    if FoldInt (e, iv) and (iv <> Low (Int64)) then
+    begin
+      n := TNode.Create (nkInt);
+      n.a := IntToStr (Abs (iv)); n.line := e.line; n.col := e.col;
+      if iv < 0 then
+      begin
+        u := TNode.Create (nkUn);
+        u.a := '-'; u.line := e.line; u.col := e.col;
+        u.Add (n);
+        Exit (u);
+      end;
+      Exit (n);
+    end;
+end;
+
+{ a real CONST over an expression of real literals, as the C expression
+  of those literals (mirrors Gen.RealC) }
+function TGen.RealC (e: TNode): string;
+var l, r : string;
+begin
+  Result := '';
+  if e = nil then Exit;
+  if e.kind = nkReal then Exit ('(' + e.a + ')');
+  if Length (e.kids) < 1 then Exit;
+  if e.kind = nkParen then Exit (RealC (e.kids[0]));
+  if (e.kind = nkUn) and (e.a = '-') then
+  begin
+    l := RealC (e.kids[0]);
+    if l = '' then Exit;
+    Exit ('(-' + l + ')');
+  end;
+  if (e.kind = nkBin) and (Length (e.kids) = 2) and
+     ((e.a = '+') or (e.a = '-') or (e.a = '*') or (e.a = '/')) then
+  begin
+    l := RealC (e.kids[0]);
+    r := RealC (e.kids[1]);
+    if (l = '') or (r = '') then Exit;
+    Exit ('(' + l + ' ' + e.a + ' ' + r + ')');
   end;
 end;
 
 function TGen.CharVal (const lit: string): Int64;
 begin
-  { hex digits + trailing C: 0AC = U+000A }
-  Result := StrToInt64 ('$' + Copy (lit, 1, Length (lit) - 1));
+  Result := CharCode (lit);
 end;
 
 { a constant table (par 2.2.4): CONST X = [ e1, ..., en ] is kept as
@@ -1742,17 +1869,155 @@ end;
 
 { ---- designators ---- }
 
-function TGen.DES (d: TNode; out tag: string): string;
+{ the selectors of d from kid FROM on, applied to the C expression
+  RES0 of type TND0 (mirrors Gen.DESSel): a designator's from its name,
+  a call's answer -- F (x).f, nkCallSel -- from its temporary }
+function TGen.DESSel (d: TNode; from: Integer; const res0: string;
+                      tnd0: TNode; out tag: string): string;
 var
-  ci, j, k, rk, ei : Integer;
-  tnd, r, inner : TNode;
+  j, k, rk : Integer;
+  tnd, r, inner, px : TNode;
   sel : TNode;
   base, ix, ec, nsx : string;
   enumIx : Boolean;
   tmod : string;
 begin
   tag := '?';
+  Result := res0;
+  tnd := tnd0;
   tmod := '';
+  for j := from to High (d.kids) do
+  begin
+    sel := d.kids[j];
+    NoteMod (tnd, tmod);
+    r := Resolve (tnd);
+    { a subscript through a pointer reaches what it points to, as the
+      checker's DesigDeclType has it; a field through a pointer is the
+      -> below }
+    if (sel.kind = nkSelIndex) and (r <> nil) and
+       (r.kind in [nkPtrType, nkSharedType]) then
+    begin
+      px := InMod (r.kids[0], tmod);
+      NoteMod (px, tmod);
+      r := Resolve (px);
+      Result := '(*' + Result + ')';
+    end;
+    if r = nil then begin Err (d, 'cannot type ' + d.a); Exit ('0'); end;
+    case sel.kind of
+      nkSelField :
+        begin
+          if r.kind in [nkPtrType, nkSharedType] then
+          begin
+            { the target's module noted, so that its fields' bare type
+              names are read where they were declared -- the step the
+              checker took and this generator did not, until the review
+              of 2026-10-09 }
+            px := InMod (r.kids[0], tmod);
+            NoteMod (px, tmod);
+            inner := Resolve (px);
+            if (inner = nil) or
+               not (inner.kind in [nkRecordType, nkMonitorType]) then
+              begin Err (d, 'field on non-record'); Exit ('0'); end;
+            Result := Result + '->' + CN (sel.a);
+            tnd := Checked (sel, InMod (FieldType (inner, sel.a), tmod));
+          end
+          else if r.kind in [nkRecordType, nkMonitorType] then
+          begin
+            Result := Result + '.' + CN (sel.a);
+            tnd := Checked (sel, InMod (FieldType (r, sel.a), tmod));
+          end
+          else
+            begin Err (d, 'field on non-record'); Exit ('0'); end;
+          if tnd = nil then
+            begin Err (d, 'no field ' + sel.a); Exit ('0'); end;
+        end;
+      nkSelIndex :
+        begin
+          if r.kind = nkGridType then
+          begin
+            { every axis checked against its own extent, in one call:
+              the check a hand-rolled d[r*cols+c] cannot make }
+            base := Result;
+            ec := TyC (r.kids[1]);
+            ix := '';
+            for k := 0 to High (sel.kids) do
+            begin
+              if k > 0 then ix := ix + ', ';
+              ix := ix + EX (sel.kids[k], '');
+            end;
+            rk := High (sel.kids) + 1;
+            if (rk >= 1) and (rk <= 4) then
+            begin
+              { ranks 1..4 go to the written-out form: extents and
+                strides by value, no index array, no loop over the
+                rank.  2.60x -> 1.29x on the port's kernel, with the
+                same checks -- see runtime/m9rt.h and
+                the port's gat_cost.c. }
+              nsx := '';
+              for k := 0 to rk - 1 do
+                nsx := nsx + base + '.n[' + IntToStr (k) + '], ';
+              for k := 0 to rk - 1 do
+                nsx := nsx + base + '.s[' + IntToStr (k) + '], ';
+              Result := '(*(' + ec + ' *) m9_gat' + IntToStr (rk) + ' (' +
+                base + '.p, sizeof (' + ec + '), ' + nsx + ix + ', err))';
+            end
+            else
+              Result := '(*(' + ec + ' *) m9_gat (' + base + '.p, sizeof (' +
+                ec + '), ' + base + '.n, ' + base + '.s, (int64_t[]){' + ix +
+                '}, ' + ArrCount (r.kids[0]) + ', err))';
+            stRaise := True;
+            tnd := Checked (sel, InMod (r.kids[1], tmod));
+            Continue;
+          end;
+          ix := EX (sel.kids[0], '');
+          if r.kind = nkSliceType then
+          begin
+            base := Result;
+            ec := TyC (r.kids[0]);
+            Result := '(*(' + ec + ' *) m9_at (' + base + '.p, ' + ix +
+              ', ' + base + '.len, sizeof (' + ec + '), err))';
+            stRaise := True;
+            tnd := Checked (sel, InMod (r.kids[0], tmod));
+          end
+          else if r.kind = nkArrayType then
+          begin
+            base := Result;
+            ec := TyC (r.kids[1]);
+            { ARRAY Colour OF T: the subscript is an enum value, its
+              tag 0..n-1 by construction -- no runtime bounds check,
+              a.v[(k).tag] directly.  Detect it from the SUBSCRIPT's
+              type, not the array's bound: an imported enum indexes an
+              imported record's field the same way, where the bound
+              resolves only in its own module (docs/enum-plan.md). }
+            enumIx := ArrEnumBoundNode (r.kids[0]) <> nil;
+            if (not enumIx) and (Length (sel.kids) >= 1) then
+              enumIx := Copy (TagOfExpr (sel.kids[0]), 1, 3) = 'CR:';
+            if enumIx then
+              Result := '(' + base + '.v[(' + ix + ').tag])'
+            else
+            begin
+              Result := '(*(' + ec + ' *) m9_at (' + base + '.v, ' + ix +
+                ', INT64_C(' + ArrCount (r.kids[0]) + '), sizeof (' + ec +
+                '), err))';
+              stRaise := True;
+            end;
+            tnd := Checked (sel, InMod (r.kids[1], tmod));
+          end
+          else
+            begin Err (d, 'index on non-slice'); Exit ('0'); end;
+        end;
+    end;
+  end;
+  tag := TagOfType (tnd);
+end;
+
+function TGen.DES (d: TNode; out tag: string): string;
+var
+  ci, j, ei : Integer;
+  tnd, r : TNode;
+  base, ix : string;
+begin
+  tag := '?';
   tnd := ScopeNode (d.a);
   if tnd = nil then
   begin
@@ -1837,112 +2102,7 @@ begin
   Result := CN (d.a);
   if (ScopeMode (d.a) = 'v') or (ScopeMode (d.a) = 'o') then
     Result := '(*' + CN (d.a) + ')';
-  for j := 0 to High (d.kids) do
-  begin
-    sel := d.kids[j];
-    NoteMod (tnd, tmod);
-    r := Resolve (tnd);
-    if r = nil then begin Err (d, 'cannot type ' + d.a); Exit ('0'); end;
-    case sel.kind of
-      nkSelField :
-        begin
-          if r.kind in [nkPtrType, nkSharedType] then
-          begin
-            inner := Resolve (InMod (r.kids[0], tmod));
-            if (inner = nil) or
-               not (inner.kind in [nkRecordType, nkMonitorType]) then
-              begin Err (d, 'field on non-record'); Exit ('0'); end;
-            Result := Result + '->' + CN (sel.a);
-            tnd := InMod (FieldType (inner, sel.a), tmod);
-          end
-          else if r.kind in [nkRecordType, nkMonitorType] then
-          begin
-            Result := Result + '.' + CN (sel.a);
-            tnd := InMod (FieldType (r, sel.a), tmod);
-          end
-          else
-            begin Err (d, 'field on non-record'); Exit ('0'); end;
-          if tnd = nil then
-            begin Err (d, 'no field ' + sel.a); Exit ('0'); end;
-        end;
-      nkSelIndex :
-        begin
-          if r.kind = nkGridType then
-          begin
-            { every axis checked against its own extent, in one call:
-              the check a hand-rolled d[r*cols+c] cannot make }
-            base := Result;
-            ec := TyC (r.kids[1]);
-            ix := '';
-            for k := 0 to High (sel.kids) do
-            begin
-              if k > 0 then ix := ix + ', ';
-              ix := ix + EX (sel.kids[k], '');
-            end;
-            rk := High (sel.kids) + 1;
-            if (rk >= 1) and (rk <= 4) then
-            begin
-              { ranks 1..4 go to the written-out form: extents and
-                strides by value, no index array, no loop over the
-                rank.  2.60x -> 1.29x on the port's kernel, with the
-                same checks -- see runtime/m9rt.h and
-                the port's gat_cost.c. }
-              nsx := '';
-              for k := 0 to rk - 1 do
-                nsx := nsx + base + '.n[' + IntToStr (k) + '], ';
-              for k := 0 to rk - 1 do
-                nsx := nsx + base + '.s[' + IntToStr (k) + '], ';
-              Result := '(*(' + ec + ' *) m9_gat' + IntToStr (rk) + ' (' +
-                base + '.p, sizeof (' + ec + '), ' + nsx + ix + ', err))';
-            end
-            else
-              Result := '(*(' + ec + ' *) m9_gat (' + base + '.p, sizeof (' +
-                ec + '), ' + base + '.n, ' + base + '.s, (int64_t[]){' + ix +
-                '}, ' + ArrCount (r.kids[0]) + ', err))';
-            stRaise := True;
-            tnd := InMod (r.kids[1], tmod);
-            Continue;
-          end;
-          ix := EX (sel.kids[0], '');
-          if r.kind = nkSliceType then
-          begin
-            base := Result;
-            ec := TyC (r.kids[0]);
-            Result := '(*(' + ec + ' *) m9_at (' + base + '.p, ' + ix +
-              ', ' + base + '.len, sizeof (' + ec + '), err))';
-            stRaise := True;
-            tnd := InMod (r.kids[0], tmod);
-          end
-          else if r.kind = nkArrayType then
-          begin
-            base := Result;
-            ec := TyC (r.kids[1]);
-            { ARRAY Colour OF T: the subscript is an enum value, its
-              tag 0..n-1 by construction -- no runtime bounds check,
-              a.v[(k).tag] directly.  Detect it from the SUBSCRIPT's
-              type, not the array's bound: an imported enum indexes an
-              imported record's field the same way, where the bound
-              resolves only in its own module (docs/enum-plan.md). }
-            enumIx := ArrEnumBoundNode (r.kids[0]) <> nil;
-            if (not enumIx) and (Length (sel.kids) >= 1) then
-              enumIx := Copy (TagOfExpr (sel.kids[0]), 1, 3) = 'CR:';
-            if enumIx then
-              Result := '(' + base + '.v[(' + ix + ').tag])'
-            else
-            begin
-              Result := '(*(' + ec + ' *) m9_at (' + base + '.v, ' + ix +
-                ', INT64_C(' + ArrCount (r.kids[0]) + '), sizeof (' + ec +
-                '), err))';
-              stRaise := True;
-            end;
-            tnd := InMod (r.kids[1], tmod);
-          end
-          else
-            begin Err (d, 'index on non-slice'); Exit ('0'); end;
-        end;
-    end;
-  end;
-  tag := TagOfType (tnd);
+  Result := DESSel (d, 0, Result, tnd, tag);
 end;
 
 { ---- calls ---- }
@@ -2003,7 +2163,7 @@ end;
 function TGen.HoistArg (const a: string): string;
 var tmp : string;
 begin
-  if (not hoistOk) or (dry > 0) then Exit (a);
+  if not hoistOk then Exit (a);
   Inc (nhoist);
   tmp := 'm9a' + IntToStr (nhoist);
   Line (pbuf, hoistInd, '{ __typeof__(' + a + ') ' + tmp + ' = ' + a + ';');
@@ -2260,7 +2420,21 @@ begin
   if name = 'MAX' then
   begin
     tag := argl.kids[0].a;
-    if argl.kids[0].a = 'I64' then Exit ('INT64_MAX');
+    { every builtin type's largest value (mirrors Gen.MaxC) }
+    case argl.kids[0].a of
+      'I64' : Exit ('INT64_MAX');
+      'I32' : Exit ('INT32_MAX');
+      'I16' : Exit ('INT16_MAX');
+      'I8' : Exit ('INT8_MAX');
+      'U64' : Exit ('UINT64_MAX');
+      'U32' : Exit ('UINT32_MAX');
+      'U16' : Exit ('UINT16_MAX');
+      'U8', 'BYTE' : Exit ('UINT8_MAX');
+      'F64' : Exit ('1.7976931348623157e308');
+      'F32' : Exit ('3.40282347e38f');
+      'CHAR' : Exit ('1114111u');
+      'BOOL' : Exit ('true');
+    end;
     Err (site, 'MAX of ' + argl.kids[0].a + ' unsupported yet');
     Exit ('0');
   end;
@@ -2613,8 +2787,9 @@ var
   svHoist : Boolean;
   l, r, lt, rt, w, tg, sh : string;
   cop : string;
-  i, j, k, ext0, nx : Integer;
-  inr, tyk : TNode;
+  i, j, k, ext0, nx, sv : Integer;
+  inr, tyk, cvc : TNode;
+  svRaise, callRaise : Boolean;
 begin
   Result := '0';
   if e = nil then Exit;
@@ -2634,8 +2809,6 @@ begin
       end
       else if Length (e.a) = 0 then
         Result := '(m9_sl_CHAR){ NULL, 0 }'
-      else if dry > 0 then
-        Result := 'm9s_dry'          { a type answer, not code }
       else
       begin
         { static storage, never a stack compound literal: a returned
@@ -2659,6 +2832,15 @@ begin
     nkParen : Result := '(' + EX (e.kids[0], want) + ')';
     nkDesignator :
       begin
+        { a one-character string CONST where a CHAR is wanted is that
+          character, as the literal itself is (mirrors Gen.EX) }
+        cvc := nil;
+        if want = 'CHAR' then cvc := ConstValue (e);
+        if (cvc <> nil) and (cvc.kind = nkString) and (Utf8Len (cvc.a) = 1) then
+        begin
+          sv := 1;
+          Exit (IntToStr (Utf8Next (cvc.a, sv)) + 'u');
+        end;
         Result := DES (e, tg);
         { a CONST is a C macro holding a double literal, so in an F32
           context it must be cast or the expression widens around it }
@@ -2667,6 +2849,30 @@ begin
           Result := '((float) ' + Result + ')';
       end;
     nkCallExpr : Result := CallC (e.kids[0], e.kids[1], e, tg);
+    nkCallSel :
+      begin
+        { F (x).f, F (x)[i] (mirrors Gen.EX's NCallSel arm) }
+        if TypeAt (e) <> nil then
+        begin
+          svRaise := stRaise;
+          stRaise := False;
+          l := EX (e.kids[0], '');
+          callRaise := stRaise;
+          w := NewTmp;
+          tg := '?';
+          r := DESSel (e, 1, w, TypeAt (e), tg);
+          Result := '({ ' + TyC (TypeAt (e)) + ' ' + w + ' = ' + l + '; ';
+          if callRaise then
+            Result := Result + 'if (err->exc) goto ' + raiseLbl + '; ';
+          stRaise := svRaise or callRaise or stRaise;
+          Result := Result + r + '; })';
+        end
+        else
+        begin
+          Err (e, 'selection from this call''s answer unsupported yet');
+          Result := '0';
+        end;
+      end;
     nkNewExpr :
       begin
         stRaise := True;
@@ -2904,7 +3110,10 @@ begin
         else if cop = '+%' then Result := 'm9_addw_i64 (' + l + ', ' + r + ')'
         else if cop = '-%' then Result := 'm9_subw_i64 (' + l + ', ' + r + ')'
         else if cop = '*%' then Result := 'm9_mulw_i64 (' + l + ', ' + r + ')'
-        else if ((cop = '==') or (cop = '!=')) and (Copy (lt, 1, 3) = 'CR:') then
+        else if ((cop = '==') or (cop = '!=')) and
+                ((Copy (lt, 1, 3) = 'CR:') or (Copy (TagOfExpr (e.kids[1]), 1, 3) = 'CR:')) then
+          { either side says so: a field of an IMPORTED record has a tag
+            the left side does not report (mirrors Gen) }
           { two enumeration (or case-record) values compare by tag: a
             struct == is not valid C (docs/enum-plan.md) }
           Result := '((' + l + ').tag ' + cop + ' (' + r + ').tag)'
@@ -2951,10 +3160,19 @@ begin
 end;
 
 { the declared type node a designator lands on (no code emitted) }
+{ the type a selector reaches: the checker's, from the typed tree,
+  when it recorded one; else what this generator worked out itself
+  (the review of 2026-10-09: one computation, the checker's) }
+function TGen.Checked (sel, own: TNode): TNode;
+begin
+  Result := TypeAt (sel);
+  if Result = nil then Result := own;
+end;
+
 function TGen.DesigDecl (d: TNode): TNode;
 var
   j : Integer;
-  r : TNode;
+  r, px : TNode;
   tmod : string;
 begin
   tmod := '';
@@ -2965,17 +3183,22 @@ begin
     NoteMod (Result, tmod);
     r := Resolve (Result);
     while (r <> nil) and (r.kind in [nkPtrType, nkSharedType]) do
-      r := Resolve (InMod (r.kids[0], tmod));
+    begin
+      px := InMod (r.kids[0], tmod);
+      NoteMod (px, tmod);
+      r := Resolve (px);
+    end;
     if r = nil then Exit (nil);
     case d.kids[j].kind of
       nkSelField :
         if r.kind in [nkRecordType, nkMonitorType] then
-          Result := InMod (FieldType (r, d.kids[j].a), tmod)
+          Result := Checked (d.kids[j], InMod (FieldType (r, d.kids[j].a), tmod))
         else
           Exit (nil);
       nkSelIndex :
-        if r.kind = nkSliceType then Result := InMod (r.kids[0], tmod)
-        else if r.kind = nkArrayType then Result := InMod (r.kids[1], tmod)
+        if r.kind = nkSliceType then Result := Checked (d.kids[j], InMod (r.kids[0], tmod))
+        else if r.kind = nkArrayType then Result := Checked (d.kids[j], InMod (r.kids[1], tmod))
+        else if r.kind = nkGridType then Result := Checked (d.kids[j], InMod (r.kids[1], tmod))
         else Exit (nil);
     end;
   end;
@@ -3200,7 +3423,7 @@ end;
 { One directive per statement, at column 0 and into the procedure
   buffer, so the C compiler attributes what follows to the M9 line it
   came from.  Nothing when dbgSrc is empty (the default, and what
-  every gate compares) or during TagOfExpr's dry recomputation. }
+  every gate compares). }
 { register a pool to be freed at L_ret.  Two callers: a local
   `VAR p: POOL`, and the implicit frame arena every procedure gets. }
 procedure TGen.PoolReg (const nm: string);
@@ -3211,7 +3434,6 @@ end;
 
 procedure TGen.DbgLine (st: TNode);
 begin
-  if dry > 0 then Exit;
   if dbgSrc = '' then Exit;
   Line (pbuf, 0, '#line ' + IntToStr (st.line) + ' "' + dbgSrc + '"');
   { and record it for an unhandled exception's message: one store
@@ -3220,9 +3442,67 @@ begin
   Line (pbuf, 1, 'err->line = ' + IntToStr (st.line) + ';');
 end;
 
+procedure TGen.LoopExit (ind: Integer);
+begin
+  if xitLbl <> '' then Line (pbuf, ind, 'if (0) { ' + xitLbl + ': break; }');
+end;
+
+function SplitFinally (st: TNode): TNode;
+var outer, inner, seq : TNode; j : Integer;
+begin
+  inner := TNode.Create (nkBlock); inner.line := st.line; inner.col := st.col;
+  outer := TNode.Create (nkBlock); outer.line := st.line; outer.col := st.col;
+  inner.Add (st.kids[0]);
+  seq := TNode.Create (nkStmtSeq); seq.line := st.line; seq.col := st.col;
+  seq.Add (inner);
+  outer.Add (seq);
+  for j := 1 to High (st.kids) do
+    if st.kids[j].kind = nkFinally then outer.Add (st.kids[j])
+    else inner.Add (st.kids[j]);
+  Result := outer;
+end;
+
+function IsSomeBind (c: TNode): Boolean;
+begin
+  Result := (c <> nil) and (c.kind = nkIs) and (Length (c.kids) > 1) and
+            (c.kids[1] <> nil) and (c.kids[1].kind = nkIsSome) and (c.kids[1].a <> '');
+end;
+
+function NeedsSplit (st: TNode): Boolean;
+var j : Integer; elsif, some : Boolean;
+begin
+  elsif := False;
+  some := IsSomeBind (st.kids[0]);
+  for j := 2 to High (st.kids) do
+    if (st.kids[j] <> nil) and (st.kids[j].kind = nkElsif) then
+    begin
+      elsif := True;
+      if IsSomeBind (st.kids[j].kids[0]) then some := True;
+    end;
+  Result := elsif and some;
+end;
+
+function SplitIf (st: TNode): TNode;
+var outer, inner, els, seq : TNode; j : Integer;
+begin
+  inner := TNode.Create (nkIf); inner.line := st.line; inner.col := st.col;
+  inner.Add (st.kids[2].kids[0]);
+  inner.Add (st.kids[2].kids[1]);
+  for j := 3 to High (st.kids) do inner.Add (st.kids[j]);
+  seq := TNode.Create (nkStmtSeq); seq.line := st.line; seq.col := st.col;
+  seq.Add (inner);
+  els := TNode.Create (nkElse); els.line := st.line; els.col := st.col;
+  els.Add (seq);
+  outer := TNode.Create (nkIf); outer.line := st.line; outer.col := st.col;
+  outer.Add (st.kids[0]);
+  outer.Add (st.kids[1]);
+  outer.Add (els);
+  Result := outer;
+end;
+
 procedure TGen.EmitStmt (st: TNode; ind: Integer);
 var
-  l, l2, r, tg, w, cnd, stp, bname, fldn : string;
+  l, l2, r, tg, w, cnd, stp, bname, fldn, sxit, lo, hi : string;
   j, i2, j2, k2, savedScope, g2, jj, sv, thrPi : Integer;
   vtN, vd, lbl : TNode;
   opened, hadElse, thrWants, lRaise, shared : Boolean;
@@ -3279,6 +3559,13 @@ begin
       end;
     nkIf :
       begin
+        { an ELSIF chain with IS SOME in it is emitted as the nested IF
+          it means (mirrors Gen.NeedsSplit/SplitIf) }
+        if NeedsSplit (st) then
+        begin
+          EmitStmt (SplitIf (st), ind);
+          Exit;
+        end;
         { IF x IS SOME p THEN: bind the payload, test for NULL }
         if (st.kids[0].kind = nkIs) and
            (st.kids[0].kids[1].kind = nkIsSome) and (st.kids[0].kids[1].a <> '') then
@@ -3378,7 +3665,10 @@ begin
           bpool.Add (bname + '=' + OriginPool (st.kids[0].kids[0]));
           scope.AddObject (bname + '=b', TObject (vtN));
           sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
+          sxit := xitLbl; xitLbl := ''; Inc (loopDepth);
           EmitSeq (st.kids[1], ind + 1);
+          LoopExit (ind + 1);
+          Dec (loopDepth); xitLbl := sxit;
           inSwitch := sv; finDepth := j2;
           while scope.Count > savedScope do
             scope.Delete (scope.Count - 1);
@@ -3397,7 +3687,10 @@ begin
         end;
         Line (pbuf, ind + 1, 'if (!(' + cnd + ')) break;');
         sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
+        sxit := xitLbl; xitLbl := ''; Inc (loopDepth);
         EmitSeq (st.kids[1], ind + 1);
+        LoopExit (ind + 1);
+        Dec (loopDepth); xitLbl := sxit;
         inSwitch := sv; finDepth := j2;
         Line (pbuf, ind, '}');
       end;
@@ -3415,7 +3708,10 @@ begin
           Line (pbuf, ind, 'for (; ' + CN (st.a) + '.tag <= ' + w +
             'to; ' + CN (st.a) + '.tag++) {');
           sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
+          sxit := xitLbl; xitLbl := ''; Inc (loopDepth);
           EmitSeq (st.kids[3], ind + 1);
+          LoopExit (ind + 1);
+          Dec (loopDepth); xitLbl := sxit;
           inSwitch := sv; finDepth := j2;
           Line (pbuf, ind, '} }');
           Exit;
@@ -3434,7 +3730,17 @@ begin
           else if (st.kids[2].kind = nkUn) and (st.kids[2].a = '-') and
                   (st.kids[2].kids[0].kind = nkInt) then
             stp := '-' + st.kids[2].kids[0].a
-          else Err (st, 'FOR BY must be a literal');
+          else
+          begin
+            { any other constant step, through the one evaluator
+              (mirrors Gen.StepC); the checker refused the rest }
+            stp := StepC (st.kids[2]);
+            if stp = '' then
+            begin
+              Err (st, 'FOR BY step form unsupported yet');
+              stp := '1';
+            end;
+          end;
         end;
         if Copy (stp, 1, 1) = '-' then
           Line (pbuf, ind, 'for (; ' + CN (st.a) + ' >= ' + w + 'to; ' +
@@ -3443,27 +3749,42 @@ begin
           Line (pbuf, ind, 'for (; ' + CN (st.a) + ' <= ' + w + 'to; ' +
             CN (st.a) + ' += ' + stp + ') {');
         sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
+        sxit := xitLbl; xitLbl := ''; Inc (loopDepth);
         EmitSeq (st.kids[3], ind + 1);
+        LoopExit (ind + 1);
+        Dec (loopDepth); xitLbl := sxit;
         inSwitch := sv; finDepth := j2;
         Line (pbuf, ind, '} }');
       end;
     nkLoop :
       begin
+        { EXIT leaves the innermost LOOP (mirrors Gen's NLoop) }
         Line (pbuf, ind, 'for (;;) {');
         sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
+        sxit := xitLbl; xitLbl := ''; Inc (loopDepth);
         EmitSeq (st.kids[0], ind + 1);
+        LoopExit (ind + 1);
+        Dec (loopDepth); xitLbl := sxit;
         inSwitch := sv; finDepth := j2;
         Line (pbuf, ind, '}');
       end;
     nkExit :
       begin
-        if inSwitch > 0 then
-          Err (st, 'EXIT inside a CASE arm would break the switch, ' +
-            'not the loop: unsupported yet');
+        if loopDepth = 0 then
+          Err (st, 'EXIT outside a loop');
         if finDepth > 0 then
-          Err (st, 'EXIT across a FINALLY boundary would skip the ' +
-            'cleanup: unsupported yet');
-        Line (pbuf, ind, 'break;');
+          Err (st, 'EXIT across FINALLY refused (it would skip the cleanup)');
+        if inSwitch > 0 then
+        begin
+          if xitLbl = '' then
+          begin
+            Inc (xitN);
+            xitLbl := 'm9xit' + IntToStr (xitN);
+          end;
+          Line (pbuf, ind, 'goto ' + xitLbl + ';');
+        end
+        else
+          Line (pbuf, ind, 'break;');
       end;
     nkBlock :
       begin
@@ -3476,7 +3797,9 @@ begin
         begin
           if vd <> nil then
           begin
-            Err (st, 'EXCEPT and FINALLY on one block unsupported yet');
+            { the handlers on an inner block, the FINALLY on an outer
+              one around it (mirrors Gen.SplitFinally) }
+            EmitStmt (SplitFinally (st), ind);
             Exit;
           end;
           { handlers: raises inside the sequence jump to the dispatch;
@@ -3608,8 +3931,12 @@ begin
           Dec (inSwitch);
           Line (pbuf, ind, '} }');
         end
-        else if (tg = 'CHAR') or (tg = 'I64') then
+        else if (tg = 'CHAR') or (tg = 'I64') or (tg = 'I8') or
+                (tg = 'I16') or (tg = 'I32') or (tg = 'U8') or (tg = 'U16') or
+                (tg = 'U32') or (tg = 'U64') or (tg = 'BYTE') then
         begin
+          { every integer type switches the same way (mirrors Gen's
+            CaseInts) }
           Line (pbuf, ind, 'switch (' + w + ') {');
           Inc (inSwitch);
           for j := 1 to High (st.kids) do
@@ -3633,6 +3960,14 @@ begin
                     r := 'INT64_C(' + lbl.kids[0].a + ')'
                   else if lbl.kids[0].kind = nkDesignator then
                     r := ConstLbl (lbl.kids[0]);
+                  if r = '' then r := ScalarC (lbl.kids[0]);
+                end
+                else if lbl.kind = nkLabelRange then
+                begin
+                  { lo .. hi: the GNU C case range, both ends constants }
+                  lo := ScalarC (lbl.kids[0]);
+                  hi := ScalarC (lbl.kids[1]);
+                  if (lo <> '') and (hi <> '') then r := lo + ' ... ' + hi;
                 end;
                 if r = '' then
                   Err (st, 'CASE label form unsupported yet')
@@ -4080,7 +4415,12 @@ begin
     if Pos ('*', retC) > 0 then init := ' = NULL'
     else if (retC = 'double') or (retC = 'float') then init := ' = 0'
     else if (retC = 'bool') then init := ' = false'
-    else if Pos ('_t', retC) > 0 then init := ' = 0'
+    { the fixed-width integers by NAME (mirrors Gen.ZeroInit): a Pos
+      of '_t' also matched m9_arr_4_int64_t }
+    else if (retC = 'int8_t') or (retC = 'int16_t') or (retC = 'int32_t') or
+            (retC = 'int64_t') or (retC = 'uint8_t') or (retC = 'uint16_t') or
+            (retC = 'uint32_t') or (retC = 'uint64_t') or (retC = 'size_t') or
+            (retC = 'ssize_t') then init := ' = 0'
     else init := ' = {0}';
     Line (pbuf, 1, retC + ' m9ret' + init + ';');
   end;
@@ -4115,7 +4455,10 @@ begin
             init := ' = {0}'
           else if (cty = 'double') or (cty = 'float') then init := ' = 0'
           else if cty = 'bool' then init := ' = false'
-          else if Pos ('_t', cty) > 0 then init := ' = 0'
+          else if (cty = 'int8_t') or (cty = 'int16_t') or (cty = 'int32_t') or
+                  (cty = 'int64_t') or (cty = 'uint8_t') or (cty = 'uint16_t') or
+                  (cty = 'uint32_t') or (cty = 'uint64_t') or (cty = 'size_t') or
+                  (cty = 'ssize_t') then init := ' = 0'
           else init := ' = {0}';
           Line (pbuf, 1, cty + ' ' +
             CN (body.kids[i].kids[g].kids[0].kids[j].a) + init +
@@ -4486,6 +4829,8 @@ begin
     else if e.kind = nkReal then
       hdrConsts.Add ('#define ' + modName + '_' + consts[ci] + ' (' +
         e.a + ')')
+    else if RealC (e) <> '' then
+      hdrConsts.Add ('#define ' + modName + '_' + consts[ci] + ' ' + RealC (e))
     { a BOOLEAN constant.  the ported model's parameter module has four of them and
       Fortran calls them parameters, which is what they are: a switch
       a program cannot flip at run time }
@@ -4502,6 +4847,10 @@ begin
         ' ((m9_sl_CHAR){ (uint32_t *) ' + modName + '_' + consts[ci] +
         '_d, ' + IntToStr (Utf8Len (e.a)) + ' })');
     end
+    { the empty string: no storage, as the literal '' has none }
+    else if e.kind = nkString then
+      hdrConsts.Add ('#define ' + modName + '_' + consts[ci] +
+        ' ((m9_sl_CHAR){ NULL, 0 })')
     { a CHAR constant: one code point, emitted like the char literal it
       names -- <cp>u -- so `s + NL` joins it as a code point (par 2.2) }
     else if e.kind = nkChar then

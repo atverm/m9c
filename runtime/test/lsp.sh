@@ -52,22 +52,22 @@ FIN
 # accepted by the checker, refused by the generator: until 2026-09-27
 # --check stopped before the generator and the editor called this
 # clean (docs/agent-review-2026-09-27.md F4)
+# (the form changes as the generator learns them: EXCEPT and FINALLY
+# on one block until 2026-10-09, an expression as a CASE label until
+# stage 2 of the typed tree the same evening, a variable FOR step until
+# stage 3, when the checker learned to refuse it, a SLICE of a call's
+# array now)
 cat > Late.m9 <<'LATE'
 MODULE Late ;
 IMPORT Io ;
-PROCEDURE F (x: I64) : I64 RAISES ValueRange =
+(* a SLICE of an array a call answers: the checker passes it, the
+   generator refuses it, and the refusal must reach the editor
+   with the generator's own words *)
+PROCEDURE Mk () : ARRAY 4 OF I64 = VAR a : ARRAY 4 OF I64 ; BEGIN RETURN a END Mk ;
+VAR s : SLICE OF I64 ;
 BEGIN
-  IF x < 0 THEN RAISE ValueRange END ;
-  RETURN x
-END F ;
-VAR n : I64 ;
-BEGIN
-  n := F (3) ;
-  Io.WriteI64 (n)
-EXCEPT
-| ValueRange : Io.WriteLine ('negative')
-FINALLY
-  Io.WriteLine ('')
+  s := SLICE (Mk (), 0, 2) ;
+  Io.WriteLine ('sliced')
 END Late.
 LATE
 
@@ -141,10 +141,10 @@ r = recv()
 check(r['params']['uri'] == uri3, 'the generator-refused file answers')
 ds = r['params']['diagnostics']
 check(len(ds) >= 1, "the generator's refusal reaches the editor")
-check(ds and 'gen: EXCEPT and FINALLY' in ds[0]['message'],
+check(ds and 'gen: SLICE() argument form' in ds[0]['message'],
       "and it is the generator's own line")
 check(ds and ds[0]['range']['start']['line'] == 8,
-      'anchored at the block, 0-based 8')
+      'anchored at the assignment, 0-based 8')
 
 send({'jsonrpc':'2.0','id':7,'method':'no/such','params':{}})
 r = recv()

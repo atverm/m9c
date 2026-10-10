@@ -143,6 +143,15 @@ the exact pair: 16 hex digits, low byte first, round-trip total
 decimal, with optional sign, fraction and exponent.  Rejects
 anything else, because a command line or a data file that says
 it holds a number and does not is the boundary this catches.
+CORRECTLY ROUNDED -- the double nearest the decimal, ties to
+even, Python's float() -- subnormals and digit strings of any
+length included; a decimal beyond the largest double RAISES
+ValueRange.  In M9 and in integers, no libc: Clinger's fast path,
+else an exact quotient (the implementation says how).  Until
+2026-10-09 it scaled in F64 and was
+wrong in 1,314 of 3,510 strings measured -- by 1 to 10 ulp, the
+largest double read as infinity, subnormals as zero (cp-kernel's
+finding on 0.19.0).
 THE INTEGER READER IS Io.ParseI64 (RAISES ValueRange, Overflow):
 an optional minus and decimal digits, every I64 down to the
 smallest.  It lives in Io because Fmt imports nothing and Io is

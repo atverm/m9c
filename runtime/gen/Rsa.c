@@ -148,7 +148,7 @@ Rsa_Key * Rsa_PublicKey (m9_pool *pool, m9_sl_CHAR pem, m9_state *err)
     }
   } }
   err->res = m9res;
-  { __typeof__(({ __typeof__(body) m9t15 = body; int64_t m9t15a = INT64_C(0), m9t15n = n; (__typeof__(m9t15)){ m9t15.p + m9_chk_slice (m9t15a, m9t15n, m9t15.len, err), m9t15n }; })) m9a3 = ({ __typeof__(body) m9t15 = body; int64_t m9t15a = INT64_C(0), m9t15n = n; (__typeof__(m9t15)){ m9t15.p + m9_chk_slice (m9t15a, m9t15n, m9t15.len, err), m9t15n }; });
+  { __typeof__(({ __typeof__(body) m9t14 = body; int64_t m9t14a = INT64_C(0), m9t14n = n; (__typeof__(m9t14)){ m9t14.p + m9_chk_slice (m9t14a, m9t14n, m9t14.len, err), m9t14n }; })) m9a3 = ({ __typeof__(body) m9t14 = body; int64_t m9t14a = INT64_C(0), m9t14n = n; (__typeof__(m9t14)){ m9t14.p + m9_chk_slice (m9t14a, m9t14n, m9t14.len, err), m9t14n }; });
     if (err->exc) goto L_hdl_m9t12;
   { __typeof__(Text_FromBase64 (m9a3, err)) m9a4 = Text_FromBase64 (m9a3, err);
     if (err->exc) goto L_hdl_m9t12;
@@ -161,7 +161,7 @@ Rsa_Key * Rsa_PublicKey (m9_pool *pool, m9_sl_CHAR pem, m9_state *err)
 L_hdl_m9t12: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 26 })) m9t16 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 26 }); err->s[0].p = m9t16.p; err->s[0].len = m9t16.len; m9_pay_keep (err, 0, sizeof (*m9t16.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 26 })) m9t15 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 26 }); err->s[0].p = m9t15.p; err->s[0].len = m9t15.len; m9_pay_keep (err, 0, sizeof (*m9t15.p)); }
     m9_raise (err, &Rsa_Error);
     goto L_ret;
     goto L_dn_m9t13;

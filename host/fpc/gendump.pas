@@ -4,7 +4,7 @@ program gendump;
   M9-compiled generator (runtime/test/gendump_m9) must produce
   identical bytes.  Usage: gendump MODULE [DEP ...]              }
 {$mode objfpc}{$H+}
-uses SysUtils, Classes, M9AST, M9Parse, M9Gen;
+uses SysUtils, Classes, M9AST, M9Parse, M9Sem, M9Gen;
 
 function LoadFile (const fn: string): string;
 var sl : TStringList;
@@ -19,6 +19,7 @@ var
   p, dp : TParser;
   root, droot : TNode;
   g : TGen;
+  sem : TSem;
   i, k : Integer;
   m : string;
 begin
@@ -36,15 +37,22 @@ begin
     Halt (1);
   end;
 
+  { the checker first, as m9c runs it: it records the types the
+    generator reads (the typed tree, 2026-10-09); its diagnostics are
+    not this tool's business -- semdiff holds them }
+  sem := TSem.Create;
   g := TGen.Create;
   for k := 2 to ParamCount do
   begin
     dp := TParser.Create (LoadFile ('../../corpus/' + ParamStr (k) + '.m9'));
     droot := dp.ParseFile;
+    sem.LoadFile (droot);
     for i := 0 to High (droot.kids) do
       g.LoadExtern (droot.kids[i]);
     dp.Free;
   end;
+  sem.LoadFile (root);
+  sem.CheckFile (root);
   for i := 0 to High (root.kids) do
     g.LoadUnit (root.kids[i]);
   g.Emit (m);

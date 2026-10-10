@@ -131,6 +131,15 @@ PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange ;
   (* decimal, with optional sign, fraction and exponent.  Rejects
      anything else, because a command line or a data file that says
      it holds a number and does not is the boundary this catches.
+     CORRECTLY ROUNDED -- the double nearest the decimal, ties to
+     even, Python's float() -- subnormals and digit strings of any
+     length included; a decimal beyond the largest double RAISES
+     ValueRange.  In M9 and in integers, no libc: Clinger's fast path,
+     else an exact quotient (the implementation says how).  Until
+     2026-10-09 it scaled in F64 and was
+     wrong in 1,314 of 3,510 strings measured -- by 1 to 10 ulp, the
+     largest double read as infinity, subnormals as zero (cp-kernel's
+     finding on 0.19.0).
      THE INTEGER READER IS Io.ParseI64 (RAISES ValueRange, Overflow):
      an optional minus and decimal digits, every I64 down to the
      smallest.  It lives in Io because Fmt imports nothing and Io is
@@ -445,72 +454,6 @@ BEGIN
   RETURN F64.FromBytesLE (b)
 END ParseBits ;
 
-PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange =
-VAR
-  i, n, digits, expo, esign, eval : I64 ;
-  mant, scale : F64 ;
-  neg, seenDot : BOOL ;
-BEGIN
-  n := LEN (s) ;
-  IF n = 0 THEN RAISE ValueRange END ;
-  i := 0 ;
-  neg := FALSE ;
-  IF s[i] = '-' THEN neg := TRUE ; i := i + 1
-  ELSIF s[i] = '+' THEN i := i + 1 END ;
-
-  mant := 0.0 ;
-  expo := 0 ;
-  digits := 0 ;
-  seenDot := FALSE ;
-  WHILE i < n DO
-    IF s[i] = '.' THEN
-      IF seenDot THEN RAISE ValueRange END ;
-      seenDot := TRUE ;
-      i := i + 1
-    ELSIF s[i] >= '0' AND s[i] <= '9' THEN
-      mant := mant * 10.0 + F64 (ORD (s[i]) - 48) ;
-      IF seenDot THEN expo := expo - 1 END ;
-      digits := digits + 1 ;
-      i := i + 1
-    ELSE
-      EXIT
-    END
-  END ;
-  IF digits = 0 THEN RAISE ValueRange END ;
-
-  IF i < n THEN
-    IF s[i] = 'e' OR s[i] = 'E' THEN
-      i := i + 1 ;
-      esign := 1 ;
-      IF i < n THEN
-        IF s[i] = '-' THEN esign := -1 ; i := i + 1
-        ELSIF s[i] = '+' THEN i := i + 1 END
-      END ;
-      eval := 0 ;
-      IF i >= n THEN RAISE ValueRange END ;
-      WHILE i < n DO
-        IF s[i] < '0' OR s[i] > '9' THEN RAISE ValueRange END ;
-        eval := eval * 10 + (ORD (s[i]) - 48) ;
-        i := i + 1
-      END ;
-      expo := expo + esign * eval
-    END
-  END ;
-  IF i # n THEN RAISE ValueRange END ;
-
-  (* scaling in F64: correctly rounded for the decimal exponents a
-     data file actually carries, and the driver checks it against
-     strtod rather than assuming                                     *)
-  scale := Pow10 (expo) ;
-  IF expo < 0 THEN
-    mant := mant / Pow10 (-expo)
-  ELSE
-    mant := mant * scale
-  END ;
-  IF neg THEN RETURN -mant END ;
-  RETURN mant
-END ParseF64 ;
-
 (* ---- Short: Burger and Dybvig's free-format digits ----
 
    The value is f * 2^e exactly.  r / s is the value scaled so that
@@ -521,12 +464,19 @@ END ParseF64 ;
    the even mantissa.  All four are integers, so nothing is rounded
    on the way -- the reason it is exact where Fixed is measured.
 
-   Integers of up to 48 limbs of 32 bits: the largest is s for the
-   smallest subnormal, 2^1075 times ten, 36 limbs.                    *)
+   Integers of limbs of 32 bits: Short's largest is s for the smallest
+   subnormal, 2^1075 times ten, 36 limbs; ParseF64's is near 116 (it
+   says why), and Limbs serves both.                                  *)
 
 CONST
-  Limbs = 48 ;
+  Limbs = 128 ;
   Base  = 4294967296 ;          (* 2^32: a limb times 2^31 fits an I64 *)
+
+(* The helpers take a Big as VAR even where they only read it: an RO
+   record is passed as a COPY today (the owed ledger's "RO on a RECORD
+   copies it"), and at 128 limbs that copy was most of the time --
+   Short ran at half its speed and ParseF64's quotient loop copied two
+   kilobytes a step.  None of them writes what it only reads.         *)
 
 TYPE
   Big = RECORD
@@ -591,7 +541,7 @@ BEGIN
   IF m > 1 THEN BigMul (a, m) END
 END BigTen ;
 
-PROCEDURE BigCmp (RO a, b: Big) : I64 =
+PROCEDURE BigCmp (VAR a, b: Big) : I64 =
 VAR i : I64 ;
 BEGIN
   IF a.n # b.n THEN
@@ -607,7 +557,7 @@ BEGIN
   RETURN 0
 END BigCmp ;
 
-PROCEDURE BigAdd (RO a, b: Big ; VAR c: Big) =
+PROCEDURE BigAdd (VAR a, b, c: Big) =
 VAR i, x, carry, n : I64 ;
 BEGIN
   n := a.n ;
@@ -628,7 +578,7 @@ BEGIN
 END BigAdd ;
 
 (* a := a - b, a >= b *)
-PROCEDURE BigSub (VAR a: Big ; RO b: Big) =
+PROCEDURE BigSub (VAR a, b: Big) =
 VAR i, x, borrow : I64 ;
 BEGIN
   borrow := 0 ;
@@ -647,7 +597,7 @@ BEGIN
 END BigSub ;
 
 (* r + mp reaches s: past it, or onto it when the boundary is in *)
-PROCEDURE High (RO r, mp, s: Big ; even: BOOL) : BOOL =
+PROCEDURE High (VAR r, mp, s: Big ; even: BOOL) : BOOL =
 VAR
   t : Big ;
   c : I64 ;
@@ -825,5 +775,292 @@ BEGIN
   END ;
   RETURN sign + out
 END Short ;
+
+(* ---- ParseF64: the correctly rounded double, in integers ----
+
+   The digits are read into dg, so the decimal is dg * 10^e exactly.
+   Most data is decided by Clinger's fast path: at most 15 digits and
+   |e| <= 22, where dg and 10^|e| are both doubles and the one multiply
+   or divide rounds once.  Everything else is decided in integers:
+   num / den is the decimal, the double is m * 2^q with m the 53-bit
+   quotient of num and den * 2^q, and the remainder against half of
+   den * 2^q says which way m rounds -- ties to the even m.  Nothing
+   is estimated that is not then checked.
+
+   A halfway point between two doubles has at most 767 significant
+   digits, so a decimal longer than MaxDig is cut there with a 1
+   appended when anything but zeros was cut: the 1 keeps the cut
+   decimal on the same side of every halfway point as the whole one
+   (fast_float's rule).  The largest integer met is then the
+   denominator of a decimal at the bottom of the subnormals with all
+   768 digits, 10^1091 shifted by 54, about 3,680 bits: Limbs is 128,
+   4,096 bits.                                                        *)
+
+CONST
+  MaxDig = 768 ;
+  Two52  = 4503599627370496 ;
+  Two53  = 9007199254740992 ;
+  Two54  = 18014398509481984 ;
+
+(* a := a + v, 0 <= v < Base *)
+PROCEDURE BigPlus (VAR a: Big ; v: I64) =
+VAR i, x : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE v > 0 DO
+    IF i = a.n THEN
+      a.d[i] := 0 ;
+      a.n := a.n + 1
+    END ;
+    x := a.d[i] + v ;
+    a.d[i] := x MOD Base ;
+    v := x DIV Base ;
+    i := i + 1
+  END
+END BigPlus ;
+
+PROCEDURE BitLen (VAR a: Big) : I64 =
+VAR x, k : I64 ;
+BEGIN
+  IF a.n = 0 THEN RETURN 0 END ;
+  x := a.d[a.n - 1] ;
+  k := 32 * (a.n - 1) ;
+  WHILE x > 0 DO
+    k := k + 1 ;
+    x := x DIV 2
+  END ;
+  RETURN k
+END BitLen ;
+
+(* the top limbs of a as a double, and the power of 2^32 it stands for *)
+PROCEDURE TopF (VAR a: Big ; VAR k: I64) : F64 RAISES ValueRange =
+VAR
+  f : F64 ;
+  i : I64 ;
+BEGIN
+  f := 0.0 ;
+  k := a.n ;
+  FOR i := 1 TO 3 DO
+    IF k > 0 THEN
+      k := k - 1 ;
+      f := f * 4294967296.0 + F64 (a.d[k])
+    END
+  END ;
+  RETURN f
+END TopF ;
+
+(* a := a * m, 0 <= m < 2^54 *)
+PROCEDURE BigMulWide (VAR a: Big ; m: I64) =
+VAR t : Big ;
+BEGIN
+  IF m = 0 THEN
+    a.n := 0
+  ELSIF m < 1073741824 THEN
+    BigMul (a, m)
+  ELSE
+    t := a ;
+    BigMul (t, m MOD 134217728) ;
+    IF m DIV 134217728 > 0 THEN
+      BigMul (a, m DIV 134217728) ;
+      BigShl (a, 27) ;
+      BigAdd (a, t, a)
+    ELSE
+      a := t
+    END
+  END
+END BigMulWide ;
+
+(* a DIV b, below 2^54 by the caller's choice of scale; a keeps the
+   remainder.  The quotient of the top limbs as doubles is within a
+   few units of the true one (relative error near 2^-50); the product
+   then says exactly how far, and the loops walk the rest. *)
+PROCEDURE Quot (VAR a, b: Big) : I64 RAISES ValueRange =
+VAR
+  t : Big ;
+  fa, fb, r : F64 ;
+  ka, kb, m : I64 ;
+BEGIN
+  IF BigCmp (a, b) < 0 THEN RETURN 0 END ;
+  fa := TopF (a, ka) ;
+  fb := TopF (b, kb) ;
+  r := fa / fb ;
+  WHILE ka > kb DO
+    r := r * 4294967296.0 ;
+    ka := ka - 1
+  END ;
+  WHILE ka < kb DO
+    r := r / 4294967296.0 ;
+    ka := ka + 1
+  END ;
+  m := 0 ;
+  IF r > 1.0 THEN m := I64 (r) END ;
+  IF m >= Two54 THEN m := Two54 - 1 END ;
+  t := b ;
+  BigMulWide (t, m) ;
+  WHILE BigCmp (t, a) > 0 DO
+    BigSub (t, b) ;
+    m := m - 1
+  END ;
+  BigSub (a, t) ;
+  WHILE BigCmp (a, b) >= 0 DO
+    BigSub (a, b) ;
+    m := m + 1
+  END ;
+  RETURN m
+END Quot ;
+
+(* the double with this sign, biased exponent and fraction *)
+PROCEDURE Make (neg: BOOL ; be, fr: I64) : F64 RAISES ValueRange =
+VAR
+  b : SLICE OF BYTE ;
+  scratch : POOL ;
+  i, x : I64 ;
+BEGIN
+  b := NEW (scratch, BYTE, 8) ;
+  FOR i := 0 TO 5 DO
+    b[i] := BYTE (fr MOD 256) ;
+    fr := fr DIV 256
+  END ;
+  b[6] := BYTE (fr + (be MOD 16) * 16) ;
+  x := be DIV 16 ;
+  IF neg THEN x := x + 128 END ;
+  b[7] := BYTE (x) ;
+  RETURN F64.FromBytesLE (b)
+END Make ;
+
+PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange =
+VAR
+  i, n, d, digits, kept, dexp, ex, e, fast, b, q, m, c, be, fr : I64 ;
+  neg, seenDot, nonzero, sticky, eneg : BOOL ;
+  dg, num, den, n2, d2 : Big ;
+  v : F64 ;
+BEGIN
+  n := LEN (s) ;
+  IF n = 0 THEN RAISE ValueRange END ;
+  i := 0 ;
+  neg := FALSE ;
+  IF s[0] = '-' OR s[0] = '+' THEN
+    neg := s[0] = '-' ;
+    i := 1
+  END ;
+
+  (* the mantissa: leading zeros counted, not kept; the first MaxDig
+     significant digits kept, the rest only remembered *)
+  digits := 0 ;
+  kept := 0 ;
+  dexp := 0 ;
+  fast := 0 ;
+  seenDot := FALSE ;
+  nonzero := FALSE ;
+  sticky := FALSE ;
+  BigSmall (dg, 0) ;
+  WHILE i < n DO
+    IF s[i] = '.' THEN
+      IF seenDot THEN RAISE ValueRange END ;
+      seenDot := TRUE
+    ELSIF s[i] >= '0' AND s[i] <= '9' THEN
+      d := ORD (s[i]) - 48 ;
+      digits := digits + 1 ;
+      IF d # 0 THEN nonzero := TRUE END ;
+      IF NOT nonzero THEN
+        IF seenDot THEN dexp := dexp - 1 END
+      ELSIF kept < MaxDig THEN
+        BigMul (dg, 10) ;
+        BigPlus (dg, d) ;
+        IF kept < 18 THEN fast := fast * 10 + d END ;
+        kept := kept + 1 ;
+        IF seenDot THEN dexp := dexp - 1 END
+      ELSE
+        IF d # 0 THEN sticky := TRUE END ;
+        IF NOT seenDot THEN dexp := dexp + 1 END
+      END
+    ELSE
+      EXIT
+    END ;
+    i := i + 1
+  END ;
+  IF digits = 0 THEN RAISE ValueRange END ;
+
+  (* the exponent; past nine digits it is beyond every double either
+     way, and stops growing *)
+  ex := 0 ;
+  eneg := FALSE ;
+  IF i < n THEN
+    IF s[i] = 'e' OR s[i] = 'E' THEN
+      i := i + 1 ;
+      IF i < n THEN
+        IF s[i] = '-' OR s[i] = '+' THEN
+          eneg := s[i] = '-' ;
+          i := i + 1
+        END
+      END ;
+      IF i >= n THEN RAISE ValueRange END ;
+      WHILE i < n DO
+        IF s[i] < '0' OR s[i] > '9' THEN RAISE ValueRange END ;
+        IF ex < 100000000 THEN ex := ex * 10 + ORD (s[i]) - 48 END ;
+        i := i + 1
+      END
+    END
+  END ;
+  IF i # n THEN RAISE ValueRange END ;
+
+  IF NOT nonzero THEN RETURN Make (neg, 0, 0) END ;
+  IF sticky THEN
+    BigMul (dg, 10) ;
+    BigPlus (dg, 1) ;
+    kept := kept + 1 ;
+    dexp := dexp - 1
+  END ;
+  IF eneg THEN e := dexp - ex ELSE e := dexp + ex END ;
+
+  (* dg * 10^e lies in [10^(kept-1+e), 10^(kept+e)): at or past 10^309
+     it is beyond the largest double, below 10^-324 it is under half
+     the smallest subnormal *)
+  IF kept - 1 + e >= 309 THEN RAISE ValueRange END ;
+  IF kept + e <= -324 THEN RETURN Make (neg, 0, 0) END ;
+
+  IF kept <= 15 AND e >= -22 AND e <= 22 THEN
+    v := F64 (fast) ;
+    IF e >= 0 THEN v := v * Pow10 (e) ELSE v := v / Pow10 (-e) END ;
+    IF neg THEN v := -v END ;
+    RETURN v
+  END ;
+
+  num := dg ;
+  BigSmall (den, 1) ;
+  IF e >= 0 THEN BigTen (num, e) ELSE BigTen (den, -e) END ;
+
+  (* num / den lies in (2^b, 2^(b+2)), so its 53 bits start at b or
+     b + 1: the quotient at b is below 2^54, and one step corrects it *)
+  b := BitLen (num) - BitLen (den) - 1 ;
+  LOOP
+    q := b - 52 ;
+    IF q < -1074 THEN q := -1074 END ;
+    n2 := num ;
+    d2 := den ;
+    IF q >= 0 THEN BigShl (d2, q) ELSE BigShl (n2, -q) END ;
+    m := Quot (n2, d2) ;
+    IF m < Two53 THEN EXIT END ;
+    b := b + 1
+  END ;
+
+  (* n2 is the remainder: past half of d2 rounds up, half to even *)
+  BigMul (n2, 2) ;
+  c := BigCmp (n2, d2) ;
+  IF c > 0 OR (c = 0 AND m MOD 2 = 1) THEN m := m + 1 END ;
+  IF m = Two53 THEN
+    m := Two52 ;
+    q := q + 1
+  END ;
+  IF m >= Two52 THEN
+    be := q + 1075 ;
+    fr := m - Two52
+  ELSE
+    be := 0 ;                                  (* subnormal *)
+    fr := m
+  END ;
+  IF be >= 2047 THEN RAISE ValueRange END ;
+  RETURN Make (neg, be, fr)
+END ParseF64 ;
 
 END Fmt.

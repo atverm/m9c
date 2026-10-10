@@ -1,0 +1,14 @@
+(* EXPECT: EXIT outside a loop: EXIT leaves the innermost LOOP, WHILE or FOR (par 5) *)
+(* EXIT leaves the innermost LOOP, WHILE or FOR -- from a CASE arm
+   too since 2026-10-09 -- and outside every loop it has nothing to
+   leave (the generator wrote a `break' C refused).  The legal forms
+   first. *)
+MODULE m ;
+VAR i, k : I64 ;
+BEGIN
+  i := 0 ;
+  LOOP i := i + 1 ; IF i = 3 THEN EXIT END END ;
+  WHILE i < 10 DO i := i + 1 ; IF i = 5 THEN EXIT END END ;
+  FOR k := 0 TO 9 DO CASE k OF | 4 : EXIT ELSE i := k END END ;
+  IF i > 0 THEN EXIT END
+END m.

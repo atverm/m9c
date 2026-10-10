@@ -107,6 +107,7 @@ type
     roFresh : TStringList;             { RoFreshWalk: `name.field' paths of a marked copy given fresh storage }
     resolvedIn : string;               { the module ResolveType's last lookup ended in, '' when none }
     ixD : TNode;                       { EXCEPTION IndexError (index, length : I64), built once }
+    loopsOpen, finSinceLoop : Integer; { LOOPs around the walk; FINALLY blocks since the innermost }
     forNames : array of string;        { the FORs being walked, innermost last (issue 3) }
     forLines : array of Integer;
     mro : TStringList;                 { ModRoSeed: module variable=what|line, per unit }
@@ -178,6 +179,7 @@ type
     function ProcSig (pl, rt: TNode; ro: Boolean; rs: TNode;
                       depth: Integer): string;
     function IsBareProc (t: TNode): Boolean;
+    function OptOverValue (t: TNode): Boolean;
     function IsReadonlyT (declN, res: TNode): Boolean;
   public
     Errors : TStringList;
@@ -361,7 +363,7 @@ var i : Integer;
 begin
   if k = nil then Exit (False);
   if k.kind = nkExit then Exit (True);
-  if k.kind = nkLoop then Exit (False);
+  if k.kind in [nkLoop, nkWhile, nkFor] then Exit (False);   { the innermost loop owns an EXIT (mirrors Sem) }
   for i := 0 to High (k.kids) do
     if HasExit (k.kids[i]) then Exit (True);
   Result := False;
@@ -628,8 +630,11 @@ begin
       begin
         l := LitType (e.kids[0]);
         r := LitType (e.kids[1]);
-        if (l = '<int>') and (r = '<int>') then Result := '<int>'
-        else if (l = '<real>') and (r = '<real>') then Result := '<real>'
+        { the arithmetic each kind has, and nothing else (mirrors Sem) }
+        if (l = '<int>') and (r = '<int>') and
+           ((e.a = '+') or (e.a = '-') or (e.a = '*') or (e.a = 'DIV') or (e.a = 'MOD')) then Result := '<int>'
+        else if (l = '<real>') and (r = '<real>') and
+           ((e.a = '+') or (e.a = '-') or (e.a = '*') or (e.a = '/')) then Result := '<real>'
         { `+' over string and CHAR literals is one string literal }
         else if (e.a = '+') and IsStrLit (l) and IsStrLit (r) then Result := 'SLICE OF CHAR';
       end;
@@ -923,6 +928,7 @@ var
   i : Integer;
   ag : TNode;
   t0, t : string;
+  cv : Int64;
 begin
   ag := cd.kids[0];
   if (ag <> nil) and IsRecordCall (ag) then
@@ -939,6 +945,20 @@ begin
   if (ag <> nil) and (LitType (ag) = '') then
     ErrN (cd, ctx, 'CONST ' + cd.a +
       ': a constant is a literal, a negated number, or + over string and CHAR literals -- compute anything else in a procedure (par 2.2.4)');
+  { an integer expression is folded by the generators with the runtime's
+    arithmetic: what would raise at run time is refused here (mirrors Sem) }
+  if (ag <> nil) and (LitType (ag) = '<int>') and
+     ((ag.kind = nkBin) or (ag.kind = nkParen) or
+      ((ag.kind = nkUn) and (Length (ag.kids) > 0) and (ag.kids[0] <> nil) and
+       not (ag.kids[0].kind in [nkInt, nkReal]))) then
+  begin
+    if not FoldInt (ag, cv) then
+      ErrN (cd, ctx, 'CONST ' + cd.a +
+        ': the expression overflows I64 or divides by zero (par 2.2.4)')
+    else if cv = Low (Int64) then
+      ErrN (cd, ctx, 'CONST ' + cd.a +
+        ': the smallest I64 cannot be written as a constant; give it a procedure (par 2.2.4)');
+  end;
   if (ag = nil) or (ag.kind <> nkAggregate) then Exit;
   Inc (nAgg);
   if where = 1 then
@@ -1293,8 +1313,17 @@ begin
       if (t.b <> '') and not TypeKnown (t.a, t.b) then
         ErrN (t, ctx, 'unknown type: ' + t.a + '.' + t.b + ' -- '
                       + t.a + ' declares no such type');
-    nkPtrType, nkOptType, nkSharedType :
+    nkPtrType, nkSharedType :
       CheckTypeNode (t.kids[0], ctx);
+    nkOptType :
+      begin
+        CheckTypeNode (t.kids[0], ctx);
+        { OPT holds a pointer or a procedure value (mirrors Sem) }
+        if OptOverValue (t.kids[0]) then
+          ErrN (t, ctx, 'OPT holds a pointer or a procedure value, and ' +
+            TypeText (t.kids[0]) +
+            ' is neither: keep a BOOL beside the value, or OPT PTR to it (par 2.2)');
+      end;
     nkSliceType :
       begin
         CheckTypeNode (t.kids[0], ctx);
@@ -1993,6 +2022,15 @@ end;
 { does a declared type resolve to a bare procedure type?  The four
   refusals of par 2.2.3 ask this: a variable or field of procedure
   type must be OPT, because a procedure value has no zero. }
+function TSem.OptOverValue (t: TNode): Boolean;
+var r : TNode;
+begin
+  r := ResolveType (t);
+  if r <> nil then Exit ((r.kind <> nkPtrType) and (r.kind <> nkProcType) and (r.kind <> nkSharedType));
+  Result := (t <> nil) and (t.kind = nkQualident) and (t.b = '') and
+            (InList (t.a, BuiltinTypes) or (t.a = 'POOL'));
+end;
+
 function TSem.IsBareProc (t: TNode): Boolean;
 var r : TNode;
 begin
@@ -2311,6 +2349,28 @@ var
   function IsConstHere (const nm: string): Boolean;
   begin
     Result := (ScopeMode (nm) = '') and (constMap.IndexOfName (nm) >= 0);
+  end;
+
+  { a FOR step that is a constant: what ScalarConst folds, or a name --
+    this module's CONST, or an imported Mod.N (mirrors Sem.StepConst) }
+  function StepConst (s: TNode): Boolean;
+  var
+    v : Int64;
+    ch : Boolean;
+    mi : TModuleInfo;
+    j : Integer;
+  begin
+    if ScalarConst (s, v, ch) then Exit (not ch);
+    Result := False;
+    if s.kind <> nkDesignator then Exit;
+    if Length (s.kids) = 0 then Exit (IsConstHere (s.a));
+    if (Length (s.kids) = 1) and (s.kids[0].kind = nkSelField) then
+    begin
+      mi := FindMod (s.a);
+      if mi = nil then Exit;
+      for j := 0 to High (mi.cnNames) do
+        if mi.cnNames[j] = s.kids[0].a then Exit (True);
+    end;
   end;
 
   { ... and a constant TABLE, the value of an aggregate (par 2.2.4) }
@@ -3414,7 +3474,11 @@ var
     operand of IS, where the final OPT component is legal.  Errors
     fire only when a selector is applied THROUGH an OPT or CASE
     RECORD component; the walk goes soft (nil) on anything unknown. }
-  function DesigDeclType (d: TNode; guard: Boolean): TNode;
+  { the selectors of d from kid FROM on, walked from the type START
+    (mirrors Sem.SelWalk): a designator's from its name, a call's
+    answer -- F (x).f, nkCallSel -- from the callee's declared result }
+  function SelWalk (d: TNode; guard: Boolean; start: TNode;
+                    from: Integer): TNode;
   var
     j, k : Integer;
     declN, res, f : TNode;
@@ -3422,8 +3486,8 @@ var
     it, eb, tmod : string;
   begin
     tmod := '';
-    declN := ScopeType (d.a);
-    for j := 0 to High (d.kids) do
+    declN := start;
+    for j := from to High (d.kids) do
     begin
       sel := d.kids[j];
       if sel.kind = nkSelIndex then
@@ -3494,7 +3558,7 @@ var
               inside `Claim (VAR w: Work)` is the binding, while
               `j.w.next` reaches past it and a second monitor
               parameter is a different lock. }
-            if (boundMon = '') or (d.a <> boundMon) or (j <> 0) then
+            if (boundMon = '') or (d.a <> boundMon) or (j <> from) then
               ErrN (d, ctx, 'monitor field ' + sel.a + ' is reached ' +
                 'from outside a procedure bound to the monitor (par 6)');
             declN := InMod (FieldSeqType (res.kids[0], sel.a), tmod);
@@ -3529,8 +3593,30 @@ var
           else
             declN := nil;
       end;
+      { the typed tree: what this selector reaches, qualified where it
+        was declared, for the generator to read (M9AST.SetType) }
+      SetType (sel, declN);
     end;
     Result := declN;
+  end;
+
+  function DesigDeclType (d: TNode; guard: Boolean): TNode;
+  begin
+    Result := SelWalk (d, guard, ScopeType (d.a), 0);
+  end;
+
+  { the declared result type of the procedure a call names, qualified
+    in the callee's module; nil for a call through a procedure value
+    or a callee the checker does not know (mirrors Sem.CallResultNode) }
+  function CallResultNode (ce: TNode): TNode;
+  var pr : TProcInfo;
+  begin
+    Result := nil;
+    if (ce = nil) or (ce.kind <> nkCallExpr) or (ce.kids[0] = nil) then Exit;
+    if not LookupProcInfo (DesigName (ce.kids[0]), pr) then Exit;
+    if (pr.node = nil) or (Length (pr.node.kids) < 2) or
+       (pr.node.kids[1] = nil) then Exit;
+    Result := InMod (pr.node.kids[1], pr.modName);
   end;
 
   { a designator as an expression: module CONSTs and payload-less
@@ -4374,7 +4460,9 @@ var
                   ErrN (site, ctx, Format (
                     'argument %d of %s: a KEPT parameter cannot take' +
                     ' %s -- it dies with this frame' +
-                    ' (par 4.1)', [k + 1, name, what]));
+                    ' (par 4.1); give it storage that outlives the call:' +
+                    ' a string through Text.Keep (pool, s), an allocation' +
+                    ' through NEW (pool, T)', [k + 1, name, what]));
                 { a record value carries what its fields hold
                   (TyBearing, decision 34), and a CONSTRUCTOR wrapping
                   a borrow hands the borrow to the keeper (2026-10-08) }
@@ -4689,11 +4777,11 @@ var
     Result := '';
   end;
 
-  function ExprType (e: TNode): string;
+  function ExprType0 (e: TNode): string;
   var
-    j, ext0, nx : Integer;
+    j, ext0, nx, ne : Integer;
     t, u, form : string;
-    res, inr, pt, tyk : TNode;
+    res, inr, pt, tyk, rtn : TNode;
     pr : TProcInfo;
   begin
     Result := '';
@@ -4979,12 +5067,40 @@ var
           Result := DesigStrType (e, False);
         end;
       nkCallExpr : Result := CallType (e.kids[0], e.kids[1], e);
+      nkCallSel :
+        begin
+          { F (x).f, F (x)[i] (mirrors Sem.ExprType0) }
+          t := ExprType (e.kids[0]);
+          rtn := CallResultNode (e.kids[0]);
+          if rtn <> nil then
+          begin
+            SetType (e, rtn);
+            ne := Errors.Count;
+            rtn := SelWalk (e, False, rtn, 1);
+            if rtn <> nil then Exit (CT (rtn));
+            if Errors.Count = ne then
+              ErrN (e, ctx, 'cannot select from an answer of type ' +
+                TyName (t) + ': a field needs a record, a subscript a slice, array or grid');
+          end
+          else if t <> '' then
+            ErrN (e, ctx,
+              'select from the answer of a procedure value through a variable: assign the answer first');
+          Exit ('');
+        end;
     else
       for j := 0 to High (e.kids) do
         ExprType (e.kids[j]);
     end;
   end;
 
+
+  { the typed tree's stage 3: every expression's type, recorded as the
+    checker computes it, for the generator to read (M9AST.SetTyStr) }
+  function ExprType (e: TNode): string;
+  begin
+    Result := ExprType0 (e);
+    SetTyStr (e, Result);
+  end;
   procedure WalkSeq (s: TNode); forward;
 
   procedure BindPattern (lbl: TNode; const selRoot: string);
@@ -5026,12 +5142,53 @@ var
     end;
   end;
 
+  { a RAISE's payload held to its EXCEPTION's fields: the count, and
+    each value against its field's type (mirrors Sem.CheckRaisePayload) }
+  procedure CheckRaisePayload (xn, args: TNode);
+  var
+    decl : TNode;
+    owner, nm, at, ft : string;
+    nf, na, k : Integer;
+  begin
+    if xn.b <> '' then
+    begin
+      decl := ExcDeclOf (xn.a, xn.b, owner);
+      nm := xn.a + '.' + xn.b;
+    end
+    else
+    begin
+      decl := ExcDeclOf ('', xn.a, owner);
+      nm := xn.a;
+    end;
+    if decl = nil then Exit;
+    nf := 0;
+    while ExcFieldType (decl, owner, nf) <> nil do Inc (nf);
+    na := 0;
+    if args <> nil then na := Length (args.kids);
+    { the predeclared IndexError raised bare }
+    if (na = 0) and (owner = '') and (nm = 'IndexError') then Exit;
+    if na <> nf then
+      ErrN (xn, ctx, Format ('%s expects %d argument(s), got %d', [nm, nf, na]));
+    for k := 0 to na - 1 do
+      if k < nf then
+      begin
+        at := ExprType (args.kids[k]);
+        ft := CT (ExcFieldType (decl, owner, k));
+        if (at <> '') and (ft <> '') and not Compat (ft, at) then
+          ErrN (xn, ctx, 'field ' + IntToStr (k + 1) + ' of ' + nm +
+            ': cannot give ' + TyName (at) + ' where ' + TyName (ft) +
+            ' is expected');
+      end;
+  end;
+
   procedure WalkStmt (st: TNode);
   var
     xowner : string;
     xdecl : TNode;
     j, k : Integer;
     lv : Int64;                      { an out-of-range literal's value }
+    sv64 : Int64;                    { a FOR step's value }
+    sch : Boolean;
     tname, tpTy, taTy, tamode : string;   { THREAD's target and argument }
     tpr : TProcInfo;
     tpl, tares : TNode;
@@ -5076,7 +5233,9 @@ var
             if (dmode = 'm') and not curInBody then
               ErrN (st.kids[1], ctx, what + ' dies with this' +
                 ' frame; it cannot be stored in module variable ' +
-                st.kids[0].a + ' (par ' + par + ')')
+                st.kids[0].a + ' (par ' + par + ')' +
+                ' -- allocate it in a module pool (VAR mpool : POOL ;' +
+                ' NEW (mpool, T)), or copy a string: Text.Keep (mpool, s)')
             else if (dmode = 'r') or
                     (((dmode = 'v') or (dmode = 'o') or (dmode = 'p')) and
                      (Length (st.kids[0].kids) > 0)) then
@@ -5259,8 +5418,10 @@ var
           if (t <> '') and (t <> 'BOOL') then
             ErrN (st.kids[0], ctx,
               'condition must be BOOL, not ' + TyName (t));
+          k := finSinceLoop; finSinceLoop := 0; Inc (loopsOpen);
           pre := OwnSnap;
           WalkSeq (st.kids[1]);
+          Dec (loopsOpen); finSinceLoop := k;
           hpre := OwnSnap;
           OwnRestore (pre);
           OwnMergeMoves (hpre);
@@ -5284,7 +5445,9 @@ var
             CheckForNest (st);
             pre := OwnSnap;
             ForPush (st);
+            k := finSinceLoop; finSinceLoop := 0; Inc (loopsOpen);
             WalkSeq (st.kids[3]);
+            Dec (loopsOpen); finSinceLoop := k;
             ForPop;
             hpre := OwnSnap;
             OwnRestore (pre);
@@ -5299,13 +5462,21 @@ var
           begin
             u := ExprType (st.kids[2]);
             if not IsIntish (u) then
-              ErrN (st, ctx, 'FOR step must be an integer, not ' + TyName (u));
+              ErrN (st, ctx, 'FOR step must be an integer, not ' + TyName (u))
+            { par 10: FOR ... BY ConstExpr (mirrors Sem.StepConst) }
+            else if not StepConst (st.kids[2]) then
+              ErrN (st, ctx,
+                'a FOR step is a constant: BY takes a literal, a CONST or an expression of them (par 10)')
+            else if ScalarConst (st.kids[2], sv64, sch) and (sv64 = 0) then
+              ErrN (st, ctx, 'a FOR step of 0 never reaches its bound');
           end;
           CheckForVar (st, '', False);
           CheckForNest (st);
           pre := OwnSnap;
           ForPush (st);
+          k := finSinceLoop; finSinceLoop := 0; Inc (loopsOpen);
           WalkSeq (st.kids[3]);
+          Dec (loopsOpen); finSinceLoop := k;
           ForPop;
           hpre := OwnSnap;
           OwnRestore (pre);
@@ -5313,8 +5484,13 @@ var
         end;
       nkLoop :
         begin
+          k := finSinceLoop;
+          finSinceLoop := 0;
+          Inc (loopsOpen);
           pre := OwnSnap;
           WalkSeq (st.kids[0]);
+          Dec (loopsOpen);
+          finSinceLoop := k;
           hpre := OwnSnap;
           OwnRestore (pre);
           OwnMergeMoves (hpre);
@@ -5414,6 +5590,11 @@ var
                   'CASE over CASE RECORD is not total (missing ' +
                   vi.variants[k] + ')');
           end;
+          { a CASE over a CHAR or an integer needs an ELSE (mirrors
+            Sem.CheckCaseElse) }
+          if (not hasElse) and ((selTy = 'CHAR') or IsIntStr (selTy) or (selTy = 'BYTE')) then
+            ErrN (st, ctx, 'a CASE over ' + TyName (selTy) +
+              ' needs an ELSE: a value no label names would have nowhere to go (par 8)');
           covered.Free;
         end;
       nkReturn :
@@ -5485,6 +5666,7 @@ var
           end
           else if raised.Values[st.kids[0].a] = '' then
             raised.Values[st.kids[0].a] := 'RAISE';
+          CheckRaisePayload (st.kids[0], st.kids[1]);
           if st.kids[1] <> nil then
             for j := 0 to High (st.kids[1].kids) do
               ExprType (st.kids[1].kids[j]);
@@ -5579,8 +5761,18 @@ var
         begin ExprType (st.kids[0]); ExprType (st.kids[1]); end;
       nkWait, nkSignal :
         ExprType (st.kids[0]);
+      nkExit :
+        begin
+          { EXIT leaves the innermost LOOP (mirrors Sem's NExit) }
+          if loopsOpen = 0 then
+            ErrN (st, ctx, 'EXIT outside a loop: EXIT leaves the innermost LOOP, WHILE or FOR (par 5)')
+          else if finSinceLoop > 0 then
+            ErrN (st, ctx, 'EXIT across a FINALLY would skip its cleanup: leave the protected block first, or move the loop inside it (par 5)');
+        end;
       nkBlock :
         begin
+          for j := 1 to High (st.kids) do
+            if st.kids[j].kind = nkFinally then Inc (finSinceLoop);
           WalkSeq (st.kids[0]);
           hpre := OwnSnap;
           SetLength (snaps, 0);
@@ -5615,6 +5807,8 @@ var
               for k := 0 to High (snaps) do
                 OwnMergeMoves (snaps[k]);
               SetLength (snaps, 0);
+              { the cleanup itself is outside its protected block }
+              Dec (finSinceLoop);
               WalkSeq (st.kids[j].kids[0]);
             end;
           for k := 0 to High (snaps) do
@@ -5740,7 +5934,10 @@ begin
     if InList (nm, Unchecked) then Continue;
     if handled.IndexOf (nm) >= 0 then Continue;
     if InList (nm, declared) then Continue;
-    ErrN (body, ctx, 'unhandled RAISES ' + nm + ' from ' + origin);
+    { the edit, said (mirrors Sem.ReportUnhandled) }
+    ErrN (body, ctx, 'unhandled RAISES ' + nm + ' from ' + origin +
+      ' -- add it to this procedure''s RAISES, or handle it: EXCEPT | ' +
+      nm + ' : ...');
   end;
   { par 3.2 rule 3: a PURE procedure may call only PURE procedures.
     This is what makes "no I/O" true without the checker knowing what

@@ -1,0 +1,385 @@
+MODULE ParquetTest ;
+
+(* Parquet.m9's READER against pyarrow's files, its writer against its
+   own reader and against itself.  The samples are under
+   runtime/test/gold/parquet/ and the goldens are what pyarrow READS
+   from them (tools/parquetgoldm9.py): sample_plain read value-exact,
+   sample_dict, sample_snappy and sample_nullbool refused by name.
+
+   The writer's outside witness is NOT here: a writer's bytes are not
+   unique, so runtime/test/columnar.sh has pyarrow read what
+   columnarout.m9 wrote (columnarcheck.py).  Here the same writer is
+   held to what an M9 reader and the module's own promises say: WriteTs
+   round-trips bitwise; WriteOpt with nothing asked IS WriteX, byte for
+   byte; BytesOpt is WriteOpt's file; an OPTIONAL file reads back with
+   its nulls as the arm's missing value; and every refusal of Options
+   is BadArg by name.  Was runtime/test/parquet_driver.c. *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Fmt ;
+IMPORT Frame ;
+IMPORT Io ;
+IMPORT Parquet ;
+IMPORT System ;
+IMPORT Text ;
+
+CONST
+  Sections = 6 ;   (* Reads .. OptRefusals, each counted at its end *)
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  pool : POOL ;
+  none : Parquet.Options ;   (* zeroed: nothing asked *)
+  tsPath, optPath : STR ;    (* per run: two runs at once write two files *)
+  ran : I64 ;                (* sections that reached their end *)
+
+PROCEDURE Sample (RO name: STR) : STR =
+BEGIN
+  RETURN Check.GoldPath ('parquet/' + name + '.parquet')
+END Sample ;
+
+PROCEDURE Widen (RO v: SLICE OF F32) : SLICE OF F64 =
+VAR
+  w : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  w := NEW (pool, F64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := F64 (v[i]) END ;
+  RETURN w
+END Widen ;
+
+PROCEDURE Ints32 (RO v: SLICE OF I32) : SLICE OF I64 =
+VAR
+  w : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  w := NEW (pool, I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := I64 (v[i]) END ;
+  RETURN w
+END Ints32 ;
+
+PROCEDURE SameBytes (RO a, b: SLICE OF BYTE) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF a[i] # b[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END SameBytes ;
+
+(* ---- pyarrow's plain file, read value-exact ---- *)
+
+PROCEDURE Reads ()
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow,
+         Frame.Unknown, Frame.WrongType =
+VAR
+  ts : PTR Frame.Ts IN pool ;
+  f : PTR Frame.Fr IN pool ;
+  notes : SLICE OF STR ;
+  lens, codes, got : SLICE OF I64 ;
+  i, j, k : I64 ;
+BEGIN
+  ts := Parquet.TsRead (pool, Sample ('sample_plain')) ;
+  f := Frame.TsFrame (ts) ;
+  Check.EqI64 (t, 'plain: the row count', Frame.Rows (f), Check.GoldI64 (t, gold, 'rows')) ;
+  Check.NearF64s (t, 'plain: TA (float) to the bit, the NaN a NaN',
+                  Widen (Frame.ColF32 (f, 'TA')), Check.GoldF64s (t, gold, 'ta'), 0.0, 0.0) ;
+  Check.NearF64s (t, "plain: SW (double), each null the arm's NaN",
+                  Frame.ColF64 (f, 'SW'), Check.GoldF64s (t, gold, 'sw'), 0.0, 0.0) ;
+  Check.EqI64s (t, 'plain: QC (int32)', Ints32 (Frame.ColI32 (f, 'QC')),
+                Check.GoldI64s (t, gold, 'qc')) ;
+  Check.EqI64s (t, 'plain: the time axis', Frame.TsTime (ts), Check.GoldI64s (t, gold, 'time')) ;
+  Check.EqBools (t, 'plain: DAY, bit-packed booleans', Frame.ColBools (f, 'DAY'),
+                 Check.GoldBools (t, gold, 'day')) ;
+  notes := Frame.ColStrs (f, 'NOTE') ;
+  lens := Check.GoldI64s (t, gold, 'note.len') ;
+  codes := Check.GoldI64s (t, gold, 'note.code') ;
+  got := NEW (pool, I64, LEN (codes)) ;
+  k := 0 ;
+  FOR i := 0 TO LEN (notes) - 1 DO
+    FOR j := 0 TO LEN (notes[i]) - 1 DO
+      IF k < LEN (got) THEN got[k] := I64 (ORD (notes[i][j])) END ;
+      k := k + 1
+    END
+  END ;
+  Check.EqI64 (t, 'plain: NOTE, as many strings', LEN (notes), LEN (lens)) ;
+  Check.EqI64 (t, 'plain: NOTE, as many characters', k, LEN (codes)) ;
+  Check.EqI64s (t, 'plain: NOTE, every character', got, codes) ;
+  Check.EqI64 (t, 'plain: the resolution from the axis gap (a foreign file)',
+               Frame.TsRes (ts), 1800) ;
+  ran := ran + 1
+END Reads ;
+
+(* ---- the refusals of the reader ---- *)
+
+PROCEDURE ReadRefusal (RO path: STR) : STR =
+  (* 'BadArg' when Read refuses the file so, '' when it reads *)
+VAR f : PTR Frame.Fr IN pool ;
+BEGIN
+  f := Parquet.Read (pool, path) ;
+  RETURN ''
+EXCEPT
+| Faults.BadArg (what) : RETURN 'BadArg'
+| Io.IOError (p) : RETURN 'IOError'
+| ValueRange : RETURN 'ValueRange'
+| Overflow : RETURN 'Overflow'
+| IndexError : RETURN 'IndexError'
+END ReadRefusal ;
+
+PROCEDURE Refusals () =
+BEGIN
+  Check.EqStr (t, 'a dictionary-encoded file is refused by name',
+               ReadRefusal (Sample ('sample_dict')), 'BadArg') ;
+  Check.EqStr (t, 'a snappy file is refused by name',
+               ReadRefusal (Sample ('sample_snappy')), 'BadArg') ;
+  Check.EqStr (t, 'a null boolean is refused by name (BOOL keeps no missing value)',
+               ReadRefusal (Sample ('sample_nullbool')), 'BadArg') ;
+  Check.EqStr (t, 'and the plain sample is not', ReadRefusal (Sample ('sample_plain')), '') ;
+  ran := ran + 1
+END Refusals ;
+
+(* ---- WriteTs, read back by Parquet's own reader ---- *)
+
+PROCEDURE RoundTrip ()
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow,
+         Frame.Unknown, Frame.WrongType =
+VAR
+  ts, ts2 : PTR Frame.Ts IN pool ;
+  f, f2 : PTR Frame.Fr IN pool ;
+BEGIN
+  ts := Parquet.TsRead (pool, Sample ('sample_plain')) ;
+  f := Frame.TsFrame (ts) ;
+  Parquet.WriteTs (pool, ts, tsPath) ;
+  ts2 := Parquet.TsRead (pool, tsPath) ;
+  f2 := Frame.TsFrame (ts2) ;
+  Check.NearF64s (t, 'WriteTs: TA back bitwise', Widen (Frame.ColF32 (f2, 'TA')),
+                  Widen (Frame.ColF32 (f, 'TA')), 0.0, 0.0) ;
+  Check.NearF64s (t, 'WriteTs: SW back bitwise', Frame.ColF64 (f2, 'SW'),
+                  Frame.ColF64 (f, 'SW'), 0.0, 0.0) ;
+  Check.EqI64s (t, 'WriteTs: the time axis back', Frame.TsTime (ts2), Frame.TsTime (ts)) ;
+  Check.EqI64 (t, 'WriteTs: the resolution rides the key-value metadata',
+               Frame.TsRes (ts2), 1800) ;
+  Check.EqStrs (t, 'WriteTs: the text back', Frame.ColStrs (f2, 'NOTE'), Frame.ColStrs (f, 'NOTE')) ;
+  Check.EqBools (t, 'WriteTs: the booleans back', Frame.ColBools (f2, 'DAY'),
+                 Frame.ColBools (f, 'DAY')) ;
+  Check.That (t, 'WriteTs: the file removed', Io.Remove (tsPath)) ;
+  ran := ran + 1
+END RoundTrip ;
+
+(* ---- Options: the frame columnarout.m9 writes, smaller ---- *)
+
+PROCEDURE Frame6 (q: I32) : PTR Frame.Fr IN pool
+  RAISES Faults.SizeError, Frame.Duplicate, ValueRange =
+  (* six rows: TA with a NaN, SW with the sentinel and a NaN, QC whose
+     row 2 is q and row 4 the sentinel, a STR, a BOOL, a time *)
+VAR
+  f : PTR Frame.Fr IN pool ;
+  ta : SLICE OF F32 ;
+  sw : SLICE OF F64 ;
+  qc : SLICE OF I32 ;
+  tm : SLICE OF I64 ;
+  note : SLICE OF STR ;
+  day : SLICE OF BOOL ;
+  r : I64 ;
+BEGIN
+  f := Frame.New (pool, 6) ;
+  ta := NEW (pool, F32, 6) ;
+  sw := NEW (pool, F64, 6) ;
+  qc := NEW (pool, I32, 6) ;
+  tm := NEW (pool, I64, 6) ;
+  note := NEW (pool, STR, 6) ;
+  day := NEW (pool, BOOL, 6) ;
+  FOR r := 0 TO 5 DO
+    ta[r] := F32 (r) * 0.5 ;
+    sw[r] := F64 (r) + 0.25 ;
+    qc[r] := I32 (r) ;
+    tm[r] := 1672531200000000 + r * 1800000000 ;
+    note[r] := 'x' ;
+    day[r] := r MOD 2 = 0
+  END ;
+  ta[1] := NaN ;
+  sw[2] := -9999.0 ; sw[3] := NaN ;
+  qc[2] := q ;
+  qc[4] := -2147483647 - 1 ;
+  note[5] := '' ;
+  Frame.AddF32 (pool, f, 'TA', ta, NaN) ;
+  Frame.AddF64 (pool, f, 'SW', sw, -9999.0) ;
+  Frame.AddI32 (pool, f, 'QC', qc, -2147483647 - 1) ;
+  Frame.AddStrs (pool, f, 'NOTE', note) ;
+  Frame.AddBools (pool, f, 'DAY', day) ;
+  Frame.AddI64 (pool, f, 'time', tm, -9223372036854775807 - 1) ;
+  RETURN f
+END Frame6 ;
+
+PROCEDURE Names1 (RO a: STR) : SLICE OF STR =
+VAR s : SLICE OF STR ;
+BEGIN
+  s := NEW (pool, STR, 1) ;
+  s[0] := Text.Keep (pool, a) ;
+  RETURN s
+END Names1 ;
+
+PROCEDURE AllAsked () : Parquet.Options =
+VAR o : Parquet.Options ;
+BEGIN
+  o.kvK := Names1 ('units') ;
+  o.kvV := Names1 ('°C') ;
+  o.usCols := Names1 ('time') ;
+  o.i8Cols := Names1 ('QC') ;
+  o.nulls := TRUE ;
+  RETURN o
+END AllAsked ;
+
+PROCEDURE Same ()
+  RAISES Faults.BadArg, Faults.SizeError, Frame.Duplicate, Io.IOError,
+         ValueRange, Overflow =
+VAR
+  f : PTR Frame.Fr IN pool ;
+  o : Parquet.Options ;
+  empty : SLICE OF STR ;
+BEGIN
+  f := Frame6 (2) ;
+  empty := NEW (pool, STR, 0) ;
+  Check.That (t, 'WriteOpt with nothing asked is WriteX, byte for byte',
+              SameBytes (Parquet.BytesOpt (pool, f, none),
+                         Parquet.BytesX (pool, f, empty, empty, empty))) ;
+  o.kvK := Names1 ('k') ;
+  o.kvV := Names1 ('v') ;
+  o.nsCols := Names1 ('time') ;
+  Check.That (t, "WriteOpt with WriteX's three is WriteX, byte for byte",
+              SameBytes (Parquet.BytesOpt (pool, f, o),
+                         Parquet.BytesX (pool, f, o.kvK, o.kvV, o.nsCols))) ;
+  Parquet.WriteOpt (pool, f, optPath, AllAsked ()) ;
+  Check.That (t, 'BytesOpt is the file WriteOpt writes',
+              SameBytes (Io.ReadFileBytes (pool, optPath), Parquet.BytesOpt (pool, f, AllAsked ()))) ;
+  Check.That (t, 'nulls makes another file (the levels are there)',
+              NOT SameBytes (Parquet.BytesOpt (pool, f, AllAsked ()), Parquet.BytesOpt (pool, f, none))) ;
+  ran := ran + 1
+END Same ;
+
+PROCEDURE ReadsOwnNulls ()
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow,
+         Frame.Unknown, Frame.WrongType =
+  (* the OPTIONAL file back through Parquet.Read: a null is the arm's
+     missing value, so SW's sentinel comes back as NaN, the NaN as NaN *)
+VAR
+  f : PTR Frame.Fr IN pool ;
+  ta, sw : SLICE OF F64 ;
+BEGIN
+  f := Parquet.Read (pool, optPath) ;
+  Check.EqI64 (t, 'own nulls: six rows', Frame.Rows (f), 6) ;
+  ta := Widen (Frame.ColF32 (f, 'TA')) ;
+  sw := Frame.ColF64 (f, 'SW') ;
+  Check.EqF64 (t, 'own nulls: TA row 1 is missing (NaN)', ta[1], NaN) ;
+  Check.EqF64 (t, 'own nulls: TA row 2, a value after a null', ta[2], 1.0) ;
+  Check.EqF64 (t, 'own nulls: SW row 2, the sentinel, is missing', sw[2], NaN) ;
+  Check.EqF64 (t, 'own nulls: SW row 3, the NaN, is missing', sw[3], NaN) ;
+  Check.EqF64 (t, 'own nulls: SW row 5, the last value', sw[5], 5.25) ;
+  Check.EqStrs (t, 'own nulls: NOTE, the empty string a value',
+                Frame.ColStrs (f, 'NOTE'), Frame.ColStrs (Frame6 (2), 'NOTE')) ;
+  Check.EqBools (t, 'own nulls: DAY', Frame.ColBools (f, 'DAY'),
+                 Frame.ColBools (Frame6 (2), 'DAY')) ;
+  Check.That (t, 'own nulls: the file removed', Io.Remove (optPath)) ;
+  ran := ran + 1
+EXCEPT
+| Faults.SizeError (got, want) : Check.That (t, 'own nulls: no SizeError', FALSE)
+| Frame.Duplicate : Check.That (t, 'own nulls: no Duplicate', FALSE)
+END ReadsOwnNulls ;
+
+(* ---- the refusals of Options, each BadArg by name ---- *)
+
+PROCEDURE OptRefusal (q: I32 ; RO o: Parquet.Options) : STR =
+  (* BadArg's text when BytesOpt refuses Frame6 (q) so, '' when not *)
+VAR b : SLICE OF BYTE ;
+BEGIN
+  b := Parquet.BytesOpt (pool, Frame6 (q), o) ;
+  RETURN ''
+EXCEPT
+| Faults.BadArg (what) : RETURN what
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| Frame.Duplicate : RETURN 'Duplicate'
+| ValueRange : RETURN 'ValueRange'
+| Overflow : RETURN 'Overflow'
+| IndexError : RETURN 'IndexError'
+END OptRefusal ;
+
+PROCEDURE OptRefusals () =
+VAR o : Parquet.Options ;
+BEGIN
+  o := AllAsked () ;
+  Check.EqStr (t, 'INT_8: 127 is written', OptRefusal (127, o), '') ;
+  Check.EqStr (t, 'INT_8: -128 is written', OptRefusal (-128, o), '') ;
+  Check.EqStr (t, 'INT_8: 128 is BadArg, the column named', OptRefusal (128, o),
+               'a value outside INT_8 in column QC') ;
+  Check.EqStr (t, 'INT_8: -129 is BadArg', OptRefusal (-129, o),
+               'a value outside INT_8 in column QC') ;
+  o.nulls := FALSE ;
+  Check.EqStr (t, 'INT_8 without nulls: the sentinel is a value, and does not fit',
+               OptRefusal (2, o), 'a value outside INT_8 in column QC') ;
+  o := AllAsked () ;
+  o.i8Cols := Names1 ('SW') ;
+  Check.EqStr (t, 'i8Cols naming a real column', OptRefusal (2, o),
+               'i8Cols names a column of another kind: SW') ;
+  o := AllAsked () ;
+  o.usCols := Names1 ('nosuch') ;
+  Check.EqStr (t, 'usCols naming no column', OptRefusal (2, o),
+               'usCols names no column: nosuch') ;
+  o := AllAsked () ;
+  o.usCols := Names1 ('QC') ;
+  Check.EqStr (t, 'usCols naming an I32 column', OptRefusal (2, o),
+               'usCols names a column of another kind: QC') ;
+  o := AllAsked () ;
+  o.nsCols := Names1 ('time') ;
+  Check.EqStr (t, 'a column in both nsCols and usCols', OptRefusal (2, o),
+               'a column in both nsCols and usCols: time') ;
+  o := AllAsked () ;
+  o.kvV := NEW (pool, STR, 0) ;
+  Check.EqStr (t, 'keys without their values', OptRefusal (2, o),
+               'key_value_metadata: keys and values differ in number') ;
+  ran := ran + 1
+END OptRefusals ;
+
+BEGIN
+  gold := Check.GoldPath ('Parquet.gold') ;
+  tsPath := Text.Keep (pool, '/tmp/m9-parquettest-' + Fmt.I64Str (System.ProcessId ()) + '-ts.parquet') ;
+  optPath := Text.Keep (pool, '/tmp/m9-parquettest-' + Fmt.I64Str (System.ProcessId ()) + '-opt.parquet') ;
+  Reads () ;
+  Refusals () ;
+  RoundTrip () ;
+  Same () ;
+  ReadsOwnNulls () ;
+  OptRefusals () ;
+  (* a section that returned early or was cut short by a handler did
+     not count itself: the checks after that point did not run, and a
+     smaller PASS would hide it *)
+  Check.EqI64 (t, 'every section ran to its end', ran, Sections) ;
+  Io.Halt (Check.Done (t, 'Parquet'))
+EXCEPT
+| Io.IOError (path) :
+    Check.That (t, 'no IOError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Parquet'))
+| Faults.BadArg (what) :
+    Check.That (t, 'no BadArg escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Parquet'))
+| Faults.SizeError (got, want) :
+    Check.That (t, 'no SizeError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Parquet'))
+| Frame.Duplicate :
+    Check.That (t, 'no Duplicate escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Parquet'))
+| Frame.Unknown :
+    Check.That (t, 'no Unknown column escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Parquet'))
+| Frame.WrongType :
+    Check.That (t, 'no WrongType escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Parquet'))
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Parquet'))
+| Overflow :
+    Check.That (t, 'no Overflow escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Parquet'))
+END ParquetTest.

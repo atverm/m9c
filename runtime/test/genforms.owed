@@ -1,0 +1,11 @@
+# Programs the checker ACCEPTS and the build then refuses -- by the
+# generator ("... unsupported yet") or by the C compiler.  A reader
+# cannot tell such a refusal from a compiler fault, so each is owed.
+# genforms.sh holds this list both ways: a name here must still pass
+# `m9c --check` AND still fail to build; a fixture NOT named here must
+# build and print its WANT line.  A fixed form loses its line in the
+# commit that fixes it; a form found later gains a fixture and a line.
+#
+#   NAME                 what refuses it today (2026-10-09)
+#
+GfSliceOfCall        gen: SLICE() argument form -- an array a call answers (m9c.sh and lsp.sh use it as THE generator refusal)

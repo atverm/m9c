@@ -1,0 +1,203 @@
+MODULE columnarout ;
+
+(* columnarout DIR
+     -> writes DIR/opt.parquet (Parquet.WriteOpt with every option:
+        nulls, MICROS and NANOS timestamps, INT_8, key-value metadata
+        beyond ASCII), DIR/plain.parquet (WriteOpt with nothing asked:
+        WriteX's REQUIRED columns), DIR/grid.nc (a classic file: the
+        old netcdf_driver.c's 4 x 5 grid, an attribute of each kind)
+        and DIR/text.nc (netCDF-4: text attributes written by
+        PutAttText and PutAttStr, a float variable with a NaN fill,
+        a byte variable of negative values)
+
+   The program runtime/test/columnar.sh drives: what it writes is read
+   back by pyarrow and by netCDF4-python in columnarcheck.py, which is
+   the whole check -- a writer is right when somebody else's reader
+   says so.  The values are stated twice, here and in columnarcheck.py,
+   and the two must agree; corpus/ParquetTest.m9 and NetCDFTest.m9
+   hold the same files through M9's own readers. *)
+
+IMPORT Faults ;
+IMPORT Frame ;
+IMPORT Io ;
+IMPORT NetCDF ;
+IMPORT Parquet ;
+IMPORT Text ;
+
+CONST
+  Rows = 10 ;
+  NLat = 4 ;
+  NLon = 5 ;
+
+VAR
+  pool : POOL ;
+  dir : STR ;
+  none : Parquet.Options ;   (* zeroed: nothing asked *)
+
+(* the frame both Parquet files hold: every kind of column, a missing
+   cell in each numeric one but Q16, NaN and the sentinel both missing
+   in SW *)
+PROCEDURE Sample () : PTR Frame.Fr IN pool
+  RAISES Faults.SizeError, Frame.Duplicate, ValueRange =
+VAR
+  f : PTR Frame.Fr IN pool ;
+  ta : SLICE OF F32 ;
+  sw : SLICE OF F64 ;
+  qc : SLICE OF I32 ;
+  q16, h : SLICE OF I16 ;
+  n, us, ns : SLICE OF I64 ;
+  b : SLICE OF BYTE ;
+  note : SLICE OF STR ;
+  day : SLICE OF BOOL ;
+  r : I64 ;
+BEGIN
+  f := Frame.New (pool, Rows) ;
+  ta := NEW (pool, F32, Rows) ;
+  sw := NEW (pool, F64, Rows) ;
+  qc := NEW (pool, I32, Rows) ;
+  q16 := NEW (pool, I16, Rows) ;
+  h := NEW (pool, I16, Rows) ;
+  n := NEW (pool, I64, Rows) ;
+  us := NEW (pool, I64, Rows) ;
+  ns := NEW (pool, I64, Rows) ;
+  b := NEW (pool, BYTE, Rows) ;
+  note := NEW (pool, STR, Rows) ;
+  day := NEW (pool, BOOL, Rows) ;
+  FOR r := 0 TO Rows - 1 DO
+    ta[r] := F32 (r) * 0.25 - 1.0 ;
+    sw[r] := 100.0 + F64 (r) * 0.5 ;
+    q16[r] := I16 (r MOD 4) ;
+    h[r] := I16 (r * 1000 - 4000) ;
+    n[r] := r * r * 1000000007 - 5 ;
+    us[r] := 1672531200000000 + r * 1800000000 ;
+    ns[r] := us[r] * 1000 ;
+    b[r] := BYTE (r * 25) ;
+    day[r] := r MOD 3 = 0
+  END ;
+  ta[3] := NaN ; ta[7] := NaN ;
+  sw[1] := -9999.0 ; sw[5] := NaN ;
+  qc[0] := -3 ; qc[1] := -2 ; qc[2] := -1 ; qc[3] := 0 ;
+  qc[4] := -2147483647 - 1 ;
+  qc[5] := 1 ; qc[6] := 2 ; qc[7] := 3 ; qc[8] := 127 ; qc[9] := -128 ;
+  h[2] := -32768 ;
+  n[9] := -9223372036854775807 - 1 ;
+  b[0] := 255 ;
+  note[0] := '' ; note[1] := 'ok' ; note[2] := '°C' ;
+  note[3] := 'µmol m-2 s-1' ; note[4] := 'a' ; note[5] := 'b' ;
+  note[6] := 'c' ; note[7] := 'd' ; note[8] := 'e' ; note[9] := 'f' ;
+  Frame.AddF32 (pool, f, 'TA', ta, NaN) ;
+  Frame.AddF64 (pool, f, 'SW', sw, -9999.0) ;
+  Frame.AddI32 (pool, f, 'QC', qc, -2147483647 - 1) ;
+  Frame.AddI16 (pool, f, 'Q16', q16, -32768) ;
+  Frame.AddI16 (pool, f, 'H', h, -32768) ;
+  Frame.AddI64 (pool, f, 'N', n, -9223372036854775807 - 1) ;
+  Frame.AddBytes (pool, f, 'B', b, 255) ;
+  Frame.AddStrs (pool, f, 'NOTE', note) ;
+  Frame.AddBools (pool, f, 'DAY', day) ;
+  Frame.AddI64 (pool, f, 'time', us, -9223372036854775807 - 1) ;
+  Frame.AddI64 (pool, f, 'tns', ns, -9223372036854775807 - 1) ;
+  RETURN f
+END Sample ;
+
+PROCEDURE Opts () : Parquet.Options =
+VAR o : Parquet.Options ;
+BEGIN
+  o.kvK := NEW (pool, STR, 2) ;
+  o.kvV := NEW (pool, STR, 2) ;
+  o.kvK[0] := 'icos_u_pid' ; o.kvV[0] := '11676/U/test' ;
+  o.kvK[1] := 'units' ; o.kvV[1] := '°C and µmol m-2 s-1' ;
+  o.usCols := NEW (pool, STR, 1) ;
+  o.usCols[0] := 'time' ;
+  o.nsCols := NEW (pool, STR, 1) ;
+  o.nsCols[0] := 'tns' ;
+  o.i8Cols := NEW (pool, STR, 2) ;
+  o.i8Cols[0] := 'QC' ; o.i8Cols[1] := 'Q16' ;
+  o.nulls := TRUE ;
+  RETURN o
+END Opts ;
+
+PROCEDURE Grid () RAISES NetCDF.Error, ValueRange, Faults.SizeError =
+VAR
+  f : PTR NetCDF.File IN pool ;
+  dims, start, count : SLICE OF I64 ;
+  data : SLICE OF F64 ;
+  v, i, j : I64 ;
+BEGIN
+  f := NetCDF.Create (pool, Text.Keep (pool, dir + '/grid.nc'), TRUE) ;
+  dims := NEW (pool, I64, 2) ;
+  dims[0] := NetCDF.DefDim (f, 'lat', NLat) ;
+  dims[1] := NetCDF.DefDim (f, 'lon', NLon) ;
+  v := NetCDF.DefVar (f, 't2m', NetCDF.TypeDouble, dims) ;
+  NetCDF.PutAttStr (f, v, 'units', 'K') ;
+  NetCDF.PutAttF64 (f, v, 'scale_factor', 0.5) ;
+  NetCDF.PutAttStr (f, NetCDF.Global, 'title', 'written by M9') ;
+  NetCDF.EndDef (f) ;
+  data := NEW (pool, F64, NLat * NLon) ;
+  FOR i := 0 TO NLat - 1 DO
+    FOR j := 0 TO NLon - 1 DO
+      data[i * NLon + j] := 100.0 * F64 (i) + F64 (j) / 8.0
+    END
+  END ;
+  start := NEW (pool, I64, 2) ;
+  count := NEW (pool, I64, 2) ;
+  count[0] := NLat ; count[1] := NLon ;
+  NetCDF.PutF64 (f, v, start, count, data) ;
+  NetCDF.Close (f)
+END Grid ;
+
+PROCEDURE TextFile () RAISES NetCDF.Error, ValueRange, Faults.SizeError =
+VAR
+  f : PTR NetCDF.File IN pool ;
+  dims, start, count : SLICE OF I64 ;
+  ta : SLICE OF F32 ;
+  qc : SLICE OF I16 ;
+  vt, vq, r : I64 ;
+BEGIN
+  f := NetCDF.Create4 (pool, Text.Keep (pool, dir + '/text.nc'), TRUE) ;
+  dims := NEW (pool, I64, 1) ;
+  dims[0] := NetCDF.DefDim (f, 'time', Rows) ;
+  vt := NetCDF.DefVar (f, 'TA', NetCDF.TypeFloat, dims) ;
+  NetCDF.FillF32 (f, vt, NaN) ;
+  NetCDF.PutAttText (f, vt, 'units', '°C') ;
+  NetCDF.PutAttText (f, vt, 'long_name', 'air temperature') ;
+  vq := NetCDF.DefVar (f, 'QC', NetCDF.TypeByte, dims) ;
+  NetCDF.PutAttText (f, vq, 'units', '1') ;
+  NetCDF.PutAttText (f, NetCDF.Global, 'title', 'µmol m-2 s-1 — a title') ;
+  NetCDF.PutAttText (f, NetCDF.Global, 'plain', 'ASCII only') ;
+  NetCDF.PutAttStr (f, NetCDF.Global, 'octets', 'K and m') ;
+  NetCDF.EndDef (f) ;
+  ta := NEW (pool, F32, Rows) ;
+  qc := NEW (pool, I16, Rows) ;
+  FOR r := 0 TO Rows - 1 DO
+    ta[r] := F32 (r) * 0.25 - 1.0 ;
+    qc[r] := I16 (r - 5)
+  END ;
+  ta[3] := NaN ;
+  start := NEW (pool, I64, 1) ;
+  count := NEW (pool, I64, 1) ;
+  count[0] := Rows ;
+  NetCDF.PutF32 (f, vt, start, count, ta) ;
+  NetCDF.PutI16 (f, vq, start, count, qc) ;
+  NetCDF.Close (f)
+END TextFile ;
+
+BEGIN
+  IF Io.ArgCount () < 2 THEN
+    Io.ErrLine ('usage: columnarout DIR') ;
+    Io.Halt (2)
+  END ;
+  dir := Io.Arg (pool, 1) ;
+  Parquet.WriteOpt (pool, Sample (), dir + '/opt.parquet', Opts ()) ;
+  Parquet.WriteOpt (pool, Sample (), dir + '/plain.parquet', none) ;
+  Grid () ;
+  TextFile ()
+EXCEPT
+| Io.IOError (p) : Io.ErrLine ('columnarout: io') ; Io.Halt (1)
+| Faults.BadArg (what) : Io.ErrLine ('columnarout: BadArg') ; Io.Halt (1)
+| Faults.SizeError (got, want) : Io.ErrLine ('columnarout: SizeError') ; Io.Halt (1)
+| Frame.Duplicate : Io.ErrLine ('columnarout: duplicate column') ; Io.Halt (1)
+| NetCDF.Error (op, detail, status) : Io.ErrLine ('columnarout: NetCDF ' + op + ': ' + detail) ; Io.Halt (1)
+| ValueRange : Io.ErrLine ('columnarout: value range') ; Io.Halt (1)
+| Overflow : Io.ErrLine ('columnarout: overflow') ; Io.Halt (1)
+| IndexError : Io.ErrLine ('columnarout: index') ; Io.Halt (1)
+END columnarout.

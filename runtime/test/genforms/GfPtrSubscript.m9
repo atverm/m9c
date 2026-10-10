@@ -1,0 +1,17 @@
+MODULE GfPtrSubscript ;
+
+(* WANT: a subscript through a pointer to an array: 5 *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  A = ARRAY 4 OF I64 ;
+
+VAR
+  p : PTR A ;
+
+BEGIN
+  p := NEW (A) ;
+  p[2] := 5 ;
+  Io.WriteLine ('a subscript through a pointer to an array: ' + Fmt.I64Str (p[2]))
+END GfPtrSubscript.

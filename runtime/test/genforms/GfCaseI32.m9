@@ -1,0 +1,16 @@
+MODULE GfCaseI32 ;
+
+(* WANT: a CASE over an I32 *)
+
+IMPORT Io ;
+
+VAR
+  i : I32 ;
+
+BEGIN
+  i := 3 ;
+  CASE i OF
+  | 3 : Io.WriteLine ('a CASE over an I32')
+  ELSE  Io.WriteLine ('ELSE')
+  END
+END GfCaseI32.

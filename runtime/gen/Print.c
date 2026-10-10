@@ -673,6 +673,16 @@ static void Print_E (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m9_stat
       DynStr_AppendChar (d, d_pool, 41u, err);
       if (err->exc) goto L_ret;
     } break;
+    case INT64_C(87):
+    {
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a15 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      Print_E (d, d_pool, m9a15, err);
+      if (err->exc) goto L_ret;
+      }
+      Print_Desig (d, d_pool, n, err);
+      if (err->exc) goto L_ret;
+    } break;
     case INT64_C(77):
     {
       Print_Desig (d, d_pool, n, err);
@@ -701,9 +711,9 @@ static void Print_E (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m9_stat
           DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s21, 2 }), err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err))) m9a15 = (*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err))) m9a16 = (*(Ast_Node * *) m9_at (n->kids.p, j, n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Print_E (d, d_pool, m9a15, err);
+        Print_E (d, d_pool, m9a16, err);
         if (err->exc) goto L_ret;
         }
       } }
@@ -741,9 +751,9 @@ static void Print_Args (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m9_s
         DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s23, 2 }), err);
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a16 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a17 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_E (d, d_pool, m9a16, err);
+      Print_E (d, d_pool, m9a17, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -791,9 +801,9 @@ static void Print_Desig (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, m9_
               DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s24, 2 }), err);
               if (err->exc) goto L_ret;
             }
-            { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, j, sel->kids.len, sizeof (Ast_Node *), err))) m9a17 = (*(Ast_Node * *) m9_at (sel->kids.p, j, sel->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, j, sel->kids.len, sizeof (Ast_Node *), err))) m9a18 = (*(Ast_Node * *) m9_at (sel->kids.p, j, sel->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Print_E (d, d_pool, m9a17, err);
+            Print_E (d, d_pool, m9a18, err);
             if (err->exc) goto L_ret;
             }
           } }
@@ -829,16 +839,16 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s25, 6 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a18 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a19 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_E (d, d_pool, m9a18, err);
+      Print_E (d, d_pool, m9a19, err);
       if (err->exc) goto L_ret;
       }
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s26, 4 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a19 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a20 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_EType (d, d_pool, m9a19, ind, err);
+      Print_EType (d, d_pool, m9a20, ind, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -846,16 +856,16 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s27, 5 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a20 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a21 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_E (d, d_pool, m9a20, err);
+      Print_E (d, d_pool, m9a21, err);
       if (err->exc) goto L_ret;
       }
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s28, 4 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a21 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a22 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_EType (d, d_pool, m9a21, ind, err);
+      Print_EType (d, d_pool, m9a22, ind, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -863,9 +873,9 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s29, 9 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a22 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a23 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_EType (d, d_pool, m9a22, ind, err);
+      Print_EType (d, d_pool, m9a23, ind, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -873,9 +883,9 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s30, 4 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a23 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a24 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_EType (d, d_pool, m9a23, ind, err);
+      Print_EType (d, d_pool, m9a24, ind, err);
       if (err->exc) goto L_ret;
       }
       { Ast_Node * pd = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
@@ -891,9 +901,9 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 4 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a24 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a25 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_EType (d, d_pool, m9a24, ind, err);
+      Print_EType (d, d_pool, m9a25, ind, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -901,9 +911,9 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s33, 11 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a25 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a26 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_EType (d, d_pool, m9a25, ind, err);
+      Print_EType (d, d_pool, m9a26, ind, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -923,11 +933,11 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
       } }
       DynStr_AppendChar (d, d_pool, 10u, err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a26 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a27 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a27 = m9_add_i64 (ind, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a28 = m9_add_i64 (ind, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      Print_FieldsLines (d, d_pool, m9a26, m9a27, err);
+      Print_FieldsLines (d, d_pool, m9a27, m9a28, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -961,9 +971,9 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
           if (vf != NULL) {
             DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 3 }), err);
             if (err->exc) goto L_ret;
-            { __typeof__((*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err))) m9a28 = (*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err))) m9a29 = (*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Print_FieldsInline (d, d_pool, m9a28, err);
+            Print_FieldsInline (d, d_pool, m9a29, err);
             if (err->exc) goto L_ret;
             }
           } }
@@ -982,11 +992,11 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
       if (err->exc) goto L_ret;
       DynStr_AppendChar (d, d_pool, 10u, err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a29 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a30 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a30 = m9_add_i64 (ind, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a31 = m9_add_i64 (ind, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      Print_FieldsLines (d, d_pool, m9a29, m9a30, err);
+      Print_FieldsLines (d, d_pool, m9a30, m9a31, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -1022,9 +1032,9 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
     {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s44, 11 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a31 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a32 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_EParams (d, d_pool, m9a31, err);
+      Print_EParams (d, d_pool, m9a32, err);
       if (err->exc) goto L_ret;
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
@@ -1038,9 +1048,9 @@ static void Print_EType (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, int
           DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 3 }), err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a32 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a33 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Print_EType (d, d_pool, m9a32, ind, err);
+        Print_EType (d, d_pool, m9a33, ind, err);
         if (err->exc) goto L_ret;
         }
       } }
@@ -1098,9 +1108,9 @@ static void Print_Group (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * g, m9_
   } }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s51, 2 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a33 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a34 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  Print_EType (d, d_pool, m9a33, INT64_C(0), err);
+  Print_EType (d, d_pool, m9a34, INT64_C(0), err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1178,9 +1188,9 @@ static void Print_FieldsLines (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * 
         } }
         DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s55, 3 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a34 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a35 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Print_EType (d, d_pool, m9a34, ind, err);
+        Print_EType (d, d_pool, m9a35, ind, err);
         if (err->exc) goto L_ret;
         }
         bool m9t2 = (((i < m9_sub_i64 (fs->nkids, INT64_C(1), err))) || fs->f1);
@@ -1221,9 +1231,9 @@ static void Print_ELabel (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, m9
     DynStr_AppendChar (d, d_pool, 41u, err);
     if (err->exc) goto L_ret;
   } else {
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a35 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a36 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a35, err);
+    Print_E (d, d_pool, m9a36, err);
     if (err->exc) goto L_ret;
     }
     { Ast_Node * hi = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
@@ -1231,9 +1241,9 @@ static void Print_ELabel (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, m9
     if (hi != NULL) {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s58, 4 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a36 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a37 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_E (d, d_pool, m9a36, err);
+      Print_E (d, d_pool, m9a37, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -1260,11 +1270,11 @@ static void Print_EBlock (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, in
   if (err->exc) goto L_ret;
   DynStr_AppendChar (d, d_pool, 10u, err);
   if (err->exc) goto L_ret;
-  { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a37 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a38 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a38 = m9_add_i64 (ind, INT64_C(1), err);
+  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a39 = m9_add_i64 (ind, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  Print_ESeq (d, d_pool, m9a37, m9a38, err);
+  Print_ESeq (d, d_pool, m9a38, m9a39, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -1320,9 +1330,9 @@ static void Print_EBlock (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, in
               DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s63, 2 }), err);
               if (err->exc) goto L_ret;
             }
-            { __typeof__((*(Ast_Node * *) m9_at (ar->kids.p, j, ar->kids.len, sizeof (Ast_Node *), err))) m9a39 = (*(Ast_Node * *) m9_at (ar->kids.p, j, ar->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (ar->kids.p, j, ar->kids.len, sizeof (Ast_Node *), err))) m9a40 = (*(Ast_Node * *) m9_at (ar->kids.p, j, ar->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Print_E (d, d_pool, m9a39, err);
+            Print_E (d, d_pool, m9a40, err);
             if (err->exc) goto L_ret;
             }
           } }
@@ -1333,11 +1343,11 @@ static void Print_EBlock (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, in
         if (err->exc) goto L_ret;
         DynStr_AppendChar (d, d_pool, 10u, err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err))) m9a40 = (*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err))) m9a41 = (*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a41 = m9_add_i64 (ind, INT64_C(2), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a42 = m9_add_i64 (ind, INT64_C(2), err);
           if (err->exc) goto L_ret;
-        Print_ESeq (d, d_pool, m9a40, m9a41, err);
+        Print_ESeq (d, d_pool, m9a41, m9a42, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -1361,11 +1371,11 @@ static void Print_EBlock (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, in
         if (err->exc) goto L_ret;
         DynStr_AppendChar (d, d_pool, 10u, err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (f->kids.p, INT64_C(0), f->kids.len, sizeof (Ast_Node *), err))) m9a42 = (*(Ast_Node * *) m9_at (f->kids.p, INT64_C(0), f->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (f->kids.p, INT64_C(0), f->kids.len, sizeof (Ast_Node *), err))) m9a43 = (*(Ast_Node * *) m9_at (f->kids.p, INT64_C(0), f->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a43 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a44 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Print_ESeq (d, d_pool, m9a42, m9a43, err);
+        Print_ESeq (d, d_pool, m9a43, m9a44, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -1448,9 +1458,9 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     } }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s68, 4 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a44 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a45 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a44, err);
+    Print_E (d, d_pool, m9a45, err);
     if (err->exc) goto L_ret;
     }
   } break;
@@ -1467,9 +1477,9 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (n->f1) {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s69, 2 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a45 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a46 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_Args (d, d_pool, m9a45, err);
+      Print_Args (d, d_pool, m9a46, err);
       if (err->exc) goto L_ret;
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
@@ -1482,20 +1492,20 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s70, 3 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a46 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a47 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a46, err);
+    Print_E (d, d_pool, m9a47, err);
     if (err->exc) goto L_ret;
     }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s71, 5 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (d, d_pool, 10u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a47 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a48 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a48 = m9_add_i64 (ind, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a49 = m9_add_i64 (ind, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    Print_ESeq (d, d_pool, m9a47, m9a48, err);
+    Print_ESeq (d, d_pool, m9a48, m9a49, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -1512,20 +1522,20 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
           if (err->exc) goto L_ret;
           DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s72, 6 }), err);
           if (err->exc) goto L_ret;
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a49 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a50 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Print_E (d, d_pool, m9a49, err);
+          Print_E (d, d_pool, m9a50, err);
           if (err->exc) goto L_ret;
           }
           DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s73, 5 }), err);
           if (err->exc) goto L_ret;
           DynStr_AppendChar (d, d_pool, 10u, err);
           if (err->exc) goto L_ret;
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a50 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a51 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a51 = m9_add_i64 (ind, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a52 = m9_add_i64 (ind, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          Print_ESeq (d, d_pool, m9a50, m9a51, err);
+          Print_ESeq (d, d_pool, m9a51, m9a52, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -1537,11 +1547,11 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
             if (err->exc) goto L_ret;
             DynStr_AppendChar (d, d_pool, 10u, err);
             if (err->exc) goto L_ret;
-            { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a52 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a53 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a53 = m9_add_i64 (ind, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a54 = m9_add_i64 (ind, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            Print_ESeq (d, d_pool, m9a52, m9a53, err);
+            Print_ESeq (d, d_pool, m9a53, m9a54, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -1559,20 +1569,20 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s76, 6 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a54 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a55 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a54, err);
+    Print_E (d, d_pool, m9a55, err);
     if (err->exc) goto L_ret;
     }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s77, 3 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (d, d_pool, 10u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a55 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a56 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a56 = m9_add_i64 (ind, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a57 = m9_add_i64 (ind, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    Print_ESeq (d, d_pool, m9a55, m9a56, err);
+    Print_ESeq (d, d_pool, m9a56, m9a57, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -1591,16 +1601,16 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s80, 4 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a57 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a58 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a57, err);
+    Print_E (d, d_pool, m9a58, err);
     if (err->exc) goto L_ret;
     }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s81, 4 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a58 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a59 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a58, err);
+    Print_E (d, d_pool, m9a59, err);
     if (err->exc) goto L_ret;
     }
     { Ast_Node * by = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
@@ -1608,9 +1618,9 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (by != NULL) {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s82, 4 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err))) m9a59 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err))) m9a60 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_E (d, d_pool, m9a59, err);
+      Print_E (d, d_pool, m9a60, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -1618,11 +1628,11 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_AppendChar (d, d_pool, 10u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(3), n->kids.len, sizeof (Ast_Node *), err))) m9a60 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(3), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(3), n->kids.len, sizeof (Ast_Node *), err))) m9a61 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(3), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a61 = m9_add_i64 (ind, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a62 = m9_add_i64 (ind, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    Print_ESeq (d, d_pool, m9a60, m9a61, err);
+    Print_ESeq (d, d_pool, m9a61, m9a62, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -1639,11 +1649,11 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_AppendChar (d, d_pool, 10u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a62 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a63 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a63 = m9_add_i64 (ind, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a64 = m9_add_i64 (ind, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    Print_ESeq (d, d_pool, m9a62, m9a63, err);
+    Print_ESeq (d, d_pool, m9a63, m9a64, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -1665,9 +1675,9 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s88, 5 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a64 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a65 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a64, err);
+    Print_E (d, d_pool, m9a65, err);
     if (err->exc) goto L_ret;
     }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s89, 3 }), err);
@@ -1711,11 +1721,11 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
           if (err->exc) goto L_ret;
           DynStr_AppendChar (d, d_pool, 10u, err);
           if (err->exc) goto L_ret;
-          { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a65 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a66 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a66 = m9_add_i64 (ind, INT64_C(2), err);
+          { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a67 = m9_add_i64 (ind, INT64_C(2), err);
             if (err->exc) goto L_ret;
-          Print_ESeq (d, d_pool, m9a65, m9a66, err);
+          Print_ESeq (d, d_pool, m9a66, m9a67, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -1727,11 +1737,11 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
             if (err->exc) goto L_ret;
             DynStr_AppendChar (d, d_pool, 10u, err);
             if (err->exc) goto L_ret;
-            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a67 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a68 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a68 = m9_add_i64 (ind, INT64_C(2), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a69 = m9_add_i64 (ind, INT64_C(2), err);
               if (err->exc) goto L_ret;
-            Print_ESeq (d, d_pool, m9a67, m9a68, err);
+            Print_ESeq (d, d_pool, m9a68, m9a69, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -1754,9 +1764,9 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (e != NULL) {
       DynStr_AppendChar (d, d_pool, 32u, err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a69 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a70 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_E (d, d_pool, m9a69, err);
+      Print_E (d, d_pool, m9a70, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -1778,9 +1788,9 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (ar != NULL) {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s97, 2 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a70 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a71 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_Args (d, d_pool, m9a70, err);
+      Print_Args (d, d_pool, m9a71, err);
       if (err->exc) goto L_ret;
       }
       DynStr_AppendChar (d, d_pool, 41u, err);
@@ -1808,16 +1818,16 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s99, 8 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a71 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a72 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a71, err);
+    Print_E (d, d_pool, m9a72, err);
     if (err->exc) goto L_ret;
     }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s100, 2 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a72 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a73 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a72, err);
+    Print_E (d, d_pool, m9a73, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (d, d_pool, 41u, err);
@@ -1829,16 +1839,16 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s101, 10 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a73 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a74 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a73, err);
+    Print_E (d, d_pool, m9a74, err);
     if (err->exc) goto L_ret;
     }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s102, 2 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a74 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a75 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a74, err);
+    Print_E (d, d_pool, m9a75, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (d, d_pool, 41u, err);
@@ -1850,9 +1860,9 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s103, 6 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a75 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a76 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a75, err);
+    Print_E (d, d_pool, m9a76, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (d, d_pool, 41u, err);
@@ -1864,9 +1874,9 @@ static void Print_EStmt (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s104, 8 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a76 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a77 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_E (d, d_pool, m9a76, err);
+    Print_E (d, d_pool, m9a77, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (d, d_pool, 41u, err);
@@ -1941,9 +1951,9 @@ static void Print_EParams (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k, m
         } }
         DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s111, 2 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err))) m9a77 = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err))) m9a78 = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Print_EType (d, d_pool, m9a77, INT64_C(0), err);
+        Print_EType (d, d_pool, m9a78, INT64_C(0), err);
         if (err->exc) goto L_ret;
         }
       } }
@@ -1981,9 +1991,9 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
       { Ast_Node * c = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (c != NULL) {
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a78 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a79 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Print_Sp (d, d_pool, m9a78, err);
+        Print_Sp (d, d_pool, m9a79, err);
         if (err->exc) goto L_ret;
         }
         DynStr_Append (d, d_pool, c->a, err);
@@ -1993,18 +2003,18 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
         bool m9t3 = Print_IsAggregate ((*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err)), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
-          { __typeof__((*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err))) m9a79 = (*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err))) m9a80 = (*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a80 = m9_add_i64 (ind, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a81 = m9_add_i64 (ind, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          Print_EAggregate (d, d_pool, m9a79, m9a80, err);
+          Print_EAggregate (d, d_pool, m9a80, m9a81, err);
           if (err->exc) goto L_ret;
           }
           }
         } else {
-          { __typeof__((*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err))) m9a81 = (*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err))) m9a82 = (*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Print_E (d, d_pool, m9a81, err);
+          Print_E (d, d_pool, m9a82, err);
           if (err->exc) goto L_ret;
           }
         }
@@ -2031,9 +2041,9 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
       { Ast_Node * td = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (td != NULL) {
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a82 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a83 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Print_Sp (d, d_pool, m9a82, err);
+        Print_Sp (d, d_pool, m9a83, err);
         if (err->exc) goto L_ret;
         }
         DynStr_Append (d, d_pool, td->a, err);
@@ -2043,11 +2053,11 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
         if (ty != NULL) {
           DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), err);
           if (err->exc) goto L_ret;
-          { __typeof__((*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err))) m9a83 = (*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err))) m9a84 = (*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a84 = m9_add_i64 (ind, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a85 = m9_add_i64 (ind, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          Print_EType (d, d_pool, m9a83, m9a84, err);
+          Print_EType (d, d_pool, m9a84, m9a85, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -2075,9 +2085,9 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
       { Ast_Node * vd = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (vd != NULL) {
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a85 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a86 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Print_Sp (d, d_pool, m9a85, err);
+        Print_Sp (d, d_pool, m9a86, err);
         if (err->exc) goto L_ret;
         }
         if (vd->f3) {
@@ -2092,11 +2102,11 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
         } }
         DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s120, 3 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a86 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a87 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a87 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a88 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Print_EType (d, d_pool, m9a86, m9a87, err);
+        Print_EType (d, d_pool, m9a87, m9a88, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -2123,9 +2133,9 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
       { Ast_Node * xd = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (xd != NULL) {
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a88 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a89 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Print_Sp (d, d_pool, m9a88, err);
+        Print_Sp (d, d_pool, m9a89, err);
         if (err->exc) goto L_ret;
         }
         DynStr_Append (d, d_pool, xd->a, err);
@@ -2135,9 +2145,9 @@ static void Print_EDecl (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
         if (xf != NULL) {
           DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s123, 2 }), err);
           if (err->exc) goto L_ret;
-          { __typeof__((*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err))) m9a89 = (*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err))) m9a90 = (*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Print_FieldsInline (d, d_pool, m9a89, err);
+          Print_FieldsInline (d, d_pool, m9a90, err);
           if (err->exc) goto L_ret;
           }
           DynStr_AppendChar (d, d_pool, 41u, err);
@@ -2186,9 +2196,9 @@ static void Print_EProc (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s127, 2 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a90 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a91 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  Print_EParams (d, d_pool, m9a90, err);
+  Print_EParams (d, d_pool, m9a91, err);
   if (err->exc) goto L_ret;
   }
   DynStr_AppendChar (d, d_pool, 41u, err);
@@ -2202,9 +2212,9 @@ static void Print_EProc (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s129, 3 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a91 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a92 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Print_EType (d, d_pool, m9a91, ind, err);
+    Print_EType (d, d_pool, m9a92, ind, err);
     if (err->exc) goto L_ret;
     }
   } }
@@ -2213,9 +2223,9 @@ static void Print_EProc (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * n, int
   if (rs != NULL) {
     DynStr_AppendChar (d, d_pool, 10u, err);
     if (err->exc) goto L_ret;
-    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a92 = m9_add_i64 (ind, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a93 = m9_add_i64 (ind, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    Print_Sp (d, d_pool, m9a92, err);
+    Print_Sp (d, d_pool, m9a93, err);
     if (err->exc) goto L_ret;
     }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s130, 7 }), err);
@@ -2333,14 +2343,14 @@ static void Print_EAggregate (DynStr_DString * *d, m9_pool *d_pool, Ast_Node * k
     m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a93 = m9_add_i64 (ind, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a94 = m9_add_i64 (ind, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      Print_Sp (d, d_pool, m9a93, err);
+      Print_Sp (d, d_pool, m9a94, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a94 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a95 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Print_E (d, d_pool, m9a94, err);
+      Print_E (d, d_pool, m9a95, err);
       if (err->exc) goto L_ret;
       }
       bool m9t2 = (i < m9_sub_i64 (n->nkids, INT64_C(1), err));

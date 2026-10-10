@@ -1,0 +1,23 @@
+(* EXPECT: field 1 of Bad: cannot give SLICE OF CHAR where I64 is expected *)
+(* A RAISE's payload is held to its EXCEPTION's fields, as a record
+   aggregate's arguments are: the count and each value's type (par 5).
+   Until 2026-10-09 nothing held it: the values swapped compiled and
+   ran, each landing in the slot of its own type.  The legal forms
+   first -- the fields in order, a literal that adapts, the predeclared
+   IndexError raised bare and with its two values. *)
+MODULE m ;
+EXCEPTION
+  Bad (code : I64 ; what : STR) ;
+PROCEDURE Ok (n : I64) RAISES Bad, IndexError =
+BEGIN
+  IF n = 1 THEN RAISE Bad (n, 'one') END ;
+  IF n = 2 THEN RAISE Bad (2, 'two') END ;
+  IF n = 3 THEN RAISE IndexError END ;
+  RAISE IndexError (n, 4)
+END Ok ;
+PROCEDURE Swapped () RAISES Bad =
+BEGIN
+  RAISE Bad ('oops', 5)
+END Swapped ;
+BEGIN
+END m.

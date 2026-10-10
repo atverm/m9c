@@ -1,0 +1,22 @@
+(* EXPECT: a CASE over I64 needs an ELSE: a value no label names would have nowhere to go (par 8) *)
+(* A CASE over a CHAR or an integer names some of its values; one no
+   label names must have somewhere to go.  The generator refused it
+   ("unmatched-label semantics undecided") and the checker passed it;
+   since 2026-10-09 the checker says so.  An enumeration or CASE RECORD
+   is held total instead.  The legal forms first. *)
+MODULE m ;
+TYPE
+  Colour = (Red, Green) ;
+VAR
+  k : I64 ;
+  c : CHAR ;
+  col : Colour ;
+BEGIN
+  k := 5 ;
+  c := 'a' ;
+  col := Colour.Red ;
+  CASE k OF | 1 : k := 2 ELSE k := 0 END ;
+  CASE c OF | 'a' : k := 1 ELSE k := 2 END ;
+  CASE col OF | Red : k := 1 | Green : k := 2 END ;
+  CASE k OF | 1 : k := 2 | 2 : k := 3 END
+END m.

@@ -72,7 +72,7 @@ deps_of () {
 }
 
 CFLAGS="-std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter"
-TOOLC="DynStr Lex Ast Parse Text Gen"
+TOOLC="DynStr Lex Ast Parse Text Print Sem Gen"
 
 # build a gendump from one stage's sources
 build_stage () {                       # build_stage <srcdir> <out>

@@ -1,4 +1,4 @@
-(* EXPECT: unhandled RAISES ValueRange from call to k *)
+(* EXPECT: unhandled RAISES ValueRange from call to k -- add it to this procedure's RAISES, or handle it: EXCEPT | ValueRange : ... *)
 MODULE m ;
 TYPE Kernel = PROCEDURE (x: F64) : F64 RAISES ValueRange ;
 VAR y : F64 ;

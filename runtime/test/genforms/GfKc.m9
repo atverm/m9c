@@ -1,0 +1,15 @@
+DEFINITION MODULE GfKc ;
+
+(* A helper for the genforms fixtures: constants declared in another
+   module, one a literal and one an expression folded at registration
+   (decision 38).                                                    *)
+
+CONST
+  Seven   = 7 ;
+  Sixteen = 4 * 4 ;
+
+END GfKc.
+
+
+IMPLEMENTATION MODULE GfKc ;
+END GfKc.

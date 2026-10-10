@@ -94,10 +94,19 @@ typedef struct Ast_Node Ast_Node;
 #define Ast_NAggregate INT64_C(84)
 #define Ast_NGridOf INT64_C(85)
 #define Ast_NLinkList INT64_C(86)
+#define Ast_NCallSel INT64_C(87)
 
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep
 typedef struct { Ast_Node * *p; int64_t len; } m9_sl_Ast_Nodep;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_CHAR
+#define M9SL_m9_sl_m9_sl_CHAR
+typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_24_uint32_t
+#define M9SL_m9_arr_24_uint32_t
+typedef struct { uint32_t v[24]; } m9_arr_24_uint32_t;
 #endif
 
 typedef struct Ast_Node Ast_Node;
@@ -113,9 +122,18 @@ struct Ast_Node {
   bool f4;
   m9_sl_Ast_Nodep kids;
   int64_t nkids;
+  int64_t id;
 };
 
 Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, m9_state *err);
 void Ast_Add (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, Ast_Node * kid, m9_state *err);
+bool Ast_ScalarConst (Ast_Node * k, int64_t *v, bool *ch, m9_state *err);
+int64_t Ast_CharCode (m9_sl_CHAR lit, m9_state *err);
+void Ast_SetType (int64_t id, Ast_Node * t, m9_state *err);
+Ast_Node * Ast_TypeAt (int64_t id, m9_state *err);
+void Ast_SetTyStr (int64_t id, m9_sl_CHAR t, m9_state *err);
+m9_sl_CHAR Ast_TyStrAt (int64_t id, m9_state *err);
+bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err);
+int64_t Ast_IntText (int64_t v, m9_arr_24_uint32_t *buf, m9_state *err);
 
 #endif

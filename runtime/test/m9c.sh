@@ -644,30 +644,29 @@ echo "m9c: a qualified handler catches exactly the module it names"
 # CHECKER refuses it since 2026-08-30 ("NEW takes the pool first"),
 # so the generator never sees it -- a gate broken by its own defect
 # being fixed one layer earlier, which is the right way round.  The
-# trigger here is EXIT inside a CASE arm: the checker passes it and
-# the generator refuses it, because a C switch would swallow the
-# break.  The reversed NEW is checked below, where it belongs now.
+# trigger was EXIT inside a CASE arm until 2026-10-09, when the
+# generator learned it, then an expression as a CASE label until stage
+# 2 of the typed tree the same evening, a variable FOR step until stage
+# 3 (the checker refuses it now, par 10); it is a SLICE of an array a
+# call answers now, which the checker passes and the generator refuses
+# (runtime/test/genforms.owed lists every such form).  The reversed
+# NEW is checked below, where it belongs now.
 GMSG=/tmp/m9c-genmsg
 rm -rf "$GMSG"; mkdir -p "$GMSG"; cd "$GMSG"
 cat > Exc.m9 <<'M9'
 MODULE Exc ;
 IMPORT Io ;
-VAR i : I64 ;
+PROCEDURE Mk () : ARRAY 4 OF I64 = VAR a : ARRAY 4 OF I64 ; BEGIN RETURN a END Mk ;
+VAR s : SLICE OF I64 ;
 BEGIN
-  i := 0 ;
-  LOOP
-    CASE i OF
-    | 0 : EXIT
-    ELSE i := 1
-    END
-  END ;
-  Io.WriteLine ('no')
+  s := SLICE (Mk (), 0, 2) ;
+  Io.WriteLine ('sliced')
 END Exc.
 M9
 if M9LIBRARY="$SRC" "$M9C" --make -c ./Exc.m9 2>gm.txt; then
-  echo "FAIL: EXIT inside a CASE arm should be refused"; exit 1
+  echo "FAIL: a SLICE of a call's array should be refused"; exit 1
 fi
-grep -q 'Exc.m9:8: gen: EXIT inside a CASE arm' gm.txt ||
+grep -q 'Exc.m9:6: gen: SLICE() argument form' gm.txt ||
   { echo "FAIL: the generator error lost its line or message:"; \
     head -3 gm.txt; exit 1; }
 
@@ -762,28 +761,24 @@ fi
 # program passes the checker and the generator refuses it, so until
 # that day an editor called it clean and the build said no.  Still
 # nothing on disk.
+# (EXCEPT and FINALLY on one block until 2026-10-09, when the generator
+# learned it; an expression as a CASE label until stage 2 of the typed
+# tree the same evening; a variable FOR step until stage 3, when the
+# checker learned to refuse it; a SLICE of a call's array now)
 cat > Late.m9 <<'LATE'
 MODULE Late ;
 IMPORT Io ;
-PROCEDURE F (x: I64) : I64 RAISES ValueRange =
+PROCEDURE Mk () : ARRAY 4 OF I64 = VAR a : ARRAY 4 OF I64 ; BEGIN RETURN a END Mk ;
+VAR s : SLICE OF I64 ;
 BEGIN
-  IF x < 0 THEN RAISE ValueRange END ;
-  RETURN x
-END F ;
-VAR n : I64 ;
-BEGIN
-  n := F (3) ;
-  Io.WriteI64 (n)
-EXCEPT
-| ValueRange : Io.WriteLine ('negative')
-FINALLY
-  Io.WriteLine ('')
+  s := SLICE (Mk (), 0, 2) ;
+  Io.WriteLine ('sliced')
 END Late.
 LATE
 if M9LIBRARY="$SRC" "$M9C" --check Late.m9 2>late.err; then
   echo "FAIL: --check accepted a program the generator refuses"; cat late.err; exit 1
 fi
-grep -q "gen: EXCEPT and FINALLY" late.err ||
+grep -q "gen: SLICE() argument form" late.err ||
   { echo "FAIL: --check exit 1 without the generator's line:"; cat late.err; exit 1; }
 [ -z "$(ls -A "$CK" | grep -v -E '^(Broke|Late)\.m9$|\.err$')" ] ||
   { echo "FAIL: --check on a generator refusal wrote files:"; ls -A "$CK"; exit 1; }

@@ -2760,7 +2760,7 @@ static void M9c_LinkWord (m9_sl_CHAR rt, m9_sl_CHAR w, m9_sl_m9_sl_CHAR *seen, i
         }
       } }
       if ((at > INT64_C(6))) {
-        { __typeof__(({ __typeof__(w) m9t11 = w; int64_t m9t11a = INT64_C(6), m9t11n = m9_sub_i64 (at, INT64_C(6), err); (__typeof__(m9t11)){ m9t11.p + m9_chk_slice (m9t11a, m9t11n, m9t11.len, err), m9t11n }; })) m9a35 = ({ __typeof__(w) m9t11 = w; int64_t m9t11a = INT64_C(6), m9t11n = m9_sub_i64 (at, INT64_C(6), err); (__typeof__(m9t11)){ m9t11.p + m9_chk_slice (m9t11a, m9t11n, m9t11.len, err), m9t11n }; });
+        { __typeof__(({ __typeof__(w) m9t10 = w; int64_t m9t10a = INT64_C(6), m9t10n = m9_sub_i64 (at, INT64_C(6), err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; })) m9a35 = ({ __typeof__(w) m9t10 = w; int64_t m9t10a = INT64_C(6), m9t10n = m9_sub_i64 (at, INT64_C(6), err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; });
           if (err->exc) goto L_ret;
         { __typeof__(M9c_Cat (((m9_sl_CHAR){ (uint32_t *) m9s74, 2 }), m9a35, err)) m9a36 = M9c_Cat (((m9_sl_CHAR){ (uint32_t *) m9s74, 2 }), m9a35, err);
           if (err->exc) goto L_ret;

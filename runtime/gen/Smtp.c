@@ -1478,7 +1478,7 @@ static m9_sl_CHAR Smtp_EncodedWord (m9_sl_CHAR s, m9_state *err)
         if (err->exc) goto L_ret;
         }
       }
-      { __typeof__(({ __typeof__(all) m9t5 = all; int64_t m9t5a = nb, m9t5n = cost; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a31 = ({ __typeof__(all) m9t5 = all; int64_t m9t5a = nb, m9t5n = cost; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+      { __typeof__(({ __typeof__(all) m9t4 = all; int64_t m9t4a = nb, m9t4n = cost; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a31 = ({ __typeof__(all) m9t4 = all; int64_t m9t4a = nb, m9t4n = cost; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
         if (err->exc) goto L_ret;
       { __typeof__(Smtp_OneWord (m9a31, useB, err)) m9a32 = Smtp_OneWord (m9a31, useB, err);
         if (err->exc) goto L_ret;
@@ -1506,7 +1506,7 @@ static m9_sl_CHAR Smtp_EncodedWord (m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     }
   }
-  { __typeof__(({ __typeof__(all) m9t7 = all; int64_t m9t7a = nb, m9t7n = m9_sub_i64 ((all).len, nb, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; })) m9a34 = ({ __typeof__(all) m9t7 = all; int64_t m9t7a = nb, m9t7n = m9_sub_i64 ((all).len, nb, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
+  { __typeof__(({ __typeof__(all) m9t5 = all; int64_t m9t5a = nb, m9t5n = m9_sub_i64 ((all).len, nb, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a34 = ({ __typeof__(all) m9t5 = all; int64_t m9t5a = nb, m9t5n = m9_sub_i64 ((all).len, nb, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
     if (err->exc) goto L_ret;
   { __typeof__(Smtp_OneWord (m9a34, useB, err)) m9a35 = Smtp_OneWord (m9a34, useB, err);
     if (err->exc) goto L_ret;
@@ -1652,18 +1652,18 @@ static void Smtp_WrAll (Smtp_Conn *c, m9_sl_BYTE b, m9_state *err)
       want = m9v;
     }
     if ((*c).secure) {
-      { __typeof__(n) m9v = (int64_t)(tls_write (((int)((*c).fd)), ((void *)(({ __typeof__(b) m9t2 = b; int64_t m9t2a = off, m9t2n = want; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })).p), ((size_t)(want))));
+      { __typeof__(n) m9v = (int64_t)(tls_write (((int)((*c).fd)), ((void *)(({ __typeof__(b) m9t1 = b; int64_t m9t1a = off, m9t1n = want; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })).p), ((size_t)(want))));
         if (err->exc) goto L_ret;
         n = m9v;
       }
     } else {
-      { __typeof__(n) m9v = (int64_t)(tcp_write (((int)((*c).fd)), ((void *)(({ __typeof__(b) m9t4 = b; int64_t m9t4a = off, m9t4n = want; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })).p), ((size_t)(want))));
+      { __typeof__(n) m9v = (int64_t)(tcp_write (((int)((*c).fd)), ((void *)(({ __typeof__(b) m9t2 = b; int64_t m9t2a = off, m9t2n = want; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })).p), ((size_t)(want))));
         if (err->exc) goto L_ret;
         n = m9v;
       }
     }
     if ((n <= INT64_C(0))) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s84, 41 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s84, 41 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s84, 41 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s84, 41 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       err->i[0] = INT64_C(0);
       m9_raise (err, &Smtp_Error);
       goto L_ret;
@@ -1737,18 +1737,18 @@ static int64_t Smtp_Reply (Smtp_Conn *c, m9_sl_CHAR *text, m9_state *err)
       want = m9v;
     }
     if ((*c).secure) {
-      { __typeof__(n) m9v = (int64_t)(tls_read (((int)((*c).fd)), ((void *)(({ __typeof__(buf) m9t3 = buf; int64_t m9t3a = total, m9t3n = want; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })).p), ((size_t)(want))));
+      { __typeof__(n) m9v = (int64_t)(tls_read (((int)((*c).fd)), ((void *)(({ __typeof__(buf) m9t2 = buf; int64_t m9t2a = total, m9t2n = want; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })).p), ((size_t)(want))));
         if (err->exc) goto L_ret;
         n = m9v;
       }
     } else {
-      { __typeof__(n) m9v = (int64_t)(tcp_read (((int)((*c).fd)), ((void *)(({ __typeof__(buf) m9t5 = buf; int64_t m9t5a = total, m9t5n = want; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })).p), ((size_t)(want))));
+      { __typeof__(n) m9v = (int64_t)(tcp_read (((int)((*c).fd)), ((void *)(({ __typeof__(buf) m9t3 = buf; int64_t m9t3a = total, m9t3n = want; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })).p), ((size_t)(want))));
         if (err->exc) goto L_ret;
         n = m9v;
       }
     }
     if ((n <= INT64_C(0))) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s86, 49 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s86, 49 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s86, 49 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s86, 49 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
       err->i[0] = INT64_C(0);
       m9_raise (err, &Smtp_Error);
       goto L_ret;
@@ -1760,15 +1760,15 @@ static int64_t Smtp_Reply (Smtp_Conn *c, m9_sl_CHAR *text, m9_state *err)
     ls = INT64_C(0);
     i = INT64_C(0);
     for (;;) {
-      bool m9t7 = ((m9_add_i64 (i, INT64_C(1), err) < total) && (!done));
+      bool m9t5 = ((m9_add_i64 (i, INT64_C(1), err) < total) && (!done));
       if (err->exc) goto L_ret;
-      if (!(m9t7)) break;
-      bool m9t8 = (((int64_t)((*(uint8_t *) m9_at (buf.p, i, buf.len, sizeof (uint8_t), err))) == INT64_C(13)) && ((int64_t)((*(uint8_t *) m9_at (buf.p, m9_add_i64 (i, INT64_C(1), err), buf.len, sizeof (uint8_t), err))) == INT64_C(10)));
+      if (!(m9t5)) break;
+      bool m9t6 = (((int64_t)((*(uint8_t *) m9_at (buf.p, i, buf.len, sizeof (uint8_t), err))) == INT64_C(13)) && ((int64_t)((*(uint8_t *) m9_at (buf.p, m9_add_i64 (i, INT64_C(1), err), buf.len, sizeof (uint8_t), err))) == INT64_C(10)));
       if (err->exc) goto L_ret;
-      if (m9t8) {
-        bool m9t9 = (((((m9_sub_i64 (i, ls, err) >= INT64_C(4)) && Smtp_IsDigit ((*(uint8_t *) m9_at (buf.p, ls, buf.len, sizeof (uint8_t), err)), err)) && Smtp_IsDigit ((*(uint8_t *) m9_at (buf.p, m9_add_i64 (ls, INT64_C(1), err), buf.len, sizeof (uint8_t), err)), err)) && Smtp_IsDigit ((*(uint8_t *) m9_at (buf.p, m9_add_i64 (ls, INT64_C(2), err), buf.len, sizeof (uint8_t), err)), err)) && ((int64_t)((*(uint8_t *) m9_at (buf.p, m9_add_i64 (ls, INT64_C(3), err), buf.len, sizeof (uint8_t), err))) == INT64_C(32)));
+      if (m9t6) {
+        bool m9t7 = (((((m9_sub_i64 (i, ls, err) >= INT64_C(4)) && Smtp_IsDigit ((*(uint8_t *) m9_at (buf.p, ls, buf.len, sizeof (uint8_t), err)), err)) && Smtp_IsDigit ((*(uint8_t *) m9_at (buf.p, m9_add_i64 (ls, INT64_C(1), err), buf.len, sizeof (uint8_t), err)), err)) && Smtp_IsDigit ((*(uint8_t *) m9_at (buf.p, m9_add_i64 (ls, INT64_C(2), err), buf.len, sizeof (uint8_t), err)), err)) && ((int64_t)((*(uint8_t *) m9_at (buf.p, m9_add_i64 (ls, INT64_C(3), err), buf.len, sizeof (uint8_t), err))) == INT64_C(32)));
         if (err->exc) goto L_ret;
-        if (m9t9) {
+        if (m9t7) {
           { __typeof__(code) m9v = m9_sub_i64 (m9_add_i64 (m9_add_i64 (m9_mul_i64 ((m9_sub_i64 ((int64_t)((*(uint8_t *) m9_at (buf.p, ls, buf.len, sizeof (uint8_t), err))), INT64_C(48), err)), INT64_C(100), err), m9_mul_i64 ((m9_sub_i64 ((int64_t)((*(uint8_t *) m9_at (buf.p, m9_add_i64 (ls, INT64_C(1), err), buf.len, sizeof (uint8_t), err))), INT64_C(48), err)), INT64_C(10), err), err), (int64_t)((*(uint8_t *) m9_at (buf.p, m9_add_i64 (ls, INT64_C(2), err), buf.len, sizeof (uint8_t), err))), err), INT64_C(48), err);
             if (err->exc) goto L_ret;
             code = m9v;
@@ -1791,7 +1791,7 @@ static int64_t Smtp_Reply (Smtp_Conn *c, m9_sl_CHAR *text, m9_state *err)
       }
     }
   }
-  { __typeof__(({ __typeof__(buf) m9t10 = buf; int64_t m9t10a = INT64_C(0), m9t10n = total; (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; })) m9a42 = ({ __typeof__(buf) m9t10 = buf; int64_t m9t10a = INT64_C(0), m9t10n = total; (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; });
+  { __typeof__(({ __typeof__(buf) m9t8 = buf; int64_t m9t8a = INT64_C(0), m9t8n = total; (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; })) m9a42 = ({ __typeof__(buf) m9t8 = buf; int64_t m9t8a = INT64_C(0), m9t8n = total; (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; });
     if (err->exc) goto L_ret;
   { __typeof__((*text)) m9v = DynStr_Chars (&(scratch), m9a42, err);
     if (err->exc) goto L_ret;

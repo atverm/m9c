@@ -1,4 +1,4 @@
-(* EXPECT: a frame allocation dies with this frame; it cannot be stored in module variable saved *)
+(* EXPECT: a frame allocation dies with this frame; it cannot be stored in module variable saved (par 2.3) -- allocate it in a module pool (VAR mpool : POOL ; NEW (mpool, T)), or copy a string: Text.Keep (mpool, s) *)
 MODULE m ;
 TYPE R = RECORD v : I64 END ;
 VAR saved : PTR R ;

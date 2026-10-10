@@ -13,12 +13,16 @@ static const uint32_t Fmt_HexDigits_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u,
 #define Fmt_MaxF64 (1.7976931348623157E308)
 static const uint32_t Fmt_HexLower_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 97u, 98u, 99u, 100u, 101u, 102u };
 #define Fmt_HexLower ((m9_sl_CHAR){ (uint32_t *) Fmt_HexLower_d, 16 })
-#define Fmt_Limbs INT64_C(48)
+#define Fmt_Limbs INT64_C(128)
 #define Fmt_Base INT64_C(4294967296)
+#define Fmt_MaxDig INT64_C(768)
+#define Fmt_Two52 INT64_C(4503599627370496)
+#define Fmt_Two53 INT64_C(9007199254740992)
+#define Fmt_Two54 INT64_C(18014398509481984)
 
-#ifndef M9SL_m9_arr_48_int64_t
-#define M9SL_m9_arr_48_int64_t
-typedef struct { int64_t v[48]; } m9_arr_48_int64_t;
+#ifndef M9SL_m9_arr_128_int64_t
+#define M9SL_m9_arr_128_int64_t
+typedef struct { int64_t v[128]; } m9_arr_128_int64_t;
 #endif
 #ifndef M9SL_m9_arr_16_uint32_t
 #define M9SL_m9_arr_16_uint32_t

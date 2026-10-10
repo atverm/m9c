@@ -65,15 +65,24 @@ static const uint32_t m9s12[3] = { 102u, 115u, 32u };
 static const uint32_t m9s13[5] = { 105u, 114u, 111u, 100u, 115u };
 static const uint32_t m9s14[9] = { 98u, 121u, 116u, 101u, 115u, 58u, 32u, 97u, 32u };
 static const uint32_t m9s15[1] = { 99u };
-static const uint32_t m9s16[12] = { 97u, 98u, 115u, 101u, 110u, 116u, 58u, 32u, 110u, 111u, 110u, 101u };
-static const uint32_t m9s17[7] = { 112u, 114u, 101u, 115u, 101u, 110u, 116u };
-static const uint32_t m9s18[5] = { 100u, 233u, 106u, 224u, 32u };
-static const uint32_t m9s19[1] = { 32u };
-static const uint32_t m9s20[6] = { 109u, 111u, 100u, 117u, 108u, 101u };
-static const uint32_t m9s21[7] = { 99u, 111u, 112u, 105u, 101u, 100u, 32u };
-static const uint32_t m9s22[7] = { 112u, 101u, 101u, 107u, 101u, 100u, 32u };
-static const uint32_t m9s23[3] = { 98u, 105u, 103u };
-static const uint32_t m9s24[6] = { 98u, 101u, 115u, 115u, 101u, 108u };
+static const uint32_t m9s16[1] = { 32u };
+static const uint32_t m9s17[5] = { 32u, 104u, 97u, 108u, 102u };
+static const uint32_t m9s18[1] = { 111u };
+static const uint32_t m9s19[15] = { 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 69u, 76u, 83u, 73u, 70u };
+static const uint32_t m9s20[7] = { 110u, 101u, 105u, 116u, 104u, 101u, 114u };
+static const uint32_t m9s21[14] = { 104u, 97u, 110u, 100u, 108u, 101u, 100u, 44u, 32u, 116u, 104u, 101u, 110u, 32u };
+static const uint32_t m9s22[10] = { 99u, 108u, 101u, 97u, 110u, 101u, 100u, 32u, 117u, 112u };
+static const uint32_t m9s23[9] = { 101u, 120u, 105u, 116u, 115u, 32u, 97u, 116u, 32u };
+static const uint32_t m9s24[1] = { 32u };
+static const uint32_t m9s25[12] = { 97u, 98u, 115u, 101u, 110u, 116u, 58u, 32u, 110u, 111u, 110u, 101u };
+static const uint32_t m9s26[7] = { 112u, 114u, 101u, 115u, 101u, 110u, 116u };
+static const uint32_t m9s27[5] = { 100u, 233u, 106u, 224u, 32u };
+static const uint32_t m9s28[1] = { 32u };
+static const uint32_t m9s29[6] = { 109u, 111u, 100u, 117u, 108u, 101u };
+static const uint32_t m9s30[7] = { 99u, 111u, 112u, 105u, 101u, 100u, 32u };
+static const uint32_t m9s31[7] = { 112u, 101u, 101u, 107u, 101u, 100u, 32u };
+static const uint32_t m9s32[3] = { 98u, 105u, 103u };
+static const uint32_t m9s33[6] = { 98u, 101u, 115u, 115u, 101u, 108u };
 
 static ShareUse_Box * ShareUse_Make (int64_t n, m9_state *err);
 static int64_t ShareUse_Count (int64_t n, m9_state *err);
@@ -85,6 +94,7 @@ static int64_t ShareUse_Peek (ShareUse_Box * o, m9_state *err);
 static void ShareUse_GridOf (int64_t n0, int64_t n1, m9_state *err);
 static void ShareUse_Dispatch (ShareUse_Store s, m9_state *err);
 static void ShareUse_Octets (m9_state *err);
+static void ShareUse_Forms (m9_state *err);
 static void ShareUse_Flags (m9_state *err);
 static void ShareUse_Accents (m9_state *err);
 
@@ -393,6 +403,130 @@ L_ret: ;
   return;
 }
 
+static void ShareUse_Forms (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  ShareUse_Box * o = NULL; (void) o;
+  ShareUse_Box * q = NULL; (void) q;
+  ShareUse_Box * c = NULL; (void) c;
+  int64_t i = 0; (void) i;
+  int64_t k = 0; (void) k;
+  double x = 0; (void) x;
+  x = ShareUse_Half;
+  Io_WriteI64 (ShareUse_Folded, err);
+  if (err->exc) goto L_ret;
+  Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s16, 1 }), err);
+  if (err->exc) goto L_ret;
+  Io_WriteI64 (ShareUse_Neg, err);
+  if (err->exc) goto L_ret;
+  if ((x == 0.5)) {
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), err);
+    if (err->exc) goto L_ret;
+  }
+  { __typeof__(c) m9v = (ShareUse_Box *) m9_pool_alloc (err->res, sizeof (ShareUse_Box), 1, err);
+    if (err->exc) goto L_ret;
+    c = m9v;
+  }
+  c->n = INT64_C(7);
+  o = NULL;
+  q = c;
+  { ShareUse_Box * a = o;
+  if (a != NULL) {
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), err);
+    if (err->exc) goto L_ret;
+  } else {
+    { ShareUse_Box * b = q;
+    if (b != NULL) {
+      Io_WriteI64 (b->n, err);
+      if (err->exc) goto L_ret;
+      Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s19, 15 }), err);
+      if (err->exc) goto L_ret;
+    } else {
+      Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s20, 7 }), err);
+      if (err->exc) goto L_ret;
+    } }
+  } }
+  bool m9t1 = false; (void) m9t1;
+  i = INT64_C(0);
+  { __typeof__(k) m9v = m9_div_i64 (INT64_C(1), i, err);
+    if (err->exc) goto L_hdl_m9t3;
+    k = m9v;
+  }
+  goto L_dn_m9t4;
+L_hdl_m9t3: ;
+  if (err->exc == &m9_exc_Overflow) {
+    err->exc = NULL;
+    Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s21, 14 }), err);
+    if (err->exc) goto L_fin_m9t2;
+    goto L_dn_m9t4;
+  }
+  goto L_fin_m9t2;
+L_dn_m9t4: ;
+L_fin_m9t2: ;
+  Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s22, 10 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t1) goto L_ret;
+  if (err->exc) goto L_ret;
+  i = INT64_C(0);
+  for (;;) {
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
+    { __typeof__(i) m9t5 = i;
+    switch (m9t5) {
+    case INT64_C(3):
+    {
+      goto m9xit1;
+    } break;
+    default: {
+      k = i;
+    } break;
+    } }
+    if (0) { m9xit1: break; }
+  }
+  k = INT64_C(0);
+  for (;;) {
+    if (!((k < INT64_C(10)))) break;
+    { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      k = m9v;
+    }
+    { __typeof__(m9_mod_i64 (k, INT64_C(4), err)) m9t6 = m9_mod_i64 (k, INT64_C(4), err);
+    if (err->exc) goto L_ret;
+    switch (m9t6) {
+    case INT64_C(0):
+    {
+      goto m9xit2;
+    } break;
+    default: {
+      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        i = m9v;
+      }
+    } break;
+    } }
+    if (0) { m9xit2: break; }
+  }
+  Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s23, 9 }), err);
+  if (err->exc) goto L_ret;
+  Io_WriteI64 (i, err);
+  if (err->exc) goto L_ret;
+  Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s24, 1 }), err);
+  if (err->exc) goto L_ret;
+  Io_WriteI64 (k, err);
+  if (err->exc) goto L_ret;
+  Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
 static void ShareUse_Flags (m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -407,7 +541,7 @@ static void ShareUse_Flags (m9_state *err)
   some = (o != NULL);
   none = (o == NULL);
   if (((!some) && none)) {
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s16, 12 }), err);
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s25, 12 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(c) m9v = (ShareUse_Box *) m9_pool_alloc (err->res, sizeof (ShareUse_Box), 1, err);
@@ -417,7 +551,7 @@ static void ShareUse_Flags (m9_state *err)
   c->n = INT64_C(3);
   o = c;
   if ((((o != NULL)) && (!((o == NULL))))) {
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s17, 7 }), err);
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s26, 7 }), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -434,7 +568,7 @@ static void ShareUse_Accents (m9_state *err)
   err->res = &m9frame;
   uint32_t ch = 0; (void) ch;
   ch = 233u;
-  { __typeof__(m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s18, 5 }), ch, err), ((m9_sl_CHAR){ (uint32_t *) m9s19, 1 }), err), 8322u, err)) m9a3 = m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s18, 5 }), ch, err), ((m9_sl_CHAR){ (uint32_t *) m9s19, 1 }), err), 8322u, err);
+  { __typeof__(m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s27, 5 }), ch, err), ((m9_sl_CHAR){ (uint32_t *) m9s28, 1 }), err), 8322u, err)) m9a3 = m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s27, 5 }), ch, err), ((m9_sl_CHAR){ (uint32_t *) m9s28, 1 }), err), 8322u, err);
     if (err->exc) goto L_ret;
   Io_WriteLine (m9a3, err);
   if (err->exc) goto L_ret;
@@ -452,19 +586,19 @@ int main (int argc, char **argv)
   err->res = &m9mframe;
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
-  p = ((m9_sl_CHAR){ (uint32_t *) m9s20, 6 });
+  p = ((m9_sl_CHAR){ (uint32_t *) m9s29, 6 });
   ShareUse_Try (INT64_C(3), err);
   if (err->exc) goto L_ret;
   ShareUse_Try (INT64_C(0), err);
   if (err->exc) goto L_ret;
   c = ((__typeof__(b)) m9_share_copy (b));
-  Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s21, 7 }), err);
+  Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s30, 7 }), err);
   if (err->exc) goto L_ret;
   Io_WriteI64 (c->n, err);
   if (err->exc) goto L_ret;
   Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
-  Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s22, 7 }), err);
+  Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s31, 7 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(ShareUse_Peek (b, err)) m9a4 = ShareUse_Peek (b, err);
     if (err->exc) goto L_ret;
@@ -483,7 +617,7 @@ int main (int argc, char **argv)
   if (err->exc) goto L_ret;
   big = UINT64_C(18446744073709551615);
   if ((big == UINT64_C(18446744073709551615))) {
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s23, 3 }), err);
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s32, 3 }), err);
     if (err->exc) goto L_ret;
   }
   ShareUse_GridOf (INT64_C(2), INT64_C(3), err);
@@ -492,7 +626,7 @@ int main (int argc, char **argv)
   if (err->exc) goto L_ret;
   y0_ = 1.0;
   if ((y0_ > 0.0)) {
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s24, 6 }), err);
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s33, 6 }), err);
     if (err->exc) goto L_ret;
   }
   ShareUse_Accents (err);
@@ -504,6 +638,8 @@ int main (int argc, char **argv)
   ShareUse_Dispatch (((ShareUse_Store){ .tag = ShareUse_Store_Irods }), err);
   if (err->exc) goto L_ret;
   ShareUse_Octets (err);
+  if (err->exc) goto L_ret;
+  ShareUse_Forms (err);
   if (err->exc) goto L_ret;
 L_ret: ;
   m9_pool_free (&m9mframe);

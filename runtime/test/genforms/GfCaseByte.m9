@@ -1,0 +1,16 @@
+MODULE GfCaseByte ;
+
+(* WANT: a CASE over a BYTE *)
+
+IMPORT Io ;
+
+VAR
+  b : BYTE ;
+
+BEGIN
+  b := 3 ;
+  CASE b OF
+  | 3 : Io.WriteLine ('a CASE over a BYTE')
+  ELSE  Io.WriteLine ('ELSE')
+  END
+END GfCaseByte.

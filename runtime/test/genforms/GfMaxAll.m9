@@ -1,0 +1,31 @@
+MODULE GfMaxAll ;
+
+(* WANT: MAX: 127 32767 2147483647 255 65535 4294967295 255 1114111 TRUE 1.7976931348623157e+308 *)
+
+IMPORT Io, Fmt ;
+
+VAR
+  a : I8 ;
+  b : I16 ;
+  c : I32 ;
+  d : U8 ;
+  e : U16 ;
+  f : U32 ;
+  g : BYTE ;
+  h : CHAR ;
+  k : BOOL ;
+  r : F64 ;
+  bs : STR ;
+
+BEGIN
+  a := MAX (I8) ; b := MAX (I16) ; c := MAX (I32) ;
+  d := MAX (U8) ; e := MAX (U16) ; f := MAX (U32) ;
+  g := MAX (BYTE) ; h := MAX (CHAR) ; k := MAX (BOOL) ; r := MAX (F64) ;
+  bs := 'FALSE' ;
+  IF k THEN bs := 'TRUE' END ;
+  Io.WriteLine ('MAX: ' + Fmt.I64Str (I64 (a)) + ' ' + Fmt.I64Str (I64 (b))
+                + ' ' + Fmt.I64Str (I64 (c)) + ' ' + Fmt.I64Str (I64 (d))
+                + ' ' + Fmt.I64Str (I64 (e)) + ' ' + Fmt.I64Str (I64 (f))
+                + ' ' + Fmt.I64Str (I64 (g)) + ' ' + Fmt.I64Str (ORD (h))
+                + ' ' + bs + ' ' + Fmt.Short (r))
+END GfMaxAll.

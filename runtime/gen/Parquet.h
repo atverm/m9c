@@ -14,6 +14,7 @@
 
 void Parquet_m9init (m9_state *err);
 
+typedef struct Parquet_Options Parquet_Options;
 typedef struct Parquet_Buf Parquet_Buf;
 typedef struct Parquet_Rd Parquet_Rd;
 typedef struct Parquet_ColInfo Parquet_ColInfo;
@@ -42,28 +43,41 @@ typedef struct Parquet_Meta Parquet_Meta;
 #define Parquet_PtFixed INT64_C(7)
 #define Parquet_CvUtf8 INT64_C(0)
 #define Parquet_CvUint8 INT64_C(11)
+#define Parquet_CvInt8 INT64_C(15)
 #define Parquet_CvInt16 INT64_C(16)
 #define Parquet_EncPlain INT64_C(0)
 #define Parquet_EncRle INT64_C(3)
 #define Parquet_CodecNone INT64_C(0)
 
-#ifndef M9SL_m9_sl_Parquet_ColInfo
-#define M9SL_m9_sl_Parquet_ColInfo
-typedef struct { Parquet_ColInfo *p; int64_t len; } m9_sl_Parquet_ColInfo;
-#endif
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_sl_Parquet_ColInfo
+#define M9SL_m9_sl_Parquet_ColInfo
+typedef struct { Parquet_ColInfo *p; int64_t len; } m9_sl_Parquet_ColInfo;
 #endif
 #ifndef M9SL_m9_sl_Parquet_Buf
 #define M9SL_m9_sl_Parquet_Buf
 typedef struct { Parquet_Buf *p; int64_t len; } m9_sl_Parquet_Buf;
 #endif
 
+typedef struct Parquet_Options Parquet_Options;
+struct Parquet_Options {
+  m9_sl_m9_sl_CHAR kvK;
+  m9_sl_m9_sl_CHAR kvV;
+  m9_sl_m9_sl_CHAR nsCols;
+  m9_sl_m9_sl_CHAR usCols;
+  m9_sl_m9_sl_CHAR i8Cols;
+  bool nulls;
+};
+
 void Parquet_Write (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err);
 void Parquet_WriteTs (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_state *err);
 void Parquet_WriteX (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_state *err);
 m9_sl_BYTE Parquet_BytesX (m9_pool *pool, Frame_Fr * f, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_state *err);
+void Parquet_WriteOpt (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, Parquet_Options o, m9_state *err);
+m9_sl_BYTE Parquet_BytesOpt (m9_pool *pool, Frame_Fr * f, Parquet_Options o, m9_state *err);
 Frame_Fr * Parquet_Read (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 

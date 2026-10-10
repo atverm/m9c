@@ -81,42 +81,44 @@ static const uint32_t m9s16[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 97u, 
 static const uint32_t m9s17[13] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u, 108u, 101u, 110u };
 static const uint32_t m9s18[15] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 97u, 116u, 116u, 95u, 116u, 101u, 120u, 116u };
 static const uint32_t m9s19[10] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u };
-static const uint32_t m9s20[47] = { 97u, 110u, 32u, 78u, 67u, 95u, 83u, 84u, 82u, 73u, 78u, 71u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 111u, 102u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s21[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 97u, 116u, 116u, 95u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s22[14] = { 110u, 99u, 95u, 102u, 114u, 101u, 101u, 95u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s23[10] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u };
-static const uint32_t m9s24[15] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 110u, 97u, 116u, 116u, 115u };
-static const uint32_t m9s25[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s26[12] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 110u, 118u, 97u, 114u, 115u };
-static const uint32_t m9s27[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s28[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s29[21] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 100u, 105u, 109u, 105u, 100u, 58u, 32u, 114u, 97u, 110u, 107u };
-static const uint32_t m9s30[15] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 100u, 105u, 109u, 105u, 100u };
-static const uint32_t m9s31[15] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 105u, 110u, 116u };
-static const uint32_t m9s32[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 115u, 104u, 111u, 114u, 116u };
-static const uint32_t m9s33[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 117u, 98u, 121u, 116u, 101u };
-static const uint32_t m9s34[10] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 100u, 105u, 109u };
-static const uint32_t m9s35[10] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u };
-static const uint32_t m9s36[15] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 97u, 116u, 116u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s37[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 97u, 116u, 116u, 95u, 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s38[9] = { 110u, 99u, 95u, 101u, 110u, 100u, 100u, 101u, 102u };
-static const uint32_t m9s39[18] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s40[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s41[18] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 100u, 101u, 102u, 108u, 97u, 116u, 101u };
-static const uint32_t m9s42[19] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 99u, 104u, 117u, 110u, 107u, 105u, 110u, 103u };
-static const uint32_t m9s43[16] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s44[20] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 108u, 111u, 110u, 103u, 108u, 111u, 110u, 103u };
-static const uint32_t m9s45[15] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 105u, 110u, 116u };
-static const uint32_t m9s46[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 115u, 104u, 111u, 114u, 116u };
-static const uint32_t m9s47[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 117u, 98u, 121u, 116u, 101u };
-static const uint32_t m9s48[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s49[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
+static const uint32_t m9s20[10] = { 71u, 101u, 116u, 65u, 116u, 116u, 84u, 101u, 120u, 116u };
+static const uint32_t m9s21[47] = { 97u, 110u, 32u, 78u, 67u, 95u, 83u, 84u, 82u, 73u, 78u, 71u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 111u, 102u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s22[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 97u, 116u, 116u, 95u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s23[14] = { 110u, 99u, 95u, 102u, 114u, 101u, 101u, 95u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s24[10] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u };
+static const uint32_t m9s25[15] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 110u, 97u, 116u, 116u, 115u };
+static const uint32_t m9s26[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u, 110u, 97u, 109u, 101u };
+static const uint32_t m9s27[12] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 110u, 118u, 97u, 114u, 115u };
+static const uint32_t m9s28[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 110u, 97u, 109u, 101u };
+static const uint32_t m9s29[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s30[21] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 100u, 105u, 109u, 105u, 100u, 58u, 32u, 114u, 97u, 110u, 107u };
+static const uint32_t m9s31[15] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 100u, 105u, 109u, 105u, 100u };
+static const uint32_t m9s32[15] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 105u, 110u, 116u };
+static const uint32_t m9s33[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 115u, 104u, 111u, 114u, 116u };
+static const uint32_t m9s34[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 117u, 98u, 121u, 116u, 101u };
+static const uint32_t m9s35[10] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 100u, 105u, 109u };
+static const uint32_t m9s36[10] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u };
+static const uint32_t m9s37[15] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 97u, 116u, 116u, 95u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s38[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 97u, 116u, 116u, 95u, 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s39[15] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 97u, 116u, 116u, 95u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s40[9] = { 110u, 99u, 95u, 101u, 110u, 100u, 100u, 101u, 102u };
+static const uint32_t m9s41[18] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s42[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
+static const uint32_t m9s43[18] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 100u, 101u, 102u, 108u, 97u, 116u, 101u };
+static const uint32_t m9s44[19] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 99u, 104u, 117u, 110u, 107u, 105u, 110u, 103u };
+static const uint32_t m9s45[16] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s46[20] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 108u, 111u, 110u, 103u, 108u, 111u, 110u, 103u };
+static const uint32_t m9s47[15] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 105u, 110u, 116u };
+static const uint32_t m9s48[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 115u, 104u, 111u, 114u, 116u };
+static const uint32_t m9s49[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 117u, 98u, 121u, 116u, 101u };
 static const uint32_t m9s50[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
 static const uint32_t m9s51[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
 static const uint32_t m9s52[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s53[16] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s54[16] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s55[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 102u, 108u, 111u, 97u, 116u };
+static const uint32_t m9s53[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
+static const uint32_t m9s54[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
+static const uint32_t m9s55[16] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s56[16] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s57[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 102u, 108u, 111u, 97u, 116u };
 
 static m9_mon m9_gate_cnc;
 
@@ -892,7 +894,9 @@ m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_
     goto L_ret;
   }
   if ((len != INT64_C(1))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s20, 47 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s20, 47 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s20, 10 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s20, 10 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s21, 47 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s21, 47 }); err->s[1].p = m9t3.p; err->s[1].len = m9t3.len; m9_pay_keep (err, 1, sizeof (*m9t3.p)); }
+    err->i[0] = INT64_C(0);
     m9_raise (err, &NetCDF_Error);
     goto L_ret;
   }
@@ -900,7 +904,7 @@ m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_
     if (err->exc) goto L_ret;
     ptrs = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s21, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_att_string (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((void *)(ptrs).p))) m9gv = nc_get_att_string (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((void *)(ptrs).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s22, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_att_string (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((void *)(ptrs).p))) m9gv = nc_get_att_string (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((void *)(ptrs).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), NetCDF_MaxAtt, err);
     if (err->exc) goto L_ret;
@@ -910,14 +914,14 @@ m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_
     if (err->exc) goto L_ret;
     got = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s22, 14 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_free_string (((size_t)(len)), ((void *)(ptrs).p))) m9gv = nc_free_string (((size_t)(len)), ((void *)(ptrs).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s23, 14 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_free_string (((size_t)(len)), ((void *)(ptrs).p))) m9gv = nc_free_string (((size_t)(len)), ((void *)(ptrs).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   if ((got < INT64_C(0))) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(({ __typeof__(buf) m9t3 = buf; int64_t m9t3a = INT64_C(0), m9t3n = got; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a9 = ({ __typeof__(buf) m9t3 = buf; int64_t m9t3a = INT64_C(0), m9t3n = got; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+  { __typeof__(({ __typeof__(buf) m9t4 = buf; int64_t m9t4a = INT64_C(0), m9t4n = got; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a9 = ({ __typeof__(buf) m9t4 = buf; int64_t m9t4a = INT64_C(0), m9t4n = got; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
     if (err->exc) goto L_ret;
   m9ret = DynStr_FromUtf8 (pool, m9a9, err);
   if (err->exc) goto L_ret;
@@ -996,7 +1000,7 @@ int64_t NetCDF_AttType (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_stat
     if (err->exc) goto L_ret;
     nb = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s23, 10 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_att (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((void *)(t).v), ((void *)(ln).v))) m9gv = nc_inq_att (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((void *)(t).v), ((void *)(ln).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s24, 10 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_att (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((void *)(t).v), ((void *)(ln).v))) m9gv = nc_inq_att (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((void *)(t).v), ((void *)(ln).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = (int64_t)((*(int32_t *) m9_at (t.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)));
@@ -1017,7 +1021,7 @@ int64_t NetCDF_AttCount (NetCDF_File * f, int64_t varid, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   m9_arr_1_int32_t n = {0}; (void) n;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s24, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_varnatts (((int)(f->ncid)), ((int)(varid)), ((void *)(n).v))) m9gv = nc_inq_varnatts (((int)(f->ncid)), ((int)(varid)), ((void *)(n).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s25, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_varnatts (((int)(f->ncid)), ((int)(varid)), ((void *)(n).v))) m9gv = nc_inq_varnatts (((int)(f->ncid)), ((int)(varid)), ((void *)(n).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = (int64_t)((*(int32_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)));
@@ -1043,7 +1047,7 @@ m9_sl_CHAR NetCDF_AttName (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_
     if (err->exc) goto L_ret;
     buf = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s25, 14 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_attname (((int)(f->ncid)), ((int)(varid)), ((int)(i)), ((void *)(buf).p))) m9gv = nc_inq_attname (((int)(f->ncid)), ((int)(varid)), ((int)(i)), ((void *)(buf).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s26, 14 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_attname (((int)(f->ncid)), ((int)(varid)), ((int)(i)), ((void *)(buf).p))) m9gv = nc_inq_attname (((int)(f->ncid)), ((int)(varid)), ((int)(i)), ((void *)(buf).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   n = INT64_C(0);
   for (;;) {
@@ -1079,7 +1083,7 @@ int64_t NetCDF_VarCount (NetCDF_File * f, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   m9_arr_1_int32_t n = {0}; (void) n;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s26, 12 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_nvars (((int)(f->ncid)), ((void *)(n).v))) m9gv = nc_inq_nvars (((int)(f->ncid)), ((void *)(n).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s27, 12 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_nvars (((int)(f->ncid)), ((void *)(n).v))) m9gv = nc_inq_nvars (((int)(f->ncid)), ((void *)(n).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = (int64_t)((*(int32_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)));
@@ -1104,7 +1108,7 @@ m9_sl_CHAR NetCDF_VarName (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sta
     if (err->exc) goto L_ret;
     b = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s27, 14 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_varname (((int)(f->ncid)), ((int)(varid)), ((void *)(b).p))) m9gv = nc_inq_varname (((int)(f->ncid)), ((int)(varid)), ((void *)(b).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s28, 14 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_varname (((int)(f->ncid)), ((int)(varid)), ((void *)(b).p))) m9gv = nc_inq_varname (((int)(f->ncid)), ((int)(varid)), ((void *)(b).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   n = INT64_C(0);
   for (;;) {
@@ -1138,7 +1142,7 @@ int64_t NetCDF_VarType (NetCDF_File * f, int64_t varid, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   m9_arr_1_int32_t t = {0}; (void) t;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s28, 14 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_vartype (((int)(f->ncid)), ((int)(varid)), ((void *)(t).v))) m9gv = nc_inq_vartype (((int)(f->ncid)), ((int)(varid)), ((void *)(t).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s29, 14 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_vartype (((int)(f->ncid)), ((int)(varid)), ((void *)(t).v))) m9gv = nc_inq_vartype (((int)(f->ncid)), ((int)(varid)), ((void *)(t).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = (int64_t)((*(int32_t *) m9_at (t.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)));
@@ -1166,10 +1170,10 @@ m9_sl_I64 NetCDF_VarDims (NetCDF_File * f, int64_t varid, m9_state *err)
     rank = m9v;
   }
   if ((rank > NetCDF_MaxRank)) {
-    NetCDF_Fail (((m9_sl_CHAR){ (uint32_t *) m9s29, 21 }), rank, err);
+    NetCDF_Fail (((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), rank, err);
     if (err->exc) goto L_ret;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s30, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_vardimid (((int)(f->ncid)), ((int)(varid)), ((void *)(dims).v))) m9gv = nc_inq_vardimid (((int)(f->ncid)), ((int)(varid)), ((void *)(dims).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s31, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_inq_vardimid (((int)(f->ncid)), ((int)(varid)), ((void *)(dims).v))) m9gv = nc_inq_vardimid (((int)(f->ncid)), ((int)(varid)), ((void *)(dims).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, rank, err);
     if (err->exc) goto L_ret;
@@ -1215,7 +1219,7 @@ void NetCDF_GetI32 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s31, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_int (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p))) m9gv = nc_get_vara_int (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s32, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_int (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p))) m9gv = nc_get_vara_int (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1243,7 +1247,7 @@ void NetCDF_GetI16 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s32, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_short (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p))) m9gv = nc_get_vara_short (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s33, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_short (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p))) m9gv = nc_get_vara_short (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1271,7 +1275,7 @@ void NetCDF_GetBytes (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s33, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_ubyte (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p))) m9gv = nc_get_vara_ubyte (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s34, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_ubyte (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p))) m9gv = nc_get_vara_ubyte (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1298,7 +1302,7 @@ int64_t NetCDF_DefDim (NetCDF_File * f, m9_sl_CHAR name, int64_t extent, m9_stat
     if (err->exc) goto L_ret;
     nb = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s34, 10 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_dim (((int)(f->ncid)), ((void *)(nb).p), ((size_t)(extent)), ((void *)(id).v))) m9gv = nc_def_dim (((int)(f->ncid)), ((void *)(nb).p), ((size_t)(extent)), ((void *)(id).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s35, 10 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_dim (((int)(f->ncid)), ((void *)(nb).p), ((size_t)(extent)), ((void *)(id).v))) m9gv = nc_def_dim (((int)(f->ncid)), ((void *)(nb).p), ((size_t)(extent)), ((void *)(id).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = (int64_t)((*(int32_t *) m9_at (id.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)));
@@ -1342,7 +1346,7 @@ int64_t NetCDF_DefVar (NetCDF_File * f, m9_sl_CHAR name, int64_t nctype, m9_sl_I
       if (err->exc) goto L_ret;
     }
   } }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s35, 10 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var (((int)(f->ncid)), ((void *)(nb).p), ((int)(nctype)), ((int)((dims).len)), ((void *)(ids).p), ((void *)(id).v))) m9gv = nc_def_var (((int)(f->ncid)), ((void *)(nb).p), ((int)(nctype)), ((int)((dims).len)), ((void *)(ids).p), ((void *)(id).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s36, 10 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var (((int)(f->ncid)), ((void *)(nb).p), ((int)(nctype)), ((int)((dims).len)), ((void *)(ids).p), ((void *)(id).v))) m9gv = nc_def_var (((int)(f->ncid)), ((void *)(nb).p), ((int)(nctype)), ((int)((dims).len)), ((void *)(ids).p), ((void *)(id).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = (int64_t)((*(int32_t *) m9_at (id.v, INT64_C(0), INT64_C(1), sizeof (int32_t), err)));
@@ -1372,7 +1376,7 @@ void NetCDF_PutAttStr (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sl_CH
     if (err->exc) goto L_ret;
     vb = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s36, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_att_text (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((size_t)((vb).len)), ((void *)(vb).p))) m9gv = nc_put_att_text (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((size_t)((vb).len)), ((void *)(vb).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s37, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_att_text (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((size_t)((vb).len)), ((void *)(vb).p))) m9gv = nc_put_att_text (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((size_t)((vb).len)), ((void *)(vb).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1396,7 +1400,33 @@ void NetCDF_PutAttF64 (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, double v
   }
   (*(double *) m9_at (v.v, INT64_C(0), INT64_C(1), sizeof (double), err)) = value;
   if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s37, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_att_double (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((int)(NetCDF_TypeDouble)), ((size_t)(INT64_C(1))), ((void *)(v).v))) m9gv = nc_put_att_double (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((int)(NetCDF_TypeDouble)), ((size_t)(INT64_C(1))), ((void *)(v).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s38, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_att_double (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((int)(NetCDF_TypeDouble)), ((size_t)(INT64_C(1))), ((void *)(v).v))) m9gv = nc_put_att_double (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((int)(NetCDF_TypeDouble)), ((size_t)(INT64_C(1))), ((void *)(v).v)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return;
+}
+
+void NetCDF_PutAttText (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_pool scratch = {0}; (void) scratch;
+  m9_sl_BYTE nb = {0}; (void) nb;
+  m9_sl_BYTE vb = {0}; (void) vb;
+  { __typeof__(nb) m9v = NetCDF_CStr (&(scratch), name, err);
+    if (err->exc) goto L_ret;
+    nb = m9v;
+  }
+  { __typeof__(vb) m9v = DynStr_Utf8 (&(scratch), value, err);
+    if (err->exc) goto L_ret;
+    vb = m9v;
+  }
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s39, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_att_text (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((size_t)((vb).len)), ((void *)(vb).p))) m9gv = nc_put_att_text (((int)(f->ncid)), ((int)(varid)), ((void *)(nb).p), ((size_t)((vb).len)), ((void *)(vb).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1411,7 +1441,7 @@ void NetCDF_EndDef (NetCDF_File * f, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s38, 9 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_enddef (((int)(f->ncid)))) m9gv = nc_enddef (((int)(f->ncid))); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s40, 9 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_enddef (((int)(f->ncid)))) m9gv = nc_enddef (((int)(f->ncid))); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1438,7 +1468,7 @@ void NetCDF_PutF64 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s39, 18 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_double (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(data).p))) m9gv = nc_put_vara_double (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(data).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s41, 18 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_double (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(data).p))) m9gv = nc_put_vara_double (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(data).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1461,7 +1491,7 @@ void NetCDF_FillF32 (NetCDF_File * f, int64_t varid, float fill, m9_state *err)
   }
   (*(float *) m9_at (v.p, INT64_C(0), v.len, sizeof (float), err)) = fill;
   if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s40, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s42, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1476,7 +1506,7 @@ void NetCDF_Deflate (NetCDF_File * f, int64_t varid, int64_t level, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s41, 18 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_deflate (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(1))), ((int)(INT64_C(1))), ((int)(level)))) m9gv = nc_def_var_deflate (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(1))), ((int)(INT64_C(1))), ((int)(level))); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s43, 18 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_deflate (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(1))), ((int)(INT64_C(1))), ((int)(level)))) m9gv = nc_def_var_deflate (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(1))), ((int)(INT64_C(1))), ((int)(level))); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1496,7 +1526,7 @@ void NetCDF_Chunking (NetCDF_File * f, int64_t varid, m9_sl_I64 sizes, m9_state 
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s42, 19 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_chunking (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(c).p))) m9gv = nc_def_var_chunking (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(c).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s44, 19 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_chunking (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(c).p))) m9gv = nc_def_var_chunking (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(c).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1557,7 +1587,7 @@ void NetCDF_PutChars (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s43, 16 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(b).p))) m9gv = nc_put_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(b).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s45, 16 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(b).p))) m9gv = nc_put_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(b).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1585,7 +1615,7 @@ void NetCDF_PutI64 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s44, 20 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_longlong (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p))) m9gv = nc_put_vara_longlong (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s46, 20 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_longlong (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p))) m9gv = nc_put_vara_longlong (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1613,7 +1643,7 @@ void NetCDF_PutI32 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s45, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_int (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p))) m9gv = nc_put_vara_int (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s47, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_int (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p))) m9gv = nc_put_vara_int (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1641,7 +1671,7 @@ void NetCDF_PutI16 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s46, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_short (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p))) m9gv = nc_put_vara_short (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s48, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_short (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p))) m9gv = nc_put_vara_short (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1669,7 +1699,7 @@ void NetCDF_PutBytes (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s47, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_ubyte (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p))) m9gv = nc_put_vara_ubyte (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s49, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_ubyte (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p))) m9gv = nc_put_vara_ubyte (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1692,7 +1722,7 @@ void NetCDF_FillF64 (NetCDF_File * f, int64_t varid, double fill, m9_state *err)
   }
   (*(double *) m9_at (v.p, INT64_C(0), v.len, sizeof (double), err)) = fill;
   if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s48, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s50, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1715,7 +1745,7 @@ void NetCDF_FillI64 (NetCDF_File * f, int64_t varid, int64_t fill, m9_state *err
   }
   (*(int64_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (int64_t), err)) = fill;
   if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s49, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s51, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1738,7 +1768,7 @@ void NetCDF_FillI32 (NetCDF_File * f, int64_t varid, int32_t fill, m9_state *err
   }
   (*(int32_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (int32_t), err)) = fill;
   if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s50, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s52, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1761,7 +1791,7 @@ void NetCDF_FillI16 (NetCDF_File * f, int64_t varid, int16_t fill, m9_state *err
   }
   (*(int16_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (int16_t), err)) = fill;
   if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s51, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s53, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1784,7 +1814,7 @@ void NetCDF_FillByte (NetCDF_File * f, int64_t varid, uint8_t fill, m9_state *er
   }
   (*(uint8_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (uint8_t), err)) = fill;
   if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s52, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s54, 15 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p))) m9gv = nc_def_var_fill (((int)(f->ncid)), ((int)(varid)), ((int)(INT64_C(0))), ((void *)(v).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1837,7 +1867,7 @@ m9_sl_m9_sl_CHAR NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid,
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s53, 16 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(raw).p))) m9gv = nc_get_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(raw).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s55, 16 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(raw).p))) m9gv = nc_get_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(raw).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), n, err);
     if (err->exc) goto L_ret;
@@ -1921,7 +1951,7 @@ void NetCDF_GetText (NetCDF_File * f, int64_t varid, int64_t row, int64_t n, int
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s54, 16 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p))) m9gv = nc_get_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s56, 16 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_get_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p))) m9gv = nc_get_vara_text (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(out).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1949,7 +1979,7 @@ void NetCDF_PutF32 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s55, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_float (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(data).p))) m9gv = nc_put_vara_float (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(data).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
+  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s57, 17 }), (int64_t)(({ m9_mon_enter (&m9_gate_cnc); __typeof__(nc_put_vara_float (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(data).p))) m9gv = nc_put_vara_float (((int)(f->ncid)), ((int)(varid)), ((void *)(s).p), ((void *)(c).p), ((void *)(data).p)); m9_mon_leave (&m9_gate_cnc); m9gv; })), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;

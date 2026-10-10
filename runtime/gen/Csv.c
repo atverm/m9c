@@ -1742,7 +1742,7 @@ static Time_Instant Csv_FieldStamp (m9_pool *pool, m9_sl_BYTE b, int64_t ofs, in
   Time_Instant t = {0}; (void) t;
   if ((format == Csv_StampIso)) {
     err->res = m9res;
-    { __typeof__(({ __typeof__(b) m9t2 = b; int64_t m9t2a = ofs, m9t2n = n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a5 = ({ __typeof__(b) m9t2 = b; int64_t m9t2a = ofs, m9t2n = n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+    { __typeof__(({ __typeof__(b) m9t1 = b; int64_t m9t1a = ofs, m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a5 = ({ __typeof__(b) m9t1 = b; int64_t m9t1a = ofs, m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
       if (err->exc) goto L_ret;
     { __typeof__(DynStr_Chars (pool, m9a5, err)) m9a6 = DynStr_Chars (pool, m9a5, err);
       if (err->exc) goto L_ret;

@@ -97,10 +97,13 @@ type
     nkGridOf,                     { GRID (s, n0, ..., nR): kids[0] the
                                     slice, the rest the extents.
                                     Ast.NGridOf, 2026-10-08 }
-    nkLinkList                    { LINK "w1", "w2" on a FOR "C" unit:
+    nkLinkList,                   { LINK "w1", "w2" on a FOR "C" unit:
                                     the Definition's LAST kid; kids are
                                     nkString, a the word.
                                     Ast.NLinkList, 2026-10-09 }
+    nkCallSel                     { F (x).f, F (x)[i]: kids[0] the
+                                    nkCallExpr, the rest selectors.
+                                    Ast.NCallSel, 2026-10-09 }
   );
 
   TNode = class
@@ -112,16 +115,109 @@ type
                                 rather than replacing one }
     line, col : Integer;
     kids      : array of TNode;
+    tys       : string;    { the typed tree's stage 3: the canonical
+                             type the checker gave this expression
+                             (SetTyStr/TyStrAt); '' unknown }
+    ty        : TNode;     { the TYPED TREE (2026-10-09), through
+                             SetType/TypeAt below: corpus/Ast.m9 keys
+                             a table by node id, because the M9
+                             checker reads the tree through borrowed
+                             pointers; a class field is the same
+                             thing here }
     constructor Create (k: TNodeKind);
     procedure Add (n: TNode);          { nil is a legal child }
   end;
+
+{ THE TYPED TREE (2026-10-09, the review's decision): the checker
+  records the type it resolved at a node -- on a designator's selector,
+  the component the selector reaches, qualified in its declaring module
+  -- and the generator reads it instead of working the type out again;
+  nil where no checker has run or it did not know }
+procedure SetType (n, t: TNode);
+function TypeAt (n: TNode): TNode;
+{ stage 3: an EXPRESSION's type, as the checker's canonical string
+  ('I64', 'PTR Mod.T', '<str1>', ...); '' where none was recorded }
+procedure SetTyStr (n: TNode; const t: string);
+function TyStrAt (n: TNode): string;
 
 function Utf8Next (const s: string; var i: Integer): Cardinal;
 function Utf8Len (const s: string): Integer;
 function Utf8Enc (c: Cardinal): string;
 function LabelName (lv: TNode): string;
+{ A constant's VALUE, one evaluator for every place C needs one -- a
+  CASE label, an array bound (the typed tree's stage 2, 2026-10-09):
+  an integer literal or an expression of them (FoldInt), a CHAR
+  literal, a one-character string.  ch says the value is a character.
+  False for anything else.  (corpus/Ast.m9 ScalarConst/CharCode) }
+function ScalarConst (e: TNode; var v: Int64; var ch: Boolean): Boolean;
+function CharCode (const lit: string): Int64;
+function FoldInt (e: TNode; var v: Int64): Boolean;
 
 implementation
+
+function CharCode (const lit: string): Int64;
+var
+  i : Integer;
+  c : Char;
+begin
+  { hex digits + trailing C: 0AC = U+000A }
+  Result := 0;
+  for i := 1 to Length (lit) - 1 do
+  begin
+    c := lit[i];
+    if (c >= '0') and (c <= '9') then Result := Result * 16 + (Ord (c) - 48)
+    else Result := Result * 16 + (Ord (c) - 55);
+    if Result > $10FFFF then Exit (-1);
+  end;
+end;
+
+function ScalarConst (e: TNode; var v: Int64; var ch: Boolean): Boolean;
+var i : Integer;
+begin
+  ch := False;
+  if e <> nil then
+  begin
+    if e.kind = nkChar then
+    begin
+      v := CharCode (e.a);
+      ch := True;
+      Exit (v >= 0);
+    end;
+    if e.kind = nkString then
+    begin
+      if Utf8Len (e.a) <> 1 then Exit (False);
+      i := 1;
+      v := Utf8Next (e.a, i);
+      ch := True;
+      Exit (True);
+    end;
+    if (e.kind = nkParen) and (Length (e.kids) = 1) then
+      Exit (ScalarConst (e.kids[0], v, ch));
+  end;
+  Result := FoldInt (e, v);
+end;
+
+procedure SetType (n, t: TNode);
+begin
+  if n <> nil then n.ty := t;
+end;
+
+function TypeAt (n: TNode): TNode;
+begin
+  if n = nil then Exit (nil);
+  Result := n.ty;
+end;
+
+procedure SetTyStr (n: TNode; const t: string);
+begin
+  if n <> nil then n.tys := t;
+end;
+
+function TyStrAt (n: TNode): string;
+begin
+  if n = nil then Exit ('');
+  Result := n.tys;
+end;
 
 { A string literal's text is UTF-8 octets on this side (FPC reads the
   file as bytes; m9c reads it as scalars since 2026-10-09): these two
@@ -183,6 +279,83 @@ begin
   for i := 0 to High (lv.kids) do
     if (lv.kids[i] = nil) or (lv.kids[i].kind <> nkSelField) then Exit;
   Result := lv.kids[High (lv.kids)].a;
+end;
+
+{ the value of an integer CONSTANT EXPRESSION, with the runtime's
+  arithmetic: checked, DIV and MOD truncating (mirrors Ast.FoldInt) }
+function FoldLit (const s: string; var v: Int64): Boolean;
+var i, d, base, from : Integer; hi : Int64;
+begin
+  Result := False;
+  base := 10; from := 1;
+  if (Length (s) > 2) and (s[1] = '0') and (s[2] in ['x', 'X']) then begin base := 16; from := 3; end;
+  if Length (s) < from then Exit;
+  v := 0;
+  for i := from to Length (s) do
+  begin
+    case s[i] of
+      '0'..'9': d := Ord (s[i]) - 48;
+      'a'..'f': if base = 16 then d := Ord (s[i]) - 87 else Exit;
+      'A'..'F': if base = 16 then d := Ord (s[i]) - 55 else Exit;
+    else Exit;
+    end;
+    hi := (High (Int64) - d) div base;
+    if v > hi then Exit;
+    v := v * base + d;
+  end;
+  Result := True;
+end;
+
+function FoldInt (e: TNode; var v: Int64): Boolean;
+var a, b : Int64;
+begin
+  Result := False;
+  if e = nil then Exit;
+  if e.kind = nkInt then Exit (FoldLit (e.a, v));
+  if Length (e.kids) < 1 then Exit;
+  if e.kind = nkParen then Exit (FoldInt (e.kids[0], v));
+  if (e.kind = nkUn) and (e.a = '-') then
+  begin
+    if not FoldInt (e.kids[0], a) then Exit;
+    if a = Low (Int64) then Exit;
+    v := -a;
+    Exit (True);
+  end;
+  if (e.kind = nkBin) and (Length (e.kids) = 2) then
+  begin
+    if not FoldInt (e.kids[0], a) then Exit;
+    if not FoldInt (e.kids[1], b) then Exit;
+    if e.a = '+' then
+    begin
+      if ((b > 0) and (a > High (Int64) - b)) or ((b < 0) and (a < Low (Int64) - b)) then Exit;
+      v := a + b; Exit (True);
+    end;
+    if e.a = '-' then
+    begin
+      if ((b < 0) and (a > High (Int64) + b)) or ((b > 0) and (a < Low (Int64) + b)) then Exit;
+      v := a - b; Exit (True);
+    end;
+    if e.a = '*' then
+    begin
+      if (a <> 0) and (b <> 0) then
+      begin
+        if (a = Low (Int64)) or (b = Low (Int64)) then
+        begin
+          if (a <> 1) and (b <> 1) then Exit;
+        end
+        else if (a <> -1) and (b <> -1) then
+          if (Abs (a) > High (Int64) div Abs (b)) then Exit;
+      end;
+      v := a * b; Exit (True);
+    end;
+    if (e.a = 'DIV') or (e.a = 'MOD') then
+    begin
+      if b = 0 then Exit;
+      if (b = -1) and (a = Low (Int64)) then Exit;
+      if e.a = 'DIV' then v := a div b else v := a mod b;
+      Exit (True);
+    end;
+  end;
 end;
 
 end.

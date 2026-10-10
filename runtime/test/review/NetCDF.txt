@@ -1,18 +1,18 @@
-REVIEW NetCDF -- 63 procedures with a body, 34 of them functions; 55 headings in a DEFINITION
+REVIEW NetCDF -- 64 procedures with a body, 34 of them functions; 56 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              34
-  assignments                                   152
-  arguments                                     488
+  assignments                                   154
+  arguments                                     499
   RETURN values                                  35
-  operands of a comparison or an operator        68
+  operands of a comparison or an operator        69
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                    42   Fail.scratch, Open.scratch, OpenRW.scratch, Create.scratch, Create4.scratch, VarId.scratch, +36 more
+  local pools                                    43   Fail.scratch, Open.scratch, OpenRW.scratch, Create.scratch, Create4.scratch, VarId.scratch, +37 more
   pool parameters                                12   Message, CStr, Open, OpenRW, Create, Create4, +6 more
   KEPT parameters                                 4   Open, OpenRW, Create, Create4
   HEAP named                                      0

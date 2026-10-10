@@ -1,0 +1,21 @@
+(* EXPECT: a FOR step is a constant: BY takes a literal, a CONST or an expression of them (par 10) *)
+(* The grammar says FOR ... BY ConstExpr: the step decides which way
+   the loop runs, so it is known where the loop is written.  The
+   checker passed a variable step and the generator refused it ("FOR BY
+   step form unsupported yet"); since 2026-10-09 the checker says so.
+   The legal forms first: a literal, a negative one, a CONST, an
+   expression of literals. *)
+MODULE m ;
+CONST
+  Two = 2 ;
+VAR
+  i, k, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 0 TO 9 BY 3 DO s := s + i END ;
+  FOR i := 9 TO 0 BY -1 DO s := s + i END ;
+  FOR i := 0 TO 9 BY Two DO s := s + i END ;
+  FOR i := 0 TO 9 BY 2 * 2 DO s := s + i END ;
+  k := 2 ;
+  FOR i := 0 TO 9 BY k DO s := s + i END
+END m.

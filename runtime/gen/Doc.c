@@ -1604,7 +1604,7 @@ static bool Doc_IsParamLine (m9_sl_CHAR ln, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(({ __typeof__(t) m9t2 = t; int64_t m9t2a = INT64_C(0), m9t2n = dash; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a42 = ({ __typeof__(t) m9t2 = t; int64_t m9t2a = INT64_C(0), m9t2n = dash; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+  { __typeof__(({ __typeof__(t) m9t1 = t; int64_t m9t1a = INT64_C(0), m9t1n = dash; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a42 = ({ __typeof__(t) m9t1 = t; int64_t m9t1a = INT64_C(0), m9t1n = dash; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
     if (err->exc) goto L_ret;
   { __typeof__(Text_Trim (m9a42, err)) m9a43 = Text_Trim (m9a42, err);
     if (err->exc) goto L_ret;
@@ -1640,18 +1640,18 @@ static int64_t Doc_ParamStart (m9_sl_CHAR b, m9_state *err)
     bool m9t1 = ((*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)) == 10u);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      bool m9t6 = ((Text_Trim (({ __typeof__(b) m9t5 = b; int64_t m9t5a = lineStart, m9t5n = m9_sub_i64 (i, lineStart, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err)).len == INT64_C(0));
+      bool m9t3 = ((Text_Trim (({ __typeof__(b) m9t2 = b; int64_t m9t2a = lineStart, m9t2n = m9_sub_i64 (i, lineStart, err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err)).len == INT64_C(0));
       if (err->exc) goto L_ret;
-      if (m9t6) {
+      if (m9t3) {
         { __typeof__(blank) m9v = m9_add_i64 (i, INT64_C(1), err);
           if (err->exc) goto L_ret;
           blank = m9v;
         }
       } else {
         if ((blank >= INT64_C(0))) {
-          bool m9t8 = Doc_IsParamLine (({ __typeof__(b) m9t7 = b; int64_t m9t7a = lineStart, m9t7n = m9_sub_i64 (i, lineStart, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), err);
+          bool m9t5 = Doc_IsParamLine (({ __typeof__(b) m9t4 = b; int64_t m9t4a = lineStart, m9t4n = m9_sub_i64 (i, lineStart, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
           if (err->exc) goto L_ret;
-          if (m9t8) {
+          if (m9t5) {
             err->res = m9res;
             m9ret = blank;
             goto L_ret;
@@ -1672,9 +1672,9 @@ static int64_t Doc_ParamStart (m9_sl_CHAR b, m9_state *err)
     }
   }
   if (((blank >= INT64_C(0)) && (lineStart < (b).len))) {
-    bool m9t10 = Doc_IsParamLine (({ __typeof__(b) m9t9 = b; int64_t m9t9a = lineStart, m9t9n = m9_sub_i64 ((b).len, lineStart, err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; }), err);
+    bool m9t7 = Doc_IsParamLine (({ __typeof__(b) m9t6 = b; int64_t m9t6a = lineStart, m9t6n = m9_sub_i64 ((b).len, lineStart, err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
     if (err->exc) goto L_ret;
-    if (m9t10) {
+    if (m9t7) {
       err->res = m9res;
       m9ret = blank;
       goto L_ret;

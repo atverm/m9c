@@ -1,0 +1,22 @@
+MODULE GfForByConst ;
+
+(* WANT: constant FOR steps: 20 25 45 16 *)
+
+IMPORT Io, Fmt, GfKc ;
+
+CONST
+  Two = 2 ;
+  Down = -1 ;
+
+VAR
+  i, a, b, c, d : I64 ;
+
+BEGIN
+  a := 0 ; b := 0 ; c := 0 ; d := 0 ;
+  FOR i := 0 TO 9 BY Two DO a := a + i END ;            (* 0+2+4+6+8 *)
+  FOR i := 1 TO 9 BY 2 * 1 DO b := b + i END ;          (* 1+3+5+7+9 *)
+  FOR i := 9 TO 0 BY Down DO c := c + i END ;           (* 9+8+...+0 *)
+  FOR i := 0 TO 31 BY GfKc.Sixteen DO d := d + i END ;  (* 0+16 *)
+  Io.WriteLine ('constant FOR steps: ' + Fmt.I64Str (a) + ' ' + Fmt.I64Str (b)
+                + ' ' + Fmt.I64Str (c) + ' ' + Fmt.I64Str (d))
+END GfForByConst.

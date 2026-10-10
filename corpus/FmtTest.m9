@@ -43,7 +43,47 @@ BEGIN
   Check.EqStrs (t, 'Short = repr: ' + says, got, Check.GoldStrs (t, gold, name + '.want'))
 END Part ;
 
+(* ParseF64 = Python's float(): the correctly rounded double, held to
+   the bit on 2,413 strings (tools/fmtgold.py: data reprs, mantissa-
+   and-exponent strings over the whole range, twenty-digit fractions,
+   the hard cases) -- 1,314 of a like set were wrong before 2026-10-09 *)
+PROCEDURE Parses () =
+VAR
+  gold : STR ;
+  ins : SLICE OF STR ;
+  want : SLICE OF F64 ;
+  i, right : I64 ;
 BEGIN
+  gold := Check.GoldPath ('Fmt.gold') ;
+  ins := Check.GoldStrs (t, gold, 'parse.in') ;
+  want := Check.GoldF64s (t, gold, 'parse.want') ;
+  right := 0 ;
+  FOR i := 0 TO LEN (ins) - 1 DO
+    IF Text.Eq (Fmt.Bits (Fmt.ParseF64 (ins[i])), Fmt.Bits (want[i])) THEN right := right + 1 END
+  END ;
+  Check.That (t, 'the golden file has parse cases', LEN (ins) > 2000) ;
+  Check.EqI64 (t, 'ParseF64 = float (): every string to the bit', right, LEN (ins))
+EXCEPT
+| ValueRange : Check.That (t, 'ParseF64 refused a golden string', FALSE)
+| IndexError : Check.That (t, 'the parse golden lines differ in length', FALSE)
+END Parses ;
+
+PROCEDURE Refused (RO s: STR) : BOOL =
+VAR v : F64 ;
+BEGIN
+  v := Fmt.ParseF64 (s) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+END Refused ;
+
+BEGIN
+  Parses () ;
+  Check.That (t, 'ParseF64 refuses a decimal beyond the largest double', Refused ('1.7976931348623159e308')) ;
+  Check.That (t, 'and its negative', Refused ('-1e400')) ;
+  Check.That (t, 'and what is no decimal: a hex float', Refused ('0x1p3')) ;
+  Check.That (t, 'and an empty exponent', Refused ('1e')) ;
+  Check.That (t, 'and a leading blank, which strtod would skip', Refused (' 1')) ;
   (* by hand, so that a reader sees the layout without the golden *)
   Check.EqStr (t, 'Short 0.1', Fmt.Short (0.1), '0.1') ;
   Check.EqStr (t, 'Short 0.1 + 0.2', Fmt.Short (0.1 + 0.2), '0.30000000000000004') ;

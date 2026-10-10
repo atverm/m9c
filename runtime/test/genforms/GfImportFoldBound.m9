@@ -1,0 +1,14 @@
+MODULE GfImportFoldBound ;
+
+(* WANT: an imported folded CONST as an array bound: 7 16 *)
+
+IMPORT Io, Fmt, GfKc ;
+
+VAR
+  a : ARRAY GfKc.Seven OF I64 ;
+  b : ARRAY GfKc.Sixteen OF I64 ;
+
+BEGIN
+  Io.WriteLine ('an imported folded CONST as an array bound: '
+                + Fmt.I64Str (LEN (a)) + ' ' + Fmt.I64Str (LEN (b)))
+END GfImportFoldBound.

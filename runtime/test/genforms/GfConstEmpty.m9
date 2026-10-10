@@ -1,0 +1,12 @@
+MODULE GfConstEmpty ;
+
+(* WANT: [] after the empty string CONST *)
+
+IMPORT Io ;
+
+CONST
+  E = '' ;
+
+BEGIN
+  Io.WriteLine ('[' + E + '] after the empty string CONST')
+END GfConstEmpty.

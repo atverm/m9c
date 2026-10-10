@@ -156,22 +156,6 @@ else
   echo "SKIP: frame_driver (no /usr/include/netcdf.h)"
 fi
 }
-# Parquet against pyarrow: samples and goldens CHECKED IN
-# (tools/parquetgold.py); the pyarrow re-read inside the driver
-# skips out loud when python3/pyarrow are absent
-b_parquet () {
-if [ -f /usr/include/netcdf.h ]; then
-  gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-      -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../fmtshim.c ../gen/Parquet.c \
-      ../gen/Frame.c ../gen/Csv.c ../gen/DynStr.c ../gen/Io.c \
-      ../gen/Math.c ../gen/Fmt.c ../gen/Time.c ../gen/Text.c \
-      ../gen/NetCDF.c ../gen/Sort.c ../gen/Stats.c ../gen/Bits.c \
-      parquet_driver.c -lnetcdf -lm -o parquet_test
-  ./parquet_test
-else
-  echo "SKIP: parquet_driver (no /usr/include/netcdf.h)"
-fi
-}
 
 # Delim: the ROW CURSOR, which is Csv's opposite number -- Csv reads a
 # whole file and hands out columns, this walks a 9 GB one in bounded
@@ -235,16 +219,6 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
 # The two format libraries the port needs.  Optional, and
 # SKIPPED OUT LOUD when absent: a test that silently disappears on a
 # machine without a dependency is a test nobody notices losing.
-b_netcdf () {
-if [ -f /usr/include/netcdf.h ]; then
-  gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-      -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../gen/DynStr.c ../gen/NetCDF.c \
-      netcdf_driver.c -lnetcdf -lm -o netcdf_test
-  ./netcdf_test
-else
-  echo "SKIP: netcdf_driver (no /usr/include/netcdf.h)"
-fi
-}
 b_grib () {
 ECH=$(ls /usr/include/eccodes.h /usr/include/*/eccodes.h 2>/dev/null | head -1)
 if [ -n "$ECH" ]; then
@@ -537,8 +511,12 @@ déjà é ₂
 absent: none
 present
 fs irods
-bytes: a b c" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, a module variable named y0 collided with libm, IndexError's payload did not bind, or a literal beyond ASCII went wrong, or IS SOME as an expression answered wrong, a CASE over Store.Fs did not dispatch, or WriteBytes overtook Write"; ./shareuse_test; exit 1; }
-echo "PASS (18 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped; IndexError binds (index, length); a literal beyond ASCII is its scalars"
+bytes: a b c
+19 -3 half
+7 from the ELSIF
+handled, then cleaned up
+exits at 6 4" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, a module variable named y0 collided with libm, IndexError's payload did not bind, or a literal beyond ASCII went wrong, or IS SOME as an expression answered wrong, a CASE over Store.Fs did not dispatch, WriteBytes overtook Write, or a CONST expression, an ELSIF after IS SOME, EXCEPT with FINALLY or an EXIT from a CASE arm went wrong"; ./shareuse_test; exit 1; }
+echo "PASS (22 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped; IndexError binds (index, length); a literal beyond ASCII is its scalars"
 }
 
 # Http's URL fetcher, against a local fixture server.  IN THE SUITE
@@ -550,6 +528,14 @@ b_deflate () {
 # gzip (and Pillow where it is installed): the witness that is not
 # this repository's own inflate
 sh ./deflate.sh || { echo "FAIL: deflate"; exit 1; }
+}
+
+b_columnar () {
+# Parquet's and NetCDF's writers, read back by pyarrow and
+# netCDF4-python: the witness that is not this repository's own
+# reader (ParquetTest and NetCDFTest, in m9test, are the M9 half;
+# they took over parquet_driver.c and netcdf_driver.c)
+sh ./columnar.sh || { echo "FAIL: columnar"; exit 1; }
 }
 
 b_httpget () {
@@ -570,7 +556,7 @@ echo "PASS (1 check) -- catbench.c still compiles"
 }
 
 for b in dynstr dict fmt time text syslog math mat sort bits system stats \
-         frame parquet delim io zip csv netcdf grib json apispec arrow \
+         frame delim io zip csv grib json apispec arrow \
          httpserver sigpipe zarrw stores; do
   battery "$b"
 done
@@ -584,7 +570,7 @@ sleep 1
 for b in zarr plot bars bench; do battery "$b"; done
 kill $ZSRV 2>/dev/null
 trap - INT TERM
-for b in http hello concat narrow procuse agguse shareuse deflate httpget catbench; do battery "$b"; done
+for b in http hello concat narrow procuse agguse shareuse deflate columnar httpget catbench; do battery "$b"; done
 
 # THE SKIPS, held to a list when one is given: sorted, leading blanks
 # dropped, compared as text.  A line too many is a battery that

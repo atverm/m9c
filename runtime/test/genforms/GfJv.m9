@@ -1,0 +1,21 @@
+DEFINITION MODULE GfJv ;
+
+(* A helper for the genforms fixtures: an enumeration and records
+   declared in ANOTHER module than the program that uses them.       *)
+
+TYPE
+  Kind = (Obj, Arr, Str) ;
+  Node = RECORD
+    kind : Kind ;
+    n    : I64
+  END ;
+  Pair = RECORD
+    a : Node ;
+    b : Node
+  END ;
+
+END GfJv.
+
+
+IMPLEMENTATION MODULE GfJv ;
+END GfJv.

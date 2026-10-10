@@ -1,0 +1,74 @@
+MODULE GfCallSelect ;
+
+(* WANT: call answers selected: 7 4 30 3 9 9 handled 3 *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Pair = RECORD a, b : I64 END ;
+  Box = RECORD p : Pair ; xs : SLICE OF I64 END ;
+  Row = ARRAY 4 OF I64 ;
+
+EXCEPTION
+  Empty ;
+
+VAR
+  i : I64 ;
+  out : STR ;
+
+PROCEDURE MkPair (n: I64) : Pair =
+VAR p : Pair ;
+BEGIN
+  p.a := n ;
+  p.b := n * 2 ;
+  RETURN p
+END MkPair ;
+
+PROCEDURE MkBox (n: I64) : PTR Box =
+VAR b : PTR Box ;
+BEGIN
+  b := NEW (Box) ;
+  b.p := MkPair (n) ;
+  b.xs := NEW (I64, 3) ;
+  b.xs[2] := n + 6 ;
+  RETURN b
+END MkBox ;
+
+PROCEDURE Tens (n: I64) : SLICE OF I64 =
+VAR s : SLICE OF I64 ;
+  k : I64 ;
+BEGIN
+  s := NEW (I64, n) ;
+  FOR k := 0 TO n - 1 DO s[k] := 10 * k END ;
+  RETURN s
+END Tens ;
+
+PROCEDURE MkRow () : Row =
+VAR r : Row ;
+BEGIN
+  r[0] := 1 ; r[1] := 2 ; r[2] := 3 ; r[3] := 4 ;
+  RETURN r
+END MkRow ;
+
+PROCEDURE Must (n: I64) : SLICE OF I64 RAISES Empty =
+BEGIN
+  IF n = 0 THEN RAISE Empty END ;
+  RETURN Tens (n)
+END Must ;
+
+BEGIN
+  out := 'call answers selected: ' + Fmt.I64Str (MkPair (7).a) ;   (* a record answer *)
+  out := out + ' ' + Fmt.I64Str (MkBox (2).p.b) ;                  (* a pointer answer, a chain *)
+  out := out + ' ' + Fmt.I64Str (Tens (5)[3]) ;                     (* a slice answer *)
+  out := out + ' ' + Fmt.I64Str (MkRow ()[2]) ;                     (* an array answer *)
+  out := out + ' ' + Fmt.I64Str (99)[0] ;                           (* a string answer: a CHAR *)
+  out := out + ' ' + Fmt.I64Str (MkBox (3).xs[2]) ;                 (* a pointer answer's slice field *)
+  BEGIN
+    out := out + ' ' + Fmt.I64Str (Must (0)[1])                     (* raises: nothing is selected *)
+  EXCEPT
+  | Empty : out := out + ' handled'
+  END ;
+  i := 0 ;
+  WHILE Tens (4)[i] < 30 DO i := i + 1 END ;                          (* re-evaluated each turn *)
+  Io.WriteLine (out + ' ' + Fmt.I64Str (i))
+END GfCallSelect.

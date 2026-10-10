@@ -55,6 +55,7 @@ type
     function PFactor: TNode;
     function PNew: TNode;
     function PDesignator: TNode;
+    procedure PSels (n: TNode);
     function PQualident: TNode;
     function PIdentList: TNode;
     function PArgList: TNode;
@@ -1197,7 +1198,7 @@ end;
 
 function TParser.PFactor: TNode;
 var
-  des : TNode;
+  des, cs : TNode;
 begin
   case cur.kind of
     tkIntLit :
@@ -1283,6 +1284,14 @@ begin
           if cur.kind = tkRParen then Result.Add (NewNode (nkArgList))
           else Result.Add (PArgList);
           Expect (tkRParen, ')');
+          { F (x).f, F (x)[i]: the call's answer selected from }
+          if cur.kind in [tkDot, tkLBrack] then
+          begin
+            cs := NewNode (nkCallSel);
+            cs.Add (Result);
+            PSels (cs);
+            Result := cs;
+          end;
         end
         else
           Result := des;
@@ -1368,11 +1377,18 @@ begin
 end;
 
 function TParser.PDesignator: TNode;
-var
-  sel : TNode;
 begin
   Result := NewNode (nkDesignator);
   Result.a := TakeIdent ('name');
+  PSels (Result);
+end;
+
+{ the selectors that follow a name -- or a call's closing parenthesis
+  (nkCallSel, 2026-10-09) -- appended to n (mirrors Parse.PSels) }
+procedure TParser.PSels (n: TNode);
+var
+  sel : TNode;
+begin
   while cur.kind in [tkDot, tkLBrack] do
   begin
     if cur.kind = tkDot then
@@ -1380,7 +1396,7 @@ begin
       Bump;
       sel := NewNode (nkSelField);
       sel.a := TakeIdent ('field name');
-      Result.Add (sel);
+      n.Add (sel);
     end
     else
     begin
@@ -1397,7 +1413,7 @@ begin
         sel.Add (PExpr);
       end;
       Expect (tkRBrack, ']');
-      Result.Add (sel);
+      n.Add (sel);
     end;
   end;
 end;

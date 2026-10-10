@@ -7,15 +7,20 @@ DEFINITION MODULE Parquet ;
    lie, and the format's long tail (dictionaries, ten codecs, three
    page versions, bloom filters) is exactly the part nothing here
    needs yet.  docs/dataframe-plan.md phase 4; pyarrow is the oracle
-   in runtime/test/parquet_driver.c: files pyarrow wrote are read
-   value-exact, files this module writes are re-read by pyarrow, and
-   the two refusal samples (dictionary, snappy) are pyarrow's own.
+   both ways: files pyarrow wrote are read value-exact against what
+   pyarrow reads from them (corpus/ParquetTest.m9), files this module
+   writes are read back by pyarrow (runtime/test/columnar.sh), and the
+   refusal samples (dictionary, snappy, a null boolean) are pyarrow's
+   own.
 
-   THE WRITER EMITS REQUIRED COLUMNS: Frame's missing values live in
-   the data (NaN, the sentinels), not as Parquet nulls, so no
-   definition levels are written.  THE READER accepts OPTIONAL
-   columns and maps a null to the arm's own missing value -- the
-   same mapping CSV import applies to an empty field.
+   THE WRITER EMITS REQUIRED COLUMNS by default: Frame's missing
+   values live in the data (NaN, the sentinels), not as Parquet
+   nulls, so no definition levels are written.  Asked for
+   (`Options.nulls`, WriteOpt), every numeric column is OPTIONAL and
+   a missing cell is a NULL -- what pyarrow writes from pandas, and
+   what a reader that knows no sentinel needs.  THE READER accepts
+   OPTIONAL columns and maps a null to the arm's own missing value --
+   the same mapping CSV import applies to an empty field.
 
    Strings are ASCII in this subset, both directions, refused
    otherwise with the column named: CHAR beyond 127 would need real
@@ -57,6 +62,48 @@ PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
      this hands that buffer over instead, so a server does not need a
      per-request temp file it must then read back and remove.  No
      Io.IOError, because nothing is opened.                          *)
+
+TYPE
+  Options = RECORD
+    kvK, kvV : SLICE OF STR ;   (* file-level key_value_metadata *)
+    nsCols : SLICE OF STR ;     (* INT64 as TIMESTAMP(NANOS, UTC) *)
+    usCols : SLICE OF STR ;     (* INT64 as TIMESTAMP(MICROS, local) *)
+    i8Cols : SLICE OF STR ;     (* an I16 or I32 column as INT_8 *)
+    nulls : BOOL ;              (* missing cells as Parquet nulls *)
+  END ;
+  (* what WriteX takes, and three things a dataframe written for
+     pandas and pyarrow needs, found by the cp-kernel's time series
+     renditions (2026-10-09), which pyarrow writes from pandas:
+
+       usCols -- INT64 columns (microseconds since the epoch)
+                 annotated TIMESTAMP(MICROS, isAdjustedToUTC false):
+                 pandas' naive datetime64[us], a time WITHOUT a zone
+                 said.  nsCols, which says UTC, is the other one;
+                 a column in both is BadArg.
+       i8Cols -- I16 or I32 columns written as INT32 annotated
+                 INT_8, which pyarrow reads as int8: Frame has no
+                 signed 8-bit arm (BYTE is unsigned, written UINT_8).
+                 A value outside -128 .. 127 is BadArg, the column
+                 named; a missing cell is not looked at when nulls.
+       nulls  -- every column but BOOL and STR is OPTIONAL, and a
+                 cell that is the column's missing value (or NaN, in
+                 a real column) is a NULL: definition levels, one
+                 bit-packed run, and the value left out.  FALSE
+                 writes WriteX's bytes.
+
+     A zeroed record is WriteX with nothing asked: empty slices,
+     nulls FALSE.  Every name in usCols and i8Cols must be a column
+     of the frame of the right kind, or BadArg says which (nsCols is
+     not held to the frame, as WriteX never held it).               *)
+
+PROCEDURE WriteOpt (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
+                    RO o: Options)
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
+
+PROCEDURE BytesOpt (VAR pool: POOL ; f: PTR Frame.Fr ; RO o: Options)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, ValueRange, Overflow, IndexError ;
+  (* WriteOpt's document in memory, as BytesX is WriteX's *)
 
 PROCEDURE Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
@@ -103,6 +150,7 @@ CONST
   (* converted types this subset speaks *)
   CvUtf8 = 0 ;
   CvUint8 = 11 ;
+  CvInt8 = 15 ;
   CvInt16 = 16 ;
 
   EncPlain = 0 ;
@@ -282,9 +330,79 @@ BEGIN
   RETURN -1
 END ColConv ;
 
+PROCEDURE Kept (RO skip: SLICE OF BOOL ; r: I64) : BOOL
+  RAISES IndexError =
+  (* row r has a value to write: an empty mask skips nothing *)
+BEGIN
+  RETURN LEN (skip) = 0 OR NOT skip[r]
+END Kept ;
+
+PROCEDURE Missing (VAR pool: POOL ; f: PTR Frame.Fr ; RO name: STR ;
+                   k: I64) : SLICE OF BOOL
+  RAISES Faults.BadArg =
+  (* which cells of a numeric column are missing: the column's own
+     missing value, or NaN in a real column whatever that value is
+     (Frame: a NaN in a real column is ALWAYS missing).  BOOL and STR
+     columns have none: an empty mask. *)
+VAR
+  m : SLICE OF BOOL ;
+  v64 : SLICE OF F64 ;
+  v32 : SLICE OF F32 ;
+  vi64 : SLICE OF I64 ;
+  vi32 : SLICE OF I32 ;
+  vi16 : SLICE OF I16 ;
+  vb : SLICE OF BYTE ;
+  m64 : F64 ;
+  m32 : F32 ;
+  mi64 : I64 ;
+  mi32 : I32 ;
+  mi16 : I16 ;
+  mb : BYTE ;
+  r : I64 ;
+BEGIN
+  IF k = Frame.KindBool OR k = Frame.KindStr THEN RETURN NEW (pool, BOOL, 0) END ;
+  m := NEW (pool, BOOL, Frame.Rows (f)) ;
+  IF k = Frame.KindF64 THEN
+    v64 := Frame.ColF64 (f, name) ;
+    m64 := Frame.MissF64 (f, name) ;
+    FOR r := 0 TO LEN (v64) - 1 DO
+      m[r] := NOT (v64[r] = v64[r]) OR v64[r] = m64
+    END
+  ELSIF k = Frame.KindF32 THEN
+    v32 := Frame.ColF32 (f, name) ;
+    m32 := Frame.MissF32 (f, name) ;
+    FOR r := 0 TO LEN (v32) - 1 DO
+      m[r] := NOT (v32[r] = v32[r]) OR v32[r] = m32
+    END
+  ELSIF k = Frame.KindI64 THEN
+    vi64 := Frame.ColI64 (f, name) ;
+    mi64 := Frame.MissI64 (f, name) ;
+    FOR r := 0 TO LEN (vi64) - 1 DO m[r] := vi64[r] = mi64 END
+  ELSIF k = Frame.KindI32 THEN
+    vi32 := Frame.ColI32 (f, name) ;
+    mi32 := Frame.MissI32 (f, name) ;
+    FOR r := 0 TO LEN (vi32) - 1 DO m[r] := vi32[r] = mi32 END
+  ELSIF k = Frame.KindI16 THEN
+    vi16 := Frame.ColI16 (f, name) ;
+    mi16 := Frame.MissI16 (f, name) ;
+    FOR r := 0 TO LEN (vi16) - 1 DO m[r] := vi16[r] = mi16 END
+  ELSE
+    vb := Frame.ColBytes (f, name) ;
+    mb := Frame.MissByte (f, name) ;
+    FOR r := 0 TO LEN (vb) - 1 DO m[r] := vb[r] = mb END
+  END ;
+  RETURN m
+EXCEPT
+| Frame.Unknown : RAISE Faults.BadArg ('internal: column vanished')
+| Frame.WrongType : RAISE Faults.BadArg ('internal: column type changed')
+| IndexError : RAISE Faults.BadArg ('internal: a column shorter than the frame')
+END Missing ;
+
 PROCEDURE PutValues (VAR pool: POOL ; VAR u: Buf ; f: PTR Frame.Fr ;
-                     RO name: STR ; k: I64)
+                     RO name: STR ; k: I64 ; RO skip: SLICE OF BOOL)
   RAISES ValueRange, Overflow, IndexError, Faults.BadArg =
+  (* the PLAIN values of the rows skip does not mark; BOOL and STR
+     columns are never handed a mask *)
 VAR
   r, x : I64 ;
   v64 : SLICE OF F64 ;
@@ -301,15 +419,19 @@ BEGIN
     v64 := Frame.ColF64 (f, name) ;
     Room (u, 8 * LEN (v64)) ;
     FOR r := 0 TO LEN (v64) - 1 DO
-      F64.ToBytesLE (v64[r], SLICE (u.b, u.n, 8)) ;
-      u.n := u.n + 8
+      IF Kept (skip, r) THEN
+        F64.ToBytesLE (v64[r], SLICE (u.b, u.n, 8)) ;
+        u.n := u.n + 8
+      END
     END
   ELSIF k = Frame.KindF32 THEN
     v32 := Frame.ColF32 (f, name) ;
     Room (u, 4 * LEN (v32)) ;
     FOR r := 0 TO LEN (v32) - 1 DO
-      F32.ToBytesLE (v32[r], SLICE (u.b, u.n, 4)) ;
-      u.n := u.n + 4
+      IF Kept (skip, r) THEN
+        F32.ToBytesLE (v32[r], SLICE (u.b, u.n, 4)) ;
+        u.n := u.n + 4
+      END
     END
   ELSIF k = Frame.KindI64 THEN
     vi64 := Frame.ColI64 (f, name) ;
@@ -317,7 +439,8 @@ BEGIN
       (* two's complement LE: negatives via the 2^63 split, no
          shifts needed *)
       x := vi64[r] ;
-      IF x >= 0 THEN
+      IF NOT Kept (skip, r) THEN
+      ELSIF x >= 0 THEN
         PLE (pool, u, x MOD 4294967296, 4) ;
         PLE (pool, u, x DIV 4294967296, 4)
       ELSE
@@ -329,21 +452,25 @@ BEGIN
   ELSIF k = Frame.KindI32 THEN
     vi32 := Frame.ColI32 (f, name) ;
     FOR r := 0 TO LEN (vi32) - 1 DO
-      x := I64 (vi32[r]) ;
-      IF x < 0 THEN x := x + 4294967296 END ;
-      PLE (pool, u, x, 4)
+      IF Kept (skip, r) THEN
+        x := I64 (vi32[r]) ;
+        IF x < 0 THEN x := x + 4294967296 END ;
+        PLE (pool, u, x, 4)
+      END
     END
   ELSIF k = Frame.KindI16 THEN
     vi16 := Frame.ColI16 (f, name) ;
     FOR r := 0 TO LEN (vi16) - 1 DO
-      x := I64 (vi16[r]) ;
-      IF x < 0 THEN x := x + 4294967296 END ;
-      PLE (pool, u, x, 4)
+      IF Kept (skip, r) THEN
+        x := I64 (vi16[r]) ;
+        IF x < 0 THEN x := x + 4294967296 END ;
+        PLE (pool, u, x, 4)
+      END
     END
   ELSIF k = Frame.KindByte THEN
     vb := Frame.ColBytes (f, name) ;
     FOR r := 0 TO LEN (vb) - 1 DO
-      PLE (pool, u, I64 (vb[r]), 4)
+      IF Kept (skip, r) THEN PLE (pool, u, I64 (vb[r]), 4) END
     END
   ELSIF k = Frame.KindBool THEN
     vbo := Frame.ColBools (f, name) ;
@@ -389,15 +516,40 @@ BEGIN
 END PStrVal ;
 
 PROCEDURE PageFor (VAR pool: POOL ; f: PTR Frame.Fr ;
-                   RO name: STR ; k: I64) : Buf
+                   RO name: STR ; k: I64 ; optional: BOOL ;
+                   RO skip: SLICE OF BOOL) : Buf
   RAISES ValueRange, Overflow, IndexError, Faults.BadArg =
-  (* one DATA_PAGE: thrift PageHeader, then PLAIN values *)
+  (* one DATA_PAGE: thrift PageHeader, then PLAIN values.  An
+     OPTIONAL column's values are preceded by its definition levels
+     (max level 1): a 4-byte length, then ONE bit-packed run of the
+     RLE/bit-packed hybrid -- header (groups * 2 + 1), groups of
+     eight levels a byte, LSB first, the last group zero-padded (the
+     format allows it: num_values says where the levels end) -- and
+     only the present values follow. *)
 VAR
-  vals, page : Buf ;
-  last, last2 : I64 ;
+  vals, page, lv : Buf ;
+  last, last2, r, x, b : I64 ;
 BEGIN
   vals := NewBuf (pool, 64) ;
-  PutValues (pool, vals, f, name, k) ;
+  IF optional THEN
+    lv := NewBuf (pool, 16) ;
+    PVar (pool, lv, ((Frame.Rows (f) + 7) DIV 8) * 2 + 1) ;
+    x := 0 ;
+    b := 1 ;
+    FOR r := 0 TO Frame.Rows (f) - 1 DO
+      IF Kept (skip, r) THEN x := x + b END ;
+      b := b * 2 ;
+      IF b = 256 THEN
+        P8 (pool, lv, x) ;
+        x := 0 ;
+        b := 1
+      END
+    END ;
+    IF b > 1 THEN P8 (pool, lv, x) END ;
+    PLE (pool, vals, lv.n, 4) ;
+    PBytes (pool, vals, SLICE (lv.b, 0, lv.n))
+  END ;
+  PutValues (pool, vals, f, name, k, skip) ;
   page := NewBuf (pool, vals.n + 64) ;
   last := 0 ;
   PI32F (pool, page, last, 1, 0) ;              (* type DATA_PAGE *)
@@ -416,32 +568,50 @@ BEGIN
 END PageFor ;
 
 PROCEDURE SchemaElem (VAR pool: POOL ; VAR u: Buf ; RO name: STR ;
-                      k: I64 ; ns: BOOL)
+                      k: I64 ; ns, us, i8, optional: BOOL)
   RAISES ValueRange, Overflow, Faults.BadArg =
+  (* ns and us are each a TIMESTAMP logical type: NANOS said UTC,
+     MICROS said local.  Neither has a converted_type here: the
+     legacy TIMESTAMP_MICROS means adjusted-to-UTC, and a reader
+     that prefers it would put a zone on a time that has none. *)
 VAR last, l2, l3, l4 : I64 ;
 BEGIN
   last := 0 ;
   PI32F (pool, u, last, 1, ColPhys (k)) ;       (* type *)
-  PI32F (pool, u, last, 3, 0) ;                 (* REQUIRED *)
+  IF optional THEN
+    PI32F (pool, u, last, 3, 1)                 (* OPTIONAL *)
+  ELSE
+    PI32F (pool, u, last, 3, 0)                 (* REQUIRED *)
+  END ;
   PStrF (pool, u, last, 4, name) ;
-  IF ColConv (k) >= 0 THEN
+  IF i8 THEN
+    PI32F (pool, u, last, 6, CvInt8)
+  ELSIF ColConv (k) >= 0 THEN
     PI32F (pool, u, last, 6, ColConv (k))
   END ;
-  IF ns THEN
-    (* logicalType = TIMESTAMP { isAdjustedToUTC: true,
-       unit: TimeUnit.NANOS } -- SchemaElement field 10, nested
-       unions as one-field structs, an empty NANOS struct inside.
-       Nanoseconds have NO converted_type, which is why field 6
-       stays untouched above. *)
+  IF ns OR us THEN
+    (* logicalType = TIMESTAMP { isAdjustedToUTC, unit } --
+       SchemaElement field 10, nested unions as one-field structs,
+       an empty unit struct inside (MICROS is the union's field 2,
+       NANOS its field 3).  Bools in a compact struct are the field
+       header's type: CtTrue / CtFalse, no payload. *)
     PField (pool, u, last, 10, CtStruct) ;
     l2 := 0 ;
     PField (pool, u, l2, 8, CtStruct) ;         (* TIMESTAMP *)
     l3 := 0 ;
-    PField (pool, u, l3, 1, CtTrue) ;           (* utc-adjusted *)
+    IF ns THEN
+      PField (pool, u, l3, 1, CtTrue)           (* utc-adjusted *)
+    ELSE
+      PField (pool, u, l3, 1, CtFalse)          (* local: no zone *)
+    END ;
     PField (pool, u, l3, 2, CtStruct) ;         (* unit *)
     l4 := 0 ;
-    PField (pool, u, l4, 3, CtStruct) ;         (* NANOS *)
-    P8 (pool, u, CtStop) ;                      (* empty NanoSeconds *)
+    IF ns THEN
+      PField (pool, u, l4, 3, CtStruct)         (* NANOS *)
+    ELSE
+      PField (pool, u, l4, 2, CtStruct)         (* MICROS *)
+    END ;
+    P8 (pool, u, CtStop) ;                      (* empty unit struct *)
     P8 (pool, u, CtStop) ;                      (* end TimeUnit *)
     P8 (pool, u, CtStop) ;                      (* end TimestampType *)
     P8 (pool, u, CtStop)                        (* end LogicalType *)
@@ -480,28 +650,85 @@ BEGIN
 END I64Text ;
 
 PROCEDURE WriteAny (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
-                    withTs: BOOL ; ts: PTR Frame.Ts ;
-                    RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
-                    RO nsCols: SLICE OF STR)
+                    withTs: BOOL ; ts: PTR Frame.Ts ; RO o: Options)
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 BEGIN
-  Io.WriteFileBytes (path,
-    AnyBytes (pool, f, withTs, ts, kvK, kvV, nsCols))
+  Io.WriteFileBytes (path, AnyBytes (pool, f, withTs, ts, o))
 END WriteAny ;
 
+PROCEDURE CheckNames (f: PTR Frame.Fr ; RO what: STR ;
+                      RO xs: SLICE OF STR ; k1, k2: I64)
+  RAISES Faults.BadArg, IndexError =
+  (* every name in xs is a column of kind k1 or k2 *)
+VAR
+  i, k : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF Frame.Find (f, xs[i]) < 0 THEN
+      RAISE Faults.BadArg (what + ' names no column: ' + xs[i])
+    END ;
+    k := KindQ (f, xs[i]) ;
+    IF k # k1 AND k # k2 THEN
+      RAISE Faults.BadArg (what + ' names a column of another kind: ' + xs[i])
+    END
+  END
+END CheckNames ;
+
+PROCEDURE CheckI8 (f: PTR Frame.Fr ; RO name: STR ; k: I64 ;
+                   RO skip: SLICE OF BOOL)
+  RAISES Faults.BadArg, IndexError =
+  (* every value to be written fits INT_8; a skipped (null) cell is
+     not a value *)
+VAR
+  vi32 : SLICE OF I32 ;
+  vi16 : SLICE OF I16 ;
+  r, x : I64 ;
+BEGIN
+  IF k = Frame.KindI32 THEN
+    vi32 := Frame.ColI32 (f, name) ;
+    FOR r := 0 TO LEN (vi32) - 1 DO
+      x := I64 (vi32[r]) ;
+      IF Kept (skip, r) AND (x < -128 OR x > 127) THEN
+        RAISE Faults.BadArg ('a value outside INT_8 in column ' + name)
+      END
+    END
+  ELSE
+    vi16 := Frame.ColI16 (f, name) ;
+    FOR r := 0 TO LEN (vi16) - 1 DO
+      x := I64 (vi16[r]) ;
+      IF Kept (skip, r) AND (x < -128 OR x > 127) THEN
+        RAISE Faults.BadArg ('a value outside INT_8 in column ' + name)
+      END
+    END
+  END
+EXCEPT
+| Frame.Unknown : RAISE Faults.BadArg ('internal: column vanished')
+| Frame.WrongType : RAISE Faults.BadArg ('internal: column type changed')
+END CheckI8 ;
+
 PROCEDURE AnyBytes (VAR pool: POOL ; f: PTR Frame.Fr ;
-                    withTs: BOOL ; ts: PTR Frame.Ts ;
-                    RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
-                    RO nsCols: SLICE OF STR) : SLICE OF BYTE
+                    withTs: BOOL ; ts: PTR Frame.Ts ; RO o: Options)
+  : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange, Overflow, IndexError =
 VAR
   out, meta, page : Buf ;
   pages : SLICE OF Buf ;
   offs, kinds : SLICE OF I64 ;
   names : SLICE OF STR ;
+  opt : SLICE OF BOOL ;
+  skip : SLICE OF BOOL ;
   c, nc, last, lastRg, lastCc, lastCm, i, kvn : I64 ;
   conv : Frame.Conv ;
 BEGIN
+  (* nsCols is not held to the frame: WriteX never did, and a caller
+     naming a column it did not add got a file, not a refusal *)
+  CheckNames (f, 'usCols', o.usCols, Frame.KindI64, Frame.KindI64) ;
+  CheckNames (f, 'i8Cols', o.i8Cols, Frame.KindI32, Frame.KindI16) ;
+  FOR i := 0 TO LEN (o.usCols) - 1 DO
+    IF InList (o.usCols[i], o.nsCols) THEN
+      RAISE Faults.BadArg ('a column in both nsCols and usCols: ' + o.usCols[i])
+    END
+  END ;
   nc := Frame.Cols (f) ;
   out := NewBuf (pool, 4096) ;
   PBytes (pool, out, MagicBytes ()) ;
@@ -509,11 +736,24 @@ BEGIN
   offs := NEW (pool, I64, nc) ;
   names := NEW (pool, STR, nc) ;
   kinds := NEW (pool, I64, nc) ;
+  opt := NEW (pool, BOOL, nc) ;
   FOR c := 0 TO nc - 1 DO
     names[c] := Frame.NameAt (f, c) ;
     kinds[c] := KindQ (f, names[c]) ;
+    (* BOOL and STR are never null: Frame keeps no missing value for
+       a BOOL (it refuses a null one by name), and an empty string is
+       a value, not a missing one *)
+    opt[c] := o.nulls AND kinds[c] # Frame.KindBool AND kinds[c] # Frame.KindStr ;
+    IF opt[c] THEN
+      skip := Missing (pool, f, names[c], kinds[c])
+    ELSE
+      skip := NEW (pool, BOOL, 0)
+    END ;
+    IF InList (names[c], o.i8Cols) THEN
+      CheckI8 (f, names[c], kinds[c], skip)
+    END ;
     offs[c] := out.n ;
-    page := PageFor (pool, f, names[c], kinds[c]) ;
+    page := PageFor (pool, f, names[c], kinds[c], opt[c], skip) ;
     pages[c] := page ;
     PBytes (pool, out, SLICE (page.b, 0, page.n))
   END ;
@@ -529,7 +769,8 @@ BEGIN
   P8 (pool, meta, CtStop) ;
   FOR c := 0 TO nc - 1 DO
     SchemaElem (pool, meta, names[c], kinds[c],
-                InList (names[c], nsCols))
+                InList (names[c], o.nsCols), InList (names[c], o.usCols),
+                InList (names[c], o.i8Cols), opt[c])
   END ;
   PI64F (pool, meta, last, 3, Frame.Rows (f)) ; (* num_rows *)
   PListF (pool, meta, last, 4, CtStruct, 1) ;   (* row_groups *)
@@ -557,7 +798,10 @@ BEGIN
   PI64F (pool, meta, lastRg, 2, out.n - 4) ;    (* total_byte_size *)
   PI64F (pool, meta, lastRg, 3, Frame.Rows (f)) ;
   P8 (pool, meta, CtStop) ;                     (* end RowGroup *)
-  kvn := LEN (kvK) ;
+  IF LEN (o.kvK) # LEN (o.kvV) THEN
+    RAISE Faults.BadArg ('key_value_metadata: keys and values differ in number')
+  END ;
+  kvn := LEN (o.kvK) ;
   IF withTs THEN kvn := kvn + 3 END ;
   IF kvn > 0 THEN
     PListF (pool, meta, last, 5, CtStruct, kvn) ;
@@ -569,8 +813,8 @@ BEGIN
               Frame.ConvName (conv)) ;
       MetaKV (pool, meta, 'description', Frame.TsDescr (ts))
     END ;
-    FOR i := 0 TO LEN (kvK) - 1 DO
-      MetaKV (pool, meta, kvK[i], kvV[i])
+    FOR i := 0 TO LEN (o.kvK) - 1 DO
+      MetaKV (pool, meta, o.kvK[i], o.kvV[i])
     END
   END ;
   P8 (pool, meta, CtStop) ;                     (* end FileMetaData *)
@@ -591,19 +835,36 @@ END MagicBytes ;
 
 PROCEDURE Write (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR)
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
-VAR none : SLICE OF STR ;
+VAR o : Options ;
 BEGIN
-  none := NEW (pool, STR, 0) ;
-  WriteAny (pool, f, path, FALSE, NIL9 (pool), none, none, none)
+  WriteAny (pool, f, path, FALSE, NIL9 (pool), o)
 END Write ;
 
 PROCEDURE WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
                   RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                   RO nsCols: SLICE OF STR)
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
+VAR o : Options ;
 BEGIN
-  WriteAny (pool, f, path, FALSE, NIL9 (pool), kvK, kvV, nsCols)
+  o.kvK := kvK ;
+  o.kvV := kvV ;
+  o.nsCols := nsCols ;
+  WriteAny (pool, f, path, FALSE, NIL9 (pool), o)
 END WriteX ;
+
+PROCEDURE WriteOpt (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
+                    RO o: Options)
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
+BEGIN
+  WriteAny (pool, f, path, FALSE, NIL9 (pool), o)
+END WriteOpt ;
+
+PROCEDURE BytesOpt (VAR pool: POOL ; f: PTR Frame.Fr ; RO o: Options)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, ValueRange, Overflow, IndexError =
+BEGIN
+  RETURN AnyBytes (pool, f, FALSE, NIL9 (pool), o)
+END BytesOpt ;
 
 PROCEDURE NIL9 (VAR pool: POOL) : PTR Frame.Ts =
   (* a placeholder Ts nothing reads: WriteAny only touches ts when
@@ -626,7 +887,7 @@ PROCEDURE WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR)
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 VAR
   f2 : PTR Frame.Fr IN pool ;
-  none : SLICE OF STR ;
+  o : Options ;
   c : I64 ;
 BEGIN
   (* time first, then the data columns, in one flat frame *)
@@ -637,8 +898,7 @@ BEGIN
     AddCopy (pool, f2, Frame.TsFrame (ts),
              Frame.NameAt (Frame.TsFrame (ts), c))
   END ;
-  none := NEW (pool, STR, 0) ;
-  WriteAny (pool, f2, path, TRUE, ts, none, none, none)
+  WriteAny (pool, f2, path, TRUE, ts, o)
 EXCEPT
 | Faults.SizeError : RAISE Faults.BadArg ('internal: ts frame sizes disagree')
 | Frame.Duplicate : RAISE Faults.BadArg ('a column is already named time')
@@ -1355,8 +1615,12 @@ PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
                   RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                   RO nsCols: SLICE OF STR) : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange, Overflow, IndexError =
+VAR o : Options ;
 BEGIN
-  RETURN AnyBytes (pool, f, FALSE, NIL9 (pool), kvK, kvV, nsCols)
+  o.kvK := kvK ;
+  o.kvV := kvV ;
+  o.nsCols := nsCols ;
+  RETURN AnyBytes (pool, f, FALSE, NIL9 (pool), o)
 END BytesX ;
 
 PROCEDURE Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr

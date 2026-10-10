@@ -5,7 +5,7 @@ PROVED BY THE CHECKER -- examined, and nothing refused
   assignments                                   817
   arguments                                    3283
   RETURN values                                 263
-  operands of a comparison or an operator       748
+  operands of a comparison or an operator       750
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                4
