@@ -1,0 +1,16 @@
+(* EXPECT: FOR x IN goes over a slice, an array or a string, not I64 (par 10) *)
+(* FOR x IN s takes the elements of a slice, an array or a string --
+   STR is a slice of CHAR.  A GRID is gone over by its indexes.  The
+   legal forms first. *)
+MODULE m ;
+VAR
+  xs : SLICE OF I64 ;
+  a : ARRAY 4 OF I64 ;
+  x, n : I64 ;
+BEGIN
+  xs := NEW (I64, 3) ;
+  n := 0 ;
+  FOR x IN xs DO n := n + x END ;
+  FOR x IN a DO n := n + x END ;
+  FOR x IN n DO n := n + x END
+END m.

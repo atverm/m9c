@@ -22,6 +22,7 @@ struct Review_Counts {
   int64_t shared;
   int64_t thread;
   int64_t modVars;
+  int64_t sharable;
   int64_t unsafeUnits;
   int64_t statefulUnits;
   int64_t foreign;
@@ -87,31 +88,35 @@ static const uint32_t m9s15[12] = { 78u, 69u, 87u, 32u, 40u, 79u, 87u, 78u, 44u,
 static const uint32_t m9s16[7] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u };
 static const uint32_t m9s17[10] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 40u, 120u, 41u };
 static const uint32_t m9s18[6] = { 84u, 72u, 82u, 69u, 65u, 68u };
-static const uint32_t m9s19[16] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 115u };
-static const uint32_t m9s20[43] = { 84u, 82u, 85u, 83u, 84u, 69u, 68u, 32u, 45u, 45u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 119u, 104u, 97u, 116u, 32u, 116u, 104u, 101u, 32u, 99u, 104u, 101u, 99u, 107u, 101u, 114u, 32u, 99u, 97u, 110u, 32u, 115u, 101u, 101u };
-static const uint32_t m9s21[12] = { 85u, 78u, 83u, 65u, 70u, 69u, 32u, 117u, 110u, 105u, 116u, 115u };
-static const uint32_t m9s22[18] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 115u };
-static const uint32_t m9s23[18] = { 32u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 109u, 32u, 91u, 83u, 69u, 82u, 73u, 65u, 76u, 93u };
-static const uint32_t m9s24[21] = { 32u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 109u, 32u, 91u, 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u, 93u };
-static const uint32_t m9s25[38] = { 67u, 79u, 85u, 78u, 84u, 69u, 68u, 32u, 45u, 45u, 32u, 104u, 111u, 119u, 32u, 109u, 117u, 99u, 104u, 32u, 116u, 104u, 101u, 114u, 101u, 32u, 119u, 97u, 115u, 32u, 116u, 111u, 32u, 99u, 104u, 101u, 99u, 107u };
-static const uint32_t m9s26[15] = { 67u, 65u, 83u, 69u, 32u, 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u, 115u };
-static const uint32_t m9s27[16] = { 82u, 65u, 73u, 83u, 69u, 32u, 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u, 115u };
-static const uint32_t m9s28[8] = { 104u, 97u, 110u, 100u, 108u, 101u, 114u, 115u };
-static const uint32_t m9s29[16] = { 78u, 69u, 87u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s30[19] = { 78u, 69u, 87u, 32u, 105u, 110u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 100u, 32u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s31[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s32[1] = { 67u };
-static const uint32_t m9s33[3] = { 79u, 87u, 78u };
-static const uint32_t m9s34[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s35[1] = { 46u };
-static const uint32_t m9s36[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
-static const uint32_t m9s37[9] = { 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u };
-static const uint32_t m9s38[6] = { 40u, 98u, 111u, 100u, 121u, 41u };
-static const uint32_t m9s39[2] = { 44u, 32u };
-static const uint32_t m9s40[3] = { 44u, 32u, 43u };
-static const uint32_t m9s41[5] = { 32u, 109u, 111u, 114u, 101u };
-static const uint32_t m9s42[32] = { 32u, 32u, 32u, 112u, 97u, 115u, 115u, 101u, 100u, 32u, 111u, 118u, 101u, 114u, 44u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 58u, 32u };
-static const uint32_t m9s43[9] = { 32u, 45u, 45u, 32u, 108u, 105u, 110u, 101u, 32u };
+static const uint32_t m9s19[18] = { 91u, 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u, 93u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 115u };
+static const uint32_t m9s20[16] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 115u };
+static const uint32_t m9s21[43] = { 84u, 82u, 85u, 83u, 84u, 69u, 68u, 32u, 45u, 45u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 119u, 104u, 97u, 116u, 32u, 116u, 104u, 101u, 32u, 99u, 104u, 101u, 99u, 107u, 101u, 114u, 32u, 99u, 97u, 110u, 32u, 115u, 101u, 101u };
+static const uint32_t m9s22[12] = { 85u, 78u, 83u, 65u, 70u, 69u, 32u, 117u, 110u, 105u, 116u, 115u };
+static const uint32_t m9s23[18] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 115u };
+static const uint32_t m9s24[18] = { 32u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 109u, 32u, 91u, 83u, 69u, 82u, 73u, 65u, 76u, 93u };
+static const uint32_t m9s25[21] = { 32u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 109u, 32u, 91u, 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u, 93u };
+static const uint32_t m9s26[2] = { 87u, 32u };
+static const uint32_t m9s27[30] = { 84u, 72u, 82u, 69u, 65u, 68u, 115u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u, 83u, 84u, 65u, 84u, 69u, 70u, 85u, 76u, 32u, 115u, 116u, 97u, 116u, 101u };
+static const uint32_t m9s28[38] = { 67u, 79u, 85u, 78u, 84u, 69u, 68u, 32u, 45u, 45u, 32u, 104u, 111u, 119u, 32u, 109u, 117u, 99u, 104u, 32u, 116u, 104u, 101u, 114u, 101u, 32u, 119u, 97u, 115u, 32u, 116u, 111u, 32u, 99u, 104u, 101u, 99u, 107u };
+static const uint32_t m9s29[15] = { 67u, 65u, 83u, 69u, 32u, 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u, 115u };
+static const uint32_t m9s30[16] = { 82u, 65u, 73u, 83u, 69u, 32u, 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u, 115u };
+static const uint32_t m9s31[8] = { 104u, 97u, 110u, 100u, 108u, 101u, 114u, 115u };
+static const uint32_t m9s32[16] = { 78u, 69u, 87u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s33[19] = { 78u, 69u, 87u, 32u, 105u, 110u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 100u, 32u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s34[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s35[1] = { 67u };
+static const uint32_t m9s36[3] = { 79u, 87u, 78u };
+static const uint32_t m9s37[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s38[1] = { 46u };
+static const uint32_t m9s39[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
+static const uint32_t m9s40[9] = { 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u };
+static const uint32_t m9s41[8] = { 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u };
+static const uint32_t m9s42[6] = { 40u, 98u, 111u, 100u, 121u, 41u };
+static const uint32_t m9s43[2] = { 44u, 32u };
+static const uint32_t m9s44[3] = { 44u, 32u, 43u };
+static const uint32_t m9s45[5] = { 32u, 109u, 111u, 114u, 101u };
+static const uint32_t m9s46[32] = { 32u, 32u, 32u, 112u, 97u, 115u, 115u, 101u, 100u, 32u, 111u, 118u, 101u, 114u, 44u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 58u, 32u };
+static const uint32_t m9s47[9] = { 32u, 45u, 45u, 32u, 108u, 105u, 110u, 101u, 32u };
 
 static void Review_Site (DynStr_DString * *log_, m9_pool *log__pool, uint32_t tag, int64_t line, m9_sl_CHAR what, m9_state *err);
 static bool Review_IsPool (Ast_Node * k, m9_state *err);
@@ -124,6 +129,7 @@ static void Review_Walk (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
 static void Review_Vars (Review_Counts *c, DynStr_DString * *log_, m9_pool *log__pool, Ast_Node * sec, m9_sl_CHAR proc, bool atModule, m9_state *err);
 static void Review_Params (Review_Counts *c, DynStr_DString * *log_, m9_pool *log__pool, Ast_Node * k, m9_sl_CHAR proc, m9_state *err);
 static void Review_Proc (Review_Counts *c, DynStr_DString * *log_, m9_pool *log__pool, Ast_Node * root, Ast_Node * p, bool foreignUnit, m9_state *err);
+static void Review_Sharable (Review_Counts *c, DynStr_DString * *log_, m9_pool *log__pool, Ast_Node * sec, m9_state *err);
 static void Review_Unit (Review_Counts *c, DynStr_DString * *log_, m9_pool *log__pool, Ast_Node * root, Ast_Node * u, m9_state *err);
 static void Review_Spaces (DynStr_DString * *d, m9_pool *d_pool, int64_t n, m9_state *err);
 static int64_t Review_Digits (int64_t n, m9_state *err);
@@ -132,7 +138,7 @@ static void Review_Head (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_
 static void Review_StatRow (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR label, int64_t checked, int64_t skipped, m9_sl_CHAR lines, m9_state *err);
 
 
-m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl_Review_Stat stats, m9_state *err)
+m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl_Review_Stat stats, m9_sl_m9_sl_CHAR writes, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -144,6 +150,7 @@ m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl
   DynStr_DString * log_ = NULL; (void) log_;
   Review_Counts c = {0}; (void) c;
   m9_sl_m9_sl_CHAR lines = {0}; (void) lines;
+  m9_sl_m9_sl_CHAR wl = {0}; (void) wl;
   int64_t i = 0; (void) i;
   c.procs = INT64_C(0);
   c.funcs = INT64_C(0);
@@ -161,6 +168,7 @@ m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl
   c.shared = INT64_C(0);
   c.thread = INT64_C(0);
   c.modVars = INT64_C(0);
+  c.sharable = INT64_C(0);
   c.unsafeUnits = INT64_C(0);
   c.statefulUnits = INT64_C(0);
   c.foreign = INT64_C(0);
@@ -273,29 +281,48 @@ m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl
   if (err->exc) goto L_ret;
   Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s18, 6 }), c.thread, 84u, err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s19, 16 }), c.modVars, 86u, err);
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s19, 18 }), c.sharable, 82u, err);
   if (err->exc) goto L_ret;
-  Review_Head (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s20, 43 }), err);
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s20, 16 }), c.modVars, 86u, err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s21, 12 }), c.unsafeUnits, 85u, err);
+  Review_Head (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s21, 43 }), err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s22, 18 }), c.foreign, 32u, err);
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s22, 12 }), c.unsafeUnits, 85u, err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s23, 18 }), c.serial, 32u, err);
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s23, 18 }), c.foreign, 32u, err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s24, 21 }), c.reentrant, 32u, err);
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s24, 18 }), c.serial, 32u, err);
   if (err->exc) goto L_ret;
-  Review_Head (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s25, 38 }), err);
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s25, 21 }), c.reentrant, 32u, err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s26, 15 }), c.cases, 32u, err);
+  { __typeof__(wl) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, (writes).len, err);
+    if (err->exc) goto L_ret;
+    wl = m9v;
+  }
+  { int64_t m9t3to;
+  i = INT64_C(0);
+  m9t3to = m9_sub_i64 ((writes).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s27, 16 }), c.raises, 32u, err);
+  for (; i <= m9t3to; i += 1) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (wl.p, i, wl.len, sizeof (m9_sl_CHAR), err))) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s26, 2 }), (*(m9_sl_CHAR *) m9_at (writes.p, i, writes.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      (*(m9_sl_CHAR *) m9_at (wl.p, i, wl.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  } }
+  Review_Row (&(d), &(scratch), wl, ((m9_sl_CHAR){ (uint32_t *) m9s27, 30 }), (writes).len, 87u, err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s28, 8 }), c.handlers, 32u, err);
+  Review_Head (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s28, 38 }), err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s29, 16 }), c.newFrame, 32u, err);
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s29, 15 }), c.cases, 32u, err);
   if (err->exc) goto L_ret;
-  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s30, 19 }), c.newPool, 32u, err);
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s30, 16 }), c.raises, 32u, err);
+  if (err->exc) goto L_ret;
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s31, 8 }), c.handlers, 32u, err);
+  if (err->exc) goto L_ret;
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s32, 16 }), c.newFrame, 32u, err);
+  if (err->exc) goto L_ret;
+  Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s33, 19 }), c.newPool, 32u, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -347,7 +374,7 @@ static bool Review_IsPool (Ast_Node * k, m9_state *err)
   { Ast_Node * t = k;
   if (t != NULL) {
     err->res = m9res;
-    m9ret = (((t->kind == Ast_NQualident) && DynStr_Eq (t->a, ((m9_sl_CHAR){ (uint32_t *) m9s31, 4 }), err)) && ((t->b).len == INT64_C(0)));
+    m9ret = (((t->kind == Ast_NQualident) && DynStr_Eq (t->a, ((m9_sl_CHAR){ (uint32_t *) m9s34, 4 }), err)) && ((t->b).len == INT64_C(0)));
     if (err->exc) goto L_ret;
     goto L_ret;
   } }
@@ -460,7 +487,7 @@ static bool Review_NamesType (Ast_Node * root, Ast_Node * d, m9_state *err)
     if (sel != NULL) {
       if ((sel->kind == Ast_NSelField)) {
         err->res = m9res;
-        m9ret = (DynStr_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s32, 1 }), err) || Review_Declares (root, d->a, true, err));
+        m9ret = (DynStr_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s35, 1 }), err) || Review_Declares (root, d->a, true, err));
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -768,7 +795,7 @@ static void Review_Walk (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
       { Ast_Node * p = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (p != NULL) {
-        bool m9t2 = DynStr_Eq (p->a, ((m9_sl_CHAR){ (uint32_t *) m9s33, 3 }), err);
+        bool m9t2 = DynStr_Eq (p->a, ((m9_sl_CHAR){ (uint32_t *) m9s36, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t2) {
           { __typeof__((*c).newOwn) m9v = m9_add_i64 ((*c).newOwn, INT64_C(1), err);
@@ -800,7 +827,7 @@ static void Review_Walk (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
     } break;
     case INT64_C(77):
     {
-      bool m9t4 = DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s34, 4 }), err);
+      bool m9t4 = DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s37, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t4) {
         { __typeof__((*c).heap) m9v = m9_add_i64 ((*c).heap, INT64_C(1), err);
@@ -875,7 +902,7 @@ static void Review_Vars (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
                   if (err->exc) goto L_ret;
                   (*c).localPools = m9v;
                 }
-                { __typeof__(m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s35, 1 }), err), id->a, err)) m9a9 = m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s35, 1 }), err), id->a, err);
+                { __typeof__(m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s38, 1 }), err), id->a, err)) m9a9 = m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s38, 1 }), err), id->a, err);
                   if (err->exc) goto L_ret;
                 Review_Site (log_, log__pool, 76u, vd->line, m9a9, err);
                 if (err->exc) goto L_ret;
@@ -983,7 +1010,7 @@ static void Review_Proc (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
     { Ast_Node * at = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(3), p->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (at != NULL) {
-      bool m9t1 = DynStr_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s36, 6 }), err);
+      bool m9t1 = DynStr_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s39, 6 }), err);
       if (err->exc) goto L_ret;
       if (m9t1) {
         { __typeof__((*c).serial) m9v = m9_add_i64 ((*c).serial, INT64_C(1), err);
@@ -991,7 +1018,7 @@ static void Review_Proc (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
           (*c).serial = m9v;
         }
       } else {
-        bool m9t2 = DynStr_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s37, 9 }), err);
+        bool m9t2 = DynStr_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s40, 9 }), err);
         if (err->exc) goto L_ret;
         if (m9t2) {
           { __typeof__((*c).reentrant) m9v = m9_add_i64 ((*c).reentrant, INT64_C(1), err);
@@ -1072,6 +1099,50 @@ L_ret: ;
   return;
 }
 
+static void Review_Sharable (Review_Counts *c, DynStr_DString * *log_, m9_pool *log__pool, Ast_Node * sec, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (sec->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { Ast_Node * td = (*(Ast_Node * *) m9_at (sec->kids.p, i, sec->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (td != NULL) {
+      { Ast_Node * body = (*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (body != NULL) {
+        if (((body->kind == Ast_NRecordType) && (body->nkids > INT64_C(2)))) {
+          { Ast_Node * at = (*(Ast_Node * *) m9_at (body->kids.p, INT64_C(2), body->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (at != NULL) {
+            bool m9t2 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s41, 8 }), err);
+            if (err->exc) goto L_ret;
+            if (m9t2) {
+              { __typeof__((*c).sharable) m9v = m9_add_i64 ((*c).sharable, INT64_C(1), err);
+                if (err->exc) goto L_ret;
+                (*c).sharable = m9v;
+              }
+              Review_Site (log_, log__pool, 82u, td->line, td->a, err);
+              if (err->exc) goto L_ret;
+            }
+          } }
+        }
+      } }
+    } }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, log__pool, (*log_));
+  m9_pool_free (&m9frame);
+  return;
+}
+
 static void Review_Unit (Review_Counts *c, DynStr_DString * *log_, m9_pool *log__pool, Ast_Node * root, Ast_Node * u, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -1128,13 +1199,17 @@ static void Review_Unit (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
           Review_Proc (c, log_, log__pool, root, kd, foreignUnit, err);
           if (err->exc) goto L_ret;
       } else {
+        if ((kd->kind == Ast_NTypeSection)) {
+          Review_Sharable (c, log_, log__pool, kd, err);
+          if (err->exc) goto L_ret;
+      } else {
         if ((kd->kind == Ast_NModBody)) {
           { __typeof__((*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err))) m9a12 = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Review_Walk (c, log_, log__pool, root, m9a12, ((m9_sl_CHAR){ (uint32_t *) m9s38, 6 }), err);
+          Review_Walk (c, log_, log__pool, root, m9a12, ((m9_sl_CHAR){ (uint32_t *) m9s42, 6 }), err);
           if (err->exc) goto L_ret;
           }
-      } } }
+      } } } }
     } }
   } }
 L_ret: ;
@@ -1242,7 +1317,7 @@ static void Review_Row (DynStr_DString * *d, m9_pool *d_pool, m9_sl_m9_sl_CHAR l
               Review_Spaces (d, d_pool, INT64_C(3), err);
               if (err->exc) goto L_ret;
             } else {
-              DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), err);
+              DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s43, 2 }), err);
               if (err->exc) goto L_ret;
             }
             { __typeof__(({ __typeof__(ln) m9t3 = ln; int64_t m9t3a = INT64_C(2), m9t3n = m9_sub_i64 ((ln).len, INT64_C(2), err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a14 = ({ __typeof__(ln) m9t3 = ln; int64_t m9t3a = INT64_C(2), m9t3n = m9_sub_i64 ((ln).len, INT64_C(2), err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
@@ -1259,14 +1334,14 @@ static void Review_Row (DynStr_DString * *d, m9_pool *d_pool, m9_sl_m9_sl_CHAR l
       }
     } }
     if ((total > shown)) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s40, 3 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s44, 3 }), err);
       if (err->exc) goto L_ret;
       { __typeof__(m9_sub_i64 (total, shown, err)) m9a15 = m9_sub_i64 (total, shown, err);
         if (err->exc) goto L_ret;
       DynStr_AppendI64 (d, d_pool, m9a15, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s41, 5 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s45, 5 }), err);
       if (err->exc) goto L_ret;
     }
   }
@@ -1316,12 +1391,12 @@ static void Review_StatRow (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR lab
   DynStr_AppendI64 (d, d_pool, checked, err);
   if (err->exc) goto L_ret;
   if ((skipped > INT64_C(0))) {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s42, 32 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 32 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendI64 (d, d_pool, skipped, err);
     if (err->exc) goto L_ret;
     if (((lines).len > INT64_C(0))) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s43, 9 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s47, 9 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (d, d_pool, lines, err);
       if (err->exc) goto L_ret;

@@ -12,19 +12,14 @@ typedef struct Hash_Hmac Hash_Hmac;
 
 #define Hash_DigestLen INT64_C(32)
 #define Hash_BlockLen INT64_C(64)
-#define Hash_Mask32 INT64_C(0xFFFFFFFF)
 
-#ifndef M9SL_m9_arr_8_int64_t
-#define M9SL_m9_arr_8_int64_t
-typedef struct { int64_t v[8]; } m9_arr_8_int64_t;
+#ifndef M9SL_m9_arr_16_int64_t
+#define M9SL_m9_arr_16_int64_t
+typedef struct { int64_t v[16]; } m9_arr_16_int64_t;
 #endif
 #ifndef M9SL_m9_arr_64_uint8_t
 #define M9SL_m9_arr_64_uint8_t
 typedef struct { uint8_t v[64]; } m9_arr_64_uint8_t;
-#endif
-#ifndef M9SL_m9_arr_64_int64_t
-#define M9SL_m9_arr_64_int64_t
-typedef struct { int64_t v[64]; } m9_arr_64_int64_t;
 #endif
 #ifndef M9SL_m9_arr_4_uint8_t
 #define M9SL_m9_arr_4_uint8_t
@@ -33,10 +28,7 @@ typedef struct { uint8_t v[4]; } m9_arr_4_uint8_t;
 
 typedef struct Hash_Sha256 Hash_Sha256;
 struct Hash_Sha256 {
-  m9_arr_8_int64_t h;
-  m9_arr_64_uint8_t buf;
-  int64_t n;
-  int64_t total;
+  m9_arr_16_int64_t st;
 };
 
 typedef struct Hash_Hmac Hash_Hmac;

@@ -114,6 +114,11 @@ typedef struct Parse_Parser Parse_Parser;
 #define Parse_SRParen INT64_C(5)
 #define Parse_SVariantF INT64_C(6)
 
+#ifndef M9SL_m9_sl_Ast_Nodep
+#define M9SL_m9_sl_Ast_Nodep
+typedef struct { Ast_Node * *p; int64_t len; } m9_sl_Ast_Nodep;
+#endif
+
 typedef struct Parse_Perr Parse_Perr;
 struct Parse_Perr {
   int64_t line;

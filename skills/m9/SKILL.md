@@ -53,6 +53,21 @@ heading with `m9c --json MODULE`):
 | an instant with nanoseconds, ISO 8601 with an offset | `Time.Nanos`, `Time.ParseNanos`, `Time.IsoNanos` |
 | an HTTP date | `Http.FormatDate (secs)` out |
 
+**One handler arm for several exceptions** (0.22): `| Bad, Worse (n)
+: ...` -- a binder only when they all have the same fields.
+
+**A record handed to THREADs is `RECORD ... END [SHARABLE]`** (0.22):
+the claim that their writes are disjoint (a band each, a MONITOR field
+dealing the bands out).  A THREAD handed a record it does not move --
+a pool pointer, a VAR parameter -- that is neither a monitor nor so
+marked is refused.
+
+**`FOR x IN s DO ... END`** (0.22) where the index is used only as
+`s[i]`: a slice, an array, a string or a constant table; `s` a NAME
+(give a call's answer one first), `x` declared with the element type
+exactly, given a copy -- assigning `x` changes nothing in `s`.  Over a
+slice of SHARED handles, index it.
+
 **JSON strings: `Json.Text`, not `Json.AsStr`, for what the string
 SAYS.**  `AsStr` answers the raw text between the quotes, escapes
 still in (`\u00e9`, `\n`) -- right for comparing with a literal that

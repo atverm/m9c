@@ -235,6 +235,8 @@ begin
                       Result := Result + ' (' + QualStr (n.kids[0]) + ')';
                     Result := Result + LF +
                       FieldsLines (n.kids[1], ind + 1) + Sp (ind) + 'END';
+                    if (Length (n.kids) > 2) and (n.kids[2] <> nil) then
+                      Result := Result + ' [' + n.kids[2].a + ']';
                   end;
     nkCaseRecordType :
       begin
@@ -339,6 +341,9 @@ begin
         Result := Result + ' DO' + LF + SeqStr (n.kids[3], ind + 1) +
           Sp (ind) + 'END';
       end;
+    nkForIn :
+      Result := Sp (ind) + 'FOR ' + n.a + ' IN ' + E (n.kids[0]) + ' DO' + LF +
+        SeqStr (n.kids[1], ind + 1) + Sp (ind) + 'END';
     nkLoop :
       Result := Sp (ind) + 'LOOP' + LF + SeqStr (n.kids[0], ind + 1) +
         Sp (ind) + 'END';
@@ -423,6 +428,8 @@ begin
     begin
       h := blk.kids[i];
       Result := Result + Sp (ind) + '| ' + QualStr (h.kids[0]);
+      for j := 3 to High (h.kids) do
+        Result := Result + ', ' + QualStr (h.kids[j]);
       if h.kids[1] <> nil then
       begin
         Result := Result + ' (';

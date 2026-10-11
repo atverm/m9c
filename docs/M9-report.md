@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.21.0, 2026-10-11
+## Report — revision 0.22.0, 2026-10-11
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -32,10 +32,10 @@ to reduce, so the list is meant to shrink.
 | **Compiler** | `m9c`, self-hosted. Lexer, parser and code generator are written in M9; the three-stage bootstrap is byte-identical at the fixpoint (§9.5) |
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
 | **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a `RAISE`'s payload held to its `EXCEPTION`'s fields, count and types (§5, since 0.20.0), a `FOR` step a constant other than 0 (§10, since 0.20.0), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
-| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path, a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
+| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6; since 2026-10-11 `m9c --review` LISTS each `THREAD` whose target writes one, not refused); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path, a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
 | **Accepted by the checker, refused by the generator** | `VIEW` over a grid a call answers (`VIEW (Mk (), 1, ALL)`).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
-| **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` (§6); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.21.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
+| **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` as COMPUTED (§6: since 2026-10-11 it is DECLARED, `RECORD ... END [SHARABLE]`, and checked at `THREAD`; the `SHARED` count is still not atomic); the pre-registered candidates with their adoption triggers (§9.6) |
+| **Release** | 0.22.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
 
@@ -210,6 +210,17 @@ and which here is the one assignment the language itself makes.
 and the outer loop ran once — the one logic error of that session no
 compiler saw.
 `museum/implicit-through-loop-variable.m9`.)*
+**`FOR x IN s` goes over the elements** of a slice, an array, a string
+or a constant table (since 2026-10-11): `s` is a NAME — a variable, a
+field, an element — evaluated once; `x` is declared, of the element
+type exactly, and given a COPY of each element in turn, so assigning
+`x` changes nothing in `s`, while an element the body writes ahead of
+the loop is read as written.  A slice of `SHARED` handles is gone over
+by its index: the loop's copy would be a share the count never saw.
+EXIT leaves it as it leaves any loop.  *(Measured before building: of
+cp-kernel's 210 loops `FOR i := 0 TO LEN (s) - 1`, 151 use `i` only
+as `s[i]`; of this repository's 498, 161.  Each is two names and an
+index check where one name says it.)*
 **`NaN` is predeclared**: the quiet NaN, an identifier and not a
 keyword (the `STR` precedent), typed as a real literal so it is an F64
 or an F32 where one is wanted, with the bits `7ff8000000000000` that C's
@@ -988,7 +999,7 @@ Rules:
 
    What is **not** enforced is the second half — that a `STATEFUL`
    non-monitor module is reached by only one thread. §6 states the
-   rule and §6 also states, now, that no check implements it. *(This
+   rule, and says what `m9c --review` shows of it since 2026-10-11. *(This
    used to say it was "the last rule in this report with no check
    behind it"; the table at the head of the report is the honest
    list, and it is longer than one.)* *(Observed
@@ -1388,6 +1399,11 @@ may be a local of the caller that dies when it returns; it may not be
 kept in a module variable (since 2026-10-10).  The module's own pool
 or `HEAP` may be.
 
+A VIEW of frame storage is frame storage (since 2026-10-11): a `SLICE`
+or `GRID` over a concatenation, or the answer of a function that
+answers a view of its argument (`Text.Trim`), may not be kept in a
+module variable or through a reference parameter.
+
 ## 5. Errors
 
 *(`EXIT`, the loop's own exit, first: it leaves the innermost `LOOP`,
@@ -1494,6 +1510,15 @@ distinction while refusing his conclusion.
 
 ---
 
+A call's RAISES is counted wherever the call stands -- a condition, a
+CASE selector, a FOR bound included (since 2026-10-11: until then the
+checker typed those expressions and did not count them).
+
+One handler arm may name several exceptions, `| Bad, Worse (n) : ...`
+(since 2026-10-11): any of them enters the arm.  A binder list binds
+alike from each, so it is allowed only when every named exception has
+the same fields; without binders the names may differ in their fields.
+
 ## 6. Concurrency
 
 Threads are in the language; data races are not.
@@ -1515,10 +1540,22 @@ Threads are in the language; data races are not.
   exception's name: par 11 gives every procedure an error slot and
   the caller checks it, and a thread has no caller, so swallowing it
   would make this the one place in the language where an error is a
-  silence. SHARABLE is computed structurally and
-  stated in definition modules — it is Send/Sync with Wirth's
-  spelling.  *Stated, not built, as of 2026-09-27: no checker computes
-  SHARABLE or reads it from a definition, the SHARED count is not
+  silence. **SHARABLE is DECLARED** (since 2026-10-11): `RECORD ...
+  END [SHARABLE]` is its author's claim that threads holding it write
+  disjoint parts of it — a band each, a monitor field dealing the bands
+  out — which no type can prove, so it is written down where a
+  reviewer reads it (`m9c --review` lists every one). What a `THREAD`
+  is handed and does not MOVE — a pool pointer, a `VAR` parameter's
+  pointer, a module variable's — both threads hold, and both checkers
+  refuse it unless it is a `MONITOR` or a record so marked. Measured
+  before building: 15 of the 16 `THREAD` sites in this repository
+  handed over such a record (Mat's three parallel factorisations,
+  HttpServer's workers, the tutorial's chapters 11 and 16), each with a
+  comment stating the claim the attribute now states; the sixteenth is
+  a monitor. It is Send/Sync with Wirth's spelling, declared rather
+  than inferred. The `SHARED` count is still not atomic.  *Stated, not
+  built, as of 2026-09-27: no checker computed
+  SHARABLE or read it from a definition, the SHARED count is not
   atomic, and `THREAD`'s argument was walked by neither checker — the
   generator refused a non-pointer shape and nothing matched the
   argument to the target's parameter or moved it.  The type-and-move
@@ -1580,13 +1617,21 @@ Threads are in the language; data races are not.
   `THREAD`, `MONITOR`, `WAIT` and `SIGNAL` are generated and in use.
 
 A `STATEFUL` non-monitor module is not to be touched by more than one
-thread. **The compiler does not check this**, and the sentence is
+thread. **The compiler does not refuse a breach**, and the sentence is
 written here as an admission: earlier drafts said "enforced, not
-documented", and that was false — there is no such check in either
-checker. What is
-enforced is that module state must be declared at all (§3.3), which
-makes the modules a reviewer has to think about greppable but does
-not count the threads that reach them.
+documented", and that was false. What is
+enforced is that module state must be declared at all (§3.3). What is
+SHOWN, since 2026-10-11, is every `THREAD` whose target — or a
+procedure it calls that the checker can follow, across modules —
+WRITES a variable of a `STATEFUL` module: an assignment rooted there, a
+`VAR` or `OWN` argument, an allocation in a module `POOL`, a `DISPOSE`.
+`m9c --review` lists each under TRUSTED with the write it reaches.
+Reading is not listed (a threshold set before the threads start is
+the idiom), nor a write that passes through a `MONITOR` on its way
+(the variable's own type, or a field's). It is a list and not a
+refusal because the one site measured over 637 files, a fault
+counter the zarr proxy's reaper thread bumps, is correct: the thread
+is joined before the counter is read, and no checker sees a join.
 
 The related rule that a THREAD may not reach a `[SERIAL]` foreign
 procedure was removed rather than repaired, and §7.2 records why: it
@@ -1714,9 +1759,10 @@ features:
    plus deep call graphs breed `throws Exception`. M9's mitigations —
    few checked types, error values not hierarchies, OPT for the
    expected case — are hopes, not proofs.
-3. **SHARABLE inference at module boundaries** interacts with opaque
-   types; the definition must state it, which leaks one bit of
-   implementation. Accepted, grudgingly.
+3. **SHARABLE at module boundaries** interacts with opaque types; the
+   definition must state it, which leaks one bit of implementation.
+   Accepted, grudgingly — and since 2026-10-11 it is stated, never
+   inferred: `RECORD ... END [SHARABLE]` in the declaration.
 4. **WITH as explicit binding — a pre-registered candidate.**
    Modula-3's `WITH v = expr DO ... END` names one evaluation of a
    deep path; no scope injection, no capture. Under §4.1 it reads as
@@ -1845,8 +1891,8 @@ ProcBody    = { Declaration } Block ident .
 
 Block       = "BEGIN" StmtSeq [ "EXCEPT" Handler { Handler } ]
               [ "FINALLY" StmtSeq ] "END" .
-Handler     = "|" Qualident [ "(" HandlerArg { "," HandlerArg } ")" ]
-              ":" StmtSeq .
+Handler     = "|" Qualident { "," Qualident }
+              [ "(" HandlerArg { "," HandlerArg } ")" ] ":" StmtSeq .
 HandlerArg  = ident | number | string .
 
 Type        = Qualident | ArrayType | GridType | SliceType | RecordType
@@ -1857,8 +1903,8 @@ ProcType    = "PROCEDURE" "(" [ ParamList ] ")" [ ":" [ "RO" ] Type ]
               [ "RAISES" Qualident { "," Qualident } ] .
 ArrayType   = "ARRAY" ConstExpr "OF" Type .
 GridType    = "GRID" ConstExpr "OF" Type .
-SliceType   = "SLICE" "OF" Type [ Attrib ] .
-RecordType  = "RECORD" [ "(" Qualident ")" ] FieldSeq "END" .
+SliceType   = "SLICE" "OF" Type .
+RecordType  = "RECORD" [ "(" Qualident ")" ] FieldSeq "END" [ Attrib ] .
 CaseRecordType = "CASE" "RECORD" Variant { Variant } "END" .
 Variant     = "|" ident [ ":" FieldSeq ] .
 MonitorType = "MONITOR" "RECORD" FieldSeq "END" .
@@ -1878,7 +1924,8 @@ If          = "IF" Expr "THEN" StmtSeq
               { "ELSIF" Expr "THEN" StmtSeq }
               [ "ELSE" StmtSeq ] "END" .
 While       = "WHILE" Expr "DO" StmtSeq "END" .
-For         = "FOR" ident ":=" Expr "TO" Expr [ "BY" ConstExpr ]
+For         = "FOR" ident ( ":=" Expr "TO" Expr [ "BY" ConstExpr ]
+                          | "IN" Designator )
               "DO" StmtSeq "END" .
 Loop        = "LOOP" StmtSeq "END" .
 Case        = "CASE" Expr "OF" CaseArm { CaseArm }

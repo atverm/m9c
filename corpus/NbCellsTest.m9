@@ -107,7 +107,7 @@ PROCEDURE Frames () RAISES Faults.BadArg, Faults.SizeError, Io.IOError,
                            Frame.Duplicate, Frame.Unknown, Frame.WrongType =
 VAR
   f, got : PTR Frame.Fr IN pool ;
-  x : SLICE OF F64 ;
+  x, back : SLICE OF F64 ;
   s : SLICE OF STR ;
 BEGIN
   x := NEW (pool, F64, 2) ;
@@ -124,8 +124,10 @@ BEGIN
   Check.EqI64 (t, 'frame: rows', Frame.Rows (got), 2) ;
   Check.EqI64 (t, 'frame: columns', Frame.Cols (got), 2) ;
   Check.EqStrs (t, 'frame: the strings', Frame.ColStrs (got, 'site'), s) ;
-  x := Frame.ColF64 (got, 'co2') ;
-  Check.EqF64 (t, 'frame: a real', x[1], 401.25) ;
+  (* a column read back is the frame's: its own name, since RO marks
+     a name for the whole procedure (par 2.4) and x is written above *)
+  back := Frame.ColF64 (got, 'co2') ;
+  Check.EqF64 (t, 'frame: a real', back[1], 401.25) ;
   Check.EqStr (t, 'frame: the name holds frame', NbCells.Kind ('obs'), 'frame')
 END Frames ;
 

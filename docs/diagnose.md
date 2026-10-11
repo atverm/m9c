@@ -46,7 +46,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `argument 1 of Bump: the CONST Pi cannot be passed to a VAR or OWN parameter` | a CONST is passed to a VAR or OWN parameter, which exists to be written through; there is nothing to write | pass a variable holding the value, or make the parameter by-value or RO if the callee only reads | `const-as-var-argument` |
 | `CONST Big: the expression overflows I64 or divides by zero (par 2.2.4)` | an integer CONST expression is folded with the run-time arithmetic, and this one overflows I64 or divides by zero (or a CONST is a form no generator writes: a name, a call, a comparison) | compute the value in a procedure, or split the expression so each part fits I64 | `const-expression-overflow` |
 | `argument 1 of Up: the CONST Names can be lent only to an RO parameter` | a string CONST, or an element of a constant table, is passed to a by-value slice parameter that is not RO; a constant is read-only data | declare the parameter RO, or copy the constant into a variable first (par 2.4) | `const-string-to-writable` |
-| `the CONST table Primes can only be indexed, measured with LEN, or lent to an RO parameter` | a constant table is named bare where its value would be aliased -- assigned to a slice, cut with SLICE, RETURNed -- and whatever held the alias could write the constant | index it (X[i]), measure it (LEN (X)), or lend it whole to an RO parameter; those three are everything a table does (par 2.2.4) | `const-table-aliased` |
+| `the CONST table Primes can only be indexed, measured with LEN, gone over by FOR IN, or lent to an RO parameter` | a constant table is named bare where its value would be aliased -- assigned to a slice, cut with SLICE, RETURNed -- and whatever held the alias could write the constant | index it (X[i]), measure it (LEN (X)), or lend it whole to an RO parameter; those three are everything a table does (par 2.2.4) | `const-table-aliased` |
 | `argument 1 of Fill: the CONST table Primes can be lent only to an RO parameter` | a constant table is passed to a parameter that is not RO; a slice parameter can be written through, and the table is read-only data | declare the parameter RO if the callee only reads; if it writes, it needs a variable, not a constant (par 2.2.4) | `const-table-lent-writable` |
 | `Ink is declared twice in module m: the first is at line 10` | a CONST, TYPE, VAR, EXCEPTION or PROCEDURE name is declared a second time at the module's level, or a local beside a parameter of its name; until 2026-10-03 the C compiler refused most of these and a PROCEDURE declared twice it never saw -- the generator emitted the second body and dropped the first, and the program ran (museum/declared-twice.m9: Csv.ColF64 had shipped twice for five releases) | delete or rename the second declaration; the message names the line of the first.  A forward heading -- a heading without a body, its body later -- is legal and stays so (par 3) | `declared-twice` |
 | `declared in the definition but not implemented` | the DEFINITION declares a procedure the IMPLEMENTATION never defines | implement it, or remove it from the definition; the signature is the contract (par 3) | `def-not-implemented` |
@@ -66,6 +66,12 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign a real literal to I64` | another module's exported variable Mod.v has the type its definition declares, and nothing converts implicitly (decision 28, par 3) | convert explicitly to the declared type, or read the definition: m9c --json Mod | `export-var-typed` |
 | `FOR over an enumeration needs both bounds of one type, not m.Colour and m.Fruit` | a FOR loop over an enumeration walks the members of ONE enumeration in declaration order, so its two bounds must name that same type; giving Colour.Red as the low bound and a member of a different enumeration as the high bound has no meaning, since members of unrelated enumerations are not comparable | make both bounds members of the one type -- FOR c := Colour.Red TO Colour.Blue; a loop that must cross two enumerations is two loops, or a conversion through ORD if the ordinals really are meant to line up | `for-enum-bounds-differ` |
 | `FOR over an enumeration takes no BY step` | BY names an integer stride and an enumeration's members are not numbers to step over -- the loop already visits every member from the low bound to the high one, with nothing between them to skip -- so BY on an enumeration bound is refused | drop the BY: FOR c := Colour.Red TO Colour.Blue visits Red, Green, Blue in order; if you need to skip members, guard the body with an IF or CASE rather than striding the loop | `for-enum-takes-no-step` |
+| `undeclared retention: borrowed rows (carried by p) reaches module state -- declare KEPT rows (par 4.1)` | x holds each element as x := s[i] would, so over a borrowed slice of pointers x carries the borrow, and keeping it is a retention the heading does not declare (par 4.1) | declare the parameter KEPT, or keep a copy that is not the borrowed one | `for-in-borrow-kept` |
+| `FOR c IN takes a name -- a variable, a field, an element: give the value one first (par 10)` | FOR x IN goes over what a NAME holds -- a variable, a field, an element, a constant table -- and here it is handed a literal or a call (par 10) | assign the value to a local first, then FOR x IN that local | `for-in-not-a-name` |
+| `FOR x IN goes over a slice, an array or a string, not I64 (par 10)` | FOR x IN goes over a slice, an array or a string (STR is a slice of CHAR), and this is none of them (par 10) | go over a GRID or a count by its index: FOR i := 0 TO LEN (g, 0) - 1 | `for-in-not-a-sequence` |
+| `cannot write through t, which holds the CONST Names` | x holds each element as x := s[i] would, so over read-only storage -- a constant table, an RO parameter -- x holds read-only storage, and the write lands in it (par 2.4) | write through a copy that is not read-only -- Text.Keep (pool, t) -- or write into a slice the procedure owns | `for-in-ro-written` |
+| `FOR h IN over SHARED handles: index the slice -- a copy of a handle is counted, and the loop would copy it uncounted` | a SHARED handle is counted, and the copy FOR x IN would make into x is a share the count never sees (par 4.1) | index the slice: FOR i := 0 TO LEN (hs) - 1 DO ... hs[i] ... | `for-in-shared` |
+| `FOR variable x is F64, and the elements it goes over are I64` | the loop variable is held to the element type exactly, as an assignment is: no conversion happens in the head of the loop (par 2.1) | declare x with the element type, and convert inside the body: s := s + F64 (x) | `for-in-variable-type` |
 | `FOR variable j is the control variable of the enclosing FOR at line 12 (par 2.1)` | a FOR inside a FOR over the SAME control variable: the inner loop assigns the outer count (cp-kernel's Shacl.m9 ran its outer loop once, 2026-10-09) | give the inner loop its own variable (declare it); a second FOR over the same variable AFTER the first is fine | `for-nested-same-variable` |
 | `a FOR step is a constant: BY takes a literal, a CONST or an expression of them (par 10)` | the FOR names its BY step by a variable (or anything else that is no constant); the grammar takes a ConstExpr there, because the step decides which way the loop runs | write the step as a literal, a CONST or an expression of them; a step known only at run time is a WHILE with its own test (par 10) | `for-step-not-constant` |
 | `FOR variable k is I64, and its bounds are m.Colour` | a FOR loop over an enumeration (FOR c := Colour.Red TO Colour.Blue) has a variable of another type; the variable takes each member in turn, so it is that enumeration | declare it of the enumeration: VAR c : Colour ; | `for-variable-enum-mismatch` |
@@ -83,6 +89,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `a frame allocation dies with this frame; it cannot be stored in module variable saved (par 2.3) -- allocate it in a module pool (VAR mpool : POOL ; NEW (mpool, T)), or copy a string: Text.Keep (mpool, s)` | NEW (T) with no pool allocates from the procedure's frame, which dies when the frame returns; a module variable outlives it and would point at freed storage (par 4.3, docs/pool-elision-plan.md) | allocate it where the reader lives: NEW (HEAP, T) for the process's lifetime, NEW (pool, T) in a pool the caller owns, or return it -- a returned frame pointer keeps its storage | `frame-ptr-to-modvar` |
 | `THREAD (Work): cannot hand a frame allocation to a thread` | a frame allocation dies when this frame returns, and a thread does not wait for that | allocate what a thread receives with NEW (OWN, T): the thread owns it and DISPOSEs it (par 4.2, 6) | `frame-ptr-to-thread` |
 | `a frame allocation dies with this frame; it cannot be stored through n, which outlives it` | a frame allocation stored into a COMPONENT reached through a reference parameter (a field, an element, a pointer's target) is not seen by the exit adoption, which looks at the parameter itself, so the caller would hold freed storage (par 4.3) | assign the whole VAR parameter (its target is adopted at exit), or allocate in the pool the object lives in: NEW (pool, T) | `frame-ptr-via-var-component` |
+| `a view of a concatenation dies with this frame; it cannot be stored in module variable keep (par 2.3)` | a VIEW of frame storage -- a SLICE over a concatenation, or the answer of a function that answers a view of its argument (Text.Trim's shape) -- is kept in a module variable, which outlives the frame (par 2.3) | copy it into storage that lives as long as the module variable: Text.Keep (mpool, s) with a module pool | `frame-view-stored` |
 | `is an M9 module -- use IMPORT lib` | FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way) | use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later | `from-m9-module` |
 | `a function must RETURN or RAISE on every path` | the function has a path that reaches its END without a RETURN or a RAISE -- an IF with no ELSE, a WHILE or FOR as its last statement, a LOOP left by EXIT, a CASE arm or a handler that does not answer; the emitted C would hand back the zero the result started as | answer on every path: add the ELSE, or a RETURN after the loop; a call does not count as an ending whatever the callee does, so write RAISE X (...) rather than a helper that always raises (par 3 rule 4) | `function-falls-off-end` |
 | `axis 2 of a GRID 2 OF F64 does not exist` | LEN (g, k) names an axis the grid's rank does not have (axes are 0-based) | a GRID 2 has axes 0 and 1 | `grid-len-axis-exists` |
@@ -92,6 +99,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `GRID needs a slice, not I64` | GRID (s, n0, ..., nR) was given something that is not a SLICE OF T as its storage (par 2.2.1): the grid's element type is the slice's | hand GRID a SLICE OF T: an array goes through SLICE (a, 0, LEN (a)) into a variable first | `grid-of-slice` |
 | `cannot assign GRID 3 OF F64 to GRID 2 OF F64` | GRID 3 OF F64 and GRID 2 OF F64 are different types; rank is in the type, shape in the value | declare the matching rank, or take a VIEW that drops an axis | `grid-rank-is-part-of-the-type` |
 | `a GRID 3 needs 3 subscripts, not 2` | every axis must be subscripted; a GRID is not a nested array | g[i, j, k] for a GRID 3; VIEW (g, i, ALL, ALL) to select a plane | `grid-subscript-arity` |
+| `one handler arm binds a payload only when every exception it names has the same fields: Bad (I64) and Other (SLICE OF CHAR) differ -- give each its own arm, or bind nothing (par 5)` | one handler arm names several exceptions and binds a payload, but their fields differ, so a binder would mean a different thing for each (par 5) | give each exception its own arm, or bind nothing in the shared arm | `handler-arm-fields-differ` |
 | `cannot assign I64 to SLICE OF CHAR (no implicit conversions, par 2.1)` | a handler's payload binder (the names in `| Err (m, c) :') has the type of the EXCEPTION declaration's field it stands for, in order -- since 2026-10-08; until then a binder had no type and `s := c' with s a STR and c an I64 payload compiled | use the binder at its field's type, or convert it (Fmt.I64Str for a number into text); the declaration names the fields and their types | `handler-binder-typed` |
 | `cannot assign I32 to I64` | there is no implicit conversion between any two numeric types, widening included | I64 (x) explicitly; the conversion RAISES ValueRange, which your RAISES set must carry (par 2.1) | `implicit-widening` |
 | `cannot assign I64 to SLICE OF CHAR (no implicit conversions, par 2.1)` | a handler of the predeclared IndexError binds (index, length : I64) since 2026-10-09, and a binder was used at another type | use the binder as an I64 -- the index and the length as the check saw them -- or convert it | `index-error-binder-typed` |
@@ -113,7 +121,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `integer literal 40000 does not fit I16` | an integer literal adapts to the width it is stored into, and this one is outside that width's range -- until 2026-09-27 it compiled and the C conversion wrapped it (I16 := 40000 stored -25536) | use a wider type, or the value you meant; a computed value that may not fit converts explicitly with I16 (x) RAISES ValueRange (par 2.1) | `literal-does-not-fit` |
 | `argument 1 of Up: a string literal can be lent only to an RO parameter` | a string literal is passed to a by-value STR (or SLICE) parameter that is not RO; such a parameter can be written through, a literal is read-only data, and until 2026-10-01 this was accepted and a callee that wrote died with SIGSEGV (museum/write-through-literal.m9) | declare the parameter RO if the procedure only reads it -- every STR parameter that is not written should say so; if it does write, pass a variable (par 2.4) | `literal-to-writable-slice` |
 | `a local CONST may not shadow a module CONST: Tag` | a procedure declares a CONST with the same name as one the module already declares | rename one of them.  Which would win depends on lookup order, and the map answers the first hit, so the shadow is refused rather than resolved (docs/frame-pools.md) | `local-const-shadow` |
-| `use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 34 (par 4.2)` | a module variable moved in the module body (handed to an OWN parameter or a THREAD, DISPOSEd) is used again -- the body tracks ownership as a procedure does (par 4.2) | give it a fresh value after the move (p := NEW (OWN, T)), or move it once; a POOL allocation is lent to a thread, not moved | `module-body-use-after-move` |
+| `use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 35 (par 4.2)` | a module variable moved in the module body (handed to an OWN parameter or a THREAD, DISPOSEd) is used again -- the body tracks ownership as a procedure does (par 4.2) | give it a fresh value after the move (p := NEW (OWN, T)), or move it once; a POOL allocation is lent to a thread, not moved | `module-body-use-after-move` |
 | `module Other is named and not imported: write IMPORT Other` | the same refusal; the probe holds what must stay LEGAL before it -- an implementation naming a module only its definition imports, a module naming itself, a local variable that has a module's name | IMPORT the module the last procedure names | `module-import-allowed-forms` |
 | `unknown name: Lib.Nosuch -- Lib declares no such name` | a qualified name Mod.X names a module the checker has loaded and a member it does not declare -- no procedure, type, constant, exception or exported variable X; a module NOT loaded stays soft (that is a missing import, said elsewhere) | spell the member as the module declares it (m9c --json MODULE lists them), or import the module that has it | `module-member-unknown` |
 | `module Lib is named and not imported: write IMPORT Lib` | a qualified name's module is known to the compiler -- something imported imports it -- and this module does not import it; until 2026-10-02 any module in the import closure could be named, so a program's IMPORT lines did not say what it depended on (museum/named-not-imported.m9) | add the line: IMPORT Lib ;  An implementation may lean on its definition's IMPORT and the other way round.  NOT SOURCE COMPATIBLE for a program that leaned on the gap: 5 sites in 386 files (par 3) | `module-named-not-imported` |
@@ -154,9 +162,11 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `PURE procedure calls Note, which is not PURE (par 3.2)` | a PURE procedure may call only PURE procedures -- which is what makes 'no I/O' true without the checker knowing what I/O is, since a foreign procedure is [SERIAL] or [REENTRANT] and never [PURE] | declare the callee [PURE] too if it really is, or drop [PURE] from the caller | `pure-calls-impure` |
 | `cannot write through the VAR parameter acc in a PURE procedure (par 3.2)` | a PURE procedure has no observable effect (par 3.2), and writing through a caller's VAR binding is precisely what the caller observes | answer a value instead of writing through a parameter, or drop [PURE] | `pure-writes-var` |
 | `field 1 of Bad: cannot give SLICE OF CHAR where I64 is expected` | a RAISE gives its EXCEPTION a value of another type than the field declares (or, with `expects N argument(s)', another number of values) -- the payload is held to the declaration as a record aggregate's arguments are | give the fields in their declared order and types; a handler binds them by position, so a value in the wrong place is read as another field (par 5) | `raise-payload-mismatch` |
+| `unhandled RAISES ValueRange from call to Check -- add it to this procedure's RAISES, or handle it: EXCEPT \| ValueRange : ...` | a call that can raise stands in an IF, ELSIF or WHILE condition, a CASE selector or a FOR bound, and nothing declares or handles what it raises -- counted there since 2026-10-11, as everywhere else (par 5) | add the exception to the procedure's RAISES, or handle it in an EXCEPT arm, as for any other call | `raises-in-condition` |
 | `Row expects 2 argument(s), got 1` | a record aggregate Row (...) gives fewer or more values than the record has fields; it is positional and every field must be given (report par 2.2.4, 2026-10-05) | give every field, in declaration order: Row (code, text) | `record-aggregate-arity` |
 | `Ext: an aggregate of an extended record is not built` | a record aggregate names an extended record (RECORD (Base) ...): its base fields would have to come first, which the first cut of the aggregate does not do | declare a variable of the extended type and set its fields one by one | `record-aggregate-extended` |
 | `field 1 of Row: cannot give SLICE OF CHAR where I64 is expected` | a value of a record aggregate does not have its field type -- often two fields given in the wrong order, which is what a positional aggregate cannot otherwise notice when the types differ | give each field a value of its type, in declaration order; the message names the field by position | `record-aggregate-field-type` |
+| `a RECORD takes one attribute, [SHARABLE] (par 6), not [SHARE]` | a RECORD takes one attribute, [SHARABLE]; another name is a typo, not an attribute anything reads (par 6) | write [SHARABLE], or drop the attribute | `record-attribute-unknown` |
 | `a record CONST is not exported yet: Ok` | a record CONST is declared in a DEFINITION: like a constant table it is not exported yet | declare the record CONST in the implementation, or export a procedure that answers it | `record-const-exported` |
 | `field 1 of C is not a literal: a CONST holds literals` | a field of a record CONST is not a literal: a CONST record is read-only data in the program, so its fields are literals (or NaN), as the elements of a constant table are | write the literal itself, or build the value in a statement (r := Row (N, ...)), where any expression of the field type goes | `record-const-not-literal` |
 | `cannot write the CONST E` | a field of a record CONST, or the whole of it, is assigned: it is read-only data | copy it to a variable (r := E) and change the copy | `record-const-written` |
@@ -180,6 +190,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `a SLICE of an array no variable holds: the array is gone at the end of the statement -- name it first: a := F (...) ; SLICE (a, ...)` | SLICE over an ARRAY that a call answers (or a field of one): an array is a value, held in a temporary that is gone at the end of the statement, and the slice would point into it (par 2.2.1) | assign the answer to a variable first, a := F (x), and slice the variable; a function answering a SLICE OF T can be sliced as it is | `slice-of-call-array` |
 | `THREAD (Work): cannot pass I64 where PTR m.Rec is expected` | THREAD hands its argument to the target's first parameter, and this one is not of that type -- until 2026-09-27 neither checker looked at the argument (only the generator refused a non-pointer shape) | pass what the target declares: a PTR T or SHARED PTR T for a `VAR r: T` or `p: PTR T` parameter, or a monitor by name (par 6) | `thread-argument-type` |
 | `use of p after it was moved into a THREAD running Work` | a bare owned pointer handed to a THREAD is MOVED: the thread owns it now, and reading or writing it in the caller is a race the language refuses by construction | hand the thread a record it may share -- a MONITOR, or a pool value both sides may read -- or do not touch the owned value again after the THREAD (par 6, par 4.2) | `thread-moves-its-argument` |
+| `THREAD (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE]` | a THREAD is handed a record it does not own -- a pool pointer, a VAR parameter, a module variable -- so both threads hold it, and the record is neither a MONITOR nor marked [SHARABLE] (par 6) | if the threads' writes to the record are disjoint -- a band each, dealt out by a monitor field -- end its declaration END [SHARABLE]; else put what they share in a MONITOR, or move an owned value in | `thread-not-sharable` |
 | `THREAD (Lib.Work): the target must be a procedure of this module, not Lib's -- start it from a procedure declared here (par 6)` | the same refusal where a BINDER of the module's name exists elsewhere in the procedure -- an IS SOME, a CASE arm, a handler -- and the qualified name is outside the statements that binder covers; until 2026-10-08 the shadow test was by subtree and such a name passed as the binder's | IMPORT the module, or rename the binder; a binder is in scope only in the THEN, the arm or the handler that binds it | `thread-target-elsewhere` |
 | `is not total (missing R)` | CASE over a CASE RECORD must name every variant of the selector's own type | add the missing arm; there is no ELSE for variants (par 8) | `totality-uses-selector-type` |
 | `unknown name: alex` | a bare name used as a value is declared nowhere -- not a local, parameter, IS SOME binder, CONST, type, or module | declare it, import the module it comes from, or fix the typo; the checker now names it rather than leaving it to the generator (par: the checker refuses what the generator cannot see) | `undefined-name` |
@@ -190,6 +201,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `use of s after it was DISPOSEd` | the name was DISPOSEd on an earlier line and is dead | do not read it; re-assign to bring it back to life (par 4.2) | `use-after-dispose` |
 | `use of s after it was moved` | assigning a bare owned pointer to another name MOVES it; the source is dead | use the destination; if both must live, that is a SHARED handle | `use-after-move-assign` |
 | `use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 27 (par 4.2)` | an owned pointer moved inside a loop body (handed to an OWN parameter, DISPOSEd) is used again in the next turn, with no fresh value given before it (par 4.2) | give it a fresh value in the body after the move (p := NEW (OWN, T)), move it outside the loop, or leave the loop (EXIT) after the move | `use-after-move-loop` |
+| `use of s after it was moved at line 18 (par 4.2)` | an owned pointer moved in parentheses -- t := (s) -- is moved as t := s is, and s is used after it (par 4.2); the M9 checker missed the parenthesised form until 2026-10-11 | give s a fresh value before using it again, or use t, the name that owns the object now | `use-after-move-paren` |
 | `use of s after it was consumed by SHARED` | SHARED (s) consumed s; the handle is what lives on | use the SHARED result; s is gone | `use-after-shared` |
 | `must be a variable (VAR/OWN parameter)` | a VAR or OWN argument must be something that can be written to -- a variable, field or element | store the expression in a local first | `var-arg-not-designator` |
 | `unknown procedure: Lib.Kind.Nope` | a three-part constructor Mod.Type.Variant (args) names a module, a type in it, and a variant that is not there -- reported as `unknown procedure: Mod.Type.Variant', because a name that is neither a procedure nor a known variant is, to the caller, an unknown callee | spell the variant as the type declares it (m9c --json Mod lists them); the three-part form is how an imported variant with a payload is built from another module, Mod.Type.Variant, and it looks nowhere but Mod -- before 2026-09-15 it was refused outright as `unknown procedure: Mod' because the callee was split at its first dot | `variant-in-named-module` |
@@ -769,7 +781,7 @@ END m.
 
 ### const-table-aliased
 
-`the CONST table Primes can only be indexed, measured with LEN, or lent to an RO parameter`
+`the CONST table Primes can only be indexed, measured with LEN, gone over by FOR IN, or lent to an RO parameter`
 
 ```
 MODULE m ;
@@ -1261,6 +1273,171 @@ BEGIN
 END m.
 ```
 
+### for-in-borrow-kept
+
+`undeclared retention: borrowed rows (carried by p) reaches module state -- declare KEPT rows (par 4.1)`
+
+```
+(* FOR p IN rows gives p each element: a pointer the caller lent, as
+   `p := rows[i]' would.  Keeping it in module state is a retention the
+   heading must declare.  The legal forms first: reading through it,
+   and keeping what a KEPT parameter lent. *)
+MODULE m ;
+TYPE
+  T = RECORD n : I64 END ;
+VAR
+  kept : OPT PTR T ;
+  total : I64 ;
+PROCEDURE Sum (rows: SLICE OF PTR T) =
+VAR p : PTR T ;
+BEGIN
+  FOR p IN rows DO total := total + p.n END
+END Sum ;
+PROCEDURE Hold (KEPT rows: SLICE OF PTR T) =
+VAR p : PTR T ;
+BEGIN
+  FOR p IN rows DO kept := SOME (p) END
+END Hold ;
+PROCEDURE Keep (rows: SLICE OF PTR T) =
+VAR p : PTR T ;
+BEGIN
+  FOR p IN rows DO kept := SOME (p) END
+END Keep ;
+BEGIN
+END m.
+```
+
+### for-in-not-a-name
+
+`FOR c IN takes a name -- a variable, a field, an element: give the value one first (par 10)`
+
+```
+(* FOR x IN s goes over what a NAME holds: a variable, a field, an
+   element, a constant table.  A literal or a call's answer has no
+   name to read the elements of while the loop runs; give it one.
+   The legal forms first. *)
+MODULE m ;
+CONST
+  Primes = [2, 3, 5] ;
+TYPE
+  R = RECORD s : STR END ;
+VAR
+  s : STR ;
+  r : R ;
+  ss : SLICE OF STR ;
+  c : CHAR ;
+  p, n : I64 ;
+BEGIN
+  n := 0 ;
+  s := 'abc' ;
+  FOR c IN s DO n := n + 1 END ;
+  r.s := s ;
+  FOR c IN r.s DO n := n + 1 END ;
+  ss := NEW (STR, 1) ;
+  ss[0] := s ;
+  FOR c IN ss[0] DO n := n + 1 END ;
+  FOR p IN Primes DO n := n + p END ;
+  FOR c IN 'abc' DO n := n + 1 END
+END m.
+```
+
+### for-in-not-a-sequence
+
+`FOR x IN goes over a slice, an array or a string, not I64 (par 10)`
+
+```
+(* FOR x IN s takes the elements of a slice, an array or a string --
+   STR is a slice of CHAR.  A GRID is gone over by its indexes.  The
+   legal forms first. *)
+MODULE m ;
+VAR
+  xs : SLICE OF I64 ;
+  a : ARRAY 4 OF I64 ;
+  x, n : I64 ;
+BEGIN
+  xs := NEW (I64, 3) ;
+  n := 0 ;
+  FOR x IN xs DO n := n + x END ;
+  FOR x IN a DO n := n + x END ;
+  FOR x IN n DO n := n + x END
+END m.
+```
+
+### for-in-ro-written
+
+`cannot write through t, which holds the CONST Names`
+
+```
+(* FOR t IN s gives t a copy of each element: of a string, a view of
+   the same characters.  Over read-only storage -- a constant table, an
+   RO parameter -- t holds read-only storage as `t := Names[i]' would
+   (par 2.4, decision 33), and a write through it would land in
+   read-only data.  The legal forms first: reading, writing a slice
+   that is not read-only through another name (the mark is the
+   name's for the whole procedure, as decision 33's is). *)
+MODULE m ;
+CONST
+  Names = ['ab', 'cd'] ;
+VAR
+  t, u : STR ;
+  ss : SLICE OF STR ;
+  n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR t IN Names DO n := n + LEN (t) END ;
+  ss := NEW (STR, 1) ;
+  ss[0] := NEW (CHAR, 2) ;
+  FOR u IN ss DO u[0] := 'X' END ;
+  FOR t IN Names DO t[0] := 'X' END
+END m.
+```
+
+### for-in-shared
+
+`FOR h IN over SHARED handles: index the slice -- a copy of a handle is counted, and the loop would copy it uncounted`
+
+```
+(* A SHARED handle is counted: every copy is a share (par 4.1).  The
+   loop's copy into the variable would be one the count does not see,
+   so a slice of handles is gone over by its index.  The legal form
+   first. *)
+MODULE m ;
+TYPE
+  T = RECORD n : I64 END ;
+  H = SHARED PTR T ;
+VAR
+  hs : SLICE OF H ;
+  h : H ;
+  i, n : I64 ;
+BEGIN
+  hs := NEW (H, 0) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (hs) - 1 DO n := n + hs[i].n END ;
+  FOR h IN hs DO n := n + h.n END
+END m.
+```
+
+### for-in-variable-type
+
+`FOR variable x is F64, and the elements it goes over are I64`
+
+```
+(* The loop variable is held to the element type exactly, as an
+   assignment is: no conversion happens in the loop's head.  The legal
+   form first. *)
+MODULE m ;
+VAR
+  xs : SLICE OF I64 ;
+  i : I64 ;
+  x, s : F64 ;
+BEGIN
+  xs := NEW (I64, 3) ;
+  s := 0.0 ;
+  FOR i IN xs DO s := s + F64 (i) END ;
+  FOR x IN xs DO s := s + x END
+END m.
+```
+
 ### for-nested-same-variable
 
 `FOR variable j is the control variable of the enclosing FOR at line 12 (par 2.1)`
@@ -1555,6 +1732,47 @@ BEGIN
 END m.
 ```
 
+### frame-view-stored
+
+`a view of a concatenation dies with this frame; it cannot be stored in module variable keep (par 2.3)`
+
+```
+(* A view of frame storage kept in a module variable (2026-10-11): a
+   SLICE over a concatenation, or the answer of a function that answers
+   a view of its argument (Text.Trim's shape), passed the checker, and
+   the module held freed bytes.  The legal forms first: a view of the
+   module's own storage, a view of a fresh concatenation used in the
+   frame, a copy.  Then a view of a concatenation kept. *)
+STATEFUL DEFINITION MODULE m ;
+PROCEDURE Ok (RO x: STR) ;
+PROCEDURE Bad (RO x: STR) ;
+END m.
+
+IMPLEMENTATION MODULE m ;
+VAR
+  keep, mine : STR ;
+  n : I64 ;
+PROCEDURE Head (RO s: STR) : STR =
+BEGIN
+  IF LEN (s) < 2 THEN RETURN s END ;
+  RETURN SLICE (s, 0, 2)
+END Head ;
+PROCEDURE Ok (RO x: STR) =
+VAR f : STR ;
+BEGIN
+  keep := SLICE (mine, 0, 0) ;
+  f := x + '!' ;
+  n := LEN (Head (f))
+END Ok ;
+PROCEDURE Bad (RO x: STR) =
+VAR f : STR ;
+BEGIN
+  f := x + '!' ;
+  keep := Head (f)
+END Bad ;
+END m.
+```
+
 ### from-m9-module
 
 `is an M9 module -- use IMPORT lib`
@@ -1707,6 +1925,50 @@ BEGIN a := b END m.
 MODULE m ;
 VAR g : GRID 3 OF F64 ; x : F64 ; i : I64 ;
 BEGIN x := g[i, i] END m.
+```
+
+### handler-arm-fields-differ
+
+`one handler arm binds a payload only when every exception it names has the same fields: Bad (I64) and Other (SLICE OF CHAR) differ -- give each its own arm, or bind nothing (par 5)`
+
+```
+(* One handler arm for several exceptions (2026-10-11): `| A, B (x) :'
+   binds x alike from each, which means the same fields in every one.
+   The legal forms first: the same fields with a binder, different
+   fields without one.  Then a binder over different fields. *)
+MODULE m ;
+EXCEPTION
+  Bad (n : I64) ;
+  Worse (n : I64) ;
+  Other (s : STR) ;
+VAR x : I64 ;
+PROCEDURE Fire () RAISES Bad, Worse, Other =
+BEGIN
+  RAISE Bad (1)
+END Fire ;
+PROCEDURE Same () =
+BEGIN
+  Fire ()
+EXCEPT
+| Bad, Worse (n) : x := n
+| Other : x := 0
+END Same ;
+PROCEDURE Unbound () =
+BEGIN
+  Fire ()
+EXCEPT
+| Bad, Other : x := 1
+| Worse : x := 2
+END Unbound ;
+PROCEDURE Differ () =
+BEGIN
+  Fire ()
+EXCEPT
+| Bad, Other (n) : x := 3
+| Worse : x := 2
+END Differ ;
+BEGIN
+END m.
 ```
 
 ### handler-binder-typed
@@ -2164,7 +2426,7 @@ END m.
 
 ### module-body-use-after-move
 
-`use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 34 (par 4.2)`
+`use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 35 (par 4.2)`
 
 ```
 (* The module body tracks ownership as a procedure does (2026-10-10):
@@ -2172,12 +2434,13 @@ END m.
    DO Eat (p) END' in a program's body handed on a pointer already
    freed.  The legal forms first: a fresh value after each move, a
    move the body does not use again, and a POOL allocation lent to a
-   thread and used after (nobody's to own: the programs' own shape).
+   thread and read after (nobody's to own: the programs' own shape;
+   [SHARABLE] since 2026-10-11, par 6, as a lent record must be).
    Then the loop. *)
 MODULE m ;
 TYPE
   Node = RECORD v : I64 END ;
-  Job = RECORD n : I64 END ;
+  Job = RECORD n : I64 END [SHARABLE] ;
 PROCEDURE Work (VAR j: Job) =
 BEGIN
   j.n := 1
@@ -2190,7 +2453,7 @@ VAR p, q : PTR Node ; i : I64 ; pool : POOL ; j : PTR Job ;
 BEGIN
   j := NEW (pool, Job) ;
   THREAD (Work, j) ;
-  j.n := 2 ;
+  i := j.n ;
   p := NEW (OWN, Node) ;
   Eat (p) ;
   p := NEW (OWN, Node) ;
@@ -3065,6 +3328,44 @@ BEGIN
 END m.
 ```
 
+### raises-in-condition
+
+`unhandled RAISES ValueRange from call to Check -- add it to this procedure's RAISES, or handle it: EXCEPT | ValueRange : ...`
+
+```
+(* A call's RAISES counts wherever the call stands (2026-10-11): in an
+   IF or ELSIF condition, a WHILE condition, a CASE selector and a FOR
+   bound the M9 checker only TYPED the expression and counted nothing --
+   from 0.14.0 at least; its Pascal twin counted them.  The legal forms
+   first: the same calls declared and handled.  Then one undeclared. *)
+MODULE m ;
+PROCEDURE Check (n: I64) : I64 RAISES ValueRange =
+BEGIN
+  IF n < 0 THEN RAISE ValueRange END ;
+  RETURN n
+END Check ;
+PROCEDURE Declared (n: I64) RAISES ValueRange =
+VAR i : I64 ;
+BEGIN
+  IF Check (n) > 0 THEN RETURN END ;
+  WHILE Check (n) > 9 DO RETURN END ;
+  CASE Check (n) OF | 1 : RETURN ELSE RETURN END ;
+  FOR i := 0 TO Check (n) DO END
+END Declared ;
+PROCEDURE Handled (n: I64) =
+BEGIN
+  IF Check (n) > 0 THEN RETURN END
+EXCEPT
+| ValueRange : RETURN
+END Handled ;
+PROCEDURE Undeclared (n: I64) =
+BEGIN
+  IF n = 0 THEN RETURN ELSIF Check (n) > 0 THEN RETURN END
+END Undeclared ;
+BEGIN
+END m.
+```
+
 ### record-aggregate-arity
 
 `Row expects 2 argument(s), got 1`
@@ -3126,6 +3427,21 @@ TYPE
 VAR r : Row ;
 BEGIN
   r := Row ('OK', 200)
+END m.
+```
+
+### record-attribute-unknown
+
+`a RECORD takes one attribute, [SHARABLE] (par 6), not [SHARE]`
+
+```
+(* RECORD ... END takes one attribute, [SHARABLE]: the claim that
+   threads may share it (par 6).  Another name is a typo the checker
+   says, not an attribute nobody reads.  The legal form first. *)
+MODULE m ;
+TYPE
+  Band = RECORD part : SLICE OF I64 END [SHARABLE] ;
+  Job = RECORD n : I64 END [SHARE] ;
 END m.
 ```
 
@@ -3672,6 +3988,43 @@ BEGIN p := NEW (OWN, Rec) ; THREAD (Work, p) ; p.n := 8 END F ;
 END m.
 ```
 
+### thread-not-sharable
+
+`THREAD (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE]`
+
+```
+(* What a THREAD is handed and not moved -- here a pool pointer -- both
+   threads hold (par 6).  A MONITOR serialises what they do with it; a
+   RECORD marked [SHARABLE] is its author's claim that the threads'
+   writes to it are disjoint, a band each; an owned value moved in is
+   the thread's alone.  Any other record so handed is refused.  The
+   legal forms first. *)
+MODULE m ;
+TYPE
+  Gate = MONITOR RECORD n : I64 END ;
+  Band = RECORD part : SLICE OF I64 END [SHARABLE] ;
+  Job = RECORD n : I64 END ;
+VAR
+  pool : POOL ;
+  g : PTR Gate IN pool ;
+  b : PTR Band IN pool ;
+  o : PTR Job ;
+  j : PTR Job IN pool ;
+PROCEDURE Count (VAR q: Gate) = BEGIN q.n := q.n + 1 END Count ;
+PROCEDURE Fill (VAR q: Band) = BEGIN q.part[0] := 1 END Fill ;
+PROCEDURE Work (VAR q: Job) = BEGIN q.n := q.n + 1 END Work ;
+BEGIN
+  g := NEW (pool, Gate) ;
+  THREAD (Count, g) ;
+  b := NEW (pool, Band) ;
+  THREAD (Fill, b) ;
+  o := NEW (OWN, Job) ;
+  THREAD (Work, o) ;
+  j := NEW (pool, Job) ;
+  THREAD (Work, j)
+END m.
+```
+
 ### thread-target-elsewhere
 
 `THREAD (Lib.Work): the target must be a procedure of this module, not Lib's -- start it from a procedure declared here (par 6)`
@@ -3688,9 +4041,10 @@ PROCEDURE Work (r: PTR Rec) ;
 END Lib.
 MODULE m ;
 IMPORT Lib ;
-VAR p, q : PTR Lib.Rec ;
+VAR q : PTR Lib.Rec ;
 PROCEDURE Here (r: PTR Lib.Rec) = BEGIN Lib.Work (r) END Here ;
 PROCEDURE Fine () =
+VAR p : PTR Lib.Rec ;
 BEGIN
   p := NEW (OWN, Lib.Rec) ;
   THREAD (Here, p)
@@ -3856,6 +4210,35 @@ BEGIN
   p := NEW (OWN, Node) ;
   FOR i := 1 TO 3 DO Eat (p) END
 END Run ;
+BEGIN
+END m.
+```
+
+### use-after-move-paren
+
+`use of s after it was moved at line 18 (par 4.2)`
+
+```
+(* A move is a move in parentheses too (2026-10-11): `t := (s)' left s
+   usable on the M9 side, so two names owned one object, while the
+   Pascal twin stripped the parentheses and refused the next use --
+   found by tools/CheckFuzz.m9 dropping the SHARED from `SHARED (s)'.
+   The legal forms first: a parenthesised move whose source is given a
+   fresh value, and the moved-to name freed.  Then the use. *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F () =
+VAR s, t : PTR R ;
+BEGIN
+  s := NEW (OWN, R) ;
+  t := (s) ;
+  s := NEW (OWN, R) ;
+  s.v := 1 ;
+  DISPOSE (t) ;
+  t := ((s)) ;
+  s.v := 2 ;
+  DISPOSE (t)
+END F ;
 BEGIN
 END m.
 ```

@@ -1,0 +1,31 @@
+(* EXPECT: THREAD (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE] *)
+(* What a THREAD is handed and not moved -- here a pool pointer -- both
+   threads hold (par 6).  A MONITOR serialises what they do with it; a
+   RECORD marked [SHARABLE] is its author's claim that the threads'
+   writes to it are disjoint, a band each; an owned value moved in is
+   the thread's alone.  Any other record so handed is refused.  The
+   legal forms first. *)
+MODULE m ;
+TYPE
+  Gate = MONITOR RECORD n : I64 END ;
+  Band = RECORD part : SLICE OF I64 END [SHARABLE] ;
+  Job = RECORD n : I64 END ;
+VAR
+  pool : POOL ;
+  g : PTR Gate IN pool ;
+  b : PTR Band IN pool ;
+  o : PTR Job ;
+  j : PTR Job IN pool ;
+PROCEDURE Count (VAR q: Gate) = BEGIN q.n := q.n + 1 END Count ;
+PROCEDURE Fill (VAR q: Band) = BEGIN q.part[0] := 1 END Fill ;
+PROCEDURE Work (VAR q: Job) = BEGIN q.n := q.n + 1 END Work ;
+BEGIN
+  g := NEW (pool, Gate) ;
+  THREAD (Count, g) ;
+  b := NEW (pool, Band) ;
+  THREAD (Fill, b) ;
+  o := NEW (OWN, Job) ;
+  THREAD (Work, o) ;
+  j := NEW (pool, Job) ;
+  THREAD (Work, j)
+END m.

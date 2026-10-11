@@ -10,9 +10,10 @@ PROCEDURE Work (r: PTR Rec) ;
 END Lib.
 MODULE m ;
 IMPORT Lib ;
-VAR p, q : PTR Lib.Rec ;
+VAR q : PTR Lib.Rec ;
 PROCEDURE Here (r: PTR Lib.Rec) = BEGIN Lib.Work (r) END Here ;
 PROCEDURE Fine () =
+VAR p : PTR Lib.Rec ;
 BEGIN
   p := NEW (OWN, Lib.Rec) ;
   THREAD (Here, p)

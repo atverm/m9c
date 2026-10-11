@@ -1,0 +1,15 @@
+(* EXPECT: FOR variable x is F64, and the elements it goes over are I64 *)
+(* The loop variable is held to the element type exactly, as an
+   assignment is: no conversion happens in the loop's head.  The legal
+   form first. *)
+MODULE m ;
+VAR
+  xs : SLICE OF I64 ;
+  i : I64 ;
+  x, s : F64 ;
+BEGIN
+  xs := NEW (I64, 3) ;
+  s := 0.0 ;
+  FOR i IN xs DO s := s + F64 (i) END ;
+  FOR x IN xs DO s := s + x END
+END m.

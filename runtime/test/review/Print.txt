@@ -3,10 +3,10 @@ REVIEW Print -- 25 procedures with a body, 5 of them functions; 9 headings in a 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               5
   assignments                                    13
-  arguments                                     901
+  arguments                                     932
   RETURN values                                   6
-  operands of a comparison or an operator       104
-  CASE labels                                    56
+  operands of a comparison or an operator       107
+  CASE labels                                    57
   THREAD arguments                                0
   CASE over variants, proved total                0
 
@@ -20,6 +20,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  [SHARABLE] records                              0
   module variables                                0
 
 TRUSTED -- outside what the checker can see
@@ -27,6 +28,7 @@ TRUSTED -- outside what the checker can see
   foreign procedures                              0
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
+  THREADs writing STATEFUL state                  0
 
 COUNTED -- how much there was to check
   CASE statements                                 4

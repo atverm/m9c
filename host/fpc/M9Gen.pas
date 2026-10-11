@@ -114,6 +114,7 @@ type
     function CRPrefix (const tn: string): string;
     function CRNode (const tn: string): TNode;
     function TagOfType (t: TNode): string;
+    function FieldTagAt (fields: TNode; k: Integer): string;
     function TagOfExpr (e: TNode): string;
     function TagOfExprOwn (e: TNode): string;
     function TagOfCanon (const s: string): string;
@@ -925,6 +926,22 @@ begin
     Exit (nil);
   end;
   Result := FindType (tn);
+end;
+
+{ the C tag of an exception's k-th field (mirrors Gen.FieldTagAt) }
+function TGen.FieldTagAt (fields: TNode; k: Integer): string;
+var g, j, ix : Integer;
+begin
+  Result := '';
+  if fields = nil then Exit;
+  ix := 0;
+  for g := 0 to High (fields.kids) do
+    if (fields.kids[g] <> nil) and (fields.kids[g].kids[0] <> nil) then
+      for j := 0 to High (fields.kids[g].kids[0].kids) do
+      begin
+        if ix = k then Exit (TagOfType (fields.kids[g].kids[1]));
+        Inc (ix);
+      end;
 end;
 
 function TGen.TagOfType (t: TNode): string;
@@ -3387,7 +3404,7 @@ end;
 procedure TGen.EmitHandler (h: TNode; const dlbl: string; ind: Integer);
 var
   nm, qual, desc, cond, slot, ety : string;
-  fields, arg, fld : TNode;
+  fields, arg, fld, fx : TNode;
   savedScope, ii, di, si, k, g, j : Integer;
   binderLines : TStringList;
 begin
@@ -3404,6 +3421,19 @@ begin
     Exit;
   end;
   cond := 'err->exc == &' + desc;
+  { `| A, B :' -- any of the further names enters the arm (mirrors
+    Gen.EmitHandler, 2026-10-11) }
+  for k := 3 to High (h.kids) do
+  begin
+    if h.kids[k].b <> '' then desc := ExcRef (h.kids[k].a, h.kids[k].b, fx)
+    else desc := ExcRef ('', h.kids[k].a, fx);
+    if desc = '' then
+    begin
+      Err (h, 'unknown exception in handler: ' + h.kids[k].a);
+      Exit;
+    end;
+    cond := '(' + cond + ' || err->exc == &' + desc + ')';
+  end;
   binderLines := TStringList.Create; binderLines.CaseSensitive := True;
   savedScope := scope.Count;
   k := 0; ii := 0; di := 0; si := 0;
@@ -3759,6 +3789,33 @@ begin
         Dec (loopDepth); xitLbl := sxit;
         inSwitch := sv; finDepth := j2;
         Line (pbuf, ind, '}');
+      end;
+    nkForIn :
+      begin
+        { FOR x IN s (mirrors Gen.EmitStmt, 2026-10-11) }
+        stRaise := False;
+        tg := TagOfExpr (st.kids[0]);
+        l := EX (st.kids[0], '');
+        w := NewTmp;
+        if tg = 'ARR' then
+          Line (pbuf, ind, '{ __typeof__(' + l + ') *' + w + 's = &(' + l + ');')
+        else
+          Line (pbuf, ind, '{ __typeof__(' + l + ') ' + w + 's = ' + l + ';');
+        if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
+        if tg = 'ARR' then
+          Line (pbuf, ind, 'for (int64_t ' + w + 'i = 0; ' + w +
+            'i < (int64_t) (sizeof (' + w + 's->v) / sizeof (' + w +
+            's->v[0])); ' + w + 'i++) { ' + CN (st.a) + ' = ' + w + 's->v[' + w + 'i];')
+        else
+          Line (pbuf, ind, 'for (int64_t ' + w + 'i = 0; ' + w + 'i < ' + w +
+            's.len; ' + w + 'i++) { ' + CN (st.a) + ' = ' + w + 's.p[' + w + 'i];');
+        sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
+        sxit := xitLbl; xitLbl := ''; Inc (loopDepth);
+        EmitSeq (st.kids[1], ind + 1);
+        LoopExit (ind + 1);
+        Dec (loopDepth); xitLbl := sxit;
+        inSwitch := sv; finDepth := j2;
+        Line (pbuf, ind, '} }');
       end;
     nkFor :
       begin
@@ -4228,6 +4285,8 @@ begin
           for j := 0 to High (st.kids[1].kids) do
           begin
             tg := TagOfExpr (st.kids[1].kids[j]);
+            { the FIELD says where a value travels (mirrors Gen.EmitRaise) }
+            if FieldTagAt (vd, j) = 'SLICE' then tg := 'SLICE';
             cnd := EX (st.kids[1].kids[j], '');
             if (tg = 'F64') or (tg = 'F32') then
             begin

@@ -146,15 +146,15 @@ PROCEDURE GetCol (f: PTR Fr ; RO name: STR) : Col RAISES Unknown ;
   (* the whole column record; CASE over .data handles every type,
      and the checker holds the CASE total *)
 
-PROCEDURE ColF64 (f: PTR Fr ; RO name: STR) : SLICE OF F64
+PROCEDURE ColF64 (f: PTR Fr ; RO name: STR) : RO SLICE OF F64
   RAISES Unknown, WrongType ;
-PROCEDURE ColF32 (f: PTR Fr ; RO name: STR) : SLICE OF F32
+PROCEDURE ColF32 (f: PTR Fr ; RO name: STR) : RO SLICE OF F32
   RAISES Unknown, WrongType ;
-PROCEDURE ColI64 (f: PTR Fr ; RO name: STR) : SLICE OF I64
+PROCEDURE ColI64 (f: PTR Fr ; RO name: STR) : RO SLICE OF I64
   RAISES Unknown, WrongType ;
-PROCEDURE ColStrs (f: PTR Fr ; RO name: STR) : SLICE OF STR
+PROCEDURE ColStrs (f: PTR Fr ; RO name: STR) : RO SLICE OF STR
   RAISES Unknown, WrongType ;
-PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : SLICE OF BOOL
+PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : RO SLICE OF BOOL
   RAISES Unknown, WrongType ;
   (* the everyday accessors; the other types go through GetCol *)
 
@@ -199,11 +199,11 @@ CONST
   KindBool = 7 ;
 
 PROCEDURE KindOf (f: PTR Fr ; RO name: STR) : I64 RAISES Unknown ;
-PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : SLICE OF I32
+PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : RO SLICE OF I32
   RAISES Unknown, WrongType ;
-PROCEDURE ColI16 (f: PTR Fr ; RO name: STR) : SLICE OF I16
+PROCEDURE ColI16 (f: PTR Fr ; RO name: STR) : RO SLICE OF I16
   RAISES Unknown, WrongType ;
-PROCEDURE ColBytes (f: PTR Fr ; RO name: STR) : SLICE OF BYTE
+PROCEDURE ColBytes (f: PTR Fr ; RO name: STR) : RO SLICE OF BYTE
   RAISES Unknown, WrongType ;
 PROCEDURE MissF64 (f: PTR Fr ; RO name: STR) : F64
   RAISES Unknown, WrongType ;
@@ -272,7 +272,7 @@ PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
 
 (* ---- the timeseries frame ---- *)
 
-PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ;
+PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; RO KEPT time: SLICE OF I64 ;
                  res: I64 ; conv: Conv ; RO descr: STR)
   : PTR Ts IN pool
   RAISES Faults.SizeError, Disorder, Faults.BadArg ;
@@ -281,7 +281,7 @@ PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ;
      Gaps are legal -- MakeContiguous is how they close. *)
 
 PROCEDURE TsFrame (ts: PTR Ts) : PTR Fr ;
-PROCEDURE TsTime (ts: PTR Ts) : SLICE OF I64 ;
+PROCEDURE TsTime (ts: PTR Ts) : RO SLICE OF I64 ;
 PROCEDURE TsRes (ts: PTR Ts) : I64 ;
 PROCEDURE TsConv (ts: PTR Ts) : Conv ;
 PROCEDURE TsDescr (ts: PTR Ts) : STR ;
@@ -734,7 +734,7 @@ BEGIN
   RETURN f.cols[i]
 END GetCol ;
 
-PROCEDURE ColF64 (f: PTR Fr ; RO name: STR) : SLICE OF F64
+PROCEDURE ColF64 (f: PTR Fr ; RO name: STR) : RO SLICE OF F64
   RAISES Unknown, WrongType =
 VAR c : Col ;
 BEGIN
@@ -751,7 +751,7 @@ BEGIN
   END
 END ColF64 ;
 
-PROCEDURE ColF32 (f: PTR Fr ; RO name: STR) : SLICE OF F32
+PROCEDURE ColF32 (f: PTR Fr ; RO name: STR) : RO SLICE OF F32
   RAISES Unknown, WrongType =
 VAR c : Col ;
 BEGIN
@@ -768,7 +768,7 @@ BEGIN
   END
 END ColF32 ;
 
-PROCEDURE ColI64 (f: PTR Fr ; RO name: STR) : SLICE OF I64
+PROCEDURE ColI64 (f: PTR Fr ; RO name: STR) : RO SLICE OF I64
   RAISES Unknown, WrongType =
 VAR c : Col ;
 BEGIN
@@ -785,7 +785,7 @@ BEGIN
   END
 END ColI64 ;
 
-PROCEDURE ColStrs (f: PTR Fr ; RO name: STR) : SLICE OF STR
+PROCEDURE ColStrs (f: PTR Fr ; RO name: STR) : RO SLICE OF STR
   RAISES Unknown, WrongType =
 VAR c : Col ;
 BEGIN
@@ -942,7 +942,7 @@ END WriteCsv ;
 
 (* ---- the timeseries frame ---- *)
 
-PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ;
+PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; RO KEPT time: SLICE OF I64 ;
                  res: I64 ; conv: Conv ; RO descr: STR)
   : PTR Ts IN pool
   RAISES Faults.SizeError, Disorder, Faults.BadArg =
@@ -972,7 +972,7 @@ BEGIN
   RETURN ts.f
 END TsFrame ;
 
-PROCEDURE TsTime (ts: PTR Ts) : SLICE OF I64 =
+PROCEDURE TsTime (ts: PTR Ts) : RO SLICE OF I64 =
 BEGIN
   RETURN ts.time
 END TsTime ;
@@ -2104,7 +2104,7 @@ END TsFromNc ;
 
 (* ---- the cross-module face ---- *)
 
-PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : SLICE OF BOOL
+PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : RO SLICE OF BOOL
   RAISES Unknown, WrongType =
 VAR c : Col ;
 BEGIN
@@ -2137,7 +2137,7 @@ BEGIN
   END
 END KindOf ;
 
-PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : SLICE OF I32
+PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : RO SLICE OF I32
   RAISES Unknown, WrongType =
 VAR c : Col ;
 BEGIN
@@ -2154,7 +2154,7 @@ BEGIN
   END
 END ColI32 ;
 
-PROCEDURE ColI16 (f: PTR Fr ; RO name: STR) : SLICE OF I16
+PROCEDURE ColI16 (f: PTR Fr ; RO name: STR) : RO SLICE OF I16
   RAISES Unknown, WrongType =
 VAR c : Col ;
 BEGIN
@@ -2171,7 +2171,7 @@ BEGIN
   END
 END ColI16 ;
 
-PROCEDURE ColBytes (f: PTR Fr ; RO name: STR) : SLICE OF BYTE
+PROCEDURE ColBytes (f: PTR Fr ; RO name: STR) : RO SLICE OF BYTE
   RAISES Unknown, WrongType =
 VAR c : Col ;
 BEGIN

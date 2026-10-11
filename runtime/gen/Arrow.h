@@ -12,6 +12,7 @@ typedef struct Arrow_Col Arrow_Col;
 typedef struct Arrow_Kv Arrow_Kv;
 typedef struct Arrow_Table Arrow_Table;
 typedef struct Arrow_Fb Arrow_Fb;
+typedef struct Arrow_Packed Arrow_Packed;
 
 #define Arrow_TyI8 INT64_C(0)
 #define Arrow_TyI16 INT64_C(1)
@@ -21,6 +22,8 @@ typedef struct Arrow_Fb Arrow_Fb;
 #define Arrow_TyF64 INT64_C(5)
 #define Arrow_TyStr INT64_C(6)
 #define Arrow_TyTsNs INT64_C(7)
+#define Arrow_CodecNone INT64_C(0)
+#define Arrow_CodecZstd INT64_C(1)
 #define Arrow_FbFixed INT64_C(8192)
 #define Arrow_FbPerCol INT64_C(512)
 
@@ -32,6 +35,10 @@ typedef struct { int64_t v[16]; } m9_arr_16_int64_t;
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 #endif
+#ifndef M9SL_m9_sl_Arrow_Packed
+#define M9SL_m9_sl_Arrow_Packed
+typedef struct { Arrow_Packed *p; int64_t len; } m9_sl_Arrow_Packed;
+#endif
 
 Arrow_Table * Arrow_New (m9_pool *pool, int64_t rows, m9_state *err);
 void Arrow_Meta (Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR key, m9_sl_CHAR value, m9_state *err);
@@ -40,6 +47,7 @@ void Arrow_AddF32 (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR 
 void Arrow_AddF64 (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR name, m9_sl_F64 v, m9_state *err);
 void Arrow_AddStr (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR name, m9_sl_m9_sl_CHAR v, m9_state *err);
 m9_sl_BYTE Arrow_Stream (m9_pool *pool, Arrow_Table * t, m9_state *err);
+m9_sl_BYTE Arrow_StreamCodec (m9_pool *pool, Arrow_Table * t, int64_t codec, int64_t level, m9_state *err);
 int64_t Arrow_NBytes (Arrow_Table * t, m9_state *err);
 
 #endif

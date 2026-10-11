@@ -139,7 +139,12 @@ _(documented with the group below)_
 
 ### ParseBits (RO s: STR) : F64 RAISES ValueRange
 
-the exact pair: 16 hex digits, low byte first, round-trip total
+the exact pair: 16 hex digits, low byte first, round-trip total.
+The digits are UPPER case and the bytes LITTLE-ENDIAN -- 1.0 is
+000000000000F03F, not Python's 3ff0000000000000 -- because this is
+the byte order a golden file and a binary file hold, read in
+order; it is NOT the number's hexadecimal.  For that, Hex of an
+integer.  (cp-kernel lost a measurement to the difference.)
 
 ### ParseF64 (RO s: STR) : F64 RAISES ValueRange
 

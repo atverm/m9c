@@ -793,6 +793,9 @@ BEGIN
     END ;
     Ast.Add (pool, n, SOME (PFieldSeq (pool, p, SEnd))) ;
     Expect (p, TkEND) ;
+    (* RECORD ... END [SHARABLE]: threads may share it, their writes
+       disjoint by the author's claim (report par 6, 2026-10-11) *)
+    Ast.Add (pool, n, PAttribOpt (pool, p)) ;
     RETURN n
   ELSIF p.cur.kind = TkCASE THEN
     n := Nn (pool, p, Ast.NCaseRecordType) ;
@@ -992,6 +995,17 @@ BEGIN
     n := Nn (pool, p, Ast.NFor) ;
     Bump (p) ;
     n.a := TakeIdent (p, 'loop variable') ;
+    (* FOR x IN s DO ... END, over a slice's or an array's elements
+       (2026-10-11) *)
+    IF p.cur.kind = TkIN THEN
+      n.kind := Ast.NForIn ;
+      Bump (p) ;
+      Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+      Expect (p, TkDO) ;
+      Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SEnd))) ;
+      Expect (p, TkEND) ;
+      RETURN n
+    END ;
     Expect (p, TkAssign) ;
     Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
     Expect (p, TkTO) ;
@@ -1120,10 +1134,22 @@ END PStmtSeq ;
 PROCEDURE PHandler (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, args, h : PTR Ast.Node ;
   had : BOOL ;
+  more : SLICE OF Ast.Kid ;
+  nmore, i : I64 ;
 BEGIN
   n := Nn (pool, p, Ast.NHandler) ;
   Expect (p, TkBar) ;
   Ast.Add (pool, n, SOME (PQualident (pool, p))) ;
+  (* one arm for several exceptions, `| A, B :' (2026-10-11): the
+     further names go after the body, kids[3..] *)
+  nmore := 0 ;
+  more := NEW (pool, Ast.Kid, 8) ;
+  WHILE p.cur.kind = TkComma AND nmore < 8 DO
+    Bump (p) ;
+    more[nmore] := SOME (PQualident (pool, p)) ;
+    nmore := nmore + 1
+  END ;
+  IF p.cur.kind = TkComma THEN Rerr (p, 'at most 9 exceptions in one handler arm') END ;
   had := FALSE ;
   IF p.cur.kind = TkLParen THEN
     had := TRUE ;
@@ -1155,6 +1181,7 @@ BEGIN
   IF NOT had THEN Ast.Add (pool, n, NONE) END ;
   Expect (p, TkColon) ;
   Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SHandler))) ;
+  FOR i := 0 TO nmore - 1 DO Ast.Add (pool, n, more[i]) END ;
   RETURN n
 END PHandler ;
 

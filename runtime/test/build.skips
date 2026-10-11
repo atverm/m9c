@@ -11,7 +11,7 @@
 # of the comparison on both sides.  Order does not matter.
 #
 # This is CI's list and no other machine's: the release machine has
-# pyarrow, xarray and cfchecks and skips four lines, not eight.
+# pyarrow, xarray and cfchecks and skips four lines, not nine.
 
 # data that is not in the repository and is not fetched
 SKIP: csv_driver (the FLUXNET battery: no /mnt/d/data/ICOSETC_SE-Htm_FLUXNET_HH_L2.csv; set $M9CSV)
@@ -24,6 +24,7 @@ SKIP live Carbon Portal checks (set M9HTTP_LIVE=1)
 SKIP: cfchecks not installed
 SKIP: pyarrow not installed
 SKIP: pyarrow not installed (the cross-read half)
+SKIP: pyarrow not installed (the zstd cross-read half)
 SKIP: xarray half (no xarray)
 SKIP: .zmetadata byte-identity needs zarr 3 (have 2.17.0)
 

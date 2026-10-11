@@ -5,6 +5,9 @@
 
 const m9_exc Rsa_Error = { "Error" };
 
+extern void m9_sha256_init (void *);
+extern void m9_sha256_update (void *, const void *, int64_t);
+extern void m9_sha256_final (void *, void *);
 extern int m9_rsa_verify (const void *, size_t, int, const void *, size_t, const void *, size_t, int);
 
 struct Rsa_Key {

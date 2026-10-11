@@ -12,10 +12,15 @@ runtime/test/arrow_driver.c.
 
 IN THE SUBSET: flat schemas; int8/16/32/64, float32/64, UTF-8
 strings, and timestamps in nanoseconds; one record batch; schema
-custom_metadata.  UNCOMPRESSED -- Arrow's per-buffer compression
-would need a zstd or lz4 binding, and a reader accepts an
-uncompressed stream from a writer that compresses, so the cost is
-bytes on the wire and nothing else.
+custom_metadata.  Uncompressed (Stream), or every body buffer
+compressed with ZSTD (StreamCodec): the record batch's
+BodyCompression says so, and each buffer is its uncompressed
+length as 8 little-endian bytes and then one zstd frame -- or the
+length -1 and the bytes as they were, for a buffer zstd would not
+make smaller, which the format allows for exactly that.  An empty
+buffer stays empty.  libzstd is the system's (LINK below), as
+Parquet's ZSTD pages are; lz4, the format's other codec, is not
+written.
 
 OUT OF THE SUBSET, and refused: nulls.  Every column here is
 written with an EMPTY validity buffer and a null_count of zero,
@@ -76,6 +81,18 @@ timestamp, nanoseconds,
 NO timezone: naive, as a
 numpy datetime64 lands
 
+### CONST CodecNone
+
+_(documented with the group below)_
+
+### CONST CodecZstd
+
+StreamCodec's codec.  The
+numbers are this module's:
+the format spells LZ4_FRAME
+0 and ZSTD 1, and 0 here
+must mean "nothing asked"
+
 ### New (VAR pool: POOL ; rows: I64) : PTR Table IN pool
 
 an empty table of `rows` rows.  Columns are added in order and
@@ -110,6 +127,14 @@ UTF-8 on the wire, encoded here from the caller's CHARs.
 
 the whole stream, in pool.
 
+### StreamCodec (VAR pool: POOL ; t: PTR Table ; codec, level: I64) : SLICE OF BYTE RAISES Faults.BadArg, ValueRange
+
+the same stream with its body buffers compressed: CodecNone is
+Stream's bytes exactly, CodecZstd is libzstd at `level' (1 is
+pyarrow's own default for ZSTD, 3 is libzstd's).  Another codec
+is BadArg by name.  The schema and every cell read back the same
+either way; only the wire shrinks.
+
 ### NBytes (t: PTR Table) : I64
 
 what pyarrow's `table.nbytes` answers for this table, which is
@@ -121,3 +146,18 @@ wire than nbytes admits -- and a column with no nulls carries no
 validity bytes at all.  Both were measured against pyarrow, and
 the first cost an 8-byte passport error on two string columns
 the last time this was written.
+
+libzstd's one-shot compressor, as Parquet's czstd binds it: each
+call makes and frees its own context, so any number of threads may
+call it at once.  An error is a size_t near 2 ** 64, which I64 ()
+refuses with ValueRange.  Its own unit, not Parquet's, so that
+Arrow does not import Parquet and a program linking both has two
+units of distinct names over the same two symbols.
+
+### ZstdCompress (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT ; level: C.Int) : C.SizeT [REENTRANT]
+
+_(undocumented)_
+
+### ZstdBound (n: C.SizeT) : C.SizeT [REENTRANT]
+
+_(undocumented)_

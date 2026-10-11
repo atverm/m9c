@@ -385,6 +385,12 @@ the rest NSelField / NSelIndex as a designator
 has them.  An expression, never a target.
 2026-10-09, cp-kernel's stages 4b and 6a
 
+### CONST NForIn
+
+FOR x IN s DO ... END: a the variable, kids[0]
+the designator iterated, kids[1] the body.
+2026-10-11, cp-kernel's proposal
+
 ### TYPE Kid
 
 named so NEW can say it;

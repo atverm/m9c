@@ -2320,7 +2320,7 @@ BEGIN
 END TsRead ;
 
 PROCEDURE NewTsQ (VAR pool: POOL ; KEPT f: PTR Frame.Fr ;
-                  KEPT t: SLICE OF I64 ; res: I64 ; conv: Frame.Conv ;
+                  RO KEPT t: SLICE OF I64 ; res: I64 ; conv: Frame.Conv ;
                   RO descr: STR) : PTR Frame.Ts
   RAISES Faults.BadArg =
 BEGIN

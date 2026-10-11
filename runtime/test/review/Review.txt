@@ -1,11 +1,11 @@
-REVIEW Review -- 18 procedures with a body, 8 of them functions; 2 headings in a DEFINITION
+REVIEW Review -- 19 procedures with a body, 8 of them functions; 2 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               8
-  assignments                                    76
-  arguments                                     333
+  assignments                                    80
+  arguments                                     352
   RETURN values                                  29
-  operands of a comparison or an operator        96
+  operands of a comparison or an operator       102
   CASE labels                                    14
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -20,6 +20,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  [SHARABLE] records                              0
   module variables                                0
 
 TRUSTED -- outside what the checker can see
@@ -27,10 +28,11 @@ TRUSTED -- outside what the checker can see
   foreign procedures                              0
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
+  THREADs writing STATEFUL state                  0
 
 COUNTED -- how much there was to check
   CASE statements                                 2
   RAISE statements                                0
   handlers                                        0
-  NEW in the frame                                0
+  NEW in the frame                                1
   NEW in a named pool                             0

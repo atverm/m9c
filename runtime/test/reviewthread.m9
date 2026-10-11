@@ -1,0 +1,46 @@
+MODULE reviewthread ;
+
+(* The STATEFUL row of the review page, held by reviewdiff.sh
+   (report par 6, 2026-10-11): a THREAD whose target WRITES a
+   STATEFUL module's state is listed, one that only READS it is not.
+   Logger is STATEFUL: Start builds its line in module state, Msg
+   reads the threshold and the sink and writes nothing.  Counted by
+   hand: Builds (directly) and Deep (through Helper) are the two;
+   Quiet is not. *)
+
+IMPORT Logger ;
+
+TYPE
+  Gate = MONITOR RECORD n : I64 END ;
+
+VAR
+  g : PTR Gate ;
+
+PROCEDURE Quiet (VAR q: Gate) =
+BEGIN
+  Logger.Msg (Logger.Info, 'reading the threshold is fine')
+END Quiet ;
+
+PROCEDURE Builds (VAR q: Gate) =
+BEGIN
+  Logger.Start (Logger.Info, 'the builder is module state')
+END Builds ;
+
+PROCEDURE Helper () =
+BEGIN
+  Logger.Start (Logger.Info, 'two calls down')
+END Helper ;
+
+PROCEDURE Deep (VAR q: Gate) =
+BEGIN
+  Helper ()
+END Deep ;
+
+BEGIN
+  g := NEW (OWN, Gate) ;
+  THREAD (Quiet, g) ;
+  g := NEW (OWN, Gate) ;
+  THREAD (Builds, g) ;
+  g := NEW (OWN, Gate) ;
+  THREAD (Deep, g)
+END reviewthread.

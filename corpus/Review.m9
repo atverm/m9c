@@ -35,7 +35,8 @@ TYPE
   END ;
 
 PROCEDURE Page (root: PTR Ast.Node ; RO modName: STR ;
-                checked: BOOL ; RO stats: SLICE OF Stat) : STR ;
+                checked: BOOL ; RO stats: SLICE OF Stat ;
+                RO writes: SLICE OF STR) : STR ;
   (* the review page for one parsed file.
 
        root    -- the NFile node Parse.File answered.
@@ -51,6 +52,12 @@ PROCEDURE Page (root: PTR Ast.Node ; RO modName: STR ;
                   `checked`: one row each, the examined count and,
                   beside it, what was passed over for an unknown
                   type.  Empty from a caller that ran no checker.
+       writes  -- the THREADs the checker found writing a STATEFUL
+                  module's state (Sem.ThreadWrite), each `LINE what',
+                  printed under TRUSTED: the checker cannot see a
+                  join, so whether two threads meet there is the
+                  reviewer's to read (report par 6).  Empty from a
+                  caller that ran no checker.
 
      Four sections: PROVED (or, unchecked, the functions that can
      reach their END without answering, named from the tree alone),
@@ -79,7 +86,7 @@ TYPE
     modPools, localPools, poolParams : I64 ;
     kept, heap, newOwn, newPool, newFrame : I64 ;
     dispose, shared, thread : I64 ;
-    modVars : I64 ;
+    modVars, sharable : I64 ;
     unsafeUnits, statefulUnits : I64 ;
     foreign, serial, reentrant : I64 ;
     cases, raises, handlers : I64 ;
@@ -409,6 +416,28 @@ BEGIN
   END
 END Proc ;
 
+(* a RECORD marked [SHARABLE]: its author's claim that threads sharing
+   it write disjoint parts (report par 6), which no checker proves *)
+PROCEDURE Sharable (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+                    sec: PTR Ast.Node) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO sec.nkids - 1 DO
+    IF sec.kids[i] IS SOME td THEN
+      IF td.kids[0] IS SOME body THEN
+        IF body.kind = Ast.NRecordType AND body.nkids > 2 THEN
+          IF body.kids[2] IS SOME at THEN
+            IF Text.Eq (at.a, 'SHARABLE') THEN
+              c.sharable := c.sharable + 1 ;
+              Site (log, 'R', td.line, td.a)
+            END
+          END
+        END
+      END
+    END
+  END
+END Sharable ;
+
 PROCEDURE Unit (VAR c: Counts ; VAR log: PTR DynStr.DString ;
                 root: PTR Ast.Node ; u: PTR Ast.Node) =
 VAR
@@ -430,6 +459,8 @@ BEGIN
         Vars (c, log, kd, u.a, TRUE)
       ELSIF kd.kind = Ast.NProcDecl THEN
         Proc (c, log, root, kd, foreignUnit)
+      ELSIF kd.kind = Ast.NTypeSection THEN
+        Sharable (c, log, kd)
       ELSIF kd.kind = Ast.NModBody THEN
         Walk (c, log, root, u.kids[i], '(body)')
       END
@@ -524,20 +555,21 @@ BEGIN
 END StatRow ;
 
 PROCEDURE Page (root: PTR Ast.Node ; RO modName: STR ;
-                checked: BOOL ; RO stats: SLICE OF Stat) : STR =
+                checked: BOOL ; RO stats: SLICE OF Stat ;
+                RO writes: SLICE OF STR) : STR =
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
   log : PTR DynStr.DString IN scratch ;
   c : Counts ;
-  lines : SLICE OF STR ;
+  lines, wl : SLICE OF STR ;
   i : I64 ;
 BEGIN
   c.procs := 0 ; c.funcs := 0 ; c.exported := 0 ; c.fallOff := 0 ;
   c.modPools := 0 ; c.localPools := 0 ; c.poolParams := 0 ;
   c.kept := 0 ; c.heap := 0 ; c.newOwn := 0 ; c.newPool := 0 ;
   c.newFrame := 0 ; c.dispose := 0 ; c.shared := 0 ; c.thread := 0 ;
-  c.modVars := 0 ; c.unsafeUnits := 0 ; c.statefulUnits := 0 ;
+  c.modVars := 0 ; c.sharable := 0 ; c.unsafeUnits := 0 ; c.statefulUnits := 0 ;
   c.foreign := 0 ; c.serial := 0 ; c.reentrant := 0 ;
   c.cases := 0 ; c.raises := 0 ; c.handlers := 0 ;
   c.defs := 0 ; c.impls := 0 ; c.progs := 0 ;
@@ -587,6 +619,7 @@ BEGIN
   Row (d, lines, 'DISPOSE', c.dispose, 'D') ;
   Row (d, lines, 'SHARED (x)', c.shared, 'S') ;
   Row (d, lines, 'THREAD', c.thread, 'T') ;
+  Row (d, lines, '[SHARABLE] records', c.sharable, 'R') ;
   Row (d, lines, 'module variables', c.modVars, 'V') ;
 
   Head (d, 'TRUSTED -- outside what the checker can see') ;
@@ -594,6 +627,9 @@ BEGIN
   Row (d, lines, 'foreign procedures', c.foreign, ' ') ;
   Row (d, lines, '  of them [SERIAL]', c.serial, ' ') ;
   Row (d, lines, '  of them [REENTRANT]', c.reentrant, ' ') ;
+  wl := NEW (STR, LEN (writes)) ;
+  FOR i := 0 TO LEN (writes) - 1 DO wl[i] := 'W ' + writes[i] END ;
+  Row (d, wl, 'THREADs writing STATEFUL state', LEN (writes), 'W') ;
 
   Head (d, 'COUNTED -- how much there was to check') ;
   Row (d, lines, 'CASE statements', c.cases, ' ') ;

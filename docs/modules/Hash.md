@@ -4,26 +4,29 @@ SHA-256, fed in pieces; HMAC-SHA-256; PBKDF2-HMAC-SHA256; and a
 comparison that takes the same time whatever differs
 (docs/library-plan-2.md, item 1).
 
-WRITTEN IN M9, bit for bit FIPS 180-4, so that a 40 MB response
-streaming through HttpServer or a file the zip writer adds is hashed
-as it passes and never whole in memory -- the runtime's
-`m9_sha256_hex' is a one-shot over a buffer -- and so that it runs
-wherever M9 does.  The words are 32-bit patterns held in I64 and
-masked after every sum; the rotations are Bits.  Held to Python's
-hashlib by HashTest: the FIPS vectors, random lengths across every
-block boundary, a million a's, a 64 KB message fed in pieces of
-every size from 1 to 200 (the digest must not depend on the
-pieces), RFC 4231's HMAC cases and the PBKDF2 vectors.
+THE BLOCK FUNCTION IS OPENSSL'S since 2026-10-11 (runtime/
+sha256shim.c; a portable C loop on Windows, where m9c links no
+OpenSSL).  It was written in M9 until then, every rotation and mask a
+call into Bits, and ran at 140 MB/s where OpenSSL ran at 1,984 (the
+M4) -- cp-kernel measured the cost, and the ICOS work hashes whole
+data objects.  What the M9 version was for stays: a 40 MB response
+is hashed as it streams, in pieces, never whole in memory; HMAC and
+PBKDF2 are built on it here.
 
-Sha256 is a value: a record the caller holds, Init'ed, Update'd
-with any number of slices, and Final'ed once -- a copy of it before
-Final is a fork of the stream, which is how PBKDF2 keeps its keyed
-states.  Every digest is answered as fresh octets in the caller's
-frame.
+Sha256 is a value: a record the caller holds, Init'ed, Update'd with
+any number of slices, and Final'ed once -- a copy of it before Final
+is a fork of the stream, which is how PBKDF2 keeps its keyed states
+(OpenSSL's SHA256_CTX is a plain struct, so a copy is a fork there
+too; EVP's context would not be).  Every digest is answered as fresh
+octets in the caller's frame.  Held to Python's hashlib by HashTest:
+the FIPS vectors, random lengths across every block boundary, a
+million a's, a 64 KB message fed in pieces of every size from 1 to
+200, RFC 4231's HMAC cases and the PBKDF2 vectors.
 
 ### TYPE Sha256
 
-the eight 32-bit words of the state
+the C state, 128 octets, 8-aligned:
+OpenSSL's SHA256_CTX; opaque here
 
 ### TYPE Hmac
 
@@ -87,3 +90,18 @@ iterations, compared with Equal.  Measured in HashTest
 a = b, reading EVERY octet whatever the first difference, so the
 time says nothing about where two digests or tokens differ; two
 lengths that differ are unequal at once (a length is no secret)
+
+runtime/sha256shim.c: SHA256_CTX through OpenSSL, a portable loop
+on Windows.  REENTRANT: every state is the caller's.
+
+### CInit (st: C.MutPtr) [REENTRANT]
+
+_(undocumented)_
+
+### CUpdate (st: C.MutPtr ; p: C.ConstPtr ; n: C.SSizeT) [REENTRANT]
+
+_(undocumented)_
+
+### CFinal (st: C.MutPtr ; out: C.MutPtr) [REENTRANT]
+
+_(undocumented)_

@@ -1,0 +1,23 @@
+(* EXPECT: cannot write through t, which holds the CONST Names *)
+(* FOR t IN s gives t a copy of each element: of a string, a view of
+   the same characters.  Over read-only storage -- a constant table, an
+   RO parameter -- t holds read-only storage as `t := Names[i]' would
+   (par 2.4, decision 33), and a write through it would land in
+   read-only data.  The legal forms first: reading, writing a slice
+   that is not read-only through another name (the mark is the
+   name's for the whole procedure, as decision 33's is). *)
+MODULE m ;
+CONST
+  Names = ['ab', 'cd'] ;
+VAR
+  t, u : STR ;
+  ss : SLICE OF STR ;
+  n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR t IN Names DO n := n + LEN (t) END ;
+  ss := NEW (STR, 1) ;
+  ss[0] := NEW (CHAR, 2) ;
+  FOR u IN ss DO u[0] := 'X' END ;
+  FOR t IN Names DO t[0] := 'X' END
+END m.

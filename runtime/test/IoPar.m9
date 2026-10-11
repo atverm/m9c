@@ -41,7 +41,7 @@ TYPE
     w : Work ;
     bad : SLICE OF I64 ;    (* per worker: checks that failed *)
     done : SLICE OF I64 ;   (* per worker: files that passed whole *)
-  END ;
+  END [SHARABLE] ;
 
 PROCEDURE Name (k, i: I64) : STR =
 BEGIN

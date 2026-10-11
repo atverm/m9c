@@ -158,6 +158,22 @@ cd "$BLD"
 [ -f Io.c ] || { echo "FAIL: --keep-c did not keep the C"; exit 1; }
 [ -f Io.o ] || { echo "FAIL: --keep-c skipped the compile"; exit 1; }
 
+# a NAME.h beside the source that is not the one just written to
+# --out-dir is said (a C driver there would include the stale one,
+# 2026-09-15); a copy identical to it is not
+rm -rf staleh && mkdir -p staleh/src staleh/out
+cp "$SRC/Hello.m9" staleh/src/
+printf '/* an old header */\n' > staleh/src/Hello.h
+M9LIBRARY="$SRC" "$M9C" --out-dir staleh/out staleh/src/Hello.m9 > staleh/said.txt 2>&1 ||
+  { echo "FAIL: Hello did not generate"; cat staleh/said.txt; exit 1; }
+grep -q 'staleh/src/Hello.h is not the header just written' staleh/said.txt ||
+  { echo "FAIL: a stale Hello.h beside the source was not said:"; cat staleh/said.txt; exit 1; }
+cp staleh/out/Hello.h staleh/src/Hello.h
+M9LIBRARY="$SRC" "$M9C" --out-dir staleh/out staleh/src/Hello.m9 > staleh/said2.txt 2>&1
+if grep -q 'is not the header' staleh/said2.txt; then
+  echo "FAIL: an identical Hello.h beside the source was called stale"; exit 1
+fi
+rm -rf staleh
 # a whole program, linked, with no make and no build script in sight
 "$M9C" -o hello "$SRC/Hello.m9" "$SRC/Io.m9" "$SRC/DynStr.m9" \
        -- -iquote "$RT" -iquote . "$RT/m9rt.c" Io.o DynStr.o

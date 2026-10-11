@@ -577,10 +577,22 @@ end;
 function TParser.PHandler: TNode;
 var
   args, h : TNode;
+  more : array of TNode;
+  i : Integer;
 begin
   Result := NewNode (nkHandler);
   Expect (tkBar, '|');
   Result.Add (PQualident);
+  { `| A, B :' -- the further names go after the body (mirrors
+    Parse.PHandler, 2026-10-11) }
+  SetLength (more, 0);
+  while (cur.kind = tkComma) and (Length (more) < 8) do
+  begin
+    Bump;
+    SetLength (more, Length (more) + 1);
+    more[High (more)] := PQualident;
+  end;
+  if cur.kind = tkComma then Err ('at most 9 exceptions in one handler arm');
   args := nil;
   if cur.kind = tkLParen then
   begin
@@ -609,6 +621,7 @@ begin
   Result.Add (args);
   Expect (tkColon, ':');
   Result.Add (PStmtSeq ([tkBar, tkFINALLY, tkEND]));
+  for i := 0 to High (more) do Result.Add (more[i]);
 end;
 
 { ---- types ---- }
@@ -673,6 +686,8 @@ begin
           Result.Add (nil);
         Result.Add (PFieldSeq ([tkEND]));
         Expect (tkEND, 'END');
+        { RECORD ... END [SHARABLE] (mirrors Parse) }
+        Result.Add (PAttribOpt);
       end;
     tkCASE :
       begin
@@ -919,6 +934,17 @@ begin
         Result := NewNode (nkFor);
         Bump;
         Result.a := TakeIdent ('loop variable');
+        { FOR x IN s DO ... END (mirrors Parse, 2026-10-11) }
+        if cur.kind = tkIN then
+        begin
+          Result.kind := nkForIn;
+          Bump;
+          Result.Add (PExpr);
+          Expect (tkDO, 'DO');
+          Result.Add (PStmtSeq ([tkEND]));
+          Expect (tkEND, 'END');
+          Exit;
+        end;
         Expect (tkAssign, ':=');
         Result.Add (PExpr);
         Expect (tkTO, 'TO');

@@ -223,7 +223,19 @@ CONST
     'dispose-not-owned',
     'dispose-through-field',
     'module-body-use-after-move',
-    'pool-param-into-module'
+    'pool-param-into-module',
+    'frame-view-stored',
+    'raises-in-condition',
+    'use-after-move-paren',
+    'handler-arm-fields-differ',
+    'for-in-not-a-name',
+    'for-in-not-a-sequence',
+    'for-in-variable-type',
+    'for-in-shared',
+    'for-in-ro-written',
+    'for-in-borrow-kept',
+    'thread-not-sharable',
+    'record-attribute-unknown'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -414,7 +426,19 @@ CONST
     'DISPOSE of a local that nothing in the procedure gives an owned pointer -- only a copy of a field, a pool or a frame allocation reaches it -- so freeing it may free what another name still owns (par 4.2)',
     'DISPOSE through a selector: ownership moved into a record field is not followed there, so the checker cannot see a second DISPOSE of the same object (par 4.2)',
     'a module variable moved in the module body (handed to an OWN parameter or a THREAD, DISPOSEd) is used again -- the body tracks ownership as a procedure does (par 4.2)',
-    "an allocation in a POOL parameter -- the caller's pool, perhaps a local that dies when the caller returns -- is kept in a module variable (par 4.3)"
+    "an allocation in a POOL parameter -- the caller's pool, perhaps a local that dies when the caller returns -- is kept in a module variable (par 4.3)",
+    "a VIEW of frame storage -- a SLICE over a concatenation, or the answer of a function that answers a view of its argument (Text.Trim's shape) -- is kept in a module variable, which outlives the frame (par 2.3)",
+    'a call that can raise stands in an IF, ELSIF or WHILE condition, a CASE selector or a FOR bound, and nothing declares or handles what it raises -- counted there since 2026-10-11, as everywhere else (par 5)',
+    'an owned pointer moved in parentheses -- t := (s) -- is moved as t := s is, and s is used after it (par 4.2); the M9 checker missed the parenthesised form until 2026-10-11',
+    'one handler arm names several exceptions and binds a payload, but their fields differ, so a binder would mean a different thing for each (par 5)',
+    'FOR x IN goes over what a NAME holds -- a variable, a field, an element, a constant table -- and here it is handed a literal or a call (par 10)',
+    'FOR x IN goes over a slice, an array or a string (STR is a slice of CHAR), and this is none of them (par 10)',
+    'the loop variable is held to the element type exactly, as an assignment is: no conversion happens in the head of the loop (par 2.1)',
+    'a SHARED handle is counted, and the copy FOR x IN would make into x is a share the count never sees (par 4.1)',
+    "x holds each element as x := s[i] would, so over read-only storage -- a constant table, an RO parameter -- x holds read-only storage, and the write lands in it (par 2.4)",
+    "x holds each element as x := s[i] would, so over a borrowed slice of pointers x carries the borrow, and keeping it is a retention the heading does not declare (par 4.1)",
+    'a THREAD is handed a record it does not own -- a pool pointer, a VAR parameter, a module variable -- so both threads hold it, and the record is neither a MONITOR nor marked [SHARABLE] (par 6)',
+    'a RECORD takes one attribute, [SHARABLE]; another name is a typo, not an attribute anything reads (par 6)'
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -605,7 +629,19 @@ CONST
     'DISPOSE the name that took NEW (OWN, T) or the OWN parameter that was moved in; a copy of a field owns nothing',
     'keep the owned pointer in a local or an OWN parameter and DISPOSE that name; a pointer moved into a field is not freed by DISPOSE',
     'give it a fresh value after the move (p := NEW (OWN, T)), or move it once; a POOL allocation is lent to a thread, not moved',
-    "allocate it in the module's own pool (VAR mpool : POOL ; NEW (mpool, T)) or in HEAP, or copy a string: Text.Keep (mpool, s)"
+    "allocate it in the module's own pool (VAR mpool : POOL ; NEW (mpool, T)) or in HEAP, or copy a string: Text.Keep (mpool, s)",
+    'copy it into storage that lives as long as the module variable: Text.Keep (mpool, s) with a module pool',
+    "add the exception to the procedure's RAISES, or handle it in an EXCEPT arm, as for any other call",
+    'give s a fresh value before using it again, or use t, the name that owns the object now',
+    'give each exception its own arm, or bind nothing in the shared arm',
+    'assign the value to a local first, then FOR x IN that local',
+    'go over a GRID or a count by its index: FOR i := 0 TO LEN (g, 0) - 1',
+    'declare x with the element type, and convert inside the body: s := s + F64 (x)',
+    'index the slice: FOR i := 0 TO LEN (hs) - 1 DO ... hs[i] ...',
+    'write through a copy that is not read-only -- Text.Keep (pool, t) -- or write into a slice the procedure owns',
+    'declare the parameter KEPT, or keep a copy that is not the borrowed one',
+    "if the threads' writes to the record are disjoint -- a band each, dealt out by a monitor field -- end its declaration END [SHARABLE]; else put what they share in a MONITOR, or move an owned value in",
+    'write [SHARABLE], or drop the attribute'
   ] ;
 
 VAR

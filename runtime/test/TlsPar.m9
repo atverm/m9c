@@ -38,7 +38,7 @@ TYPE
     w : Work ;
     status : SLICE OF I64 ;
     size : SLICE OF I64 ;
-  END ;
+  END [SHARABLE] ;
 
 PROCEDURE One (VAR status: SLICE OF I64 ; VAR size: SLICE OF I64 ;
                k: I64) =

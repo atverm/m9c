@@ -630,7 +630,7 @@ TYPE
     t : PTR Matrix ;             (* the transpose of the inverse factor: row j belongs to the band holding j *)
     p : PTR Matrix ;             (* the inverse: rows of a band *)
     n, band, nbands, pass : I64
-  END ;
+  END [SHARABLE] ;
 
   NormalJob = RECORD
     w : Work ;
@@ -638,7 +638,7 @@ TYPE
     k : PTR Matrix ;
     wt : SLICE OF F64 ;
     n, m, band, nbands : I64
-  END ;
+  END [SHARABLE] ;
 
 PROCEDURE Claim (VAR w: Work) : I64 =
 VAR b : I64 ;
@@ -736,7 +736,7 @@ TYPE
     l : PTR Matrix ;             (* the factor in the making, lower triangle *)
     n, k0, k1, pass, band, nbands : I64 ;
     bad : I64                    (* a NotSPD row, -1 while none *)
-  END ;
+  END [SHARABLE] ;
 
 PROCEDURE CholBand (VAR j: CholJob ; b: I64) =
 VAR

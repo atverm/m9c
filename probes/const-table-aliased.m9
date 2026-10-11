@@ -1,4 +1,4 @@
-(* EXPECT: the CONST table Primes can only be indexed, measured with LEN, or lent to an RO parameter *)
+(* EXPECT: the CONST table Primes can only be indexed, measured with LEN, gone over by FOR IN, or lent to an RO parameter *)
 MODULE m ;
 CONST Primes = [2, 3, 5] ;
 VAR s : SLICE OF I64 ;

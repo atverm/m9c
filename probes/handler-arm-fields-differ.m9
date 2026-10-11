@@ -1,0 +1,38 @@
+(* EXPECT: one handler arm binds a payload only when every exception it names has the same fields: Bad (I64) and Other (SLICE OF CHAR) differ -- give each its own arm, or bind nothing (par 5) *)
+(* One handler arm for several exceptions (2026-10-11): `| A, B (x) :'
+   binds x alike from each, which means the same fields in every one.
+   The legal forms first: the same fields with a binder, different
+   fields without one.  Then a binder over different fields. *)
+MODULE m ;
+EXCEPTION
+  Bad (n : I64) ;
+  Worse (n : I64) ;
+  Other (s : STR) ;
+VAR x : I64 ;
+PROCEDURE Fire () RAISES Bad, Worse, Other =
+BEGIN
+  RAISE Bad (1)
+END Fire ;
+PROCEDURE Same () =
+BEGIN
+  Fire ()
+EXCEPT
+| Bad, Worse (n) : x := n
+| Other : x := 0
+END Same ;
+PROCEDURE Unbound () =
+BEGIN
+  Fire ()
+EXCEPT
+| Bad, Other : x := 1
+| Worse : x := 2
+END Unbound ;
+PROCEDURE Differ () =
+BEGIN
+  Fire ()
+EXCEPT
+| Bad, Other (n) : x := 3
+| Worse : x := 2
+END Differ ;
+BEGIN
+END m.

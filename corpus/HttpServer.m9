@@ -459,7 +459,7 @@ TYPE
     s : PTR Srv ;
     k : I64 ;
     last : I64 ;               (* the status the last answer went with *)
-  END ;
+  END [SHARABLE] ;
 
   (* the one pointer-shaped argument a THREAD may take *)
   WorkerP = PTR Worker ;

@@ -329,7 +329,14 @@ BEGIN
         DynStr.AppendChar (d, 0AC) ;
         FieldsLines (d, n.kids[1], ind + 1) ;
         Sp (d, ind) ;
-        DynStr.Append (d, 'END')
+        DynStr.Append (d, 'END') ;
+        IF n.nkids > 2 THEN
+          IF n.kids[2] IS SOME at THEN
+            DynStr.Append (d, ' [') ;
+            DynStr.Append (d, at.a) ;
+            DynStr.AppendChar (d, ']')
+          END
+        END
     | Ast.NCaseRecordType :
         DynStr.Append (d, 'CASE RECORD') ;
         DynStr.AppendChar (d, 0AC) ;
@@ -479,6 +486,17 @@ BEGIN
       ESeq (d, n.kids[3], ind + 1) ;
       Sp (d, ind) ;
       DynStr.Append (d, 'END')
+  | Ast.NForIn :
+      Sp (d, ind) ;
+      DynStr.Append (d, 'FOR ') ;
+      DynStr.Append (d, n.a) ;
+      DynStr.Append (d, ' IN ') ;
+      E (d, n.kids[0]) ;
+      DynStr.Append (d, ' DO') ;
+      DynStr.AppendChar (d, 0AC) ;
+      ESeq (d, n.kids[1], ind + 1) ;
+      Sp (d, ind) ;
+      DynStr.Append (d, 'END')
   | Ast.NLoop :
       Sp (d, ind) ;
       DynStr.Append (d, 'LOOP') ;
@@ -621,6 +639,12 @@ BEGIN
         Sp (d, ind) ;
         DynStr.Append (d, '| ') ;
         IF h.kids[0] IS SOME q THEN Qual (d, q) END ;
+        FOR j := 3 TO h.nkids - 1 DO
+          IF h.kids[j] IS SOME qm THEN
+            DynStr.Append (d, ', ') ;
+            Qual (d, qm)
+          END
+        END ;
         IF h.kids[1] IS SOME ar THEN
           DynStr.Append (d, ' (') ;
           FOR j := 0 TO ar.nkids - 1 DO

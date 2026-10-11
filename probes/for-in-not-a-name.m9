@@ -1,0 +1,28 @@
+(* EXPECT: FOR c IN takes a name -- a variable, a field, an element: give the value one first (par 10) *)
+(* FOR x IN s goes over what a NAME holds: a variable, a field, an
+   element, a constant table.  A literal or a call's answer has no
+   name to read the elements of while the loop runs; give it one.
+   The legal forms first. *)
+MODULE m ;
+CONST
+  Primes = [2, 3, 5] ;
+TYPE
+  R = RECORD s : STR END ;
+VAR
+  s : STR ;
+  r : R ;
+  ss : SLICE OF STR ;
+  c : CHAR ;
+  p, n : I64 ;
+BEGIN
+  n := 0 ;
+  s := 'abc' ;
+  FOR c IN s DO n := n + 1 END ;
+  r.s := s ;
+  FOR c IN r.s DO n := n + 1 END ;
+  ss := NEW (STR, 1) ;
+  ss[0] := s ;
+  FOR c IN ss[0] DO n := n + 1 END ;
+  FOR p IN Primes DO n := n + p END ;
+  FOR c IN 'abc' DO n := n + 1 END
+END m.

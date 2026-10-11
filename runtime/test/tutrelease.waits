@@ -9,3 +9,6 @@
 # carries the version removes it (the pointer commit), and
 # tutrelease fails on a line whose version is out, whose example
 # agrees with the release after all, or whose example is gone.
+C11Fetch  0.22.0   its Job is RECORD ... END [SHARABLE]: 0.21.0 does not parse the attribute
+C16Hash   0.22.0   its Job is RECORD ... END [SHARABLE]: 0.21.0 does not parse the attribute
+C16Mat    0.22.0   its MulJob and InvJob are [SHARABLE]: 0.21.0 does not parse the attribute

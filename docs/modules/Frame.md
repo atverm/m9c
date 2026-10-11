@@ -296,7 +296,7 @@ attributes WriteTsNc writes; a foreign file without them gets
 convention start and the axis's own smallest gap, both stated
 choices rather than inference.
 
-### NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ; res: I64 ; conv: Conv ; RO descr: STR) : PTR Ts IN pool RAISES Faults.SizeError, Disorder, Faults.BadArg
+### NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; RO KEPT time: SLICE OF I64 ; res: I64 ; conv: Conv ; RO descr: STR) : PTR Ts IN pool RAISES Faults.SizeError, Disorder, Faults.BadArg
 
 time is epoch seconds UTC, one per row, STRICTLY increasing and
 on the res grid (relative to its own first stamp); res > 0.

@@ -35,6 +35,6 @@ struct Review_Stat {
   m9_sl_CHAR lines;
 };
 
-m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl_Review_Stat stats, m9_state *err);
+m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl_Review_Stat stats, m9_sl_m9_sl_CHAR writes, m9_state *err);
 
 #endif

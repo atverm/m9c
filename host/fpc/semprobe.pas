@@ -14,7 +14,13 @@ program semprobe;
     (* LEDGER: substring *)     a par 4.1 retention, measured not
                                 rejected
 
-  and the rest of the file is the program. }
+  and the rest of the file is the program.
+
+  A probe writes its LEGAL forms first and its refusal after them, so
+  nothing may be refused on a line BEFORE the first line the
+  expectation is reported at: an earlier diagnostic is a legal form
+  refused.  Until 2026-10-11 any diagnostic containing the text was
+  enough, and a checker refusing every legal form passed. }
 {$mode objfpc}{$H+}
 uses SysUtils, Classes, M9Parse, M9AST, M9Sem;
 
@@ -55,9 +61,9 @@ var
   p : TParser;
   ast : TNode;
   sem : TSem;
-  i : Integer;
+  i, ln, hitLine, firstLine : Integer;
   hit : Boolean;
-  src, kind, want, title : string;
+  src, kind, want, title, firstDiag : string;
   list : TStringList;
 begin
   title := ChangeFileExt (ExtractFileName (fn), '');
@@ -85,9 +91,29 @@ begin
   sem.CheckFile (ast);
   if kind = 'LEDGER' then list := sem.Ledger else list := sem.Errors;
   hit := False;
+  hitLine := MaxInt;
+  firstLine := MaxInt;
+  firstDiag := '';
   for i := 0 to list.Count - 1 do
-    if Pos (want, list[i]) > 0 then hit := True;
-  if hit then
+  begin
+    ln := StrToIntDef (Copy (list[i], 1, Pos (':', list[i]) - 1), MaxInt);
+    if Pos (want, list[i]) > 0 then
+    begin
+      hit := True;
+      if ln < hitLine then hitLine := ln;
+    end;
+    if ln < firstLine then
+    begin
+      firstLine := ln;
+      firstDiag := list[i];
+    end;
+  end;
+  if hit and (kind = 'EXPECT') and (firstLine < hitLine) then
+  begin
+    WriteLn (title, ': REFUSED A LEGAL FORM before the expected refusal: ', firstDiag);
+    Inc (fails);
+  end
+  else if hit then
     WriteLn (title, ': fires as intended')
   else
   begin

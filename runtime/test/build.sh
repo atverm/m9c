@@ -255,8 +255,17 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 b_arrow () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../gen/DynStr.c ../gen/Arrow.c \
-    arrow_driver.c -lm -o arrow_test
-./arrow_test
+    arrow_driver.c -l:libzstd.so.1 -lm -o arrow_test
+# the driver asks `python3' for pyarrow; where the suite names another
+# Python that has it ($COLUMNAR_PY: zoefii's miniconda), that one is the
+# python3 the driver sees, so the zstd streams are read back by pyarrow
+# there too -- they were read only on the Mac (2026-10-11)
+if [ -n "${COLUMNAR_PY:-}" ] && [ -x "$COLUMNAR_PY" ]; then
+  mkdir -p pyshim && ln -sf "$COLUMNAR_PY" pyshim/python3
+  PATH="$(pwd)/pyshim:$PATH" ./arrow_test
+else
+  ./arrow_test
+fi
 }
 b_httpserver () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
@@ -515,7 +524,8 @@ bytes: a b c
 19 -3 half
 7 from the ELSIF
 handled, then cleaned up
-exits at 6 4" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, a module variable named y0 collided with libm, IndexError's payload did not bind, or a literal beyond ASCII went wrong, or IS SOME as an expression answered wrong, a CASE over Store.Fs did not dispatch, WriteBytes overtook Write, or a CONST expression, an ELSIF after IS SOME, EXCEPT with FINALLY or an EXIT from a CASE arm went wrong"; ./shareuse_test; exit 1; }
+exits at 6 4
+for in 60 a b c" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, a module variable named y0 collided with libm, IndexError's payload did not bind, or a literal beyond ASCII went wrong, or IS SOME as an expression answered wrong, a CASE over Store.Fs did not dispatch, WriteBytes overtook Write, or a CONST expression, an ELSIF after IS SOME, EXCEPT with FINALLY or an EXIT from a CASE arm went wrong, or FOR IN missed an element"; ./shareuse_test; exit 1; }
 echo "PASS (22 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped; IndexError binds (index, length); a literal beyond ASCII is its scalars"
 }
 

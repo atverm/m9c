@@ -1,0 +1,35 @@
+(* EXPECT: a view of a concatenation dies with this frame; it cannot be stored in module variable keep (par 2.3) *)
+(* A view of frame storage kept in a module variable (2026-10-11): a
+   SLICE over a concatenation, or the answer of a function that answers
+   a view of its argument (Text.Trim's shape), passed the checker, and
+   the module held freed bytes.  The legal forms first: a view of the
+   module's own storage, a view of a fresh concatenation used in the
+   frame, a copy.  Then a view of a concatenation kept. *)
+STATEFUL DEFINITION MODULE m ;
+PROCEDURE Ok (RO x: STR) ;
+PROCEDURE Bad (RO x: STR) ;
+END m.
+
+IMPLEMENTATION MODULE m ;
+VAR
+  keep, mine : STR ;
+  n : I64 ;
+PROCEDURE Head (RO s: STR) : STR =
+BEGIN
+  IF LEN (s) < 2 THEN RETURN s END ;
+  RETURN SLICE (s, 0, 2)
+END Head ;
+PROCEDURE Ok (RO x: STR) =
+VAR f : STR ;
+BEGIN
+  keep := SLICE (mine, 0, 0) ;
+  f := x + '!' ;
+  n := LEN (Head (f))
+END Ok ;
+PROCEDURE Bad (RO x: STR) =
+VAR f : STR ;
+BEGIN
+  f := x + '!' ;
+  keep := Head (f)
+END Bad ;
+END m.

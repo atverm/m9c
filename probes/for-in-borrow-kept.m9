@@ -1,0 +1,28 @@
+(* EXPECT: undeclared retention: borrowed rows (carried by p) reaches module state -- declare KEPT rows (par 4.1) *)
+(* FOR p IN rows gives p each element: a pointer the caller lent, as
+   `p := rows[i]' would.  Keeping it in module state is a retention the
+   heading must declare.  The legal forms first: reading through it,
+   and keeping what a KEPT parameter lent. *)
+MODULE m ;
+TYPE
+  T = RECORD n : I64 END ;
+VAR
+  kept : OPT PTR T ;
+  total : I64 ;
+PROCEDURE Sum (rows: SLICE OF PTR T) =
+VAR p : PTR T ;
+BEGIN
+  FOR p IN rows DO total := total + p.n END
+END Sum ;
+PROCEDURE Hold (KEPT rows: SLICE OF PTR T) =
+VAR p : PTR T ;
+BEGIN
+  FOR p IN rows DO kept := SOME (p) END
+END Hold ;
+PROCEDURE Keep (rows: SLICE OF PTR T) =
+VAR p : PTR T ;
+BEGIN
+  FOR p IN rows DO kept := SOME (p) END
+END Keep ;
+BEGIN
+END m.

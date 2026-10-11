@@ -16,6 +16,10 @@ typedef struct ShareUse_Store ShareUse_Store;
 #define M9SL_m9_gd2_double
 M9_GRID_T (m9_gd2_double, double, 2)
 #endif
+#ifndef M9SL_m9_arr_3_int64_t
+#define M9SL_m9_arr_3_int64_t
+typedef struct { int64_t v[3]; } m9_arr_3_int64_t;
+#endif
 
 
 #endif

@@ -25,7 +25,7 @@ where the first passed-over sites
 stand, as text: `12, 40, 41, ...';
 empty when nothing was passed over
 
-### Page (root: PTR Ast.Node ; RO modName: STR ; checked: BOOL ; RO stats: SLICE OF Stat) : STR
+### Page (root: PTR Ast.Node ; RO modName: STR ; checked: BOOL ; RO stats: SLICE OF Stat ; RO writes: SLICE OF STR) : STR
 
 the review page for one parsed file.
 
@@ -42,6 +42,12 @@ the review page for one parsed file.
              `checked`: one row each, the examined count and,
              beside it, what was passed over for an unknown
              type.  Empty from a caller that ran no checker.
+  writes  -- the THREADs the checker found writing a STATEFUL
+             module's state (Sem.ThreadWrite), each `LINE what',
+             printed under TRUSTED: the checker cannot see a
+             join, so whether two threads meet there is the
+             reviewer's to read (report par 6).  Empty from a
+             caller that ran no checker.
 
 Four sections: PROVED (or, unchecked, the functions that can
 reach their END without answering, named from the tree alone),

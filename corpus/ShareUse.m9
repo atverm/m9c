@@ -156,6 +156,9 @@ VAR
   c : PTR Box ;
   i, k : I64 ;
   x : F64 ;
+  arr : ARRAY 3 OF I64 ;
+  s : STR ;
+  ch : CHAR ;
 BEGIN
   x := Half ;
   Io.WriteI64 (Folded) ; Io.Write (' ') ; Io.WriteI64 (Neg) ;
@@ -192,7 +195,15 @@ BEGIN
     ELSE i := i + 1
     END
   END ;
-  Io.Write ('exits at ') ; Io.WriteI64 (i) ; Io.Write (' ') ; Io.WriteI64 (k) ; Io.WriteLine ('')
+  Io.Write ('exits at ') ; Io.WriteI64 (i) ; Io.Write (' ') ; Io.WriteI64 (k) ; Io.WriteLine ('') ;
+  (* FOR x IN, over an array and over a string (2026-10-11) *)
+  arr[0] := 10 ; arr[1] := 20 ; arr[2] := 30 ;
+  k := 0 ;
+  FOR i IN arr DO k := k + i END ;
+  s := 'abc' ;
+  Io.Write ('for in ') ; Io.WriteI64 (k) ;
+  FOR ch IN s DO Io.Write (' ' + ch) END ;
+  Io.WriteLine ('')
 END Forms ;
 
 (* IS SOME and IS NONE as BOOL expressions, no binder (issue 4) *)

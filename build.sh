@@ -108,7 +108,7 @@ install -m 644 runtime/m9rt.h    "$DESTDIR/usr/include/m9/m9rt.h"
 # its own tree, NOT beside the header in include/m9, where sources would
 # win over the archive and every flagless link would compile them
 install -d "$DESTDIR/usr/share/m9/runtime"
-for f in m9rt.h m9rt.c tcpshim.c fmtshim.c tlsshim.c m9session.c pgshim.c; do
+for f in m9rt.h m9rt.c tcpshim.c fmtshim.c tlsshim.c m9session.c pgshim.c sha256shim.c; do
   install -m 644 "runtime/$f" "$DESTDIR/usr/share/m9/runtime/$f"
 done
 

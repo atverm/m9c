@@ -159,6 +159,93 @@ int main (int argc, char **argv)
     printf ("  SKIP: pyarrow not installed (the cross-read half)\n");
   }
 
+  /* ---- ZSTD bodies (StreamCodec) ----
+     CodecNone must be Stream's bytes exactly; the five-column table's
+     buffers are a few bytes each, which zstd cannot shrink, so every
+     one of them takes the -1 (stored raw) path; a 20,000-row table
+     with a repeating pattern takes the compressed path in every
+     buffer.  pyarrow reads all three and must see the same cells. */
+  {
+    enum { N = 20000 };
+    static int64_t bt[N], bq[N], bc[N];
+    static float bf[N];
+    static m9_sl_CHAR bs[N];
+    static uint32_t w0[8], w1[8], w2[8];
+    m9_sl_CHAR words[3];
+    m9_sl_BYTE same, small, big, plain;
+    Arrow_Table *g;
+    m9_state e2 = {0};
+    int64_t i;
+
+    same = Arrow_StreamCodec (&pool, t, 0 /* CodecNone */, 0, err);
+    ck (err->exc == NULL && same.len == out.len
+        && memcmp (same.p, out.p, (size_t) out.len) == 0,
+        "CodecNone is Stream's bytes, exactly");
+
+    small = Arrow_StreamCodec (&pool, t, 1 /* CodecZstd */, 1, err);
+    ck (err->exc == NULL && small.len > out.len,
+        "a table of tiny buffers stores them raw: longer by the 8-byte lengths");
+    fp = fopen ("/tmp/m9-arrow-zstd-small.arrow", "wb");
+    if (fp) { fwrite (small.p, 1, (size_t) small.len, fp); fclose (fp); }
+
+    words[0] = sl ("AA", w0); words[1] = sl ("B", w1); words[2] = sl ("CCC", w2);
+    for (i = 0; i < N; i++) {
+      bt[i] = 1000000000LL * i;
+      bf[i] = (float) (i % 100) * 0.5f;
+      bq[i] = i % 3;
+      bc[i] = i / 7;
+      bs[i] = words[i % 3];
+    }
+    g = Arrow_New (&pool, N, err);
+    Arrow_Meta (&g, &pool, sl ("data_passport", nb[12]), sl ("{\"n\":2}", nb[13]), err);
+    Arrow_AddInt (&pool, &g, &pool, sl ("time", nb[14]), 7, (m9_sl_I64){ bt, N }, err);
+    Arrow_AddF32 (&pool, &g, &pool, sl ("v", nb[15]), (m9_sl_F32){ bf, N }, err);
+    Arrow_AddInt (&pool, &g, &pool, sl ("qc", nb[16]), 0, (m9_sl_I64){ bq, N }, err);
+    Arrow_AddStr (&pool, &g, &pool, sl ("dep", nb[17]), (m9_sl_m9_sl_CHAR){ bs, N }, err);
+    Arrow_AddInt (&pool, &g, &pool, sl ("ci", nb[18]), 2, (m9_sl_I64){ bc, N }, err);
+    plain = Arrow_Stream (&pool, g, err);
+    big = Arrow_StreamCodec (&pool, g, 1, 1, err);
+    ck (err->exc == NULL && big.len > 0 && big.len * 2 < plain.len,
+        "a repeating 20,000-row table compresses to under a half");
+    fp = fopen ("/tmp/m9-arrow-zstd-big.arrow", "wb");
+    if (fp) { fwrite (big.p, 1, (size_t) big.len, fp); fclose (fp); }
+    fp = fopen ("/tmp/m9-arrow-plain-big.arrow", "wb");
+    if (fp) { fwrite (plain.p, 1, (size_t) plain.len, fp); fclose (fp); }
+    printf ("  zstd: %lld bytes plain, %lld compressed\n",
+            (long long) plain.len, (long long) big.len);
+
+    e2.res = &pool;
+    (void) Arrow_StreamCodec (&pool, t, 2, 1, &e2);
+    ck (e2.exc != NULL, "a codec this writer does not write is refused");
+    e2.exc = NULL;
+    (void) Arrow_StreamCodec (&pool, t, 1, 0, &e2);
+    ck (e2.exc != NULL, "a zstd level outside 1 .. 22 is refused");
+
+    if (system ("python3 -c 'import pyarrow' >/dev/null 2>&1") == 0) {
+      int rc = system (
+        "python3 - <<'PY'\n"
+        "import sys, pyarrow as pa, pyarrow.ipc as ipc\n"
+        "rd = lambda p: ipc.open_stream(pa.BufferReader(open(p,'rb').read())).read_all()\n"
+        "bad = []\n"
+        "a, b = rd('/tmp/m9-arrow-test.arrow'), rd('/tmp/m9-arrow-zstd-small.arrow')\n"
+        "if not a.equals(b, check_metadata=True): bad.append('small: cells or metadata')\n"
+        "p, z = rd('/tmp/m9-arrow-plain-big.arrow'), rd('/tmp/m9-arrow-zstd-big.arrow')\n"
+        "if not p.equals(z, check_metadata=True): bad.append('big: cells or metadata')\n"
+        "if z.num_rows != 20000: bad.append('big rows %d' % z.num_rows)\n"
+        "if z.column('dep')[4].as_py() != 'B': bad.append('dep[4]')\n"
+        "if z.column('v')[199].as_py() != 49.5: bad.append('v[199]')\n"
+        "if z.column('ci')[19999].as_py() != 2857: bad.append('ci[19999]')\n"
+        "if (z.schema.metadata or {}).get(b'data_passport') != b'{\"n\":2}': bad.append('metadata')\n"
+        "print('  pyarrow: ' + ('both zstd streams read as their plain twins'\n"
+        "      if not bad else 'MISMATCH ' + ', '.join(bad)))\n"
+        "sys.exit(1 if bad else 0)\n"
+        "PY");
+      ck (rc == 0, "pyarrow reads both zstd streams and every cell agrees");
+    } else {
+      printf ("  SKIP: pyarrow not installed (the zstd cross-read half)\n");
+    }
+  }
+
   printf ("arrow: %d checks, %d failed\n", checks, fails);
   return fails ? 1 : 0;
 }

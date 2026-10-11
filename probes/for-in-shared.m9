@@ -1,0 +1,19 @@
+(* EXPECT: FOR h IN over SHARED handles: index the slice -- a copy of a handle is counted, and the loop would copy it uncounted *)
+(* A SHARED handle is counted: every copy is a share (par 4.1).  The
+   loop's copy into the variable would be one the count does not see,
+   so a slice of handles is gone over by its index.  The legal form
+   first. *)
+MODULE m ;
+TYPE
+  T = RECORD n : I64 END ;
+  H = SHARED PTR T ;
+VAR
+  hs : SLICE OF H ;
+  h : H ;
+  i, n : I64 ;
+BEGIN
+  hs := NEW (H, 0) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (hs) - 1 DO n := n + hs[i].n END ;
+  FOR h IN hs DO n := n + h.n END
+END m.

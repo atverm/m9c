@@ -20,6 +20,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  [SHARABLE] records                              0
   module variables                                0
 
 TRUSTED -- outside what the checker can see
@@ -27,6 +28,7 @@ TRUSTED -- outside what the checker can see
   foreign procedures                             21
     of them [SERIAL]                              6
     of them [REENTRANT]                          15
+  THREADs writing STATEFUL state                  0
 
 COUNTED -- how much there was to check
   CASE statements                                 0

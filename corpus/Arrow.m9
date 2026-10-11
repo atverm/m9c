@@ -12,10 +12,15 @@ DEFINITION MODULE Arrow ;
 
    IN THE SUBSET: flat schemas; int8/16/32/64, float32/64, UTF-8
    strings, and timestamps in nanoseconds; one record batch; schema
-   custom_metadata.  UNCOMPRESSED -- Arrow's per-buffer compression
-   would need a zstd or lz4 binding, and a reader accepts an
-   uncompressed stream from a writer that compresses, so the cost is
-   bytes on the wire and nothing else.
+   custom_metadata.  Uncompressed (Stream), or every body buffer
+   compressed with ZSTD (StreamCodec): the record batch's
+   BodyCompression says so, and each buffer is its uncompressed
+   length as 8 little-endian bytes and then one zstd frame -- or the
+   length -1 and the bytes as they were, for a buffer zstd would not
+   make smaller, which the format allows for exactly that.  An empty
+   buffer stays empty.  libzstd is the system's (LINK below), as
+   Parquet's ZSTD pages are; lz4, the format's other codec, is not
+   written.
 
    OUT OF THE SUBSET, and refused: nulls.  Every column here is
    written with an EMPTY validity buffer and a null_count of zero,
@@ -60,6 +65,13 @@ CONST
                                             NO timezone: naive, as a
                                             numpy datetime64 lands *)
 
+  CodecNone = 0 ;
+  CodecZstd = 1 ;                        (* StreamCodec's codec.  The
+                                            numbers are this module's:
+                                            the format spells LZ4_FRAME
+                                            0 and ZSTD 1, and 0 here
+                                            must mean "nothing asked" *)
+
 PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Table IN pool ;
   (* an empty table of `rows` rows.  Columns are added in order and
      that is the order the schema and the batch carry.               *)
@@ -95,6 +107,15 @@ PROCEDURE Stream (VAR pool: POOL ; t: PTR Table) : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange ;
   (* the whole stream, in pool. *)
 
+PROCEDURE StreamCodec (VAR pool: POOL ; t: PTR Table ; codec, level: I64)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, ValueRange ;
+  (* the same stream with its body buffers compressed: CodecNone is
+     Stream's bytes exactly, CodecZstd is libzstd at `level' (1 is
+     pyarrow's own default for ZSTD, 3 is libzstd's).  Another codec
+     is BadArg by name.  The schema and every cell read back the same
+     either way; only the wire shrinks.                              *)
+
 PROCEDURE NBytes (t: PTR Table) : I64 ;
   (* what pyarrow's `table.nbytes` answers for this table, which is
      NOT the stream length: it is Arrow's in-memory buffer
@@ -109,7 +130,30 @@ PROCEDURE NBytes (t: PTR Table) : I64 ;
 END Arrow.
 
 
-IMPLEMENTATION MODULE Arrow ;
+UNSAFE DEFINITION MODULE FOR "C" carrowz LINK "-l:libzstd.so.1" ;
+
+(* libzstd's one-shot compressor, as Parquet's czstd binds it: each
+   call makes and frees its own context, so any number of threads may
+   call it at once.  An error is a size_t near 2 ** 64, which I64 ()
+   refuses with ValueRange.  Its own unit, not Parquet's, so that
+   Arrow does not import Parquet and a program linking both has two
+   units of distinct names over the same two symbols. *)
+
+PROCEDURE ZstdCompress = "ZSTD_compress"
+  (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT ;
+   level: C.Int) : C.SizeT  [REENTRANT] ;
+
+PROCEDURE ZstdBound = "ZSTD_compressBound" (n: C.SizeT) : C.SizeT
+  [REENTRANT] ;
+
+END carrowz.
+
+
+UNSAFE IMPLEMENTATION MODULE Arrow ;
+
+(* UNSAFE for one reason: ADR at the libzstd boundary.  Grep ADR. *)
+
+FROM carrowz IMPORT ZstdCompress, ZstdBound ;
 
 IMPORT Faults ;
 
@@ -473,13 +517,23 @@ END SchemaMsg ;
 
 PROCEDURE BatchMsg (VAR f: Fb ; t: PTR Table ;
                     RO bufOff: SLICE OF I64 ; RO bufLen: SLICE OF I64 ;
-                    nbuf, bodyLen: I64) : I64
+                    nbuf, bodyLen, codec: I64) : I64
   RAISES Faults.BadArg, ValueRange, IndexError =
-  (* RecordBatch: 0 length, 1 nodes, 2 buffers.  FieldNode and Buffer
-     are STRUCTS -- inline, no vtable, sixteen bytes each -- so their
-     fields go down in reverse to come out in order. *)
-VAR i, nodes, bufs, rb : I64 ;
+  (* RecordBatch: 0 length, 1 nodes, 2 buffers, 3 compression.
+     FieldNode and Buffer are STRUCTS -- inline, no vtable, sixteen
+     bytes each -- so their fields go down in reverse to come out in
+     order.  BodyCompression: 0 codec (LZ4_FRAME 0, ZSTD 1 -- LZ4 is
+     the DEFAULT, so ZSTD must be written), 1 method (BUFFER 0, the
+     default and the only one, so omitted).  With no codec the batch
+     has three fields, exactly the table Stream always wrote. *)
+VAR i, nodes, bufs, rb, bc : I64 ;
 BEGIN
+  bc := 0 ;
+  IF codec = CodecZstd THEN
+    Start (f, 2) ;
+    Put8 (f, 1) ; Slot (f, 0) ;
+    bc := End (f)
+  END ;
   Prep (f, 4, 16 * t.ncol) ;
   Prep (f, 8, 16 * t.ncol) ;
   FOR i := t.ncol - 1 TO 0 BY -1 DO
@@ -496,7 +550,12 @@ BEGIN
   END ;
   Put32 (f, nbuf) ;
   bufs := Used (f) ;
-  Start (f, 3) ;
+  IF codec = CodecZstd THEN
+    Start (f, 4) ;
+    Ref (f, bc) ; Slot (f, 3)
+  ELSE
+    Start (f, 3)
+  END ;
   Ref (f, bufs) ; Slot (f, 2) ;
   Ref (f, nodes) ; Slot (f, 1) ;
   Put64 (f, t.rows) ; Slot (f, 0) ;
@@ -670,25 +729,77 @@ BEGIN
   PutLE (u, at + 4, len, 4)
 END PutMark ;
 
+PROCEDURE NBuf (t: PTR Table) : I64 =
+  (* every column's validity buffer, then its values -- or a string's
+     offsets and data *)
+VAR c : OPT PTR Col ; n : I64 ;
+BEGIN
+  n := 0 ;
+  c := t.firstC ;
+  WHILE c IS SOME cc DO
+    IF cc.ty = TyStr THEN n := n + 3 ELSE n := n + 2 END ;
+    c := cc.next
+  END ;
+  RETURN n
+END NBuf ;
+
+PROCEDURE Framed (VAR pool: POOL ; t: PTR Table ;
+                  RO bufOff: SLICE OF I64 ; RO bufLen: SLICE OF I64 ;
+                  nbuf, bodyLen, codec: I64 ; VAR pos: I64)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, ValueRange =
+  (* the whole stream but its body: the schema message, the record
+     batch's metadata naming the buffers as laid out, and the end
+     marker.  The body is left zero for the caller to fill, starting
+     at `pos'. *)
+VAR
+  f : Fb ;
+  sb, u : SLICE OF BYTE ;
+  i, sRoot, bRoot, sLen, bLen, sPad, bPad : I64 ;
+BEGIN
+  (* ---- the schema message ---- *)
+  f.b := NEW (pool, BYTE, FbFixed + FbPerCol * (t.ncol + 1) +
+                          MetaBytes (t) + NameBytes (t)) ;
+  f.head := LEN (f.b) ; f.minAlign := 1 ; f.nvt := 0 ; f.objStart := 0 ;
+  sRoot := SchemaMsg (pool, f, t) ;
+  Finish (f, sRoot) ;
+  sLen := Used (f) ;
+  sPad := Pad8 (sLen) ;
+  sb := NEW (pool, BYTE, sLen) ;
+  FOR i := 0 TO sLen - 1 DO sb[i] := f.b[f.head + i] END ;
+
+  (* ---- the record batch, in the same builder rewound ---- *)
+  f.head := LEN (f.b) ; f.minAlign := 1 ; f.nvt := 0 ; f.objStart := 0 ;
+  bRoot := BatchMsg (f, t, bufOff, bufLen, nbuf, bodyLen, codec) ;
+  Finish (f, bRoot) ;
+  bLen := Used (f) ;
+  bPad := Pad8 (bLen) ;
+
+  (* ---- the stream.  A message's declared metadata length COUNTS
+     its padding, which is what leaves every body 8-aligned ---- *)
+  u := NEW (pool, BYTE, 8 + sPad + 8 + bPad + bodyLen + 8) ;
+  PutMark (u, 0, sPad) ;
+  FOR i := 0 TO sLen - 1 DO u[8 + i] := sb[i] END ;
+  pos := 8 + sPad ;
+  PutMark (u, pos, bPad) ;
+  FOR i := 0 TO bLen - 1 DO u[pos + 8 + i] := f.b[f.head + i] END ;
+  pos := pos + 8 + bPad ;
+  PutMark (u, pos + bodyLen, 0) ;        (* end of stream *)
+  RETURN u
+END Framed ;
+
 PROCEDURE Stream (VAR pool: POOL ; t: PTR Table) : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange =
 VAR
-  f : Fb ;
   bufOff, bufLen : SLICE OF I64 ;
-  sb, u : SLICE OF BYTE ;
+  u : SLICE OF BYTE ;
   c : OPT PTR Col ;
-  i, k, nbuf, at, bodyLen, sRoot, bRoot : I64 ;
-  sLen, bLen, sPad, bPad, pos, w : I64 ;
+  i, k, nbuf, at, bodyLen, pos, w : I64 ;
 BEGIN
   (* ---- the body is laid out FIRST: the batch must name every
      buffer by (offset, length), so the layout has to exist before
      the metadata that describes it ---- *)
-  nbuf := 0 ;
-  c := t.firstC ;
-  WHILE c IS SOME cc DO
-    IF cc.ty = TyStr THEN nbuf := nbuf + 3 ELSE nbuf := nbuf + 2 END ;
-    c := cc.next
-  END ;
+  nbuf := NBuf (t) ;
   bufOff := NEW (pool, I64, nbuf + 1) ;
   bufLen := NEW (pool, I64, nbuf + 1) ;
   at := 0 ; k := 0 ;
@@ -708,34 +819,7 @@ BEGIN
     c := cc.next
   END ;
   bodyLen := at ;
-
-  (* ---- the schema message ---- *)
-  f.b := NEW (pool, BYTE, FbFixed + FbPerCol * (t.ncol + 1) +
-                          MetaBytes (t) + NameBytes (t)) ;
-  f.head := LEN (f.b) ; f.minAlign := 1 ; f.nvt := 0 ; f.objStart := 0 ;
-  sRoot := SchemaMsg (pool, f, t) ;
-  Finish (f, sRoot) ;
-  sLen := Used (f) ;
-  sPad := Pad8 (sLen) ;
-  sb := NEW (pool, BYTE, sLen) ;
-  FOR i := 0 TO sLen - 1 DO sb[i] := f.b[f.head + i] END ;
-
-  (* ---- the record batch, in the same builder rewound ---- *)
-  f.head := LEN (f.b) ; f.minAlign := 1 ; f.nvt := 0 ; f.objStart := 0 ;
-  bRoot := BatchMsg (f, t, bufOff, bufLen, nbuf, bodyLen) ;
-  Finish (f, bRoot) ;
-  bLen := Used (f) ;
-  bPad := Pad8 (bLen) ;
-
-  (* ---- the stream.  A message's declared metadata length COUNTS
-     its padding, which is what leaves every body 8-aligned ---- *)
-  u := NEW (pool, BYTE, 8 + sPad + 8 + bPad + bodyLen + 8) ;
-  PutMark (u, 0, sPad) ;
-  FOR i := 0 TO sLen - 1 DO u[8 + i] := sb[i] END ;
-  pos := 8 + sPad ;
-  PutMark (u, pos, bPad) ;
-  FOR i := 0 TO bLen - 1 DO u[pos + 8 + i] := f.b[f.head + i] END ;
-  pos := pos + 8 + bPad ;
+  u := Framed (pool, t, bufOff, bufLen, nbuf, bodyLen, CodecNone, pos) ;
 
   (* ---- the body ---- *)
   k := 0 ;
@@ -773,9 +857,141 @@ BEGIN
     END ;
     c := cc.next
   END ;
-
-  PutMark (u, pos + bodyLen, 0) ;        (* end of stream *)
   RETURN u
 END Stream ;
+
+(* ---- the compressed body ---- *)
+
+TYPE
+  Packed = RECORD
+    b : SLICE OF BYTE ;                  (* one buffer, as the wire has it *)
+  END ;
+
+PROCEDURE RawOf (VAR pool: POOL ; cc: PTR Col ; rows, part: I64)
+  : SLICE OF BYTE
+  RAISES ValueRange, IndexError =
+  (* a column's buffer as Stream writes it into the body: part 1 is
+     the values (or a string's offsets), part 2 a string's data.  The
+     data is the column's own bytes, answered as they are. *)
+VAR u : SLICE OF BYTE ; i, w : I64 ;
+BEGIN
+  IF cc.ty = TyStr THEN
+    IF part = 2 THEN RETURN cc.sdata END ;
+    u := NEW (pool, BYTE, 4 * (rows + 1)) ;
+    FOR i := 0 TO rows DO PutLE (u, 4 * i, cc.soff[i], 4) END ;
+    RETURN u
+  END ;
+  w := Width (cc.ty) ;
+  u := NEW (pool, BYTE, w * rows) ;
+  IF cc.ty = TyF32 THEN
+    FOR i := 0 TO rows - 1 DO F32.ToBytesLE (cc.f4[i], SLICE (u, 4 * i, 4)) END
+  ELSIF cc.ty = TyF64 THEN
+    FOR i := 0 TO rows - 1 DO F64.ToBytesLE (cc.f8[i], SLICE (u, 8 * i, 8)) END
+  ELSE
+    FOR i := 0 TO rows - 1 DO PutLE (u, w * i, cc.iv[i], w) END
+  END ;
+  RETURN u
+END RawOf ;
+
+PROCEDURE Pack (VAR pool: POOL ; cc: PTR Col ; rows, part, level: I64)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, ValueRange, IndexError =
+  (* one buffer compressed: its uncompressed length as 8 little-endian
+     bytes, then the zstd frame -- or -1 and the raw bytes, for a
+     buffer zstd does not make smaller.  The raw bytes and zstd's room
+     live in this procedure's own pool, so a column costs the caller
+     only what goes on the wire. *)
+VAR
+  sp : POOL ;
+  raw, z, out : SLICE OF BYTE ;
+  cap, got, i : I64 ;
+BEGIN
+  raw := RawOf (sp, cc, rows, part) ;
+  IF LEN (raw) = 0 THEN RETURN NEW (pool, BYTE, 0) END ;
+  cap := ZBound (LEN (raw)) ;
+  z := NEW (sp, BYTE, cap) ;
+  got := ZCompress (z, raw, level) ;
+  IF got < LEN (raw) THEN
+    out := NEW (pool, BYTE, 8 + got) ;
+    PutLE (out, 0, LEN (raw), 8) ;
+    FOR i := 0 TO got - 1 DO out[8 + i] := z[i] END
+  ELSE
+    out := NEW (pool, BYTE, 8 + LEN (raw)) ;
+    PutLE (out, 0, -1, 8) ;
+    FOR i := 0 TO LEN (raw) - 1 DO out[8 + i] := raw[i] END
+  END ;
+  RETURN out
+END Pack ;
+
+PROCEDURE ZBound (n: I64) : I64 RAISES Faults.BadArg =
+BEGIN
+  RETURN I64 (ZstdBound (C.SizeT (n)))
+EXCEPT
+| ValueRange : RAISE Faults.BadArg ('arrow: libzstd will not bound a buffer')
+END ZBound ;
+
+PROCEDURE ZCompress (VAR z: SLICE OF BYTE ; RO raw: SLICE OF BYTE ;
+                     level: I64) : I64
+  RAISES Faults.BadArg =
+  (* libzstd's answer, or BadArg by name: an error is a size_t near
+     2 ** 64, which I64 () refuses -- and so is a size past the room *)
+VAR got : I64 ;
+BEGIN
+  got := I64 (ZstdCompress (ADR (z), C.SizeT (LEN (z)), ADR (raw),
+                            C.SizeT (LEN (raw)), C.Int (level))) ;
+  IF got > LEN (z) THEN RAISE Faults.BadArg ('arrow: libzstd refused a buffer') END ;
+  RETURN got
+EXCEPT
+| ValueRange : RAISE Faults.BadArg ('arrow: libzstd refused a buffer')
+END ZCompress ;
+
+PROCEDURE StreamCodec (VAR pool: POOL ; t: PTR Table ; codec, level: I64)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, ValueRange =
+VAR
+  bufOff, bufLen : SLICE OF I64 ;
+  pk : SLICE OF Packed ;
+  u : SLICE OF BYTE ;
+  c : OPT PTR Col ;
+  i, k, nbuf, at, bodyLen, pos : I64 ;
+BEGIN
+  IF codec = CodecNone THEN RETURN Stream (pool, t) END ;
+  IF codec # CodecZstd THEN
+    RAISE Faults.BadArg ('arrow: a codec this writer does not write')
+  END ;
+  IF level < 1 OR level > 22 THEN
+    RAISE Faults.BadArg ('arrow: a zstd level outside 1 .. 22')
+  END ;
+  (* ---- every buffer packed FIRST: the layout is the packed lengths,
+     and the batch must name every buffer by (offset, length) ---- *)
+  nbuf := NBuf (t) ;
+  bufOff := NEW (pool, I64, nbuf + 1) ;
+  bufLen := NEW (pool, I64, nbuf + 1) ;
+  pk := NEW (pool, Packed, nbuf + 1) ;
+  at := 0 ; k := 0 ;
+  c := t.firstC ;
+  WHILE c IS SOME cc DO
+    (* the validity buffer: present, EMPTY, and an empty buffer is
+       not compressed -- there is nothing to say its length with *)
+    bufOff[k] := at ; bufLen[k] := 0 ; k := k + 1 ;
+    pk[k].b := Pack (pool, cc, t.rows, 1, level) ;
+    bufOff[k] := at ; bufLen[k] := LEN (pk[k].b) ;
+    at := at + Pad8 (bufLen[k]) ; k := k + 1 ;
+    IF cc.ty = TyStr THEN
+      pk[k].b := Pack (pool, cc, t.rows, 2, level) ;
+      bufOff[k] := at ; bufLen[k] := LEN (pk[k].b) ;
+      at := at + Pad8 (bufLen[k]) ; k := k + 1
+    END ;
+    c := cc.next
+  END ;
+  bodyLen := at ;
+  u := Framed (pool, t, bufOff, bufLen, nbuf, bodyLen, CodecZstd, pos) ;
+  FOR k := 0 TO nbuf - 1 DO
+    FOR i := 0 TO bufLen[k] - 1 DO u[pos + bufOff[k] + i] := pk[k].b[i] END
+  END ;
+  RETURN u
+EXCEPT
+| IndexError : RAISE Faults.BadArg ('arrow: a buffer outgrew its layout')
+END StreamCodec ;
 
 END Arrow.

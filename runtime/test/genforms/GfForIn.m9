@@ -1,0 +1,113 @@
+MODULE GfForIn ;
+
+(* WANT: sum 6.5 n 3 abc:3 primes 17 arr 60 box 9 rows bc exit 2 pairs 9 raised 1 *)
+
+(* FOR x IN s (2026-10-11, cp-kernel's proposal): x takes each element
+   of a slice, an array or a string in turn.  s is evaluated once -- a
+   raising s is raised before the body runs -- and EXIT leaves it. *)
+
+IMPORT Io, Fmt ;
+
+CONST Primes = [2, 3, 5, 7] ;
+
+TYPE
+  Box = RECORD w : ARRAY 3 OF I64 END ;
+  Row = RECORD name : STR ; n : I64 END ;
+  Ints = SLICE OF I64 ;
+
+PROCEDURE Sum (RO xs: SLICE OF F64) : F64 =
+VAR x, s : F64 ;
+BEGIN
+  s := 0.0 ;
+  FOR x IN xs DO s := s + x END ;
+  RETURN s
+END Sum ;
+
+PROCEDURE Count (VAR xs: SLICE OF F64) : I64 =
+VAR x : F64 ;
+  n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR x IN xs DO n := n + 1 END ;
+  RETURN n
+END Count ;
+
+PROCEDURE Total (RO rows: SLICE OF Ints ; k: I64) : I64 RAISES IndexError =
+VAR v, t : I64 ;
+BEGIN
+  t := 0 ;
+  FOR v IN rows[k] DO t := t + v END ;
+  RETURN t
+END Total ;
+
+(* the iterand raises before the body runs: n keeps the first answer *)
+PROCEDURE Probe (RO ys: SLICE OF Ints) : STR =
+VAR n : I64 ;
+BEGIN
+  n := 0 ;
+  n := Total (ys, 0) ;
+  n := Total (ys, 5) ;
+  RETURN ' not raised'
+EXCEPT
+| IndexError :
+    RETURN ' raised ' + Fmt.I64Str (n)
+END Probe ;
+
+PROCEDURE Main () RAISES IndexError =
+VAR xs : SLICE OF F64 ;
+  s, out : STR ;
+  c : CHAR ;
+  n, p, i, j, t : I64 ;
+  arr : ARRAY 3 OF I64 ;
+  b : PTR Box ;
+  rows : SLICE OF Row ;
+  r : Row ;
+  ys : SLICE OF Ints ;
+BEGIN
+  xs := NEW (F64, 3) ;
+  xs[0] := 1.0 ; xs[1] := 2.5 ; xs[2] := 3.0 ;
+  out := 'sum ' + Fmt.Short (Sum (xs)) + ' n ' + Fmt.I64Str (Count (xs)) ;
+  s := 'abc' ;
+  n := 0 ;
+  FOR c IN s DO n := n + 1 END ;
+  out := out + ' ' + s + ':' + Fmt.I64Str (n) ;
+  t := 0 ;
+  FOR p IN Primes DO t := t + p END ;
+  out := out + ' primes ' + Fmt.I64Str (t) ;
+  arr[0] := 10 ; arr[1] := 20 ; arr[2] := 30 ;
+  t := 0 ;
+  FOR p IN arr DO t := t + p END ;
+  out := out + ' arr ' + Fmt.I64Str (t) ;
+  b := NEW (Box) ;
+  b.w[0] := 2 ; b.w[1] := 3 ; b.w[2] := 4 ;
+  t := 0 ;
+  FOR p IN b.w DO t := t + p END ;
+  out := out + ' box ' + Fmt.I64Str (t) ;
+  rows := NEW (Row, 3) ;
+  rows[0] := Row ('a', 0) ; rows[1] := Row ('b', 1) ; rows[2] := Row ('c', 2) ;
+  out := out + ' rows ' ;
+  FOR r IN rows DO
+    IF r.n > 0 THEN out := out + r.name END
+  END ;
+  n := 0 ;
+  FOR p IN arr DO
+    n := n + 1 ;
+    IF p = 20 THEN EXIT END
+  END ;
+  out := out + ' exit ' + Fmt.I64Str (n) ;
+  (* nested over the same array, another variable each *)
+  n := 0 ;
+  FOR i IN arr DO
+    FOR j IN arr DO n := n + 1 END
+  END ;
+  out := out + ' pairs ' + Fmt.I64Str (n) ;
+  ys := NEW (Ints, 1) ;
+  ys[0] := NEW (I64, 1) ;
+  ys[0][0] := 1 ;
+  out := out + Probe (ys) ;
+  Io.WriteLine (out)
+END Main ;
+
+BEGIN
+  Main ()
+END GfForIn.

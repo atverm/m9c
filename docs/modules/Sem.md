@@ -104,6 +104,24 @@ say how many of those there were.  These do.
 Module state like the diagnostics, and for the same reason: they
 accumulate over every CheckFile of the process.
 
+### ThreadWrites () : I64
+
+_(documented with the group below)_
+
+### ThreadWrite (i: I64) : STR
+
+the THREADs whose target, or what it calls that the checker can
+follow, WRITES a variable of a STATEFUL module that is not a
+monitor (report par 6), for `m9c --review'.  Not a refusal (Alex,
+2026-10-11): the one such site measured, the zarr proxy's reaper,
+is correct because the thread is joined before its counter is
+read, and no checker sees a join.  So it is listed, as a thing
+the reviewer reads.
+
+  i -- 0 .. ThreadWrites () - 1: `LINE TARGET writes Mod.v
+       (Mod.P, line N)', the THREAD's line first, as the page
+       prints a site.
+
 ### ShowType (RO KEPT name: STR)
 
 _(documented with the group below)_

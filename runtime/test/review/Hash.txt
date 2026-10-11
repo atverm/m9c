@@ -1,11 +1,11 @@
-REVIEW Hash -- 13 procedures with a body, 8 of them functions; 11 headings in a DEFINITION
+REVIEW Hash -- 11 procedures with a body, 7 of them functions; 11 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path               8
-  assignments                                    98
-  arguments                                     191
-  RETURN values                                   9
-  operands of a comparison or an operator       125
+  functions answering on every path               7
+  assignments                                    35
+  arguments                                      62
+  RETURN values                                   8
+  operands of a comparison or an operator        28
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -20,13 +20,15 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  [SHARABLE] records                              0
   module variables                                0
 
 TRUSTED -- outside what the checker can see
-  UNSAFE units                                    0
-  foreign procedures                              0
+  UNSAFE units                                    2   Hash, csha
+  foreign procedures                              3
     of them [SERIAL]                              0
-    of them [REENTRANT]                           0
+    of them [REENTRANT]                           3
+  THREADs writing STATEFUL state                  0
 
 COUNTED -- how much there was to check
   CASE statements                                 0

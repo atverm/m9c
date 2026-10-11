@@ -132,10 +132,14 @@ type
       body: TNode; scratchCounts: Boolean): Boolean;
     function AnswersFrame (const qual: string; const pr: TProcInfo): Boolean;
     function AnswersRo (const qual: string; const pr: TProcInfo): Boolean;
+    function AnswersView (const qual: string; const pr: TProcInfo): Boolean;
+    function ViewExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
+    function ViewEvidence (k, d: TNode; const modn: string): Boolean;
     function RoExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
     function RoEvidence (k, d: TNode; const modn: string): Boolean;
     function RoAnswerText (const name: string; const pr: TProcInfo): string;
     function CallAnswersFrame (dn: TNode): string;
+    function ShareWhy (const aTy: string): string;
     procedure ErrN (n: TNode; const ctx, msg: string);
     function SigOf (p: TNode): string;
     function RaisesOf (p: TNode): TStringArray;
@@ -143,6 +147,7 @@ type
     function ExcDeclOf (const qual, nm: string; out owner: string): TNode;
     function IxDecl: TNode;
     function ExcFieldType (decl: TNode; const owner: string; k: Integer): TNode;
+    function ExcFieldsText (q: TNode): string;
     procedure CheckExcName (n: TNode; const ctx: string);
     function TypeKnown (const qual, nm: string): Boolean;
     procedure CheckTypeNode (t: TNode; const ctx: string);
@@ -370,7 +375,7 @@ var i : Integer;
 begin
   if k = nil then Exit (False);
   if k.kind = nkExit then Exit (True);
-  if k.kind in [nkLoop, nkWhile, nkFor] then Exit (False);   { the innermost loop owns an EXIT (mirrors Sem) }
+  if k.kind in [nkLoop, nkWhile, nkFor, nkForIn] then Exit (False);   { the innermost loop owns an EXIT (mirrors Sem) }
   for i := 0 to High (k.kids) do
     if HasExit (k.kids[i]) then Exit (True);
   Result := False;
@@ -859,6 +864,74 @@ begin
     if FrameEvidence (k.kids[i], modn, isStr, body, scratchCounts) then Exit (True);
 end;
 
+{ par 6: SHARABLE (mirrors Sem.ShareWhy, 2026-10-11): the type a
+  THREAD's unmoved argument shares, when it is a RECORD neither a
+  MONITOR nor marked [SHARABLE]; '' otherwise }
+function TSem.ShareWhy (const aTy: string): string;
+var
+  t, mn, tn : string;
+  m, mm : TModuleInfo;
+  dot, depth : Integer;
+  body : TNode;
+begin
+  Result := '';
+  t := aTy;
+  if Copy (t, 1, 4) = 'OPT ' then t := Copy (t, 5, MaxInt);
+  if Copy (t, 1, 11) = 'SHARED PTR ' then t := Copy (t, 12, MaxInt)
+  else if Copy (t, 1, 4) = 'PTR ' then t := Copy (t, 5, MaxInt);
+  dot := Pos ('.', t);
+  if dot > 1 then
+  begin
+    mn := Copy (t, 1, dot - 1);
+    tn := Copy (t, dot + 1, MaxInt);
+  end
+  else
+  begin
+    mn := curMod;
+    tn := t;
+  end;
+  m := FindMod (mn);
+  if m = nil then Exit;
+  body := m.FindType (tn);
+  { through pointers, OPT and names (mirrors Sem.SwResolve) }
+  for depth := 0 to 8 do
+  begin
+    if body = nil then Exit;
+    if body.kind in [nkPtrType, nkSharedType, nkOptType] then
+      body := body.kids[0]
+    else if body.kind = nkQualident then
+    begin
+      if body.b = '' then
+        body := m.FindType (body.a)
+      else
+      begin
+        mm := FindMod (body.a);
+        if mm = nil then Exit;
+        m := mm;
+        body := m.FindType (body.b);
+      end;
+    end
+    else
+      Break;
+  end;
+  if (body = nil) or (body.kind <> nkRecordType) then Exit;
+  if (Length (body.kids) > 2) and (body.kids[2] <> nil) and
+     (body.kids[2].a = 'SHARABLE') then Exit;
+  Result := t;
+end;
+
+{ a RECORD takes one attribute, [SHARABLE] (mirrors Sem.RecordAttribWalk) }
+procedure RecordAttribWalk (sem: TSem; n: TNode; const ctx: string);
+var i : Integer;
+begin
+  if n = nil then Exit;
+  if (n.kind = nkRecordType) and (Length (n.kids) > 2) and (n.kids[2] <> nil) and
+     (n.kids[2].a <> 'SHARABLE') then
+    sem.ErrN (n.kids[2], ctx, 'a RECORD takes one attribute, [SHARABLE] (par 6), not [' +
+      n.kids[2].a + ']');
+  for i := 0 to High (n.kids) do RecordAttribWalk (sem, n.kids[i], ctx);
+end;
+
 function TSem.AnswersFrame (const qual: string; const pr: TProcInfo): Boolean;
 var
   ix, g : Integer;
@@ -957,6 +1030,66 @@ begin
     t := CanonT (pr.body.kids[1], 0);
     if StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'GRID ') then
       Result := RoEvidence (pr.body.kids[4], pr.body, pr.modName);
+  end;
+  if Result then ansMemo.Values[key] := 'yes'
+  else ansMemo.Values[key] := 'no';
+end;
+
+{ Sem.AnswersView: does the callee answer a VIEW of one of its own
+  parameters -- a RETURN of one, a SLICE or GRID over one, or another
+  such callee's answer handed one?  Memoised under 'view Module.Proc'
+  (2026-10-11). }
+function IsParamOfD (d: TNode; const nm: string): Boolean;
+var a, b : Integer;
+begin
+  Result := False;
+  if (d = nil) or (d.kids[0] = nil) then Exit;
+  for a := 0 to High (d.kids[0].kids) do
+    if (d.kids[0].kids[a] <> nil) and (d.kids[0].kids[a].kids[0] <> nil) then
+      for b := 0 to High (d.kids[0].kids[a].kids[0].kids) do
+        if d.kids[0].kids[a].kids[0].kids[b].a = nm then Exit (True);
+end;
+
+function TSem.ViewExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
+var pr : TProcInfo; i : Integer;
+begin
+  Result := False;
+  if (depth > 8) or (k = nil) then Exit;
+  if (k.kind = nkSliceOf3) or (k.kind = nkGridOf) or (k.kind = nkParen) then
+    Exit (ViewExprEvidence (k.kids[0], d, modn, depth + 1));
+  if (k.kind = nkDesignator) and (Length (k.kids) = 0) then
+    Exit (IsParamOfD (d, k.a));
+  if (k.kind = nkCallExpr) and (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) then
+    if ProcNamed (modn, CallName (k.kids[0]), pr) and (pr.foreign = '') then
+      if AnswersView (pr.modName + '.' + pr.name, pr) and (k.kids[1] <> nil) then
+        for i := 0 to High (k.kids[1].kids) do
+          if ViewExprEvidence (k.kids[1].kids[i], d, modn, depth + 1) then Exit (True);
+end;
+
+function TSem.ViewEvidence (k, d: TNode; const modn: string): Boolean;
+var i : Integer;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if (k.kind = nkReturn) and (Length (k.kids) > 0) then
+    if ViewExprEvidence (k.kids[0], d, modn, 0) then Exit (True);
+  for i := 0 to High (k.kids) do
+    if ViewEvidence (k.kids[i], d, modn) then Exit (True);
+end;
+
+function TSem.AnswersView (const qual: string; const pr: TProcInfo): Boolean;
+var ix : Integer; key, t : string;
+begin
+  key := 'view ' + qual;
+  ix := ansMemo.IndexOfName (key);
+  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
+  ansMemo.Values[key] := 'busy';
+  Result := False;
+  if (pr.body <> nil) and (pr.body.kids[1] <> nil) then
+  begin
+    t := CanonT (pr.body.kids[1], 0);
+    if StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'GRID ') then
+      Result := ViewEvidence (pr.body.kids[4], pr.body, pr.modName);
   end;
   if Result then ansMemo.Values[key] := 'yes'
   else ansMemo.Values[key] := 'no';
@@ -1313,6 +1446,35 @@ end;
 
 { the type of the k-th payload field, qualified in its module; nil past
   the fields or for a bare declaration }
+{ an exception as the program spelled it (Sem.ExcSpelled) }
+function ExcSpelledP (q: TNode): string;
+begin
+  if q.b <> '' then Result := q.a + '.' + q.b else Result := q.a;
+end;
+
+{ an exception's fields as one text, `(I64, STR)' (mirrors
+  Sem.ExcFieldsText) }
+function TSem.ExcFieldsText (q: TNode): string;
+var
+  owner, r : string;
+  decl, ft : TNode;
+  k : Integer;
+begin
+  owner := '';
+  if q.b <> '' then decl := ExcDeclOf (q.a, q.b, owner)
+  else decl := ExcDeclOf ('', q.a, owner);
+  r := '';
+  k := 0;
+  repeat
+    ft := ExcFieldType (decl, owner, k);
+    if ft = nil then Break;
+    if k > 0 then r := r + ', ';
+    r := r + TyName (CanonT (ft, 0));
+    Inc (k);
+  until False;
+  Result := '(' + r + ')';
+end;
+
 function TSem.ExcFieldType (decl: TNode; const owner: string; k: Integer): TNode;
 var
   fs, grp : TNode;
@@ -1753,6 +1915,40 @@ begin
   for i := 0 to High (n.kids) do NanWalk (n.kids[i]);
 end;
 
+{ FOR x IN s: the loop's assignment x := s[0] written down as kids[2]
+  (mirrors Sem.ForInWalk) }
+procedure ForInWalk (n: TNode);
+var i, j : Integer;
+  asg, lhs, rhs, sel, ix, s : TNode;
+begin
+  if n = nil then Exit;
+  if (n.kind = nkForIn) and (Length (n.kids) = 2) and (n.kids[0] <> nil) and
+     (n.kids[0].kind = nkDesignator) then
+  begin
+    s := n.kids[0];
+    lhs := TNode.Create (nkDesignator);
+    lhs.line := n.line; lhs.col := n.col;
+    lhs.a := n.a;
+    rhs := TNode.Create (nkDesignator);
+    rhs.line := s.line; rhs.col := s.col;
+    rhs.a := s.a; rhs.b := s.b;
+    for j := 0 to High (s.kids) do rhs.Add (s.kids[j]);
+    ix := TNode.Create (nkInt);
+    ix.line := s.line; ix.col := s.col;
+    ix.a := '0';
+    sel := TNode.Create (nkSelIndex);
+    sel.line := s.line; sel.col := s.col;
+    sel.Add (ix);
+    rhs.Add (sel);
+    asg := TNode.Create (nkAssign);
+    asg.line := n.line; asg.col := n.col;
+    asg.Add (lhs);
+    asg.Add (rhs);
+    n.Add (asg);
+  end;
+  for i := 0 to High (n.kids) do ForInWalk (n.kids[i]);
+end;
+
 function IsNanLit (n: TNode): Boolean;
 begin
   Result := (n <> nil) and (n.kind = nkReal) and (n.a = 'NAN');
@@ -1764,6 +1960,8 @@ begin
   recSem := Self;
   for i := 0 to High (root.kids) do
     NanWalk (root.kids[i]);
+  for i := 0 to High (root.kids) do
+    ForInWalk (root.kids[i]);
   for i := 0 to High (root.kids) do
     CollectUnit (root.kids[i]);
 end;
@@ -2532,9 +2730,9 @@ var
   var i, first : Integer;
   begin
     if (n.kind = nkDesignator) and (Length (n.kids) = 0) and
-       (parent <> nkArgList) and IsAggConst (n.a) then
+       (parent <> nkArgList) and (parent <> nkForIn) and IsAggConst (n.a) then
       ErrN (n, ctx, 'the CONST table ' + n.a +
-        ' can only be indexed, measured with LEN, or lent to an RO' +
+        ' can only be indexed, measured with LEN, gone over by FOR IN, or lent to an RO' +
         ' parameter (par 2.2.4)');
     first := 0;
     { the left side of an assignment is CheckWrite's to refuse }
@@ -2821,7 +3019,8 @@ var
       local pool's is freed (mirrors Sem.FvalAdd) }
     if ix >= 0 then
     begin
-      if KindPool (what) <> '' then fvalKind[ix] := what;
+      if (KindPool (what) <> '') or StartsWithS (what, 'a view of ') then
+        fvalKind[ix] := what;
       Exit;
     end;
     fval.Add (nm);
@@ -2995,6 +3194,26 @@ var
     end;
   end;
 
+  { the frame storage a call's answer views (mirrors Sem.ViewedFrame) }
+  function ViewedFrame (dn, args: TNode): string;
+  var
+    pr : TProcInfo;
+    i : Integer;
+    w : string;
+  begin
+    Result := '';
+    if dn.kind <> nkDesignator then Exit;
+    if not LookupProcInfo (DesigName (dn), pr) then Exit;
+    if pr.foreign <> '' then Exit;
+    if not AnswersView (pr.modName + '.' + pr.name, pr) then Exit;
+    if args = nil then Exit;
+    for i := 0 to High (args.kids) do
+    begin
+      w := FrameWhat (args.kids[i], 'SLICE OF CHAR');
+      if w <> '' then Exit ('a view of ' + w);
+    end;
+  end;
+
   { what the frame-scoped value IS: 'a concatenation', 'a frame
     allocation', 'the answer of F', 'an allocation in pool P' or 'a
     view into pool P' for a LOCAL pool P (par 4.3: dies with the
@@ -3017,6 +3236,19 @@ var
       if nm <> '' then Exit ('the answer of ' + nm);
       p := ViewedPool (e.kids[0], e.kids[1]);
       if p <> '' then Exit ('a view into pool ' + p);
+      p := ViewedFrame (e.kids[0], e.kids[1]);
+      if p <> '' then Exit (p);
+    end;
+    { a SLICE or GRID over frame storage is a view of it (mirrors
+      Sem.FrameWhat, 2026-10-11) }
+    if (e.kind = nkSliceOf3) or (e.kind = nkGridOf) then
+    begin
+      p := FrameWhat (e.kids[0], 'SLICE OF CHAR');
+      if p <> '' then
+      begin
+        if StartsWithS (p, 'a view') then Exit (p);
+        Exit ('a view of ' + p);
+      end;
     end;
     if (e.kind = nkDesignator) and (Length (e.kids) = 0) then
     begin
@@ -3205,6 +3437,7 @@ var
   function OwnFedBy (r: TNode): Boolean;
   begin
     Result := False;
+    while (r <> nil) and (r.kind = nkParen) do r := r.kids[0];
     if r = nil then Exit;
     if r.kind = nkNewExpr then
       Result := (r.kids[0] <> nil) and (r.kids[0].kind = nkDesignator) and
@@ -3709,6 +3942,59 @@ var
     SetLength (forNames, Length (forNames) - 1);
     SetLength (forLines, Length (forLines) - 1);
   end;
+  { FOR x IN s (mirrors Sem.CheckForIn, 2026-10-11) }
+  function CheckForIn (st: TNode): Boolean;
+  var t, elem, vt : string; at : Integer;
+  begin
+    Result := True;
+    elem := '';
+    if st.kids[0] <> nil then
+    begin
+      if st.kids[0].kind <> nkDesignator then
+      begin
+        Result := False;
+        ErrN (st, ctx, 'FOR ' + st.a +
+          ' IN takes a name -- a variable, a field, an element: give the value one first (par 10)');
+      end;
+      t := ExprType (st.kids[0]);
+      if StartsWithS (t, 'SLICE OF ') then
+        elem := Copy (t, 10, Length (t) - 9)
+      else if StartsWithS (t, 'ARRAY ') then
+      begin
+        at := Pos (' OF ', t);
+        if at > 0 then elem := Copy (t, at + 4, Length (t) - at - 3);
+      end
+      else if t <> '' then
+      begin
+        Result := False;
+        ErrN (st, ctx, 'FOR ' + st.a + ' IN goes over a slice, an array or a string, not ' +
+          TyName (t) + ' (par 10)');
+      end;
+      if StartsWithS (elem, 'SHARED ') or StartsWithS (elem, 'OPT SHARED ') then
+      begin
+        Result := False;
+        ErrN (st, ctx, 'FOR ' + st.a +
+          ' IN over SHARED handles: index the slice -- a copy of a handle is counted, and the loop would copy it uncounted');
+      end;
+    end;
+    if scope.IndexOfName (st.a) < 0 then
+    begin
+      Result := False;
+      ErrN (st, ctx, 'FOR variable ' + st.a + ' is not declared');
+      BindName (st.a, nil);
+    end
+    else
+    begin
+      vt := CanonT (ScopeType (st.a), 0);
+      if (vt <> '') and (elem <> '') and (vt <> elem) then
+      begin
+        Result := False;
+        ErrN (st, ctx, 'FOR variable ' + st.a + ' is ' + TyName (vt) +
+          ', and the elements it goes over are ' + TyName (elem));
+      end;
+    end;
+  end;
+
   procedure CheckForVar (st: TNode; const bound: string; enum: Boolean);
   var vt : string;
   begin
@@ -4756,6 +5042,9 @@ var
                 { a concatenation, a frame allocation, or a name
                   holding either }
                 what := FrameWhat (aNode[k], aTy[k]);
+                { a view of frame storage is refused where it is stored
+                  durably, not here (mirrors Sem.CheckArg) }
+                if StartsWithS (what, 'a view of ') then what := '';
                 if (what <> '') and (nFrameKept <= 1) and
                    not PoolAmong (KindPool (what)) then
                   ErrN (site, ctx, Format (
@@ -5367,7 +5656,10 @@ var
           if (Length (e.kids) = 0) and not BareNameKnown (e.a) then
             ErrN (e, ctx, 'unknown name: ' + e.a);
           { a member a LOADED module does not declare: Math.Nosuch }
-          if (Length (e.kids) >= 1) and (ScopeType (e.a) = nil) and
+          { "not a name in scope" -- a binder from an operand of unknown
+            type has no type and is still the name (Sem.m9 asks
+            ScopeFind; CheckFuzz, 2026-10-11) }
+          if (Length (e.kids) >= 1) and (ScopeMode (e.a) = '') and
              (FindMod (e.a) <> nil) and (e.kids[0] <> nil) and
              (e.kids[0].kind = nkSelField) and
              not ModHasName (e.a, e.kids[0].a) then
@@ -5503,6 +5795,9 @@ var
     tpl, tares : TNode;
     lblTxt : string;                 { a scalar CASE label, printed }
     labelsVariant, hasElse, beyond, haveSelVi : Boolean;
+    headOk : Boolean;                { FOR IN: the head refused nothing }
+    tmoved : Boolean;                { THREAD: its argument was moved }
+    sw : string;                     { THREAD: the type it shares }
     vi, selVi : TVariantInfo;
     haveVi : Boolean;
     covered : TStringList;
@@ -5809,6 +6104,23 @@ var
           OwnRestore (pre);
           OwnMergeMoves (hpre);
         end;
+      nkForIn :
+        begin
+          headOk := CheckForIn (st);
+          CheckForNest (st);
+          pre := OwnSnap;
+          ForPush (st);
+          k := finSinceLoop; finSinceLoop := 0; Inc (loopsOpen);
+          { the loop's own assignment first (mirrors Sem.WalkStmt) }
+          if headOk and (Length (st.kids) > 2) then WalkStmt (st.kids[2]);
+          WalkSeq (st.kids[1]);
+          LoopCarry (pre, st.kids[1]);
+          Dec (loopsOpen); finSinceLoop := k;
+          ForPop;
+          hpre := OwnSnap;
+          OwnRestore (pre);
+          OwnMergeMoves (hpre);
+        end;
       nkLoop :
         begin
           k := finSinceLoop;
@@ -5908,10 +6220,12 @@ var
             end;
           for k := 0 to High (snaps) do
             OwnMergeMoves (snaps[k]);
-          if labelsVariant and (not hasElse) and haveVi then
+          { judged only against a selector whose type is KNOWN: with
+            it unknown (softness) the labels' by-name owner is a guess,
+            and the M9 twin says nothing there (CheckFuzz, 2026-10-11) }
+          if labelsVariant and (not hasElse) and haveVi and haveSelVi then
           begin
-            if haveSelVi then vi := selVi
-            else VariantOwner (covered[0], vi);
+            vi := selVi;
             for k := 0 to High (vi.variants) do
               if covered.IndexOf (vi.variants[k]) < 0 then
                 ErrN (st, ctx,
@@ -6041,6 +6355,7 @@ var
             and a bare owned pointer MOVED into the thread.  Mirrors
             Sem.CheckThread; neither checker looked at the argument
             before 2026-09-27 (docs/agent-review-2026-09-27.md F2). }
+          tmoved := False;
           taTy := ExprType (st.kids[1]);
           if st.kids[0].kind = nkDesignator then
           begin
@@ -6058,7 +6373,9 @@ var
               storage handed to a thread is allocated with OWN }
             what := FrameWhat (st.kids[1], taTy);
             { a local pool's object is lent as any pool pointer is,
-              unchecked until SHARABLE (mirrors Sem) }
+              and held to SHARABLE below (mirrors Sem) }
+            if (what <> '') and (KindPool (what) = '') then
+              tmoved := True;   { refused here: the sharing rule says no more }
             if (what <> '') and (KindPool (what) = '') then
               ErrN (st, ctx, 'THREAD (' + tname + '): cannot hand ' + what +
                 ' to a thread -- it dies with this frame; allocate it' +
@@ -6091,9 +6408,21 @@ var
                    (OwnedCandKind (st.kids[1].a) > 0) and
                    (fval.IndexOf (st.kids[1].a) < 0) and
                    (pval.IndexOf (st.kids[1].a) < 0) then
+                begin
                   OwnMark (st.kids[1].a,
                     'moved into a THREAD running ' + tname, st);
+                  tmoved := True;
+                end;
               end;
+            end;
+            { SHARABLE: what is not moved, both threads hold (mirrors
+              Sem.CheckThread) }
+            if not tmoved then
+            begin
+              sw := ShareWhy (taTy);
+              if sw <> '' then
+                ErrN (st, ctx, 'THREAD (' + tname + '): both threads hold the ' + sw +
+                  ' handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE] -- mark it RECORD ... END [SHARABLE] if the threads'' writes to it are disjoint, or move an owned value in (par 6)');
             end;
           end;
         end;
@@ -6124,6 +6453,22 @@ var
                 handled.Add (st.kids[j].kids[0].b)
               else
                 handled.Add (st.kids[j].kids[0].a);
+              { the further names of `| A, B :' (mirrors Sem.WalkStmt) }
+              for k := 3 to High (st.kids[j].kids) do
+              begin
+                CheckExcName (st.kids[j].kids[k], ctx);
+                if st.kids[j].kids[k].b <> '' then
+                  handled.Add (st.kids[j].kids[k].b)
+                else
+                  handled.Add (st.kids[j].kids[k].a);
+                if (st.kids[j].kids[1] <> nil) and
+                   (ExcFieldsText (st.kids[j].kids[0]) <> ExcFieldsText (st.kids[j].kids[k])) then
+                  ErrN (st.kids[j], ctx,
+                    'one handler arm binds a payload only when every exception it names has the same fields: ' +
+                    ExcSpelledP (st.kids[j].kids[0]) + ' ' + ExcFieldsText (st.kids[j].kids[0]) +
+                    ' and ' + ExcSpelledP (st.kids[j].kids[k]) + ' ' + ExcFieldsText (st.kids[j].kids[k]) +
+                    ' differ -- give each its own arm, or bind nothing (par 5)');
+              end;
               { handler binders are names, TYPED since 2026-10-08 by
                 the EXCEPTION declaration's fields in order, qualified
                 in the declaring module (corpus/Sem.m9 says why) }
@@ -6935,6 +7280,7 @@ begin
       ExportWalk (u, nil, u.kids[i]);
     CheckDeclaredOnce (u);
     CheckExcFields (u);
+    RecordAttribWalk (Self, u, u.a);
     constMap.Clear;
     nAgg := 0;
     { an IMPLEMENTATION sees the constants of its DEFINITION, the unit

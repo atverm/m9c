@@ -18,7 +18,7 @@ TYPE
   END ;
   Job = RECORD
     d : Done ;
-  END ;
+  END [SHARABLE] ;
 
 PROCEDURE Finish (VAR d: Done) =
 BEGIN

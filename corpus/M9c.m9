@@ -215,7 +215,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.21.0' ;
+  Version = '0.22.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -354,6 +354,35 @@ BEGIN
 END DirAddPath ;
 
 (* the directory a path came from, empty when it names no directory *)
+(* the text of a file, or '' when it cannot be read as text *)
+PROCEDURE TextOf (RO path: STR) : STR =
+BEGIN
+  RETURN Io.ReadFile (pool, path)
+EXCEPT
+| Io.IOError (m) : RETURN ''
+| ValueRange : RETURN ''
+END TextOf ;
+
+(* a NAME.h beside the module's source that is not the header just
+   written to another directory: a C driver there includes "NAME.h"
+   and a quoted include searches the including file's directory first,
+   so it reads the stale one (2026-09-15: `implicit declaration of
+   Mod_m9init'; the owed ledger since).  Said, not refused -- the file
+   is not m9c's to delete. *)
+PROCEDURE StaleBeside (RO main, outDir, name, fresh: STR) RAISES ValueRange =
+VAR src, there : STR ;
+BEGIN
+  src := DirOf (main) ;
+  IF LEN (src) = 0 THEN src := '.' END ;
+  IF DynStr.Eq (src, outDir) THEN RETURN END ;
+  there := Join (src, Suffix (name, '.h')) ;
+  IF NOT Io.Exists (there) THEN RETURN END ;
+  IF DynStr.Eq (TextOf (there), fresh) THEN RETURN END ;
+  Diag ('m9c: ', there, Cat (' is not the header just written to ',
+        Cat (Join (outDir, Suffix (name, '.h')),
+             '; a C file beside it that includes it reads the old one -- delete it')))
+END StaleBeside ;
+
 PROCEDURE DirOf (RO path: STR) : STR =
 VAR i, cut : I64 ;
 BEGIN
@@ -3036,6 +3065,7 @@ END JsonText ;
 PROCEDURE ReviewText (root: PTR Ast.Node ; RO name: STR) : STR =
 VAR
   st : SLICE OF Review.Stat ;
+  tw : SLICE OF STR ;
   d : PTR DynStr.DString IN pool ;
   i, j, n : I64 ;
 BEGIN
@@ -3057,7 +3087,9 @@ BEGIN
     END ;
     st[i].lines := DynStr.View (d)
   END ;
-  RETURN Review.Page (root, name, TRUE, st)
+  tw := NEW (pool, STR, Sem.ThreadWrites ()) ;
+  FOR i := 0 TO LEN (tw) - 1 DO tw[i] := Sem.ThreadWrite (i) END ;
+  RETURN Review.Page (root, name, TRUE, st, tw)
 END ReviewText ;
 
 PROCEDURE ParseText (RO KEPT src: STR ; RO path: STR) : Ast.Kid
@@ -3888,6 +3920,9 @@ BEGIN
         END ;
         Io.WriteFile (Join (outDir, Suffix (name, '.h')), Gen.HText ()) ;
         Io.WriteFile (Join (outDir, Suffix (name, '.c')), Gen.CText ()) ;
+        IF NOT doRun AND NOT doCell THEN
+          StaleBeside (main, outDir, name, Gen.HText ())
+        END ;
         (* said under -v: a stale NAME.h beside a driver beats the fresh
            one (a quoted include searches the including directory first),
            and where the fresh one went is the first thing to know *)

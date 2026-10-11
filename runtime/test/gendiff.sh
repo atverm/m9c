@@ -126,6 +126,10 @@ grep -q '((c->shade).tag == ' /tmp/gen_fpc.txt \
 # copy.  The grep holds the order; two generators storing first
 # together would also agree byte for byte.
 run ShareUse Io
+# FOR x IN s: the iterand once, the loop over its own index (2026-10-11)
+grep -q 'for (int64_t m9t[0-9]*i = 0; m9t[0-9]*i < m9t[0-9]*s.len; m9t[0-9]*i++) { ch = m9t[0-9]*s.p\[m9t[0-9]*i\];' /tmp/gen_fpc.txt \
+  && grep -q '{ __typeof__(arr) \*m9t[0-9]*s = &(arr);' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: FOR x IN is not the once-evaluated loop -- in BOTH generators"; exit 1; }
 grep -q -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' /tmp/gen_fpc.txt \
   && grep -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' /tmp/gen_fpc.txt | grep -q 'if (err->exc) goto' \
   && grep -q 'b = ((__typeof__(b)) m9_share_copy (m9v));' /tmp/gen_fpc.txt \

@@ -1,12 +1,12 @@
-REVIEW Gen -- 145 procedures with a body, 104 of them functions; 26 headings in a DEFINITION
+REVIEW Gen -- 146 procedures with a body, 105 of them functions; 26 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             104
-  assignments                                  1091
-  arguments                                    5194
-  RETURN values                                 496
-  operands of a comparison or an operator       890
-  CASE labels                                    91
+  functions answering on every path             105
+  assignments                                  1112
+  arguments                                    5300
+  RETURN values                                 498
+  operands of a comparison or an operator       901
+  CASE labels                                    92
   THREAD arguments                                0
   CASE over variants, proved total                0
 
@@ -20,6 +20,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  [SHARABLE] records                              0
   module variables                               85   modName, dbgSrc, pfxMod, pfxC, npfx, constsBase, +79 more
 
 TRUSTED -- outside what the checker can see
@@ -27,6 +28,7 @@ TRUSTED -- outside what the checker can see
   foreign procedures                              0
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
+  THREADs writing STATEFUL state                  0
 
 COUNTED -- how much there was to check
   CASE statements                                 8

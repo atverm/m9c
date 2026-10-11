@@ -4344,7 +4344,7 @@ PROCEDURE EmitHandler (h: PTR Ast.Node ; RO dlbl: STR ;
                        ind: I64) =
 VAR
   nm, qual, desc, cond, slot, ety, bn, ec : STR ;
-  fields : Ast.Kid ;
+  fields, fx : Ast.Kid ;
   savedScope, ii, di, si, k2, g, j, q, nbl : I64 ;
   blines : SLICE OF STR ;
   nb : SLICE OF STR ;
@@ -4365,6 +4365,19 @@ BEGIN
     RETURN
   END ;
   cond := S2 ('err->exc == &', desc) ;
+  (* `| A, B :' -- the further names, kids[3..]: any of them enters the
+     arm; the checker holds a binder to fields the same in all *)
+  FOR q := 3 TO h.nkids - 1 DO
+    IF h.kids[q] IS SOME qx THEN
+      IF LEN (qx.b) > 0 THEN desc := ExcRef (qx.a, qx.b, fx)
+      ELSE desc := ExcRef ('', qx.a, fx) END ;
+      IF LEN (desc) = 0 THEN
+        Err2 (h.line, S2 ('unknown exception in handler: ', qx.a)) ;
+        RETURN
+      END ;
+      cond := S4 ('(', cond, ' || err->exc == &', S2 (desc, ')'))
+    END
+  END ;
   blines := NEW (gpool, STR, 8) ;
   nbl := 0 ;
   savedScope := scope.n ;
@@ -4814,6 +4827,39 @@ BEGIN
         sf := finDepth ; finDepth := 0 ;
         savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
         EmitSeq (st.kids[3], ind + 1) ;
+        LoopExit (ind + 1) ;
+        loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
+        inSwitch := sv ; finDepth := sf ;
+        Line (KPbuf, ind, '} }')
+    | Ast.NForIn :
+        (* FOR x IN s (2026-10-11): s evaluated ONCE -- a slice's
+           descriptor copied, an array by its address -- and x given each
+           element in turn; the index is the loop's own, so no element
+           read needs a check *)
+        stRaise := FALSE ;
+        tg := TagOfExpr (st.kids[0]) ;
+        l := EX (st.kids[0], '') ;
+        w := NewTmp () ;
+        IF DynStr.Eq (tg, 'ARR') THEN
+          Line (KPbuf, ind, S7 ('{ __typeof__(', l, ') *', w, 's = &(', l, ');'))
+        ELSE
+          Line (KPbuf, ind, S7 ('{ __typeof__(', l, ') ', w, 's = ', l, ';'))
+        END ;
+        IF stRaise THEN
+          Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+        END ;
+        IF DynStr.Eq (tg, 'ARR') THEN
+          Line (KPbuf, ind, S9 ('for (int64_t ', w, 'i = 0; ', w,
+            'i < (int64_t) (sizeof (', w, 's->v) / sizeof (', w,
+            S5 ('s->v[0])); ', w, 'i++) { ', CN (st.a), S4 (' = ', w, 's->v[', S2 (w, 'i];')))))
+        ELSE
+          Line (KPbuf, ind, S9 ('for (int64_t ', w, 'i = 0; ', w, 'i < ', w,
+            's.len; ', w, S5 ('i++) { ', CN (st.a), ' = ', w, S4 ('s.p[', w, 'i];', ''))))
+        END ;
+        sv := inSwitch ; inSwitch := 0 ;
+        sf := finDepth ; finDepth := 0 ;
+        savedXit := xitLbl ; xitLbl := '' ; loopDepth := loopDepth + 1 ;
+        EmitSeq (st.kids[1], ind + 1) ;
         LoopExit (ind + 1) ;
         loopDepth := loopDepth - 1 ; xitLbl := savedXit ;
         inSwitch := sv ; finDepth := sf ;
@@ -5366,6 +5412,26 @@ BEGIN
   END
 END EmitDispose ;
 
+(* the C tag of an exception's k-th field, '' past the last *)
+PROCEDURE FieldTagAt (fields: Ast.Kid ; k: I64) : STR =
+VAR g, j, ix : I64 ;
+BEGIN
+  ix := 0 ;
+  IF fields IS SOME fs THEN
+    FOR g := 0 TO fs.nkids - 1 DO
+      IF fs.kids[g] IS SOME fg THEN
+        IF fg.kids[0] IS SOME fids THEN
+          FOR j := 0 TO fids.nkids - 1 DO
+            IF ix = k THEN RETURN TagOfType (fg.kids[1]) END ;
+            ix := ix + 1
+          END
+        END
+      END
+    END
+  END ;
+  RETURN ''
+END FieldTagAt ;
+
 PROCEDURE EmitRaise (st: PTR Ast.Node ; ind: I64) =
 VAR
   l, l2, r, tg, cnd, w : STR ;
@@ -5393,6 +5459,11 @@ BEGIN
     i2 := 0 ; j2 := 0 ; k2 := 0 ;
     FOR j := 0 TO pay.nkids - 1 DO
       tg := TagOfExpr (pay.kids[j]) ;
+      (* the FIELD says where a value travels: a one-character string
+         literal tags as a CHAR and went into an integer slot of a STR
+         field, which gcc refused (`RAISE Other ('x')', 0.20.0 to 0.21.0;
+         found writing genforms GfMultiArm, 2026-10-11) *)
+      IF DynStr.Eq (FieldTagAt (fields, j), 'SLICE') THEN tg := 'SLICE' END ;
       cnd := EX (pay.kids[j], '') ;
       IF DynStr.Eq (tg, 'F64') OR DynStr.Eq (tg, 'F32') THEN
         (* THE SLOTS ARE FINITE AND OVERFLOWING THEM IS SILENT.

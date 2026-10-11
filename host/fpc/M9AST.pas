@@ -101,9 +101,13 @@ type
                                     the Definition's LAST kid; kids are
                                     nkString, a the word.
                                     Ast.NLinkList, 2026-10-09 }
-    nkCallSel                     { F (x).f, F (x)[i]: kids[0] the
+    nkCallSel,                    { F (x).f, F (x)[i]: kids[0] the
                                     nkCallExpr, the rest selectors.
                                     Ast.NCallSel, 2026-10-09 }
+    nkForIn                       { FOR x IN s DO ... END: a the
+                                    variable, kids[0] the designator,
+                                    kids[1] the body.  Ast.NForIn,
+                                    2026-10-11 }
   );
 
   TNode = class

@@ -1,0 +1,23 @@
+(* EXPECT: use of s after it was moved at line 18 (par 4.2) *)
+(* A move is a move in parentheses too (2026-10-11): `t := (s)' left s
+   usable on the M9 side, so two names owned one object, while the
+   Pascal twin stripped the parentheses and refused the next use --
+   found by tools/CheckFuzz.m9 dropping the SHARED from `SHARED (s)'.
+   The legal forms first: a parenthesised move whose source is given a
+   fresh value, and the moved-to name freed.  Then the use. *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F () =
+VAR s, t : PTR R ;
+BEGIN
+  s := NEW (OWN, R) ;
+  t := (s) ;
+  s := NEW (OWN, R) ;
+  s.v := 1 ;
+  DISPOSE (t) ;
+  t := ((s)) ;
+  s.v := 2 ;
+  DISPOSE (t)
+END F ;
+BEGIN
+END m.

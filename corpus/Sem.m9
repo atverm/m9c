@@ -79,6 +79,20 @@ PROCEDURE StatLine (i, j: I64) : I64 ;
      Module state like the diagnostics, and for the same reason: they
      accumulate over every CheckFile of the process.                *)
 
+PROCEDURE ThreadWrites () : I64 ;
+PROCEDURE ThreadWrite (i: I64) : STR ;
+  (* the THREADs whose target, or what it calls that the checker can
+     follow, WRITES a variable of a STATEFUL module that is not a
+     monitor (report par 6), for `m9c --review'.  Not a refusal (Alex,
+     2026-10-11): the one such site measured, the zarr proxy's reaper,
+     is correct because the thread is joined before its counter is
+     read, and no checker sees a join.  So it is listed, as a thing
+     the reviewer reads.
+
+       i -- 0 .. ThreadWrites () - 1: `LINE TARGET writes Mod.v
+            (Mod.P, line N)', the THREAD's line first, as the page
+            prints a site.                                         *)
+
 PROCEDURE ShowType (RO KEPT name: STR) ;
 PROCEDURE ShownType () : STR ;
   (* for `m9c --show`, which asks the type of an expression
@@ -176,6 +190,11 @@ TYPE
                                      module (QualifiedIn) ... *)
     vrRo : SLICE OF BOOL ;        (* ... and VAR RO, written by no one *)
     nvrs : I64 ;
+    mvNames : SLICE OF STR ;      (* every module-level VAR, definition's
+                                     and implementation's: the state a
+                                     THREAD may not write (par 6) ... *)
+    mvTypes : SLICE OF AKid ;     (* ... and its declared type *)
+    nmvs : I64 ;
   END ;
 
 VAR
@@ -197,6 +216,11 @@ VAR
   nmro : I64 ;
   errs : SLICE OF STR ;
   nerrs : I64 ;
+  quietWalk : I64 ;     (* > 0: WalkQuiet is collecting RAISES only *)
+  unkArgs : SLICE OF I64 ;  (* argument lists of calls to an UNKNOWN
+                               procedure, typed (and reported) once by
+                               CallType: walked again quietly *)
+  nunkArgs : I64 ;
   ledger : SLICE OF STR ;
   nledger : I64 ;
   (* m9c --review: what was EXAMINED and what was PASSED OVER, per
@@ -207,6 +231,8 @@ VAR
      this side only; the oracle's diagnostics are what semdiff holds
      it to, and a count is not a diagnostic. *)
   statC, statS : ARRAY 7 OF I64 ;         (* StatKinds of them *)
+  twText : SLICE OF STR ;                  (* ThreadWrite *)
+  ntw : I64 ;
   statR : ARRAY 7 OF I64 ;                (* lines recorded, per kind *)
   statL : ARRAY 42 OF I64 ;               (* StatKinds * StatSites lines
                                              of sites passed over *)
@@ -420,6 +446,7 @@ END Diag ;
 
 PROCEDURE ErrN (n: PTR Ast.Node ; RO ctx: STR ; RO msg: STR) =
 BEGIN
+  IF quietWalk > 0 THEN RETURN END ;
   Diag (errs, nerrs, n.line, n.col, ctx, msg)
 END ErrN ;
 
@@ -900,6 +927,41 @@ END ExcDeclOf ;
 (* the type of the k-th payload field of an EXCEPTION declaration,
    qualified in its module so that it resolves wherever the handler
    is; NONE past the fields or for a bare declaration *)
+PROCEDURE ExcFieldType (decl: Ast.Kid ; RO KEPT owner: STR ; k: I64) : Ast.Kid ;
+
+(* an exception as the program spelled it: Mod.Name or Name *)
+PROCEDURE ExcSpelled (q: PTR Ast.Node) : STR =
+BEGIN
+  IF LEN (q.b) > 0 THEN RETURN q.a + '.' + q.b END ;
+  RETURN q.a
+END ExcSpelled ;
+
+(* an exception's fields as one text -- `(I64, STR)' -- for the one-arm
+   handler of several exceptions: a binder there needs the same fields
+   in every one (2026-10-11) *)
+PROCEDURE ExcFieldsText (q: PTR Ast.Node) : STR =
+VAR
+  owner, r : STR ;
+  decl : Ast.Kid ;
+  k : I64 ;
+BEGIN
+  owner := '' ;
+  IF LEN (q.b) > 0 THEN decl := ExcDeclOf (q.a, q.b, owner)
+  ELSE decl := ExcDeclOf ('', q.a, owner) END ;
+  r := '' ;
+  k := 0 ;
+  LOOP
+    IF ExcFieldType (decl, owner, k) IS SOME ft THEN
+      IF k > 0 THEN r := r + ', ' END ;
+      r := r + TyName (CanonT (SOME (ft), 0)) ;
+      k := k + 1
+    ELSE
+      EXIT
+    END
+  END ;
+  RETURN '(' + r + ')'
+END ExcFieldsText ;
+
 PROCEDURE ExcFieldType (decl: Ast.Kid ; RO KEPT owner: STR ; k: I64) : Ast.Kid =
 VAR g, j, ix : I64 ;
 BEGIN
@@ -983,6 +1045,27 @@ BEGIN
   mods[m].nvts := k + 1
 END AddVariants ;
 
+PROCEDURE AddModVar (m: I64 ; RO KEPT n: STR ; KEPT ty: Ast.Kid) =
+VAR
+  nn : SLICE OF STR ;
+  nt : SLICE OF AKid ;
+  i : I64 ;
+BEGIN
+  IF mods[m].nmvs = LEN (mods[m].mvNames) THEN
+    nn := NEW (pool, STR, 2 * LEN (mods[m].mvNames) + 8) ;
+    nt := NEW (pool, AKid, 2 * LEN (mods[m].mvNames) + 8) ;
+    FOR i := 0 TO mods[m].nmvs - 1 DO
+      nn[i] := mods[m].mvNames[i] ;
+      nt[i] := mods[m].mvTypes[i]
+    END ;
+    mods[m].mvNames := nn ;
+    mods[m].mvTypes := nt
+  END ;
+  mods[m].mvNames[mods[m].nmvs] := n ;
+  mods[m].mvTypes[mods[m].nmvs] := ty ;
+  mods[m].nmvs := mods[m].nmvs + 1
+END AddModVar ;
+
 PROCEDURE CollectUnit (KEPT u: PTR Ast.Node) =
 VAR
   m, i, j, pi : I64 ;
@@ -1041,6 +1124,16 @@ BEGIN
                   AddExportVar (m, vid.a, QualifiedIn (vd.kids[1], mods[m].name),
                                 vd.f3)
                 END
+              END
+            END
+          END
+        END
+      ELSIF d.kind = Ast.NVarSection THEN
+        FOR j := 0 TO d.nkids - 1 DO
+          IF d.kids[j] IS SOME vd THEN
+            IF vd.kids[0] IS SOME vids THEN
+              FOR pi := 0 TO vids.nkids - 1 DO
+                IF vids.kids[pi] IS SOME vid THEN AddModVar (m, vid.a, vd.kids[1]) END
               END
             END
           END
@@ -1105,6 +1198,44 @@ BEGIN
   END
 END NanWalk ;
 
+(* FOR x IN s makes an assignment each time round, x := s[i], and the
+   checker's rules about what may flow where are rules about
+   assignments: read-only storage (par 2.4), frame and pool storage,
+   borrows carried (par 4.1).  So the loop's assignment is WRITTEN DOWN
+   once per file, `x := s[0]' as the FOR IN node's kids[2], where every
+   pass that reads a procedure's assignments finds it, and the walk
+   checks it as the first statement of the body.  The parsers, the
+   printers and the generators never see it (2026-10-11). *)
+PROCEDURE ForInWalk (VAR n: PTR Ast.Node) =
+VAR i, j : I64 ;
+  asg, lhs, rhs, sel, ix : PTR Ast.Node ;
+BEGIN
+  IF n.kind = Ast.NForIn AND n.nkids = 2 THEN
+    IF n.kids[0] IS SOME s THEN
+      IF s.kind = Ast.NDesignator THEN
+        lhs := Ast.NewNode (pool, Ast.NDesignator, n.line, n.col) ;
+        lhs.a := n.a ;
+        rhs := Ast.NewNode (pool, Ast.NDesignator, s.line, s.col) ;
+        rhs.a := s.a ;
+        rhs.b := s.b ;
+        FOR j := 0 TO s.nkids - 1 DO Ast.Add (pool, rhs, s.kids[j]) END ;
+        ix := Ast.NewNode (pool, Ast.NInt, s.line, s.col) ;
+        ix.a := '0' ;
+        sel := Ast.NewNode (pool, Ast.NSelIndex, s.line, s.col) ;
+        Ast.Add (pool, sel, SOME (ix)) ;
+        Ast.Add (pool, rhs, SOME (sel)) ;
+        asg := Ast.NewNode (pool, Ast.NAssign, n.line, n.col) ;
+        Ast.Add (pool, asg, SOME (lhs)) ;
+        Ast.Add (pool, asg, SOME (rhs)) ;
+        Ast.Add (pool, n, SOME (asg))
+      END
+    END
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN ForInWalk (c) END
+  END
+END ForInWalk ;
+
 PROCEDURE IsNanLit (k: Ast.Kid) : BOOL =
 BEGIN
   IF k IS SOME n THEN
@@ -1119,6 +1250,9 @@ BEGIN
   Setup () ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME w THEN NanWalk (w) END
+  END ;
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME v THEN ForInWalk (v) END
   END ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN CollectUnit (u) END
@@ -1946,7 +2080,9 @@ BEGIN
      one element viewing a local pool is the pool's problem *)
   FOR i := 0 TO nfval - 1 DO
     IF Text.Eq (fvalName[i], nm) THEN
-      IF LEN (KindPool (what)) > 0 THEN fvalKind[i] := what END ;
+      IF LEN (KindPool (what)) > 0 OR Text.StartsWith (what, 'a view of ') THEN
+        fvalKind[i] := what
+      END ;
       RETURN
     END
   END ;
@@ -2086,6 +2222,15 @@ BEGIN
 END IsFrameMode ;
 
 (* the expression under parens and SOME *)
+(* k without its parentheses, as the Pascal twin's StripParens *)
+PROCEDURE ParenCore (k: Ast.Kid) : Ast.Kid =
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NParen THEN RETURN ParenCore (e.kids[0]) END
+  END ;
+  RETURN k
+END ParenCore ;
+
 PROCEDURE FrameCore (k: Ast.Kid) : Ast.Kid =
 BEGIN
   IF k IS SOME e THEN
@@ -2466,6 +2611,130 @@ BEGIN
   RETURN res
 END AnswersRo ;
 
+(* does the callee answer a VIEW of one of its own parameters -- a
+   RETURN of a parameter, a SLICE or GRID over one, or the answer of
+   another such callee handed a parameter?  Text.Trim answers SLICE (s,
+   ...): a frame string handed to it comes back as a view into that
+   frame (2026-10-11; `keep := Text.Trim (x + ' ')' passed and kept
+   freed storage).  Memoised beside AnswersRo; a string literal or a
+   CONST answer is not a view of an argument. *)
+PROCEDURE IsParamOf (d: PTR Ast.Node ; RO nm: STR) : BOOL =
+VAR g, b : I64 ;
+BEGIN
+  IF d.kids[0] IS SOME ps THEN
+    FOR g := 0 TO ps.nkids - 1 DO
+      IF ps.kids[g] IS SOME grp THEN
+        IF grp.kids[0] IS SOME ids THEN
+          FOR b := 0 TO ids.nkids - 1 DO
+            IF ids.kids[b] IS SOME id THEN
+              IF Text.Eq (id.a, nm) THEN RETURN TRUE END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END IsParamOf ;
+
+PROCEDURE AnswersView (RO KEPT qual: STR ; pr: ProcInfo) : BOOL ;
+
+PROCEDURE ViewExprEvidence (k: Ast.Kid ; d: PTR Ast.Node ; RO mod: STR ;
+                            depth: I64) : BOOL =
+VAR
+  found : BOOL ;
+  nm : STR ;
+  pr : ProcInfo ;
+  i : I64 ;
+BEGIN
+  IF depth > 8 THEN RETURN FALSE END ;
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf OR e.kind = Ast.NParen THEN
+      RETURN ViewExprEvidence (e.kids[0], d, mod, depth + 1)
+    END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      RETURN IsParamOf (d, e.a)
+    END ;
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        IF dn.kind = Ast.NDesignator THEN
+          nm := DesigName (dn) ;
+          pr := ProcNamed (mod, nm, found) ;
+          IF found AND LEN (pr.foreign) = 0 THEN
+            IF AnswersView (Qualify (pr.modName, pr.name), pr) THEN
+              IF e.kids[1] IS SOME al THEN
+                FOR i := 0 TO al.nkids - 1 DO
+                  IF ViewExprEvidence (al.kids[i], d, mod, depth + 1) THEN RETURN TRUE END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END ViewExprEvidence ;
+
+PROCEDURE ViewEvidence (k: Ast.Kid ; d: PTR Ast.Node ; RO mod: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NReturn THEN
+      IF ViewExprEvidence (e.kids[0], d, mod, 0) THEN RETURN TRUE END
+    END ;
+    FOR i := 0 TO e.nkids - 1 DO
+      IF ViewEvidence (e.kids[i], d, mod) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END ViewEvidence ;
+
+PROCEDURE AnswersView (RO KEPT qual: STR ; pr: ProcInfo) : BOOL =
+VAR
+  i : I64 ;
+  key, t : STR ;
+  res : BOOL ;
+BEGIN
+  key := Text.Keep (pool, Cat ('view ', qual)) ;
+  i := AnsFind (key) ;
+  IF i >= 0 THEN RETURN Text.Eq (ansState[i], 'yes') END ;
+  AnsSet (key, 'busy') ;
+  res := FALSE ;
+  IF pr.body IS SOME d THEN
+    IF d.kids[1] IS SOME rt THEN
+      t := CanonT (d.kids[1], 0) ;
+      IF Text.StartsWith (t, 'SLICE OF ') OR Text.StartsWith (t, 'GRID ') THEN
+        res := ViewEvidence (d.kids[4], d, pr.modName)
+      END
+    END
+  END ;
+  IF res THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
+  RETURN res
+END AnswersView ;
+
+(* the frame storage a call's answer views: the first argument that is
+   frame storage, when the callee answers a view of its parameters *)
+PROCEDURE ViewedFrame (dn: PTR Ast.Node ; args: Ast.Kid) : STR =
+VAR
+  pr : ProcInfo ;
+  found : BOOL ;
+  i : I64 ;
+  w : STR ;
+BEGIN
+  IF dn.kind # Ast.NDesignator THEN RETURN '' END ;
+  pr := LookupProc (DesigName (dn), found) ;
+  IF NOT found OR LEN (pr.foreign) > 0 THEN RETURN '' END ;
+  IF NOT AnswersView (Qualify (pr.modName, pr.name), pr) THEN RETURN '' END ;
+  IF args IS SOME al THEN
+    FOR i := 0 TO al.nkids - 1 DO
+      w := FrameWhat (al.kids[i], 'SLICE OF CHAR') ;
+      IF LEN (w) > 0 THEN RETURN Cat ('a view of ', w) END
+    END
+  END ;
+  RETURN ''
+END ViewedFrame ;
+
 PROCEDURE CallAnswersFrame (dn: PTR Ast.Node) : STR =
 VAR
   name : STR ;
@@ -2571,7 +2840,19 @@ BEGIN
         nm := CallAnswersFrame (dn) ;
         IF LEN (nm) > 0 THEN RETURN Cat ('the answer of ', nm) END ;
         p := ViewedPool (dn, e.kids[1]) ;
-        IF LEN (p) > 0 THEN RETURN Cat ('a view into pool ', p) END
+        IF LEN (p) > 0 THEN RETURN Cat ('a view into pool ', p) END ;
+        p := ViewedFrame (dn, e.kids[1]) ;
+        IF LEN (p) > 0 THEN RETURN p END
+      END
+    END ;
+    (* a SLICE or GRID over frame storage is that storage, a view of it
+       (2026-10-11: `keep := SLICE (f, 0, 2)' with f a concatenation
+       passed and kept freed bytes) *)
+    IF e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf THEN
+      p := FrameWhat (e.kids[0], 'SLICE OF CHAR') ;
+      IF LEN (p) > 0 THEN
+        IF Text.StartsWith (p, 'a view') THEN RETURN p END ;
+        RETURN Cat ('a view of ', p)
       END
     END ;
     IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
@@ -3905,17 +4186,18 @@ END CheckAggregate ;
 
 (* par 2.2.4: a constant table is read-only DATA, so its whole value
    goes only where nothing can write through it -- indexed, under
-   LEN, or lent to an RO parameter (CallType holds that last one,
+   LEN, gone over by FOR x IN (a copy of each element), or lent to an
+   RO parameter (CallType holds that last one,
    argument by argument).  Anything else that names it bare would
    make an alias: s := Primes, SLICE (Primes, 0, 2), RETURN Primes. *)
 PROCEDURE AggWalk (n: PTR Ast.Node ; parent: I64 ; RO ctx: STR) =
 VAR i, first : I64 ;
 BEGIN
   IF n.kind = Ast.NDesignator AND n.nkids = 0 AND
-     parent # Ast.NArgList THEN
+     parent # Ast.NArgList AND parent # Ast.NForIn THEN
     IF IsAggConst (n.a) THEN
       ErrN (n, ctx, S3 ('the CONST table ', n.a,
-        ' can only be indexed, measured with LEN, or lent to an RO'
+        ' can only be indexed, measured with LEN, gone over by FOR IN, or lent to an RO'
         + ' parameter (par 2.2.4)'))
     END
   END ;
@@ -4353,6 +4635,9 @@ END OwnerName ;
 
 PROCEDURE OwnFedBy (k: Ast.Kid) : BOOL =
 BEGIN
+  IF k IS SOME r0 THEN
+    IF r0.kind = Ast.NParen THEN RETURN OwnFedBy (r0.kids[0]) END
+  END ;
   IF k IS SOME r THEN
     IF r.kind = Ast.NNewExpr THEN
       IF r.kids[0] IS SOME d THEN
@@ -5933,7 +6218,8 @@ PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR =
 VAR
   name, pTy, amode, om, t, hint : STR ;
-  nargs, j, g, k, kept, rank, dot, nflat, si, nFrameKept : I64 ;
+  nargs, j, g, k, kept, rank, dot, nflat, si, nFrameKept, iu : I64 ;
+  nu : SLICE OF I64 ;
   aTy : SLICE OF STR ;
   aNode : SLICE OF AKid ;
   flat : SLICE OF AKid ;
@@ -6288,6 +6574,19 @@ BEGIN
     RETURN t
   END ;
   hint := CaseTwin (name) ;
+  (* the arguments were typed above, and what was wrong in them said:
+     the walk that follows is quiet for this list, as the Pascal twin
+     types them once (CheckFuzz, 2026-10-11: `Nosuch (r.at)' said `no
+     field at' twice) *)
+  IF argl IS SOME ual THEN
+    IF nunkArgs = LEN (unkArgs) THEN
+      nu := NEW (pool, I64, 2 * nunkArgs + 16) ;
+      FOR iu := 0 TO nunkArgs - 1 DO nu[iu] := unkArgs[iu] END ;
+      unkArgs := nu
+    END ;
+    unkArgs[nunkArgs] := ual.id ;
+    nunkArgs := nunkArgs + 1
+  END ;
   IF LEN (hint) > 0 THEN
     ErrN (site, ctx, S4 ('unknown procedure: ', name, ' -- did you mean ', Cat (hint, '?')))
   ELSE
@@ -6434,6 +6733,12 @@ BEGIN
     (* a concatenation, a frame allocation, an answer built here, or a
        name holding one -- unless the keeper is a frame value too *)
     what := FrameWhat (an, aTy) ;
+    (* a VIEW of frame storage (a SLICE of it, or a callee's answer that
+       views it, followed since 2026-10-11) is refused where it is
+       STORED durably, not here: measured, the KEPT side refused four
+       sound sites in the tools -- each consumed in its frame -- for one
+       real escape in an application *)
+    IF Text.StartsWith (what, 'a view of ') THEN what := '' END ;
     IF LEN (what) > 0 AND nFrameKept <= 1 AND
        NOT PoolAmong (args, KindPool (what)) THEN
       ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
@@ -7205,13 +7510,328 @@ END CheckCaseTotal ;
    T)` and `P (OWN p: PTR T)` take a PTR T.  A pool value is the
    pool's and is lent, a VAR parameter is a borrow and is lent;
    sharability itself is still unbuilt and the reviewer holds it. *)
+(* ---- par 6: a STATEFUL module's state is written by ONE thread ----
+   (2026-10-11.)  Listed on the review page, not refused (ThreadWrites
+   says why).  A THREAD's target, and everything it calls that the
+   checker can follow, should not WRITE a variable of a STATEFUL module:
+   assign one, hand one to a VAR or OWN parameter, allocate in a module
+   POOL, DISPOSE one.  READING is allowed -- the threshold and the sink
+   Logger.Msg reads, set before the threads start, are the idiom -- and
+   a variable whose type is a MONITOR, or a pointer to one, serialises
+   itself.  A call through a procedure value is not followed (nothing
+   says what it calls).  The answer is a witness, `Mod.v (Mod.P, line
+   N)', memoised per Module.Proc in AnswersFrame's table under `w:'. *)
+
+(* a type's body, through pointers, OPT and names; m becomes the
+   module that declares it *)
+PROCEDURE SwResolve (VAR m: I64 ; k: Ast.Kid) : Ast.Kid =
+VAR
+  depth, mm : I64 ;
+  cur : Ast.Kid ;
+BEGIN
+  cur := k ;
+  FOR depth := 0 TO 8 DO
+    IF m < 0 THEN RETURN NONE END ;
+    IF cur IS SOME t THEN
+      IF t.kind = Ast.NPtrType OR t.kind = Ast.NSharedType OR t.kind = Ast.NOptType THEN
+        cur := t.kids[0]
+      ELSIF t.kind = Ast.NQualident THEN
+        IF LEN (t.b) = 0 THEN
+          cur := FindTypeIn (m, t.a)
+        ELSE
+          mm := FindMod (t.a) ;
+          IF mm < 0 THEN RETURN NONE END ;
+          m := mm ;
+          cur := FindTypeIn (m, t.b)
+        END
+      ELSE
+        RETURN cur
+      END
+    ELSE
+      RETURN NONE
+    END
+  END ;
+  RETURN NONE
+END SwResolve ;
+
+(* does the write through designator d, from its selector `from' on,
+   pass through a MONITOR -- the variable's own type, or a field's on
+   the way?  Then the monitor serialises it.  An index, or a type not
+   found, stops the walk: the write counts. *)
+PROCEDURE SwPathMonitor (m: I64 ; ty: Ast.Kid ; d: PTR Ast.Node ; from: I64) : BOOL =
+VAR
+  i : I64 ;
+  t : Ast.Kid ;
+BEGIN
+  t := SwResolve (m, ty) ;
+  FOR i := from TO d.nkids - 1 DO
+    IF t IS SOME tn THEN
+      IF tn.kind = Ast.NMonitorType THEN RETURN TRUE END ;
+      IF d.kids[i] IS SOME sel THEN
+        IF sel.kind = Ast.NSelField AND tn.kind = Ast.NRecordType THEN
+          t := SwResolve (m, FieldTypeOf (tn, sel.a))
+        ELSE
+          RETURN FALSE
+        END
+      END
+    ELSE
+      RETURN FALSE
+    END
+  END ;
+  IF t IS SOME tf THEN RETURN tf.kind = Ast.NMonitorType END ;
+  RETURN FALSE
+END SwPathMonitor ;
+
+(* `Mod.v' when nm is a variable of the STATEFUL module m and the
+   write through d (selectors from `from') reaches no monitor, else '' *)
+PROCEDURE SwVarAt (m: I64 ; RO nm: STR ; d: PTR Ast.Node ; from: I64) : STR =
+VAR i : I64 ;
+BEGIN
+  IF m < 0 THEN RETURN '' END ;
+  IF NOT mods[m].stateful THEN RETURN '' END ;
+  FOR i := 0 TO mods[m].nmvs - 1 DO
+    IF Text.Eq (mods[m].mvNames[i], nm) THEN
+      IF SwPathMonitor (m, mods[m].mvTypes[i], d, from) THEN RETURN '' END ;
+      RETURN Qualify (mods[m].name, nm)
+    END
+  END ;
+  RETURN ''
+END SwVarAt ;
+
+(* the module variable designator d (in procedure proc of module m)
+   writes through, or '' *)
+PROCEDURE SwTarget (m: I64 ; proc: PTR Ast.Node ; d: PTR Ast.Node) : STR =
+VAR dot, mm : I64 ;
+BEGIN
+  dot := Text.FindChar (d.a, '.') ;
+  IF dot > 0 THEN
+    (* an exported variable, rewritten to one name (decision 28) *)
+    RETURN SwVarAt (FindMod (SLICE (d.a, 0, dot)),
+                    SLICE (d.a, dot + 1, LEN (d.a) - dot - 1), d, 0)
+  END ;
+  IF DeclaresName (SOME (proc), d.a) THEN RETURN '' END ;
+  mm := FindMod (d.a) ;
+  IF mm >= 0 AND mm # m AND d.nkids > 0 THEN
+    IF d.kids[0] IS SOME s0 THEN
+      IF s0.kind = Ast.NSelField THEN RETURN SwVarAt (mm, s0.a, d, 1) END
+    END ;
+    RETURN ''
+  END ;
+  RETURN SwVarAt (m, d.a, d, 0)
+END SwTarget ;
+
+PROCEDURE SwAt (RO w: STR ; m: I64 ; proc: PTR Ast.Node ; line: I64) : STR =
+BEGIN
+  RETURN S5 (w, ' (', Qualify (mods[m].name, proc.a), ', line ',
+             Cat (ItoA (line), ')'))
+END SwAt ;
+
+PROCEDURE StateWrite (RO KEPT qual: STR ; m: I64 ; body: Ast.Kid) : STR ;
+
+(* a call in procedure proc of module m: its VAR and OWN arguments,
+   a NEW's pool, and what the callee writes *)
+PROCEDURE SwCall (m: I64 ; proc: PTR Ast.Node ; cn: PTR Ast.Node ;
+                  args: Ast.Kid ; line: I64) : STR =
+VAR
+  callee, w : STR ;
+  found : BOOL ;
+  pr : ProcInfo ;
+  g, j, k : I64 ;
+BEGIN
+  callee := DesigName (cn) ;
+  IF Text.Eq (callee, 'NEW') OR Text.Eq (callee, 'DISPOSE') THEN
+    IF args IS SOME al THEN
+      IF al.nkids > 0 THEN
+        IF al.kids[0] IS SOME a0 THEN
+          IF a0.kind = Ast.NDesignator AND a0.nkids = 0 THEN
+            w := SwTarget (m, proc, a0) ;
+            IF LEN (w) > 0 THEN RETURN SwAt (w, m, proc, line) END
+          END
+        END
+      END
+    END ;
+    RETURN ''
+  END ;
+  pr := ProcNamed (mods[m].name, callee, found) ;
+  IF NOT found THEN RETURN '' END ;
+  IF pr.node IS SOME pd THEN
+    IF pd.kids[0] IS SOME pl THEN
+      IF args IS SOME al2 THEN
+        k := 0 ;
+        FOR g := 0 TO pl.nkids - 1 DO
+          IF pl.kids[g] IS SOME grp THEN
+            IF grp.kids[0] IS SOME ids THEN
+              FOR j := 0 TO ids.nkids - 1 DO
+                IF (grp.f1 OR grp.f2) AND k < al2.nkids THEN
+                  IF al2.kids[k] IS SOME ak THEN
+                    IF ak.kind = Ast.NDesignator THEN
+                      w := SwTarget (m, proc, ak) ;
+                      IF LEN (w) > 0 THEN RETURN SwAt (w, m, proc, line) END
+                    END
+                  END
+                END ;
+                k := k + 1
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN StateWrite (Qualify (pr.modName, pr.name), FindMod (pr.modName), pr.body)
+END SwCall ;
+
+PROCEDURE SwWalk (m: I64 ; proc: PTR Ast.Node ; k: Ast.Kid) : STR =
+VAR
+  i : I64 ;
+  w : STR ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NAssign THEN
+      IF n.kids[0] IS SOME l THEN
+        IF l.kind = Ast.NDesignator THEN
+          w := SwTarget (m, proc, l) ;
+          IF LEN (w) > 0 THEN RETURN SwAt (w, m, proc, n.line) END
+        END
+      END
+    ELSIF n.kind = Ast.NDispose THEN
+      IF n.kids[0] IS SOME dd THEN
+        IF dd.kind = Ast.NDesignator THEN
+          w := SwTarget (m, proc, dd) ;
+          IF LEN (w) > 0 THEN RETURN SwAt (w, m, proc, n.line) END
+        END
+      END
+    ELSIF n.kind = Ast.NCallStmt OR n.kind = Ast.NCallExpr THEN
+      IF n.kids[0] IS SOME cn THEN
+        IF cn.kind = Ast.NDesignator THEN
+          w := SwCall (m, proc, cn, n.kids[1], n.line) ;
+          IF LEN (w) > 0 THEN RETURN w END
+        END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      w := SwWalk (m, proc, n.kids[i]) ;
+      IF LEN (w) > 0 THEN RETURN w END
+    END
+  END ;
+  RETURN ''
+END SwWalk ;
+
+PROCEDURE StateWrite (RO KEPT qual: STR ; m: I64 ; body: Ast.Kid) : STR =
+VAR
+  i : I64 ;
+  key, w : STR ;
+BEGIN
+  key := Text.Keep (pool, Cat ('w:', qual)) ;
+  i := AnsFind (key) ;
+  IF i >= 0 THEN
+    IF Text.Eq (ansState[i], '-') OR Text.Eq (ansState[i], 'busy') THEN RETURN '' END ;
+    RETURN ansState[i]
+  END ;
+  AnsSet (key, 'busy') ;
+  w := '' ;
+  IF m >= 0 THEN
+    IF body IS SOME pd THEN
+      IF pd.kind = Ast.NProcDecl THEN w := SwWalk (m, pd, pd.kids[4]) END
+    END
+  END ;
+  IF LEN (w) = 0 THEN AnsSet (key, '-') ELSE AnsSet (key, Text.Keep (pool, w)) END ;
+  RETURN w
+END StateWrite ;
+
+PROCEDURE NoteThreadWrite (line: I64 ; RO name: STR ; RO sw: STR) =
+VAR
+  nt : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF ntw = LEN (twText) THEN
+    nt := NEW (pool, STR, 2 * LEN (twText) + 4) ;
+    FOR i := 0 TO ntw - 1 DO nt[i] := twText[i] END ;
+    twText := nt
+  END ;
+  twText[ntw] := Text.Keep (pool, S5 (ItoA (line), ' ', name, ' writes ', sw)) ;
+  ntw := ntw + 1
+END NoteThreadWrite ;
+
+PROCEDURE ThreadWrites () : I64 =
+BEGIN
+  RETURN ntw
+END ThreadWrites ;
+
+PROCEDURE ThreadWrite (i: I64) : STR =
+BEGIN
+  RETURN twText[i]
+END ThreadWrite ;
+
+(* ---- par 6: SHARABLE (2026-10-11; Alex: "an attribute on the job
+   type").  What a THREAD is handed and not MOVED -- a pool pointer, a
+   VAR parameter's, a module variable's -- both threads hold.  That is
+   sound for a MONITOR, whose lock is the point, and for a RECORD whose
+   declaration says `[SHARABLE]': the author's claim that the threads'
+   writes to it are disjoint (a band each, a monitor field dealing the
+   bands out), which no type can prove and the review page lists.  Any
+   other RECORD so handed is refused.  A type the checker cannot find
+   says nothing, as everywhere. *)
+PROCEDURE ShareWhy (RO aTy: STR) : STR =
+VAR
+  t, mn, tn : STR ;
+  m, dot : I64 ;
+  body : Ast.Kid ;
+BEGIN
+  t := aTy ;
+  IF Text.StartsWith (t, 'OPT ') THEN t := SLICE (t, 4, LEN (t) - 4) END ;
+  IF Text.StartsWith (t, 'SHARED PTR ') THEN t := SLICE (t, 11, LEN (t) - 11)
+  ELSIF Text.StartsWith (t, 'PTR ') THEN t := SLICE (t, 4, LEN (t) - 4)
+  END ;
+  dot := Text.FindChar (t, '.') ;
+  IF dot > 0 THEN
+    mn := SLICE (t, 0, dot) ;
+    tn := SLICE (t, dot + 1, LEN (t) - dot - 1)
+  ELSE
+    mn := curMod ;
+    tn := t
+  END ;
+  m := FindMod (mn) ;
+  IF m < 0 THEN RETURN '' END ;
+  body := SwResolve (m, FindTypeIn (m, tn)) ;
+  IF body IS SOME b THEN
+    IF b.kind = Ast.NRecordType THEN
+      IF b.nkids > 2 THEN
+        IF b.kids[2] IS SOME at THEN
+          IF Text.Eq (at.a, 'SHARABLE') THEN RETURN '' END
+        END
+      END ;
+      RETURN t
+    END
+  END ;
+  RETURN ''
+END ShareWhy ;
+
+(* a RECORD takes one attribute, [SHARABLE] *)
+PROCEDURE RecordAttribWalk (k: Ast.Kid ; RO ctx: STR) =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NRecordType AND n.nkids > 2 THEN
+      IF n.kids[2] IS SOME at THEN
+        IF NOT Text.Eq (at.a, 'SHARABLE') THEN
+          ErrN (at, ctx, S3 ('a RECORD takes one attribute, [SHARABLE] (par 6), not [',
+            at.a, ']'))
+        END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO RecordAttribWalk (n.kids[i], ctx) END
+  END
+END RecordAttribWalk ;
+
 PROCEDURE CheckThread (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
-  name, pTy, aTy, amode, what : STR ;
+  name, pTy, aTy, amode, what, sw, sh : STR ;
   dot : I64 ;
   pr : ProcInfo ;
-  found, pooled : BOOL ;
+  found, pooled, moved : BOOL ;
 BEGIN
+  moved := FALSE ;
   aTy := ExprType (st.kids[1], ctx) ;
   IF st.kids[0] IS SOME tn THEN
     IF tn.kind # Ast.NDesignator THEN RETURN END ;
@@ -7243,6 +7863,10 @@ BEGIN
         canonCtx := ''
       END
     END ;
+    IF found THEN
+      sw := StateWrite (Qualify (pr.modName, pr.name), FindMod (pr.modName), pr.body) ;
+      IF LEN (sw) > 0 THEN NoteThreadWrite (st.line, name, sw) END
+    END ;
     Agree (StThread, pTy, aTy, st.line) ;
     IF LEN (pTy) > 0 AND LEN (aTy) > 0 THEN
       IF NOT (Compat (pTy, aTy) OR Compat (Cat ('PTR ', pTy), aTy) OR
@@ -7256,10 +7880,11 @@ BEGIN
        to a thread is allocated with OWN (docs/pool-elision-plan.md) *)
     what := FrameWhat (st.kids[1], aTy) ;
     IF LEN (what) > 0 AND LEN (KindPool (what)) = 0 THEN
+      moved := TRUE ;     (* refused here: the sharing rule says no more *)
       (* a local pool's object is lent as any pool pointer is (the
          thread receives the pool through the thunk, and Mat.AddNormal
-         WAITs for its workers before the pool dies): unchecked until
-         SHARABLE, like the rest *)
+         WAITs for its workers before the pool dies), and held to
+         SHARABLE below, like the rest *)
       ErrN (st, ctx, S5 ('THREAD (', name, '): cannot hand ', what,
         ' to a thread -- it dies with this frame; allocate it with OWN (par 4.3)'))
     END ;
@@ -7279,12 +7904,20 @@ BEGIN
                 IF NOT pooled AND OwnedCandKind (an.a) > 0 AND
                    NOT FvalHas (an.a) AND NOT PvalHas (an.a) THEN
                   OwnMark (an.a, Cat ('moved into a THREAD running ', name),
-                           st)
+                           st) ;
+                  moved := TRUE
                 END
               END
             END
           END
         END
+      END
+    END ;
+    IF NOT moved THEN
+      sh := ShareWhy (aTy) ;
+      IF LEN (sh) > 0 THEN
+        ErrN (st, ctx, S5 ('THREAD (', name, '): both threads hold the ', sh,
+          " handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE] -- mark it RECORD ... END [SHARABLE] if the threads' writes to it are disjoint, or move an owned value in (par 6)"))
       END
     END
   END
@@ -7751,7 +8384,9 @@ BEGIN
        bare name on the left is (re)initialised.  A name holding a
        FRAME allocation is not owned -- the frame is -- so copying it
        is a copy, not a move (docs/pool-elision-plan.md, rule 1). *)
-    IF st.kids[1] IS SOME rhs THEN
+    (* the parentheses stripped, as the Pascal twin's StripParens does:
+       `t := (s)' moves s as `t := s' does (CheckFuzz, 2026-10-11) *)
+    IF ParenCore (st.kids[1]) IS SOME rhs THEN
       IF rhs.kind = Ast.NDesignator THEN
         IF rhs.nkids = 0 THEN
           IF OwnedCandKind (rhs.a) = 1 THEN
@@ -7827,10 +8462,11 @@ END HasFinally ;
 
 PROCEDURE WalkStmt (k: Ast.Kid ; RO ctx: STR) =
 VAR
-  j, hk, npre, nacc, narm2, sv : I64 ;
+  j, hk, hm, npre, nacc, narm2, sv : I64 ;
   xowner : STR ;
   xdecl : Ast.Kid ;
   pre, acc, arm2 : SLICE OF Binding ;
+  headOk : BOOL ;
 BEGIN
   IF k IS SOME st THEN
     CASE st.kind OF
@@ -7919,6 +8555,32 @@ BEGIN
         END ;
         LoopCarry (pre, npre, st.kids[3], ctx) ;
         loopsOpen := loopsOpen - 1 ; finSinceLoop := sv
+    | Ast.NForIn :
+        headOk := CheckForIn (st, ctx) ;
+        FOR j := 0 TO nforActive - 1 DO
+          IF Text.Eq (forNames[j], st.a) THEN
+            ErrN (st, ctx, S4 ('FOR variable ', st.a,
+              ' is the control variable of the enclosing FOR at line ',
+              Cat (ItoA (forLines[j]), ' (par 2.1)')))
+          END
+        END ;
+        sv := finSinceLoop ; finSinceLoop := 0 ; loopsOpen := loopsOpen + 1 ;
+        pre := OwnSnap () ;
+        npre := nown ;
+        (* the loop's own assignment, x := s[i], first in the body --
+           only for a sound head, whose refusal already said it all *)
+        IF headOk AND st.nkids > 2 THEN WalkStmt (st.kids[2], ctx) END ;
+        IF nforActive < LEN (forNames) THEN
+          forNames[nforActive] := Text.Keep (pool, st.a) ;
+          forLines[nforActive] := st.line ;
+          nforActive := nforActive + 1 ;
+          WalkSeq (st.kids[1], ctx) ;
+          nforActive := nforActive - 1
+        ELSE
+          WalkSeq (st.kids[1], ctx)
+        END ;
+        LoopCarry (pre, npre, st.kids[1], ctx) ;
+        loopsOpen := loopsOpen - 1 ; finSinceLoop := sv
     | Ast.NLoop :
         (* EXIT leaves the innermost LOOP, WHILE or FOR -- from inside a
            CASE arm too (report par 5); the FINALLY blocks entered since
@@ -7951,6 +8613,26 @@ BEGIN
                 CheckExcName (hq, ctx) ;
                 IF LEN (hq.b) > 0 THEN HandledAdd (hq.b)
                 ELSE HandledAdd (hq.a) END
+              END ;
+              (* the further names of `| A, B :', each handled and each
+                 an exception; with a binder list, each with the fields
+                 of the first *)
+              FOR hm := 3 TO h.nkids - 1 DO
+                IF h.kids[hm] IS SOME hq3 THEN
+                  CheckExcName (hq3, ctx) ;
+                  IF LEN (hq3.b) > 0 THEN HandledAdd (hq3.b)
+                  ELSE HandledAdd (hq3.a) END ;
+                  IF h.kids[1] IS SOME hba THEN
+                    IF h.kids[0] IS SOME hq0 THEN
+                      IF NOT Text.Eq (ExcFieldsText (hq0), ExcFieldsText (hq3)) THEN
+                        ErrN (h, ctx, S5 ('one handler arm binds a payload only when every exception it names has the same fields: ',
+                          Cat (ExcSpelled (hq0), Cat (' ', ExcFieldsText (hq0))), ' and ',
+                          Cat (ExcSpelled (hq3), Cat (' ', ExcFieldsText (hq3))),
+                          ' differ -- give each its own arm, or bind nothing (par 5)'))
+                      END
+                    END
+                  END
+                END
               END
             END
           END
@@ -7988,6 +8670,7 @@ BEGIN
           END
         END
     | Ast.NCase :
+        WalkQuiet (st.kids[0], ctx) ;          (* the selector's RAISES *)
         CheckCaseLabels (st, ctx) ;
         CheckCaseTotal (st, ctx) ;
         CheckCaseElse (st, ctx) ;
@@ -8018,10 +8701,28 @@ BEGIN
   END
 END OwnSeed ;
 
+(* the walk of an expression that ExprType has already checked: what its
+   calls raise is recorded, and nothing is said twice -- the walk types
+   the same names again, and `unknown name: x' in a condition came out
+   twice on the M9 side the day conditions were first walked (found by
+   tools/CheckFuzz.m9, 2026-10-11) *)
+PROCEDURE WalkQuiet (k: Ast.Kid ; RO ctx: STR) =
+BEGIN
+  quietWalk := quietWalk + 1 ;
+  WalkExpr (k, ctx) ;
+  quietWalk := quietWalk - 1
+END WalkQuiet ;
+
 PROCEDURE CheckCond (k: Ast.Kid ; RO ctx: STR) =
 VAR t : STR ;
 BEGIN
   t := ExprType (k, ctx) ;
+  (* and WALKED, which is where a call's RAISES is recorded: typed only,
+     `IF Io.Exists (p)' and `WHILE F (x)' raised nothing the checker
+     counted -- from 0.14.0 at least until 2026-10-11, when the Pascal
+     twin (whose ExprType records them) refused M9c.StaleBeside and
+     this one did not *)
+  WalkQuiet (k, ctx) ;
   IF LEN (t) > 0 AND NOT Text.Eq (t, 'BOOL') THEN
     IF k IS SOME c THEN
       ErrN (c, ctx, Cat ('condition must be BOOL, not ', TyName (t)))
@@ -8042,6 +8743,57 @@ END CheckCond ;
    common.
      bound -- the bounds' type when they are an enumeration's
      enum  -- whether they are *)
+(* FOR x IN s (2026-10-11): s a NAME -- a variable, a field, an element
+   -- of a slice, an array or a string; x declared, of the element type
+   exactly; no SHARED elements (a copy of a handle counts, the loop's
+   assignment would not).  x is a copy: assigning it changes nothing in
+   s, as assigning an integer FOR's variable changes no bound. *)
+PROCEDURE CheckForIn (KEPT st: PTR Ast.Node ; RO ctx: STR) : BOOL =
+VAR t, elem, vt : STR ;
+  at : I64 ;
+  ok : BOOL ;
+BEGIN
+  elem := '' ;
+  ok := TRUE ;
+  IF st.kids[0] IS SOME e THEN
+    IF e.kind # Ast.NDesignator THEN
+      ok := FALSE ;
+      ErrN (st, ctx, S3 ('FOR ', st.a,
+        ' IN takes a name -- a variable, a field, an element: give the value one first (par 10)'))
+    END ;
+    t := ExprType (st.kids[0], ctx) ;
+    WalkQuiet (st.kids[0], ctx) ;
+    IF Text.StartsWith (t, 'SLICE OF ') THEN
+      elem := SLICE (t, 9, LEN (t) - 9)
+    ELSIF Text.StartsWith (t, 'ARRAY ') THEN
+      at := Text.Find (t, ' OF ') ;
+      IF at > 0 THEN elem := SLICE (t, at + 4, LEN (t) - at - 4) END
+    ELSIF LEN (t) > 0 THEN
+      ok := FALSE ;
+      ErrN (st, ctx, S5 ('FOR ', st.a, ' IN goes over a slice, an array or a string, not ',
+        TyName (t), ' (par 10)'))
+    END ;
+    IF Text.StartsWith (elem, 'SHARED ') OR Text.StartsWith (elem, 'OPT SHARED ') THEN
+      ok := FALSE ;
+      ErrN (st, ctx, S3 ('FOR ', st.a,
+        ' IN over SHARED handles: index the slice -- a copy of a handle is counted, and the loop would copy it uncounted'))
+    END
+  END ;
+  IF ScopeFind (st.a) < 0 THEN
+    ok := FALSE ;
+    ErrN (st, ctx, S3 ('FOR variable ', st.a, ' is not declared')) ;
+    BindName (st.a, NONE)
+  ELSE
+    vt := CanonT (ScopeType (st.a), 0) ;
+    IF LEN (vt) > 0 AND LEN (elem) > 0 AND NOT Text.Eq (vt, elem) THEN
+      ok := FALSE ;
+      ErrN (st, ctx, S5 ('FOR variable ', st.a, ' is ', TyName (vt),
+        Cat (', and the elements it goes over are ', TyName (elem))))
+    END
+  END ;
+  RETURN ok
+END CheckForIn ;
+
 PROCEDURE CheckForVar (KEPT st: PTR Ast.Node ; RO ctx: STR ; RO bound: STR ;
                        enum: BOOL) =
 VAR vt : STR ;
@@ -8100,6 +8852,8 @@ VAR
 BEGIN
   t := ExprType (st.kids[0], ctx) ;
   u := ExprType (st.kids[1], ctx) ;
+  WalkQuiet (st.kids[0], ctx) ;             (* the bounds' RAISES *)
+  WalkQuiet (st.kids[1], ctx) ;
   IF IsTagged (t) OR IsTagged (u) THEN
     IF NOT Text.Eq (t, u) THEN
       ErrN (st, ctx, S4 ('FOR over an enumeration needs both bounds of one type, not ',
@@ -8149,7 +8903,12 @@ VAR
   t : STR ;
   j : I64 ;
 BEGIN
+  (* the selector was checked, and said so, by CheckCaseLabels: typed
+     again here quietly, or an unknown selector is reported twice (the
+     Pascal twin types it once; CheckFuzz, 2026-10-11) *)
+  quietWalk := quietWalk + 1 ;
   t := ExprType (st.kids[0], ctx) ;
+  quietWalk := quietWalk - 1 ;
   IF NOT (Text.Eq (t, 'CHAR') OR IsIntStr (t) OR Text.Eq (t, 'BYTE')) THEN RETURN END ;
   FOR j := 1 TO st.nkids - 1 DO
     IF st.kids[j] IS SOME arm THEN
@@ -8342,7 +9101,8 @@ VAR i : I64 ;
 BEGIN
   IF k IS SOME n THEN
     IF n.kind = Ast.NExit THEN RETURN TRUE END ;
-    IF n.kind = Ast.NLoop OR n.kind = Ast.NWhile OR n.kind = Ast.NFor THEN RETURN FALSE END ;
+    IF n.kind = Ast.NLoop OR n.kind = Ast.NWhile OR n.kind = Ast.NFor OR
+       n.kind = Ast.NForIn THEN RETURN FALSE END ;
     FOR i := 0 TO n.nkids - 1 DO
       IF HasExit (n.kids[i]) THEN RETURN TRUE END
     END
@@ -8648,10 +9408,18 @@ END TotalWidening ;
 PROCEDURE WalkExpr (k: Ast.Kid ; RO ctx: STR) ;
 
 PROCEDURE WalkArgs (k: Ast.Kid ; RO ctx: STR) =
-VAR i : I64 ;
+VAR
+  i : I64 ;
+  quiet : BOOL ;
 BEGIN
   IF k IS SOME al THEN
-    FOR i := 0 TO al.nkids - 1 DO WalkExpr (al.kids[i], ctx) END
+    quiet := FALSE ;
+    FOR i := 0 TO nunkArgs - 1 DO
+      IF unkArgs[i] = al.id THEN quiet := TRUE END
+    END ;
+    IF quiet THEN quietWalk := quietWalk + 1 END ;
+    FOR i := 0 TO al.nkids - 1 DO WalkExpr (al.kids[i], ctx) END ;
+    IF quiet THEN quietWalk := quietWalk - 1 END
   END
 END WalkArgs ;
 
@@ -9534,6 +10302,7 @@ BEGIN
       ExportWalk (u, root, u.a, NONE) ;
       CheckDeclaredOnce (u) ;
       CheckExcFields (u) ;
+      RecordAttribWalk (SOME (u), u.a) ;
       (* module CONSTs, so a designator naming one has a type *)
       ConstClear () ;
       FOR j := 0 TO u.nkids - 1 DO

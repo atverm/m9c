@@ -88,6 +88,23 @@ if ! diff reviewnew.want "$OUT/new.got" > "$OUT/new.diff"; then
 fi
 echo "reviewdiff: the NEW rows reproduce the hand count of reviewnew.m9 (1 owned, 6 in the frame, 5 in a pool)"
 
+# A THREAD WRITING A STATEFUL MODULE'S STATE is listed under TRUSTED
+# (report par 6, decision 49): reviewthread.m9 has two such threads,
+# one direct and one through a helper, and one that only reads.  The
+# library's pages all say 0, so without this nothing holds the row.
+"$M9C" --review reviewthread.m9 > "$OUT/thread.txt" 2> "$OUT/thread.err" ||
+  { echo "reviewdiff: m9c --review refused reviewthread.m9:"; cat "$OUT/thread.err"; exit 1; }
+got=$(grep '^  THREADs writing STATEFUL state' "$OUT/thread.txt")
+case "$got" in
+  *" 2   "*"Builds writes Logger."*"Deep writes Logger."*) ;;
+  *) echo "reviewdiff: the STATEFUL row of reviewthread.m9 is not Builds and Deep:"
+     echo "    $got"; exit 1 ;;
+esac
+case "$got" in
+  *Quiet*) echo "reviewdiff: a thread that only READS Logger is listed: $got"; exit 1 ;;
+esac
+echo "reviewdiff: the STATEFUL row lists the two writing threads of reviewthread.m9 and not the reader"
+
 n=0; bad=0
 funcs=0; mpools=0; lpools=0; ppar=0; kept=0; heap=0; own=0; thr=0; mvars=0; unsafe=0; foreign=0
 exam=0; passed=0; ctot=0; cover=0

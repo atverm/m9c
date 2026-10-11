@@ -1,0 +1,24 @@
+MODULE GfRaiseStr1 ;
+
+(* WANT: a one-character payload: x *)
+
+(* A one-character string literal raised into a STR field.  The literal
+   types as a CHAR, and the generator chose the payload slot from the
+   VALUE: an integer slot, which gcc refused -- 0.20.0 and 0.21.0 alike
+   (found writing GfMultiArm, 2026-10-11).  The slot is the FIELD's. *)
+
+IMPORT Io ;
+
+EXCEPTION
+  Said (s : STR) ;
+
+PROCEDURE Fire () RAISES Said =
+BEGIN
+  RAISE Said ('x')
+END Fire ;
+
+BEGIN
+  Fire ()
+EXCEPT
+| Said (s) : Io.WriteLine ('a one-character payload: ' + s)
+END GfRaiseStr1.

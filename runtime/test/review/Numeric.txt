@@ -5,7 +5,7 @@ PROVED BY THE CHECKER -- examined, and nothing refused
   assignments                                   759
   arguments                                     375
   RETURN values                                  42
-  operands of a comparison or an operator      1157
+  operands of a comparison or an operator      1159
   CASE labels                                     8
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -20,6 +20,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
+  [SHARABLE] records                              0
   module variables                                0
 
 TRUSTED -- outside what the checker can see
@@ -27,6 +28,7 @@ TRUSTED -- outside what the checker can see
   foreign procedures                              0
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
+  THREADs writing STATEFUL state                  0
 
 COUNTED -- how much there was to check
   CASE statements                                 1
