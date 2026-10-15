@@ -105,16 +105,41 @@ def judge(args):
             print("FAIL:", what)
 
     expected = {}
+    composed = {}   # SendOctets: `octets TAG N ENVFROM RCPTS | FROMHEADER | SUBJECT | BODY | AUTH`
     for line in open(sent, encoding="utf-8"):
         line = line.rstrip("\n")
+        if line.startswith("octets "):
+            head, hfrom, subject, body, auth = line[7:].split(" | ")
+            tag, n, frm, rcpts = head.split(" ", 3)
+            composed[tag + n.zfill(3)] = (frm, rcpts.split(","), hfrom, subject, body.replace("\\n", "\n"), auth)
+            continue
         if not line.startswith("sent "):
             continue
         head, subject, body, attach, auth = line[5:].split(" | ")
         tag, n, frm, rcpts = head.split(" ", 3)
         expected[tag + n.zfill(3)] = (frm, rcpts.split(","), subject, body.replace("\\n", "\n"), attach, auth)
     names = sorted(f[:-4] for f in os.listdir(out) if f.endswith(".eml"))
-    ck(sorted(expected) == names, f"the messages that arrived are the ones sent: {names} vs {sorted(expected)}")
+    ck(sorted(list(expected) + list(composed)) == names,
+       f"the messages that arrived are the ones sent: {names} vs {sorted(list(expected) + list(composed))}")
     for name in names:
+        if name in composed:
+            # the caller's octets under the caller's envelope: the envelope
+            # as given, the headers as composed, LF made CR LF, the dot
+            # line unstuffed again by the server, the last line closed
+            frm, rcpts, hfrom, subject, body, auth = composed[name]
+            raw = open(os.path.join(out, name + ".eml"), "rb").read()
+            msg = email.message_from_bytes(raw, policy=email.policy.default)
+            env = open(os.path.join(out, name + ".env")).read().split("\n")
+            ck(env[0] == frm, f"{name}: envelope from {env[0]!r}, sent {frm!r}")
+            ck(env[1].split() == rcpts, f"{name}: envelope recipients {env[1]!r}, sent {rcpts}")
+            ck(env[2] == auth, f"{name}: the session was {env[2]}, the driver said {auth}")
+            ck(msg["From"] == hfrom, f"{name}: From header {msg['From']!r}, composed {hfrom!r}")
+            ck(msg["Subject"] == subject, f"{name}: subject {msg['Subject']!r}, composed {subject!r}")
+            ck(msg["Message-ID"] == "<composed@test.org>", f"{name}: the composed Message-ID as it was")
+            ck(b"\n" not in raw.replace(b"\r\n", b""), f"{name}: every line end CR LF on the wire")
+            ck(msg.get_content().replace("\r\n", "\n") == body + "\n",
+               f"{name}: body {msg.get_content()!r}, composed {body!r} plus the line end that closed it")
+            continue
         if name not in expected:
             continue
         frm, rcpts, subject, body, attach, auth = expected[name]

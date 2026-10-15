@@ -193,8 +193,47 @@ BEGIN
   | Smtp.Error (msg, c) :
       em := msg
   END ;
-  Check.That (t, 'a refused connection: cannot connect', Text.Contains (em, 'cannot connect'))
+  Check.That (t, 'a refused connection: cannot connect', Text.Contains (em, 'cannot connect')) ;
+  (* SendOctets: the same refusals before any connection *)
+  em := '' ;
+  code := -1 ;
+  BEGIN
+    Smtp.SendOctets ('127.0.0.1', 1, Smtp.Plain, '', '', 'a@b.org', NEW (STR, 0), NEW (BYTE, 0)) ;
+    Check.That (t, 'octets with no recipient are refused', FALSE)
+  EXCEPT
+  | Smtp.Error (msg, c) :
+      em := msg ;
+      code := c
+  END ;
+  Check.That (t, 'octets, no recipient: refused before any connection', Text.Contains (em, 'no recipient')) ;
+  Check.EqI64 (t, 'octets, no recipient: code 0', code, 0) ;
+  em := '' ;
+  BEGIN
+    Smtp.SendOctets ('127.0.0.1', 1, 7, '', '', 'a@b.org', OneRcpt (), NEW (BYTE, 0)) ;
+    Check.That (t, 'octets under an unknown security are refused', FALSE)
+  EXCEPT
+  | Smtp.Error (msg, c) :
+      em := msg
+  END ;
+  Check.That (t, 'octets, an unknown security: refused by name', Text.Contains (em, 'security')) ;
+  em := '' ;
+  BEGIN
+    Smtp.SendOctets ('127.0.0.1', 1, Smtp.Plain, '', '', 'a@b.org', OneRcpt (), NEW (BYTE, 0)) ;
+    Check.That (t, 'octets to a refused connection are an Error', FALSE)
+  EXCEPT
+  | Smtp.Error (msg, c) :
+      em := msg
+  END ;
+  Check.That (t, 'octets, a refused connection: cannot connect', Text.Contains (em, 'cannot connect'))
 END Refusals ;
+
+PROCEDURE OneRcpt () : SLICE OF STR =
+VAR r : SLICE OF STR ;
+BEGIN
+  r := NEW (STR, 1) ;
+  r[0] := 'c@d.org' ;
+  RETURN r
+END OneRcpt ;
 
 BEGIN
   BEGIN

@@ -21,7 +21,8 @@ HELD by SmtpTest (m9test: the message as written -- the Date line,
 the encoded word, the multipart -- against Python's email, and the
 refusals) and by runtime/test/smtp.sh: an aiosmtpd server records
 what arrives plain, over TLS, over STARTTLS and with each AUTH, and
-Python's email parses every message back to what was sent.
+Python's email parses every message back to what was sent --
+SendOctets' too, under an envelope that differs from its headers.
 
 Nothing is retried: a submission failure is a fact the caller
 reports.  The reply code is in the Error (0 for the transport).
@@ -101,6 +102,19 @@ message with no recipient is an Error before any connection
 ### SendText (RO host: STR ; port: I64 ; security: I64 ; RO user: STR ; RO pass: STR ; RO from: STR ; RO to: SLICE OF STR ; RO subject: STR ; RO body: STR) RAISES Error, ValueRange
 
 the proxy's shape: one text message to every address in to
+
+### SendOctets (RO host: STR ; port: I64 ; security: I64 ; RO user: STR ; RO pass: STR ; RO from: STR ; RO to: SLICE OF STR ; RO octets: SLICE OF BYTE) RAISES Error, ValueRange
+
+the same dialogue for a message the CALLER composed -- one a
+list server rewrote and sends once per member, one read from a
+file: from is the envelope sender (MAIL FROM) and to the envelope
+recipients (RCPT TO), whatever the octets' own From and To say;
+octets are the RFC 5322 message as it stands, headers and body.
+A bare LF line end is made CR LF on the wire, the message is
+dot-stuffed and ended as the transport wants, and nothing else
+is read or changed: Date, Message-ID and the rest are the
+caller's.  A message with no recipient is an Error before any
+connection (2026-10-15, for cplists)
 
 ### Stuffed (RO text: STR) : STR
 
