@@ -21,7 +21,8 @@ DEFINITION MODULE Smtp ;
    the encoded word, the multipart -- against Python's email, and the
    refusals) and by runtime/test/smtp.sh: an aiosmtpd server records
    what arrives plain, over TLS, over STARTTLS and with each AUTH, and
-   Python's email parses every message back to what was sent.
+   Python's email parses every message back to what was sent --
+   SendOctets' too, under an envelope that differs from its headers.
 
    Nothing is retried: a submission failure is a fact the caller
    reports.  The reply code is in the Error (0 for the transport).  *)
@@ -84,6 +85,21 @@ PROCEDURE SendText (RO host: STR ; port: I64 ; security: I64 ;
                     RO to: SLICE OF STR ; RO subject: STR ; RO body: STR)
   RAISES Error, ValueRange ;
   (* the proxy's shape: one text message to every address in to *)
+
+PROCEDURE SendOctets (RO host: STR ; port: I64 ; security: I64 ;
+                      RO user: STR ; RO pass: STR ; RO from: STR ;
+                      RO to: SLICE OF STR ; RO octets: SLICE OF BYTE)
+  RAISES Error, ValueRange ;
+  (* the same dialogue for a message the CALLER composed -- one a
+     list server rewrote and sends once per member, one read from a
+     file: from is the envelope sender (MAIL FROM) and to the envelope
+     recipients (RCPT TO), whatever the octets' own From and To say;
+     octets are the RFC 5322 message as it stands, headers and body.
+     A bare LF line end is made CR LF on the wire, the message is
+     dot-stuffed and ended as the transport wants, and nothing else
+     is read or changed: Date, Message-ID and the rest are the
+     caller's.  A message with no recipient is an Error before any
+     connection (2026-10-15, for cplists) *)
 
 PROCEDURE Stuffed (RO text: STR) : STR ;
   (* text with a dot put before every line that begins with one:
@@ -724,12 +740,66 @@ PROCEDURE Send (RO host: STR ; port: I64 ; security: I64 ;
   RAISES Error, ValueRange =
 VAR
   scratch : POOL ;
+  rcpts : SLICE OF STR ;
+  i, n : I64 ;
+BEGIN
+  IF m.nto + m.ncc + m.nbcc = 0 THEN RAISE Error ('smtp: a message with no recipient', 0) END ;
+  rcpts := NEW (scratch, STR, m.nto + m.ncc + m.nbcc) ;
+  n := 0 ;
+  FOR i := 0 TO m.nto - 1 DO rcpts[n] := m.to[i] ; n := n + 1 END ;
+  FOR i := 0 TO m.ncc - 1 DO rcpts[n] := m.cc[i] ; n := n + 1 END ;
+  FOR i := 0 TO m.nbcc - 1 DO rcpts[n] := m.bcc[i] ; n := n + 1 END ;
+  Dialogue (host, port, security, user, pass, m.from, rcpts,
+            DynStr.Bytes (scratch, Stuffed (Wire (m)) + '.' + 0DC + 0AC, FALSE))
+END Send ;
+
+PROCEDURE SendOctets (RO host: STR ; port: I64 ; security: I64 ;
+                      RO user: STR ; RO pass: STR ; RO from: STR ;
+                      RO to: SLICE OF STR ; RO octets: SLICE OF BYTE)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  data : SLICE OF BYTE ;
+  i, o, n : I64 ;
+  atLineStart : BOOL ;
+BEGIN
+  IF LEN (to) = 0 THEN RAISE Error ('smtp: a message with no recipient', 0) END ;
+  (* CR LF for every line end, a dot before a line that begins with
+     one, CR LF to close the last line, and the terminating dot: at
+     most twice the octets and five more *)
+  data := NEW (scratch, BYTE, 2 * LEN (octets) + 5) ;
+  o := 0 ;
+  atLineStart := TRUE ;
+  n := LEN (octets) ;
+  FOR i := 0 TO n - 1 DO
+    IF I64 (octets[i]) = 10 THEN
+      IF o = 0 OR I64 (data[o - 1]) # 13 THEN data[o] := 13 ; o := o + 1 END ;
+      data[o] := 10 ; o := o + 1 ;
+      atLineStart := TRUE
+    ELSE
+      IF atLineStart AND I64 (octets[i]) = 46 THEN data[o] := 46 ; o := o + 1 END ;
+      data[o] := octets[i] ; o := o + 1 ;
+      atLineStart := FALSE
+    END
+  END ;
+  IF NOT atLineStart THEN data[o] := 13 ; data[o + 1] := 10 ; o := o + 2 END ;
+  data[o] := 46 ; data[o + 1] := 13 ; data[o + 2] := 10 ; o := o + 3 ;
+  Dialogue (host, port, security, user, pass, from, to, SLICE (data, 0, o))
+END SendOctets ;
+
+PROCEDURE Dialogue (RO host: STR ; port: I64 ; security: I64 ;
+                    RO user: STR ; RO pass: STR ; RO from: STR ;
+                    RO rcpts: SLICE OF STR ; RO data: SLICE OF BYTE)
+  RAISES Error, ValueRange =
+  (* the session: data is the message dot-stuffed and ended with the
+     dot line, as the transport sends it *)
+VAR
+  scratch : POOL ;
   c : Conn ;
-  hz, wire : SLICE OF BYTE ;
+  hz : SLICE OF BYTE ;
   text, ehlo : STR ;
   i, h : I64 ;
 BEGIN
-  IF m.nto + m.ncc + m.nbcc = 0 THEN RAISE Error ('smtp: a message with no recipient', 0) END ;
   IF security # Plain AND security # Tls AND security # StartTls THEN
     RAISE Error ('smtp: security is Plain, Tls or StartTls', 0)
   END ;
@@ -757,24 +827,15 @@ BEGIN
       Need (c, 250, 'EHLO after STARTTLS', ehlo)
     END ;
     IF LEN (user) > 0 THEN Auth (c, ehlo, user, pass) END ;
-    Cmd (c, 'MAIL FROM:<' + m.from + '>') ;
+    Cmd (c, 'MAIL FROM:<' + from + '>') ;
     Need (c, 2, 'MAIL FROM', text) ;
-    FOR i := 0 TO m.nto - 1 DO
-      Cmd (c, 'RCPT TO:<' + m.to[i] + '>') ;
-      Need (c, 2, 'RCPT TO ' + m.to[i], text)
-    END ;
-    FOR i := 0 TO m.ncc - 1 DO
-      Cmd (c, 'RCPT TO:<' + m.cc[i] + '>') ;
-      Need (c, 2, 'RCPT TO ' + m.cc[i], text)
-    END ;
-    FOR i := 0 TO m.nbcc - 1 DO
-      Cmd (c, 'RCPT TO:<' + m.bcc[i] + '>') ;
-      Need (c, 2, 'RCPT TO ' + m.bcc[i], text)
+    FOR i := 0 TO LEN (rcpts) - 1 DO
+      Cmd (c, 'RCPT TO:<' + rcpts[i] + '>') ;
+      Need (c, 2, 'RCPT TO ' + rcpts[i], text)
     END ;
     Cmd (c, 'DATA') ;
     Need (c, 354, 'DATA', text) ;
-    wire := DynStr.Bytes (scratch, Stuffed (Wire (m)) + '.' + 0DC + 0AC, FALSE) ;
-    WrAll (c, wire) ;
+    WrAll (c, data) ;
     Need (c, 2, 'the end of DATA', text) ;
     Cmd (c, 'QUIT')
   FINALLY
@@ -782,7 +843,7 @@ BEGIN
     ELSE i := I64 (Close (C.Int (c.fd)))
     END
   END
-END Send ;
+END Dialogue ;
 
 PROCEDURE SendText (RO host: STR ; port: I64 ; security: I64 ;
                     RO user: STR ; RO pass: STR ; RO from: STR ;

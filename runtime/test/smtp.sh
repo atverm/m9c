@@ -72,10 +72,11 @@ refused rcpt 550
 refused mail 451
 refused nostarttls 250
 refused tlsplain 0
+refused octetsnorcpt 0
 refused needstarttls 530
 EOF
 sed -n 's/^\(refused [a-z]* [0-9]*\) .*/\1/p' "$W/sent.txt" > "$W/refused.got"
 diff "$W/refused.want" "$W/refused.got" || { grep '^refused' "$W/sent.txt"; echo "smtp: FAIL -- the refusals"; exit 1; }
 
 "$PY" smtpfix/smtpfix.py judge "$W/out" "$W/sent.txt" || { echo "smtp: FAIL -- the judge"; exit 1; }
-echo "smtp: PASS ($(grep -c '^sent' "$W/sent.txt") messages, $(grep -c '^refused' "$W/sent.txt") refusals)"
+echo "smtp: PASS ($(grep -c '^sent\|^octets' "$W/sent.txt") messages, $(grep -c '^refused' "$W/sent.txt") refusals)"

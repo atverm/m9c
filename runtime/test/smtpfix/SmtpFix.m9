@@ -11,6 +11,7 @@ MODULE SmtpFix ;
    The servers are on localhost, the TLS ones with the gate's
    self-signed certificate, trusted through SSL_CERT_FILE.  *)
 
+IMPORT DynStr ;
 IMPORT Fmt ;
 IMPORT Io ;
 IMPORT Smtp ;
@@ -68,6 +69,47 @@ EXCEPT
     Io.WriteLine ('refused ' + name + ' ValueRange') ;
     RETURN FALSE
 END Try ;
+
+PROCEDURE OctetsBody () : STR =
+BEGIN
+  RETURN 'octets line one' + 0AC + '.a dot line' + 0AC + 'last line without a line end'
+END OctetsBody ;
+
+PROCEDURE Octets () : SLICE OF BYTE RAISES ValueRange =
+  (* a whole message, LF line ends throughout, no final line end; in
+     the program's pool, since a local pool dies with the frame *)
+BEGIN
+  RETURN DynStr.Bytes (pool,
+           'From: Alice <alice@test.org>' + 0AC + 'To: list@test.org' + 0AC +
+           'Subject: composed' + 0AC + 'Date: Wed, 15 Oct 2026 12:00:00 +0000' + 0AC +
+           'Message-ID: <composed@test.org>' + 0AC + 'Content-Type: text/plain; charset=us-ascii' + 0AC +
+           0AC + OctetsBody (), FALSE)
+END Octets ;
+
+PROCEDURE TryOctets (RO name: STR ; port: I64 ; security: I64 ; RO user: STR ;
+                     RO pass: STR ; RO from: STR ; RO to: STR ; RO octets: SLICE OF BYTE) : BOOL =
+  (* SendOctets to one recipient, or none when to is empty *)
+VAR
+  scratch : POOL ;
+  rcpts : SLICE OF STR ;
+  why : STR ;
+  c : I64 ;
+BEGIN
+  IF LEN (to) = 0 THEN rcpts := NEW (scratch, STR, 0)
+  ELSE rcpts := NEW (scratch, STR, 1) ; rcpts[0] := to
+  END ;
+  Smtp.SendOctets (Host, port, security, user, pass, from, rcpts, octets) ;
+  RETURN TRUE
+EXCEPT
+| Smtp.Error (msg, code) :
+    why := msg ;
+    c := code ;
+    Io.WriteLine ('refused ' + name + ' ' + Fmt.I64Str (c) + ' -- ' + why) ;
+    RETURN FALSE
+| ValueRange :
+    Io.WriteLine ('refused ' + name + ' ValueRange') ;
+    RETURN FALSE
+END TryOctets ;
 
 PROCEDURE Sent (RO tag: STR ; n: I64 ; RO rcpts: STR ; RO subject: STR ;
                 RO body: STR ; RO attach: STR ; auth: BOOL) =
@@ -144,6 +186,19 @@ BEGIN
   END ;
   IF Try ('tlsplain', plain, Smtp.Tls, '', '', Simple ('x', 'b@test.org')) THEN
     Io.WriteLine ('FAIL tlsplain: sent')
+  END ;
+  (* p 3: SendOctets -- a message the driver composed, LF line ends
+     and a dot line, under an envelope that differs from its headers
+     (a list's VERP sender, the member alone as recipient) *)
+  IF TryOctets ('octets', plain, Smtp.Plain, '', '', 'list+bounce+b=test.org@test.org',
+                'b@test.org', Octets ()) THEN
+    np := np + 1 ;
+    Io.WriteLine ('octets p ' + Fmt.I64Str (np) + ' list+bounce+b=test.org@test.org b@test.org | ' +
+                  'Alice <alice@test.org> | composed | ' + Shown (OctetsBody ()) + ' | noauth')
+  END ;
+  (* refusal: no recipient, before any connection *)
+  IF TryOctets ('octetsnorcpt', plain, Smtp.Plain, '', '', From, '', Octets ()) THEN
+    Io.WriteLine ('FAIL octetsnorcpt: sent')
   END ;
   (* l 1: a server offering LOGIN only *)
   IF Try ('login', login, Smtp.Plain, 'm9', 'secret', Simple ('by LOGIN', 'b@test.org')) THEN
