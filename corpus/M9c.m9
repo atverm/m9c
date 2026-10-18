@@ -215,7 +215,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.22.0' ;
+  Version = '0.23.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -337,7 +337,7 @@ END DirAdd ;
    convention the shell already taught everyone: ':' here, and ';'
    on Windows, where a path of its own carries a ':' two characters
    in (C:\m9\lib\m9) *)
-PROCEDURE DirAddPath (RO s: STR ; trusted: BOOL) =
+PROCEDURE DirAddPath (RO KEPT s: STR ; trusted: BOOL) =
 VAR
   i, start : I64 ;
   sep : CHAR ;
@@ -1080,7 +1080,7 @@ END FpWords ;
    development package is not installed (Debian's libblosc1 without
    libblosc-dev) -- is `-lNAME' where ld64 and mingw's ld are the
    linker; any other word is a library name, `-lNAME'. *)
-PROCEDURE LinkWord (RO rt: STR ; RO KEPT w: STR ; VAR KEPT seen: SLICE OF STR ;
+PROCEDURE LinkWord (RO rt: STR ; RO KEPT w: STR ; VAR seen: SLICE OF STR ;
                     VAR nseen: I64) RAISES ValueRange =
 VAR
   i, n, at : I64 ;
@@ -2775,7 +2775,7 @@ END CacheRuntime ;
 (* --cell's runtime: one shared object of the runtime's objects and the
    system libraries they need, loaded first; and the session host, a
    plain C program that loads the rest (runtime/m9session.c) *)
-PROCEDURE CacheSession (RO KEPT rt: STR ; RO KEPT dir: STR) : BOOL
+PROCEDURE CacheSession (RO KEPT rt: STR ; RO dir: STR) : BOOL
   RAISES ValueRange, Io.IOError =
 VAR
   i, rc : I64 ;
@@ -3092,7 +3092,7 @@ BEGIN
   RETURN Review.Page (root, name, TRUE, st, tw)
 END ReviewText ;
 
-PROCEDURE ParseText (RO KEPT src: STR ; RO path: STR) : Ast.Kid
+PROCEDURE ParseText (RO src: STR ; RO path: STR) : Ast.Kid
   RAISES ValueRange =
 VAR
   p : Parse.Parser ;
@@ -3352,7 +3352,7 @@ END LoadIndirect ;
    the generated includes; a fully-named command line must still
    produce the same bytes it always did.  Its root is kept so that
    the gaps it leaves can be filled afterwards. *)
-PROCEDURE LoadDep (RO path: STR) RAISES Io.IOError, ValueRange =
+PROCEDURE LoadDep (RO KEPT path: STR) RAISES Io.IOError, ValueRange =
 BEGIN
   IF IsLoaded (BaseName (path)) THEN RETURN END ;
   MarkLoaded (BaseName (path)) ;
@@ -3450,7 +3450,7 @@ END Report ;
    finds -- read from TOKENS, so nothing in a string or a comment
    counts -- because decision 24 wants every module named imported
    and a cell of one expression has nowhere to say so. *)
-PROCEDURE ShowImports (RO KEPT expr: STR ; withShow: BOOL) : STR RAISES ValueRange =
+PROCEDURE ShowImports (RO expr: STR ; withShow: BOOL) : STR RAISES ValueRange =
 VAR
   lx : Lex.Lexer ;
   tk, prev, cur : Lex.Token ;

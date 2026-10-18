@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                    12   InvBand.wpool, CholeskyT.scratch, CholInverse.scratch, AddNormal.scratch, Solve.scratch, Det.scratch, +6 more
   pool parameters                                21   New, SubRowVector, MulM, MulV, Transpose, AddM, +15 more
-  KEPT parameters                                 1   CholInverse
+  KEPT parameters                                 0
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

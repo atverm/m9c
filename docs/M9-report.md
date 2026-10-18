@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.22.0, 2026-10-11
+## Report — revision 0.23.0, 2026-10-18
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -34,8 +34,8 @@ to reduce, so the list is meant to shrink.
 | **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a `RAISE`'s payload held to its `EXCEPTION`'s fields, count and types (§5, since 0.20.0), a `FOR` step a constant other than 0 (§10, since 0.20.0), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
 | **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6; since 2026-10-11 `m9c --review` LISTS each `THREAD` whose target writes one, not refused); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path, a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
 | **Accepted by the checker, refused by the generator** | `VIEW` over a grid a call answers (`VIEW (Mk (), 1, ALL)`).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
-| **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` as COMPUTED (§6: since 2026-10-11 it is DECLARED, `RECORD ... END [SHARABLE]`, and checked at `THREAD`; the `SHARED` count is still not atomic); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.22.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
+| **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` as COMPUTED (§6: since 2026-10-11 it is DECLARED, `RECORD ... END [SHARABLE]`, and checked at `THREAD`; the `SHARED` count is atomic since 2026-10-18); the pre-registered candidates with their adoption triggers (§9.6) |
+| **Release** | 0.23.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
 
@@ -611,6 +611,36 @@ STR ; ...)` sets `out := a + b`; and a chain `Top -> Mid -> Fill`
 through one `VAR out` climbs an arena per level, because each frame
 re-homes at its own exit.  No pool parameter, and nothing to spell.
 
+**A statement's temporaries die with the statement, when nothing can
+see them afterwards (since 2026-10-18).**  A concatenation lives until
+the end of the statement that made it when that statement is a call,
+a plain assignment to a scalar, or the condition of an `IF`, `ELSIF`
+or `WHILE`, and nothing in it hands the value on: not the right side
+of an assignment to a name that carries a pointer, not an argument in
+`VAR`, `OWN` or `KEPT` position, not an argument of a foreign
+procedure or of a constructor, not a `RETURN`, `RAISE` or `THREAD`
+-- and no `VAR` pointer argument of the statement names an object of
+this frame's arena (a local `PTR T` without an `IN` clause), since
+the callee receives that arena as the object's pool and may grow the
+object in it, above the mark (`DynStr.Append (d, a + b)`).
+Then the generator marks the arena's top before the statement and
+puts it back after (`m9_pool_mark`, `m9_pool_release`; the error path
+skips the release, since the frame's exit frees everything anyway),
+and `Io.WriteLine ('row ' + Fmt.I64Str (i) + ': ' + name)` in a loop
+of a million turns costs the arena one line's worth, not a million
+-- the shape cp-kernel's sync loop was killed for at 50 GB
+(`docs/statement-release-plan.md`).  Everywhere else a concatenation
+lives until the frame's exit, as the paragraph above says: `s := s +
+x` accumulates, `Keep (pool, a + b)` is refused (par 4.1) or copies,
+a `+` that reaches the answer is re-homed.  The decision is
+syntactic, over one statement and the typed tree, plus the one fact
+the checker enforces -- a callee without `KEPT` keeps nothing -- and
+it is deliberately more conservative than the proposal that asked
+for it: `x := Text.Keep (a + b)` is not released either, because the
+generator does not look through `Keep`.  Built with `-DM9_POISON`,
+the runtime writes 0xA5 over every released byte, so a release the
+rule got wrong shows as a visibly wrong value, not a usually-right one.
+
 *The first version of this was structural -- the generator tracked
 which locals had been assigned a concatenation and copied only a
 `RETURN` of one -- and had a hole the runtime test does not: a
@@ -1144,15 +1174,48 @@ borrows.**
   may not retain — unless declared `KEPT`.
 - A parameter marked `KEPT` (after its mode: `RO KEPT msg: STR`) is
   **declared retained**: the callee stores it somewhere that outlives
-  the call — module state, the caller's storage through another
-  parameter, or the answer. The checker computes, per procedure,
-  where every store's destination escapes to, and refuses an
-  undeclared retention by naming what it reaches: `undeclared
+  the call — module state, or an object the caller's reference
+  parameter leads to (`f.cols[n] := c` through `VAR f: PTR Fr`, an
+  element of `VAR out: SLICE OF STR`). The checker computes, per
+  procedure, where every store's destination escapes to, and refuses
+  an undeclared retention by naming what it reaches: `undeclared
   retention: borrowed msg reaches module state -- declare KEPT msg`.
   The declaration sits in the definition module, where a caller reads
   it: `AddRoute` keeping its caller's route slices used to be a prose
   comment beside the signature, and is now five `KEPT` marks inside
-  it.
+  it; `Frame.Take (pool, KEPT f, rows)` says that the frame it answers
+  views `f`'s strings.
+- A borrow that reaches the **answer**, or a **`VAR` parameter's own
+  storage** — the variable itself or an inline component of it — is
+  not retained, it is handed back: `Text.Split (s)` answers views of
+  `s`, `Png.NextTag (s, i, tg)` fills the caller's `Tag` with views of
+  the document, and neither keeps anything, so neither says `KEPT`.
+  The answer, or the argument, *carries* the borrow instead (the
+  provenance below), and whoever stores it durably is the one
+  retaining: `p := Text.Split (msg) ; last := p` is refused as
+  `borrowed msg (carried by p) reaches module state`, `Pick (pool,
+  items, saved)` into a module variable as `borrowed items reaches
+  module state`, and a view-answering call handed to a `KEPT`
+  parameter asks the caller for its own `KEPT`, exactly as the borrow
+  itself would. The line between the two is the reference: a store
+  *through* a pointer or into a slice's storage reached from the
+  parameter retains (`KEPT`); a store *into* the parameter hands back.
+  *(Until 2026-10-18 both demanded `KEPT`, and `KEPT` on a splitter
+  then refused every caller that split a frame string — "a KEPT
+  parameter cannot take the answer of ... it dies with this frame" —
+  though the parts were consumed in that frame: ten corpus modules,
+  every one a false alarm; `KEPT` on `Png.NextTag` would have rippled
+  up to `Png.Raster` and refused every caller rasterising a built
+  string. One word had covered two things. The sweep that followed:
+  62 parameters lost a `KEPT` the analysis no longer sees as a
+  retention — `NetCDF.Open`'s `path`, `Zip.Open`'s, `Lex.Init`'s and
+  `Parse.Init`'s `src`, `Frame.NewTs`'s `f` and `time` — and 36 gained
+  one where the sharper analysis now sees a retention it had missed:
+  a frame built from another frame views its strings (`Frame.Take`,
+  `Filter`, `SortBy`, `GroupBy`, `Aggregate`, `Join`, `FromCsv`, and
+  the test helpers forwarding a frame to them), `Parse.PImports` puts
+  views of the source into the caller's node. The ledger's retention
+  rows went 284 → 434, its `kept-unseen` rows 19 → 18.)*
 - Retention by **ownership transfer** stays §4.2's: an owned value
   moves.
 
@@ -1161,8 +1224,9 @@ insists at each step of the chain: a concatenation passed to a
 `KEPT` parameter is refused outright (`+` builds in the frame's
 arena, §2.3, and dies at RETURN — the exact dangling-diagnostic bug
 par 2.3 records); a borrow passed to one is itself a retention the
-caller must declare, so `Parse.Init` says `KEPT src` because
-`Lex.Init` does, and `Parquet` says it because `Frame` does. The
+caller must declare, so `Frame.Average` says `KEPT ts` because
+`Frame.Reduce` does, and `Parquet.WriteTs` says it because
+`Frame.AddI64` does. The
 declaration is also what makes the escape analysis precise across
 calls: whether a callee keeps its argument is read from the callee's
 signature, not assumed.
@@ -1193,12 +1257,25 @@ reads the same way: a record argument, or a constructor argument
 wrapping a borrow, handed to a `KEPT` parameter asks the caller for
 its own `KEPT` -- and since a `Parser` record holds the source its
 tree views, the parser's `VAR KEPT p` at `PFactor` composed upward
-through 31 procedures that had forwarded `p` unmarked.
-A `KEPT` parameter the analysis never sees retained is
+through 31 procedures that had forwarded `p` unmarked.  *(Since
+2026-10-18 that chain is rooted where the tree is written THROUGH a
+pointer the caller handed in -- `PSels` and `PImports` adding
+selectors and imports to `VAR n: PTR Ast.Node` -- and no longer at
+the answer, which merely carries the source's views to whoever
+stores the tree.)*  The provenance through a call is read from the
+callee's body, per parameter: does it answer a view of parameter j
+(`AnswersViewAt`), does it fill `VAR` parameter i with a view of j
+(`HandsBackFrom`), and does that fill land beyond the frame, through
+a reference (`HandsBackDeep`) -- so that `NextTag (svg, i, tg)` makes
+`tg` carry `svg`, and `Ast.Add (pool, n, SOME (sel))` through `VAR n:
+PTR Ast.Node` is judged as `n.kids[k] := sel` would be where it
+stands.  A `KEPT` parameter the analysis never sees retained is
 reported the other way, as the `kept-unseen` ledger class: an
 overstated contract is a signal, and a false `KEPT` also errors
 every caller through the composition, so signatures are pressed
-honest from both sides.
+honest from both sides.  A reach that only hands back -- the answer,
+a `VAR` parameter's own storage -- does not justify a `KEPT`; a
+callee's declared keeping does.
 
 These sentences are the discipline. There are no lifetime
 annotations, no named regions in signatures, no borrow syntax. The
@@ -1225,8 +1302,11 @@ and `DISPOSE`, says so.)*
 For shared ownership, `SHARED PTR T` is reference-counted; creating
 one is explicit — `SHARED (NEW (OWN, Store))` consumes the owned pointer
 and yields the first handle — cycles are the programmer's declared
-problem, and the count is not atomic unless the type is SHARABLE
-(§6). *(The form was forced by ZarrStore: an Array must retain its
+problem; the count is atomic (since 2026-10-18: copy and release are
+`__atomic` operations, and the release that finds itself last is the
+one that runs the interior cleanup, decrement and test in one step),
+so a handle to a `[SHARABLE]` record (§6) may be copied and dropped
+from any thread. *(The form was forced by ZarrStore: an Array must retain its
 Store, and retention is exactly what plain borrows refuse.)*
 
 A move inside a loop carries into the next turn (since 2026-10-10): a
@@ -1553,7 +1633,7 @@ Threads are in the language; data races are not.
   HttpServer's workers, the tutorial's chapters 11 and 16), each with a
   comment stating the claim the attribute now states; the sixteenth is
   a monitor. It is Send/Sync with Wirth's spelling, declared rather
-  than inferred. The `SHARED` count is still not atomic.  *Stated, not
+  than inferred. The `SHARED` count is atomic since 2026-10-18.  *Stated, not
   built, as of 2026-09-27: no checker computed
   SHARABLE or read it from a definition, the SHARED count is not
   atomic, and `THREAD`'s argument was walked by neither checker — the

@@ -29,7 +29,7 @@ _(undocumented)_
 
 every error
 
-### Init (VAR p: Parser ; RO KEPT src: STR)
+### Init (VAR p: Parser ; RO src: STR)
 
 points a parser at source text and reads the first token.
 

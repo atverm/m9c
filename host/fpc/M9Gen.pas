@@ -90,6 +90,7 @@ type
     strNode : TNode;            { the SLICE OF CHAR that STR names }
     isProgram : Boolean;        { MODULE m -- emit a main () }
     mainBody : TNode;           { its statement sequence }
+    inMain : Boolean;           { emitting it: err->res is &m9mframe there }
     function NewTmp : string;
     function FindType (const n: string): TNode;
     function IsOpaque (const n: string): Boolean;
@@ -168,6 +169,12 @@ type
     function ExcRef (const qual, nm: string; out fields: TNode): string;
     function OptInner (e: TNode): TNode;
     procedure EmitHandler (h: TNode; const dlbl: string; ind: Integer);
+    function Allocates (k: TNode): Boolean;
+    function CalleeHead (dn: TNode): TNode;
+    function FrameArenaArg (k: TNode): Boolean;
+    function SinkAlloc (k: TNode): Boolean;
+    function Releasable (st: TNode): Boolean;
+    function CondMark (k: TNode; ind: Integer): string;
     procedure EmitStmt (st: TNode; ind: Integer);
     procedure LoopExit (ind: Integer);
     procedure EmitSeq (s: TNode; ind: Integer);
@@ -195,6 +202,10 @@ implementation
 const
   Builtins : array [0..12] of string = ('I8','I16','I32','I64','U8',
     'U16','U32','U64','F32','F64','BYTE','BOOL','CHAR');
+  { the calls CallC answers by name, not through a head; none keeps an
+    argument (SinkAlloc; mirrors Gen.BuiltinCalls) }
+  BuiltinCalls : array [0..8] of string = ('ADR','ByteSize','CHR','LEN',
+    'MAX','NAME','ORD','SizeOf','VIEW');
 
 function InL (const s: string; const a: array of string): Boolean;
 var i : Integer;
@@ -3596,17 +3607,175 @@ begin
   Result := outer;
 end;
 
+{ ---- a statement's temporaries, released with the statement
+       (docs/statement-release-plan.md, stage 2; mirrors Gen.m9's
+       Allocates / CalleeHead / SinkAlloc / Releasable / CondMark, and
+       gendiff holds the two identical) ---- }
+
+{ does the expression under K carve the arena: a string +, a frame-form
+  NEW, a call whose answer carries a pointer? }
+function TGen.Allocates (k: TNode): Boolean;
+var
+  i, ext0 : Integer;
+  lt, rt : string;
+  tyk : TNode;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if (k.kind = nkBin) and (k.a = '+') then
+  begin
+    lt := TagOfExpr (k.kids[0]);
+    rt := TagOfExpr (k.kids[1]);
+    if (lt = 'SLICE') or (lt = 'STR1') or (rt = 'SLICE') or (rt = 'STR1') then
+      Exit (True);
+  end;
+  if k.kind = nkNewExpr then
+    if NewShape (k, tyk, ext0) = 'frame' then Exit (True);
+  if (k.kind = nkCallExpr) or (k.kind = nkCallSel) then
+    if (TypeAt (k) <> nil) and HasPtr (TypeAt (k), 0) then Exit (True);
+  for i := 0 to High (k.kids) do
+    if Allocates (k.kids[i]) then Exit (True);
+end;
+
+{ the callee's head the way CallC finds it: Mod.Proc in the loaded
+  definitions, a procedure value in scope, this module's own; nil for
+  a builtin, a foreign procedure, a constructor or anything unknown }
+function TGen.CalleeHead (dn: TNode): TNode;
+var
+  name : string;
+  j, g : Integer;
+  svt : TNode;
+begin
+  Result := nil;
+  if (dn = nil) or (dn.kind <> nkDesignator) then Exit;
+  name := dn.a;
+  for j := 0 to High (dn.kids) do
+    if (dn.kids[j] <> nil) and (dn.kids[j].kind = nkSelField) then
+      name := name + '.' + dn.kids[j].a
+    else
+      Exit;
+  if Pos ('.', name) > 0 then
+  begin
+    g := extProcs.IndexOf (name);
+    if g >= 0 then Result := TNode (extProcs.Objects[g]);
+    Exit;
+  end;
+  svt := Resolve (ScopeNode (name));
+  if (svt <> nil) and (svt.kind = nkProcType) then Exit (svt);
+  g := FindProc (name);
+  if g >= 0 then Result := procs[g].node;
+end;
+
+{ does a sink under K receive an expression containing an allocation:
+  an argument in VAR, OWN or KEPT position, or any argument of a
+  callee without a head (a builtin keeps nothing and is walked through) }
+{ a VAR pointer argument whose object lives in the arena the statement
+  marks: rule 2 passes that arena behind the pointer as the object's
+  pool, the callee may grow the object above the mark, and the release
+  would free the growth under the caller's pointer (DynStr.Append
+  through a frame-form d; cp-kernel's Cs.Canonical, 2026-10-18).  A
+  sink whether or not the argument allocates (mirrors Gen.FrameArenaArg) }
+function TGen.FrameArenaArg (k: TNode): Boolean;
+var p : string;
+begin
+  Result := False;
+  if (k <> nil) and (k.kind = nkDesignator) then
+  begin
+    p := ObjPoolC (k);
+    Result := (p = 'err->res') or (inMain and (p = '&m9mframe'));
+  end;
+end;
+
+function TGen.SinkAlloc (k: TNode): Boolean;
+var
+  i, g, b, n : Integer;
+  hd, pl, grp, ids, al, dn : TNode;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if ((k.kind = nkCallExpr) or (k.kind = nkCallStmt)) and (k.kids[0] <> nil) then
+  begin
+    dn := k.kids[0];
+    hd := CalleeHead (dn);
+    al := k.kids[1];
+    if hd <> nil then
+    begin
+      if al <> nil then
+      begin
+        n := 0;
+        pl := hd.kids[0];
+        if pl <> nil then
+          for g := 0 to High (pl.kids) do
+          begin
+            grp := pl.kids[g];
+            if (grp = nil) or (grp.kids[0] = nil) then continue;
+            ids := grp.kids[0];
+            for b := 0 to High (ids.kids) do
+            begin
+              if (n <= High (al.kids)) and (grp.f1 or grp.f2 or grp.f4) then
+                if Allocates (al.kids[n]) then Exit (True);
+              if (n <= High (al.kids)) and grp.f1 and PoolParamTy (grp.kids[1]) then
+                if FrameArenaArg (al.kids[n]) then Exit (True);
+              Inc (n);
+            end;
+          end;
+      end;
+    end
+    else if not ((Length (dn.kids) = 0) and (InL (dn.a, Builtins) or InL (dn.a, BuiltinCalls))) then
+      if Allocates (al) then Exit (True);
+  end;
+  for i := 0 to High (k.kids) do
+    if SinkAlloc (k.kids[i]) then Exit (True);
+end;
+
+{ is this call statement or assignment released with the statement? }
+function TGen.Releasable (st: TNode): Boolean;
+var lt : TNode;
+begin
+  Result := False;
+  if st.kind = nkCallStmt then
+    Exit (Allocates (st.kids[1]) and not SinkAlloc (st));
+  if st.kind = nkAssign then
+  begin
+    if st.kids[0] <> nil then
+    begin
+      lt := TypeAt (st.kids[0]);
+      if lt = nil then Exit;
+      if HasPtr (lt, 0) then Exit;
+    end;
+    Exit (Allocates (st.kids[1]) and not SinkAlloc (st.kids[1]));
+  end;
+end;
+
+{ a condition's release: the mark before its evaluation; '' when the
+  condition allocates nothing it could not also leak }
+function TGen.CondMark (k: TNode; ind: Integer): string;
+begin
+  Result := '';
+  if Allocates (k) and not SinkAlloc (k) then
+  begin
+    Result := NewTmp;
+    Line (pbuf, ind, 'm9_mark ' + Result + ' = m9_pool_mark (err->res);');
+  end;
+end;
+
 procedure TGen.EmitStmt (st: TNode; ind: Integer);
 var
-  l, l2, r, tg, w, cnd, stp, bname, fldn, sxit, lo, hi : string;
+  l, l2, r, tg, w, cnd, stp, bname, fldn, sxit, lo, hi, mk : string;
   j, i2, j2, k2, savedScope, g2, jj, sv, thrPi : Integer;
   vtN, vd, lbl : TNode;
-  opened, hadElse, thrWants, lRaise, shared : Boolean;
+  opened, hadElse, thrWants, lRaise, shared, rel : Boolean;
 begin
   DbgLine (st);
   case st.kind of
     nkAssign :
       begin
+        rel := Releasable (st);
+        if rel then
+        begin
+          mk := NewTmp;
+          Line (pbuf, ind, 'm9_mark ' + mk + ' = m9_pool_mark (err->res);');
+        end;
         stRaise := False;
         hoistOk := True;
         hoistInd := ind;
@@ -3643,15 +3812,23 @@ begin
             Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
         end;
         CloseHoists (ind);
+        if rel then Line (pbuf, ind, 'm9_pool_release (err->res, ' + mk + ');');
       end;
     nkCallStmt :
       begin
+        rel := Releasable (st);
+        if rel then
+        begin
+          mk := NewTmp;
+          Line (pbuf, ind, 'm9_mark ' + mk + ' = m9_pool_mark (err->res);');
+        end;
         stRaise := False;
         hoistOk := True;
         hoistInd := ind;
         Line (pbuf, ind, CallC (st.kids[0], st.kids[1], st, tg) + ';');
         if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
         CloseHoists (ind);
+        if rel then Line (pbuf, ind, 'm9_pool_release (err->res, ' + mk + ');');
       end;
     nkIf :
       begin
@@ -3696,13 +3873,15 @@ begin
             scope.Delete (scope.Count - 1);
           Exit;
         end;
+        mk := CondMark (st.kids[0], ind);
         stRaise := False;
         cnd := EX (st.kids[0], '');
-        if stRaise then
+        if stRaise or (mk <> '') then
         begin
           w := NewTmp;
           Line (pbuf, ind, 'bool ' + w + ' = ' + cnd + ';');
-          Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
+          if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
+          if mk <> '' then Line (pbuf, ind, 'm9_pool_release (err->res, ' + mk + ');');
           cnd := w;
         end;
         Line (pbuf, ind, 'if (' + cnd + ') {');
@@ -3714,13 +3893,15 @@ begin
           if st.kids[j].kind = nkElsif then
           begin
             Line (pbuf, ind, '} else {');
+            mk := CondMark (st.kids[j].kids[0], ind + 1);
             stRaise := False;
             cnd := EX (st.kids[j].kids[0], '');
-            if stRaise then
+            if stRaise or (mk <> '') then
             begin
               w := NewTmp;
               Line (pbuf, ind + 1, 'bool ' + w + ' = ' + cnd + ';');
-              Line (pbuf, ind + 1, 'if (err->exc) goto ' + raiseLbl + ';');
+              if stRaise then Line (pbuf, ind + 1, 'if (err->exc) goto ' + raiseLbl + ';');
+              if mk <> '' then Line (pbuf, ind + 1, 'm9_pool_release (err->res, ' + mk + ');');
               cnd := w;
             end;
             Line (pbuf, ind + 1, 'if (' + cnd + ') {');
@@ -3772,13 +3953,15 @@ begin
           Exit;
         end;
         Line (pbuf, ind, 'for (;;) {');
+        mk := CondMark (st.kids[0], ind + 1);
         stRaise := False;
         cnd := EX (st.kids[0], '');
-        if stRaise then
+        if stRaise or (mk <> '') then
         begin
           w := NewTmp;
           Line (pbuf, ind + 1, 'bool ' + w + ' = ' + cnd + ';');
-          Line (pbuf, ind + 1, 'if (err->exc) goto ' + raiseLbl + ';');
+          if stRaise then Line (pbuf, ind + 1, 'if (err->exc) goto ' + raiseLbl + ';');
+          if mk <> '' then Line (pbuf, ind + 1, 'm9_pool_release (err->res, ' + mk + ');');
           cnd := w;
         end;
         Line (pbuf, ind + 1, 'if (!(' + cnd + ')) break;');
@@ -4243,7 +4426,9 @@ begin
               begin
                 if not opened then
                 begin
-                  Line (pbuf, ind, 'if (m9_rc_last (' + l + ')) {');
+                  { release and last-handle test in one atomic step
+                    (m9rt.h, 2026-10-18; mirrors Sem.EmitDispose) }
+                  Line (pbuf, ind, 'if (m9_release (' + l + ')) {');
                   opened := True;
                 end;
                 if lbl.kind = nkSharedType then
@@ -4257,8 +4442,13 @@ begin
               end;
             end;
         end;
-        if opened then Line (pbuf, ind, '}');
-        Line (pbuf, ind, 'm9_dispose (' + l + ');');
+        if opened then
+        begin
+          Line (pbuf, ind + 1, 'm9_free_last (' + l + ');');
+          Line (pbuf, ind, '}');
+        end
+        else
+          Line (pbuf, ind, 'm9_dispose (' + l + ');');
         if stRaise then
           Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
       end;
@@ -4686,7 +4876,9 @@ begin
     Line (pbuf, 1, extMods[i] + '_m9init (err); if (err->exc) goto L_ret;');
   { the body is a BLOCK, so EXCEPT at the root goes through the same
     handler machinery every other frame uses }
+  inMain := True;
   EmitStmt (mainBody, 1);
+  inMain := False;
   Line (pbuf, 0, 'L_ret: ;');
   for i := 0 to High (localPools) do
     Line (pbuf, 1, 'm9_pool_free (&' + localPools[i] + ');');
@@ -4722,7 +4914,9 @@ begin
   Line (pbuf, 1, 'err->res = &m9mframe;');
   for i := 0 to extMods.Count - 1 do
     Line (pbuf, 1, extMods[i] + '_m9init (err); if (err->exc) goto L_ret;');
+  inMain := True;
   if mainBody <> nil then EmitStmt (mainBody, 1);
+  inMain := False;
   Line (pbuf, 0, 'L_ret: ;');
   for i := 0 to High (localPools) do
     Line (pbuf, 1, 'm9_pool_free (&' + localPools[i] + ');');

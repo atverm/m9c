@@ -275,7 +275,7 @@ argument spelled inline -- `n := NewStr (p, s) ; Set (o, k, n)`
 -- and a composer that wants the one-liner back wraps these in
 its own helper, where the skip-blanks policy belongs anyway.
 
-### Add (VAR KEPT arr: PTR Node ; VAR KEPT v: PTR Node) RAISES TypeMismatch
+### Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node) RAISES TypeMismatch
 
 append to an array, count kept.
 

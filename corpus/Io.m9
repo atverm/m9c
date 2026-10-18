@@ -558,7 +558,12 @@ BEGIN
   IF n < 0 THEN RAISE IndexError (i, ArgCount ()) END ;
   b := NEW (pool, BYTE, n) ;
   n := I64 (ArgCopy (C.Int (i), ADR (b), C.Int (n))) ;
-  RETURN DynStr.Chars (pool, SLICE (b, 0, n))
+  (* the bytes are UTF-8 on every platform -- Linux and macOS hand
+     them so, Windows since the runtime takes the command line wide
+     (m9rt.c, 2026-10-18) -- and were read as one CHAR a byte until
+     that day: `ärg ✓` arrived as `Ã¤rg â` on every platform, found
+     on real Windows, confirmed on the Mac *)
+  RETURN DynStr.FromUtf8 (pool, SLICE (b, 0, n))
 END Arg ;
 
 (* a path for the C library: its UTF-8, zero-terminated.  Pool

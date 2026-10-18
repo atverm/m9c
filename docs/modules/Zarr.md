@@ -231,19 +231,19 @@ hold them in a single chunk already.
 
 opaque; lives in a POOL
 
-### SinkF32 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ; RO KEPT dims: SLICE OF STR ; comp: I64) : PTR Sink IN pool RAISES Error, ValueRange
+### SinkF32 (VAR pool: POOL ; RO adir: STR ; chunk: I64 ; RO dims: SLICE OF STR ; comp: I64) : PTR Sink IN pool RAISES Error, ValueRange
 
 _(undocumented)_
 
-### SinkF64 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ; RO KEPT dims: SLICE OF STR ; comp: I64) : PTR Sink IN pool RAISES Error, ValueRange
+### SinkF64 (VAR pool: POOL ; RO adir: STR ; chunk: I64 ; RO dims: SLICE OF STR ; comp: I64) : PTR Sink IN pool RAISES Error, ValueRange
 
 _(undocumented)_
 
-### SinkInt (VAR pool: POOL ; RO KEPT adir: STR ; width: I64 ; signed: BOOL ; chunk: I64 ; RO KEPT dims: SLICE OF STR ; comp: I64) : PTR Sink IN pool RAISES Error, ValueRange
+### SinkInt (VAR pool: POOL ; RO adir: STR ; width: I64 ; signed: BOOL ; chunk: I64 ; RO dims: SLICE OF STR ; comp: I64) : PTR Sink IN pool RAISES Error, ValueRange
 
 _(undocumented)_
 
-### SinkTimeNs (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ; RO KEPT dims: SLICE OF STR ; comp: I64) : PTR Sink IN pool RAISES Error, ValueRange
+### SinkTimeNs (VAR pool: POOL ; RO adir: STR ; chunk: I64 ; RO dims: SLICE OF STR ; comp: I64) : PTR Sink IN pool RAISES Error, ValueRange
 
 _(undocumented)_
 

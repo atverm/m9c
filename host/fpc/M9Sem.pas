@@ -132,9 +132,24 @@ type
       body: TNode; scratchCounts: Boolean): Boolean;
     function AnswersFrame (const qual: string; const pr: TProcInfo): Boolean;
     function AnswersRo (const qual: string; const pr: TProcInfo): Boolean;
-    function AnswersView (const qual: string; const pr: TProcInfo): Boolean;
-    function ViewExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
-    function ViewEvidence (k, d: TNode; const modn: string): Boolean;
+    function AnswersViewAt (const qual: string; const pr: TProcInfo; j: Integer): Boolean;
+    function AnswersViewAny (const qual: string; const pr: TProcInfo): Boolean;
+    function ViewExprEvidence (k, d: TNode; const modn: string; depth: Integer;
+                               const nm: string): Boolean;
+    function ViewEvidence (k, d: TNode; const modn, nm: string): Boolean;
+    function CarrierEvidence (k: TNode; const cn: string; d: TNode; const modn: string;
+                              depth: Integer; const nm: string; deep: Boolean): Boolean;
+    function ViewCarrier (const cn: string; d: TNode; const modn: string;
+                          depth: Integer; const nm: string): Boolean;
+    function ViewCallOf (k: TNode): TNode;
+    function ViewArgOf (vc: TNode; j: Integer): Boolean;
+    function PtrBearing (t: TNode; depth: Integer): Boolean;
+    function ParamSelType (d, e: TNode; const modn: string;
+                           out beyond, known: Boolean): TNode;
+    function ParamViewBearing (d, e: TNode; const modn: string): Boolean;
+    function ParamSelBeyond (d, e: TNode; const modn: string): Boolean;
+    function HandsBackDeep (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
+    function HandsBackFrom (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
     function RoExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
     function RoEvidence (k, d: TNode; const modn: string): Boolean;
     function RoAnswerText (const name: string; const pr: TProcInfo): string;
@@ -1050,49 +1065,431 @@ begin
         if d.kids[0].kids[a].kids[0].kids[b].a = nm then Exit (True);
 end;
 
-function TSem.ViewExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
+function FieldTypeOf (rec: TNode; const fname: string): TNode; forward;
+
+{ the J-th parameter's name, '' past the end (Sem.ParamNameAt) }
+function ParamNameAt (d: TNode; j: Integer): string;
+var g, b, k : Integer; grp, ids : TNode;
+begin
+  Result := '';
+  k := 0;
+  if (d = nil) or (d.kids[0] = nil) then Exit;
+  for g := 0 to High (d.kids[0].kids) do
+  begin
+    grp := d.kids[0].kids[g];
+    if (grp = nil) or (grp.kids[0] = nil) then continue;
+    ids := grp.kids[0];
+    for b := 0 to High (ids.kids) do
+    begin
+      if k = j then
+      begin
+        if ids.kids[b] <> nil then Exit (ids.kids[b].a);
+        Exit;
+      end;
+      Inc (k);
+    end;
+  end;
+end;
+
+{ the J-th parameter's name when it is a VAR parameter, else ''
+  (Sem.VarParamAt) }
+function VarParamAt (d: TNode; j: Integer): string;
+var g, b, k : Integer; grp, ids : TNode;
+begin
+  Result := '';
+  k := 0;
+  if (d = nil) or (d.kids[0] = nil) then Exit;
+  for g := 0 to High (d.kids[0].kids) do
+  begin
+    grp := d.kids[0].kids[g];
+    if (grp = nil) or (grp.kids[0] = nil) then continue;
+    ids := grp.kids[0];
+    for b := 0 to High (ids.kids) do
+    begin
+      if k = j then
+      begin
+        if (ids.kids[b] <> nil) and grp.f1 and not grp.f2 then
+          Exit (ids.kids[b].a);
+        Exit;
+      end;
+      Inc (k);
+    end;
+  end;
+end;
+
+{ is expression K, in the body D of a procedure of module MODN, a
+  VIEW of D's parameter NM: NM itself or a viewable component of it,
+  under SLICE, GRID or parentheses; a local that CARRIES it; or the
+  answer of a callee that views the argument that is one.  Per
+  parameter since 2026-10-18.  Mirrors Sem.ViewExprEvidence }
+function TSem.ViewExprEvidence (k, d: TNode; const modn: string; depth: Integer;
+                                const nm: string): Boolean;
 var pr : TProcInfo; i : Integer;
 begin
   Result := False;
   if (depth > 8) or (k = nil) then Exit;
-  if (k.kind = nkSliceOf3) or (k.kind = nkGridOf) or (k.kind = nkParen) then
-    Exit (ViewExprEvidence (k.kids[0], d, modn, depth + 1));
-  if (k.kind = nkDesignator) and (Length (k.kids) = 0) then
-    Exit (IsParamOfD (d, k.a));
+  if (k.kind = nkSliceOf3) or (k.kind = nkGridOf) or (k.kind = nkParen) or
+     (k.kind = nkSomeExpr) then
+    Exit (ViewExprEvidence (k.kids[0], d, modn, depth + 1, nm));
+  if k.kind = nkDesignator then
+  begin
+    if k.a = nm then Exit (ParamViewBearing (d, k, modn));
+    if IsParamOfD (d, k.a) then Exit;
+    if Length (k.kids) = 0 then Exit (ViewCarrier (k.a, d, modn, depth + 1, nm));
+    Exit;
+  end;
   if (k.kind = nkCallExpr) and (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) then
-    if ProcNamed (modn, CallName (k.kids[0]), pr) and (pr.foreign = '') then
-      if AnswersView (pr.modName + '.' + pr.name, pr) and (k.kids[1] <> nil) then
-        for i := 0 to High (k.kids[1].kids) do
-          if ViewExprEvidence (k.kids[1].kids[i], d, modn, depth + 1) then Exit (True);
+    if ProcNamed (modn, CallName (k.kids[0]), pr) and (pr.foreign = '') and
+       (k.kids[1] <> nil) then
+      for i := 0 to High (k.kids[1].kids) do
+        if AnswersViewAt (pr.modName + '.' + pr.name, pr, i) then
+          if ViewExprEvidence (k.kids[1].kids[i], d, modn, depth + 1, nm) then Exit (True);
 end;
 
-function TSem.ViewEvidence (k, d: TNode; const modn: string): Boolean;
+{ does the body store a view of parameter NM under the name CN: an
+  assignment to CN bare or through a selector, an IS SOME binder or a
+  FOR IN variable named CN, from the parameter, a carrier or a
+  view-answering call; or CN handed as a VAR argument to a callee that
+  fills that parameter with a view of another argument -- mirrors
+  Sem.CarrierEvidence }
+function TSem.CarrierEvidence (k: TNode; const cn: string; d: TNode; const modn: string;
+                               depth: Integer; const nm: string; deep: Boolean): Boolean;
+var
+  i, j : Integer;
+  pr : TProcInfo;
+  al, ai : TNode;
+  q : string;
+  hit : Boolean;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if ((k.kind = nkCallStmt) or (k.kind = nkCallExpr)) and (k.kids[0] <> nil) and
+     (k.kids[0].kind = nkDesignator) and (k.kids[1] <> nil) then
+  begin
+    al := k.kids[1];
+    for i := 0 to High (al.kids) do
+    begin
+      ai := al.kids[i];
+      if (ai <> nil) and (ai.kind = nkDesignator) and (ai.a = cn) then
+        if ProcNamed (modn, CallName (k.kids[0]), pr) and (pr.foreign = '') then
+        begin
+          q := pr.modName + '.' + pr.name;
+          for j := 0 to High (al.kids) do
+            if j <> i then
+            begin
+              hit := HandsBackFrom (q, pr, i, j);
+              { DEEP asks for a store beyond the frame: the callee's
+                own was, or our designator reaches the parameter
+                through a reference (Sem.CarrierEvidence) }
+              if hit and deep then
+                hit := HandsBackDeep (q, pr, i, j) or ParamSelBeyond (d, ai, modn);
+              if hit and ViewExprEvidence (al.kids[j], d, modn, depth + 1, nm) then
+                Exit (True);
+            end;
+        end;
+    end;
+  end;
+  if (k.kind = nkAssign) and (k.kids[0] <> nil) and
+     (k.kids[0].kind = nkDesignator) and (k.kids[0].a = cn) then
+    if (not deep) or ParamSelBeyond (d, k.kids[0], modn) then
+      if ViewExprEvidence (k.kids[1], d, modn, depth + 1, nm) then Exit (True);
+  { binders are locals, never the parameter a DEEP question is about }
+  if (k.kind = nkIs) and (not deep) and (k.kids[1] <> nil) and
+     (k.kids[1].kind = nkIsSome) and (k.kids[1].a = cn) then
+    if ViewExprEvidence (k.kids[0], d, modn, depth + 1, nm) then Exit (True);
+  if (k.kind = nkForIn) and (not deep) and (k.a = cn) then
+    if ViewExprEvidence (k.kids[0], d, modn, depth + 1, nm) then Exit (True);
+  for i := 0 to High (k.kids) do
+    if CarrierEvidence (k.kids[i], cn, d, modn, depth, nm, deep) then Exit (True);
+end;
+
+function TSem.ViewCarrier (const cn: string; d: TNode; const modn: string;
+                           depth: Integer; const nm: string): Boolean;
+begin
+  Result := False;
+  if depth > 8 then Exit;
+  if IsParamOfD (d, cn) then Exit;
+  Result := CarrierEvidence (d.kids[4], cn, d, modn, depth, nm, False);
+end;
+
+{ can a value of this type carry a pointer?  Gen.HasPtr's twin;
+  mirrors Sem.PtrBearing }
+function TSem.PtrBearing (t: TNode; depth: Integer): Boolean;
+var
+  r, fs, g, arm, afs, ag : TNode;
+  i, j : Integer;
+begin
+  Result := False;
+  if depth > 8 then Exit;
+  r := ResolveType (t);
+  if r = nil then Exit;
+  case r.kind of
+    nkPtrType, nkSliceType, nkGridType : Result := True;
+    nkOptType : Result := PtrBearing (r.kids[0], depth + 1);
+    nkArrayType : Result := PtrBearing (r.kids[1], depth + 1);
+    nkRecordType, nkMonitorType :
+      begin
+        if r.kind = nkMonitorType then fs := r.kids[0] else fs := r.kids[1];
+        if fs = nil then Exit;
+        for i := 0 to High (fs.kids) do
+        begin
+          g := fs.kids[i];
+          if (g <> nil) and PtrBearing (g.kids[1], depth + 1) then
+            Exit (True);
+        end;
+      end;
+    nkCaseRecordType :
+      for i := 0 to High (r.kids) do
+      begin
+        arm := r.kids[i];
+        if arm = nil then continue;
+        afs := arm.kids[0];
+        if afs = nil then continue;
+        for j := 0 to High (afs.kids) do
+        begin
+          ag := afs.kids[j];
+          if (ag <> nil) and PtrBearing (ag.kids[1], depth + 1) then
+            Exit (True);
+        end;
+      end;
+  end;
+end;
+
+{ the type under designator E -- a parameter of D, of module MODN,
+  bare or selected -- walked from the declared type with the component
+  types qualified in their declaring module; BEYOND says a reference
+  was crossed, KNOWN that every step resolved.  Mirrors Sem.ParamSelType }
+function TSem.ParamSelType (d, e: TNode; const modn: string;
+                            out beyond, known: Boolean): TNode;
+var
+  g, b, j : Integer;
+  grp, ids, tn, tq, res, sel : TNode;
+  tmod : string;
+  found : Boolean;
+begin
+  Result := nil;
+  beyond := False;
+  known := False;
+  if (d = nil) or (d.kids[0] = nil) then Exit;
+  found := False;
+  tn := nil;
+  for g := 0 to High (d.kids[0].kids) do
+  begin
+    grp := d.kids[0].kids[g];
+    if (grp = nil) or (grp.kids[0] = nil) then continue;
+    ids := grp.kids[0];
+    for b := 0 to High (ids.kids) do
+      if (not found) and (ids.kids[b] <> nil) and (ids.kids[b].a = e.a) then
+      begin
+        found := True;
+        tn := grp.kids[1];
+      end;
+  end;
+  if not found then Exit;
+  tmod := modn;
+  tq := InMod (tn, tmod);
+  for j := 0 to High (e.kids) do
+  begin
+    NoteMod (tq, tmod);
+    res := ResolveType (tq);
+    while (res <> nil) and (res.kind in [nkPtrType, nkSharedType]) do
+    begin
+      beyond := True;
+      tq := InMod (res.kids[0], tmod);
+      NoteMod (tq, tmod);
+      res := ResolveType (tq);
+    end;
+    if res = nil then Exit;
+    sel := e.kids[j];
+    if sel = nil then continue;
+    if sel.kind = nkSelField then
+    begin
+      if res.kind <> nkRecordType then Exit;
+      tq := InMod (FieldTypeOf (res, sel.a), tmod);
+    end
+    else if sel.kind = nkSelIndex then
+    begin
+      if res.kind = nkSliceType then
+      begin
+        beyond := True;
+        tq := InMod (res.kids[0], tmod);
+      end
+      else if res.kind = nkGridType then
+      begin
+        beyond := True;
+        tq := InMod (res.kids[1], tmod);
+      end
+      else if res.kind = nkArrayType then
+        tq := InMod (res.kids[1], tmod)
+      else Exit;
+    end
+    else Exit;
+  end;
+  known := True;
+  Result := tq;
+end;
+
+{ can designator E -- a parameter of D, bare or selected -- be viewed
+  at all: a reference, a string, a record holding one?  A scalar is
+  copied (`buf[i] := s[i]').  A type this checker cannot resolve is
+  taken as bearing.  Mirrors Sem.ParamViewBearing }
+function TSem.ParamViewBearing (d, e: TNode; const modn: string): Boolean;
+var tn : TNode; beyond, known : Boolean;
+begin
+  Result := False;
+  if not IsParamOfD (d, e.a) then Exit;
+  tn := ParamSelType (d, e, modn, beyond, known);
+  if not known then Exit (True);
+  { a builtin scalar resolves to nothing, being nothing's alias }
+  if (tn <> nil) and (tn.kind = nkQualident) and (tn.b = '') and
+     InList (tn.a, BuiltinTypes) then Exit;
+  if ResolveType (tn) <> nil then Exit (PtrBearing (tn, 0));
+  Result := True;
+end;
+
+{ does a store into designator E -- a parameter of D, selected -- land
+  beyond the frame holding the parameter?  Unknown is taken as beyond.
+  Mirrors Sem.ParamSelBeyond }
+function TSem.ParamSelBeyond (d, e: TNode; const modn: string): Boolean;
+var tn : TNode; beyond, known : Boolean;
+begin
+  Result := False;
+  if not IsParamOfD (d, e.a) then Exit;
+  tn := ParamSelType (d, e, modn, beyond, known);
+  if not known then Exit (True);
+  Result := beyond;
+end;
+
+{ does the callee fill its I-th parameter, a VAR one, with a view of
+  its J-th?  Then the argument handed to I CARRIES the borrow of the
+  argument handed to J in the caller's frame: handed back, not kept.
+  Memoised; 'busy' breaks a cycle as FALSE.  Mirrors Sem.HandsBackFrom }
+function TSem.HandsBackFrom (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
+var ix : Integer; key, cn, src : string;
+begin
+  Result := False;
+  if i = j then Exit;
+  key := 'back ' + qual + '#' + IntToStr (i) + '#' + IntToStr (j);
+  ix := ansMemo.IndexOfName (key);
+  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
+  ansMemo.Values[key] := 'busy';
+  if pr.body <> nil then
+  begin
+    cn := VarParamAt (pr.body, i);
+    src := ParamNameAt (pr.body, j);
+    if (cn <> '') and (src <> '') then
+      Result := CarrierEvidence (pr.body.kids[4], cn, pr.body, pr.modName, 0, src, False);
+  end;
+  if Result then ansMemo.Values[key] := 'yes'
+  else ansMemo.Values[key] := 'no';
+end;
+
+{ HandsBackFrom's question with the store BEYOND the frame: into what
+  the I-th parameter points to, or a slice's storage, rather than the
+  variable itself.  Mirrors Sem.HandsBackDeep }
+function TSem.HandsBackDeep (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
+var ix : Integer; key, cn, src : string;
+begin
+  Result := False;
+  if i = j then Exit;
+  key := 'deep ' + qual + '#' + IntToStr (i) + '#' + IntToStr (j);
+  ix := ansMemo.IndexOfName (key);
+  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
+  ansMemo.Values[key] := 'busy';
+  if pr.body <> nil then
+  begin
+    cn := VarParamAt (pr.body, i);
+    src := ParamNameAt (pr.body, j);
+    if (cn <> '') and (src <> '') then
+      Result := CarrierEvidence (pr.body.kids[4], cn, pr.body, pr.modName, 0, src, True);
+  end;
+  if Result then ansMemo.Values[key] := 'yes'
+  else ansMemo.Values[key] := 'no';
+end;
+
+function TSem.ViewEvidence (k, d: TNode; const modn, nm: string): Boolean;
 var i : Integer;
 begin
   Result := False;
   if k = nil then Exit;
   if (k.kind = nkReturn) and (Length (k.kids) > 0) then
-    if ViewExprEvidence (k.kids[0], d, modn, 0) then Exit (True);
+    if ViewExprEvidence (k.kids[0], d, modn, 0, nm) then Exit (True);
   for i := 0 to High (k.kids) do
-    if ViewEvidence (k.kids[i], d, modn) then Exit (True);
+    if ViewEvidence (k.kids[i], d, modn, nm) then Exit (True);
 end;
 
-function TSem.AnswersView (const qual: string; const pr: TProcInfo): Boolean;
-var ix : Integer; key, t : string;
+{ does the callee answer a VIEW of its J-th parameter?  Then its answer
+  CARRIES the argument handed to J.  Memoised per parameter.  Mirrors
+  Sem.AnswersViewAt }
+function TSem.AnswersViewAt (const qual: string; const pr: TProcInfo; j: Integer): Boolean;
+var ix : Integer; key, t, nm : string;
 begin
-  key := 'view ' + qual;
+  key := 'view ' + qual + '#' + IntToStr (j);
   ix := ansMemo.IndexOfName (key);
   if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
   ansMemo.Values[key] := 'busy';
   Result := False;
   if (pr.body <> nil) and (pr.body.kids[1] <> nil) then
   begin
+    nm := ParamNameAt (pr.body, j);
     t := CanonT (pr.body.kids[1], 0);
-    if StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'GRID ') then
-      Result := ViewEvidence (pr.body.kids[4], pr.body, pr.modName);
+    if (nm <> '') and (StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'GRID ')) then
+      Result := ViewEvidence (pr.body.kids[4], pr.body, pr.modName, nm);
   end;
   if Result then ansMemo.Values[key] := 'yes'
   else ansMemo.Values[key] := 'no';
+end;
+
+{ the parameters a parameter list declares (the pass's CountParams is
+  nested there and out of reach here) }
+function CountParamsOf (pl: TNode): Integer;
+var g : Integer;
+begin
+  Result := 0;
+  if pl = nil then Exit;
+  for g := 0 to High (pl.kids) do
+    if (pl.kids[g] <> nil) and (pl.kids[g].kids[0] <> nil) then
+      Inc (Result, Length (pl.kids[g].kids[0].kids));
+end;
+
+{ does the callee answer a view of ANY of its parameters?  Mirrors
+  Sem.AnswersViewAny }
+function TSem.AnswersViewAny (const qual: string; const pr: TProcInfo): Boolean;
+var j, n : Integer;
+begin
+  Result := False;
+  if pr.node = nil then Exit;
+  n := CountParamsOf (pr.node.kids[0]);
+  for j := 0 to n - 1 do
+    if AnswersViewAt (qual, pr, j) then Exit (True);
+end;
+
+{ the call under K -- through parens, SOME, SLICE and GRID -- when its
+  callee answers a view of some parameter; nil otherwise.  Mirrors
+  Sem.ViewCallOf }
+function TSem.ViewCallOf (k: TNode): TNode;
+var pr : TProcInfo;
+begin
+  Result := nil;
+  if k = nil then Exit;
+  if (k.kind = nkParen) or (k.kind = nkSomeExpr) or
+     (k.kind = nkSliceOf3) or (k.kind = nkGridOf) then
+    Exit (ViewCallOf (k.kids[0]));
+  if (k.kind = nkCallExpr) and (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) then
+    if LookupProcInfo (CallName (k.kids[0]), pr) and (pr.foreign = '') then
+      if AnswersViewAny (pr.modName + '.' + pr.name, pr) then
+        Result := k;
+end;
+
+{ does the callee of call VC view its J-th argument -- the one the
+  answer carries?  Mirrors Sem.ViewArgOf }
+function TSem.ViewArgOf (vc: TNode; j: Integer): Boolean;
+var pr : TProcInfo;
+begin
+  Result := False;
+  if (vc = nil) or (vc.kids[0] = nil) or (vc.kids[0].kind <> nkDesignator) then Exit;
+  if LookupProcInfo (CallName (vc.kids[0]), pr) and (pr.foreign = '') then
+    Result := AnswersViewAt (pr.modName + '.' + pr.name, pr, j);
 end;
 
 { Sem.RoAnswerOf's text for a callee: '' when its answer is not
@@ -1214,7 +1611,6 @@ begin
     end;
 end;
 
-function FieldTypeOf (rec: TNode; const fname: string): TNode; forward;
 
 { the dotted name a call names: `Row', `Mod.Row' }
 function CalleeOf (e: TNode): string;
@@ -2743,6 +3139,15 @@ var
       if n.kids[i] <> nil then AggWalk (n.kids[i], n.kind);
   end;
 
+  { the name under a destination or target: '>tg' marks a store into
+    the VAR parameter tg's OWN storage, a hand-back to the caller
+    rather than a retention (StoreRef; mirrors Sem.TgtName) }
+  function TgtName (const t: string): string;
+  begin
+    if (Length (t) > 0) and (t[1] = '>') then Exit (Copy (t, 2, MaxInt));
+    Result := t;
+  end;
+
   { name NM's storage is reachable from outside the frame via TGT.
     Append-if-absent, so target order is first-encounter order --
     the M9 checker must reproduce it, and semdiff holds both to it }
@@ -2760,15 +3165,21 @@ var
   end;
 
   { the frame-storage root a reference expression views: through
-    SOME and parens, and through SLICE/VIEW/SHARED,
-    whose answers alias their first argument's storage }
+    SOME and parens, and through SLICE/VIEW/SHARED/GRID,
+    whose answers alias their first argument's storage.  SLICE,
+    SHARED and GRID are nodes of their own (nkSliceOf3, nkSharedExpr,
+    nkGridOf), not calls: the call branch below never met one, and
+    `RETURN SLICE (out, 0, n)` escaped unrooted (Sem.EscRootOf says
+    the rest; 2026-10-18) }
   function EscRootOf (e: TNode): string;
   var nm : string;
   begin
     Result := '';
     if e = nil then Exit;
     if e.kind = nkDesignator then Exit (e.a);
-    if (e.kind = nkSomeExpr) or (e.kind = nkParen) then
+    if (e.kind = nkSomeExpr) or (e.kind = nkParen) or
+       (e.kind = nkSliceOf3) or (e.kind = nkSharedExpr) or
+       (e.kind = nkGridOf) then
       Exit (EscRootOf (e.kids[0]));
     if (e.kind = nkCallExpr) and (e.kids[0] <> nil) and
        (e.kids[0].kind = nkDesignator) and
@@ -2836,7 +3247,6 @@ var
     Result := RoAnswerText (name, pr);
   end;
 
-  function PtrBearing (t: TNode; depth: Integer): Boolean; forward;
   function DesigPath (d: TNode): string; forward;
 
   { par 2.4, the copy: is the value of expression K read-only storage
@@ -2988,6 +3398,9 @@ var
     (mirrors Sem.KindPool) }
   function KindPool (const what: string): string;
   begin
+    { a view of storage in P is storage in P (Sem.KindPool, 2026-10-18) }
+    if Copy (what, 1, 10) = 'a view of ' then
+      Exit (KindPool (Copy (what, 11, MaxInt)));
     if Copy (what, 1, 22) = 'an allocation in pool ' then
       Exit (Copy (what, 23, Length (what) - 22));
     if Copy (what, 1, 17) = 'a view into pool ' then
@@ -3205,13 +3618,14 @@ var
     if dn.kind <> nkDesignator then Exit;
     if not LookupProcInfo (DesigName (dn), pr) then Exit;
     if pr.foreign <> '' then Exit;
-    if not AnswersView (pr.modName + '.' + pr.name, pr) then Exit;
     if args = nil then Exit;
+    { among the arguments the callee VIEWS, per parameter (2026-10-18) }
     for i := 0 to High (args.kids) do
-    begin
-      w := FrameWhat (args.kids[i], 'SLICE OF CHAR');
-      if w <> '' then Exit ('a view of ' + w);
-    end;
+      if AnswersViewAt (pr.modName + '.' + pr.name, pr, i) then
+      begin
+        w := FrameWhat (args.kids[i], 'SLICE OF CHAR');
+        if w <> '' then Exit ('a view of ' + w);
+      end;
   end;
 
   { what the frame-scoped value IS: 'a concatenation', 'a frame
@@ -3294,13 +3708,14 @@ var
   { a ref value rooted at frame storage SRC was stored into the
     designator rooted DST (dstSel: through a selector) }
   procedure EscStore (const dst: string; dstSel: Boolean; const src: string);
-  var m : string;
+  var m, nm : string;
   begin
-    m := ScopeMode (dst);
+    nm := TgtName (dst);
+    m := ScopeMode (nm);
     if m = 'm' then EscTarget (src, '<module>')
     else if (m = 'v') or (m = 'o') or (m = 'r') then EscTarget (src, dst)
     else if (m = 'p') and dstSel then EscTarget (src, dst)
-    else if IsFrameMode (m) then EscAlias (dst, src);
+    else if IsFrameMode (m) then EscAlias (nm, src);
   end;
 
   procedure CarryAdd (const nm, borrow: string);
@@ -3333,7 +3748,7 @@ var
     if t = '<return>' then Exit ('the RETURN value');
     if t = '<call>' then Exit ('a callee');
     if t = '<unknown>' then Exit ('an unknown name');
-    Result := 'the caller through ' + t;
+    Result := 'the caller through ' + TgtName (t);
   end;
 
   { classify ONE resolved store -- SRC is the borrow, CARRIER the
@@ -3344,38 +3759,46 @@ var
   var
     tl : TStringList;
     j2 : Integer;
-    selfHit : Boolean;
-    msg2, msgE, dmode, srcT : string;
+    selfHit, used : Boolean;
+    msg2, msgE, dmode, srcT, dn : string;
   begin
     srcT := src;
     if carrier <> '' then
       srcT := src + ' (carried by ' + carrier + ')';
     tl := TStringList.Create; tl.CaseSensitive := True;
-    dmode := ScopeMode (dst);
+    dn := TgtName (dst);
+    dmode := ScopeMode (dn);
     if dmode = 'm' then tl.Add ('<module>')
     else if (dmode = 'v') or (dmode = 'o') or (dmode = 'r') or
             (dmode = 'p') then tl.Add (dst)
     else if (dmode = 'l') or (dmode = 'b') then
     begin
       for j2 := 0 to escSet.Count - 1 do
-        if escSet.Names[j2] = dst then
+        if escSet.Names[j2] = dn then
           tl.Add (escSet.ValueFromIndex[j2]);
     end
     else tl.Add ('<unknown>');
     { the source among the targets is the destination escaping only
       into the borrow itself -- a tree growing through its own node
       is not a kept borrow }
-    selfHit := tl.IndexOf (src) >= 0;
-    if selfHit then tl.Delete (tl.IndexOf (src));
+    selfHit := False;
+    j2 := 0;
+    while j2 < tl.Count do
+      if TgtName (tl[j2]) = src then
+      begin
+        selfHit := True;
+        tl.Delete (j2);
+      end
+      else Inc (j2);
     if tl.Count = 0 then
     begin
       if selfHit then
         msg2 := 'self-store: borrowed ' + srcT + ' stored into ' +
-          dst + ', which reaches the caller only through ' +
+          dn + ', which reaches the caller only through ' +
           src + ' itself (par 4.1)'
       else
         msg2 := 'frame-store: borrowed ' + srcT + ' stored into ' +
-          dst + ', which never escapes the frame (par 4.1)';
+          dn + ', which never escapes the frame (par 4.1)';
     end
     else
     begin
@@ -3386,20 +3809,30 @@ var
         msg2 := msg2 + RenderTgt (tl[j2]);
       end;
       msg2 := 'retention: borrowed ' + srcT + ' stored into ' +
-        dst + ' -- reaches ' + msg2 + ' (par 4.1/4.2)';
-      keptUsed.Add (src);
+        dn + ' -- reaches ' + msg2 + ' (par 4.1/4.2)';
       { the CHECK behind the measurement: a retention must be in the
         signature, the way a raise must be in RAISES.  '<call>' alone
         does not fire it -- whether a callee keeps its argument is
         that callee's declaration to make, and the caller check reads
         it there (par 4.1). }
       msgE := '';
+      used := False;
+      { nor '<return>': a borrow that reaches the answer is handed
+        back, not kept -- the answer carries it; nor a VAR parameter's
+        own storage ('>tg'): handed back through the argument, which
+        carries it in the caller (Sem.EmitPend, 2026-10-18).  Neither
+        justifies a KEPT either; a callee's declared keeping does. }
       for j2 := 0 to tl.Count - 1 do
-        if tl[j2] <> '<call>' then
+        if (tl[j2] <> '<return>') and (TgtName (tl[j2]) = tl[j2]) then
         begin
-          if msgE <> '' then msgE := msgE + ', ';
-          msgE := msgE + RenderTgt (tl[j2]);
+          used := True;
+          if tl[j2] <> '<call>' then
+          begin
+            if msgE <> '' then msgE := msgE + ', ';
+            msgE := msgE + RenderTgt (tl[j2]);
+          end;
         end;
+      if used then keptUsed.Add (src);
       if (msgE <> '') and (keptParams.IndexOfName (src) < 0) then
         Errors.Add (Format (
           '%d:%d %s: undeclared retention: borrowed %s reaches %s' +
@@ -3645,48 +4078,9 @@ var
     Answers 'frame', 'pool' or 'own', or '' after diagnosing.  ty is
     the type's node and ext0 the index of the first extent, whose kid
     is nil when there is none.  Mirrors Sem.NewForm. }
-  { can a value of this type carry a pointer?  Gen.HasPtr's twin;
-    mirrors Sem.PtrBearing }
-  function PtrBearing (t: TNode; depth: Integer): Boolean;
-  var
-    r, fs, g, arm, afs, ag : TNode;
-    i, j : Integer;
-  begin
-    Result := False;
-    if depth > 8 then Exit;
-    r := ResolveType (t);
-    if r = nil then Exit;
-    case r.kind of
-      nkPtrType, nkSliceType, nkGridType : Result := True;
-      nkOptType : Result := PtrBearing (r.kids[0], depth + 1);
-      nkArrayType : Result := PtrBearing (r.kids[1], depth + 1);
-      nkRecordType, nkMonitorType :
-        begin
-          if r.kind = nkMonitorType then fs := r.kids[0] else fs := r.kids[1];
-          if fs = nil then Exit;
-          for i := 0 to High (fs.kids) do
-          begin
-            g := fs.kids[i];
-            if (g <> nil) and PtrBearing (g.kids[1], depth + 1) then
-              Exit (True);
-          end;
-        end;
-      nkCaseRecordType :
-        for i := 0 to High (r.kids) do
-        begin
-          arm := r.kids[i];
-          if arm = nil then continue;
-          afs := arm.kids[0];
-          if afs = nil then continue;
-          for j := 0 to High (afs.kids) do
-          begin
-            ag := afs.kids[j];
-            if (ag <> nil) and PtrBearing (ag.kids[1], depth + 1) then
-              Exit (True);
-          end;
-        end;
-    end;
-  end;
+  { PtrBearing -- can a value of this type carry a pointer? -- is a
+    method of TSem since 2026-10-18, so that ParamBearing can ask it
+    from the view-evidence walks; see TSem.PtrBearing }
 
   { does a VAR parameter of this type carry its object's pool as a
     hidden argument (docs/pool-elision-plan.md, rule 2)?  Mirrors
@@ -4418,6 +4812,58 @@ var
     end;
   end;
 
+  { CheckWrite0's answer alone -- does a store into designator D land
+    beyond the frame -- with none of its refusals, for a VAR argument
+    a callee fills with a view (the hand-back; mirrors Sem.DerefBeyond) }
+  function DerefBeyond (d: TNode): Boolean;
+  var
+    j : Integer;
+    declN, res, sel : TNode;
+    tmod : string;
+  begin
+    Result := False;
+    if Length (d.kids) = 0 then Exit;
+    tmod := '';
+    declN := ScopeType (d.a);
+    for j := 0 to High (d.kids) do
+    begin
+      sel := d.kids[j];
+      if declN = nil then Exit;
+      NoteMod (declN, tmod);
+      res := ResolveType (declN);
+      while (res <> nil) and (res.kind in [nkPtrType, nkSharedType]) do
+      begin
+        Result := True;
+        declN := InMod (res.kids[0], tmod);
+        NoteMod (declN, tmod);
+        res := ResolveType (declN);
+      end;
+      if res = nil then Exit;
+      case sel.kind of
+        nkSelField :
+          if res.kind = nkRecordType then
+            declN := InMod (FieldTypeOf (res, sel.a), tmod)
+          else
+            Exit;
+        nkSelIndex :
+          if res.kind = nkSliceType then
+          begin
+            Result := True;
+            declN := InMod (res.kids[0], tmod);
+          end
+          else if res.kind = nkGridType then
+          begin
+            Result := True;
+            declN := InMod (res.kids[1], tmod);
+          end
+          else if res.kind = nkArrayType then
+            declN := InMod (res.kids[1], tmod)
+          else
+            Exit;
+      end;
+    end;
+  end;
+
   { the base name a stored reference is borrowed from, if the source
     is a plain designator (possibly under SOME/parens) }
   function IsRefTy (const s0: string): Boolean;
@@ -4451,9 +4897,15 @@ var
     an escape fact when rooted in frame storage.  Mirrors Sem.StoreRef. }
   procedure StoreRef (st, lhs: TNode; const vname: string; beyond: Boolean;
                       const lhsMode: string);
-  var m : string;
+  var m, dst : string;
   begin
     m := ScopeMode (vname);
+    { a store into a VAR parameter's OWN storage -- not beyond -- hands
+      the borrow back to the caller through that parameter; marked
+      '>' so that EmitPend records the reach without demanding KEPT
+      (Sem.StoreRef, 2026-10-18) }
+    dst := lhs.a;
+    if (lhsMode = 'v') and not beyond then dst := '>' + lhs.a;
     if ((m = 'p') or (m = 'v') or (m = 'r') or (m = 'l') or (m = 'b')) and
        (beyond or (lhsMode = 'm') or
         ((lhsMode = 'v') and (Length (lhs.kids) > 0))) then
@@ -4461,11 +4913,11 @@ var
       SetLength (pendLn, pendN + 1); SetLength (pendCl, pendN + 1);
       SetLength (pendSrc, pendN + 1); SetLength (pendDst, pendN + 1);
       pendLn[pendN] := st.line; pendCl[pendN] := st.col;
-      pendSrc[pendN] := vname; pendDst[pendN] := lhs.a;
+      pendSrc[pendN] := vname; pendDst[pendN] := dst;
       Inc (pendN);
     end;
     if (lhsMode = 'l') or (lhsMode = 'b') then CarryFrom (lhs.a, vname);
-    if IsFrameMode (m) then EscStore (lhs.a, Length (lhs.kids) > 0, vname);
+    if IsFrameMode (m) then EscStore (dst, Length (lhs.kids) > 0, vname);
   end;
 
   { the fields, flattened, of the variant or record a call CONSTRUCTS
@@ -4589,14 +5041,15 @@ var
   function CallType (dnode, argl, site: TNode): string;
   var
     name, om, pTy, amode, aliasTo, t, what, why, roWhat : string;
-    cOm, cFty, cSv : string;
+    cOm, cFty, cSv, hbMode, hroot : string;
     cFlat : TNodeArr;
-    cj : Integer;
+    cj, iu : Integer;
+    hbBeyond : Boolean;
     nargs, j, g, k, kept, dot, nFrameKept : Integer;
     aTy : array of string;
     aNode : array of TNode;
     pr : TProcInfo;
-    pl, grp, vfields, ares, dcl, rec : TNode;
+    pl, grp, vfields, ares, dcl, rec, vcn : TNode;
     mi : TModuleInfo;
     hint : string;
     isVar : Boolean;
@@ -4850,6 +5303,8 @@ var
         pr.node := ptn;
         pr.modName := '';
         pr.foreign := '';
+        pr.name := '';
+        pr.body := nil;            { nothing is known of which body runs }
         if (sty.kind = nkQualident) and (sty.b <> '') then
           pr.modName := sty.a;
         SetLength (pr.raises, 0);
@@ -5042,9 +5497,8 @@ var
                 { a concatenation, a frame allocation, or a name
                   holding either }
                 what := FrameWhat (aNode[k], aTy[k]);
-                { a view of frame storage is refused where it is stored
-                  durably, not here (mirrors Sem.CheckArg) }
-                if StartsWithS (what, 'a view of ') then what := '';
+                { a view of frame storage is refused here too since
+                  2026-10-18 (mirrors Sem.CheckArg) }
                 if (what <> '') and (nFrameKept <= 1) and
                    not PoolAmong (KindPool (what)) then
                   ErrN (site, ctx, Format (
@@ -5057,8 +5511,23 @@ var
                   (TyBearing, decision 34), and a CONSTRUCTOR wrapping
                   a borrow hands the borrow to the keeper (2026-10-08) }
                 aliasTo := EscRootOf (aNode[k]);
+                vcn := ViewCallOf (aNode[k]);
                 if (aliasTo <> '') and TyBearing (aTy[k]) then
                   KeptRoot (site, ctx, name, k, aliasTo)
+                else if vcn <> nil then
+                begin
+                  { a view-answering call handed to a keeper hands it
+                    the arguments the answer views (Sem.CheckArg) }
+                  if vcn.kids[1] <> nil then
+                    for cj := 0 to High (vcn.kids[1].kids) do
+                    begin
+                      aliasTo := EscRootOf (vcn.kids[1].kids[cj]);
+                      if (aliasTo <> '') and (vcn.kids[1].kids[cj] <> nil) and
+                         TyBearing (TyStrAt (vcn.kids[1].kids[cj])) and
+                         ViewArgOf (vcn, cj) then
+                        KeptRoot (site, ctx, name, k, aliasTo);
+                    end;
+                end
                 else if (aliasTo = '') and CtorFlat (aNode[k], cOm, cFlat) and
                         (aNode[k].kids[1] <> nil) then
                   for cj := 0 to High (aNode[k].kids[1].kids) do
@@ -5077,6 +5546,39 @@ var
             Inc (k);
           end;
         end;
+      { par 4.1, the hand-back: a VAR argument whose parameter the
+        callee fills with a view of another argument (HandsBack) now
+        holds that borrow, as the left side of an assignment would
+        (mirrors Sem.CallType, 2026-10-18) }
+      if pr.foreign = '' then
+      begin
+        k := 0;
+        if pl <> nil then
+          for g := 0 to High (pl.kids) do
+          begin
+            grp := pl.kids[g];
+            for j := 0 to High (grp.kids[0].kids) do
+            begin
+              if (k < nargs) and grp.f1 and not grp.f2 and
+                 (aNode[k] <> nil) and (aNode[k].kind = nkDesignator) then
+              begin
+                hbMode := ScopeMode (aNode[k].a);
+                hbBeyond := DerefBeyond (aNode[k]);
+                for iu := 0 to nargs - 1 do
+                  if (iu <> k) and (iu < nargs) then
+                  begin
+                    hroot := EscRootOf (aNode[iu]);
+                    if (hroot <> '') and TyBearing (aTy[iu]) and
+                       HandsBackFrom (pr.modName + '.' + pr.name, pr, k, iu) then
+                      StoreRef (site, aNode[k], hroot,
+                        hbBeyond or HandsBackDeep (pr.modName + '.' + pr.name, pr, k, iu),
+                        hbMode);
+                  end;
+              end;
+              Inc (k);
+            end;
+          end;
+      end;
       pTy := '';
       if pr.node.kids[1] <> nil then
         pTy := CanonT (pr.node.kids[1], 0);
@@ -5802,7 +6304,8 @@ var
     haveVi : Boolean;
     covered : TStringList;
     lbl, dcl : TNode;
-    vname : string;
+    vname, vroot : string;
+    vcall : TNode;
     t, u, selTy, dmode, what, apool, par, ppool : string;
     said : Boolean;
     pre, hpre : string;
@@ -5976,6 +6479,23 @@ var
              not StartsWithS (u, 'SHARED PTR ') and
              not StartsWithS (u, 'OPT SHARED PTR ') then
             StoreRef (st, st.kids[0], vname, beyond, ScopeMode (st.kids[0].a));
+          { the ANSWER of a view-answering callee carries its
+            arguments (Sem.CheckAssign, 2026-10-18) }
+          if (vname = '') and TyBearing (u) and
+             not StartsWithS (u, 'SHARED PTR ') and
+             not StartsWithS (u, 'OPT SHARED PTR ') then
+          begin
+            vcall := ViewCallOf (st.kids[1]);
+            if (vcall <> nil) and (vcall.kids[1] <> nil) then
+              for j := 0 to High (vcall.kids[1].kids) do
+              begin
+                vroot := EscRootOf (vcall.kids[1].kids[j]);
+                if (vroot <> '') and (vcall.kids[1].kids[j] <> nil) and
+                   TyBearing (TyStrAt (vcall.kids[1].kids[j])) and
+                   ViewArgOf (vcall, j) then
+                  StoreRef (st, st.kids[0], vroot, beyond, ScopeMode (st.kids[0].a));
+              end;
+          end;
           { a value CONSTRUCTED around a borrow retains it as the
             borrow itself would (2026-10-08) }
           if vname = '' then

@@ -70,7 +70,7 @@ _(documented with the group below)_
 
 a reader on doc: UTF-8, with or without a byte order mark
 
-### Next (VAR KEPT r: PTR Reader) : Event RAISES SyntaxError, Unsupported
+### Next (VAR r: PTR Reader) : Event RAISES SyntaxError, Unsupported
 
 the next event; Eof once the root element and what follows it are
 read, and again after that.  The event's strings live in the

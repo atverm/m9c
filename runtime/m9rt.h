@@ -757,6 +757,62 @@ typedef struct m9_pool {
 void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err);
 void  m9_pool_free  (m9_pool *pool);
 
+/* ---- a statement's temporaries, released with the statement
+        (docs/statement-release-plan.md, stage 1; 2026-10-18) ----
+
+   A MARK is where the arena's top stands: its head block and that
+   block's used and last.  RELEASE puts the arena back there: the
+   usual case -- the statement carved into the same block -- is a
+   compare and two stores; a statement that crossed into new blocks
+   gives them back the way m9_pool_free does (the minimum-size ones to
+   the thread's cache), then restores the marked block's top.  last is
+   restored with used so that m9_cat may again extend in place the
+   string that was the top before the statement.
+
+   Nothing here decides WHAT may be released: that is the checker's
+   and the generator's (stage 2) -- a statement whose allocations
+   nothing can see afterwards.  Here the operations are made cheap
+   and made honest: under -DM9_POISON every released byte is written
+   0xA5 before the arena forgets it, in m9_pool_release and in
+   m9_pool_free alike, so a use after release reads a visible wrong
+   value instead of a usually-right one.
+
+   Named m9_pool_mark / m9_pool_release: m9_release is the SHARED
+   count's (decision 53), and the plan's m9_release was written
+   before that one existed.                                          */
+typedef struct m9_mark {
+  m9_pool_block *head;
+  size_t used, last;
+} m9_mark;
+
+#ifdef M9_POISON
+#define M9_POISON_BYTES(p, n) memset ((p), 0xA5, (n))
+#else
+#define M9_POISON_BYTES(p, n) ((void) 0)
+#endif
+
+static inline m9_mark m9_pool_mark (const m9_pool *pool)
+{
+  m9_mark m;
+  m.head = pool->head;
+  if (m.head != NULL) { m.used = m.head->used; m.last = m.head->last; }
+  else { m.used = 0; m.last = 0; }
+  return m;
+}
+
+void m9_pool_release_slow (m9_pool *pool, m9_mark m);   /* blocks to give back */
+
+static inline void m9_pool_release (m9_pool *pool, m9_mark m)
+{
+  m9_pool_block *b = pool->head;
+  if (b != m.head) { m9_pool_release_slow (pool, m); return; }
+  if (b != NULL && b->used > m.used) {
+    M9_POISON_BYTES ((unsigned char *) (b + 1) + m.used, b->used - m.used);
+    b->used = m.used;
+    b->last = m.last;
+  }
+}
+
 /* A RAISE'S STRINGS OUTLIVE THE FRAME THAT BUILT THEM (2026-10-06).
    A payload slot holds a pointer and a length, not a copy, and the
    payload is usually built where the failure is: `'no such column '
@@ -896,11 +952,24 @@ void m9_trap_tag (void);
    object actually dies. */
 static inline bool m9_rc_last (void *p)
 {
-  return p != NULL && (((struct m9_hdr *) p) - 1)->rc <= 1;
+  return p != NULL &&
+         __atomic_load_n (&(((struct m9_hdr *) p) - 1)->rc, __ATOMIC_ACQUIRE) <= 1;
 }
 
+/* THE count is atomic (2026-10-18): a SHARED handle to a [SHARABLE]
+   record is copied and disposed from several threads, and a plain
+   rc++ / rc-- lost or doubled a count under contention -- the owed
+   "SHARED count is still not atomic" of decision 50.  m9_release
+   gives up one handle and answers whether it was the LAST: the
+   decrement and the test are one atomic operation, so exactly one
+   thread sees true and runs the interior cleanup before m9_free_last
+   -- the m9_rc_last-then-dispose shape the generator emitted before
+   let two threads each see rc = 2, skip the cleanup, and the last
+   free leak the object's pools and inner handles.                  */
 void *m9_new     (size_t size, m9_state *err);   /* rc = 0: owned      */
-void  m9_dispose (void *p);                    /* owned or last handle */
+void  m9_dispose (void *p);                    /* release; free if last */
+bool  m9_release (void *p);                    /* one handle less; last? */
+void  m9_free_last (void *p);                  /* after m9_release said so */
 void *m9_share   (void *p);                    /* owned -> handle, rc=1 */
 void *m9_share_copy (void *p);                 /* handle copy, rc++  */
 

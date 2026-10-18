@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    1   pool
   local pools                                     0
   pool parameters                                 0
-  KEPT parameters                                 4   LexAll, SplitLines, EmitComment, Format
+  KEPT parameters                                 0
   HEAP named                                      5   ErrPos, (body), (body), (body), (body)
   NEW (OWN, T)                                    0
   DISPOSE                                         0

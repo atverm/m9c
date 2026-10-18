@@ -282,6 +282,19 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 # zarr proxy (2026-09-07).  The driver carries its own control: a
 # child that restores SIG_DFL must still die of the same write, or
 # these checks would pass on a platform that never raises it.
+# The statement release's runtime half (docs/statement-release-plan.md,
+# stage 1): mark and release over the frame arena, twice -- as shipped,
+# and with -DM9_POISON, where a read after release must see 0xA5.  No
+# generator emits a mark yet; this holds the operations it will emit.
+b_release () {
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. ../m9rt.c release_driver.c -o release_test
+./release_test
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -DM9_POISON -iquote .. ../m9rt.c release_driver.c -o release_poison_test
+./release_poison_test
+}
+
 b_sigpipe () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c sigpipe_driver.c \
@@ -567,7 +580,7 @@ echo "PASS (1 check) -- catbench.c still compiles"
 
 for b in dynstr dict fmt time text syslog math mat sort bits system stats \
          frame delim io zip csv grib json apispec arrow \
-         httpserver sigpipe zarrw stores; do
+         httpserver sigpipe release zarrw stores; do
   battery "$b"
 done
 # one server for the three store readers, started here so that it is

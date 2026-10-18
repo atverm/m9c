@@ -95,12 +95,11 @@ compiler and the shims carry `_WIN32` paths beside the POSIX ones and
 the generated C never names a platform, so the Windows build is the
 same compiler rather than a fork.  But it is verified under wine and
 on one Windows machine, not on the range Linux is tested across, and
-two of the tutorial's twenty-nine examples do not work there:
-**chapter 14** (netCDF, which resolves paths through its own Windows
-converter) and **chapter 17** (it runs `sort` and `uniq`, which
-Windows does not have).  Everything else — including the zarr
-chapters over TLS and the threaded ones — runs.  Report what breaks;
-that is what the label is for.
+one of the tutorial's twenty-nine examples does not work there:
+**chapter 17** (it runs `sort` and `uniq`, and Windows has no
+`uniq`).  Everything else — the netCDF chapter, the zarr chapters
+over TLS and the threaded ones — runs (measured on Windows 11,
+2026-10-18).  Report what breaks; that is what the label is for.
 
 ## macOS — experimental
 

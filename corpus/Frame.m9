@@ -160,7 +160,7 @@ PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : RO SLICE OF BOOL
 
 (* ---- CSV ---- *)
 
-PROCEDURE FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool
+PROCEDURE FromCsv (VAR pool: POOL ; KEPT t: PTR Csv.Table) : PTR Fr IN pool
   RAISES Faults.SizeError, Duplicate, IndexError, ValueRange ;
   (* every non-Skip column of a PARSED Csv.Table, with the kinds the
      caller declared there: Real -> F32s (miss NaN), Int -> I64s
@@ -223,7 +223,7 @@ PROCEDURE ConvName (conv: Conv) : STR ;
 (* ---- NetCDF ---- *)
 
 PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
-                   RO KEPT path: STR ; RO dim: STR)
+                   RO path: STR ; RO dim: STR)
   RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError ;
   (* a netCDF-4 file with one dimension named `dim`, one variable
      per column in its OWN storage type, the column's missing value
@@ -233,7 +233,7 @@ PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
      matrix over a per-column length dimension, the PutChars
      convention. *)
 
-PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR)
+PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR)
   RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError ;
   (* WriteNc over the dimension 'time', plus the time coordinate:
      I64 seconds, units 'seconds since 1970-01-01 00:00:00 +00:00'
@@ -246,7 +246,7 @@ PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR)
      know whether a column is a mean over its period or a point
      sample, and writing 'mean' unasked would be a lie in metadata. *)
 
-PROCEDURE FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr
+PROCEDURE FromNc (VAR pool: POOL ; RO path: STR ; RO dim: STR) : PTR Fr
   RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange,
          Overflow, IndexError ;
   (* every variable whose FIRST dimension is `dim`: 1-D numerics
@@ -257,7 +257,7 @@ PROCEDURE FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr
      column's missing value; units / long_name / standard_name are
      read when present. *)
 
-PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
+PROCEDURE TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts
   RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, Disorder,
          ValueRange, Overflow, IndexError ;
   (* FromNc over 'time', with the time variable itself parsed from
@@ -272,7 +272,7 @@ PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
 
 (* ---- the timeseries frame ---- *)
 
-PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; RO KEPT time: SLICE OF I64 ;
+PROCEDURE NewTs (VAR pool: POOL ; f: PTR Fr ; RO time: SLICE OF I64 ;
                  res: I64 ; conv: Conv ; RO descr: STR)
   : PTR Ts IN pool
   RAISES Faults.SizeError, Disorder, Faults.BadArg ;
@@ -333,21 +333,21 @@ PROCEDURE MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool
    value, and in a real column a NaN is one too, as everywhere in
    this module.  The oracle is polars, in corpus/FrameTest.m9. *)
 
-PROCEDURE Take (VAR pool: POOL ; f: PTR Fr ; RO rows: SLICE OF I64)
+PROCEDURE Take (VAR pool: POOL ; KEPT f: PTR Fr ; RO rows: SLICE OF I64)
   : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate ;
   (* f's columns, in f's order, with their metadata, and the rows
      named, in the order named; a row may be named more than once,
      or not at all.  A number outside 0 .. Rows (f) - 1 is
      IndexError. *)
 
-PROCEDURE Filter (VAR pool: POOL ; f: PTR Fr ; RO mask: SLICE OF BOOL)
+PROCEDURE Filter (VAR pool: POOL ; KEPT f: PTR Fr ; RO mask: SLICE OF BOOL)
   : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate ;
   (* the rows where mask is TRUE, in their order: polars' filter.
      LEN (mask) must be Rows (f), or it is Faults.SizeError. *)
 
 PROCEDURE OrderBy (f: PTR Fr ; RO name: STR ; descending: BOOL)
   : SLICE OF I64 RAISES Unknown, IndexError ;
-PROCEDURE SortBy (VAR pool: POOL ; f: PTR Fr ; RO name: STR ;
+PROCEDURE SortBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO name: STR ;
                   descending: BOOL) : PTR Fr IN pool
   RAISES Unknown, IndexError, Faults.SizeError, Duplicate ;
   (* the rows in the order of one column: OrderBy answers the row
@@ -361,7 +361,7 @@ PROCEDURE SortBy (VAR pool: POOL ; f: PTR Fr ; RO name: STR ;
        strings by code point, the shorter first, and the empty
          string is a value; FALSE before TRUE. *)
 
-PROCEDURE GroupBy (VAR pool: POOL ; f: PTR Fr ; RO key: STR ;
+PROCEDURE GroupBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO key: STR ;
                    RO how: SLICE OF How ; minCount: I64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Faults.SizeError, ValueRange, Overflow,
          IndexError ;
@@ -382,9 +382,9 @@ PROCEDURE GroupSizes (f: PTR Fr ; RO key: STR) : SLICE OF I64
   (* how many rows each group of GroupBy (f, key) has, in the same
      order *)
 
-PROCEDURE Join (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool
+PROCEDURE Join (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError ;
-PROCEDURE JoinLeft (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR)
+PROCEDURE JoinLeft (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR)
   : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError ;
   (* the rows of a and b that hold the same value in the column
@@ -449,7 +449,7 @@ TYPE
             RAISES ValueRange ;
   (* yes or no for a row; a comparison with a NaN is FALSE *)
 
-PROCEDURE Aggregate (VAR pool: POOL ; f: PTR Fr ; RO key, name: STR ;
+PROCEDURE Aggregate (VAR pool: POOL ; KEPT f: PTR Fr ; RO key, name: STR ;
                      agg: Agg ; RO p: SLICE OF F64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
          IndexError ;
@@ -466,7 +466,7 @@ PROCEDURE Compute (VAR pool: POOL ; VAR f: PTR Fr ; RO cols: SLICE OF STR ;
      values in the columns cols; its missing value is NaN.  polars'
      with_columns. *)
 
-PROCEDURE FilterBy (VAR pool: POOL ; f: PTR Fr ; RO cols: SLICE OF STR ;
+PROCEDURE FilterBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO cols: SLICE OF STR ;
                     test: RowTest ; RO p: SLICE OF F64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
          IndexError ;
@@ -804,7 +804,7 @@ END ColStrs ;
 
 (* ---- CSV ---- *)
 
-PROCEDURE FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool
+PROCEDURE FromCsv (VAR pool: POOL ; KEPT t: PTR Csv.Table) : PTR Fr IN pool
   RAISES Faults.SizeError, Duplicate, IndexError, ValueRange =
 VAR
   f : PTR Fr IN pool ;
@@ -942,7 +942,7 @@ END WriteCsv ;
 
 (* ---- the timeseries frame ---- *)
 
-PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; RO KEPT time: SLICE OF I64 ;
+PROCEDURE NewTs (VAR pool: POOL ; f: PTR Fr ; RO time: SLICE OF I64 ;
                  res: I64 ; conv: Conv ; RO descr: STR)
   : PTR Ts IN pool
   RAISES Faults.SizeError, Disorder, Faults.BadArg =
@@ -1085,7 +1085,7 @@ END Average ;
 (* one column reduced into the output frame.  The float paths
    accumulate in F64; integer sums accumulate in I64 with the checked
    ops, so an overflowing Sum RAISES instead of wrapping. *)
-PROCEDURE Reduce (VAR pool: POOL ; src: PTR Fr ; VAR out: PTR Fr ;
+PROCEDURE Reduce (VAR pool: POOL ; KEPT src: PTR Fr ; VAR out: PTR Fr ;
                   RO c: Col ;
                   h: How ; win: SLICE OF I64 ; nwin, minCount: I64)
   RAISES WrongType, Faults.SizeError, ValueRange, Overflow, IndexError =
@@ -1414,7 +1414,7 @@ EXCEPT
 END ReduceBools ;
 
 PROCEDURE ReduceStrs (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
-                      v: SLICE OF STR ; h: How ;
+                      KEPT v: SLICE OF STR ; h: How ;
                       win: SLICE OF I64 ; nwin: I64)
   RAISES WrongType, Faults.SizeError, IndexError =
 VAR
@@ -1494,7 +1494,7 @@ BEGIN
   RETURN result
 END MakeContiguous ;
 
-PROCEDURE Fill (VAR pool: POOL ; src: PTR Fr ; VAR out: PTR Fr ;
+PROCEDURE Fill (VAR pool: POOL ; KEPT src: PTR Fr ; VAR out: PTR Fr ;
                 RO c: Col ;
                 at: SLICE OF I64 ; total: I64)
   RAISES Faults.SizeError, Duplicate, WrongType, ValueRange, Overflow,
@@ -1691,7 +1691,7 @@ BEGIN
 END PutCols ;
 
 PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
-                   RO KEPT path: STR ; RO dim: STR)
+                   RO path: STR ; RO dim: STR)
   RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   nc : PTR NetCDF.File IN pool ;
@@ -1716,7 +1716,7 @@ BEGIN
   END
 END ConvName ;
 
-PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR)
+PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR)
   RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   nc : PTR NetCDF.File IN pool ;
@@ -1900,7 +1900,7 @@ EXCEPT
 | Unknown : RAISE IndexError
 END SetMeta2 ;
 
-PROCEDURE FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr
+PROCEDURE FromNc (VAR pool: POOL ; RO path: STR ; RO dim: STR) : PTR Fr
   RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange,
          Overflow, IndexError =
 VAR
@@ -2009,7 +2009,7 @@ BEGIN
   RETURN v
 END Num ;
 
-PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
+PROCEDURE TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts
   RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, Disorder,
          ValueRange, Overflow, IndexError =
 VAR
@@ -2296,7 +2296,7 @@ END MissByte ;
    from rows[i] of f -- and a row number of -1 is a row that is not
    there, which answers the column's missing value ('' in a Strs
    column) and is REFUSED by a Bools column, which has none *)
-PROCEDURE Gather (VAR pool: POOL ; VAR out: PTR Fr ; f: PTR Fr ;
+PROCEDURE Gather (VAR pool: POOL ; VAR out: PTR Fr ; KEPT f: PTR Fr ;
                   RO rows: SLICE OF I64 ; RO skip: STR)
   RAISES IndexError, WrongType, Faults.SizeError, Duplicate =
 VAR
@@ -2373,7 +2373,7 @@ BEGIN
   END
 END Gather ;
 
-PROCEDURE Take (VAR pool: POOL ; f: PTR Fr ; RO rows: SLICE OF I64)
+PROCEDURE Take (VAR pool: POOL ; KEPT f: PTR Fr ; RO rows: SLICE OF I64)
   : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate =
 VAR
   out : PTR Fr IN pool ;
@@ -2389,7 +2389,7 @@ EXCEPT
 | WrongType : RAISE IndexError    (* only a row of -1 asks for it *)
 END Take ;
 
-PROCEDURE Filter (VAR pool: POOL ; f: PTR Fr ; RO mask: SLICE OF BOOL)
+PROCEDURE Filter (VAR pool: POOL ; KEPT f: PTR Fr ; RO mask: SLICE OF BOOL)
   : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate =
 VAR
   scratch : POOL ;
@@ -2638,7 +2638,7 @@ BEGIN
   RETURN out
 END OrderBy ;
 
-PROCEDURE SortBy (VAR pool: POOL ; f: PTR Fr ; RO name: STR ;
+PROCEDURE SortBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO name: STR ;
                   descending: BOOL) : PTR Fr IN pool
   RAISES Unknown, IndexError, Faults.SizeError, Duplicate =
 BEGIN
@@ -2667,7 +2667,7 @@ BEGIN
   RETURN ng + gap
 END Groups ;
 
-PROCEDURE GroupBy (VAR pool: POOL ; f: PTR Fr ; RO key: STR ;
+PROCEDURE GroupBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO key: STR ;
                    RO how: SLICE OF How ; minCount: I64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Faults.SizeError, ValueRange, Overflow,
          IndexError =
@@ -2709,7 +2709,7 @@ END GroupSizes ;
 (* ---- join ---- *)
 
 (* the keys of a and then the keys of b, as one column *)
-PROCEDURE Glue (VAR pool: POOL ; RO KEPT a, b: Keys) : Keys
+PROCEDURE Glue (VAR pool: POOL ; RO a, b: Keys) : Keys
   RAISES IndexError =
 VAR
   k : Keys ;
@@ -2736,7 +2736,7 @@ BEGIN
   RETURN k
 END Glue ;
 
-PROCEDURE JoinOn (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR ;
+PROCEDURE JoinOn (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR ;
                   keepAll: BOOL) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError =
 VAR
@@ -2813,13 +2813,13 @@ BEGIN
   RETURN out
 END JoinOn ;
 
-PROCEDURE Join (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool
+PROCEDURE Join (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError =
 BEGIN
   RETURN JoinOn (pool, a, b, key, FALSE)
 END Join ;
 
-PROCEDURE JoinLeft (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR)
+PROCEDURE JoinLeft (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR)
   : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError =
 BEGIN
@@ -2934,7 +2934,7 @@ END Describe ;
 
 (* ---- verbs that take a procedure ---- *)
 
-PROCEDURE Aggregate (VAR pool: POOL ; f: PTR Fr ; RO key, name: STR ;
+PROCEDURE Aggregate (VAR pool: POOL ; KEPT f: PTR Fr ; RO key, name: STR ;
                      agg: Agg ; RO p: SLICE OF F64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
          IndexError =
@@ -3026,7 +3026,7 @@ BEGIN
   AddF64 (pool, f, name, o, NaN)
 END Compute ;
 
-PROCEDURE FilterBy (VAR pool: POOL ; f: PTR Fr ; RO cols: SLICE OF STR ;
+PROCEDURE FilterBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO cols: SLICE OF STR ;
                     test: RowTest ; RO p: SLICE OF F64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
          IndexError =

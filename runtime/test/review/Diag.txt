@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     3   Check.scratch, DocJson.scratch, LexJson.pool
   pool parameters                                 5   One, OutText, Check, DocJson, Json
-  KEPT parameters                                 3   Parse, One, LexJson
+  KEPT parameters                                 0
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

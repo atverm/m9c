@@ -362,7 +362,7 @@ CONST
 (* member i whole, read `size` bytes at a time; a slice of a length no
    member has when the reader fails or answers another length than the
    directory states *)
-PROCEDURE Whole (KEPT a: PTR Zip.Archive ; i, size, block: I64) : SLICE OF BYTE =
+PROCEDURE Whole (a: PTR Zip.Archive ; i, size, block: I64) : SLICE OF BYTE =
 VAR
   m : PTR Zip.Member ;
   all, chunk : SLICE OF BYTE ;
@@ -438,7 +438,7 @@ END Members ;
 
 (* what reading member i to its end, `size` bytes at a time, is
    refused as: '' when it is not *)
-PROCEDURE StreamRefusal (KEPT a: PTR Zip.Archive ; i, size: I64) : STR =
+PROCEDURE StreamRefusal (a: PTR Zip.Archive ; i, size: I64) : STR =
 VAR
   m : PTR Zip.Member ;
   chunk : SLICE OF BYTE ;

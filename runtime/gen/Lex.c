@@ -616,6 +616,7 @@ static void Lex_Note (int64_t line, int64_t col, int64_t endLine, m9_sl_CHAR tex
   (void) m9res;
   err->res = &m9frame;
   m9_sl_Lex_Comment nc = {0}; (void) nc;
+  m9_sl_CHAR cp = {0}; (void) cp;
   int64_t i = 0; (void) i;
   if ((ncom == (coms).len)) {
     if (((coms).len == INT64_C(0))) {
@@ -648,7 +649,22 @@ static void Lex_Note (int64_t line, int64_t col, int64_t endLine, m9_sl_CHAR tex
   if (err->exc) goto L_ret;
   (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).endLine = endLine;
   if (err->exc) goto L_ret;
-  (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).text = text;
+  { __typeof__(cp) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, &(m9_heap), (text).len, err);
+    if (err->exc) goto L_ret;
+    cp = m9v;
+  }
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 ((text).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    { __typeof__((*(uint32_t *) m9_at (cp.p, i, cp.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (text.p, i, text.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint32_t *) m9_at (cp.p, i, cp.len, sizeof (uint32_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  } }
+  (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).text = cp;
   if (err->exc) goto L_ret;
   { __typeof__(ncom) m9v = m9_add_i64 (ncom, INT64_C(1), err);
     if (err->exc) goto L_ret;

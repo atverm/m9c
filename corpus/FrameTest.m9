@@ -187,7 +187,7 @@ BEGIN
   END
 END Orders ;
 
-PROCEDURE Verbs (f: PTR Frame.Fr)
+PROCEDURE Verbs (KEPT f: PTR Frame.Fr)
   RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
          IndexError =
 VAR
@@ -233,7 +233,7 @@ END Verbs ;
 
 (* ---- group by: the columns are t x k s b w, one reducer each ---- *)
 
-PROCEDURE GroupsByK (f: PTR Frame.Fr)
+PROCEDURE GroupsByK (KEPT f: PTR Frame.Fr)
   RAISES Frame.Unknown, Frame.WrongType, Faults.SizeError, ValueRange,
          IndexError =
 VAR
@@ -267,7 +267,7 @@ EXCEPT
 | Overflow : Check.That (t, 'GroupBy k: no sum overflows', FALSE)
 END GroupsByK ;
 
-PROCEDURE GroupsByS (f: PTR Frame.Fr)
+PROCEDURE GroupsByS (KEPT f: PTR Frame.Fr)
   RAISES Frame.Unknown, Frame.WrongType, Faults.SizeError, ValueRange,
          IndexError =
 VAR
@@ -323,7 +323,7 @@ BEGIN
                 Strs ('want.join.' + how + '.s'))
 END JoinChecked ;
 
-PROCEDURE Joins (f: PTR Frame.Fr)
+PROCEDURE Joins (KEPT f: PTR Frame.Fr)
   RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
          IndexError =
 VAR
@@ -446,7 +446,7 @@ BEGIN
   RETURN row[0] > p[0] AND row[1] >= p[1]
 END Wanted ;
 
-PROCEDURE AggCase (f: PTR Frame.Fr ; RO key, what: STR ; agg: Frame.Agg ;
+PROCEDURE AggCase (KEPT f: PTR Frame.Fr ; RO key, what: STR ; agg: Frame.Agg ;
                    tol: F64)
   RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
          ValueRange, IndexError =
@@ -458,7 +458,7 @@ BEGIN
                   F64s ('want.agg.' + key + '.' + what), 0.0, tol)
 END AggCase ;
 
-PROCEDURE Callbacks (f: PTR Frame.Fr)
+PROCEDURE Callbacks (KEPT f: PTR Frame.Fr)
   RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
          ValueRange, IndexError =
 VAR
@@ -496,7 +496,7 @@ BEGIN
 END Callbacks ;
 
 (* what a verb with a procedure is refused as: '' when it is not *)
-PROCEDURE AggRefusal (f: PTR Frame.Fr ; RO key, name: STR ; agg: Frame.Agg)
+PROCEDURE AggRefusal (KEPT f: PTR Frame.Fr ; RO key, name: STR ; agg: Frame.Agg)
   : STR =
 VAR g : PTR Frame.Fr IN pool ;
 BEGIN
@@ -528,7 +528,7 @@ END ComputeRefusal ;
 
 (* ---- the refusals ---- *)
 
-PROCEDURE RowRefused (f: PTR Frame.Fr) : BOOL =
+PROCEDURE RowRefused (KEPT f: PTR Frame.Fr) : BOOL =
 VAR
   g : PTR Frame.Fr IN pool ;
   rows : SLICE OF I64 ;
@@ -543,7 +543,7 @@ EXCEPT
 | Frame.Duplicate : RETURN FALSE
 END RowRefused ;
 
-PROCEDURE MaskRefused (f: PTR Frame.Fr) : BOOL =
+PROCEDURE MaskRefused (KEPT f: PTR Frame.Fr) : BOOL =
 VAR g : PTR Frame.Fr IN pool ;
 BEGIN
   g := Frame.Filter (pool, f, NEW (BOOL, 3)) ;
@@ -565,7 +565,7 @@ EXCEPT
 END ColumnRefused ;
 
 (* what a join of a with b on key is refused as: '' when it is not *)
-PROCEDURE JoinRefusal (a, b: PTR Frame.Fr ; RO key: STR ; left: BOOL) : STR =
+PROCEDURE JoinRefusal (KEPT a, b: PTR Frame.Fr ; RO key: STR ; left: BOOL) : STR =
 VAR j : PTR Frame.Fr IN pool ;
 BEGIN
   IF left THEN
@@ -582,7 +582,7 @@ EXCEPT
 | IndexError : RETURN 'IndexError'
 END JoinRefusal ;
 
-PROCEDURE MeanOfStrings (f: PTR Frame.Fr) : BOOL =
+PROCEDURE MeanOfStrings (KEPT f: PTR Frame.Fr) : BOOL =
 VAR
   g : PTR Frame.Fr IN pool ;
   how : SLICE OF Frame.How ;
@@ -602,7 +602,7 @@ EXCEPT
 | IndexError : RETURN FALSE
 END MeanOfStrings ;
 
-PROCEDURE Refusals (f: PTR Frame.Fr)
+PROCEDURE Refusals (KEPT f: PTR Frame.Fr)
   RAISES Frame.Duplicate, Faults.SizeError =
 VAR
   r, q, flags : PTR Frame.Fr IN pool ;

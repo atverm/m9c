@@ -47,7 +47,7 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### NewSpec (RO KEPT title: STR ; RO KEPT version: STR) : PTR Spec
+### NewSpec (RO title: STR ; RO version: STR) : PTR Spec
 
 an empty document, in the caller's frame; AddOp and AddParam grow
 it in the pool of the variable holding it (rule 2 of

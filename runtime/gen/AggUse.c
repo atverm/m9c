@@ -335,27 +335,29 @@ int main (int argc, char **argv)
     Io_WriteI64 (m9a4, err);
     if (err->exc) goto L_hdl_m9t1;
     }
+    m9_mark m9t6 = m9_pool_mark (err->res);
     { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 2 }), (*(m9_sl_CHAR *) m9_at ((*Names).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), err)) m9a5 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 2 }), (*(m9_sl_CHAR *) m9_at ((*Names).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), err);
       if (err->exc) goto L_hdl_m9t1;
     Io_WriteLine (m9a5, err);
     if (err->exc) goto L_hdl_m9t1;
     }
+    m9_pool_release (err->res, m9t6);
   } }
-  bool m9t6 = ((*(uint32_t *) m9_at ((*Marks).v, INT64_C(1), INT64_C(2), sizeof (uint32_t), err)) == 43u);
+  bool m9t7 = ((*(uint32_t *) m9_at ((*Marks).v, INT64_C(1), INT64_C(2), sizeof (uint32_t), err)) == 43u);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t6) {
+  if (m9t7) {
     Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s7, 5 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   n = INT64_C(0);
-  { int64_t m9t7to;
+  { int64_t m9t8to;
   i = INT64_C(0);
-  m9t7to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
+  m9t8to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; i <= m9t7to; i += 1) {
-    bool m9t8 = (*(bool *) m9_at ((*Flags).v, i, INT64_C(3), sizeof (bool), err));
+  for (; i <= m9t8to; i += 1) {
+    bool m9t9 = (*(bool *) m9_at ((*Flags).v, i, INT64_C(3), sizeof (bool), err));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t8) {
+    if (m9t9) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
         n = m9v;
@@ -376,20 +378,22 @@ int main (int argc, char **argv)
   Io_WriteLine (m9a7, err);
   if (err->exc) goto L_hdl_m9t1;
   }
+  m9_mark m9t10 = m9_pool_mark (err->res);
   { __typeof__(m9_cat (err->res, m9_cat (err->res, AggUse_Lookup (INT64_C(404), err), ((m9_sl_CHAR){ (uint32_t *) m9s8, 3 }), err), AggUse_Lookup (INT64_C(1), err), err)) m9a8 = m9_cat (err->res, m9_cat (err->res, AggUse_Lookup (INT64_C(404), err), ((m9_sl_CHAR){ (uint32_t *) m9s8, 3 }), err), AggUse_Lookup (INT64_C(1), err), err);
     if (err->exc) goto L_hdl_m9t1;
   Io_WriteLine (m9a8, err);
   if (err->exc) goto L_hdl_m9t1;
   }
+  m9_pool_release (err->res, m9t10);
   n = INT64_C(0);
-  { int64_t m9t9to;
+  { int64_t m9t11to;
   i = INT64_C(0);
-  m9t9to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
+  m9t11to = m9_sub_i64 (INT64_C(3), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; i <= m9t9to; i += 1) {
-    bool m9t10 = (*(AggUse_Status *) m9_at ((*Statuses).v, i, INT64_C(3), sizeof (AggUse_Status), err)).fatal;
+  for (; i <= m9t11to; i += 1) {
+    bool m9t12 = (*(AggUse_Status *) m9_at ((*Statuses).v, i, INT64_C(3), sizeof (AggUse_Status), err)).fatal;
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t10) {
+    if (m9t12) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
         n = m9v;
@@ -406,11 +410,13 @@ int main (int argc, char **argv)
   }
   Io_WriteI64 (made.code, err);
   if (err->exc) goto L_hdl_m9t1;
+  m9_mark m9t13 = m9_pool_mark (err->res);
   { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), AggUse_Line (made, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s11, 3 }), err), AggUse_Line ((*Ok), err), err)) m9a9 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), AggUse_Line (made, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s11, 3 }), err), AggUse_Line ((*Ok), err), err);
     if (err->exc) goto L_hdl_m9t1;
   Io_WriteLine (m9a9, err);
   if (err->exc) goto L_hdl_m9t1;
   }
+  m9_pool_release (err->res, m9t13);
   { __typeof__(n) m9v = AggUse_Past (INT64_C(5), err);
     if (err->exc) goto L_hdl_m9t1;
     n = m9v;

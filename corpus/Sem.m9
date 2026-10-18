@@ -534,7 +534,7 @@ BEGIN
   RETURN FALSE
 END IsOpaqueIn ;
 
-PROCEDURE RaisesOf (VAR pl: POOL ; KEPT p: PTR Ast.Node) : SLICE OF STR =
+PROCEDURE RaisesOf (VAR pl: POOL ; p: PTR Ast.Node) : SLICE OF STR =
 VAR
   r : SLICE OF STR ;
   i : I64 ;
@@ -579,7 +579,7 @@ BEGIN
   RETURN FALSE
 END ExcKnown ;
 
-PROCEDURE CheckExcName (KEPT n: PTR Ast.Node ; RO ctx: STR) =
+PROCEDURE CheckExcName (n: PTR Ast.Node ; RO ctx: STR) =
 VAR qual, nm : STR ;
 BEGIN
   qual := '' ; nm := n.a ;
@@ -746,7 +746,7 @@ END CheckDeclTypes ;
 (* the signature as TEXT: two declarations are the same declaration
    exactly when the printer renders them the same way, which is why
    def/impl conformance is a string comparison and not a tree walk *)
-PROCEDURE SigOf (KEPT p: PTR Ast.Node) : STR =
+PROCEDURE SigOf (p: PTR Ast.Node) : STR =
 VAR
   d : PTR DynStr.DString IN pool ;
   r : SLICE OF STR ;
@@ -1982,6 +1982,70 @@ BEGIN
   RETURN beyond
 END CheckWrite0 ;
 
+(* CheckWrite0's answer alone -- does a store into designator D land
+   beyond the frame, through a pointer, a slice or a grid -- with
+   none of its refusals, for a VAR argument that a callee fills with
+   a view (CallType's hand-back, 2026-10-18): the same walk, so that
+   `Fill (f.cols[0], v)' is judged as `f.cols[0].data := v' is *)
+PROCEDURE DerefBeyond (d: PTR Ast.Node) : BOOL =
+VAR
+  j : I64 ;
+  declN, res : Ast.Kid ;
+  tmod : STR ;
+  beyond, deref, known : BOOL ;
+BEGIN
+  beyond := FALSE ;
+  tmod := '' ;
+  IF d.nkids = 0 THEN RETURN FALSE END ;
+  declN := ScopeType (d.a) ;
+  FOR j := 0 TO d.nkids - 1 DO
+    known := FALSE ;
+    IF declN IS SOME dn0 THEN known := TRUE END ;
+    IF NOT known THEN RETURN beyond END ;
+    NoteMod (declN, tmod) ;
+    res := ResolveType (declN) ;
+    LOOP
+      deref := FALSE ;
+      IF res IS SOME r0 THEN
+        IF r0.kind = Ast.NPtrType OR r0.kind = Ast.NSharedType THEN
+          deref := TRUE ;
+          beyond := TRUE ;
+          declN := InMod (r0.kids[0], tmod) ;
+          NoteMod (declN, tmod) ;
+          res := ResolveType (declN)
+        END
+      END ;
+      IF NOT deref THEN EXIT END
+    END ;
+    IF res IS SOME r THEN
+      IF d.kids[j] IS SOME sel THEN
+        IF sel.kind = Ast.NSelField THEN
+          IF r.kind = Ast.NRecordType THEN
+            declN := InMod (FieldTypeOf (r, sel.a), tmod)
+          ELSE
+            RETURN beyond
+          END
+        ELSIF sel.kind = Ast.NSelIndex THEN
+          IF r.kind = Ast.NGridType THEN
+            beyond := TRUE ;
+            declN := InMod (r.kids[1], tmod)
+          ELSIF r.kind = Ast.NSliceType THEN
+            beyond := TRUE ;
+            declN := InMod (r.kids[0], tmod)
+          ELSIF r.kind = Ast.NArrayType THEN
+            declN := InMod (r.kids[1], tmod)
+          ELSE
+            RETURN beyond
+          END
+        END
+      END
+    ELSE
+      RETURN beyond
+    END
+  END ;
+  RETURN beyond
+END DerefBeyond ;
+
 (* the base name a stored reference is borrowed from, when the source
    is a plain designator, possibly under SOME or parentheses *)
 PROCEDURE IsRefTy (RO s0: STR) : BOOL =
@@ -2049,6 +2113,13 @@ END FvalHas ;
    and the taint, as the frame kinds do. *)
 PROCEDURE KindPool (RO what: STR) : STR =
 BEGIN
+  (* a view of storage in P is storage in P, for the lifetime the
+     pool clauses weigh (2026-10-18: `cs.added := NotOpen (scratch,
+     c, qs)' with cs and qs both in scratch was refused as a view
+     of nowhere) *)
+  IF Text.StartsWith (what, 'a view of ') THEN
+    RETURN KindPool (SLICE (what, 10, LEN (what) - 10))
+  END ;
   IF Text.StartsWith (what, 'an allocation in pool ') THEN
     RETURN SLICE (what, 22, LEN (what) - 22)
   END ;
@@ -2190,13 +2261,27 @@ BEGIN
 END EscAlias ;
 
 (* the frame-storage root a reference expression views: through SOME
-   and parens, and through SLICE/VIEW/SHARED, whose
-   answers alias their first argument's storage *)
+   and parens, and through SLICE/VIEW/SHARED/GRID, whose
+   answers alias their first argument's storage.
+
+   SLICE, SHARED and GRID ARE NODES OF THEIR OWN, not calls: the
+   parser makes NSliceOf3, NSharedExpr and NGridOf, so the branch
+   below that looks for a call named SLICE never saw one, and
+   `RETURN SLICE (out, 0, n)` -- out holding borrowed elements --
+   reached the caller with no root found and nothing pended, while
+   `RETURN out` was refused.  cp-kernel's Unique (its FINDINGS,
+   "a retention through an intermediate slice") was this, not the
+   intermediate copy: a copy through a local IS carried (kept-via-
+   local).  Found 2026-10-18 by the statement-release plan's stage 0,
+   which makes a missed retention a use-after-release rather than a
+   leak.  Only VIEW is still a call by name. *)
 PROCEDURE EscRootOf (k: Ast.Kid) : STR =
 BEGIN
   IF k IS SOME e THEN
     IF e.kind = Ast.NDesignator THEN RETURN e.a END ;
-    IF e.kind = Ast.NSomeExpr OR e.kind = Ast.NParen THEN
+    IF e.kind = Ast.NSomeExpr OR e.kind = Ast.NParen OR
+       e.kind = Ast.NSliceOf3 OR e.kind = Ast.NSharedExpr OR
+       e.kind = Ast.NGridOf THEN
       RETURN EscRootOf (e.kids[0])
     END ;
     IF e.kind = Ast.NCallExpr THEN
@@ -2536,7 +2621,7 @@ BEGIN
   RETURN FALSE
 END IsRoParamOf ;
 
-PROCEDURE AnswersRo (RO KEPT qual: STR ; pr: ProcInfo) : BOOL ;
+PROCEDURE AnswersRo (RO qual: STR ; pr: ProcInfo) : BOOL ;
 
 PROCEDURE RoExprEvidence (k: Ast.Kid ; d: PTR Ast.Node ; RO mod: STR ;
                           depth: I64) : BOOL =
@@ -2588,7 +2673,7 @@ BEGIN
   RETURN FALSE
 END RoEvidence ;
 
-PROCEDURE AnswersRo (RO KEPT qual: STR ; pr: ProcInfo) : BOOL =
+PROCEDURE AnswersRo (RO qual: STR ; pr: ProcInfo) : BOOL =
 VAR
   i : I64 ;
   key, t : STR ;
@@ -2637,34 +2722,104 @@ BEGIN
   RETURN FALSE
 END IsParamOf ;
 
-PROCEDURE AnswersView (RO KEPT qual: STR ; pr: ProcInfo) : BOOL ;
+PROCEDURE AnswersViewAt (RO qual: STR ; pr: ProcInfo ; j: I64) : BOOL ;
+PROCEDURE ViewCarrier (RO cn: STR ; d: PTR Ast.Node ; RO mod: STR ;
+                       depth: I64 ; RO nm: STR) : BOOL ;
+PROCEDURE HandsBackFrom (RO qual: STR ; pr: ProcInfo ; i, j: I64) : BOOL ;
+PROCEDURE HandsBackDeep (RO qual: STR ; pr: ProcInfo ; i, j: I64) : BOOL ;
+PROCEDURE ParamViewBearing (d: PTR Ast.Node ; e: PTR Ast.Node ; RO mod: STR) : BOOL ;
+PROCEDURE ParamSelBeyond (d: PTR Ast.Node ; e: PTR Ast.Node ; RO mod: STR) : BOOL ;
 
+(* the J-th parameter's name, '' past the end *)
+PROCEDURE ParamNameAt (d: PTR Ast.Node ; j: I64) : STR =
+VAR g, b, k : I64 ;
+BEGIN
+  k := 0 ;
+  IF d.kids[0] IS SOME ps THEN
+    FOR g := 0 TO ps.nkids - 1 DO
+      IF ps.kids[g] IS SOME grp THEN
+        IF grp.kids[0] IS SOME ids THEN
+          FOR b := 0 TO ids.nkids - 1 DO
+            IF k = j THEN
+              IF ids.kids[b] IS SOME id THEN RETURN id.a END ;
+              RETURN ''
+            END ;
+            k := k + 1
+          END
+        END
+      END
+    END
+  END ;
+  RETURN ''
+END ParamNameAt ;
+
+(* the J-th parameter's name when it is a VAR parameter -- the one
+   kind a callee can hand a view back through -- else '' *)
+PROCEDURE VarParamAt (d: PTR Ast.Node ; j: I64) : STR =
+VAR g, b, k : I64 ;
+BEGIN
+  k := 0 ;
+  IF d.kids[0] IS SOME ps THEN
+    FOR g := 0 TO ps.nkids - 1 DO
+      IF ps.kids[g] IS SOME grp THEN
+        IF grp.kids[0] IS SOME ids THEN
+          FOR b := 0 TO ids.nkids - 1 DO
+            IF k = j THEN
+              IF ids.kids[b] IS SOME id THEN
+                IF grp.f1 AND NOT grp.f2 THEN RETURN id.a END
+              END ;
+              RETURN ''
+            END ;
+            k := k + 1
+          END
+        END
+      END
+    END
+  END ;
+  RETURN ''
+END VarParamAt ;
+
+(* is expression K, in the body of procedure D of module MOD, a VIEW
+   of D's parameter NM -- NM itself or a component of it that can be
+   viewed (ParamViewBearing), under SLICE, GRID or parentheses; a
+   local that CARRIES it (ViewCarrier); or the answer of a callee
+   that answers a view of the argument that is one (AnswersViewAt)?
+   Per parameter since 2026-10-18: `Frame.ColStrs (f, name)' views f
+   and not name, and blaming both refused Parquet.AddCopy. *)
 PROCEDURE ViewExprEvidence (k: Ast.Kid ; d: PTR Ast.Node ; RO mod: STR ;
-                            depth: I64) : BOOL =
+                            depth: I64 ; RO nm: STR) : BOOL =
 VAR
   found : BOOL ;
-  nm : STR ;
   pr : ProcInfo ;
   i : I64 ;
 BEGIN
   IF depth > 8 THEN RETURN FALSE END ;
   IF k IS SOME e THEN
-    IF e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf OR e.kind = Ast.NParen THEN
-      RETURN ViewExprEvidence (e.kids[0], d, mod, depth + 1)
+    IF e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf OR e.kind = Ast.NParen OR
+       e.kind = Ast.NSomeExpr THEN
+      RETURN ViewExprEvidence (e.kids[0], d, mod, depth + 1, nm)
     END ;
-    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
-      RETURN IsParamOf (d, e.a)
+    IF e.kind = Ast.NDesignator THEN
+      (* the parameter, or a component of it (`lx.src'), that can be
+         viewed at all: a scalar -- `s[i]', a CHAR -- is copied *)
+      IF Text.Eq (e.a, nm) THEN RETURN ParamViewBearing (d, e, mod) END ;
+      IF IsParamOf (d, e.a) THEN RETURN FALSE END ;
+      (* or a local that CARRIES the parameter: the splitter shape,
+         `parts[n] := SLICE (s, ...) ; RETURN parts' (2026-10-18) *)
+      IF e.nkids = 0 THEN RETURN ViewCarrier (e.a, d, mod, depth + 1, nm) END ;
+      RETURN FALSE
     END ;
     IF e.kind = Ast.NCallExpr THEN
       IF e.kids[0] IS SOME dn THEN
         IF dn.kind = Ast.NDesignator THEN
-          nm := DesigName (dn) ;
-          pr := ProcNamed (mod, nm, found) ;
+          pr := ProcNamed (mod, DesigName (dn), found) ;
           IF found AND LEN (pr.foreign) = 0 THEN
-            IF AnswersView (Qualify (pr.modName, pr.name), pr) THEN
-              IF e.kids[1] IS SOME al THEN
-                FOR i := 0 TO al.nkids - 1 DO
-                  IF ViewExprEvidence (al.kids[i], d, mod, depth + 1) THEN RETURN TRUE END
+            IF e.kids[1] IS SOME al THEN
+              FOR i := 0 TO al.nkids - 1 DO
+                IF AnswersViewAt (Qualify (pr.modName, pr.name), pr, i) THEN
+                  IF ViewExprEvidence (al.kids[i], d, mod, depth + 1, nm) THEN
+                    RETURN TRUE
+                  END
                 END
               END
             END
@@ -2676,60 +2831,287 @@ BEGIN
   RETURN FALSE
 END ViewExprEvidence ;
 
-PROCEDURE ViewEvidence (k: Ast.Kid ; d: PTR Ast.Node ; RO mod: STR) : BOOL =
+PROCEDURE ViewEvidence (k: Ast.Kid ; d: PTR Ast.Node ; RO mod: STR ;
+                        RO nm: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
   IF k IS SOME e THEN
     IF e.kind = Ast.NReturn THEN
-      IF ViewExprEvidence (e.kids[0], d, mod, 0) THEN RETURN TRUE END
+      IF ViewExprEvidence (e.kids[0], d, mod, 0, nm) THEN RETURN TRUE END
     END ;
     FOR i := 0 TO e.nkids - 1 DO
-      IF ViewEvidence (e.kids[i], d, mod) THEN RETURN TRUE END
+      IF ViewEvidence (e.kids[i], d, mod, nm) THEN RETURN TRUE END
     END
   END ;
   RETURN FALSE
 END ViewEvidence ;
 
-PROCEDURE AnswersView (RO KEPT qual: STR ; pr: ProcInfo) : BOOL =
+(* does the body store a view of parameter NM under the name CN --
+   bare or through a selector (`parts[n] := SLICE (s, a, b)',
+   `tg.name := ...'), bound by IS SOME or FOR IN, assigned from a
+   carrier or a view-answering call, or handed as a VAR argument to a
+   callee that fills that parameter with a view of another argument
+   (`Mk (t, kind, SLICE (lx.src, a, n))' makes t carry lx,
+   HandsBackFrom)?  Structural, over the callee's own tree, because
+   it is asked from OTHER procedures' checks, where this one's carry
+   edges are not in hand.  Bounded by depth, since a local may be
+   assigned from itself. *)
+PROCEDURE CarrierEvidence (k: Ast.Kid ; RO cn: STR ; d: PTR Ast.Node ;
+                           RO mod: STR ; depth: I64 ; RO nm: STR ;
+                           deep: BOOL) : BOOL =
 VAR
-  i : I64 ;
-  key, t : STR ;
+  i, j : I64 ;
+  pr : ProcInfo ;
+  found, hit : BOOL ;
+  q : STR ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NCallStmt OR e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        IF dn.kind = Ast.NDesignator THEN
+          IF e.kids[1] IS SOME al THEN
+            FOR i := 0 TO al.nkids - 1 DO
+              IF al.kids[i] IS SOME ai THEN
+                IF ai.kind = Ast.NDesignator AND Text.Eq (ai.a, cn) THEN
+                  pr := ProcNamed (mod, DesigName (dn), found) ;
+                  IF found AND LEN (pr.foreign) = 0 THEN
+                    q := Qualify (pr.modName, pr.name) ;
+                    FOR j := 0 TO al.nkids - 1 DO
+                      IF j # i THEN
+                        hit := HandsBackFrom (q, pr, i, j) ;
+                        (* DEEP asks for a store beyond the frame: the
+                           callee's own was, or our designator reaches
+                           the parameter through a reference *)
+                        IF hit AND deep THEN
+                          hit := HandsBackDeep (q, pr, i, j) OR
+                                 ParamSelBeyond (d, ai, mod)
+                        END ;
+                        IF hit THEN
+                          IF ViewExprEvidence (al.kids[j], d, mod, depth + 1, nm) THEN
+                            RETURN TRUE
+                          END
+                        END
+                      END
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END ;
+    IF e.kind = Ast.NAssign THEN
+      IF e.kids[0] IS SOME lhs THEN
+        IF lhs.kind = Ast.NDesignator AND Text.Eq (lhs.a, cn) THEN
+          IF NOT deep OR ParamSelBeyond (d, lhs, mod) THEN
+            IF ViewExprEvidence (e.kids[1], d, mod, depth + 1, nm) THEN RETURN TRUE END
+          END
+        END
+      END
+    END ;
+    (* binders are locals, never the parameter a DEEP question is about *)
+    IF e.kind = Ast.NIs AND NOT deep THEN
+      IF e.kids[1] IS SOME b THEN
+        IF b.kind = Ast.NIsSome AND Text.Eq (b.a, cn) THEN
+          IF ViewExprEvidence (e.kids[0], d, mod, depth + 1, nm) THEN RETURN TRUE END
+        END
+      END
+    END ;
+    IF e.kind = Ast.NForIn AND NOT deep AND Text.Eq (e.a, cn) THEN
+      IF ViewExprEvidence (e.kids[0], d, mod, depth + 1, nm) THEN RETURN TRUE END
+    END ;
+    FOR i := 0 TO e.nkids - 1 DO
+      IF CarrierEvidence (e.kids[i], cn, d, mod, depth, nm, deep) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END CarrierEvidence ;
+
+PROCEDURE ViewCarrier (RO cn: STR ; d: PTR Ast.Node ; RO mod: STR ;
+                       depth: I64 ; RO nm: STR) : BOOL =
+BEGIN
+  IF depth > 8 THEN RETURN FALSE END ;
+  IF IsParamOf (d, cn) THEN RETURN FALSE END ;
+  RETURN CarrierEvidence (d.kids[4], cn, d, mod, depth, nm, FALSE)
+END ViewCarrier ;
+
+(* does the callee fill its I-th parameter, a VAR one, with a view of
+   its J-th -- `tg.name := SLICE (s, a, n)', `t.text := text', or
+   through a further call that does?  Then the argument handed to I
+   CARRIES the borrow of the argument handed to J in the caller's
+   frame, as the answer of a view-answering callee does
+   (AnswersViewAt): the borrow is handed back, not kept, and KEPT is
+   not the word for it (par 4.1, 2026-10-18).  Memoised like
+   AnswersViewAt; 'busy' breaks a cycle as FALSE. *)
+PROCEDURE HandsBackFrom (RO qual: STR ; pr: ProcInfo ; i, j: I64) : BOOL =
+VAR
+  n : I64 ;
+  key, cn, src : STR ;
   res : BOOL ;
 BEGIN
-  key := Text.Keep (pool, Cat ('view ', qual)) ;
+  IF i = j THEN RETURN FALSE END ;
+  key := Text.Keep (pool, S5 ('back ', qual, '#', ItoA (i), Cat ('#', ItoA (j)))) ;
+  n := AnsFind (key) ;
+  IF n >= 0 THEN RETURN Text.Eq (ansState[n], 'yes') END ;
+  AnsSet (key, 'busy') ;
+  res := FALSE ;
+  IF pr.body IS SOME d THEN
+    cn := VarParamAt (d, i) ;
+    src := ParamNameAt (d, j) ;
+    IF LEN (cn) > 0 AND LEN (src) > 0 THEN
+      res := CarrierEvidence (d.kids[4], cn, d, pr.modName, 0, src, FALSE)
+    END
+  END ;
+  IF res THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
+  RETURN res
+END HandsBackFrom ;
+
+(* HandsBackFrom's question with the store BEYOND the frame: does the
+   callee put the view of its J-th parameter where its I-th points --
+   `n.kids[k] := sel' through `VAR n: PTR Node', `out[i] := v' into a
+   slice's storage -- rather than into the variable itself (`res :=
+   SLICE (out, 0, n)', `tg.name := ...')?  The caller's variable then
+   does not merely carry the borrow, its object keeps it: judged as
+   the direct store `n.kids[k] := sel' would be there (par 4.1,
+   2026-10-18). *)
+PROCEDURE HandsBackDeep (RO qual: STR ; pr: ProcInfo ; i, j: I64) : BOOL =
+VAR
+  n : I64 ;
+  key, cn, src : STR ;
+  res : BOOL ;
+BEGIN
+  IF i = j THEN RETURN FALSE END ;
+  key := Text.Keep (pool, S5 ('deep ', qual, '#', ItoA (i), Cat ('#', ItoA (j)))) ;
+  n := AnsFind (key) ;
+  IF n >= 0 THEN RETURN Text.Eq (ansState[n], 'yes') END ;
+  AnsSet (key, 'busy') ;
+  res := FALSE ;
+  IF pr.body IS SOME d THEN
+    cn := VarParamAt (d, i) ;
+    src := ParamNameAt (d, j) ;
+    IF LEN (cn) > 0 AND LEN (src) > 0 THEN
+      res := CarrierEvidence (d.kids[4], cn, d, pr.modName, 0, src, TRUE)
+    END
+  END ;
+  IF res THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
+  RETURN res
+END HandsBackDeep ;
+
+(* does the callee answer a VIEW of its J-th parameter -- a slice or
+   grid whose RETURN is that parameter, a component of it, a local
+   carrying it, or such a view answered by a further callee?  Then its
+   answer CARRIES the argument handed to J: the borrow is handed back,
+   not kept (par 4.1, 2026-10-18).  Memoised per parameter; 'busy'
+   breaks a cycle as FALSE. *)
+PROCEDURE AnswersViewAt (RO qual: STR ; pr: ProcInfo ; j: I64) : BOOL =
+VAR
+  i : I64 ;
+  key, t, nm : STR ;
+  res : BOOL ;
+BEGIN
+  key := Text.Keep (pool, S4 ('view ', qual, '#', ItoA (j))) ;
   i := AnsFind (key) ;
   IF i >= 0 THEN RETURN Text.Eq (ansState[i], 'yes') END ;
   AnsSet (key, 'busy') ;
   res := FALSE ;
   IF pr.body IS SOME d THEN
+    nm := ParamNameAt (d, j) ;
     IF d.kids[1] IS SOME rt THEN
       t := CanonT (d.kids[1], 0) ;
-      IF Text.StartsWith (t, 'SLICE OF ') OR Text.StartsWith (t, 'GRID ') THEN
-        res := ViewEvidence (d.kids[4], d, pr.modName)
+      IF LEN (nm) > 0 AND
+         (Text.StartsWith (t, 'SLICE OF ') OR Text.StartsWith (t, 'GRID ')) THEN
+        res := ViewEvidence (d.kids[4], d, pr.modName, nm)
       END
     END
   END ;
   IF res THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
   RETURN res
-END AnswersView ;
+END AnswersViewAt ;
+
+(* does the callee answer a view of ANY of its parameters? *)
+PROCEDURE AnswersViewAny (RO qual: STR ; pr: ProcInfo) : BOOL =
+VAR j, n : I64 ;
+BEGIN
+  IF pr.node IS SOME pn THEN
+    n := CountParams (pn.kids[0]) ;
+    FOR j := 0 TO n - 1 DO
+      IF AnswersViewAt (qual, pr, j) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END AnswersViewAny ;
+
+(* the call under K -- through parens, SOME, SLICE and GRID -- when
+   its callee answers a view of some parameter, so that the call's
+   ANSWER carries that argument's root (par 4.1, 2026-10-18; which
+   argument, ViewArgOf says); NONE for anything else *)
+PROCEDURE ViewCallOf (k: Ast.Kid) : Ast.Kid =
+VAR
+  pr : ProcInfo ;
+  found : BOOL ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NParen OR e.kind = Ast.NSomeExpr OR
+       e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf THEN
+      RETURN ViewCallOf (e.kids[0])
+    END ;
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        IF dn.kind = Ast.NDesignator THEN
+          pr := LookupProc (DesigName (dn), found) ;
+          IF found AND LEN (pr.foreign) = 0 THEN
+            IF AnswersViewAny (Qualify (pr.modName, pr.name), pr) THEN
+              RETURN SOME (e)
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END ViewCallOf ;
+
+(* does the callee of call VC (ViewCallOf's answer) view its J-th
+   argument -- the one the answer carries? *)
+PROCEDURE ViewArgOf (vc: PTR Ast.Node ; j: I64) : BOOL =
+VAR
+  pr : ProcInfo ;
+  found : BOOL ;
+BEGIN
+  IF vc.kids[0] IS SOME dn THEN
+    IF dn.kind = Ast.NDesignator THEN
+      pr := LookupProc (DesigName (dn), found) ;
+      IF found AND LEN (pr.foreign) = 0 THEN
+        RETURN AnswersViewAt (Qualify (pr.modName, pr.name), pr, j)
+      END
+    END
+  END ;
+  RETURN FALSE
+END ViewArgOf ;
 
 (* the frame storage a call's answer views: the first argument that is
-   frame storage, when the callee answers a view of its parameters *)
+   frame storage AMONG THOSE THE CALLEE VIEWS (per parameter since
+   2026-10-18: `ReqOf (pool, st, errs, vs, s, p + 'x')' views vs and
+   not the concatenation handed to p, which cp-kernel's Respage was
+   refused for) *)
 PROCEDURE ViewedFrame (dn: PTR Ast.Node ; args: Ast.Kid) : STR =
 VAR
   pr : ProcInfo ;
   found : BOOL ;
   i : I64 ;
-  w : STR ;
+  w, q : STR ;
 BEGIN
   IF dn.kind # Ast.NDesignator THEN RETURN '' END ;
   pr := LookupProc (DesigName (dn), found) ;
   IF NOT found OR LEN (pr.foreign) > 0 THEN RETURN '' END ;
-  IF NOT AnswersView (Qualify (pr.modName, pr.name), pr) THEN RETURN '' END ;
+  q := Qualify (pr.modName, pr.name) ;
   IF args IS SOME al THEN
     FOR i := 0 TO al.nkids - 1 DO
-      w := FrameWhat (al.kids[i], 'SLICE OF CHAR') ;
-      IF LEN (w) > 0 THEN RETURN Cat ('a view of ', w) END
+      IF AnswersViewAt (q, pr, i) THEN
+        w := FrameWhat (al.kids[i], 'SLICE OF CHAR') ;
+        IF LEN (w) > 0 THEN RETURN Cat ('a view of ', w) END
+      END
     END
   END ;
   RETURN ''
@@ -2898,15 +3280,28 @@ END DesigPath ;
 
 (* a ref value rooted at frame storage SRC was stored into the
    designator rooted DST (dstSel: through a selector) *)
-PROCEDURE EscStore (RO KEPT dst: STR ; dstSel: BOOL ; RO KEPT src: STR) =
-VAR m : STR ;
+(* the name under a destination or target: '>tg' marks a store into
+   the VAR parameter tg's OWN storage -- the variable itself or an
+   inline component, no pointer or slice crossed -- which hands the
+   borrow back to the caller through tg rather than keeping it
+   (StoreRef, 2026-10-18); the mark travels with the escape fact and
+   the pend, and only EmitPend reads it *)
+PROCEDURE TgtName (RO t: STR) : STR =
 BEGIN
-  m := ScopeMode (dst) ;
+  IF Text.StartsWith (t, '>') THEN RETURN SLICE (t, 1, LEN (t) - 1) END ;
+  RETURN t
+END TgtName ;
+
+PROCEDURE EscStore (RO KEPT dst: STR ; dstSel: BOOL ; RO KEPT src: STR) =
+VAR m, nm : STR ;
+BEGIN
+  nm := TgtName (dst) ;
+  m := ScopeMode (nm) ;
   IF Text.Eq (m, ModeModule) THEN EscTarget (src, '<module>')
   ELSIF Text.Eq (m, ModeVar) OR Text.Eq (m, ModeOwn) OR
         Text.Eq (m, ModeRo) THEN EscTarget (src, dst)
   ELSIF Text.Eq (m, ModeVal) AND dstSel THEN EscTarget (src, dst)
-  ELSIF IsFrameMode (m) THEN EscAlias (dst, src)
+  ELSIF IsFrameMode (m) THEN EscAlias (nm, src)
   END
 END EscStore ;
 
@@ -3022,7 +3417,7 @@ BEGIN
     DynStr.Append (d, 'an unknown name')
   ELSE
     DynStr.Append (d, 'the caller through ') ;
-    DynStr.Append (d, t)
+    DynStr.Append (d, TgtName (t))
   END
 END AppendTgt ;
 
@@ -3089,9 +3484,9 @@ END KeptHas ;
 PROCEDURE EmitPend (line, col: I64 ; RO KEPT src: STR ;
                     RO carrier: STR ; RO KEPT dst: STR ; RO ctx: STR) =
 VAR
-  selfHit, first : BOOL ;
+  selfHit, first, used : BOOL ;
   j, n2, ntl : I64 ;
-  dmode : STR ;
+  dmode, dn : STR ;
   tl : SLICE OF STR ;
   d, de, dm, ds : PTR DynStr.DString IN pool ;
 BEGIN
@@ -3104,7 +3499,8 @@ BEGIN
   END ;
   tl := NEW (pool, STR, 8) ;
   ntl := 0 ;
-  dmode := ScopeMode (dst) ;
+  dn := TgtName (dst) ;
+  dmode := ScopeMode (dn) ;
   IF Text.Eq (dmode, ModeModule) THEN
     PushErr (tl, ntl, '<module>')
   ELSIF Text.Eq (dmode, ModeVar) OR Text.Eq (dmode, ModeOwn) OR
@@ -3112,7 +3508,7 @@ BEGIN
     PushErr (tl, ntl, dst)
   ELSIF Text.Eq (dmode, ModeLocal) OR Text.Eq (dmode, ModeBinder) THEN
     FOR j := 0 TO nesc - 1 DO
-      IF Text.Eq (escName[j], dst) THEN
+      IF Text.Eq (escName[j], dn) THEN
         PushErr (tl, ntl, escTgt[j])
       END
     END
@@ -3125,7 +3521,9 @@ BEGIN
   selfHit := FALSE ;
   n2 := 0 ;
   FOR j := 0 TO ntl - 1 DO
-    IF NOT selfHit AND Text.Eq (tl[j], src) THEN
+    IF Text.Eq (TgtName (tl[j]), src) THEN
+      (* in both its spellings: a store through the pointer and one
+         into the parameter's own storage are one escape *)
       selfHit := TRUE
     ELSE
       tl[n2] := tl[j] ;
@@ -3139,7 +3537,7 @@ BEGIN
       DynStr.Append (d, 'self-store: borrowed ') ;
       DynStr.Append (d, DynStr.View (ds)) ;
       DynStr.Append (d, ' stored into ') ;
-      DynStr.Append (d, dst) ;
+      DynStr.Append (d, dn) ;
       DynStr.Append (d, ', which reaches the caller only through ') ;
       DynStr.Append (d, src) ;
       DynStr.Append (d, ' itself (par 4.1)')
@@ -3147,35 +3545,59 @@ BEGIN
       DynStr.Append (d, 'frame-store: borrowed ') ;
       DynStr.Append (d, DynStr.View (ds)) ;
       DynStr.Append (d, ' stored into ') ;
-      DynStr.Append (d, dst) ;
+      DynStr.Append (d, dn) ;
       DynStr.Append (d, ', which never escapes the frame (par 4.1)')
     END
   ELSE
     DynStr.Append (d, 'retention: borrowed ') ;
     DynStr.Append (d, DynStr.View (ds)) ;
     DynStr.Append (d, ' stored into ') ;
-    DynStr.Append (d, dst) ;
+    DynStr.Append (d, dn) ;
     DynStr.Append (d, ' -- reaches ') ;
     FOR j := 0 TO ntl - 1 DO
       IF j > 0 THEN DynStr.Append (d, ', ') END ;
       AppendTgt (d, tl[j])
     END ;
     DynStr.Append (d, ' (par 4.1/4.2)') ;
-    KeptUse (src) ;
     (* the CHECK behind the measurement: a retention must be in the
        signature, the way a raise must be in RAISES.  '<call>'
        alone does not fire it -- whether a callee keeps its
        argument is that callee's declaration to make, and the
-       caller check reads it there (par 4.1). *)
+       caller check reads it there (par 4.1).  Nor does '<return>'
+       (2026-10-18): a borrow that reaches the ANSWER is not kept by
+       this procedure, it is handed back -- Text.Split answers views
+       of s and retains nothing -- so the answer CARRIES the borrow
+       instead (AnswersView, ViewCarrier) and the caller's store of
+       that answer is the retention, judged there.  Until this day the
+       answer demanded KEPT, and KEPT on a splitter refused every
+       caller that split a frame string -- false, measured on ten
+       corpus modules; the ledger line below still says "reaches the
+       RETURN value", as a provenance fact.  Nor a VAR parameter's
+       OWN storage ('>tg', StoreRef): `tg.name := SLICE (s, a, n)'
+       hands the view back to the caller's variable, which CARRIES
+       it there (CallType's hand-back) -- Png.NextTag fills the
+       caller's Tag with views of the document and keeps nothing;
+       KEPT on it rippled up to Raster and refused every caller
+       that rasterised a frame string. *)
     de := DynStr.New (pool) ;
     first := TRUE ;
+    used := FALSE ;
     FOR j := 0 TO ntl - 1 DO
-      IF NOT Text.Eq (tl[j], '<call>') THEN
-        IF NOT first THEN DynStr.Append (de, ', ') END ;
-        AppendTgt (de, tl[j]) ;
-        first := FALSE
+      IF NOT Text.Eq (tl[j], '<return>') AND NOT Text.StartsWith (tl[j], '>') THEN
+        used := TRUE ;
+        IF NOT Text.Eq (tl[j], '<call>') THEN
+          IF NOT first THEN DynStr.Append (de, ', ') END ;
+          AppendTgt (de, tl[j]) ;
+          first := FALSE
+        END
       END
     END ;
+    (* a KEPT is JUSTIFIED by a reach that keeps -- module state, the
+       caller's object, or a callee's declared keeping ('<call>') --
+       not by a hand-back: a borrow that only reaches the answer or a
+       VAR parameter's own storage leaves a KEPT on it unseen, and
+       the ledger says so (kept-unseen, 2026-10-18) *)
+    IF used THEN KeptUse (src) END ;
     IF NOT first AND NOT KeptHas (src) THEN
       dm := DynStr.New (pool) ;
       DynStr.Append (dm, 'undeclared retention: borrowed ') ;
@@ -3312,7 +3734,7 @@ END DesigDeclType ;
    a designator's from its name's declared type (DesigDeclType), a
    call's answer -- F (x).f, NCallSel -- from the callee's declared
    result.  Each step's type is recorded for the generator. *)
-PROCEDURE SelWalk (d: PTR Ast.Node ; RO ctx: STR ; KEPT start: Ast.Kid ;
+PROCEDURE SelWalk (d: PTR Ast.Node ; RO ctx: STR ; start: Ast.Kid ;
                    from: I64) : Ast.Kid =
 VAR
   j, q : I64 ;
@@ -4771,7 +5193,7 @@ BEGIN
 END RoArg ;
 
 PROCEDURE ExprType (k: Ast.Kid ; RO ctx: STR) : STR ;
-PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
+PROCEDURE CallType (dn: Ast.Kid ; argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR ;
 
 (* a designator as an expression: scope names, module CONSTs, the
@@ -5589,7 +6011,7 @@ END BindName ;
 
 (* a binder bound by IS SOME from a designator: the designator's ROOT
    name, which names the binder's pool (ObjPoolIssue) *)
-PROCEDURE BindFrom (RO KEPT nm: STR ; RO KEPT root: STR) =
+PROCEDURE BindFrom (RO nm: STR ; RO KEPT root: STR) =
 VAR i : I64 ;
 BEGIN
   i := ScopeFind (nm) ;
@@ -5601,7 +6023,7 @@ END BindFrom ;
    the binder is used in -- resolves them where they were declared
    (the canonCtx lesson, applied to binders).  Pool and attribute
    components are dropped, neither being part of type identity. *)
-PROCEDURE QualifiedBound (KEPT b: Ast.Kid ; RO KEPT m: STR) : Ast.Kid =
+PROCEDURE QualifiedBound (b: Ast.Kid ; RO KEPT m: STR) : Ast.Kid =
 VAR
   d, sf : PTR Ast.Node IN pool ;
   found : BOOL ;
@@ -5623,7 +6045,7 @@ BEGIN
   RETURN b
 END QualifiedBound ;
 
-PROCEDURE QualifiedIn (KEPT t: Ast.Kid ; RO KEPT modName: STR) : Ast.Kid =
+PROCEDURE QualifiedIn (t: Ast.Kid ; RO KEPT modName: STR) : Ast.Kid =
 VAR n : PTR Ast.Node IN pool ;
 BEGIN
   IF t IS SOME tn THEN
@@ -5685,7 +6107,7 @@ BEGIN
   END
 END NoteMod ;
 
-PROCEDURE InMod (KEPT t: Ast.Kid ; RO KEPT m: STR) : Ast.Kid =
+PROCEDURE InMod (t: Ast.Kid ; RO KEPT m: STR) : Ast.Kid =
 BEGIN
   IF LEN (m) = 0 OR Text.Eq (m, curMod) THEN RETURN t END ;
   RETURN QualifiedIn (t, m)
@@ -5814,6 +6236,136 @@ BEGIN
   RETURN FALSE
 END PtrBearing ;
 
+(* the type under designator E -- a parameter of procedure D of module
+   MOD, bare or selected (`lx.src', `items[i]', `s[i]') -- walked from
+   the parameter's declared type as CheckWrite0 walks a write, with
+   the component types qualified in the module that declared the
+   aggregate (InMod, NoteMod).  BEYOND says whether the walk crossed
+   a reference -- a pointer's target, a slice's or a grid's element --
+   so that the storage lies beyond the frame holding the parameter;
+   KNOWN is FALSE when the parameter is not D's or a step did not
+   resolve (another module's type this checker has not loaded), and
+   the callers then take the conservative side. *)
+PROCEDURE ParamSelType (d: PTR Ast.Node ; e: PTR Ast.Node ; RO mod: STR ;
+                        VAR beyond: BOOL ; VAR known: BOOL) : Ast.Kid =
+VAR
+  g, b, j : I64 ;
+  tn, tq, res : Ast.Kid ;
+  tmod : STR ;
+  found, deref : BOOL ;
+BEGIN
+  beyond := FALSE ;
+  known := FALSE ;
+  found := FALSE ;
+  tn := NONE ;
+  IF d.kids[0] IS SOME ps THEN
+    FOR g := 0 TO ps.nkids - 1 DO
+      IF ps.kids[g] IS SOME grp THEN
+        IF grp.kids[0] IS SOME ids THEN
+          FOR b := 0 TO ids.nkids - 1 DO
+            IF ids.kids[b] IS SOME id THEN
+              IF NOT found AND Text.Eq (id.a, e.a) THEN
+                found := TRUE ;
+                tn := grp.kids[1]
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  IF NOT found THEN RETURN NONE END ;
+  tmod := mod ;
+  tq := InMod (tn, tmod) ;
+  FOR j := 0 TO e.nkids - 1 DO
+    NoteMod (tq, tmod) ;
+    res := ResolveType (tq) ;
+    LOOP
+      deref := FALSE ;
+      IF res IS SOME r0 THEN
+        IF r0.kind = Ast.NPtrType OR r0.kind = Ast.NSharedType THEN
+          deref := TRUE ;
+          beyond := TRUE ;
+          tq := InMod (r0.kids[0], tmod) ;
+          NoteMod (tq, tmod) ;
+          res := ResolveType (tq)
+        END
+      END ;
+      IF NOT deref THEN EXIT END
+    END ;
+    IF res IS SOME r THEN
+      IF e.kids[j] IS SOME sel THEN
+        IF sel.kind = Ast.NSelField THEN
+          IF r.kind = Ast.NRecordType THEN
+            tq := InMod (FieldTypeOf (r, sel.a), tmod)
+          ELSE
+            RETURN NONE
+          END
+        ELSIF sel.kind = Ast.NSelIndex THEN
+          IF r.kind = Ast.NSliceType THEN
+            beyond := TRUE ;
+            tq := InMod (r.kids[0], tmod)
+          ELSIF r.kind = Ast.NGridType THEN
+            beyond := TRUE ;
+            tq := InMod (r.kids[1], tmod)
+          ELSIF r.kind = Ast.NArrayType THEN
+            tq := InMod (r.kids[1], tmod)
+          ELSE
+            RETURN NONE
+          END
+        ELSE
+          RETURN NONE
+        END
+      END
+    ELSE
+      RETURN NONE
+    END
+  END ;
+  known := TRUE ;
+  RETURN tq
+END ParamSelType ;
+
+(* can designator E -- a parameter of procedure D, bare or selected
+   -- be viewed at all: is what it names a reference, a string, a
+   record holding one (PtrBearing)?  A scalar is copied, so a store
+   of it is no borrow: `buf[i] := s[i]' copies a CHAR, and
+   DynStr.Append hands nothing back (ViewExprEvidence, 2026-10-18).
+   A type this checker cannot resolve is taken as bearing, and the
+   caller's own argument types then decide what is carried. *)
+PROCEDURE ParamViewBearing (d: PTR Ast.Node ; e: PTR Ast.Node ; RO mod: STR) : BOOL =
+VAR
+  tn : Ast.Kid ;
+  beyond, known : BOOL ;
+BEGIN
+  IF NOT IsParamOf (d, e.a) THEN RETURN FALSE END ;
+  tn := ParamSelType (d, e, mod, beyond, known) ;
+  IF NOT known THEN RETURN TRUE END ;
+  (* a builtin scalar resolves to nothing, being nothing's alias *)
+  IF tn IS SOME tq THEN
+    IF tq.kind = Ast.NQualident AND LEN (tq.b) = 0 AND IsBuiltinTy (tq.a) THEN
+      RETURN FALSE
+    END
+  END ;
+  IF ResolveType (tn) IS SOME r2 THEN RETURN PtrBearing (tn, 0) END ;
+  RETURN TRUE
+END ParamViewBearing ;
+
+(* does a store into designator E -- a parameter of D, selected --
+   land beyond the frame that holds the parameter: through a pointer
+   it points to, into a slice's or grid's element?  Then what the
+   store keeps outlives the call, and the caller's variable does not
+   merely carry it (HandsBackDeep).  Unknown is taken as beyond. *)
+PROCEDURE ParamSelBeyond (d: PTR Ast.Node ; e: PTR Ast.Node ; RO mod: STR) : BOOL =
+VAR
+  tn : Ast.Kid ;
+  beyond, known : BOOL ;
+BEGIN
+  IF NOT IsParamOf (d, e.a) THEN RETURN FALSE END ;
+  tn := ParamSelType (d, e, mod, beyond, known) ;
+  IF NOT known THEN RETURN TRUE END ;
+  RETURN beyond
+END ParamSelBeyond ;
+
 (* does a VAR parameter of this type carry its object's pool as a
    hidden argument (docs/pool-elision-plan.md, rule 2)?  Written as
    `PTR T` or `OPT PTR T`: yes, by node kind and no lookup.  A record,
@@ -5916,7 +6468,7 @@ BEGIN
 END ObjPoolIssue ;
 
 (* the flattened field types of a variant: one entry per binder *)
-PROCEDURE FlatFields (KEPT fields: Ast.Kid ; VAR n: I64) : SLICE OF AKid =
+PROCEDURE FlatFields (fields: Ast.Kid ; VAR n: I64) : SLICE OF AKid =
 VAR
   out : SLICE OF AKid ;
   g, j : I64 ;
@@ -6214,17 +6766,17 @@ BEGIN
   RETURN NONE
 END RecordNamed ;
 
-PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
+PROCEDURE CallType (dn: Ast.Kid ; argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR =
 VAR
-  name, pTy, amode, om, t, hint : STR ;
+  name, pTy, amode, om, t, hint, hbMode, hroot : STR ;
   nargs, j, g, k, kept, rank, dot, nflat, si, nFrameKept, iu : I64 ;
   nu : SLICE OF I64 ;
   aTy : SLICE OF STR ;
   aNode : SLICE OF AKid ;
   flat : SLICE OF AKid ;
   pr : ProcInfo ;
-  found, isVar : BOOL ;
+  found, isVar, hbBeyond : BOOL ;
   fields : Ast.Kid ;
 BEGIN
   name := '' ;
@@ -6421,6 +6973,8 @@ BEGIN
         pr.node := SOME (ptn) ;
         pr.modName := '' ;
         pr.foreign := '' ;
+        pr.name := '' ;
+        pr.body := NONE ;          (* nothing is known of which body runs *)
         IF scope[si].ty IS SOME tq THEN
           IF tq.kind = Ast.NQualident THEN
             IF LEN (tq.b) > 0 THEN pr.modName := tq.a END
@@ -6485,6 +7039,51 @@ BEGIN
           END
         END
       END ;
+      (* par 4.1, the hand-back: a VAR argument whose parameter the
+         callee fills with a view of another argument (HandsBack)
+         now holds that borrow, exactly as the left side of `tg :=
+         SLICE (svg, a, n)' would -- carried by a local, pended
+         beyond the frame, an escape fact in frame storage.  The
+         callee declares nothing: `NextTag (svg, i, tg)' hands svg
+         back through tg, and whether tg then outlives the frame is
+         this frame's business (2026-10-18). *)
+      IF LEN (pr.foreign) = 0 THEN
+        k := 0 ;
+        IF pn.kids[0] IS SOME pl2 THEN
+          FOR g := 0 TO pl2.nkids - 1 DO
+            IF pl2.kids[g] IS SOME grp2 THEN
+              IF grp2.kids[0] IS SOME ids2 THEN
+                FOR j := 0 TO ids2.nkids - 1 DO
+                  IF k < nargs AND grp2.f1 AND NOT grp2.f2 THEN
+                    IF aNode[k] IS SOME ak THEN
+                      IF ak.kind = Ast.NDesignator THEN
+                        hbMode := ScopeMode (ak.a) ;
+                        hbBeyond := DerefBeyond (ak) ;
+                        FOR iu := 0 TO nargs - 1 DO
+                          IF iu # k THEN
+                            hroot := EscRootOf (aNode[iu]) ;
+                            IF LEN (hroot) > 0 AND TyBearing (aTy[iu]) AND
+                               HandsBackFrom (Qualify (pr.modName, pr.name), pr, k, iu) THEN
+                              (* beyond the frame when our designator
+                                 crosses a reference, or the callee's
+                                 store did (`n.kids[k] := sel' through
+                                 `VAR n: PTR Node') *)
+                              StoreRef (site, ak, hroot,
+                                hbBeyond OR HandsBackDeep (Qualify (pr.modName, pr.name), pr, k, iu),
+                                hbMode, ctx)
+                            END
+                          END
+                        END
+                      END
+                    END
+                  END ;
+                  k := k + 1
+                END
+              END
+            END
+          END
+        END
+      END ;
       pTy := '' ;
       IF pn.kids[1] IS SOME rt THEN pTy := CanonT (pn.kids[1], 0) END ;
       canonCtx := '' ;
@@ -6521,7 +7120,9 @@ BEGIN
   IF isVar THEN
     flat := FlatFields (fields, nflat) ;
     Arity (site, ctx, name, nflat, nargs) ;
-    canonCtx := om ;
+    (* a copy: om views the call's own text, and canonCtx is module
+       state (par 4.1, 2026-10-18) *)
+    canonCtx := Text.Keep (pool, om) ;
     FOR k := 0 TO nargs - 1 DO
       IF k < nflat THEN
         pTy := CanonT (flat[k], 0) ;
@@ -6558,7 +7159,7 @@ BEGIN
     END ;
     flat := FlatFields (rn.kids[1], nflat) ;
     Arity (site, ctx, name, nflat, nargs) ;
-    canonCtx := om ;
+    canonCtx := Text.Keep (pool, om) ;
     FOR k := 0 TO nargs - 1 DO
       IF k < nflat THEN
         pTy := CanonT (flat[k], 0) ;
@@ -6733,12 +7334,15 @@ BEGIN
     (* a concatenation, a frame allocation, an answer built here, or a
        name holding one -- unless the keeper is a frame value too *)
     what := FrameWhat (an, aTy) ;
-    (* a VIEW of frame storage (a SLICE of it, or a callee's answer that
-       views it, followed since 2026-10-11) is refused where it is
-       STORED durably, not here: measured, the KEPT side refused four
-       sound sites in the tools -- each consumed in its frame -- for one
-       real escape in an application *)
-    IF Text.StartsWith (what, 'a view of ') THEN what := '' END ;
+    (* a VIEW of frame storage -- a SLICE of it, or a callee's answer
+       that views it -- is refused here too since 2026-10-18.  It was
+       not from 2026-10-11 to then: following it refused four sound
+       sites in the tools (three through Diag.LexJson's KEPT, one in
+       Setup.Args9) for one real escape in an application; with the
+       answer and the hand-back carrying borrows LexJson lost its KEPT
+       and Args9 builds its vector in the frame, so the measurement
+       became one false site repaired against one escape found
+       (probe frame-view-kept-arg) *)
     IF LEN (what) > 0 AND nFrameKept <= 1 AND
        NOT PoolAmong (args, KindPool (what)) THEN
       ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
@@ -6753,6 +7357,22 @@ BEGIN
     aroot := EscRootOf (an) ;
     IF LEN (aroot) > 0 AND TyBearing (aTy) THEN
       KeptRoot (site, ctx, name, k, aroot)
+    ELSIF ViewCallOf (an) IS SOME vc THEN
+      (* a view-answering call handed to a keeper hands it the
+         arguments the answer views: `Keep (Text.Split (s))' is `Keep
+         (s)' for par 4.1 (2026-10-18) *)
+      IF vc.kids[1] IS SOME val THEN
+        FOR j := 0 TO val.nkids - 1 DO
+          aroot := EscRootOf (val.kids[j]) ;
+          IF LEN (aroot) > 0 THEN
+            IF val.kids[j] IS SOME varg THEN
+              IF TyBearing (Ast.TyStrAt (varg.id)) AND ViewArgOf (vc, j) THEN
+                KeptRoot (site, ctx, name, k, aroot)
+              END
+            END
+          END
+        END
+      END
     ELSIF LEN (aroot) = 0 THEN
       nflat := CtorFields (an, flat, om) ;
       IF nflat >= 0 THEN
@@ -6989,7 +7609,7 @@ BEGIN
   RETURN FALSE
 END LeavesAfter ;
 
-PROCEDURE LoopCarry (KEPT pre: SLICE OF Binding ; npre: I64 ; body: Ast.Kid ;
+PROCEDURE LoopCarry (pre: SLICE OF Binding ; npre: I64 ; body: Ast.Kid ;
                      RO ctx: STR) =
 VAR
   i, ix : I64 ;
@@ -7626,7 +8246,7 @@ BEGIN
              Cat (ItoA (line), ')'))
 END SwAt ;
 
-PROCEDURE StateWrite (RO KEPT qual: STR ; m: I64 ; body: Ast.Kid) : STR ;
+PROCEDURE StateWrite (RO qual: STR ; m: I64 ; body: Ast.Kid) : STR ;
 
 (* a call in procedure proc of module m: its VAR and OWN arguments,
    a NEW's pool, and what the callee writes *)
@@ -7717,7 +8337,7 @@ BEGIN
   RETURN ''
 END SwWalk ;
 
-PROCEDURE StateWrite (RO KEPT qual: STR ; m: I64 ; body: Ast.Kid) : STR =
+PROCEDURE StateWrite (RO qual: STR ; m: I64 ; body: Ast.Kid) : STR =
 VAR
   i : I64 ;
   key, w : STR ;
@@ -7923,7 +8543,7 @@ BEGIN
   END
 END CheckThread ;
 
-PROCEDURE CheckCallStmt (KEPT st: PTR Ast.Node ; RO ctx: STR) =
+PROCEDURE CheckCallStmt (st: PTR Ast.Node ; RO ctx: STR) =
 VAR t : STR ;
 BEGIN
   IF st.kids[0] IS SOME dn THEN
@@ -8200,14 +8820,23 @@ END TyBearing ;
    each borrow a CONSTRUCTOR wraps (2026-10-08) *)
 PROCEDURE StoreRef (st: PTR Ast.Node ; KEPT lhs: PTR Ast.Node ; RO KEPT vname: STR ;
                     beyond: BOOL ; RO lhsMode: STR ; RO ctx: STR) =
-VAR m : STR ;
+VAR m, dst : STR ;
 BEGIN
   m := ScopeMode (vname) ;
+  (* a store into a VAR parameter's OWN storage -- not beyond: no
+     pointer or slice crossed on the way -- hands the borrow back to
+     the caller through that parameter, as a RETURN hands it back
+     through the answer; the destination is marked '>' so that
+     EmitPend records the reach without demanding KEPT (2026-10-18) *)
+  dst := lhs.a ;
+  IF Text.Eq (lhsMode, ModeVar) AND NOT beyond THEN
+    dst := Text.Keep (pool, Cat ('>', lhs.a))
+  END ;
   IF Text.Eq (m, ModeVal) OR Text.Eq (m, ModeVar) OR Text.Eq (m, ModeRo) OR
      Text.Eq (m, ModeLocal) OR Text.Eq (m, ModeBinder) THEN
     IF beyond OR Text.Eq (lhsMode, ModeModule) OR
        (Text.Eq (lhsMode, ModeVar) AND lhs.nkids > 0) THEN
-      PendPush (st.line, st.col, vname, lhs.a)
+      PendPush (st.line, st.col, vname, dst)
     END
   END ;
   IF Text.Eq (lhsMode, ModeLocal) OR Text.Eq (lhsMode, ModeBinder) THEN
@@ -8217,15 +8846,15 @@ BEGIN
     CarryFrom (lhs.a, vname)
   END ;
   IF IsFrameMode (m) THEN
-    EscStore (lhs.a, lhs.nkids > 0, vname)
+    EscStore (dst, lhs.nkids > 0, vname)
   END
 END StoreRef ;
 
 PROCEDURE CheckAssign (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   beyond, isShared : BOOL ;
-  vname, t, u, lhsMode, dmode, what, apool, par, om, fty, pp : STR ;
-  lv, nflat, k : I64 ;
+  vname, t, u, lhsMode, dmode, what, apool, par, om, fty, pp, vroot : STR ;
+  lv, nflat, k, vj : I64 ;
   flat : SLICE OF AKid ;
 BEGIN
   IF st.kids[0] IS SOME lhs THEN
@@ -8416,6 +9045,26 @@ BEGIN
        VAR parameter's component unseen (Frame.AddF64). *)
     IF LEN (vname) > 0 AND TyBearing (u) AND NOT isShared THEN
       StoreRef (st, lhs, vname, beyond, lhsMode, ctx)
+    ELSIF LEN (vname) = 0 AND TyBearing (u) AND NOT isShared THEN
+      (* the ANSWER of a view-answering callee carries its arguments:
+         `t := Text.Split (s)' stores a view of s, so storing t
+         durably is storing s -- the borrow laundered through a call
+         result, not seen until 2026-10-18.  Each reference-typed
+         argument's root goes the way a bare right-hand side goes. *)
+      IF ViewCallOf (st.kids[1]) IS SOME vc THEN
+        IF vc.kids[1] IS SOME val THEN
+          FOR vj := 0 TO val.nkids - 1 DO
+            vroot := EscRootOf (val.kids[vj]) ;
+            IF LEN (vroot) > 0 THEN
+              IF val.kids[vj] IS SOME varg THEN
+                IF TyBearing (Ast.TyStrAt (varg.id)) AND ViewArgOf (vc, vj) THEN
+                  StoreRef (st, lhs, vroot, beyond, lhsMode, ctx)
+                END
+              END
+            END
+          END
+        END
+      END
     END ;
     (* a value CONSTRUCTED around a borrow retains it as the borrow
        itself would (2026-10-08): `c.data := Data.F64s (v, miss)'
@@ -9173,8 +9822,8 @@ BEGIN
   RETURN FALSE
 END EndsSeq ;
 
-PROCEDURE CheckProcBody (u: PTR Ast.Node ; KEPT d: PTR Ast.Node ;
-                         RO KEPT ctx: STR) =
+PROCEDURE CheckProcBody (u: PTR Ast.Node ; d: PTR Ast.Node ;
+                         RO ctx: STR) =
 VAR rk : I64 ;
 BEGIN
   IF d.kids[4] IS SOME body THEN
@@ -10101,7 +10750,7 @@ END DeclOnce ;
 (* the names a declaration section declares: a CONST, TYPE or
    EXCEPTION declaration is its own name, a VAR declaration the
    identifiers of its list *)
-PROCEDURE SectionNames (sec: Ast.Kid ; RO me: STR ; RO where: STR ;
+PROCEDURE SectionNames (KEPT sec: Ast.Kid ; RO me: STR ; RO where: STR ;
                         VAR names: SLICE OF STR ; VAR lines: SLICE OF I64 ;
                         VAR open: SLICE OF BOOL ; VAR n: I64) =
 VAR i, j : I64 ;
@@ -10130,7 +10779,7 @@ BEGIN
   END
 END SectionNames ;
 
-PROCEDURE CheckDeclaredOnce (u: PTR Ast.Node) =
+PROCEDURE CheckDeclaredOnce (KEPT u: PTR Ast.Node) =
 VAR
   names : SLICE OF STR ;
   lines : SLICE OF I64 ;

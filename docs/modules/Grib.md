@@ -73,7 +73,7 @@ where each message begins
 
 _(documented with the group below)_
 
-### Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool RAISES Error, ValueRange
+### Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool RAISES Error, ValueRange
 
 _(documented with the group below)_
 

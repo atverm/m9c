@@ -157,7 +157,7 @@ _(documented with the group below)_
 
 the everyday accessors; the other types go through GetCol
 
-### FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool RAISES Faults.SizeError, Duplicate, IndexError, ValueRange
+### FromCsv (VAR pool: POOL ; KEPT t: PTR Csv.Table) : PTR Fr IN pool RAISES Faults.SizeError, Duplicate, IndexError, ValueRange
 
 every non-Skip column of a PARSED Csv.Table, with the kinds the
 caller declared there: Real -> F32s (miss NaN), Int -> I64s
@@ -251,7 +251,7 @@ _(documented with the group below)_
 
 'start' | 'end' | 'mid'
 
-### WriteNc (VAR pool: POOL ; f: PTR Fr ; RO KEPT path: STR ; RO dim: STR) RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError
+### WriteNc (VAR pool: POOL ; f: PTR Fr ; RO path: STR ; RO dim: STR) RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError
 
 a netCDF-4 file with one dimension named `dim`, one variable
 per column in its OWN storage type, the column's missing value
@@ -261,7 +261,7 @@ invented at export time.  Strs columns become an n x width char
 matrix over a per-column length dimension, the PutChars
 convention.
 
-### WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR) RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError
+### WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR) RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError
 
 WriteNc over the dimension 'time', plus the time coordinate:
 I64 seconds, units 'seconds since 1970-01-01 00:00:00 +00:00'
@@ -274,7 +274,7 @@ cell_methods is deliberately NOT written: the frame does not
 know whether a column is a mean over its period or a point
 sample, and writing 'mean' unasked would be a lie in metadata.
 
-### FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange, Overflow, IndexError
+### FromNc (VAR pool: POOL ; RO path: STR ; RO dim: STR) : PTR Fr RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange, Overflow, IndexError
 
 every variable whose FIRST dimension is `dim`: 1-D numerics
 into their matching arms, 2-D char matrices into Strs.  A
@@ -284,7 +284,7 @@ failure this module exists to prevent.  _FillValue becomes the
 column's missing value; units / long_name / standard_name are
 read when present.
 
-### TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, Disorder, ValueRange, Overflow, IndexError
+### TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, Disorder, ValueRange, Overflow, IndexError
 
 FromNc over 'time', with the time variable itself parsed from
 its CF units -- seconds, minutes, hours or days since a date,
@@ -296,7 +296,7 @@ attributes WriteTsNc writes; a foreign file without them gets
 convention start and the axis's own smallest gap, both stated
 choices rather than inference.
 
-### NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; RO KEPT time: SLICE OF I64 ; res: I64 ; conv: Conv ; RO descr: STR) : PTR Ts IN pool RAISES Faults.SizeError, Disorder, Faults.BadArg
+### NewTs (VAR pool: POOL ; f: PTR Fr ; RO time: SLICE OF I64 ; res: I64 ; conv: Conv ; RO descr: STR) : PTR Ts IN pool RAISES Faults.SizeError, Disorder, Faults.BadArg
 
 time is epoch seconds UTC, one per row, STRICTLY increasing and
 on the res grid (relative to its own first stamp); res > 0.
@@ -379,14 +379,14 @@ exactly first..last by res.  A frame with a Bools column
 REFUSES (WrongType, the column named): no missing value exists
 for a boolean.
 
-### Take (VAR pool: POOL ; f: PTR Fr ; RO rows: SLICE OF I64) : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate
+### Take (VAR pool: POOL ; KEPT f: PTR Fr ; RO rows: SLICE OF I64) : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate
 
 f's columns, in f's order, with their metadata, and the rows
 named, in the order named; a row may be named more than once,
 or not at all.  A number outside 0 .. Rows (f) - 1 is
 IndexError.
 
-### Filter (VAR pool: POOL ; f: PTR Fr ; RO mask: SLICE OF BOOL) : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate
+### Filter (VAR pool: POOL ; KEPT f: PTR Fr ; RO mask: SLICE OF BOOL) : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate
 
 the rows where mask is TRUE, in their order: polars' filter.
 LEN (mask) must be Rows (f), or it is Faults.SizeError.
@@ -395,7 +395,7 @@ LEN (mask) must be Rows (f), or it is Faults.SizeError.
 
 _(documented with the group below)_
 
-### SortBy (VAR pool: POOL ; f: PTR Fr ; RO name: STR ; descending: BOOL) : PTR Fr IN pool RAISES Unknown, IndexError, Faults.SizeError, Duplicate
+### SortBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO name: STR ; descending: BOOL) : PTR Fr IN pool RAISES Unknown, IndexError, Faults.SizeError, Duplicate
 
 the rows in the order of one column: OrderBy answers the row
 numbers and SortBy the frame, which is Take of them.  STABLE
@@ -408,7 +408,7 @@ being its null:
   strings by code point, the shorter first, and the empty
     string is a value; FALSE before TRUE.
 
-### GroupBy (VAR pool: POOL ; f: PTR Fr ; RO key: STR ; RO how: SLICE OF How ; minCount: I64) : PTR Fr IN pool RAISES Unknown, WrongType, Faults.SizeError, ValueRange, Overflow, IndexError
+### GroupBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO key: STR ; RO how: SLICE OF How ; minCount: I64) : PTR Fr IN pool RAISES Unknown, WrongType, Faults.SizeError, ValueRange, Overflow, IndexError
 
 one row for every distinct value of the column `key`, the rows
 in ASCENDING ORDER OF THE KEY, and the rows whose key is missing
@@ -427,11 +427,11 @@ F64.
 how many rows each group of GroupBy (f, key) has, in the same
 order
 
-### Join (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError
+### Join (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError
 
 _(documented with the group below)_
 
-### JoinLeft (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError
+### JoinLeft (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError
 
 the rows of a and b that hold the same value in the column
 `key`, which both have: a's columns, then b's but its key.  One
@@ -481,7 +481,7 @@ arithmetic answers NaN for a row with a gap, which is right.
 
 yes or no for a row; a comparison with a NaN is FALSE
 
-### Aggregate (VAR pool: POOL ; f: PTR Fr ; RO key, name: STR ; agg: Agg ; RO p: SLICE OF F64) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange, IndexError
+### Aggregate (VAR pool: POOL ; KEPT f: PTR Fr ; RO key, name: STR ; agg: Agg ; RO p: SLICE OF F64) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange, IndexError
 
 GroupBy's groups, in GroupBy's order, and two columns: the key,
 and the column `name' reduced by agg, as F64 with NaN for its
@@ -494,7 +494,7 @@ a new F64 column `name' ADDED to f, each value fn of that row's
 values in the columns cols; its missing value is NaN.  polars'
 with_columns.
 
-### FilterBy (VAR pool: POOL ; f: PTR Fr ; RO cols: SLICE OF STR ; test: RowTest ; RO p: SLICE OF F64) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange, IndexError
+### FilterBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO cols: SLICE OF STR ; test: RowTest ; RO p: SLICE OF F64) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange, IndexError
 
 the rows for which test is TRUE of their values in the columns
 cols, in their order: Filter, with the mask computed here.

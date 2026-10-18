@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     5   WriteCsv.pool, Filter.scratch, OrderBy.scratch, Groups.scratch, JoinOn.scratch
   pool parameters                                49   New, Blank, Copy, AddF64, AddF32, AddI64, +43 more
-  KEPT parameters                                18   AddF64, AddF32, AddI64, AddI32, AddI16, AddBytes, +11 more
+  KEPT parameters                                27   AddF64, AddF32, AddI64, AddI32, AddI16, AddBytes, +18 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

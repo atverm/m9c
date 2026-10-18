@@ -131,10 +131,9 @@ BEGIN
       IF LEN (body) > 1 AND body[0] = '@' THEN
         (* a body too long for an argument comes from a file *)
         body := Io.ReadFile (pool, SLICE (body, 1, LEN (body) - 1))
-      ELSE
-        (* argv is octets; the shell typed UTF-8 *)
-        body := DynStr.FromUtf8 (pool, DynStr.Bytes (pool, body, FALSE))
       END
+      (* Io.Arg decodes the shell's UTF-8 itself since 2026-10-18; the
+         hand decoding that stood here would now double-decode *)
     END ;
     hd := DynStr.New (pool) ;
     i := 5 ;

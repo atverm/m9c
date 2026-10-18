@@ -131,7 +131,7 @@ PROCEDURE CholeskyT (VAR pool: POOL ; a: PTR Matrix ; threads: I64)
      the serial factorisation was the last single-threaded minutes
      of a solve whose other stages were already banded.            *)
 
-PROCEDURE CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64)
+PROCEDURE CholInverse (VAR pool: POOL ; l: PTR Matrix ; threads: I64)
   : PTR Matrix IN pool
   RAISES Faults.SizeError ;
   (* (L L^T)^-1 from the factor Cholesky answered, in two contiguous
@@ -850,7 +850,7 @@ BEGIN
   RETURN l
 END CholeskyT ;
 
-PROCEDURE CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64)
+PROCEDURE CholInverse (VAR pool: POOL ; l: PTR Matrix ; threads: I64)
   : PTR Matrix IN pool
   RAISES Faults.SizeError =
 VAR

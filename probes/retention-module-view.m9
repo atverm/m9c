@@ -1,0 +1,22 @@
+(* EXPECT: undeclared retention: borrowed items reaches module state -- declare KEPT items (par 4.1) *)
+(* The retaining local leaves through a VIEW of itself: `saved :=
+   out' was refused and `saved := SLICE (out, 0, n)' was not, because
+   SLICE is a node of its own and the root finder looked for a call
+   by that name (cp-kernel's Unique, 2026-10-18).  A RETURN of the
+   same view is legal: the answer carries the borrow (par 4.1). *)
+MODULE m ;
+VAR saved : SLICE OF STR ;
+PROCEDURE Pick (VAR pool: POOL ; RO items: SLICE OF STR) =
+VAR
+  out : SLICE OF STR ;
+  i, n : I64 ;
+BEGIN
+  out := NEW (pool, STR, LEN (items)) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (items) - 1 DO
+    IF LEN (items[i]) > 0 THEN out[n] := items[i] ; n := n + 1 END
+  END ;
+  saved := SLICE (out, 0, n)
+END Pick ;
+BEGIN
+END m.

@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     0
   pool parameters                                35   Nn, PQualident, PIdentList, PArgList, DesigToQual, PNew, +29 more
-  KEPT parameters                                30   Init, PArgList, DesigToQual, PNew, PFactor, PTerm, +24 more
+  KEPT parameters                                29   PArgList, PNew, PFactor, PTerm, PSimple, PRel, +23 more
   HEAP named                                      1   Keep
   NEW (OWN, T)                                    0
   DISPOSE                                         0

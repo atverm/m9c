@@ -72,7 +72,7 @@ TYPE
 EXCEPTION
   Error (RO op: STR ; RO key: STR ; RO detail: STR ; code: I64) ;
 
-PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
+PROCEDURE Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool
   RAISES Error, ValueRange ;
 PROCEDURE Close (VAR f: PTR File) ;
   (* closing a file nobody can read from cannot fail in a way a
@@ -310,7 +310,7 @@ BEGIN
   RETURN C.MutPtr (Nowhere)
 END Null ;
 
-PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
+PROCEDURE Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool
   RAISES Error, ValueRange =
 VAR
   scratch : POOL ;

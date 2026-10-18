@@ -25,7 +25,7 @@ TYPE
     msg : STR
   END ;
 
-PROCEDURE Parse (RO KEPT line: STR ; VAR f: Finding) : BOOL ;
+PROCEDURE Parse (RO line: STR ; VAR f: Finding) : BOOL ;
   (* one line of m9c's output as a finding, when it carries a
      position.  Two shapes, m9c's own:
        LINE:COL MSG            the checker's
@@ -43,7 +43,7 @@ PROCEDURE Parse (RO KEPT line: STR ; VAR f: Finding) : BOOL ;
      a construct the checker accepts and the generator refuses was
      invisible to every editor.                                      *)
 
-PROCEDURE One (VAR pool: POOL ; line, col: I64 ; RO KEPT msg: STR)
+PROCEDURE One (VAR pool: POOL ; line, col: I64 ; RO msg: STR)
   : SLICE OF Finding ;
   (* a single finding, as a slice: what a caller answers for a
      refusal of its own (a buffer with no MODULE line, a path it will
@@ -86,7 +86,7 @@ PROCEDURE Json (VAR pool: POOL ; RO fs: SLICE OF Finding) : STR
        {"ok":false,"diags":[{"line":L,"col":C,"msg":"..."},...]}
      ok is exactly "no finding".                                     *)
 
-PROCEDURE LexJson (RO KEPT src: STR) : STR
+PROCEDURE LexJson (RO src: STR) : STR
   RAISES ValueRange, IndexError ;
   (* the compiler's own tokens and comments, for a page that paints:
        {"tokens":[[kind,line,col,len],...],
@@ -154,7 +154,7 @@ BEGIN
   RETURN any
 END TakeI64 ;
 
-PROCEDURE Parse (RO KEPT line: STR ; VAR f: Finding) : BOOL =
+PROCEDURE Parse (RO line: STR ; VAR f: Finding) : BOOL =
 VAR i, j, ln, cl : I64 ;
 BEGIN
   (* LINE:COL MSG *)
@@ -207,7 +207,7 @@ BEGIN
   RETURN FALSE
 END Parse ;
 
-PROCEDURE One (VAR pool: POOL ; line, col: I64 ; RO KEPT msg: STR)
+PROCEDURE One (VAR pool: POOL ; line, col: I64 ; RO msg: STR)
   : SLICE OF Finding =
 VAR fs : SLICE OF Finding ;
 BEGIN
@@ -397,7 +397,7 @@ END Json ;
 
 (* ---- the compiler's own tokens ---- *)
 
-PROCEDURE LexJson (RO KEPT src: STR) : STR
+PROCEDURE LexJson (RO src: STR) : STR
   RAISES ValueRange, IndexError =
 VAR
   pool : POOL ;

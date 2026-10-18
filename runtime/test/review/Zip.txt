@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                    10   Open.scratch, OpenMember.scratch, Fill.scratch, Read.scratch, GunzipBytes.scratch, Gunzip.scratch, +4 more
   pool parameters                                13   Open, InflInit, OpenMember, GunzipBytes, Gunzip, FixedBlock, +7 more
-  KEPT parameters                                 2   Open, OpenMember
+  KEPT parameters                                 0
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

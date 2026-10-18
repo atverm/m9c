@@ -50,7 +50,7 @@ CONST
   Deflated = 8 ;
   DefaultBlock = 262144 ;        (* the compressed-side read size *)
 
-PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR)
+PROCEDURE Open (VAR pool: POOL ; RO path: STR)
   : PTR Archive IN pool
   RAISES Error, Io.IOError, ValueRange ;
   (* reads the central directory, nothing else. *)
@@ -79,7 +79,7 @@ PROCEDURE Find (a: PTR Archive ; RO name: STR) : I64
   RAISES ValueRange, IndexError ;
   (* the index of that member, or -1. *)
 
-PROCEDURE OpenMember (VAR pool: POOL ; KEPT a: PTR Archive ; i: I64 ;
+PROCEDURE OpenMember (VAR pool: POOL ; a: PTR Archive ; i: I64 ;
                       block: I64) : PTR Member IN pool
   RAISES Error, Io.IOError, ValueRange, IndexError ;
   (* `block` is the COMPRESSED-side read size; 0 for DefaultBlock. *)
@@ -320,7 +320,7 @@ BEGIN
   RETURN v
 END U ;
 
-PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR)
+PROCEDURE Open (VAR pool: POOL ; RO path: STR)
   : PTR Archive IN pool
   RAISES Error, Io.IOError, ValueRange =
 VAR
@@ -1262,7 +1262,7 @@ END CrcRun ;
 
 (* ---- a member of an archive ---- *)
 
-PROCEDURE OpenMember (VAR pool: POOL ; KEPT a: PTR Archive ; i: I64 ;
+PROCEDURE OpenMember (VAR pool: POOL ; a: PTR Archive ; i: I64 ;
                       block: I64) : PTR Member IN pool
   RAISES Error, Io.IOError, ValueRange, IndexError =
 VAR

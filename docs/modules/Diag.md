@@ -21,7 +21,7 @@ fifty-four lines of Gen.m9.
 
 1-based, exactly as m9c prints them
 
-### Parse (RO KEPT line: STR ; VAR f: Finding) : BOOL
+### Parse (RO line: STR ; VAR f: Finding) : BOOL
 
 one line of m9c's output as a finding, when it carries a
 position.  Two shapes, m9c's own:
@@ -40,7 +40,7 @@ the generator (docs/agent-review-2026-09-27.md F4): before that
 a construct the checker accepts and the generator refuses was
 invisible to every editor.
 
-### One (VAR pool: POOL ; line, col: I64 ; RO KEPT msg: STR) : SLICE OF Finding
+### One (VAR pool: POOL ; line, col: I64 ; RO msg: STR) : SLICE OF Finding
 
 a single finding, as a slice: what a caller answers for a
 refusal of its own (a buffer with no MODULE line, a path it will
@@ -81,7 +81,7 @@ the cell shape:
   {"ok":false,"diags":[{"line":L,"col":C,"msg":"..."},...]}
 ok is exactly "no finding".
 
-### LexJson (RO KEPT src: STR) : STR RAISES ValueRange, IndexError
+### LexJson (RO src: STR) : STR RAISES ValueRange, IndexError
 
 the compiler's own tokens and comments, for a page that paints:
   {"tokens":[[kind,line,col,len],...],

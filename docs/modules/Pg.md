@@ -45,7 +45,7 @@ PQresultErrorMessage said, trimmed of its trailing newline.
 
 pgshim.c's pointer table
 
-### Connect (VAR pool: POOL ; RO KEPT conninfo: STR) : PTR Conn IN pool RAISES PgError, ValueRange
+### Connect (VAR pool: POOL ; RO conninfo: STR) : PTR Conn IN pool RAISES PgError, ValueRange
 
 conninfo -- a libpq connection string ('host=... dbname=...'),
 or EMPTY to let libpq read PGHOST, PGPORT,

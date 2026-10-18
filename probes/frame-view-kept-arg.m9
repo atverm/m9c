@@ -1,0 +1,29 @@
+(* EXPECT: argument 2 of Keep: a KEPT parameter cannot take a view of a concatenation -- it dies with this frame (par 4.1) *)
+(* A VIEW of frame storage handed to a KEPT parameter: `Keep (pool,
+   SLICE (t, 0, 3))' with t a concatenation hands the keeper three
+   characters of a string that dies at RETURN.  From 2026-10-11 to
+   2026-10-18 only the STORED view was refused (frame-view-stored),
+   not the handed one, because following it refused four sound sites
+   for one real escape; once the answer and a VAR parameter's own
+   storage carried borrows, three of the four had lost their KEPT and
+   the fourth built its vector in the frame, so the view is followed
+   here as well.  The legal form first: a literal, which lives as long
+   as the program. *)
+MODULE m ;
+VAR held : STR ;
+PROCEDURE Keep (VAR pool: POOL ; RO KEPT s: STR) =
+BEGIN
+  held := s
+END Keep ;
+PROCEDURE Fine (VAR pool: POOL) =
+BEGIN
+  Keep (pool, 'fixed')
+END Fine ;
+PROCEDURE Bad (VAR pool: POOL ; RO a, b: STR) =
+VAR t : STR ;
+BEGIN
+  t := a + b ;
+  Keep (pool, SLICE (t, 0, 3))
+END Bad ;
+BEGIN
+END m.

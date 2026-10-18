@@ -130,7 +130,7 @@ at any thread count; the gate holds it so.  On 16 629 unknowns
 the serial factorisation was the last single-threaded minutes
 of a solve whose other stages were already banded.
 
-### CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64) : PTR Matrix IN pool RAISES Faults.SizeError
+### CholInverse (VAR pool: POOL ; l: PTR Matrix ; threads: I64) : PTR Matrix IN pool RAISES Faults.SizeError
 
 (L L^T)^-1 from the factor Cholesky answered, in two contiguous
 passes on `threads` threads (2026-09-15, the year inversion's

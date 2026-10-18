@@ -89,6 +89,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `a frame allocation dies with this frame; it cannot be stored in module variable saved (par 2.3) -- allocate it in a module pool (VAR mpool : POOL ; NEW (mpool, T)), or copy a string: Text.Keep (mpool, s)` | NEW (T) with no pool allocates from the procedure's frame, which dies when the frame returns; a module variable outlives it and would point at freed storage (par 4.3, docs/pool-elision-plan.md) | allocate it where the reader lives: NEW (HEAP, T) for the process's lifetime, NEW (pool, T) in a pool the caller owns, or return it -- a returned frame pointer keeps its storage | `frame-ptr-to-modvar` |
 | `THREAD (Work): cannot hand a frame allocation to a thread` | a frame allocation dies when this frame returns, and a thread does not wait for that | allocate what a thread receives with NEW (OWN, T): the thread owns it and DISPOSEs it (par 4.2, 6) | `frame-ptr-to-thread` |
 | `a frame allocation dies with this frame; it cannot be stored through n, which outlives it` | a frame allocation stored into a COMPONENT reached through a reference parameter (a field, an element, a pointer's target) is not seen by the exit adoption, which looks at the parameter itself, so the caller would hold freed storage (par 4.3) | assign the whole VAR parameter (its target is adopted at exit), or allocate in the pool the object lives in: NEW (pool, T) | `frame-ptr-via-var-component` |
+| `argument 2 of Keep: a KEPT parameter cannot take a view of a concatenation -- it dies with this frame (par 4.1)` | a VIEW of frame storage -- a SLICE of a concatenation, or a callee's answer that views one -- is handed to a KEPT parameter, which keeps it past the frame it dies with; followed here too since 2026-10-18, not only where the view is stored (par 4.1) | give the keeper storage that outlives the call: Text.Keep (pool, s) for the string, or a slice of a kept string | `frame-view-kept-arg` |
 | `a view of a concatenation dies with this frame; it cannot be stored in module variable keep (par 2.3)` | a VIEW of frame storage -- a SLICE over a concatenation, or the answer of a function that answers a view of its argument (Text.Trim's shape) -- is kept in a module variable, which outlives the frame (par 2.3) | copy it into storage that lives as long as the module variable: Text.Keep (mpool, s) with a module pool | `frame-view-stored` |
 | `is an M9 module -- use IMPORT lib` | FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way) | use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later | `from-m9-module` |
 | `a function must RETURN or RAISE on every path` | the function has a path that reaches its END without a RETURN or a RAISE -- an IF with no ELSE, a WHILE or FOR as its last statement, a LOOP left by EXIT, a CASE arm or a handler that does not answer; the emitted C would hand back the zero the result started as | answer on every path: add the ELSE, or a RETURN after the loop; a call does not count as an ending whatever the callee does, so write RAISE X (...) rather than a helper that always raises (par 3 rule 4) | `function-falls-off-end` |
@@ -114,9 +115,11 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `argument 2 of Keep: borrowed v is kept by the callee -- declare KEPT v (par 4.1)` | a PROCEDURE is declared inside another procedure's body; the grammar parses it (par 10) and neither checker nor generator supports it -- until 2026-10-08 the first call of it was `unknown procedure' | declare the procedure at module level and hand it what it used of the enclosing procedure as parameters | `kept-constructor-arg` |
 | `undeclared retention: borrowed p reaches module state -- declare KEPT p (par 4.1)` | a RECORD handed by value whose fields hold references (a STR, a slice, a pointer) is stored in module state, through a VAR parameter or into the answer; since 2026-10-08 a record value counts as the references it holds | declare the parameter KEPT; a record of scalars needs nothing | `kept-record-value` |
 | `undeclared retention: borrowed msg reaches module state -- declare KEPT msg (par 4.1)` | a borrowed parameter is stored somewhere that outlives the call -- module state, the caller's storage, or the answer -- and the signature does not say so | declare the parameter KEPT so every caller can see the retention, or copy the bytes instead of keeping the borrow (par 4.1, docs/retention.md) | `kept-undeclared` |
+| `undeclared retention: borrowed msg (carried by p) reaches module state -- declare KEPT msg (par 4.1)` | a callee answers a VIEW of its argument (the splitter shape, parts[n] := SLICE (s, a, b) ; RETURN parts) and the caller stores that answer where it outlives the frame; since 2026-10-18 the answer CARRIES the borrow, so the retention is the caller to declare and the callee says no KEPT (par 4.1) | declare the parameter KEPT in the procedure that keeps the answer, or keep a copy (Text.Keep) instead of the view | `kept-via-answer` |
 | `undeclared retention: borrowed v reaches the caller through f -- declare KEPT v (par 4.1)` | a borrowed slice or pointer is an argument of a variant or record CONSTRUCTOR on the right of a store that outlives the call (f.cell := Data.F64s (v, 0.0)); since 2026-10-08 each reference-typed argument of a constructor is stored as the argument itself would be | declare the parameter KEPT, or construct the value from a copy | `kept-via-constructor` |
 | `undeclared retention: borrowed msg (carried by t) reaches module state -- declare KEPT msg (par 4.1)` | a borrowed parameter was copied into a local (or bound by IS SOME or a CASE pattern) and the copy was stored somewhere that outlives the call -- the local carried the borrow | the retention is real even though indirect: declare the parameter KEPT, or copy the bytes instead of the reference (par 4.1, docs/retention.md) | `kept-via-local` |
 | `undeclared retention: borrowed v (carried by c) reaches the caller through f -- declare KEPT v (par 4.1)` | a borrowed slice or pointer was put into a FIELD of a local record (c.data := v) and the record stored where it outlives the call -- through a VAR parameter, in module state, or answered; since 2026-10-08 a record value that holds a reference is stored as the reference would be, and a local record carries what its fields were given (Frame.AddF64 kept its callers' buffers without KEPT until then) | declare the parameter KEPT, which tells the caller its storage must outlive the call; or copy the slice into the record (NEW and a loop) | `kept-via-record` |
+| `undeclared retention: borrowed items reaches module state -- declare KEPT items (par 4.1)` | a callee fills a VAR parameter's own storage with a view of another argument (res := SLICE (out, 0, n) in Pick (pool, items, res)) and the caller handed it a module variable; since 2026-10-18 the argument CARRIES the borrow -- a hand-back, not a retention of the callee's -- and storing it durably is the caller's retention (par 4.1) | declare the parameter KEPT in the procedure that stores the argument durably, or fill a local and copy what must outlive the frame | `kept-via-var` |
 | `cannot lend the value parameter p as VAR` | a value PTR parameter is a shared borrow; passing it on as VAR would launder it into a mutable one | take the parameter as VAR yourself if you need to pass it as VAR (par 4.1) | `lend-value-ptr-as-var` |
 | `integer literal 40000 does not fit I16` | an integer literal adapts to the width it is stored into, and this one is outside that width's range -- until 2026-09-27 it compiled and the C conversion wrapped it (I16 := 40000 stored -25536) | use a wider type, or the value you meant; a computed value that may not fit converts explicitly with I16 (x) RAISES ValueRange (par 2.1) | `literal-does-not-fit` |
 | `argument 1 of Up: a string literal can be lent only to an RO parameter` | a string literal is passed to a by-value STR (or SLICE) parameter that is not RO; such a parameter can be written through, a literal is read-only data, and until 2026-10-01 this was accepted and a callee that wrote died with SIGSEGV (museum/write-through-literal.m9) | declare the parameter RO if the procedure only reads it -- every STR parameter that is not written should say so; if it does write, pass a variable (par 2.4) | `literal-to-writable-slice` |
@@ -172,6 +175,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot write the CONST E` | a field of a record CONST, or the whole of it, is assigned: it is read-only data | copy it to a variable (r := E) and change the copy | `record-const-written` |
 | `function result discarded: G returns I64` | a function's result was not used; M9 does not let a value fall on the floor | assign it, or make the procedure proper if the result is not wanted | `result-discarded` |
 | `retention: borrowed x stored into r` *(ledger, not an error)* | NOT an error: the P3 ledger noting that a borrowed parameter was stored beyond the frame | nothing to fix; it is measured against the kill-gate (docs/p3-ledger.md) | `retention-ledgered` |
+| `undeclared retention: borrowed items reaches module state -- declare KEPT items (par 4.1)` | a VIEW of a retaining local -- SLICE (out, 0, n) over a slice holding the borrowed elements -- is stored in module state; until 2026-10-18 the view escaped unrooted, because the root finder looked for a call named SLICE and the parser makes a node of its own (par 4.1) | declare the parameter KEPT, or copy the elements before keeping the slice | `retention-module-view` |
 | `cannot RETURN SLICE OF CHAR from a function of type I64` | the RETURN's type is not the function's declared result type | convert explicitly, or change the declaration | `return-mismatch` |
 | `RETURN with a value in a proper procedure` | a proper procedure (no ': T') cannot RETURN a value | declare a result type, or RETURN without a value | `return-value-in-proper-proc` |
 | `cannot write through t, which holds the RO answer of View (line 20) (par 2.4)` | a local, parameter or module variable was given the answer of a function declared `: RO T' -- read-only storage lent onward -- and is written through; since 2026-10-08 decision 33 follows the call as it follows a literal | copy the answer (NEW and a loop, or DynStr) before writing, or keep the name for reading | `ro-answer-copied` |
@@ -1732,6 +1736,41 @@ BEGIN
 END m.
 ```
 
+### frame-view-kept-arg
+
+`argument 2 of Keep: a KEPT parameter cannot take a view of a concatenation -- it dies with this frame (par 4.1)`
+
+```
+(* A VIEW of frame storage handed to a KEPT parameter: `Keep (pool,
+   SLICE (t, 0, 3))' with t a concatenation hands the keeper three
+   characters of a string that dies at RETURN.  From 2026-10-11 to
+   2026-10-18 only the STORED view was refused (frame-view-stored),
+   not the handed one, because following it refused four sound sites
+   for one real escape; once the answer and a VAR parameter's own
+   storage carried borrows, three of the four had lost their KEPT and
+   the fourth built its vector in the frame, so the view is followed
+   here as well.  The legal form first: a literal, which lives as long
+   as the program. *)
+MODULE m ;
+VAR held : STR ;
+PROCEDURE Keep (VAR pool: POOL ; RO KEPT s: STR) =
+BEGIN
+  held := s
+END Keep ;
+PROCEDURE Fine (VAR pool: POOL) =
+BEGIN
+  Keep (pool, 'fixed')
+END Fine ;
+PROCEDURE Bad (VAR pool: POOL ; RO a, b: STR) =
+VAR t : STR ;
+BEGIN
+  t := a + b ;
+  Keep (pool, SLICE (t, 0, 3))
+END Bad ;
+BEGIN
+END m.
+```
+
 ### frame-view-stored
 
 `a view of a concatenation dies with this frame; it cannot be stored in module variable keep (par 2.3)`
@@ -2270,6 +2309,34 @@ BEGIN
 END m.
 ```
 
+### kept-via-answer
+
+`undeclared retention: borrowed msg (carried by p) reaches module state -- declare KEPT msg (par 4.1)`
+
+```
+(* A borrow laundered through a call's ANSWER: Parts answers views of
+   its parameter (the splitter shape -- it keeps nothing, so it says
+   no KEPT), and the caller stores that answer in module state.  The
+   retention is the caller's, and it is seen through the answer. *)
+MODULE m ;
+VAR last : SLICE OF STR ;
+PROCEDURE Parts (VAR pool: POOL ; RO s: STR) : SLICE OF STR =
+VAR out : SLICE OF STR ;
+BEGIN
+  out := NEW (pool, STR, 1) ;
+  out[0] := SLICE (s, 0, LEN (s)) ;
+  RETURN out
+END Parts ;
+PROCEDURE Note (VAR pool: POOL ; RO msg: STR) =
+VAR p : SLICE OF STR ;
+BEGIN
+  p := Parts (pool, msg) ;
+  last := p
+END Note ;
+BEGIN
+END m.
+```
+
 ### kept-via-constructor
 
 `undeclared retention: borrowed v reaches the caller through f -- declare KEPT v (par 4.1)`
@@ -2360,6 +2427,55 @@ BEGIN
   f.cols[f.n] := c ;
   f.n := f.n + 1
 END Add ;
+BEGIN
+END m.
+```
+
+### kept-via-var
+
+`undeclared retention: borrowed items reaches module state -- declare KEPT items (par 4.1)`
+
+```
+(* A borrow handed BACK through a VAR parameter.  Pick fills the
+   caller's variable with views of items and keeps nothing, so it
+   says no KEPT; Fill does the same into a record.  Until 2026-10-18
+   both had to say KEPT, and KEPT on Png.NextTag then rippled up to
+   Png.Raster and refused every caller that rasterised a frame string.
+   The argument CARRIES the borrow in the caller's frame instead: a
+   local Tag filled by Fill dies with the frame (legal), a module
+   variable filled by Pick is the retention, and it is the caller's
+   to declare.  A store THROUGH a pointer parameter is not a hand-back
+   (kept-via-record.m9). *)
+MODULE m ;
+TYPE Tag = RECORD name : STR ; n : I64 END ;
+VAR saved : SLICE OF STR ;
+PROCEDURE Pick (VAR pool: POOL ; RO items: SLICE OF STR ; VAR res: SLICE OF STR) =
+VAR
+  out : SLICE OF STR ;
+  i, n : I64 ;
+BEGIN
+  out := NEW (pool, STR, LEN (items)) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (items) - 1 DO
+    IF LEN (items[i]) > 0 THEN out[n] := items[i] ; n := n + 1 END
+  END ;
+  res := SLICE (out, 0, n)
+END Pick ;
+PROCEDURE Fill (RO s: STR ; VAR tg: Tag) =
+BEGIN
+  tg.name := SLICE (s, 0, 1) ;
+  tg.n := LEN (s)
+END Fill ;
+PROCEDURE Scan (RO s: STR) : I64 =
+VAR tg : Tag ;
+BEGIN
+  Fill (s, tg) ;
+  RETURN tg.n
+END Scan ;
+PROCEDURE Hold (VAR pool: POOL ; RO items: SLICE OF STR) =
+BEGIN
+  Pick (pool, items, saved)
+END Hold ;
 BEGIN
 END m.
 ```
@@ -3515,6 +3631,34 @@ MODULE m ;
 TYPE R = RECORD s : SLICE OF CHAR END ;
 PROCEDURE F (VAR r: PTR R ; x: SLICE OF CHAR) = 
 BEGIN r.s := x END F ;
+END m.
+```
+
+### retention-module-view
+
+`undeclared retention: borrowed items reaches module state -- declare KEPT items (par 4.1)`
+
+```
+(* The retaining local leaves through a VIEW of itself: `saved :=
+   out' was refused and `saved := SLICE (out, 0, n)' was not, because
+   SLICE is a node of its own and the root finder looked for a call
+   by that name (cp-kernel's Unique, 2026-10-18).  A RETURN of the
+   same view is legal: the answer carries the borrow (par 4.1). *)
+MODULE m ;
+VAR saved : SLICE OF STR ;
+PROCEDURE Pick (VAR pool: POOL ; RO items: SLICE OF STR) =
+VAR
+  out : SLICE OF STR ;
+  i, n : I64 ;
+BEGIN
+  out := NEW (pool, STR, LEN (items)) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (items) - 1 DO
+    IF LEN (items[i]) > 0 THEN out[n] := items[i] ; n := n + 1 END
+  END ;
+  saved := SLICE (out, 0, n)
+END Pick ;
+BEGIN
 END m.
 ```
 

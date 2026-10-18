@@ -30,7 +30,7 @@ knows no sentinel needs.
 
 _(undocumented)_
 
-### WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR) RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
+### WriteTs (VAR pool: POOL ; KEPT ts: PTR Frame.Ts ; RO path: STR) RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
 
 the time axis becomes an INT64 column 'time' (epoch seconds),
 and the resolution, convention and description ride in the

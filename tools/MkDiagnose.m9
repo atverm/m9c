@@ -235,7 +235,11 @@ CONST
     'for-in-ro-written',
     'for-in-borrow-kept',
     'thread-not-sharable',
-    'record-attribute-unknown'
+    'record-attribute-unknown',
+    'kept-via-answer',
+    'kept-via-var',
+    'retention-module-view',
+    'frame-view-kept-arg'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -438,7 +442,11 @@ CONST
     "x holds each element as x := s[i] would, so over read-only storage -- a constant table, an RO parameter -- x holds read-only storage, and the write lands in it (par 2.4)",
     "x holds each element as x := s[i] would, so over a borrowed slice of pointers x carries the borrow, and keeping it is a retention the heading does not declare (par 4.1)",
     'a THREAD is handed a record it does not own -- a pool pointer, a VAR parameter, a module variable -- so both threads hold it, and the record is neither a MONITOR nor marked [SHARABLE] (par 6)',
-    'a RECORD takes one attribute, [SHARABLE]; another name is a typo, not an attribute anything reads (par 6)'
+    'a RECORD takes one attribute, [SHARABLE]; another name is a typo, not an attribute anything reads (par 6)',
+    'a callee answers a VIEW of its argument (the splitter shape, parts[n] := SLICE (s, a, b) ; RETURN parts) and the caller stores that answer where it outlives the frame; since 2026-10-18 the answer CARRIES the borrow, so the retention is the caller to declare and the callee says no KEPT (par 4.1)',
+    "a callee fills a VAR parameter's own storage with a view of another argument (res := SLICE (out, 0, n) in Pick (pool, items, res)) and the caller handed it a module variable; since 2026-10-18 the argument CARRIES the borrow -- a hand-back, not a retention of the callee's -- and storing it durably is the caller's retention (par 4.1)",
+    'a VIEW of a retaining local -- SLICE (out, 0, n) over a slice holding the borrowed elements -- is stored in module state; until 2026-10-18 the view escaped unrooted, because the root finder looked for a call named SLICE and the parser makes a node of its own (par 4.1)',
+    "a VIEW of frame storage -- a SLICE of a concatenation, or a callee's answer that views one -- is handed to a KEPT parameter, which keeps it past the frame it dies with; followed here too since 2026-10-18, not only where the view is stored (par 4.1)"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -641,7 +649,11 @@ CONST
     'write through a copy that is not read-only -- Text.Keep (pool, t) -- or write into a slice the procedure owns',
     'declare the parameter KEPT, or keep a copy that is not the borrowed one',
     "if the threads' writes to the record are disjoint -- a band each, dealt out by a monitor field -- end its declaration END [SHARABLE]; else put what they share in a MONITOR, or move an owned value in",
-    'write [SHARABLE], or drop the attribute'
+    'write [SHARABLE], or drop the attribute',
+    'declare the parameter KEPT in the procedure that keeps the answer, or keep a copy (Text.Keep) instead of the view',
+    'declare the parameter KEPT in the procedure that stores the argument durably, or fill a local and copy what must outlive the frame',
+    'declare the parameter KEPT, or copy the elements before keeping the slice',
+    'give the keeper storage that outlives the call: Text.Keep (pool, s) for the string, or a slice of a kept string'
   ] ;
 
 VAR

@@ -43,7 +43,7 @@ TYPE
     errs : ARRAY MaxErr OF Perr ;
   END ;
 
-PROCEDURE Init (VAR p: Parser ; RO KEPT src: STR) ;
+PROCEDURE Init (VAR p: Parser ; RO src: STR) ;
   (* points a parser at source text and reads the first token.
 
        src -- BORROWED for as long as p is used, and for as long as
@@ -309,7 +309,7 @@ BEGIN
   RETURN Ast.NewNode (pool, kind, p.cur.line, p.cur.col)
 END Nn ;
 
-PROCEDURE Init (VAR p: Parser ; RO KEPT src: STR) =
+PROCEDURE Init (VAR p: Parser ; RO src: STR) =
 BEGIN
   Lex.Init (p.lx, src) ;
   p.peeked := FALSE ;
@@ -370,7 +370,7 @@ BEGIN
 END PArgList ;
 
 PROCEDURE DesigToQual (VAR pool: POOL ; VAR p: Parser ;
-                       KEPT d: PTR Ast.Node) : PTR Ast.Node =
+                       d: PTR Ast.Node) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NQualident) ;
@@ -1415,7 +1415,7 @@ BEGIN
   RETURN n
 END PDeclaration ;
 
-PROCEDURE PImports (VAR pool: POOL ; VAR p: Parser ;
+PROCEDURE PImports (VAR pool: POOL ; VAR KEPT p: Parser ;
                     VAR parent: PTR Ast.Node) =
 VAR n : PTR Ast.Node ;
 BEGIN

@@ -376,7 +376,7 @@ BEGIN
 END OpenBytes ;
 
 (* the header and the row count over a buffer the table will keep *)
-PROCEDURE Build (VAR pool: POOL ; RO KEPT buf: SLICE OF BYTE ;
+PROCEDURE Build (VAR pool: POOL ; RO buf: SLICE OF BYTE ;
                  RO opt: Options) : PTR Table IN pool
   RAISES ParseError, ValueRange =
 VAR

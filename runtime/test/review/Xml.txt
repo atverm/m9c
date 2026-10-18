@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     1   AllText.scratch
   pool parameters                                 4   RawDecl, Open, Parse, NewWriter
-  KEPT parameters                                 7   Bind, Bind, Push, EndTagEv, Next
+  KEPT parameters                                 5   Bind, Bind, Push
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

@@ -44,6 +44,7 @@ void Smtp_Attach (Smtp_Message * *m, m9_pool *m_pool, m9_sl_CHAR name, m9_sl_CHA
 m9_sl_CHAR Smtp_Wire (Smtp_Message * m, m9_state *err);
 void Smtp_Send (m9_sl_CHAR host, int64_t port, int64_t security, m9_sl_CHAR user, m9_sl_CHAR pass, Smtp_Message * m, m9_state *err);
 void Smtp_SendText (m9_sl_CHAR host, int64_t port, int64_t security, m9_sl_CHAR user, m9_sl_CHAR pass, m9_sl_CHAR from, m9_sl_m9_sl_CHAR to, m9_sl_CHAR subject, m9_sl_CHAR body, m9_state *err);
+void Smtp_SendOctets (m9_sl_CHAR host, int64_t port, int64_t security, m9_sl_CHAR user, m9_sl_CHAR pass, m9_sl_CHAR from, m9_sl_m9_sl_CHAR to, m9_sl_BYTE octets, m9_state *err);
 m9_sl_CHAR Smtp_Stuffed (m9_sl_CHAR text, m9_state *err);
 
 #endif

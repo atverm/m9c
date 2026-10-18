@@ -902,11 +902,13 @@ static void Review_Vars (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
                   if (err->exc) goto L_ret;
                   (*c).localPools = m9v;
                 }
+                m9_mark m9t4 = m9_pool_mark (err->res);
                 { __typeof__(m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s38, 1 }), err), id->a, err)) m9a9 = m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s38, 1 }), err), id->a, err);
                   if (err->exc) goto L_ret;
                 Review_Site (log_, log__pool, 76u, vd->line, m9a9, err);
                 if (err->exc) goto L_ret;
                 }
+                m9_pool_release (err->res, m9t4);
               }
             } else {
               if (atModule) {

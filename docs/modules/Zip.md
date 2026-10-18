@@ -61,7 +61,7 @@ _(documented with the group below)_
 
 the compressed-side read size
 
-### Open (VAR pool: POOL ; RO KEPT path: STR) : PTR Archive IN pool RAISES Error, Io.IOError, ValueRange
+### Open (VAR pool: POOL ; RO path: STR) : PTR Archive IN pool RAISES Error, Io.IOError, ValueRange
 
 reads the central directory, nothing else.
 
@@ -95,7 +95,7 @@ a member against it as it inflates.
 
 the index of that member, or -1.
 
-### OpenMember (VAR pool: POOL ; KEPT a: PTR Archive ; i: I64 ; block: I64) : PTR Member IN pool RAISES Error, Io.IOError, ValueRange, IndexError
+### OpenMember (VAR pool: POOL ; a: PTR Archive ; i: I64 ; block: I64) : PTR Member IN pool RAISES Error, Io.IOError, ValueRange, IndexError
 
 `block` is the COMPRESSED-side read size; 0 for DefaultBlock.
 

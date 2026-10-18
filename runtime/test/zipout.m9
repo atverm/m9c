@@ -31,7 +31,9 @@ BEGIN
   Zip.SetTime (w, 2026, 10, 7, 12, 34, 56) ;
   i := 3 ;
   WHILE i + 1 < Io.ArgCount () DO
-    name := DynStr.FromUtf8 (pool, DynStr.Bytes (pool, Io.Arg (pool, i), FALSE)) ;
+    (* Io.Arg decodes UTF-8 itself since 2026-10-18; the hand decoding
+       that stood here raised ValueRange on the first non-Latin-1 name *)
+    name := Io.Arg (pool, i) ;
     Zip.AddFile (w, name, Io.Arg (pool, i + 1), deflate) ;
     i := i + 2
   END ;

@@ -1,0 +1,70 @@
+MODULE ReleaseLoop ;
+
+(* The incident's loop, written the way it was first written (cp-kernel's
+   sync loop, killed at 50 GB and deleted the same day): rows times ids,
+   each turn comparing a stored id with a concatenation built on the
+   spot.  Since 2026-10-18 the generator releases a statement's
+   temporaries with the statement when nothing can see them afterwards
+   (docs/statement-release-plan.md, stage 2), so the `+` in the IF's
+   condition costs the arena one line's worth however many turns run.
+
+   Two shapes, chosen by the second argument:
+     release  the comparison in the condition -- released each turn
+     sink     the same string assigned to a local first -- a SINK, so
+              frame-lived, and the arena grows with the turns
+   The gate runs each at N and at 4N and reads the two numbers printed:
+   the arena capacity live at the end of the loop (System.PoolBytes,
+   measured INSIDE the procedure whose frame holds it) and the process's
+   peak resident size.  `release` must not grow with N; `sink` must,
+   which is how the gate shows it can fail.                            *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Text ;
+IMPORT System ;
+
+CONST Ids = 50 ;
+
+PROCEDURE Run (rows: I64 ; sink: BOOL) : I64 RAISES ValueRange, IndexError =
+VAR
+  pool : POOL ;
+  ids : SLICE OF STR ;
+  s : STR ;
+  i, j, hits : I64 ;
+BEGIN
+  ids := NEW (pool, STR, Ids) ;
+  FOR j := 0 TO Ids - 1 DO ids[j] := Text.Keep (pool, '<' + Fmt.I64Str (j) + '>') END ;
+  hits := 0 ;
+  FOR i := 1 TO rows DO
+    FOR j := 0 TO Ids - 1 DO
+      IF sink THEN
+        s := '<' + Fmt.I64Str ((i + j) MOD Ids) + '>' ;
+        IF Text.Eq (ids[j], s) THEN hits := hits + 1 END
+      ELSE
+        IF Text.Eq (ids[j], '<' + Fmt.I64Str ((i + j) MOD Ids) + '>') THEN hits := hits + 1 END
+      END
+    END
+  END ;
+  Io.Write ('pool-kb ') ;
+  Io.WriteI64 (System.PoolBytes () DIV 1024) ;
+  Io.WriteLine ('') ;
+  RETURN hits
+END Run ;
+
+VAR
+  pool : POOL ;
+  rows, hits : I64 ;
+  m : System.Memory ;
+BEGIN
+  BEGIN
+    rows := 2000 ;
+    IF Io.ArgCount () > 1 THEN rows := Io.ParseI64 (Io.Arg (pool, 1)) END ;
+    hits := Run (rows, Io.ArgCount () > 2 AND Text.Eq (Io.Arg (pool, 2), 'sink')) ;
+    Io.Write ('hits ') ; Io.WriteI64 (hits) ; Io.WriteLine ('') ;
+    m := System.Mem () ;
+    Io.Write ('peak-kb ') ; Io.WriteI64 (m.peak DIV 1024) ; Io.WriteLine ('')
+  EXCEPT
+  | ValueRange : Io.ErrLine ('value range') ; Io.Halt (1)
+  | IndexError : Io.ErrLine ('index') ; Io.Halt (1)
+  END
+END ReleaseLoop.

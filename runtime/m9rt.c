@@ -55,6 +55,7 @@ const m9_exc m9_exc_ValueRange  = { "ValueRange" };
 #include <errno.h>
 #ifdef _WIN32
 #include <windows.h>
+#include <shellapi.h>            /* CommandLineToArgvW, m9_args */
 #define PSAPI_VERSION 2           /* K32GetProcessMemoryInfo lives in kernel32: no -lpsapi */
 #include <psapi.h>
 #include <direct.h>
@@ -225,25 +226,53 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
   return at;
 }
 
+/* one block given back: to the thread's cache when it is a minimum-
+   size one and the cache has room, else to malloc; poisoned first
+   under -DM9_POISON (m9rt.h) */
+static void m9_block_back (m9_pool_block *b)
+{
+  M9_POISON_BYTES (b + 1, b->used);
+  if (b->cap == M9_POOL_BLOCK_MIN && m9_block_cached < M9_POOL_CACHE_MAX) {
+    /* stays registered; an owner of NULL is what the listing skips */
+    __atomic_store_n (&b->owner, (m9_pool *) NULL, __ATOMIC_RELEASE);
+    b->next = m9_block_cache;
+    m9_block_cache = b;
+    m9_block_cached++;
+  }
+  else {
+    m9_reg_remove (b);
+    free (b);
+  }
+}
+
 void (m9_pool_free) (m9_pool *pool)
 {
   m9_pool_block *b = pool->head, *n;
   while (b != NULL) {
     n = b->next;
-    if (b->cap == M9_POOL_BLOCK_MIN && m9_block_cached < M9_POOL_CACHE_MAX) {
-      /* stays registered; an owner of NULL is what the listing skips */
-      __atomic_store_n (&b->owner, (m9_pool *) NULL, __ATOMIC_RELEASE);
-      b->next = m9_block_cache;
-      m9_block_cache = b;
-      m9_block_cached++;
-    }
-    else {
-      m9_reg_remove (b);
-      free (b);
-    }
+    m9_block_back (b);
     b = n;
   }
   pool->head = NULL;
+}
+
+/* m9_pool_release's other case: the statement carved into blocks
+   newer than the mark's.  Give them back, newest first, then put the
+   marked block's top where it stood (m9rt.h) */
+void m9_pool_release_slow (m9_pool *pool, m9_mark m)
+{
+  m9_pool_block *b = pool->head, *n;
+  while (b != NULL && b != m.head) {
+    n = b->next;
+    m9_block_back (b);
+    b = n;
+  }
+  pool->head = b;
+  if (b != NULL && b->used > m.used) {
+    M9_POISON_BYTES ((unsigned char *) (b + 1) + m.used, b->used - m.used);
+    b->used = m.used;
+    b->last = m.last;
+  }
 }
 
 /* never freed, and that is the whole point -- see m9rt.h */
@@ -398,13 +427,27 @@ void *m9_new (size_t size, m9_state *err)
   return h + 1;
 }
 
-void m9_dispose (void *p)
+/* one handle given up: TRUE when it was the last one (or the pointer
+   was owned, rc = 0), and the caller frees after its interior cleanup;
+   the decrement and the test are one atomic step (m9rt.h)           */
+bool m9_release (void *p)
 {
   m9_hdr *h;
-  if (p == NULL) return;
+  if (p == NULL) return false;
   h = (m9_hdr *) p - 1;
-  if (h->rc > 1) { h->rc--; return; }         /* not the last handle */
-  free (h);
+  if (__atomic_load_n (&h->rc, __ATOMIC_ACQUIRE) == 0) return true;   /* owned */
+  return __atomic_sub_fetch (&h->rc, 1, __ATOMIC_ACQ_REL) == 0;
+}
+
+void m9_free_last (void *p)
+{
+  if (p == NULL) return;
+  free ((m9_hdr *) p - 1);
+}
+
+void m9_dispose (void *p)
+{
+  if (m9_release (p)) m9_free_last (p);
 }
 
 void *m9_share (void *p)
@@ -425,7 +468,7 @@ void *m9_share_copy (void *p)
      this line is a defence, not a path. */
   if (p == NULL) return p;
   m9_hdr *h = (m9_hdr *) p - 1;
-  h->rc++;
+  __atomic_fetch_add (&h->rc, 1, __ATOMIC_RELAXED);
   return p;
 }
 
@@ -457,6 +500,32 @@ void m9_args (int argc, char **argv)
   _setmode (_fileno (stdin), _O_BINARY);
   _setmode (_fileno (stdout), _O_BINARY);
   _setmode (_fileno (stderr), _O_BINARY);
+  /* THE ARGUMENTS ARE TAKEN WIDE AND MADE UTF-8 (2026-10-18, on real
+     Windows: `wide.exe "ärg ✓"` answered `ärg ?`).  main's argv is
+     the ANSI code page's view of the command line, and a character
+     outside that page -- a check mark, a CJK name -- is already a '?'
+     before any program sees it.  The paths were taken wide since the
+     port (m9_wide, the file APIs); the argument vector was not.  The
+     wide command line split by the system's own rule, each argument
+     re-encoded as UTF-8, which is what Io.Arg's STR is.  Shell32 is
+     in MinGW's default link set, so no link line changes.         */
+  {
+    int n = 0;
+    LPWSTR *w = CommandLineToArgvW (GetCommandLineW (), &n);
+    if (w != NULL && n > 0) {
+      char **u = calloc ((size_t) n + 1, sizeof (char *));
+      int i, ok = u != NULL;
+      for (i = 0; ok && i < n; i++) {
+        int len = WideCharToMultiByte (CP_UTF8, 0, w[i], -1, NULL, 0, NULL, NULL);
+        u[i] = len > 0 ? malloc ((size_t) len) : NULL;
+        if (u[i] == NULL ||
+            WideCharToMultiByte (CP_UTF8, 0, w[i], -1, u[i], len, NULL, NULL) <= 0)
+          ok = 0;
+      }
+      if (ok) { m9_saved_argc = n; m9_saved_argv = u; }   /* else argv as given */
+      LocalFree (w);
+    }
+  }
 #else
   /* SIGPIPE IS IGNORED FROM HERE, WHICH IS WHAT THE REST OF THE
      RUNTIME ALREADY CLAIMED.  Writing to a pipe or socket whose peer
@@ -509,10 +578,34 @@ int m9_arg_copy (int i, void *buf, int cap)
   return n;
 }
 
+/* ON WINDOWS THE PROCESS IS ENDED HERE, NOT BY RETURNING FROM MAIN
+   (2026-10-18, on real Windows 11): a program that had created and
+   closed one netCDF file printed its last line and never exited --
+   tutorial chapter 14 was "still running after 60 seconds" in the
+   local tutor, and a six-line test program the same -- while one that
+   only imported NetCDF exited at once.  What hangs is the teardown
+   of the DLLs netCDF brings (HDF5, curl, the AWS SDK), run by the C
+   runtime after main returns; it is not ours to fix and not a
+   program's to wait for.  Our streams are flushed, every file the
+   program wrote was closed by the call that wrote it, so the process
+   can end: TerminateProcess skips the handlers that hang and
+   nothing else a correct program depends on.  Measured: the test
+   program exits in 0.3 s where it did not exit in 240.  m9_halt is
+   the same door.                                                     */
+static void m9_end (int code)
+{
+  fflush (stdout);
+  fflush (stderr);
+#ifdef _WIN32
+  TerminateProcess (GetCurrentProcess (), (UINT) code);
+#endif
+  (void) code;
+}
+
 int m9_exit (m9_state *err)
 {
   fflush (stdout);
-  if (!err->exc) return 0;
+  if (!err->exc) { m9_end (0); return 0; }
   /* under -g the generator records the raising statement's
      position; without it line is 0 and the plain message stands */
   if (err->file && err->line > 0)
@@ -521,6 +614,7 @@ int m9_exit (m9_state *err)
   else
     fprintf (stderr, "m9: unhandled %s\n", err->exc->name);
   fflush (stderr);
+  m9_end (1);
   return 1;
 }
 
@@ -933,6 +1027,7 @@ int m9_append_file (const void *path, const void *buf, size_t n)
 void m9_halt (int code)
 {
   fflush (NULL);
+  m9_end (code);                 /* Windows ends here; see m9_exit */
   exit (code);
 }
 

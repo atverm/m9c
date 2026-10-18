@@ -34,7 +34,7 @@ IMPORT Io ;
 PROCEDURE Write (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR)
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
 
-PROCEDURE WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR)
+PROCEDURE WriteTs (VAR pool: POOL ; KEPT ts: PTR Frame.Ts ; RO path: STR)
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
   (* the time axis becomes an INT64 column 'time' (epoch seconds),
      and the resolution, convention and description ride in the
@@ -1053,7 +1053,7 @@ EXCEPT
 | Faults.BadArg : RAISE Overflow
 END NIL9 ;
 
-PROCEDURE WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR)
+PROCEDURE WriteTs (VAR pool: POOL ; KEPT ts: PTR Frame.Ts ; RO path: STR)
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 VAR
   f2 : PTR Frame.Fr IN pool ;
@@ -1075,7 +1075,7 @@ EXCEPT
 END WriteTs ;
 
 PROCEDURE AddCopy (VAR pool: POOL ; VAR dst: PTR Frame.Fr ;
-                   src: PTR Frame.Fr ; RO name: STR)
+                   KEPT src: PTR Frame.Fr ; RO name: STR)
   RAISES Faults.SizeError, Frame.Duplicate, IndexError, Faults.BadArg =
 VAR k : I64 ;
 BEGIN
@@ -2319,8 +2319,8 @@ BEGIN
   RETURN NewTsQ (pool, f, tsec, res, conv, descr)
 END TsRead ;
 
-PROCEDURE NewTsQ (VAR pool: POOL ; KEPT f: PTR Frame.Fr ;
-                  RO KEPT t: SLICE OF I64 ; res: I64 ; conv: Frame.Conv ;
+PROCEDURE NewTsQ (VAR pool: POOL ; f: PTR Frame.Fr ;
+                  RO t: SLICE OF I64 ; res: I64 ; conv: Frame.Conv ;
                   RO descr: STR) : PTR Frame.Ts
   RAISES Faults.BadArg =
 BEGIN

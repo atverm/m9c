@@ -67,6 +67,10 @@ typedef struct { m9_sl_CHAR v[8]; } m9_arr_8_m9_sl_CHAR;
 #define M9SL_m9_arr_13_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[13]; } m9_arr_13_m9_sl_CHAR;
 #endif
+#ifndef M9SL_m9_arr_9_m9_sl_CHAR
+#define M9SL_m9_arr_9_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[9]; } m9_arr_9_m9_sl_CHAR;
+#endif
 #ifndef M9SL_m9_arr_7_m9_sl_CHAR
 #define M9SL_m9_arr_7_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[7]; } m9_arr_7_m9_sl_CHAR;

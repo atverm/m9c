@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     9   ParseTurtle.scratch, ParseNTriples.scratch, NTriples.scratch, Turtle.scratch, XmlLiteral.scratch, ParseRdfXml.scratch, +3 more
   pool parameters                                49   NewGraph, Hold, Add, Fresh, Labelled, BlankLabel, +43 more
-  KEPT parameters                                 8   AddDefault, AddDefault, CopyCtx, DefineTerm, ProcessContext, AddTo, +2 more
+  KEPT parameters                                 6   AddDefault, AddDefault, DefineTerm, AddTo, SetKey, AddUnique
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

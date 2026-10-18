@@ -2223,7 +2223,7 @@ BEGIN
   RETURN c
 END NewCtx ;
 
-PROCEDURE CopyCtx (VAR pool: POOL ; RO KEPT c: Ctx) : Ctx =
+PROCEDURE CopyCtx (VAR pool: POOL ; RO c: Ctx) : Ctx =
 VAR
   d : Ctx ;
   i : I64 ;
@@ -2572,7 +2572,7 @@ EXCEPT
 | Json.TypeMismatch (m) : RAISE SyntaxError ('invalid term definition: ' + term, 0, 0)
 END CreateTerm ;
 
-PROCEDURE ProcessContext (VAR pool: POOL ; VAR st: JState ; RO KEPT active: Ctx ;
+PROCEDURE ProcessContext (VAR pool: POOL ; VAR st: JState ; RO active: Ctx ;
                           local: PTR Json.Node) : Ctx RAISES SyntaxError, ValueRange =
   (* JSON-LD 1.0 par 6.1: the local context, an object, a string
      (refused: remote), null, or an array of those *)

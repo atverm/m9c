@@ -39,7 +39,7 @@ CONST
   TyInt  = 2 ;
   TyBool = 3 ;
 
-PROCEDURE NewSpec (RO KEPT title: STR ; RO KEPT version: STR) : PTR Spec ;
+PROCEDURE NewSpec (RO title: STR ; RO version: STR) : PTR Spec ;
   (* an empty document, in the caller's frame; AddOp and AddParam grow
      it in the pool of the variable holding it (rule 2 of
      docs/pool-elision-plan.md).  The strings are KEPT, as
@@ -106,7 +106,7 @@ TYPE
     count : I64 ;
   END ;
 
-PROCEDURE NewSpec (RO KEPT title: STR ; RO KEPT version: STR) : PTR Spec =
+PROCEDURE NewSpec (RO title: STR ; RO version: STR) : PTR Spec =
 VAR s : PTR Spec ;
 BEGIN
   s := NEW (Spec) ;

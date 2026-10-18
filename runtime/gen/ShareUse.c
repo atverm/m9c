@@ -548,11 +548,13 @@ L_fin_m9t2: ;
   if (err->exc) goto L_ret;
   { __typeof__(s) m9t8s = s;
   for (int64_t m9t8i = 0; m9t8i < m9t8s.len; m9t8i++) { ch = m9t8s.p[m9t8i];
+    m9_mark m9t9 = m9_pool_mark (err->res);
     { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s27, 1 }), ch, err)) m9a3 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s27, 1 }), ch, err);
       if (err->exc) goto L_ret;
     Io_Write (m9a3, err);
     if (err->exc) goto L_ret;
     }
+    m9_pool_release (err->res, m9t9);
   } }
   Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
@@ -603,11 +605,13 @@ static void ShareUse_Accents (m9_state *err)
   err->res = &m9frame;
   uint32_t ch = 0; (void) ch;
   ch = 233u;
+  m9_mark m9t1 = m9_pool_mark (err->res);
   { __typeof__(m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 5 }), ch, err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 1 }), err), 8322u, err)) m9a4 = m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 5 }), ch, err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 1 }), err), 8322u, err);
     if (err->exc) goto L_ret;
   Io_WriteLine (m9a4, err);
   if (err->exc) goto L_ret;
   }
+  m9_pool_release (err->res, m9t1);
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);

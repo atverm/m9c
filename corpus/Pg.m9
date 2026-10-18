@@ -42,7 +42,7 @@ EXCEPTION
 CONST
   MaxParams = 64 ;                (* pgshim.c's pointer table *)
 
-PROCEDURE Connect (VAR pool: POOL ; RO KEPT conninfo: STR) : PTR Conn IN pool
+PROCEDURE Connect (VAR pool: POOL ; RO conninfo: STR) : PTR Conn IN pool
   RAISES PgError, ValueRange ;
   (* conninfo -- a libpq connection string ('host=... dbname=...'),
                  or EMPTY to let libpq read PGHOST, PGPORT,
@@ -295,7 +295,7 @@ BEGIN
   RETURN h
 END Open ;
 
-PROCEDURE Connect (VAR pool: POOL ; RO KEPT conninfo: STR) : PTR Conn IN pool
+PROCEDURE Connect (VAR pool: POOL ; RO conninfo: STR) : PTR Conn IN pool
   RAISES PgError, ValueRange =
 VAR
   scratch : POOL ;

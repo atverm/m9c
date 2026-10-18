@@ -48,7 +48,7 @@ CONST
      refused by name. *)
   MaxFields = 1024 ;
 
-PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR ; delim: BYTE ;
+PROCEDURE Open (VAR pool: POOL ; RO path: STR ; delim: BYTE ;
                 block: I64) : PTR Reader IN pool
   RAISES Error, Io.IOError, ValueRange ;
   (* `block` is the read size AND the longest line the reader will
@@ -214,7 +214,7 @@ BEGIN
   RETURN r
 END New ;
 
-PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR ; delim: BYTE ;
+PROCEDURE Open (VAR pool: POOL ; RO path: STR ; delim: BYTE ;
                 block: I64) : PTR Reader IN pool
   RAISES Error, Io.IOError, ValueRange =
 VAR r : PTR Reader IN pool ;

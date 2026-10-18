@@ -50,7 +50,7 @@ _(undocumented)_
 
 _(documented with the group below)_
 
-### Open (VAR pool: POOL ; RO KEPT path: STR ; delim: BYTE ; block: I64) : PTR Reader IN pool RAISES Error, Io.IOError, ValueRange
+### Open (VAR pool: POOL ; RO path: STR ; delim: BYTE ; block: I64) : PTR Reader IN pool RAISES Error, Io.IOError, ValueRange
 
 `block` is the read size AND the longest line the reader will
 accept: a line that does not fit raises rather than being cut,

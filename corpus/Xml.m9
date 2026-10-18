@@ -77,7 +77,7 @@ PROCEDURE Open (VAR pool: POOL ; RO doc: SLICE OF BYTE) : PTR Reader IN pool
   RAISES SyntaxError, Unsupported ;
   (* a reader on doc: UTF-8, with or without a byte order mark *)
 
-PROCEDURE Next (VAR KEPT r: PTR Reader) : Event RAISES SyntaxError, Unsupported ;
+PROCEDURE Next (VAR r: PTR Reader) : Event RAISES SyntaxError, Unsupported ;
   (* the next event; Eof once the root element and what follows it are
      read, and again after that.  The event's strings live in the
      reader's pool *)
@@ -954,7 +954,7 @@ BEGIN
   END
 END StartTagEv ;
 
-PROCEDURE EndTagEv (VAR KEPT r: PTR Reader ; VAR ev: Event) RAISES SyntaxError =
+PROCEDURE EndTagEv (VAR r: PTR Reader ; VAR ev: Event) RAISES SyntaxError =
   (* at </ *)
 VAR n : STR ;
 BEGIN
@@ -1092,7 +1092,7 @@ BEGIN
   RETURN r
 END Open ;
 
-PROCEDURE Next (VAR KEPT r: PTR Reader) : Event RAISES SyntaxError, Unsupported =
+PROCEDURE Next (VAR r: PTR Reader) : Event RAISES SyntaxError, Unsupported =
 VAR
   ev : Event ;
   line, col : I64 ;

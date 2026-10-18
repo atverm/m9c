@@ -34,7 +34,7 @@ TYPE
     text : STR ;
   END ;
 
-PROCEDURE Init (VAR lx: Lexer ; RO KEPT src: STR) ;
+PROCEDURE Init (VAR lx: Lexer ; RO src: STR) ;
   (* the lexer keeps the source slice; keep it alive while lexing --
      the Json.Parse contract again                                   *)
 
@@ -162,10 +162,14 @@ END ComAt ;
 
 (* one comment onto the list, doubling the vector when it is full.
    The abandoned vector stays in HEAP, which is the same trade
-   DynStr.Grow makes and for the same reason. *)
-PROCEDURE Note (line, col, endLine: I64 ; RO KEPT text: STR) =
+   DynStr.Grow makes and for the same reason.  The text is COPIED
+   into HEAP too: a view of the source would be module state keeping
+   the lexer's input, and every lexer up to the parser's callers
+   would have to say KEPT for a comment list (par 4.1, 2026-10-18). *)
+PROCEDURE Note (line, col, endLine: I64 ; RO text: STR) =
 VAR
   nc : SLICE OF Comment ;
+  cp : STR ;
   i  : I64 ;
 BEGIN
   IF ncom = LEN (coms) THEN
@@ -180,7 +184,9 @@ BEGIN
   coms[ncom].line := line ;
   coms[ncom].col := col ;
   coms[ncom].endLine := endLine ;
-  coms[ncom].text := text ;
+  cp := NEW (HEAP, CHAR, LEN (text)) ;
+  FOR i := 0 TO LEN (text) - 1 DO cp[i] := text[i] END ;
+  coms[ncom].text := cp ;
   ncom := ncom + 1
 END Note ;
 
@@ -305,7 +311,7 @@ BEGIN
   RETURN KIdent
 END Lookup ;
 
-PROCEDURE Init (VAR lx: Lexer ; RO KEPT src: STR) =
+PROCEDURE Init (VAR lx: Lexer ; RO src: STR) =
 BEGIN
   lx.src := src ;
   lx.pos := 0 ;
@@ -419,7 +425,7 @@ BEGIN
   END
 END Skip ;
 
-PROCEDURE Mk (VAR t: Token ; kind: I64 ; RO KEPT text: STR ;
+PROCEDURE Mk (VAR t: Token ; kind: I64 ; RO text: STR ;
               line, col: I64) =
 BEGIN
   t.kind := kind ;

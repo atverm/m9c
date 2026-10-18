@@ -544,7 +544,7 @@ m9_sl_CHAR Io_Arg (m9_pool *pool, int64_t i, m9_state *err)
   err->res = m9res;
   { __typeof__(({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a5 = ({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a5, err);
+  m9ret = DynStr_FromUtf8 (pool, m9a5, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;

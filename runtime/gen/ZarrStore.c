@@ -815,11 +815,11 @@ void ZarrStore_CloseArray (ZarrStore_Array * *a, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  if (m9_rc_last ((*a))) {
+  if (m9_release ((*a))) {
     m9_dispose ((*a)->st);
     m9_pool_free (&(*a)->cache);
+    m9_free_last ((*a));
   }
-  m9_dispose ((*a));
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, (*a));
@@ -833,10 +833,10 @@ void ZarrStore_Close (ZarrStore_Store * *s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  if (m9_rc_last ((*s))) {
+  if (m9_release ((*s))) {
     m9_pool_free (&(*s)->pool);
+    m9_free_last ((*s));
   }
-  m9_dispose ((*s));
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);

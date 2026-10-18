@@ -691,11 +691,13 @@ static void Parse_Bump (Parse_Parser *p, m9_pool *p_pool, m9_state *err)
     if (((*p).cur.kind != Parse_TkError)) {
       break;
     }
+    m9_mark m9t1 = m9_pool_mark (err->res);
     { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s32, 5 }), (*p).cur.text, err)) m9a1 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s32, 5 }), (*p).cur.text, err);
       if (err->exc) goto L_ret;
     Parse_ErrAt (p, p_pool, (*p).cur.line, (*p).cur.col, m9a1, err);
     if (err->exc) goto L_ret;
     }
+    m9_pool_release (err->res, m9t1);
   }
 L_ret: ;
   err->res = m9res;
@@ -723,11 +725,13 @@ static int64_t Parse_NxtKind (Parse_Parser *p, m9_pool *p_pool, m9_state *err)
       if (((*p).peekTok.kind != Parse_TkError)) {
         break;
       }
+      m9_mark m9t1 = m9_pool_mark (err->res);
       { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 5 }), (*p).peekTok.text, err)) m9a2 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 5 }), (*p).peekTok.text, err);
         if (err->exc) goto L_ret;
       Parse_ErrAt (p, p_pool, (*p).peekTok.line, (*p).peekTok.col, m9a2, err);
       if (err->exc) goto L_ret;
       }
+      m9_pool_release (err->res, m9t1);
     }
     (*p).peeked = true;
   }
@@ -756,11 +760,13 @@ static void Parse_Expect (Parse_Parser *p, m9_pool *p_pool, int64_t k, m9_state 
     Parse_Bump (p, p_pool, err);
     if (err->exc) goto L_ret;
   } else {
+    m9_mark m9t1 = m9_pool_mark (err->res);
     { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Parse_Spell (k, err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 17 }), err), Lex_KindName ((*p).cur.kind, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s35, 2 }), err), (*p).cur.text, err), ((m9_sl_CHAR){ (uint32_t *) m9s36, 1 }), err)) m9a3 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Parse_Spell (k, err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 17 }), err), Lex_KindName ((*p).cur.kind, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s35, 2 }), err), (*p).cur.text, err), ((m9_sl_CHAR){ (uint32_t *) m9s36, 1 }), err);
       if (err->exc) goto L_ret;
     Parse_Rerr (p, p_pool, m9a3, err);
     if (err->exc) goto L_ret;
     }
+    m9_pool_release (err->res, m9t1);
   }
 L_ret: ;
   err->res = m9res;
@@ -790,11 +796,13 @@ static m9_sl_CHAR Parse_TakeIdent (Parse_Parser *p, m9_pool *p_pool, m9_sl_CHAR 
     m9ret = s;
     goto L_ret;
   }
+  m9_mark m9t1 = m9_pool_mark (err->res);
   { __typeof__(m9_cat (err->res, m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s37, 30 }), err), Lex_KindName ((*p).cur.kind, err), err)) m9a4 = m9_cat (err->res, m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s37, 30 }), err), Lex_KindName ((*p).cur.kind, err), err);
     if (err->exc) goto L_ret;
   Parse_Rerr (p, p_pool, m9a4, err);
   if (err->exc) goto L_ret;
   }
+  m9_pool_release (err->res, m9t1);
   err->res = m9res;
   m9ret = (m9_sl_CHAR){ NULL, 0 };
   goto L_ret;
@@ -1235,11 +1243,13 @@ static Ast_Node * Parse_PType (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
       m9ret = n;
       goto L_ret;
   } } } } } } } } } } } } }
+  m9_mark m9t1 = m9_pool_mark (err->res);
   { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s43, 21 }), Lex_KindName ((*p).cur.kind, err), err)) m9a23 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s43, 21 }), Lex_KindName ((*p).cur.kind, err), err);
     if (err->exc) goto L_ret;
   Parse_Rerr (p, p_pool, m9a23, err);
   if (err->exc) goto L_ret;
   }
+  m9_pool_release (err->res, m9t1);
   { __typeof__(n) m9v = Parse_Nn (pool, p, p_pool, Ast_NQualident, err);
     if (err->exc) goto L_ret;
     n = m9v;
@@ -1299,15 +1309,17 @@ static Ast_Node * Parse_PStmtSeq (m9_pool *pool, Parse_Parser *p, m9_pool *p_poo
       bool m9t3 = (!((Parse_InStops (sid, (*p).cur.kind, err) || ((*p).cur.kind == Parse_TkEOF))));
       if (err->exc) goto L_ret;
       if (m9t3) {
+        m9_mark m9t4 = m9_pool_mark (err->res);
         { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s45, 43 }), Lex_KindName ((*p).cur.kind, err), err)) m9a25 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s45, 43 }), Lex_KindName ((*p).cur.kind, err), err);
           if (err->exc) goto L_ret;
         Parse_Rerr (p, p_pool, m9a25, err);
         if (err->exc) goto L_ret;
         }
+        m9_pool_release (err->res, m9t4);
         for (;;) {
-          bool m9t4 = (!(((Parse_InStops (sid, (*p).cur.kind, err) || ((*p).cur.kind == Parse_TkSemi)) || ((*p).cur.kind == Parse_TkEOF))));
+          bool m9t5 = (!(((Parse_InStops (sid, (*p).cur.kind, err) || ((*p).cur.kind == Parse_TkSemi)) || ((*p).cur.kind == Parse_TkEOF))));
           if (err->exc) goto L_ret;
-          if (!(m9t4)) break;
+          if (!(m9t5)) break;
           Parse_Bump (p, p_pool, err);
           if (err->exc) goto L_ret;
         }
@@ -2176,11 +2188,13 @@ static Ast_Node * Parse_PFactor (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool
         n = d;
       }
   } else {
+    m9_mark m9t1 = m9_pool_mark (err->res);
     { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s59, 27 }), Lex_KindName ((*p).cur.kind, err), err)) m9a53 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s59, 27 }), Lex_KindName ((*p).cur.kind, err), err);
       if (err->exc) goto L_ret;
     Parse_Rerr (p, p_pool, m9a53, err);
     if (err->exc) goto L_ret;
     }
+    m9_pool_release (err->res, m9t1);
     { __typeof__(n) m9v = Parse_Nn (pool, p, p_pool, Ast_NInt, err);
       if (err->exc) goto L_ret;
       n = m9v;
@@ -3290,11 +3304,13 @@ static Ast_Node * Parse_PStatement (m9_pool *pool, Parse_Parser *p, m9_pool *p_p
       m9ret = n;
       goto L_ret;
   } } } } } } } } } } } } }
+  m9_mark m9t2 = m9_pool_mark (err->res);
   { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s70, 26 }), Lex_KindName ((*p).cur.kind, err), err)) m9a97 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s70, 26 }), Lex_KindName ((*p).cur.kind, err), err);
     if (err->exc) goto L_ret;
   Parse_Rerr (p, p_pool, m9a97, err);
   if (err->exc) goto L_ret;
   }
+  m9_pool_release (err->res, m9t2);
   { __typeof__(n) m9v = Parse_Nn (pool, p, p_pool, Ast_NStmtSeq, err);
     if (err->exc) goto L_ret;
     n = m9v;
@@ -3420,11 +3436,13 @@ static Ast_Node * Parse_PHandler (m9_pool *pool, Parse_Parser *p, m9_pool *p_poo
           Parse_Bump (p, p_pool, err);
           if (err->exc) goto L_ret;
       } else {
+        m9_mark m9t1 = m9_pool_mark (err->res);
         { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s72, 27 }), Lex_KindName ((*p).cur.kind, err), err)) m9a99 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s72, 27 }), Lex_KindName ((*p).cur.kind, err), err);
           if (err->exc) goto L_ret;
         Parse_Rerr (p, p_pool, m9a99, err);
         if (err->exc) goto L_ret;
         }
+        m9_pool_release (err->res, m9t1);
         { __typeof__(h) m9v = Parse_Nn (pool, p, p_pool, Ast_NIdent, err);
           if (err->exc) goto L_ret;
           h = m9v;
@@ -3458,11 +3476,11 @@ static Ast_Node * Parse_PHandler (m9_pool *pool, Parse_Parser *p, m9_pool *p_poo
   Ast_Add (pool, &(n), err->res, m9a100, err);
   if (err->exc) goto L_ret;
   }
-  { int64_t m9t1to;
+  { int64_t m9t2to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 (nmore, INT64_C(1), err);
+  m9t2to = m9_sub_i64 (nmore, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  for (; i <= m9t2to; i += 1) {
     { __typeof__((*(Ast_Node * *) m9_at (more.p, i, more.len, sizeof (Ast_Node *), err))) m9a101 = (*(Ast_Node * *) m9_at (more.p, i, more.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
     Ast_Add (pool, &(n), err->res, m9a101, err);
@@ -3644,11 +3662,13 @@ static Ast_Node * Parse_PProcBody (m9_pool *pool, Parse_Parser *p, m9_pool *p_po
     bool m9t2 = (!DynStr_Eq ((*p).cur.text, name, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
+      m9_mark m9t3 = m9_pool_mark (err->res);
       { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s74, 4 }), (*p).cur.text, err), ((m9_sl_CHAR){ (uint32_t *) m9s75, 26 }), err), name, err)) m9a108 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s74, 4 }), (*p).cur.text, err), ((m9_sl_CHAR){ (uint32_t *) m9s75, 26 }), err), name, err);
         if (err->exc) goto L_ret;
       Parse_Rerr (p, p_pool, m9a108, err);
       if (err->exc) goto L_ret;
       }
+      m9_pool_release (err->res, m9t3);
     }
     Parse_Bump (p, p_pool, err);
     if (err->exc) goto L_ret;
@@ -4006,11 +4026,13 @@ static Ast_Node * Parse_PUnit (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
     bool m9t1 = (!DynStr_Eq (Parse_TakeIdent (p, p_pool, ((m9_sl_CHAR){ (uint32_t *) m9s84, 21 }), err), n->a, err));
     if (err->exc) goto L_ret;
     if (m9t1) {
+      m9_mark m9t2 = m9_pool_mark (err->res);
       { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s85, 31 }), n->a, err)) m9a118 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s85, 31 }), n->a, err);
         if (err->exc) goto L_ret;
       Parse_Rerr (p, p_pool, m9a118, err);
       if (err->exc) goto L_ret;
       }
+      m9_pool_release (err->res, m9t2);
     }
     Parse_Expect (p, p_pool, Parse_TkDot, err);
     if (err->exc) goto L_ret;
@@ -4058,14 +4080,16 @@ static Ast_Node * Parse_PUnit (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
       Parse_Expect (p, p_pool, Parse_TkEND, err);
       if (err->exc) goto L_ret;
     }
-    bool m9t2 = (!DynStr_Eq (Parse_TakeIdent (p, p_pool, ((m9_sl_CHAR){ (uint32_t *) m9s88, 21 }), err), n->a, err));
+    bool m9t3 = (!DynStr_Eq (Parse_TakeIdent (p, p_pool, ((m9_sl_CHAR){ (uint32_t *) m9s88, 21 }), err), n->a, err));
     if (err->exc) goto L_ret;
-    if (m9t2) {
+    if (m9t3) {
+      m9_mark m9t4 = m9_pool_mark (err->res);
       { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s89, 31 }), n->a, err)) m9a120 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s89, 31 }), n->a, err);
         if (err->exc) goto L_ret;
       Parse_Rerr (p, p_pool, m9a120, err);
       if (err->exc) goto L_ret;
       }
+      m9_pool_release (err->res, m9t4);
     }
     Parse_Expect (p, p_pool, Parse_TkDot, err);
     if (err->exc) goto L_ret;
@@ -4114,14 +4138,16 @@ static Ast_Node * Parse_PUnit (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
       Parse_Expect (p, p_pool, Parse_TkEND, err);
       if (err->exc) goto L_ret;
     }
-    bool m9t3 = (!DynStr_Eq (Parse_TakeIdent (p, p_pool, ((m9_sl_CHAR){ (uint32_t *) m9s93, 21 }), err), n->a, err));
+    bool m9t5 = (!DynStr_Eq (Parse_TakeIdent (p, p_pool, ((m9_sl_CHAR){ (uint32_t *) m9s93, 21 }), err), n->a, err));
     if (err->exc) goto L_ret;
-    if (m9t3) {
+    if (m9t5) {
+      m9_mark m9t6 = m9_pool_mark (err->res);
       { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s94, 31 }), n->a, err)) m9a122 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s94, 31 }), n->a, err);
         if (err->exc) goto L_ret;
       Parse_Rerr (p, p_pool, m9a122, err);
       if (err->exc) goto L_ret;
       }
+      m9_pool_release (err->res, m9t6);
     }
     Parse_Expect (p, p_pool, Parse_TkDot, err);
     if (err->exc) goto L_ret;
@@ -4129,11 +4155,13 @@ static Ast_Node * Parse_PUnit (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
     m9ret = n;
     goto L_ret;
   }
+  m9_mark m9t7 = m9_pool_mark (err->res);
   { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s95, 54 }), Lex_KindName ((*p).cur.kind, err), err)) m9a123 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s95, 54 }), Lex_KindName ((*p).cur.kind, err), err);
     if (err->exc) goto L_ret;
   Parse_Rerr (p, p_pool, m9a123, err);
   if (err->exc) goto L_ret;
   }
+  m9_pool_release (err->res, m9t7);
   { __typeof__(n) m9v = Parse_Nn (pool, p, p_pool, Ast_NProgram, err);
     if (err->exc) goto L_ret;
     n = m9v;

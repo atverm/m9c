@@ -306,24 +306,24 @@ PROCEDURE WriteStrVlen (VAR pool: POOL ; RO adir: STR ;
 TYPE
   Sink ;                         (* opaque; lives in a POOL *)
 
-PROCEDURE SinkF32 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
-                   RO KEPT dims: SLICE OF STR ; comp: I64)
+PROCEDURE SinkF32 (VAR pool: POOL ; RO adir: STR ; chunk: I64 ;
+                   RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange ;
 
-PROCEDURE SinkF64 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
-                   RO KEPT dims: SLICE OF STR ; comp: I64)
+PROCEDURE SinkF64 (VAR pool: POOL ; RO adir: STR ; chunk: I64 ;
+                   RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange ;
 
-PROCEDURE SinkInt (VAR pool: POOL ; RO KEPT adir: STR ; width: I64 ;
+PROCEDURE SinkInt (VAR pool: POOL ; RO adir: STR ; width: I64 ;
                    signed: BOOL ; chunk: I64 ;
-                   RO KEPT dims: SLICE OF STR ; comp: I64)
+                   RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange ;
 
-PROCEDURE SinkTimeNs (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
-                      RO KEPT dims: SLICE OF STR ; comp: I64)
+PROCEDURE SinkTimeNs (VAR pool: POOL ; RO adir: STR ; chunk: I64 ;
+                      RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange ;
 
@@ -1459,10 +1459,10 @@ TYPE
     sealed : BOOL ;
   END ;
 
-PROCEDURE NewSink (VAR pool: POOL ; RO KEPT adir: STR ;
-                   RO KEPT dtype: STR ; RO KEPT fill: STR ;
+PROCEDURE NewSink (VAR pool: POOL ; RO adir: STR ;
+                   RO dtype: STR ; RO fill: STR ;
                    esize: I64 ; chunk: I64 ;
-                   RO KEPT dims: SLICE OF STR ; comp: I64)
+                   RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange =
 VAR
@@ -1497,8 +1497,8 @@ EXCEPT
 | IndexError : RAISE Error (Cat (pool, 'index error opening ', adir))
 END NewSink ;
 
-PROCEDURE SinkF32 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
-                   RO KEPT dims: SLICE OF STR ; comp: I64)
+PROCEDURE SinkF32 (VAR pool: POOL ; RO adir: STR ; chunk: I64 ;
+                   RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange =
 VAR s : PTR Sink IN pool ;
@@ -1509,8 +1509,8 @@ BEGIN
   RETURN s
 END SinkF32 ;
 
-PROCEDURE SinkF64 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
-                   RO KEPT dims: SLICE OF STR ; comp: I64)
+PROCEDURE SinkF64 (VAR pool: POOL ; RO adir: STR ; chunk: I64 ;
+                   RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange =
 VAR s : PTR Sink IN pool ;
@@ -1521,9 +1521,9 @@ BEGIN
   RETURN s
 END SinkF64 ;
 
-PROCEDURE SinkInt (VAR pool: POOL ; RO KEPT adir: STR ; width: I64 ;
+PROCEDURE SinkInt (VAR pool: POOL ; RO adir: STR ; width: I64 ;
                    signed: BOOL ; chunk: I64 ;
-                   RO KEPT dims: SLICE OF STR ; comp: I64)
+                   RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange =
 VAR s : PTR Sink IN pool ;
@@ -1534,8 +1534,8 @@ BEGIN
   RETURN s
 END SinkInt ;
 
-PROCEDURE SinkTimeNs (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
-                      RO KEPT dims: SLICE OF STR ; comp: I64)
+PROCEDURE SinkTimeNs (VAR pool: POOL ; RO adir: STR ; chunk: I64 ;
+                      RO dims: SLICE OF STR ; comp: I64)
   : PTR Sink IN pool
   RAISES Error, ValueRange =
 VAR s : PTR Sink IN pool ;

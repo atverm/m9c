@@ -216,9 +216,17 @@ disagree is not evidence.
    branch to learn there is no logic in any of them.  The CASE reads
    as the table it is.  A real table -- `SLICE OF RECORD code, text
    END` filled once and searched -- is also fine and is better when
-   the rows come from data.  DynStr is for ACCUMULATING in a loop;
-   `+` is for composing an expression, and this language's reason
-   for existing is the reviewer.
+   the rows come from data.  DynStr is for ACCUMULATING across
+   statements; `+` is for composing an expression, and this
+   language's reason for existing is the reviewer.  A `+` the
+   statement consumes -- a call's argument, a condition, a value
+   assigned to a scalar -- dies with that statement since 0.23.0, so
+   `Io.WriteLine ('row ' + Fmt.I64Str (i) + ': ' + name)` or `IF
+   Text.Eq (ids[j], '<' + id + '>')` in a loop of a million turns
+   costs the arena one line, not a million (report par 2.3).  What
+   still lives to the frame's end is a `+` that is STORED -- `s := s
+   + x`, a field, a VAR or KEPT argument -- which is exactly the
+   accumulation DynStr is for.
 
 7. **No NIL.**  `OPT PTR T`, and the only way in is `IF x IS SOME p
    THEN ... END` -- as the WHOLE condition of IF/ELSIF/WHILE, binding

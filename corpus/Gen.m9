@@ -174,6 +174,7 @@ VAR
                               recent entry of a name is the live one *)
   isProgram : BOOL ;       (* MODULE m -- emit a main () *)
   mainBody : Ast.Kid ;     (* its block *)
+  inMain : BOOL ;          (* emitting it: err->res is &m9mframe there *)
   strNode : Ast.Kid ;      (* the STR that STR names *)
 
   bHdr, bSrc, bTdefs, bPbuf, bSprotos, bLit : PTR DynStr.DString IN gpool ;
@@ -693,6 +694,9 @@ CONST
     'I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64', 'F32', 'F64',
     'BYTE', 'BOOL', 'CHAR'
   ] ;
+  BuiltinCalls = [
+    'ADR', 'ByteSize', 'CHR', 'LEN', 'MAX', 'NAME', 'ORD', 'SizeOf', 'VIEW'
+  ] ;
   (* the conversions that narrow, each with its own checked helper *)
   WidthConvs = ['I8', 'I16', 'I32', 'U8', 'U16', 'U32', 'U64'] ;
   (* the argument tags C.Int and C.SizeT check (Sem.CTotal's
@@ -752,6 +756,13 @@ PROCEDURE IsBuiltin (RO n: STR) : BOOL =
 BEGIN
   RETURN Text.OneOf (n, Builtins)
 END IsBuiltin ;
+
+(* a call CallC answers by name, not through a head: a conversion or
+   one of these; none keeps an argument (SinkAlloc) *)
+PROCEDURE IsBuiltinCall (RO n: STR) : BOOL =
+BEGIN
+  RETURN IsBuiltin (n) OR Text.OneOf (n, BuiltinCalls)
+END IsBuiltinCall ;
 
 PROCEDURE IsLibM (RO n: STR) : BOOL =
 BEGIN
@@ -2388,7 +2399,7 @@ END ConstLbl ;
 (* the type a selector reaches: the checker's, from the typed tree,
    when it recorded one; else what this generator worked out itself
    (the review of 2026-10-09: one computation, the checker's) *)
-PROCEDURE Checked (sel: PTR Ast.Node ; KEPT own: Ast.Kid) : Ast.Kid =
+PROCEDURE Checked (sel: PTR Ast.Node ; own: Ast.Kid) : Ast.Kid =
 VAR ck : Ast.Kid ;
 BEGIN
   ck := Ast.TypeAt (sel.id) ;
@@ -2782,8 +2793,8 @@ END OriginPool ;
 (* the selectors of d from kid FROM on, applied to the C expression
    RES of type TND: a designator's from its name (DES), a call's
    answer -- F (x).f, NCallSel -- from the temporary holding it *)
-PROCEDURE DESSel (d: PTR Ast.Node ; from: I64 ; RO KEPT res0: STR ;
-                  KEPT tnd0: Ast.Kid ; VAR tag: STR) : STR =
+PROCEDURE DESSel (d: PTR Ast.Node ; from: I64 ; RO res0: STR ;
+                  tnd0: Ast.Kid ; VAR tag: STR) : STR =
 VAR
   j, jj, rk : I64 ;
   tnd, r2, px : Ast.Kid ;
@@ -4177,7 +4188,7 @@ BEGIN
           END ;
           IF ser AND LEN (gname) > 0 THEN
             IF MFind (gateSeen, gname) < 0 THEN
-              MAdd (gateSeen, gname, NONE, '') ;
+              MAdd (gateSeen, Text.Keep (gpool, gname), NONE, '') ;
               (* a pointer to the program's ONE gate for the unit,
                  fetched by name on first use (m9rt.h m9_gate): a
                  static monitor per file let two modules calling the
@@ -4435,8 +4446,10 @@ BEGIN
                           S2 (bn, ';'))
                       END ;
                       nbl := nbl + 1 ;
-                      MAdd (bpool, arg.a, NONE, 'err->res') ;
-                      MAdd (scope, arg.a, fg.kids[1], 'b')
+                      (* the maps keep their keys: a copy, not a view
+                         of the tree (par 4.1, 2026-10-18) *)
+                      MAdd (bpool, Text.Keep (gpool, arg.a), NONE, 'err->res') ;
+                      MAdd (scope, Text.Keep (gpool, arg.a), fg.kids[1], 'b')
                     ELSIF arg.kind = Ast.NInt THEN
                       cond := S5 (cond, ' && ', slot, ' == INT64_C(',
                         S2 (arg.a, ')'))
@@ -4556,18 +4569,205 @@ BEGIN
   RETURN outer
 END SplitIf ;
 
+(* ---- a statement's temporaries, released with the statement
+        (docs/statement-release-plan.md, stage 2; 2026-10-18) ----
+
+   RELEASABLE = the statement ALLOCATES in the arena, and no SINK
+   receives an expression that contains an allocation.  An allocation
+   is a string `+`, a frame-form NEW, or a call whose answer carries a
+   pointer (the callee built it in our arena -- or in a pool, which a
+   release of the arena cannot touch, so counting it costs a mark and
+   nothing else).  A sink is the right side of an assignment whose
+   left side's type carries a pointer, an argument in VAR, OWN or KEPT
+   position, and any argument of a callee this generator cannot
+   resolve to a head -- a foreign procedure, a constructor -- taken
+   conservatively.  RETURN, RAISE, THREAD and the binder forms are
+   never released.  Syntactic, over one statement's trees and the
+   typed tree, plus the one fact the checker enforces: KEPT (par 4.1).
+   The release is skipped on the error path, as the frame's exit frees
+   everything anyway.  Mirrors nothing: M9Gen.pas carries the same
+   four procedures and gendiff holds them identical.                 *)
+PROCEDURE Allocates (k: Ast.Kid) : BOOL =
+VAR
+  i, ext0 : I64 ;
+  lt, rt : STR ;
+  tyk : Ast.Kid ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NBin AND DynStr.Eq (e.a, '+') THEN
+      lt := TagOfExpr (e.kids[0]) ;
+      rt := TagOfExpr (e.kids[1]) ;
+      IF DynStr.Eq (lt, 'SLICE') OR DynStr.Eq (lt, 'STR1') OR
+         DynStr.Eq (rt, 'SLICE') OR DynStr.Eq (rt, 'STR1') THEN
+        RETURN TRUE
+      END
+    END ;
+    IF e.kind = Ast.NNewExpr THEN
+      IF DynStr.Eq (NewShape (e, tyk, ext0), 'frame') THEN RETURN TRUE END
+    END ;
+    IF e.kind = Ast.NCallExpr OR e.kind = Ast.NCallSel THEN
+      IF Ast.TypeAt (e.id) IS SOME rt0 THEN
+        IF HasPtr (SOME (rt0), 0) THEN RETURN TRUE END
+      END
+    END ;
+    FOR i := 0 TO e.nkids - 1 DO
+      IF Allocates (e.kids[i]) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END Allocates ;
+
+(* the callee's head -- a declaration's node, or a procedure type's
+   -- the way CallC finds it: Mod.Proc in the loaded definitions, a
+   procedure value in scope, this module's own; NONE for a builtin, a
+   foreign procedure, a constructor or anything unknown *)
+PROCEDURE CalleeHead (dn: Ast.Kid) : Ast.Kid =
+VAR
+  name : STR ;
+  j, g : I64 ;
+BEGIN
+  IF dn IS SOME dnode THEN
+    IF dnode.kind # Ast.NDesignator THEN RETURN NONE END ;
+    name := dnode.a ;
+    FOR j := 0 TO dnode.nkids - 1 DO
+      IF dnode.kids[j] IS SOME sf THEN
+        IF sf.kind = Ast.NSelField THEN name := S3 (name, '.', sf.a) ELSE RETURN NONE END
+      END
+    END ;
+    IF FindCh (name, '.') >= 0 THEN
+      g := MFind (extProcs, name) ;
+      IF g >= 0 THEN RETURN extProcs.es[g].v END ;
+      RETURN NONE
+    END ;
+    IF Resolve (ScopeNode (name)) IS SOME svt THEN
+      IF svt.kind = Ast.NProcType THEN RETURN SOME (svt) END
+    END ;
+    g := FindProcN (name) ;
+    IF g >= 0 THEN RETURN gps[g].node END
+  END ;
+  RETURN NONE
+END CalleeHead ;
+
+(* does a SINK under K receive an expression containing an allocation
+   -- an argument in VAR, OWN or KEPT position, or any argument of a
+   callee without a head (a builtin keeps nothing and is walked
+   through) *)
+(* A VAR pointer argument whose object lives in the arena the
+   statement marks.  Rule 2 passes the object's pool behind a VAR
+   pointer (CallC above, `ObjPoolC`), and for a frame-form local that
+   pool IS err->res -- so the callee may grow the object above the
+   mark, and the release frees the growth under the caller's pointer:
+   `DynStr.Append (d, 'prev ' + h + Lf)` with `d : PTR DynStr.DString`
+   and no IN clause, Append's Grow carving the doubled buffer in the
+   caller's frame arena (cp-kernel's Cs.Canonical, 2026-10-18: 48,847
+   of 48,867 bytes NUL).  Such a statement is a sink whether or not
+   the argument allocates; it is the one place the marked arena
+   leaves the frame.  In the module body the arena is &m9mframe, and
+   a module variable without IN names it. *)
+PROCEDURE FrameArenaArg (k: Ast.Kid) : BOOL =
+VAR p : STR ;
+BEGIN
+  IF k IS SOME a THEN
+    IF a.kind = Ast.NDesignator THEN
+      p := ObjPoolC (a) ;
+      RETURN DynStr.Eq (p, 'err->res') OR (inMain AND DynStr.Eq (p, '&m9mframe'))
+    END
+  END ;
+  RETURN FALSE
+END FrameArenaArg ;
+
+PROCEDURE SinkAlloc (k: Ast.Kid) : BOOL =
+VAR
+  i, g, b, n : I64 ;
+  name : STR ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NCallExpr OR e.kind = Ast.NCallStmt THEN
+      IF e.kids[0] IS SOME dn THEN
+        name := dn.a ;
+        IF CalleeHead (e.kids[0]) IS SOME hd THEN
+          IF e.kids[1] IS SOME al THEN
+            n := 0 ;
+            IF hd.kids[0] IS SOME pl THEN
+              FOR g := 0 TO pl.nkids - 1 DO
+                IF pl.kids[g] IS SOME grp THEN
+                  IF grp.kids[0] IS SOME ids THEN
+                    FOR b := 0 TO ids.nkids - 1 DO
+                      IF n < al.nkids AND (grp.f1 OR grp.f2 OR grp.f4) THEN
+                        IF Allocates (al.kids[n]) THEN RETURN TRUE END
+                      END ;
+                      IF n < al.nkids AND grp.f1 AND PoolParamTy (grp.kids[1]) THEN
+                        IF FrameArenaArg (al.kids[n]) THEN RETURN TRUE END
+                      END ;
+                      n := n + 1
+                    END
+                  END
+                END
+              END
+            END
+          END
+        ELSIF NOT (dn.nkids = 0 AND IsBuiltinCall (name)) THEN
+          IF Allocates (e.kids[1]) THEN RETURN TRUE END
+        END
+      END
+    END ;
+    FOR i := 0 TO e.nkids - 1 DO
+      IF SinkAlloc (e.kids[i]) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END SinkAlloc ;
+
+(* is this call statement or assignment released with the statement? *)
+PROCEDURE Releasable (st: PTR Ast.Node) : BOOL =
+BEGIN
+  IF st.kind = Ast.NCallStmt THEN
+    RETURN Allocates (st.kids[1]) AND NOT SinkAlloc (SOME (st))
+  END ;
+  IF st.kind = Ast.NAssign THEN
+    IF st.kids[0] IS SOME lhs THEN
+      IF Ast.TypeAt (lhs.id) IS SOME lt THEN
+        IF HasPtr (SOME (lt), 0) THEN RETURN FALSE END
+      ELSE
+        RETURN FALSE
+      END
+    END ;
+    RETURN Allocates (st.kids[1]) AND NOT SinkAlloc (st.kids[1])
+  END ;
+  RETURN FALSE
+END Releasable ;
+
+(* a condition's release: the mark before its evaluation, the test
+   hoisted into a bool, the release after -- or '' when the condition
+   allocates nothing it could not also leak *)
+PROCEDURE CondMark (k: Ast.Kid ; ind: I64) : STR =
+VAR mk : STR ;
+BEGIN
+  IF Allocates (k) AND NOT SinkAlloc (k) THEN
+    mk := NewTmp () ;
+    Line (KPbuf, ind, S3 ('m9_mark ', mk, ' = m9_pool_mark (err->res);')) ;
+    RETURN mk
+  END ;
+  RETURN ''
+END CondMark ;
+
 PROCEDURE EmitStmt (k: Ast.Kid ; ind: I64) =
 VAR
-  savedXit : STR ;
+  savedXit, mk : STR ;
   l, r, tg, w, cnd, stp, bname, thrPool : STR ;
   j, j2, savedScope, sv, sf, thrPi : I64 ;
   vtN, vd : Ast.Kid ;
-  thrWants, lRaise, shared : BOOL ;
+  thrWants, lRaise, shared, rel : BOOL ;
 BEGIN
   IF k IS SOME st THEN
     DbgLine (st) ;
     CASE st.kind OF
     | Ast.NAssign :
+        rel := Releasable (st) ;
+        IF rel THEN
+          mk := NewTmp () ;
+          Line (KPbuf, ind, S3 ('m9_mark ', mk, ' = m9_pool_mark (err->res);'))
+        END ;
         stRaise := FALSE ;
         hoistOk := TRUE ;
         hoistInd := ind ;
@@ -4613,8 +4813,16 @@ BEGIN
             Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
           END
         END ;
-        CloseHoists (ind)
+        CloseHoists (ind) ;
+        IF rel THEN
+          Line (KPbuf, ind, S3 ('m9_pool_release (err->res, ', mk, ');'))
+        END
     | Ast.NCallStmt :
+        rel := Releasable (st) ;
+        IF rel THEN
+          mk := NewTmp () ;
+          Line (KPbuf, ind, S3 ('m9_mark ', mk, ' = m9_pool_mark (err->res);'))
+        END ;
         stRaise := FALSE ;
         hoistOk := TRUE ;
         hoistInd := ind ;
@@ -4623,7 +4831,10 @@ BEGIN
         IF stRaise THEN
           Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
         END ;
-        CloseHoists (ind)
+        CloseHoists (ind) ;
+        IF rel THEN
+          Line (KPbuf, ind, S3 ('m9_pool_release (err->res, ', mk, ');'))
+        END
     | Ast.NIf :
         (* an ELSIF chain with IS SOME in it -- at its head or in an arm
            -- is emitted as the nested IF it means: IF c1 THEN s1 ELSE
@@ -4641,7 +4852,7 @@ BEGIN
               stRaise := FALSE ;
               cnd := EX (isn.kids[0], '') ;
               bname := '' ;
-              IF isn.kids[1] IS SOME bn0 THEN bname := bn0.a END ;
+              IF isn.kids[1] IS SOME bn0 THEN bname := Text.Keep (gpool, bn0.a) END ;
               Line (KPbuf, ind, S6 ('{ ', TyC (vtN), ' ', CN (bname),
                 ' = ', S2 (cnd, ';'))) ;
               IF stRaise THEN
@@ -4670,12 +4881,18 @@ BEGIN
           END ;
           RETURN
         END ;
+        mk := CondMark (st.kids[0], ind) ;
         stRaise := FALSE ;
         cnd := EX (st.kids[0], '') ;
-        IF stRaise THEN
+        IF stRaise OR LEN (mk) > 0 THEN
           w := NewTmp () ;
           Line (KPbuf, ind, S4 ('bool ', w, ' = ', S2 (cnd, ';'))) ;
-          Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+          IF stRaise THEN
+            Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          END ;
+          IF LEN (mk) > 0 THEN
+            Line (KPbuf, ind, S3 ('m9_pool_release (err->res, ', mk, ');'))
+          END ;
           cnd := w
         END ;
         Line (KPbuf, ind, S3 ('if (', cnd, ') {')) ;
@@ -4687,14 +4904,21 @@ BEGIN
           IF st.kids[j] IS SOME tail THEN
             IF tail.kind = Ast.NElsif THEN
               Line (KPbuf, ind, '} else {') ;
+              mk := CondMark (tail.kids[0], ind + 1) ;
               stRaise := FALSE ;
               cnd := EX (tail.kids[0], '') ;
-              IF stRaise THEN
+              IF stRaise OR LEN (mk) > 0 THEN
                 w := NewTmp () ;
                 Line (KPbuf, ind + 1, S4 ('bool ', w, ' = ',
                   S2 (cnd, ';'))) ;
-                Line (KPbuf, ind + 1,
-                  S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+                IF stRaise THEN
+                  Line (KPbuf, ind + 1,
+                    S3 ('if (err->exc) goto ', raiseLbl, ';'))
+                END ;
+                IF LEN (mk) > 0 THEN
+                  Line (KPbuf, ind + 1,
+                    S3 ('m9_pool_release (err->res, ', mk, ');'))
+                END ;
                 cnd := w
               END ;
               Line (KPbuf, ind + 1, S3 ('if (', cnd, ') {')) ;
@@ -4716,7 +4940,7 @@ BEGIN
             vtN := OptInner (isn.kids[0]) ;
             IF vtN IS SOME vt1 THEN
               bname := '' ;
-              IF isn.kids[1] IS SOME bn1 THEN bname := bn1.a END ;
+              IF isn.kids[1] IS SOME bn1 THEN bname := Text.Keep (gpool, bn1.a) END ;
               Line (KPbuf, ind, 'for (;;) {') ;
               stRaise := FALSE ;
               cnd := EX (isn.kids[0], '') ;
@@ -4747,12 +4971,18 @@ BEGIN
           RETURN
         END ;
         Line (KPbuf, ind, 'for (;;) {') ;
+        mk := CondMark (st.kids[0], ind + 1) ;
         stRaise := FALSE ;
         cnd := EX (st.kids[0], '') ;
-        IF stRaise THEN
+        IF stRaise OR LEN (mk) > 0 THEN
           w := NewTmp () ;
           Line (KPbuf, ind + 1, S4 ('bool ', w, ' = ', S2 (cnd, ';'))) ;
-          Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+          IF stRaise THEN
+            Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          END ;
+          IF LEN (mk) > 0 THEN
+            Line (KPbuf, ind + 1, S3 ('m9_pool_release (err->res, ', mk, ');'))
+          END ;
           cnd := w
         END ;
         Line (KPbuf, ind + 1, S3 ('if (!(', cnd, ')) break;')) ;
@@ -4959,7 +5189,7 @@ BEGIN
           IF pn.kind # Ast.NDesignator THEN
             Err2 (st.line, 'THREAD target form unsupported yet')
           ELSE
-            bname := pn.a ;
+            bname := Text.Keep (gpool, pn.a) ;
             l := '0' ;
             vd := NONE ;
             vtN := NONE ;
@@ -5230,9 +5460,9 @@ BEGIN
                                         ' = ', w, '.u.', lbl.a, '.',
                                         S5 (fldn, '; (void) ', bname,
                                             ';', ''))) ;
-                                    MAdd (bpool, bid.a, NONE,
+                                    MAdd (bpool, Text.Keep (gpool, bid.a), NONE,
                                           OriginPool (st.kids[0])) ;
-                                    MAdd (scope, bid.a, vg.kids[1], 'b')
+                                    MAdd (scope, Text.Keep (gpool, bid.a), vg.kids[1], 'b')
                                   END
                                 END
                               END
@@ -5379,8 +5609,11 @@ BEGIN
                       DynStr.Eq (ftn.a, 'POOL')) OR
                      ftn.kind = Ast.NSharedType THEN
                     IF NOT opened THEN
+                      (* the release and the last-handle test are one
+                         atomic step, so one thread cleans the interior
+                         and frees (m9rt.h, 2026-10-18) *)
                       Line (KPbuf, ind,
-                        S3 ('if (m9_rc_last (', l, ')) {')) ;
+                        S3 ('if (m9_release (', l, ')) {')) ;
                       opened := TRUE
                     END ;
                     IF fg.kids[0] IS SOME fids THEN
@@ -5405,8 +5638,12 @@ BEGIN
       END
     END
   END ;
-  IF opened THEN Line (KPbuf, ind, '}') END ;
-  Line (KPbuf, ind, S3 ('m9_dispose (', l, ');')) ;
+  IF opened THEN
+    Line (KPbuf, ind + 1, S3 ('m9_free_last (', l, ');')) ;
+    Line (KPbuf, ind, '}')
+  ELSE
+    Line (KPbuf, ind, S3 ('m9_dispose (', l, ');'))
+  END ;
   IF stRaise THEN
     Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
   END
@@ -5903,7 +6140,9 @@ BEGIN
     Line (KPbuf, 1, S3 (CP (extMods.es[i].k), '_m9init (err);',
       ' if (err->exc) goto L_ret;'))
   END ;
+  inMain := TRUE ;
   EmitStmt (mainBody, 1) ;
+  inMain := FALSE ;
   Line (KPbuf, 0, 'L_ret: ;') ;
   FOR i := 0 TO nlp - 1 DO
     Line (KPbuf, 1, S3 ('m9_pool_free (&', lpools[i], ');'))
@@ -5954,7 +6193,9 @@ BEGIN
     Line (KPbuf, 1, S3 (CP (extMods.es[i].k), '_m9init (err);',
       ' if (err->exc) goto L_ret;'))
   END ;
+  inMain := TRUE ;
   EmitStmt (mainBody, 1) ;
+  inMain := FALSE ;
   Line (KPbuf, 0, 'L_ret: ;') ;
   FOR i := 0 TO nlp - 1 DO
     Line (KPbuf, 1, S3 ('m9_pool_free (&', lpools[i], ');'))

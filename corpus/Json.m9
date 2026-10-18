@@ -283,7 +283,7 @@ PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ;
      -- and a composer that wants the one-liner back wraps these in
      its own helper, where the skip-blanks policy belongs anyway. *)
 
-PROCEDURE Add (VAR KEPT arr: PTR Node ; VAR KEPT v: PTR Node)
+PROCEDURE Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node)
   RAISES TypeMismatch ;
   (* append to an array, count kept.                               *)
 
@@ -1615,7 +1615,7 @@ BEGIN
   END
 END Set ;
 
-PROCEDURE Add (VAR KEPT arr: PTR Node ; VAR KEPT v: PTR Node)
+PROCEDURE Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node)
   RAISES TypeMismatch =
 VAR
   cur, prev, head : OPT PTR Node ;

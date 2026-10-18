@@ -72,7 +72,7 @@ BEGIN
   t.n := t.n + 1
 END TokPush ;
 
-PROCEDURE LexAll (RO KEPT src: STR ; VAR t: Toks) =
+PROCEDURE LexAll (RO src: STR ; VAR t: Toks) =
 VAR
   lx : Lex.Lexer ;
   tok : Lex.Token ;
@@ -91,7 +91,7 @@ END LexAll ;
 
 (* ---- lines ------------------------------------------------------- *)
 
-PROCEDURE SplitLines (RO KEPT s: STR ; VAR n: I64) : SLICE OF STR =
+PROCEDURE SplitLines (RO s: STR ; VAR n: I64) : SLICE OF STR =
 VAR
   out : SLICE OF STR ;
   nb : SLICE OF STR ;
@@ -128,7 +128,7 @@ END Spaces ;
    continuations verbatim -- the slice runs through the newlines, so
    their original leading spaces are already inside it *)
 PROCEDURE EmitComment (VAR d: PTR DynStr.DString ; col: I64 ;
-                       RO KEPT text: STR) =
+                       RO text: STR) =
 VAR
   cl : SLICE OF STR ;
   ncl, i : I64 ;
@@ -168,7 +168,7 @@ BEGIN
   Io.ErrLine (DynStr.View (d))
 END ErrPos ;
 
-PROCEDURE Format (RO KEPT src: STR ; RO path: STR) : STR
+PROCEDURE Format (RO src: STR ; RO path: STR) : STR
   RAISES ValueRange, IndexError =
 VAR
   p : Parse.Parser ;

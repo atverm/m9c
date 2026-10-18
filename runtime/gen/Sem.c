@@ -408,848 +408,867 @@ static const uint32_t m9s107[4] = { 79u, 80u, 84u, 32u };
 static const uint32_t m9s108[4] = { 80u, 84u, 82u, 32u };
 static const uint32_t m9s109[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
 static const uint32_t m9s110[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s111[22] = { 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 112u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s112[17] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 105u, 110u, 116u, 111u, 32u, 112u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s113[10] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s114[3] = { 79u, 87u, 78u };
-static const uint32_t m9s115[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s116[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s117[4] = { 86u, 73u, 69u, 87u };
-static const uint32_t m9s118[6] = { 83u, 72u, 65u, 82u, 69u, 68u };
-static const uint32_t m9s119[3] = { 121u, 101u, 115u };
-static const uint32_t m9s120[4] = { 98u, 117u, 115u, 121u };
-static const uint32_t m9s121[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s122[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s123[3] = { 121u, 101u, 115u };
-static const uint32_t m9s124[2] = { 110u, 111u };
-static const uint32_t m9s125[3] = { 79u, 87u, 78u };
-static const uint32_t m9s126[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s127[3] = { 83u, 84u, 82u };
-static const uint32_t m9s128[1] = { 43u };
-static const uint32_t m9s129[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s130[3] = { 114u, 111u, 32u };
-static const uint32_t m9s131[3] = { 121u, 101u, 115u };
-static const uint32_t m9s132[4] = { 98u, 117u, 115u, 121u };
-static const uint32_t m9s133[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s134[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s135[3] = { 121u, 101u, 115u };
-static const uint32_t m9s136[2] = { 110u, 111u };
-static const uint32_t m9s137[5] = { 118u, 105u, 101u, 119u, 32u };
-static const uint32_t m9s138[3] = { 121u, 101u, 115u };
-static const uint32_t m9s139[4] = { 98u, 117u, 115u, 121u };
-static const uint32_t m9s140[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s141[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s142[3] = { 121u, 101u, 115u };
-static const uint32_t m9s143[2] = { 110u, 111u };
-static const uint32_t m9s144[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s145[10] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s146[3] = { 79u, 87u, 78u };
-static const uint32_t m9s147[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s148[1] = { 43u };
-static const uint32_t m9s149[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s150[15] = { 97u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s151[18] = { 97u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s152[14] = { 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s153[17] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 105u, 110u, 116u, 111u, 32u, 112u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s154[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s155[6] = { 97u, 32u, 118u, 105u, 101u, 119u };
-static const uint32_t m9s156[10] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s157[22] = { 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 112u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s158[1] = { 46u };
-static const uint32_t m9s159[2] = { 91u, 93u };
-static const uint32_t m9s160[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
-static const uint32_t m9s161[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
-static const uint32_t m9s162[12] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u, 115u, 116u, 97u, 116u, 101u };
-static const uint32_t m9s163[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
-static const uint32_t m9s164[16] = { 116u, 104u, 101u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s165[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s166[8] = { 97u, 32u, 99u, 97u, 108u, 108u, 101u, 101u };
-static const uint32_t m9s167[9] = { 60u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 62u };
-static const uint32_t m9s168[15] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s169[19] = { 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
-static const uint32_t m9s170[13] = { 32u, 40u, 99u, 97u, 114u, 114u, 105u, 101u, 100u, 32u, 98u, 121u, 32u };
-static const uint32_t m9s171[1] = { 41u };
-static const uint32_t m9s172[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
-static const uint32_t m9s173[9] = { 60u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 62u };
-static const uint32_t m9s174[21] = { 115u, 101u, 108u, 102u, 45u, 115u, 116u, 111u, 114u, 101u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s175[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
-static const uint32_t m9s176[40] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
-static const uint32_t m9s177[17] = { 32u, 105u, 116u, 115u, 101u, 108u, 102u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s178[22] = { 102u, 114u, 97u, 109u, 101u, 45u, 115u, 116u, 111u, 114u, 101u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s179[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
-static const uint32_t m9s180[41] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 110u, 101u, 118u, 101u, 114u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s181[20] = { 114u, 101u, 116u, 101u, 110u, 116u, 105u, 111u, 110u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s182[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
-static const uint32_t m9s183[12] = { 32u, 45u, 45u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
-static const uint32_t m9s184[2] = { 44u, 32u };
-static const uint32_t m9s185[14] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 47u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s186[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s187[2] = { 44u, 32u };
-static const uint32_t m9s188[31] = { 117u, 110u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 114u, 101u, 116u, 101u, 110u, 116u, 105u, 111u, 110u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s189[9] = { 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
-static const uint32_t m9s190[17] = { 32u, 45u, 45u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 75u, 69u, 80u, 84u, 32u };
-static const uint32_t m9s191[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s192[18] = { 107u, 101u, 112u, 116u, 45u, 117u, 110u, 115u, 101u, 101u, 110u, 58u, 32u, 75u, 69u, 80u, 84u, 32u };
-static const uint32_t m9s193[48] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 115u, 101u, 101u, 110u, 32u, 114u, 101u, 116u, 97u, 105u, 110u, 101u, 100u, 32u, 98u, 121u, 32u, 116u, 104u, 105u, 115u, 32u, 97u, 110u, 97u, 108u, 121u, 115u, 105u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s194[9] = { 97u, 110u, 32u, 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s195[20] = { 32u, 79u, 70u, 32u, 105u, 115u, 32u, 105u, 110u, 100u, 101u, 120u, 101u, 100u, 32u, 98u, 121u, 32u, 97u, 32u };
-static const uint32_t m9s196[12] = { 32u, 118u, 97u, 108u, 117u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s197[30] = { 105u, 110u, 100u, 101u, 120u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s198[38] = { 79u, 80u, 84u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 117u, 115u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 103u, 117u, 97u, 114u, 100u, 58u, 32u };
-static const uint32_t m9s199[50] = { 67u, 65u, 83u, 69u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 100u, 32u, 98u, 121u, 32u, 67u, 65u, 83u, 69u, 44u, 32u, 110u, 111u, 116u, 32u, 98u, 121u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 58u, 32u };
-static const uint32_t m9s200[9] = { 110u, 111u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s201[23] = { 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s202[14] = { 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s203[65] = { 32u, 105u, 115u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 116u, 111u, 32u, 116u, 104u, 101u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u };
-static const uint32_t m9s204[7] = { 97u, 32u, 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s205[7] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u };
-static const uint32_t m9s206[17] = { 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s207[33] = { 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s208[34] = { 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s209[2] = { 73u, 56u };
-static const uint32_t m9s210[3] = { 73u, 49u, 54u };
-static const uint32_t m9s211[3] = { 73u, 51u, 50u };
-static const uint32_t m9s212[3] = { 73u, 54u, 52u };
-static const uint32_t m9s213[2] = { 85u, 56u };
-static const uint32_t m9s214[3] = { 85u, 49u, 54u };
-static const uint32_t m9s215[3] = { 85u, 51u, 50u };
-static const uint32_t m9s216[3] = { 85u, 54u, 52u };
-static const uint32_t m9s217[3] = { 70u, 51u, 50u };
-static const uint32_t m9s218[3] = { 70u, 54u, 52u };
-static const uint32_t m9s219[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s220[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s221[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s222[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s223[18] = { 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s224[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s225[14] = { 97u, 32u, 114u, 101u, 97u, 108u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s226[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s227[21] = { 97u, 32u, 67u, 72u, 65u, 82u, 47u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s228[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
-static const uint32_t m9s229[4] = { 78u, 79u, 78u, 69u };
-static const uint32_t m9s230[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s231[8] = { 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s232[5] = { 60u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s233[3] = { 65u, 76u, 76u };
-static const uint32_t m9s234[15] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s235[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s236[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s237[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s238[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s239[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s240[2] = { 73u, 56u };
-static const uint32_t m9s241[3] = { 73u, 49u, 54u };
-static const uint32_t m9s242[3] = { 73u, 51u, 50u };
-static const uint32_t m9s243[2] = { 85u, 56u };
-static const uint32_t m9s244[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s245[3] = { 85u, 49u, 54u };
-static const uint32_t m9s246[3] = { 85u, 51u, 50u };
-static const uint32_t m9s247[3] = { 85u, 54u, 52u };
-static const uint32_t m9s248[1] = { 45u };
-static const uint32_t m9s249[11] = { 80u, 82u, 79u, 67u, 69u, 68u, 85u, 82u, 69u, 32u, 40u };
-static const uint32_t m9s250[8] = { 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
-static const uint32_t m9s251[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s252[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s253[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s254[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s255[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s256[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s257[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s258[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s259[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s260[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s261[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s262[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s263[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s264[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s265[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
-static const uint32_t m9s266[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s267[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
-static const uint32_t m9s268[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s269[5] = { 67u, 46u, 80u, 116u, 114u };
-static const uint32_t m9s270[10] = { 67u, 46u, 67u, 111u, 110u, 115u, 116u, 80u, 116u, 114u };
-static const uint32_t m9s271[8] = { 67u, 46u, 77u, 117u, 116u, 80u, 116u, 114u };
-static const uint32_t m9s272[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s273[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s274[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s275[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
-static const uint32_t m9s276[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s277[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s278[3] = { 73u, 54u, 52u };
-static const uint32_t m9s279[3] = { 70u, 54u, 52u };
-static const uint32_t m9s280[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s281[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s282[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s283[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s284[1] = { 45u };
-static const uint32_t m9s285[3] = { 73u, 54u, 52u };
-static const uint32_t m9s286[3] = { 70u, 54u, 52u };
-static const uint32_t m9s287[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s288[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s289[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s290[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s291[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s292[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s293[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s294[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s295[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s296[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s297[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s298[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s299[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s300[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s301[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s302[1] = { 43u };
-static const uint32_t m9s303[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s304[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s305[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s306[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s307[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s308[39] = { 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 101u, 120u, 116u, 101u, 110u, 100u, 101u, 100u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 105u, 115u };
-static const uint32_t m9s309[50] = { 32u, 110u, 111u, 116u, 32u, 98u, 117u, 105u, 108u, 116u, 59u, 32u, 103u, 105u, 118u, 101u, 32u, 105u, 116u, 115u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 32u, 111u, 110u, 101u, 32u, 98u, 121u, 32u, 111u, 110u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s310[6] = { 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s311[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s312[53] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 58u, 32u, 97u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 104u, 111u, 108u, 100u, 115u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s313[6] = { 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s314[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s315[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 103u, 105u, 118u, 101u, 32u };
-static const uint32_t m9s316[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s317[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s318[36] = { 97u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
-static const uint32_t m9s319[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s320[40] = { 97u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 98u, 101u, 108u, 111u, 110u, 103u, 115u, 32u, 97u, 116u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 108u, 101u, 118u, 101u, 108u, 58u, 32u };
-static const uint32_t m9s321[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s322[6] = { 67u, 79u, 78u, 83u, 84u, 32u };
-static const uint32_t m9s323[131] = { 58u, 32u, 97u, 32u, 99u, 111u, 110u, 115u, 116u, 97u, 110u, 116u, 32u, 105u, 115u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 44u, 32u, 97u, 32u, 110u, 101u, 103u, 97u, 116u, 101u, 100u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 44u, 32u, 111u, 114u, 32u, 43u, 32u, 111u, 118u, 101u, 114u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 97u, 110u, 100u, 32u, 67u, 72u, 65u, 82u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 115u, 32u, 45u, 45u, 32u, 99u, 111u, 109u, 112u, 117u, 116u, 101u, 32u, 97u, 110u, 121u, 116u, 104u, 105u, 110u, 103u, 32u, 101u, 108u, 115u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s324[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s325[6] = { 67u, 79u, 78u, 83u, 84u, 32u };
-static const uint32_t m9s326[61] = { 58u, 32u, 116u, 104u, 101u, 32u, 101u, 120u, 112u, 114u, 101u, 115u, 115u, 105u, 111u, 110u, 32u, 111u, 118u, 101u, 114u, 102u, 108u, 111u, 119u, 115u, 32u, 73u, 54u, 52u, 32u, 111u, 114u, 32u, 100u, 105u, 118u, 105u, 100u, 101u, 115u, 32u, 98u, 121u, 32u, 122u, 101u, 114u, 111u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s327[6] = { 67u, 79u, 78u, 83u, 84u, 32u };
-static const uint32_t m9s328[83] = { 58u, 32u, 116u, 104u, 101u, 32u, 115u, 109u, 97u, 108u, 108u, 101u, 115u, 116u, 32u, 73u, 54u, 52u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 119u, 114u, 105u, 116u, 116u, 101u, 110u, 32u, 97u, 115u, 32u, 97u, 32u, 99u, 111u, 110u, 115u, 116u, 97u, 110u, 116u, 59u, 32u, 103u, 105u, 118u, 101u, 32u, 105u, 116u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s329[40] = { 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
-static const uint32_t m9s330[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s331[44] = { 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 98u, 101u, 108u, 111u, 110u, 103u, 115u, 32u, 97u, 116u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 108u, 101u, 118u, 101u, 108u, 58u, 32u };
-static const uint32_t m9s332[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s333[8] = { 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s334[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s335[8] = { 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s336[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s337[58] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 104u, 111u, 108u, 100u, 115u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s338[8] = { 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s339[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s340[4] = { 32u, 105u, 115u, 32u };
-static const uint32_t m9s341[20] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u, 116u, 104u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s342[47] = { 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 104u, 97u, 115u, 32u, 111u, 110u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 116u, 121u, 112u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s343[16] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 116u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s344[78] = { 32u, 99u, 97u, 110u, 32u, 111u, 110u, 108u, 121u, 32u, 98u, 101u, 32u, 105u, 110u, 100u, 101u, 120u, 101u, 100u, 44u, 32u, 109u, 101u, 97u, 115u, 117u, 114u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 32u, 76u, 69u, 78u, 44u, 32u, 103u, 111u, 110u, 101u, 32u, 111u, 118u, 101u, 114u, 32u, 98u, 121u, 32u, 70u, 79u, 82u, 32u, 73u, 78u, 44u, 32u, 111u, 114u, 32u, 108u, 101u, 110u, 116u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u };
-static const uint32_t m9s345[22] = { 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s346[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s347[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s348[12] = { 58u, 32u, 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
-static const uint32_t m9s349[43] = { 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 112u, 97u, 115u, 115u, 101u, 100u, 32u, 116u, 111u, 32u, 97u, 32u, 86u, 65u, 82u, 32u, 111u, 114u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
-static const uint32_t m9s350[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s351[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s352[18] = { 58u, 32u, 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 116u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s353[48] = { 32u, 99u, 97u, 110u, 32u, 98u, 101u, 32u, 108u, 101u, 110u, 116u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s354[17] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s355[14] = { 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s356[82] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 109u, 97u, 121u, 32u, 98u, 101u, 32u, 114u, 101u, 97u, 100u, 45u, 111u, 110u, 108u, 121u, 32u, 115u, 116u, 111u, 114u, 97u, 103u, 101u, 32u, 40u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 44u, 32u, 97u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 111u, 114u, 32u, 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 41u };
-static const uint32_t m9s357[16] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s358[13] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s359[17] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s360[16] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s361[10] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
-static const uint32_t m9s362[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
-static const uint32_t m9s363[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s364[16] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s365[10] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
-static const uint32_t m9s366[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
-static const uint32_t m9s367[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s368[3] = { 79u, 87u, 78u };
-static const uint32_t m9s369[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
-static const uint32_t m9s370[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s371[16] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s372[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
-static const uint32_t m9s373[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s374[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s375[17] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s376[16] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s377[14] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 104u, 111u, 108u, 100u, 115u, 32u };
-static const uint32_t m9s378[1] = { 44u };
-static const uint32_t m9s379[10] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
-static const uint32_t m9s380[13] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s111[10] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s112[22] = { 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 112u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s113[17] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 105u, 110u, 116u, 111u, 32u, 112u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s114[10] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s115[3] = { 79u, 87u, 78u };
+static const uint32_t m9s116[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s117[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s118[4] = { 86u, 73u, 69u, 87u };
+static const uint32_t m9s119[6] = { 83u, 72u, 65u, 82u, 69u, 68u };
+static const uint32_t m9s120[3] = { 121u, 101u, 115u };
+static const uint32_t m9s121[4] = { 98u, 117u, 115u, 121u };
+static const uint32_t m9s122[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s123[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s124[3] = { 121u, 101u, 115u };
+static const uint32_t m9s125[2] = { 110u, 111u };
+static const uint32_t m9s126[3] = { 79u, 87u, 78u };
+static const uint32_t m9s127[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s128[3] = { 83u, 84u, 82u };
+static const uint32_t m9s129[1] = { 43u };
+static const uint32_t m9s130[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s131[3] = { 114u, 111u, 32u };
+static const uint32_t m9s132[3] = { 121u, 101u, 115u };
+static const uint32_t m9s133[4] = { 98u, 117u, 115u, 121u };
+static const uint32_t m9s134[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s135[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s136[3] = { 121u, 101u, 115u };
+static const uint32_t m9s137[2] = { 110u, 111u };
+static const uint32_t m9s138[5] = { 118u, 105u, 101u, 119u, 32u };
+static const uint32_t m9s139[1] = { 35u };
+static const uint32_t m9s140[3] = { 121u, 101u, 115u };
+static const uint32_t m9s141[4] = { 98u, 117u, 115u, 121u };
+static const uint32_t m9s142[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s143[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s144[3] = { 121u, 101u, 115u };
+static const uint32_t m9s145[2] = { 110u, 111u };
+static const uint32_t m9s146[5] = { 98u, 97u, 99u, 107u, 32u };
+static const uint32_t m9s147[1] = { 35u };
+static const uint32_t m9s148[1] = { 35u };
+static const uint32_t m9s149[3] = { 121u, 101u, 115u };
+static const uint32_t m9s150[4] = { 98u, 117u, 115u, 121u };
+static const uint32_t m9s151[3] = { 121u, 101u, 115u };
+static const uint32_t m9s152[2] = { 110u, 111u };
+static const uint32_t m9s153[5] = { 100u, 101u, 101u, 112u, 32u };
+static const uint32_t m9s154[1] = { 35u };
+static const uint32_t m9s155[1] = { 35u };
+static const uint32_t m9s156[3] = { 121u, 101u, 115u };
+static const uint32_t m9s157[4] = { 98u, 117u, 115u, 121u };
+static const uint32_t m9s158[3] = { 121u, 101u, 115u };
+static const uint32_t m9s159[2] = { 110u, 111u };
+static const uint32_t m9s160[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s161[10] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s162[3] = { 79u, 87u, 78u };
+static const uint32_t m9s163[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s164[1] = { 43u };
+static const uint32_t m9s165[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s166[15] = { 97u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s167[18] = { 97u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s168[14] = { 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s169[17] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 105u, 110u, 116u, 111u, 32u, 112u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s170[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s171[6] = { 97u, 32u, 118u, 105u, 101u, 119u };
+static const uint32_t m9s172[10] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s173[22] = { 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 112u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s174[1] = { 46u };
+static const uint32_t m9s175[2] = { 91u, 93u };
+static const uint32_t m9s176[1] = { 62u };
+static const uint32_t m9s177[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
+static const uint32_t m9s178[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
+static const uint32_t m9s179[12] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u, 115u, 116u, 97u, 116u, 101u };
+static const uint32_t m9s180[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
+static const uint32_t m9s181[16] = { 116u, 104u, 101u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s182[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s183[8] = { 97u, 32u, 99u, 97u, 108u, 108u, 101u, 101u };
+static const uint32_t m9s184[9] = { 60u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 62u };
+static const uint32_t m9s185[15] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u };
+static const uint32_t m9s186[19] = { 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
+static const uint32_t m9s187[13] = { 32u, 40u, 99u, 97u, 114u, 114u, 105u, 101u, 100u, 32u, 98u, 121u, 32u };
+static const uint32_t m9s188[1] = { 41u };
+static const uint32_t m9s189[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
+static const uint32_t m9s190[9] = { 60u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 62u };
+static const uint32_t m9s191[21] = { 115u, 101u, 108u, 102u, 45u, 115u, 116u, 111u, 114u, 101u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s192[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
+static const uint32_t m9s193[40] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
+static const uint32_t m9s194[17] = { 32u, 105u, 116u, 115u, 101u, 108u, 102u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s195[22] = { 102u, 114u, 97u, 109u, 101u, 45u, 115u, 116u, 111u, 114u, 101u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s196[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
+static const uint32_t m9s197[41] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 110u, 101u, 118u, 101u, 114u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s198[20] = { 114u, 101u, 116u, 101u, 110u, 116u, 105u, 111u, 110u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s199[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
+static const uint32_t m9s200[12] = { 32u, 45u, 45u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
+static const uint32_t m9s201[2] = { 44u, 32u };
+static const uint32_t m9s202[14] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 47u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s203[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
+static const uint32_t m9s204[1] = { 62u };
+static const uint32_t m9s205[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s206[2] = { 44u, 32u };
+static const uint32_t m9s207[31] = { 117u, 110u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 114u, 101u, 116u, 101u, 110u, 116u, 105u, 111u, 110u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s208[9] = { 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
+static const uint32_t m9s209[17] = { 32u, 45u, 45u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 75u, 69u, 80u, 84u, 32u };
+static const uint32_t m9s210[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s211[18] = { 107u, 101u, 112u, 116u, 45u, 117u, 110u, 115u, 101u, 101u, 110u, 58u, 32u, 75u, 69u, 80u, 84u, 32u };
+static const uint32_t m9s212[48] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 115u, 101u, 101u, 110u, 32u, 114u, 101u, 116u, 97u, 105u, 110u, 101u, 100u, 32u, 98u, 121u, 32u, 116u, 104u, 105u, 115u, 32u, 97u, 110u, 97u, 108u, 121u, 115u, 105u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s213[9] = { 97u, 110u, 32u, 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s214[20] = { 32u, 79u, 70u, 32u, 105u, 115u, 32u, 105u, 110u, 100u, 101u, 120u, 101u, 100u, 32u, 98u, 121u, 32u, 97u, 32u };
+static const uint32_t m9s215[12] = { 32u, 118u, 97u, 108u, 117u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s216[30] = { 105u, 110u, 100u, 101u, 120u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s217[38] = { 79u, 80u, 84u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 117u, 115u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 103u, 117u, 97u, 114u, 100u, 58u, 32u };
+static const uint32_t m9s218[50] = { 67u, 65u, 83u, 69u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 100u, 32u, 98u, 121u, 32u, 67u, 65u, 83u, 69u, 44u, 32u, 110u, 111u, 116u, 32u, 98u, 121u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 58u, 32u };
+static const uint32_t m9s219[9] = { 110u, 111u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s220[23] = { 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s221[14] = { 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s222[65] = { 32u, 105u, 115u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 116u, 111u, 32u, 116u, 104u, 101u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u };
+static const uint32_t m9s223[7] = { 97u, 32u, 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s224[7] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u };
+static const uint32_t m9s225[17] = { 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s226[33] = { 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s227[34] = { 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s228[2] = { 73u, 56u };
+static const uint32_t m9s229[3] = { 73u, 49u, 54u };
+static const uint32_t m9s230[3] = { 73u, 51u, 50u };
+static const uint32_t m9s231[3] = { 73u, 54u, 52u };
+static const uint32_t m9s232[2] = { 85u, 56u };
+static const uint32_t m9s233[3] = { 85u, 49u, 54u };
+static const uint32_t m9s234[3] = { 85u, 51u, 50u };
+static const uint32_t m9s235[3] = { 85u, 54u, 52u };
+static const uint32_t m9s236[3] = { 70u, 51u, 50u };
+static const uint32_t m9s237[3] = { 70u, 54u, 52u };
+static const uint32_t m9s238[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s239[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s240[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s241[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s242[18] = { 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s243[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s244[14] = { 97u, 32u, 114u, 101u, 97u, 108u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s245[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s246[21] = { 97u, 32u, 67u, 72u, 65u, 82u, 47u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s247[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
+static const uint32_t m9s248[4] = { 78u, 79u, 78u, 69u };
+static const uint32_t m9s249[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s250[8] = { 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s251[5] = { 60u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s252[3] = { 65u, 76u, 76u };
+static const uint32_t m9s253[15] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s254[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s255[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s256[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s257[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s258[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s259[2] = { 73u, 56u };
+static const uint32_t m9s260[3] = { 73u, 49u, 54u };
+static const uint32_t m9s261[3] = { 73u, 51u, 50u };
+static const uint32_t m9s262[2] = { 85u, 56u };
+static const uint32_t m9s263[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s264[3] = { 85u, 49u, 54u };
+static const uint32_t m9s265[3] = { 85u, 51u, 50u };
+static const uint32_t m9s266[3] = { 85u, 54u, 52u };
+static const uint32_t m9s267[1] = { 45u };
+static const uint32_t m9s268[11] = { 80u, 82u, 79u, 67u, 69u, 68u, 85u, 82u, 69u, 32u, 40u };
+static const uint32_t m9s269[8] = { 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
+static const uint32_t m9s270[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s271[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s272[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s273[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s274[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s275[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s276[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s277[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s278[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s279[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s280[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s281[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s282[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s283[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s284[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
+static const uint32_t m9s285[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s286[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
+static const uint32_t m9s287[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s288[5] = { 67u, 46u, 80u, 116u, 114u };
+static const uint32_t m9s289[10] = { 67u, 46u, 67u, 111u, 110u, 115u, 116u, 80u, 116u, 114u };
+static const uint32_t m9s290[8] = { 67u, 46u, 77u, 117u, 116u, 80u, 116u, 114u };
+static const uint32_t m9s291[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s292[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s293[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s294[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
+static const uint32_t m9s295[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s296[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s297[3] = { 73u, 54u, 52u };
+static const uint32_t m9s298[3] = { 70u, 54u, 52u };
+static const uint32_t m9s299[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s300[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s301[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s302[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s303[1] = { 45u };
+static const uint32_t m9s304[3] = { 73u, 54u, 52u };
+static const uint32_t m9s305[3] = { 70u, 54u, 52u };
+static const uint32_t m9s306[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s307[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s308[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s309[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s310[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s311[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s312[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s313[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s314[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s315[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s316[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s317[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s318[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s319[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s320[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s321[1] = { 43u };
+static const uint32_t m9s322[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s323[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s324[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s325[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s326[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s327[39] = { 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 101u, 120u, 116u, 101u, 110u, 100u, 101u, 100u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 105u, 115u };
+static const uint32_t m9s328[50] = { 32u, 110u, 111u, 116u, 32u, 98u, 117u, 105u, 108u, 116u, 59u, 32u, 103u, 105u, 118u, 101u, 32u, 105u, 116u, 115u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 32u, 111u, 110u, 101u, 32u, 98u, 121u, 32u, 111u, 110u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s329[6] = { 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s330[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s331[53] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 58u, 32u, 97u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 104u, 111u, 108u, 100u, 115u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s332[6] = { 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s333[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s334[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 103u, 105u, 118u, 101u, 32u };
+static const uint32_t m9s335[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s336[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s337[36] = { 97u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
+static const uint32_t m9s338[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s339[40] = { 97u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 98u, 101u, 108u, 111u, 110u, 103u, 115u, 32u, 97u, 116u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 108u, 101u, 118u, 101u, 108u, 58u, 32u };
+static const uint32_t m9s340[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s341[6] = { 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s342[131] = { 58u, 32u, 97u, 32u, 99u, 111u, 110u, 115u, 116u, 97u, 110u, 116u, 32u, 105u, 115u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 44u, 32u, 97u, 32u, 110u, 101u, 103u, 97u, 116u, 101u, 100u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 44u, 32u, 111u, 114u, 32u, 43u, 32u, 111u, 118u, 101u, 114u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 97u, 110u, 100u, 32u, 67u, 72u, 65u, 82u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 115u, 32u, 45u, 45u, 32u, 99u, 111u, 109u, 112u, 117u, 116u, 101u, 32u, 97u, 110u, 121u, 116u, 104u, 105u, 110u, 103u, 32u, 101u, 108u, 115u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s343[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s344[6] = { 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s345[61] = { 58u, 32u, 116u, 104u, 101u, 32u, 101u, 120u, 112u, 114u, 101u, 115u, 115u, 105u, 111u, 110u, 32u, 111u, 118u, 101u, 114u, 102u, 108u, 111u, 119u, 115u, 32u, 73u, 54u, 52u, 32u, 111u, 114u, 32u, 100u, 105u, 118u, 105u, 100u, 101u, 115u, 32u, 98u, 121u, 32u, 122u, 101u, 114u, 111u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s346[6] = { 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s347[83] = { 58u, 32u, 116u, 104u, 101u, 32u, 115u, 109u, 97u, 108u, 108u, 101u, 115u, 116u, 32u, 73u, 54u, 52u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 119u, 114u, 105u, 116u, 116u, 101u, 110u, 32u, 97u, 115u, 32u, 97u, 32u, 99u, 111u, 110u, 115u, 116u, 97u, 110u, 116u, 59u, 32u, 103u, 105u, 118u, 101u, 32u, 105u, 116u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s348[40] = { 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
+static const uint32_t m9s349[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s350[44] = { 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 98u, 101u, 108u, 111u, 110u, 103u, 115u, 32u, 97u, 116u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 108u, 101u, 118u, 101u, 108u, 58u, 32u };
+static const uint32_t m9s351[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s352[8] = { 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s353[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s354[8] = { 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s355[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s356[58] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 104u, 111u, 108u, 100u, 115u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s357[8] = { 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s358[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s359[4] = { 32u, 105u, 115u, 32u };
+static const uint32_t m9s360[20] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u, 116u, 104u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s361[47] = { 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 104u, 97u, 115u, 32u, 111u, 110u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 116u, 121u, 112u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s362[16] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 116u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s363[78] = { 32u, 99u, 97u, 110u, 32u, 111u, 110u, 108u, 121u, 32u, 98u, 101u, 32u, 105u, 110u, 100u, 101u, 120u, 101u, 100u, 44u, 32u, 109u, 101u, 97u, 115u, 117u, 114u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 32u, 76u, 69u, 78u, 44u, 32u, 103u, 111u, 110u, 101u, 32u, 111u, 118u, 101u, 114u, 32u, 98u, 121u, 32u, 70u, 79u, 82u, 32u, 73u, 78u, 44u, 32u, 111u, 114u, 32u, 108u, 101u, 110u, 116u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u };
+static const uint32_t m9s364[22] = { 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s365[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s366[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s367[12] = { 58u, 32u, 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s368[43] = { 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 112u, 97u, 115u, 115u, 101u, 100u, 32u, 116u, 111u, 32u, 97u, 32u, 86u, 65u, 82u, 32u, 111u, 114u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
+static const uint32_t m9s369[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s370[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s371[18] = { 58u, 32u, 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 116u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s372[48] = { 32u, 99u, 97u, 110u, 32u, 98u, 101u, 32u, 108u, 101u, 110u, 116u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s373[17] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s374[14] = { 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s375[82] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 109u, 97u, 121u, 32u, 98u, 101u, 32u, 114u, 101u, 97u, 100u, 45u, 111u, 110u, 108u, 121u, 32u, 115u, 116u, 111u, 114u, 97u, 103u, 101u, 32u, 40u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 44u, 32u, 97u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 111u, 114u, 32u, 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 41u };
+static const uint32_t m9s376[16] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s377[13] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s378[17] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s379[16] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s380[10] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
 static const uint32_t m9s381[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
 static const uint32_t m9s382[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s383[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s384[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s385[2] = { 58u, 32u };
-static const uint32_t m9s386[46] = { 32u, 99u, 97u, 110u, 32u, 98u, 101u, 32u, 108u, 101u, 110u, 116u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s387[3] = { 70u, 51u, 50u };
-static const uint32_t m9s388[3] = { 70u, 54u, 52u };
-static const uint32_t m9s389[3] = { 73u, 54u, 52u };
-static const uint32_t m9s390[3] = { 73u, 54u, 52u };
-static const uint32_t m9s391[3] = { 67u, 72u, 82u };
-static const uint32_t m9s392[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s393[3] = { 65u, 68u, 82u };
-static const uint32_t m9s394[37] = { 65u, 68u, 82u, 32u, 101u, 120u, 105u, 115u, 116u, 115u, 32u, 111u, 110u, 108u, 121u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 85u, 78u, 83u, 65u, 70u, 69u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 115u };
-static const uint32_t m9s395[5] = { 67u, 46u, 80u, 116u, 114u };
-static const uint32_t m9s396[3] = { 70u, 51u, 50u };
-static const uint32_t m9s397[3] = { 70u, 54u, 52u };
-static const uint32_t m9s398[3] = { 76u, 69u, 78u };
-static const uint32_t m9s399[41] = { 76u, 69u, 78u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 110u, 32u, 97u, 120u, 105u, 115u, 32u, 111u, 110u, 108u, 121u, 32u, 111u, 110u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 44u, 32u, 110u, 111u, 116u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s400[33] = { 76u, 69u, 78u, 32u, 97u, 120u, 105u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s401[5] = { 97u, 120u, 105u, 115u, 32u };
-static const uint32_t m9s402[6] = { 32u, 111u, 102u, 32u, 97u, 32u };
-static const uint32_t m9s403[15] = { 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 105u, 115u, 116u };
-static const uint32_t m9s404[3] = { 73u, 54u, 52u };
-static const uint32_t m9s405[39] = { 76u, 69u, 78u, 32u, 111u, 102u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 97u, 120u, 105u, 115u, 58u, 32u, 76u, 69u, 78u, 32u, 40u, 103u, 44u, 32u, 48u, 41u };
-static const uint32_t m9s406[3] = { 73u, 54u, 52u };
-static const uint32_t m9s407[3] = { 79u, 82u, 68u };
+static const uint32_t m9s383[16] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s384[10] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s385[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
+static const uint32_t m9s386[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s387[3] = { 79u, 87u, 78u };
+static const uint32_t m9s388[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
+static const uint32_t m9s389[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s390[16] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s391[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
+static const uint32_t m9s392[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s393[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s394[17] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s395[16] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s396[14] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 104u, 111u, 108u, 100u, 115u, 32u };
+static const uint32_t m9s397[1] = { 44u };
+static const uint32_t m9s398[10] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s399[13] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s400[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
+static const uint32_t m9s401[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s402[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s403[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s404[2] = { 58u, 32u };
+static const uint32_t m9s405[46] = { 32u, 99u, 97u, 110u, 32u, 98u, 101u, 32u, 108u, 101u, 110u, 116u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s406[3] = { 70u, 51u, 50u };
+static const uint32_t m9s407[3] = { 70u, 54u, 52u };
 static const uint32_t m9s408[3] = { 73u, 54u, 52u };
-static const uint32_t m9s409[4] = { 78u, 65u, 77u, 69u };
-static const uint32_t m9s410[36] = { 78u, 65u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 111u, 114u, 32u, 97u, 32u, 99u, 97u, 115u, 101u, 32u };
-static const uint32_t m9s411[12] = { 114u, 101u, 99u, 111u, 114u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s412[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s413[4] = { 86u, 73u, 69u, 87u };
-static const uint32_t m9s414[43] = { 86u, 73u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 103u, 114u, 105u, 100u, 32u, 97u, 110u, 100u, 32u, 111u, 110u, 101u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 112u, 101u, 114u, 32u, 97u, 120u, 105u, 115u };
-static const uint32_t m9s415[23] = { 86u, 73u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s416[2] = { 97u, 32u };
-static const uint32_t m9s417[7] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u };
-static const uint32_t m9s418[21] = { 32u, 97u, 120u, 105u, 115u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s419[5] = { 60u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s420[36] = { 97u, 32u, 86u, 73u, 69u, 87u, 32u, 97u, 120u, 105u, 115u, 32u, 105u, 115u, 32u, 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 111u, 114u, 32u, 65u, 76u, 76u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s421[59] = { 97u, 32u, 86u, 73u, 69u, 87u, 32u, 116u, 104u, 97u, 116u, 32u, 107u, 101u, 101u, 112u, 115u, 32u, 110u, 111u, 32u, 97u, 120u, 105u, 115u, 32u, 105u, 115u, 32u, 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 58u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 115u };
-static const uint32_t m9s422[3] = { 77u, 65u, 88u };
-static const uint32_t m9s423[6] = { 83u, 105u, 122u, 101u, 79u, 102u };
-static const uint32_t m9s424[3] = { 73u, 54u, 52u };
-static const uint32_t m9s425[8] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u };
-static const uint32_t m9s426[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s427[28] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s428[3] = { 73u, 54u, 52u };
-static const uint32_t m9s429[15] = { 70u, 54u, 52u, 46u, 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s430[15] = { 70u, 51u, 50u, 46u, 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s431[13] = { 70u, 54u, 52u, 46u, 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s432[13] = { 70u, 51u, 50u, 46u, 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s433[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s434[2] = { 67u, 46u };
-static const uint32_t m9s435[49] = { 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 115u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u };
-static const uint32_t m9s436[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
-static const uint32_t m9s437[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s438[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s439[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s440[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
-static const uint32_t m9s441[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s442[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s443[14] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 49u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s444[17] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 116u, 32u };
-static const uint32_t m9s445[51] = { 32u, 116u, 111u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 59u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 111u, 110u, 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s446[39] = { 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 101u, 120u, 116u, 101u, 110u, 100u, 101u, 100u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 105u, 115u };
-static const uint32_t m9s447[50] = { 32u, 110u, 111u, 116u, 32u, 98u, 117u, 105u, 108u, 116u, 59u, 32u, 103u, 105u, 118u, 101u, 32u, 105u, 116u, 115u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 32u, 111u, 110u, 101u, 32u, 98u, 121u, 32u, 111u, 110u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
-static const uint32_t m9s448[6] = { 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s449[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s450[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 103u, 105u, 118u, 101u, 32u };
-static const uint32_t m9s451[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s452[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s453[19] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 58u, 32u };
-static const uint32_t m9s454[17] = { 32u, 45u, 45u, 32u, 100u, 105u, 100u, 32u, 121u, 111u, 117u, 32u, 109u, 101u, 97u, 110u, 32u };
-static const uint32_t m9s455[1] = { 63u };
-static const uint32_t m9s456[19] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 58u, 32u };
-static const uint32_t m9s457[3] = { 65u, 76u, 76u };
-static const uint32_t m9s458[5] = { 60u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s459[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s460[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s461[30] = { 105u, 110u, 100u, 101u, 120u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s462[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s463[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s464[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s465[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s466[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s467[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s468[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s469[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s470[3] = { 65u, 78u, 68u };
-static const uint32_t m9s471[2] = { 79u, 82u };
-static const uint32_t m9s472[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s473[26] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s474[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s475[26] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s476[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s477[1] = { 61u };
-static const uint32_t m9s478[1] = { 35u };
-static const uint32_t m9s479[1] = { 60u };
-static const uint32_t m9s480[2] = { 60u, 61u };
-static const uint32_t m9s481[1] = { 62u };
-static const uint32_t m9s482[2] = { 62u, 61u };
-static const uint32_t m9s483[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s484[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s485[38] = { 99u, 111u, 109u, 112u, 97u, 114u, 105u, 110u, 103u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 116u, 104u, 97u, 116u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s486[4] = { 110u, 111u, 32u, 39u };
-static const uint32_t m9s487[37] = { 39u, 32u, 119u, 105u, 116u, 104u, 32u, 78u, 97u, 78u, 58u, 32u, 110u, 111u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 105u, 115u, 111u, 110u, 32u, 119u, 105u, 116u, 104u, 32u, 78u, 97u, 78u, 32u, 105u, 115u };
-static const uint32_t m9s488[60] = { 32u, 101u, 118u, 101u, 114u, 32u, 84u, 82u, 85u, 69u, 44u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 32u, 39u, 35u, 39u, 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 97u, 108u, 119u, 97u, 121u, 115u, 32u, 105u, 115u, 59u, 32u, 77u, 97u, 116u, 104u, 46u, 73u, 115u, 78u, 97u, 78u, 32u, 40u, 120u, 41u, 32u, 97u, 115u, 107u, 115u };
-static const uint32_t m9s489[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s490[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 32u };
-static const uint32_t m9s491[6] = { 32u, 119u, 105u, 116u, 104u, 32u };
-static const uint32_t m9s492[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s493[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s494[4] = { 110u, 111u, 32u, 39u };
-static const uint32_t m9s495[30] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 115u, 58u, 32u, 84u, 101u, 120u, 116u, 46u, 69u, 113u };
-static const uint32_t m9s496[53] = { 32u, 40u, 97u, 44u, 32u, 98u, 41u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 115u, 32u, 101u, 113u, 117u, 97u, 108u, 105u, 116u, 121u, 44u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 111u, 114u, 100u, 101u, 114u, 115u, 32u, 116u, 104u, 101u, 109u };
-static const uint32_t m9s497[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s498[4] = { 110u, 111u, 32u, 39u };
-static const uint32_t m9s499[29] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
-static const uint32_t m9s500[43] = { 58u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 115u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 115u, 44u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 115u, 44u };
-static const uint32_t m9s501[52] = { 32u, 98u, 111u, 111u, 108u, 101u, 97u, 110u, 115u, 44u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 97u, 110u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s502[4] = { 110u, 111u, 32u, 39u };
-static const uint32_t m9s503[29] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
-static const uint32_t m9s504[43] = { 58u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 115u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 115u, 44u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 115u, 44u };
-static const uint32_t m9s505[52] = { 32u, 98u, 111u, 111u, 108u, 101u, 97u, 110u, 115u, 44u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 97u, 110u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s506[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s507[1] = { 43u };
-static const uint32_t m9s508[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s509[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 101u, 32u };
-static const uint32_t m9s510[14] = { 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s511[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s512[33] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 101u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 119u, 105u, 116u, 104u, 32u };
-static const uint32_t m9s513[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s514[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s515[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s516[59] = { 66u, 89u, 84u, 69u, 32u, 105u, 115u, 32u, 97u, 32u, 114u, 97u, 119u, 32u, 111u, 99u, 116u, 101u, 116u, 58u, 32u, 110u, 111u, 32u, 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 40u, 99u, 111u, 110u, 118u, 101u, 114u, 116u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s517[29] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s518[29] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s519[25] = { 110u, 111u, 32u, 105u, 109u, 112u, 108u, 105u, 99u, 105u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 115u, 58u, 32u };
-static const uint32_t m9s520[1] = { 32u };
-static const uint32_t m9s521[1] = { 32u };
-static const uint32_t m9s522[1] = { 47u };
-static const uint32_t m9s523[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s524[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s525[39] = { 39u, 47u, 39u, 32u, 105u, 115u, 32u, 102u, 108u, 111u, 97u, 116u, 32u, 100u, 105u, 118u, 105u, 115u, 105u, 111u, 110u, 59u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 32u, 117u, 115u, 101u, 32u, 68u, 73u, 86u };
-static const uint32_t m9s526[3] = { 68u, 73u, 86u };
-static const uint32_t m9s527[3] = { 77u, 79u, 68u };
-static const uint32_t m9s528[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s529[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s530[33] = { 32u, 105u, 115u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 100u, 105u, 118u, 105u, 115u, 105u, 111u, 110u, 59u, 32u, 102u, 108u, 111u, 97u, 116u, 115u, 32u, 117u, 115u, 101u, 32u };
-static const uint32_t m9s531[3] = { 39u, 47u, 39u };
-static const uint32_t m9s532[2] = { 43u, 37u };
-static const uint32_t m9s533[2] = { 45u, 37u };
-static const uint32_t m9s534[2] = { 42u, 37u };
-static const uint32_t m9s535[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s536[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s537[35] = { 119u, 114u, 97u, 112u, 112u, 105u, 110u, 103u, 32u, 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 105u, 115u, 32u, 102u, 111u, 114u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u };
-static const uint32_t m9s538[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s539[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s540[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s541[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s542[3] = { 65u, 76u, 76u };
-static const uint32_t m9s543[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s544[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u, 58u, 32u };
-static const uint32_t m9s545[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u, 58u, 32u };
-static const uint32_t m9s546[1] = { 46u };
-static const uint32_t m9s547[4] = { 32u, 45u, 45u, 32u };
-static const uint32_t m9s548[22] = { 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 115u, 32u, 110u, 111u, 32u, 115u, 117u, 99u, 104u, 32u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s549[3] = { 79u, 87u, 78u };
-static const uint32_t m9s550[74] = { 78u, 69u, 87u, 32u, 40u, 79u, 87u, 78u, 44u, 32u, 84u, 41u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 59u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 114u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s551[3] = { 111u, 119u, 110u };
-static const uint32_t m9s552[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s553[4] = { 112u, 111u, 111u, 108u };
-static const uint32_t m9s554[36] = { 78u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 97u, 109u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s555[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s556[38] = { 78u, 69u, 87u, 39u, 115u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s557[4] = { 112u, 111u, 111u, 108u };
-static const uint32_t m9s558[36] = { 78u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 97u, 109u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s559[5] = { 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s560[5] = { 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s561[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s562[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s563[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s564[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s565[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s566[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s567[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s568[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
-static const uint32_t m9s569[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s570[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s571[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s572[34] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 99u, 111u, 110u, 115u, 117u, 109u, 101u, 115u, 32u, 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 59u, 32u };
-static const uint32_t m9s573[22] = { 32u, 105u, 115u, 32u, 97u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s574[32] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 59u, 32u };
-static const uint32_t m9s575[29] = { 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s576[18] = { 99u, 111u, 110u, 115u, 117u, 109u, 101u, 100u, 32u, 98u, 121u, 32u, 83u, 72u, 65u, 82u, 69u, 68u };
-static const uint32_t m9s577[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s578[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
-static const uint32_t m9s579[4] = { 112u, 111u, 111u, 108u };
-static const uint32_t m9s580[30] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s581[30] = { 32u, 105u, 110u, 32u, 97u, 32u, 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
-static const uint32_t m9s582[5] = { 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s583[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s584[39] = { 78u, 69u, 87u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 116u, 104u, 101u, 110u, 32u, 116u, 104u, 101u, 32u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s585[35] = { 78u, 69u, 87u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s586[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s587[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s588[36] = { 71u, 82u, 73u, 68u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s589[40] = { 71u, 82u, 73u, 68u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 116u, 32u, 109u, 111u, 115u, 116u, 32u, 52u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s590[88] = { 71u, 82u, 73u, 68u, 32u, 108u, 97u, 121u, 115u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 78u, 65u, 77u, 69u, 68u, 32u, 98u, 121u, 32u, 97u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u, 58u, 32u, 83u, 76u, 73u, 67u, 69u, 32u, 105u, 116u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s591[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s592[24] = { 71u, 82u, 73u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s593[36] = { 83u, 76u, 73u, 67u, 69u, 32u, 115u, 116u, 97u, 114u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s594[37] = { 83u, 76u, 73u, 67u, 69u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s595[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s596[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s597[132] = { 97u, 32u, 83u, 76u, 73u, 67u, 69u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 110u, 111u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 104u, 111u, 108u, 100u, 115u, 58u, 32u, 116u, 104u, 101u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 105u, 115u, 32u, 103u, 111u, 110u, 101u, 32u, 97u, 116u, 32u, 116u, 104u, 101u, 32u, 101u, 110u, 100u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u, 32u, 45u, 45u, 32u, 110u, 97u, 109u, 101u, 32u, 105u, 116u, 32u, 102u, 105u, 114u, 115u, 116u, 58u, 32u, 97u, 32u, 58u, 61u, 32u, 70u, 32u, 40u, 46u, 46u, 46u, 41u, 32u, 59u, 32u, 83u, 76u, 73u, 67u, 69u, 32u, 40u, 97u, 44u, 32u, 46u, 46u, 46u, 41u };
-static const uint32_t m9s598[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s599[34] = { 83u, 76u, 73u, 67u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 111u, 114u, 32u, 97u, 114u, 114u, 97u, 121u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s600[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s601[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
-static const uint32_t m9s602[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s603[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
-static const uint32_t m9s604[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s605[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
-static const uint32_t m9s606[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s607[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
-static const uint32_t m9s608[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s609[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
-static const uint32_t m9s610[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s611[3] = { 78u, 79u, 84u };
-static const uint32_t m9s612[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s613[30] = { 78u, 79u, 84u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s614[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s615[6] = { 117u, 110u, 97u, 114u, 121u, 32u };
-static const uint32_t m9s616[30] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s617[36] = { 97u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 58u, 32u };
-static const uint32_t m9s618[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s619[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s620[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s621[1] = { 46u };
-static const uint32_t m9s622[4] = { 32u, 45u, 45u, 32u };
-static const uint32_t m9s623[22] = { 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 115u, 32u, 110u, 111u, 32u, 115u, 117u, 99u, 104u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s624[37] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 32u, 102u, 114u, 111u, 109u, 32u, 97u, 110u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
-static const uint32_t m9s625[60] = { 58u, 32u, 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 44u, 32u, 97u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 111u, 114u, 32u, 103u, 114u, 105u, 100u };
-static const uint32_t m9s626[87] = { 115u, 101u, 108u, 101u, 99u, 116u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 58u, 32u, 97u, 115u, 115u, 105u, 103u, 110u, 32u, 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s627[3] = { 83u, 84u, 82u };
-static const uint32_t m9s628[35] = { 32u, 105u, 115u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s629[45] = { 32u, 45u, 45u, 32u, 116u, 97u, 107u, 101u, 32u, 105u, 116u, 32u, 97u, 115u, 32u, 86u, 65u, 82u, 44u, 32u, 115u, 111u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 32u, 99u, 111u, 109u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 105u, 116u };
-static const uint32_t m9s630[33] = { 32u, 105u, 115u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s631[14] = { 86u, 65u, 82u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s632[16] = { 32u, 99u, 97u, 114u, 114u, 105u, 101u, 115u, 32u, 110u, 111u, 32u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s633[20] = { 32u, 105u, 115u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
-static const uint32_t m9s634[21] = { 32u, 105u, 115u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
-static const uint32_t m9s635[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 115u, 32u };
-static const uint32_t m9s636[18] = { 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 40u, 115u, 41u, 44u, 32u, 103u, 111u, 116u, 32u };
-static const uint32_t m9s637[1] = { 46u };
-static const uint32_t m9s638[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
-static const uint32_t m9s639[6] = { 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s640[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s641[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 103u, 105u, 118u, 101u, 32u };
-static const uint32_t m9s642[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s643[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s644[5] = { 67u, 46u, 73u, 110u, 116u };
-static const uint32_t m9s645[8] = { 67u, 46u, 83u, 83u, 105u, 122u, 101u, 84u };
-static const uint32_t m9s646[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s647[2] = { 73u, 56u };
-static const uint32_t m9s648[3] = { 73u, 49u, 54u };
-static const uint32_t m9s649[3] = { 73u, 51u, 50u };
-static const uint32_t m9s650[2] = { 85u, 56u };
-static const uint32_t m9s651[3] = { 85u, 49u, 54u };
-static const uint32_t m9s652[3] = { 85u, 51u, 50u };
-static const uint32_t m9s653[1] = { 46u };
-static const uint32_t m9s654[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s655[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s656[11] = { 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s657[39] = { 32u, 105u, 115u, 32u, 107u, 101u, 112u, 116u, 32u, 98u, 121u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 101u, 32u, 45u, 45u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 75u, 69u, 80u, 84u, 32u };
-static const uint32_t m9s658[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s659[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s660[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s661[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s662[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s663[17] = { 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s664[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s665[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s666[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
-static const uint32_t m9s667[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s668[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s669[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s670[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s671[39] = { 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 40u, 86u, 65u, 82u, 47u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 41u };
-static const uint32_t m9s672[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s673[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s674[34] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 108u, 101u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s675[32] = { 32u, 97u, 115u, 32u, 86u, 65u, 82u, 32u, 40u, 115u, 104u, 97u, 114u, 101u, 100u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s676[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s677[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s678[14] = { 58u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s679[57] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 107u, 110u, 111u, 119u, 110u, 32u, 104u, 101u, 114u, 101u, 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 101u, 32u, 109u, 97u, 121u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 110u, 32u, 105u, 116u, 32u, 45u, 45u, 32u };
-static const uint32_t m9s680[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s681[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s682[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s683[23] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 111u, 118u, 101u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s684[32] = { 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s685[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s686[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s687[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 111u, 118u, 101u, 32u };
-static const uint32_t m9s688[57] = { 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 45u, 45u, 32u, 105u, 116u, 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s689[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s690[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s691[16] = { 58u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 119u, 110u, 115u, 32u };
-static const uint32_t m9s692[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s693[31] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s694[31] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s695[10] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s696[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s697[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s698[31] = { 58u, 32u, 97u, 32u, 75u, 69u, 80u, 84u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 116u, 97u, 107u, 101u, 32u };
-static const uint32_t m9s699[79] = { 32u, 45u, 45u, 32u, 105u, 116u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u, 59u, 32u, 103u, 105u, 118u, 101u, 32u, 105u, 116u, 32u, 115u, 116u, 111u, 114u, 97u, 103u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 111u, 117u, 116u, 108u, 105u, 118u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 58u, 32u };
-static const uint32_t m9s700[73] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 84u, 101u, 120u, 116u, 46u, 75u, 101u, 101u, 112u, 32u, 40u, 112u, 111u, 111u, 108u, 44u, 32u, 115u, 41u, 44u, 32u, 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 78u, 69u, 87u, 32u, 40u, 112u, 111u, 111u, 108u, 44u, 32u, 84u, 41u };
-static const uint32_t m9s701[9] = { 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
-static const uint32_t m9s702[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s703[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s704[7] = { 117u, 115u, 101u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s705[14] = { 32u, 97u, 102u, 116u, 101u, 114u, 32u, 105u, 116u, 32u, 119u, 97u, 115u, 32u };
-static const uint32_t m9s706[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s707[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s708[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s709[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s710[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s711[7] = { 117u, 115u, 101u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s712[44] = { 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 110u, 101u, 120u, 116u, 32u, 116u, 117u, 114u, 110u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 108u, 111u, 111u, 112u, 44u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 105u, 116u, 32u, 119u, 97u, 115u, 32u };
-static const uint32_t m9s713[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s714[37] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s715[50] = { 58u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u, 102u, 114u, 101u, 101u, 115u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 111u, 119u, 110u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 44u, 32u, 97u, 110u, 100u, 32u };
-static const uint32_t m9s716[48] = { 111u, 119u, 110u, 101u, 114u, 115u, 104u, 105u, 112u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 102u, 111u, 108u, 108u, 111u, 119u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s717[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u };
-static const uint32_t m9s718[63] = { 58u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u, 32u, 104u, 101u, 114u, 101u, 32u, 103u, 105u, 118u, 101u, 115u, 32u, 105u, 116u, 32u, 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 45u, 45u, 32u, 111u, 110u, 108u, 121u, 32u, 78u, 69u, 87u, 32u, 40u, 79u, 87u, 78u, 44u, 32u, 84u, 41u, 44u, 32u };
-static const uint32_t m9s719[47] = { 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 110u, 97u, 109u, 101u, 32u, 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 32u, 111u, 114u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 100u, 111u, 101u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s720[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u };
-static const uint32_t m9s721[51] = { 58u, 32u, 97u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 121u, 111u, 117u, 114u, 115u, 32u, 116u, 111u, 32u, 102u, 114u, 101u, 101u, 32u, 40u, 116u, 97u, 107u, 101u, 32u, 79u, 87u, 78u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s722[15] = { 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 111u, 119u, 110u, 115u, 32u };
-static const uint32_t m9s723[47] = { 59u, 32u, 105u, 116u, 32u, 105u, 115u, 32u, 102u, 114u, 101u, 101u, 100u, 32u, 97u, 116u, 32u, 101u, 120u, 105u, 116u, 44u, 32u, 110u, 111u, 116u, 32u, 98u, 121u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s724[14] = { 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 119u, 110u, 115u, 32u };
-static const uint32_t m9s725[42] = { 59u, 32u, 102u, 114u, 101u, 101u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 110u, 111u, 116u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s726[8] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u, 100u };
-static const uint32_t m9s727[8] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u, 100u };
-static const uint32_t m9s728[34] = { 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 32u, 100u, 105u, 102u, 102u, 101u, 114u, 115u, 32u, 102u, 114u, 111u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 58u };
-static const uint32_t m9s729[19] = { 32u, 32u, 32u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 32u, 32u, 32u, 32u, 32u };
-static const uint32_t m9s730[19] = { 32u, 32u, 32u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u, 32u };
-static const uint32_t m9s731[54] = { 109u, 111u, 100u, 117u, 108u, 101u, 45u, 108u, 101u, 118u, 101u, 108u, 32u, 115u, 116u, 97u, 116u, 101u, 32u, 114u, 101u, 113u, 117u, 105u, 114u, 101u, 115u, 32u, 83u, 84u, 65u, 84u, 69u, 70u, 85u, 76u, 32u, 111u, 110u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s732[46] = { 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 32u, 98u, 117u, 116u, 32u, 110u, 111u, 116u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 101u, 100u };
-static const uint32_t m9s733[45] = { 111u, 112u, 97u, 113u, 117u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 102u, 105u, 110u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s734[1] = { 67u };
-static const uint32_t m9s735[51] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 67u, 32u, 110u, 97u, 109u, 101u, 32u, 40u, 61u, 32u, 34u, 99u, 95u, 110u, 97u, 109u, 101u, 34u, 41u };
-static const uint32_t m9s736[47] = { 110u, 97u, 116u, 105u, 118u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 105u, 110u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 59u, 32u, 117u, 115u, 101u, 32u, 67u, 46u, 42u, 32u, 116u, 121u, 112u, 101u, 115u };
-static const uint32_t m9s737[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
-static const uint32_t m9s738[9] = { 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u };
-static const uint32_t m9s739[54] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 91u, 83u, 69u, 82u, 73u, 65u, 76u, 93u, 32u, 111u, 114u, 32u, 91u, 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u, 93u };
-static const uint32_t m9s740[44] = { 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u, 67u, 65u, 83u, 69u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 111u, 116u, 97u, 108u, 32u, 40u, 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s741[1] = { 41u };
-static const uint32_t m9s742[2] = { 32u, 40u };
-static const uint32_t m9s743[7] = { 44u, 32u, 108u, 105u, 110u, 101u, 32u };
-static const uint32_t m9s744[1] = { 41u };
-static const uint32_t m9s745[2] = { 119u, 58u };
-static const uint32_t m9s746[1] = { 45u };
-static const uint32_t m9s747[4] = { 98u, 117u, 115u, 121u };
-static const uint32_t m9s748[4] = { 98u, 117u, 115u, 121u };
-static const uint32_t m9s749[1] = { 45u };
-static const uint32_t m9s750[3] = { 78u, 69u, 87u };
-static const uint32_t m9s751[7] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u };
-static const uint32_t m9s752[1] = { 32u };
-static const uint32_t m9s753[8] = { 32u, 119u, 114u, 105u, 116u, 101u, 115u, 32u };
-static const uint32_t m9s754[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s755[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s756[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s757[8] = { 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u };
-static const uint32_t m9s758[8] = { 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u };
-static const uint32_t m9s759[55] = { 97u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 44u, 32u, 91u, 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u, 93u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u, 44u, 32u, 110u, 111u, 116u, 32u, 91u };
-static const uint32_t m9s760[1] = { 93u };
-static const uint32_t m9s761[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
-static const uint32_t m9s762[54] = { 41u, 58u, 32u, 116u, 104u, 101u, 32u, 116u, 97u, 114u, 103u, 101u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 111u, 102u, 32u, 116u, 104u, 105u, 115u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s763[53] = { 39u, 115u, 32u, 45u, 45u, 32u, 115u, 116u, 97u, 114u, 116u, 32u, 105u, 116u, 32u, 102u, 114u, 111u, 109u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 104u, 101u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u };
-static const uint32_t m9s764[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s765[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s766[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
-static const uint32_t m9s767[15] = { 41u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
-static const uint32_t m9s768[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s769[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s770[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
-static const uint32_t m9s771[15] = { 41u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 104u, 97u, 110u, 100u, 32u };
-static const uint32_t m9s772[71] = { 32u, 116u, 111u, 32u, 97u, 32u, 116u, 104u, 114u, 101u, 97u, 100u, 32u, 45u, 45u, 32u, 105u, 116u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 116u, 32u, 119u, 105u, 116u, 104u, 32u, 79u, 87u, 78u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s773[28] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 84u, 72u, 82u, 69u, 65u, 68u, 32u, 114u, 117u, 110u, 110u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s774[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
-static const uint32_t m9s775[25] = { 41u, 58u, 32u, 98u, 111u, 116u, 104u, 32u, 116u, 104u, 114u, 101u, 97u, 100u, 115u, 32u, 104u, 111u, 108u, 100u, 32u, 116u, 104u, 101u, 32u };
-static const uint32_t m9s776[186] = { 32u, 104u, 97u, 110u, 100u, 101u, 100u, 32u, 111u, 118u, 101u, 114u, 44u, 32u, 97u, 110u, 100u, 32u, 105u, 116u, 32u, 105u, 115u, 32u, 110u, 101u, 105u, 116u, 104u, 101u, 114u, 32u, 97u, 32u, 77u, 79u, 78u, 73u, 84u, 79u, 82u, 32u, 110u, 111u, 114u, 32u, 97u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 109u, 97u, 114u, 107u, 101u, 100u, 32u, 91u, 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u, 93u, 32u, 45u, 45u, 32u, 109u, 97u, 114u, 107u, 32u, 105u, 116u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 46u, 46u, 46u, 32u, 69u, 78u, 68u, 32u, 91u, 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u, 93u, 32u, 105u, 102u, 32u, 116u, 104u, 101u, 32u, 116u, 104u, 114u, 101u, 97u, 100u, 115u, 39u, 32u, 119u, 114u, 105u, 116u, 101u, 115u, 32u, 116u, 111u, 32u, 105u, 116u, 32u, 97u, 114u, 101u, 32u, 100u, 105u, 115u, 106u, 111u, 105u, 110u, 116u, 44u, 32u, 111u, 114u, 32u, 109u, 111u, 118u, 101u, 32u, 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u };
-static const uint32_t m9s777[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s778[27] = { 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 114u, 101u, 115u, 117u, 108u, 116u, 32u, 100u, 105u, 115u, 99u, 97u, 114u, 100u, 101u, 100u, 58u, 32u };
-static const uint32_t m9s779[9] = { 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u };
-static const uint32_t m9s780[5] = { 82u, 65u, 73u, 83u, 69u };
-static const uint32_t m9s781[5] = { 82u, 65u, 73u, 83u, 69u };
-static const uint32_t m9s782[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s783[54] = { 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 111u, 110u, 116u, 114u, 111u, 108u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 101u, 110u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 70u, 79u, 82u, 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
-static const uint32_t m9s784[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s785[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s786[54] = { 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 111u, 110u, 116u, 114u, 111u, 108u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 101u, 110u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 70u, 79u, 82u, 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
-static const uint32_t m9s787[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s788[73] = { 69u, 88u, 73u, 84u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 108u, 111u, 111u, 112u, 58u, 32u, 69u, 88u, 73u, 84u, 32u, 108u, 101u, 97u, 118u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 105u, 110u, 110u, 101u, 114u, 109u, 111u, 115u, 116u, 32u, 76u, 79u, 79u, 80u, 44u, 32u, 87u, 72u, 73u, 76u, 69u, 32u, 111u, 114u, 32u, 70u, 79u, 82u, 32u, 40u, 112u, 97u, 114u, 32u, 53u, 41u };
-static const uint32_t m9s789[113] = { 69u, 88u, 73u, 84u, 32u, 97u, 99u, 114u, 111u, 115u, 115u, 32u, 97u, 32u, 70u, 73u, 78u, 65u, 76u, 76u, 89u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 115u, 107u, 105u, 112u, 32u, 105u, 116u, 115u, 32u, 99u, 108u, 101u, 97u, 110u, 117u, 112u, 58u, 32u, 108u, 101u, 97u, 118u, 101u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 116u, 101u, 99u, 116u, 101u, 100u, 32u, 98u, 108u, 111u, 99u, 107u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 111u, 114u, 32u, 109u, 111u, 118u, 101u, 32u, 116u, 104u, 101u, 32u, 108u, 111u, 111u, 112u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 105u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 53u, 41u };
-static const uint32_t m9s790[88] = { 111u, 110u, 101u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 114u, 32u, 97u, 114u, 109u, 32u, 98u, 105u, 110u, 100u, 115u, 32u, 97u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 32u, 111u, 110u, 108u, 121u, 32u, 119u, 104u, 101u, 110u, 32u, 101u, 118u, 101u, 114u, 121u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 105u, 116u, 32u, 110u, 97u, 109u, 101u, 115u, 32u, 104u, 97u, 115u, 32u, 116u, 104u, 101u, 32u, 115u, 97u, 109u, 101u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 58u, 32u };
-static const uint32_t m9s791[1] = { 32u };
-static const uint32_t m9s792[5] = { 32u, 97u, 110u, 100u, 32u };
-static const uint32_t m9s793[1] = { 32u };
-static const uint32_t m9s794[57] = { 32u, 100u, 105u, 102u, 102u, 101u, 114u, 32u, 45u, 45u, 32u, 103u, 105u, 118u, 101u, 32u, 101u, 97u, 99u, 104u, 32u, 105u, 116u, 115u, 32u, 111u, 119u, 110u, 32u, 97u, 114u, 109u, 44u, 32u, 111u, 114u, 32u, 98u, 105u, 110u, 100u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u, 32u, 40u, 112u, 97u, 114u, 32u, 53u, 41u };
-static const uint32_t m9s795[3] = { 79u, 87u, 78u };
-static const uint32_t m9s796[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s797[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s798[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s799[22] = { 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 112u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s800[47] = { 44u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 39u, 115u, 44u, 32u, 109u, 97u, 121u, 32u, 100u, 105u, 101u, 32u, 98u, 101u, 102u, 111u, 114u, 101u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s801[126] = { 32u, 105u, 115u, 32u, 114u, 101u, 97u, 100u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u, 32u, 45u, 45u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 116u, 32u, 105u, 110u, 32u, 97u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 86u, 65u, 82u, 32u, 109u, 112u, 111u, 111u, 108u, 32u, 58u, 32u, 80u, 79u, 79u, 76u, 32u, 59u, 32u, 78u, 69u, 87u, 32u, 40u, 109u, 112u, 111u, 111u, 108u, 44u, 32u, 84u, 41u, 41u, 44u, 32u, 111u, 114u, 32u, 99u, 111u, 112u, 121u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 58u, 32u, 84u, 101u, 120u, 116u, 46u, 75u, 101u, 101u, 112u, 32u, 40u, 109u, 112u, 111u, 111u, 108u, 44u, 32u, 115u, 41u };
-static const uint32_t m9s802[3] = { 52u, 46u, 51u };
-static const uint32_t m9s803[3] = { 50u, 46u, 51u };
-static const uint32_t m9s804[62] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s805[6] = { 32u, 40u, 112u, 97u, 114u, 32u };
-static const uint32_t m9s806[1] = { 41u };
-static const uint32_t m9s807[108] = { 32u, 45u, 45u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 116u, 32u, 105u, 110u, 32u, 97u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 86u, 65u, 82u, 32u, 109u, 112u, 111u, 111u, 108u, 32u, 58u, 32u, 80u, 79u, 79u, 76u, 32u, 59u, 32u, 78u, 69u, 87u, 32u, 40u, 109u, 112u, 111u, 111u, 108u, 44u, 32u, 84u, 41u, 41u, 44u, 32u, 111u, 114u, 32u, 99u, 111u, 112u, 121u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 58u, 32u, 84u, 101u, 120u, 116u, 46u, 75u, 101u, 101u, 112u, 32u, 40u, 109u, 112u, 111u, 111u, 108u, 44u, 32u, 115u, 41u };
-static const uint32_t m9s808[51] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
-static const uint32_t m9s809[25] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 111u, 117u, 116u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 116u, 32u, 40u, 112u, 97u, 114u, 32u };
-static const uint32_t m9s810[1] = { 41u };
-static const uint32_t m9s811[44] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 104u, 101u, 108u, 100u, 32u, 98u, 121u, 32u };
-static const uint32_t m9s812[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s813[44] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 104u, 101u, 108u, 100u, 32u, 98u, 121u, 32u };
-static const uint32_t m9s814[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s815[51] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
-static const uint32_t m9s816[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s817[16] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u };
-static const uint32_t m9s818[18] = { 32u, 98u, 117u, 116u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 100u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s819[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s820[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s821[36] = { 116u, 104u, 101u, 32u, 114u, 105u, 103u, 104u, 116u, 45u, 104u, 97u, 110u, 100u, 32u, 115u, 105u, 100u, 101u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s822[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 115u, 115u, 105u, 103u, 110u, 32u };
-static const uint32_t m9s823[4] = { 32u, 116u, 111u, 32u };
-static const uint32_t m9s824[35] = { 32u, 40u, 110u, 111u, 32u, 105u, 109u, 112u, 108u, 105u, 99u, 105u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 115u, 44u, 32u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s825[16] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 32u };
-static const uint32_t m9s826[14] = { 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 102u, 105u, 116u, 32u };
-static const uint32_t m9s827[5] = { 109u, 111u, 118u, 101u, 100u };
-static const uint32_t m9s828[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s829[15] = { 79u, 80u, 84u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s830[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s831[15] = { 79u, 80u, 84u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s832[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s833[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s834[28] = { 99u, 111u, 110u, 100u, 105u, 116u, 105u, 111u, 110u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 66u, 79u, 79u, 76u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s835[4] = { 70u, 79u, 82u, 32u };
-static const uint32_t m9s836[86] = { 32u, 73u, 78u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 32u, 45u, 45u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 44u, 32u, 97u, 32u, 102u, 105u, 101u, 108u, 100u, 44u, 32u, 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 58u, 32u, 103u, 105u, 118u, 101u, 32u, 116u, 104u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 110u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 49u, 48u, 41u };
-static const uint32_t m9s837[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s838[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s839[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s840[4] = { 70u, 79u, 82u, 32u };
-static const uint32_t m9s841[49] = { 32u, 73u, 78u, 32u, 103u, 111u, 101u, 115u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 111u, 114u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s842[9] = { 32u, 40u, 112u, 97u, 114u, 32u, 49u, 48u, 41u };
-static const uint32_t m9s843[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
-static const uint32_t m9s844[11] = { 79u, 80u, 84u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u };
-static const uint32_t m9s845[4] = { 70u, 79u, 82u, 32u };
-static const uint32_t m9s846[111] = { 32u, 73u, 78u, 32u, 111u, 118u, 101u, 114u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 115u, 58u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 116u, 104u, 101u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 45u, 45u, 32u, 97u, 32u, 99u, 111u, 112u, 121u, 32u, 111u, 102u, 32u, 97u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 32u, 105u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 101u, 100u, 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 108u, 111u, 111u, 112u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 99u, 111u, 112u, 121u, 32u, 105u, 116u, 32u, 117u, 110u, 99u, 111u, 117u, 110u, 116u, 101u, 100u };
-static const uint32_t m9s847[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s848[16] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
-static const uint32_t m9s849[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s850[4] = { 32u, 105u, 115u, 32u };
-static const uint32_t m9s851[36] = { 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 115u, 32u, 105u, 116u, 32u, 103u, 111u, 101u, 115u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 114u, 101u, 32u };
-static const uint32_t m9s852[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s853[16] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
-static const uint32_t m9s854[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s855[4] = { 32u, 105u, 115u, 32u };
-static const uint32_t m9s856[21] = { 44u, 32u, 97u, 110u, 100u, 32u, 105u, 116u, 115u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 97u, 114u, 101u, 32u };
-static const uint32_t m9s857[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s858[4] = { 32u, 105u, 115u, 32u };
-static const uint32_t m9s859[52] = { 58u, 32u, 97u, 32u, 108u, 111u, 111u, 112u, 32u, 111u, 118u, 101u, 114u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 115u, 32u, 105u, 110u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u };
-static const uint32_t m9s860[59] = { 70u, 79u, 82u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 98u, 111u, 116u, 104u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 111u, 102u, 32u, 111u, 110u, 101u, 32u, 116u, 121u, 112u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s861[5] = { 32u, 97u, 110u, 100u, 32u };
-static const uint32_t m9s862[40] = { 70u, 79u, 82u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 110u, 111u, 32u, 66u, 89u, 32u, 115u, 116u, 101u, 112u };
-static const uint32_t m9s863[33] = { 70u, 79u, 82u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s864[33] = { 70u, 79u, 82u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s865[33] = { 70u, 79u, 82u, 32u, 115u, 116u, 101u, 112u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s866[87] = { 97u, 32u, 70u, 79u, 82u, 32u, 115u, 116u, 101u, 112u, 32u, 105u, 115u, 32u, 97u, 32u, 99u, 111u, 110u, 115u, 116u, 97u, 110u, 116u, 58u, 32u, 66u, 89u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 44u, 32u, 97u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 111u, 114u, 32u, 97u, 110u, 32u, 101u, 120u, 112u, 114u, 101u, 115u, 115u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 109u, 32u, 40u, 112u, 97u, 114u, 32u, 49u, 48u, 41u };
-static const uint32_t m9s867[39] = { 97u, 32u, 70u, 79u, 82u, 32u, 115u, 116u, 101u, 112u, 32u, 111u, 102u, 32u, 48u, 32u, 110u, 101u, 118u, 101u, 114u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 98u, 111u, 117u, 110u, 100u };
-static const uint32_t m9s868[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s869[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s870[12] = { 97u, 32u, 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u };
-static const uint32_t m9s871[71] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 69u, 76u, 83u, 69u, 58u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 110u, 111u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 110u, 97u, 109u, 101u, 115u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 104u, 97u, 118u, 101u, 32u, 110u, 111u, 119u, 104u, 101u, 114u, 101u, 32u, 116u, 111u, 32u, 103u, 111u, 32u, 40u, 112u, 97u, 114u, 32u, 56u, 41u };
-static const uint32_t m9s872[14] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s873[21] = { 32u, 98u, 117u, 116u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s874[14] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s875[21] = { 32u, 98u, 117u, 116u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s876[11] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u };
-static const uint32_t m9s877[14] = { 32u, 97u, 112u, 112u, 101u, 97u, 114u, 115u, 32u, 116u, 119u, 105u, 99u, 101u };
-static const uint32_t m9s878[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s879[41] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u };
-static const uint32_t m9s880[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s881[38] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 111u, 102u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 116u, 104u, 97u, 116u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s882[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u };
-static const uint32_t m9s883[25] = { 32u, 102u, 114u, 111u, 109u, 32u, 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
-static const uint32_t m9s884[40] = { 112u, 111u, 111u, 108u, 45u, 105u, 110u, 116u, 101u, 114u, 105u, 111u, 114u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 58u, 32u };
-static const uint32_t m9s885[10] = { 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s886[38] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s887[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s888[55] = { 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s889[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
-static const uint32_t m9s890[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s891[36] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s892[37] = { 97u, 32u, 110u, 101u, 115u, 116u, 101u, 100u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 58u, 32u };
-static const uint32_t m9s893[20] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u };
-static const uint32_t m9s894[36] = { 59u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 105u, 116u, 32u, 97u, 116u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 108u, 101u, 118u, 101u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
-static const uint32_t m9s895[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s896[4] = { 80u, 85u, 82u, 69u };
-static const uint32_t m9s897[47] = { 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 109u, 117u, 115u, 116u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u, 111u, 114u, 32u, 82u, 65u, 73u, 83u, 69u, 32u, 111u, 110u, 32u, 101u, 118u, 101u, 114u, 121u, 32u, 112u, 97u, 116u, 104u, 58u, 32u };
-static const uint32_t m9s898[26] = { 32u, 99u, 97u, 110u, 32u, 114u, 101u, 97u, 99u, 104u, 32u, 105u, 116u, 115u, 32u, 69u, 78u, 68u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
-static const uint32_t m9s899[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
-static const uint32_t m9s900[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
-static const uint32_t m9s901[11] = { 79u, 117u, 116u, 79u, 102u, 77u, 101u, 109u, 111u, 114u, 121u };
-static const uint32_t m9s902[2] = { 67u, 46u };
-static const uint32_t m9s903[1] = { 60u };
-static const uint32_t m9s904[5] = { 67u, 46u, 73u, 110u, 116u };
-static const uint32_t m9s905[7] = { 67u, 46u, 83u, 105u, 122u, 101u, 84u };
-static const uint32_t m9s906[3] = { 70u, 51u, 50u };
-static const uint32_t m9s907[3] = { 73u, 54u, 52u };
-static const uint32_t m9s908[3] = { 70u, 51u, 50u };
-static const uint32_t m9s909[3] = { 70u, 54u, 52u };
-static const uint32_t m9s910[5] = { 67u, 46u, 73u, 110u, 116u };
-static const uint32_t m9s911[7] = { 67u, 46u, 83u, 105u, 122u, 101u, 84u };
-static const uint32_t m9s912[7] = { 67u, 46u, 70u, 108u, 111u, 97u, 116u };
-static const uint32_t m9s913[3] = { 76u, 69u, 78u };
-static const uint32_t m9s914[7] = { 67u, 46u, 83u, 105u, 122u, 101u, 84u };
-static const uint32_t m9s915[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s916[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
-static const uint32_t m9s917[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s918[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
-static const uint32_t m9s919[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s920[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
-static const uint32_t m9s921[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s922[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s923[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s924[1] = { 32u };
-static const uint32_t m9s925[1] = { 32u };
-static const uint32_t m9s926[1] = { 32u };
-static const uint32_t m9s927[17] = { 117u, 110u, 104u, 97u, 110u, 100u, 108u, 101u, 100u, 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
-static const uint32_t m9s928[6] = { 32u, 102u, 114u, 111u, 109u, 32u };
-static const uint32_t m9s929[62] = { 32u, 45u, 45u, 32u, 97u, 100u, 100u, 32u, 105u, 116u, 32u, 116u, 111u, 32u, 116u, 104u, 105u, 115u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 39u, 115u, 32u, 82u, 65u, 73u, 83u, 69u, 83u, 44u, 32u, 111u, 114u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 32u, 105u, 116u, 58u, 32u, 69u, 88u, 67u, 69u, 80u, 84u, 32u, 124u, 32u };
-static const uint32_t m9s930[6] = { 32u, 58u, 32u, 46u, 46u, 46u };
-static const uint32_t m9s931[4] = { 80u, 85u, 82u, 69u };
-static const uint32_t m9s932[21] = { 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 115u, 32u };
-static const uint32_t m9s933[29] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 80u, 85u, 82u, 69u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
-static const uint32_t m9s934[7] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u };
-static const uint32_t m9s935[41] = { 32u, 105u, 115u, 32u, 110u, 97u, 109u, 101u, 100u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 116u, 32u, 105u, 109u, 112u, 111u, 114u, 116u, 101u, 100u, 58u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 73u, 77u, 80u, 79u, 82u, 84u, 32u };
-static const uint32_t m9s936[8] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
-static const uint32_t m9s937[22] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 116u, 119u, 105u, 99u, 101u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s938[23] = { 58u, 32u, 116u, 104u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 105u, 115u, 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
-static const uint32_t m9s939[8] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
-static const uint32_t m9s940[3] = { 78u, 97u, 78u };
-static const uint32_t m9s941[52] = { 78u, 97u, 78u, 32u, 105u, 115u, 32u, 112u, 114u, 101u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 44u, 32u, 116u, 104u, 101u, 32u, 113u, 117u, 105u, 101u, 116u, 32u, 78u, 97u, 78u, 58u, 32u, 97u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 109u, 97u, 121u };
-static const uint32_t m9s942[28] = { 32u, 110u, 111u, 116u, 32u, 116u, 97u, 107u, 101u, 32u, 105u, 116u, 115u, 32u, 110u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s943[7] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u };
-static const uint32_t m9s944[10] = { 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u };
-static const uint32_t m9s945[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s946[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s947[3] = { 70u, 54u, 52u };
-static const uint32_t m9s948[3] = { 70u, 51u, 50u };
-static const uint32_t m9s949[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s950[21] = { 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 111u, 102u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u };
-static const uint32_t m9s951[4] = { 32u, 105u, 115u, 32u };
-static const uint32_t m9s952[105] = { 58u, 32u, 97u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 32u, 105u, 115u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 114u, 101u, 97u, 108u, 115u, 44u, 32u, 66u, 79u, 79u, 76u, 44u, 32u, 67u, 72u, 65u, 82u, 44u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 115u, 32u, 97u, 110u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 115u, 32u, 45u, 45u, 32u, 112u, 97u, 115u, 115u, 32u, 119u, 104u, 97u, 116u, 32u, 116u, 104u, 101u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 114u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 111u, 102u, 32u, 105u, 116u };
+static const uint32_t m9s409[3] = { 73u, 54u, 52u };
+static const uint32_t m9s410[3] = { 67u, 72u, 82u };
+static const uint32_t m9s411[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s412[3] = { 65u, 68u, 82u };
+static const uint32_t m9s413[37] = { 65u, 68u, 82u, 32u, 101u, 120u, 105u, 115u, 116u, 115u, 32u, 111u, 110u, 108u, 121u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 85u, 78u, 83u, 65u, 70u, 69u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 115u };
+static const uint32_t m9s414[5] = { 67u, 46u, 80u, 116u, 114u };
+static const uint32_t m9s415[3] = { 70u, 51u, 50u };
+static const uint32_t m9s416[3] = { 70u, 54u, 52u };
+static const uint32_t m9s417[3] = { 76u, 69u, 78u };
+static const uint32_t m9s418[41] = { 76u, 69u, 78u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 110u, 32u, 97u, 120u, 105u, 115u, 32u, 111u, 110u, 108u, 121u, 32u, 111u, 110u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 44u, 32u, 110u, 111u, 116u, 32u, 111u, 110u, 32u };
+static const uint32_t m9s419[33] = { 76u, 69u, 78u, 32u, 97u, 120u, 105u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s420[5] = { 97u, 120u, 105u, 115u, 32u };
+static const uint32_t m9s421[6] = { 32u, 111u, 102u, 32u, 97u, 32u };
+static const uint32_t m9s422[15] = { 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 105u, 115u, 116u };
+static const uint32_t m9s423[3] = { 73u, 54u, 52u };
+static const uint32_t m9s424[39] = { 76u, 69u, 78u, 32u, 111u, 102u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 97u, 120u, 105u, 115u, 58u, 32u, 76u, 69u, 78u, 32u, 40u, 103u, 44u, 32u, 48u, 41u };
+static const uint32_t m9s425[3] = { 73u, 54u, 52u };
+static const uint32_t m9s426[3] = { 79u, 82u, 68u };
+static const uint32_t m9s427[3] = { 73u, 54u, 52u };
+static const uint32_t m9s428[4] = { 78u, 65u, 77u, 69u };
+static const uint32_t m9s429[36] = { 78u, 65u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 111u, 114u, 32u, 97u, 32u, 99u, 97u, 115u, 101u, 32u };
+static const uint32_t m9s430[12] = { 114u, 101u, 99u, 111u, 114u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s431[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s432[4] = { 86u, 73u, 69u, 87u };
+static const uint32_t m9s433[43] = { 86u, 73u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 103u, 114u, 105u, 100u, 32u, 97u, 110u, 100u, 32u, 111u, 110u, 101u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 112u, 101u, 114u, 32u, 97u, 120u, 105u, 115u };
+static const uint32_t m9s434[23] = { 86u, 73u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s435[2] = { 97u, 32u };
+static const uint32_t m9s436[7] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u };
+static const uint32_t m9s437[21] = { 32u, 97u, 120u, 105u, 115u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s438[5] = { 60u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s439[36] = { 97u, 32u, 86u, 73u, 69u, 87u, 32u, 97u, 120u, 105u, 115u, 32u, 105u, 115u, 32u, 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 111u, 114u, 32u, 65u, 76u, 76u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s440[59] = { 97u, 32u, 86u, 73u, 69u, 87u, 32u, 116u, 104u, 97u, 116u, 32u, 107u, 101u, 101u, 112u, 115u, 32u, 110u, 111u, 32u, 97u, 120u, 105u, 115u, 32u, 105u, 115u, 32u, 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 58u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 115u };
+static const uint32_t m9s441[3] = { 77u, 65u, 88u };
+static const uint32_t m9s442[6] = { 83u, 105u, 122u, 101u, 79u, 102u };
+static const uint32_t m9s443[3] = { 73u, 54u, 52u };
+static const uint32_t m9s444[8] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u };
+static const uint32_t m9s445[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s446[28] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s447[3] = { 73u, 54u, 52u };
+static const uint32_t m9s448[15] = { 70u, 54u, 52u, 46u, 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s449[15] = { 70u, 51u, 50u, 46u, 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s450[13] = { 70u, 54u, 52u, 46u, 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s451[13] = { 70u, 51u, 50u, 46u, 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s452[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s453[2] = { 67u, 46u };
+static const uint32_t m9s454[49] = { 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 115u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u };
+static const uint32_t m9s455[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
+static const uint32_t m9s456[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s457[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s458[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s459[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
+static const uint32_t m9s460[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s461[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s462[14] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 49u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s463[17] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 116u, 32u };
+static const uint32_t m9s464[51] = { 32u, 116u, 111u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 59u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 111u, 110u, 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s465[39] = { 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 101u, 120u, 116u, 101u, 110u, 100u, 101u, 100u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 105u, 115u };
+static const uint32_t m9s466[50] = { 32u, 110u, 111u, 116u, 32u, 98u, 117u, 105u, 108u, 116u, 59u, 32u, 103u, 105u, 118u, 101u, 32u, 105u, 116u, 115u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 32u, 111u, 110u, 101u, 32u, 98u, 121u, 32u, 111u, 110u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s467[6] = { 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s468[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s469[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 103u, 105u, 118u, 101u, 32u };
+static const uint32_t m9s470[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s471[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s472[19] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 58u, 32u };
+static const uint32_t m9s473[17] = { 32u, 45u, 45u, 32u, 100u, 105u, 100u, 32u, 121u, 111u, 117u, 32u, 109u, 101u, 97u, 110u, 32u };
+static const uint32_t m9s474[1] = { 63u };
+static const uint32_t m9s475[19] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 58u, 32u };
+static const uint32_t m9s476[3] = { 65u, 76u, 76u };
+static const uint32_t m9s477[5] = { 60u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s478[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s479[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s480[30] = { 105u, 110u, 100u, 101u, 120u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s481[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s482[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s483[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s484[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s485[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s486[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s487[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s488[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s489[3] = { 65u, 78u, 68u };
+static const uint32_t m9s490[2] = { 79u, 82u };
+static const uint32_t m9s491[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s492[26] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s493[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s494[26] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s495[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s496[1] = { 61u };
+static const uint32_t m9s497[1] = { 35u };
+static const uint32_t m9s498[1] = { 60u };
+static const uint32_t m9s499[2] = { 60u, 61u };
+static const uint32_t m9s500[1] = { 62u };
+static const uint32_t m9s501[2] = { 62u, 61u };
+static const uint32_t m9s502[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s503[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s504[38] = { 99u, 111u, 109u, 112u, 97u, 114u, 105u, 110u, 103u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 116u, 104u, 97u, 116u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s505[4] = { 110u, 111u, 32u, 39u };
+static const uint32_t m9s506[37] = { 39u, 32u, 119u, 105u, 116u, 104u, 32u, 78u, 97u, 78u, 58u, 32u, 110u, 111u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 105u, 115u, 111u, 110u, 32u, 119u, 105u, 116u, 104u, 32u, 78u, 97u, 78u, 32u, 105u, 115u };
+static const uint32_t m9s507[60] = { 32u, 101u, 118u, 101u, 114u, 32u, 84u, 82u, 85u, 69u, 44u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 32u, 39u, 35u, 39u, 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 97u, 108u, 119u, 97u, 121u, 115u, 32u, 105u, 115u, 59u, 32u, 77u, 97u, 116u, 104u, 46u, 73u, 115u, 78u, 97u, 78u, 32u, 40u, 120u, 41u, 32u, 97u, 115u, 107u, 115u };
+static const uint32_t m9s508[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s509[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 32u };
+static const uint32_t m9s510[6] = { 32u, 119u, 105u, 116u, 104u, 32u };
+static const uint32_t m9s511[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s512[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s513[4] = { 110u, 111u, 32u, 39u };
+static const uint32_t m9s514[30] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 115u, 58u, 32u, 84u, 101u, 120u, 116u, 46u, 69u, 113u };
+static const uint32_t m9s515[53] = { 32u, 40u, 97u, 44u, 32u, 98u, 41u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 115u, 32u, 101u, 113u, 117u, 97u, 108u, 105u, 116u, 121u, 44u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 111u, 114u, 100u, 101u, 114u, 115u, 32u, 116u, 104u, 101u, 109u };
+static const uint32_t m9s516[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s517[4] = { 110u, 111u, 32u, 39u };
+static const uint32_t m9s518[29] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
+static const uint32_t m9s519[43] = { 58u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 115u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 115u, 44u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 115u, 44u };
+static const uint32_t m9s520[52] = { 32u, 98u, 111u, 111u, 108u, 101u, 97u, 110u, 115u, 44u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 97u, 110u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s521[4] = { 110u, 111u, 32u, 39u };
+static const uint32_t m9s522[29] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
+static const uint32_t m9s523[43] = { 58u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 115u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 115u, 44u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 115u, 44u };
+static const uint32_t m9s524[52] = { 32u, 98u, 111u, 111u, 108u, 101u, 97u, 110u, 115u, 44u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 97u, 110u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s525[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s526[1] = { 43u };
+static const uint32_t m9s527[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s528[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 101u, 32u };
+static const uint32_t m9s529[14] = { 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s530[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s531[33] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 101u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 119u, 105u, 116u, 104u, 32u };
+static const uint32_t m9s532[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s533[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s534[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s535[59] = { 66u, 89u, 84u, 69u, 32u, 105u, 115u, 32u, 97u, 32u, 114u, 97u, 119u, 32u, 111u, 99u, 116u, 101u, 116u, 58u, 32u, 110u, 111u, 32u, 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 40u, 99u, 111u, 110u, 118u, 101u, 114u, 116u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s536[29] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s537[29] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s538[25] = { 110u, 111u, 32u, 105u, 109u, 112u, 108u, 105u, 99u, 105u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 115u, 58u, 32u };
+static const uint32_t m9s539[1] = { 32u };
+static const uint32_t m9s540[1] = { 32u };
+static const uint32_t m9s541[1] = { 47u };
+static const uint32_t m9s542[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s543[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s544[39] = { 39u, 47u, 39u, 32u, 105u, 115u, 32u, 102u, 108u, 111u, 97u, 116u, 32u, 100u, 105u, 118u, 105u, 115u, 105u, 111u, 110u, 59u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 32u, 117u, 115u, 101u, 32u, 68u, 73u, 86u };
+static const uint32_t m9s545[3] = { 68u, 73u, 86u };
+static const uint32_t m9s546[3] = { 77u, 79u, 68u };
+static const uint32_t m9s547[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s548[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s549[33] = { 32u, 105u, 115u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 100u, 105u, 118u, 105u, 115u, 105u, 111u, 110u, 59u, 32u, 102u, 108u, 111u, 97u, 116u, 115u, 32u, 117u, 115u, 101u, 32u };
+static const uint32_t m9s550[3] = { 39u, 47u, 39u };
+static const uint32_t m9s551[2] = { 43u, 37u };
+static const uint32_t m9s552[2] = { 45u, 37u };
+static const uint32_t m9s553[2] = { 42u, 37u };
+static const uint32_t m9s554[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s555[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s556[35] = { 119u, 114u, 97u, 112u, 112u, 105u, 110u, 103u, 32u, 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 105u, 115u, 32u, 102u, 111u, 114u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u };
+static const uint32_t m9s557[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s558[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s559[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s560[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s561[3] = { 65u, 76u, 76u };
+static const uint32_t m9s562[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s563[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u, 58u, 32u };
+static const uint32_t m9s564[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u, 58u, 32u };
+static const uint32_t m9s565[1] = { 46u };
+static const uint32_t m9s566[4] = { 32u, 45u, 45u, 32u };
+static const uint32_t m9s567[22] = { 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 115u, 32u, 110u, 111u, 32u, 115u, 117u, 99u, 104u, 32u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s568[3] = { 79u, 87u, 78u };
+static const uint32_t m9s569[74] = { 78u, 69u, 87u, 32u, 40u, 79u, 87u, 78u, 44u, 32u, 84u, 41u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 59u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 114u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s570[3] = { 111u, 119u, 110u };
+static const uint32_t m9s571[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s572[4] = { 112u, 111u, 111u, 108u };
+static const uint32_t m9s573[36] = { 78u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 97u, 109u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s574[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s575[38] = { 78u, 69u, 87u, 39u, 115u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s576[4] = { 112u, 111u, 111u, 108u };
+static const uint32_t m9s577[36] = { 78u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 97u, 109u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s578[5] = { 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s579[5] = { 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s580[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s581[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s582[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s583[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s584[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s585[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s586[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s587[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
+static const uint32_t m9s588[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s589[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s590[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s591[34] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 99u, 111u, 110u, 115u, 117u, 109u, 101u, 115u, 32u, 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 59u, 32u };
+static const uint32_t m9s592[22] = { 32u, 105u, 115u, 32u, 97u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s593[32] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 59u, 32u };
+static const uint32_t m9s594[29] = { 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s595[18] = { 99u, 111u, 110u, 115u, 117u, 109u, 101u, 100u, 32u, 98u, 121u, 32u, 83u, 72u, 65u, 82u, 69u, 68u };
+static const uint32_t m9s596[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s597[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
+static const uint32_t m9s598[4] = { 112u, 111u, 111u, 108u };
+static const uint32_t m9s599[30] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s600[30] = { 32u, 105u, 110u, 32u, 97u, 32u, 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
+static const uint32_t m9s601[5] = { 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s602[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s603[39] = { 78u, 69u, 87u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 116u, 104u, 101u, 110u, 32u, 116u, 104u, 101u, 32u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s604[35] = { 78u, 69u, 87u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s605[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s606[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s607[36] = { 71u, 82u, 73u, 68u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s608[40] = { 71u, 82u, 73u, 68u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 116u, 32u, 109u, 111u, 115u, 116u, 32u, 52u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s609[88] = { 71u, 82u, 73u, 68u, 32u, 108u, 97u, 121u, 115u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 78u, 65u, 77u, 69u, 68u, 32u, 98u, 121u, 32u, 97u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u, 58u, 32u, 83u, 76u, 73u, 67u, 69u, 32u, 105u, 116u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s610[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s611[24] = { 71u, 82u, 73u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s612[36] = { 83u, 76u, 73u, 67u, 69u, 32u, 115u, 116u, 97u, 114u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s613[37] = { 83u, 76u, 73u, 67u, 69u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s614[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s615[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s616[132] = { 97u, 32u, 83u, 76u, 73u, 67u, 69u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 110u, 111u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 104u, 111u, 108u, 100u, 115u, 58u, 32u, 116u, 104u, 101u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 105u, 115u, 32u, 103u, 111u, 110u, 101u, 32u, 97u, 116u, 32u, 116u, 104u, 101u, 32u, 101u, 110u, 100u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u, 32u, 45u, 45u, 32u, 110u, 97u, 109u, 101u, 32u, 105u, 116u, 32u, 102u, 105u, 114u, 115u, 116u, 58u, 32u, 97u, 32u, 58u, 61u, 32u, 70u, 32u, 40u, 46u, 46u, 46u, 41u, 32u, 59u, 32u, 83u, 76u, 73u, 67u, 69u, 32u, 40u, 97u, 44u, 32u, 46u, 46u, 46u, 41u };
+static const uint32_t m9s617[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s618[34] = { 83u, 76u, 73u, 67u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 111u, 114u, 32u, 97u, 114u, 114u, 97u, 121u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s619[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s620[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
+static const uint32_t m9s621[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s622[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
+static const uint32_t m9s623[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s624[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
+static const uint32_t m9s625[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s626[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
+static const uint32_t m9s627[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s628[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
+static const uint32_t m9s629[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s630[3] = { 78u, 79u, 84u };
+static const uint32_t m9s631[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s632[30] = { 78u, 79u, 84u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s633[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s634[6] = { 117u, 110u, 97u, 114u, 121u, 32u };
+static const uint32_t m9s635[30] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s636[36] = { 97u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 58u, 32u };
+static const uint32_t m9s637[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s638[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s639[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s640[1] = { 46u };
+static const uint32_t m9s641[4] = { 32u, 45u, 45u, 32u };
+static const uint32_t m9s642[22] = { 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 115u, 32u, 110u, 111u, 32u, 115u, 117u, 99u, 104u, 32u, 110u, 97u, 109u, 101u };
+static const uint32_t m9s643[37] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 32u, 102u, 114u, 111u, 109u, 32u, 97u, 110u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
+static const uint32_t m9s644[60] = { 58u, 32u, 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 44u, 32u, 97u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 111u, 114u, 32u, 103u, 114u, 105u, 100u };
+static const uint32_t m9s645[87] = { 115u, 101u, 108u, 101u, 99u, 116u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 58u, 32u, 97u, 115u, 115u, 105u, 103u, 110u, 32u, 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 102u, 105u, 114u, 115u, 116u };
+static const uint32_t m9s646[3] = { 83u, 84u, 82u };
+static const uint32_t m9s647[35] = { 32u, 105u, 115u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s648[45] = { 32u, 45u, 45u, 32u, 116u, 97u, 107u, 101u, 32u, 105u, 116u, 32u, 97u, 115u, 32u, 86u, 65u, 82u, 44u, 32u, 115u, 111u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 32u, 99u, 111u, 109u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 105u, 116u };
+static const uint32_t m9s649[33] = { 32u, 105u, 115u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s650[14] = { 86u, 65u, 82u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s651[16] = { 32u, 99u, 97u, 114u, 114u, 105u, 101u, 115u, 32u, 110u, 111u, 32u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s652[20] = { 32u, 105u, 115u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
+static const uint32_t m9s653[21] = { 32u, 105u, 115u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
+static const uint32_t m9s654[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 115u, 32u };
+static const uint32_t m9s655[18] = { 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 40u, 115u, 41u, 44u, 32u, 103u, 111u, 116u, 32u };
+static const uint32_t m9s656[1] = { 46u };
+static const uint32_t m9s657[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
+static const uint32_t m9s658[6] = { 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s659[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s660[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 103u, 105u, 118u, 101u, 32u };
+static const uint32_t m9s661[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s662[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s663[5] = { 67u, 46u, 73u, 110u, 116u };
+static const uint32_t m9s664[8] = { 67u, 46u, 83u, 83u, 105u, 122u, 101u, 84u };
+static const uint32_t m9s665[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s666[2] = { 73u, 56u };
+static const uint32_t m9s667[3] = { 73u, 49u, 54u };
+static const uint32_t m9s668[3] = { 73u, 51u, 50u };
+static const uint32_t m9s669[2] = { 85u, 56u };
+static const uint32_t m9s670[3] = { 85u, 49u, 54u };
+static const uint32_t m9s671[3] = { 85u, 51u, 50u };
+static const uint32_t m9s672[1] = { 46u };
+static const uint32_t m9s673[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s674[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s675[11] = { 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s676[39] = { 32u, 105u, 115u, 32u, 107u, 101u, 112u, 116u, 32u, 98u, 121u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 101u, 32u, 45u, 45u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 75u, 69u, 80u, 84u, 32u };
+static const uint32_t m9s677[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s678[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s679[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s680[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s681[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s682[17] = { 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s683[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s684[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s685[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
+static const uint32_t m9s686[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s687[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s688[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s689[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s690[39] = { 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 40u, 86u, 65u, 82u, 47u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 41u };
+static const uint32_t m9s691[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s692[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s693[34] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 108u, 101u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s694[32] = { 32u, 97u, 115u, 32u, 86u, 65u, 82u, 32u, 40u, 115u, 104u, 97u, 114u, 101u, 100u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s695[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s696[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s697[14] = { 58u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s698[57] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 107u, 110u, 111u, 119u, 110u, 32u, 104u, 101u, 114u, 101u, 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 101u, 32u, 109u, 97u, 121u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 110u, 32u, 105u, 116u, 32u, 45u, 45u, 32u };
+static const uint32_t m9s699[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s700[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s701[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s702[23] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 111u, 118u, 101u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s703[32] = { 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s704[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s705[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s706[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 111u, 118u, 101u, 32u };
+static const uint32_t m9s707[57] = { 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 45u, 45u, 32u, 105u, 116u, 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s708[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s709[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s710[16] = { 58u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 119u, 110u, 115u, 32u };
+static const uint32_t m9s711[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s712[31] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s713[31] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s714[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s715[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s716[31] = { 58u, 32u, 97u, 32u, 75u, 69u, 80u, 84u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 116u, 97u, 107u, 101u, 32u };
+static const uint32_t m9s717[79] = { 32u, 45u, 45u, 32u, 105u, 116u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u, 59u, 32u, 103u, 105u, 118u, 101u, 32u, 105u, 116u, 32u, 115u, 116u, 111u, 114u, 97u, 103u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 111u, 117u, 116u, 108u, 105u, 118u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 58u, 32u };
+static const uint32_t m9s718[73] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 84u, 101u, 120u, 116u, 46u, 75u, 101u, 101u, 112u, 32u, 40u, 112u, 111u, 111u, 108u, 44u, 32u, 115u, 41u, 44u, 32u, 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 78u, 69u, 87u, 32u, 40u, 112u, 111u, 111u, 108u, 44u, 32u, 84u, 41u };
+static const uint32_t m9s719[9] = { 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
+static const uint32_t m9s720[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s721[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s722[7] = { 117u, 115u, 101u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s723[14] = { 32u, 97u, 102u, 116u, 101u, 114u, 32u, 105u, 116u, 32u, 119u, 97u, 115u, 32u };
+static const uint32_t m9s724[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s725[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s726[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s727[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s728[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s729[7] = { 117u, 115u, 101u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s730[44] = { 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 110u, 101u, 120u, 116u, 32u, 116u, 117u, 114u, 110u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 108u, 111u, 111u, 112u, 44u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 105u, 116u, 32u, 119u, 97u, 115u, 32u };
+static const uint32_t m9s731[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s732[37] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s733[50] = { 58u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u, 102u, 114u, 101u, 101u, 115u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 111u, 119u, 110u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 44u, 32u, 97u, 110u, 100u, 32u };
+static const uint32_t m9s734[48] = { 111u, 119u, 110u, 101u, 114u, 115u, 104u, 105u, 112u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 102u, 111u, 108u, 108u, 111u, 119u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s735[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u };
+static const uint32_t m9s736[63] = { 58u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u, 32u, 104u, 101u, 114u, 101u, 32u, 103u, 105u, 118u, 101u, 115u, 32u, 105u, 116u, 32u, 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 45u, 45u, 32u, 111u, 110u, 108u, 121u, 32u, 78u, 69u, 87u, 32u, 40u, 79u, 87u, 78u, 44u, 32u, 84u, 41u, 44u, 32u };
+static const uint32_t m9s737[47] = { 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 110u, 97u, 109u, 101u, 32u, 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 32u, 111u, 114u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 100u, 111u, 101u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s738[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u };
+static const uint32_t m9s739[51] = { 58u, 32u, 97u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 121u, 111u, 117u, 114u, 115u, 32u, 116u, 111u, 32u, 102u, 114u, 101u, 101u, 32u, 40u, 116u, 97u, 107u, 101u, 32u, 79u, 87u, 78u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s740[15] = { 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 111u, 119u, 110u, 115u, 32u };
+static const uint32_t m9s741[47] = { 59u, 32u, 105u, 116u, 32u, 105u, 115u, 32u, 102u, 114u, 101u, 101u, 100u, 32u, 97u, 116u, 32u, 101u, 120u, 105u, 116u, 44u, 32u, 110u, 111u, 116u, 32u, 98u, 121u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s742[14] = { 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 119u, 110u, 115u, 32u };
+static const uint32_t m9s743[42] = { 59u, 32u, 102u, 114u, 101u, 101u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 110u, 111u, 116u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s744[8] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u, 100u };
+static const uint32_t m9s745[8] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u, 100u };
+static const uint32_t m9s746[34] = { 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 32u, 100u, 105u, 102u, 102u, 101u, 114u, 115u, 32u, 102u, 114u, 111u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 58u };
+static const uint32_t m9s747[19] = { 32u, 32u, 32u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 32u, 32u, 32u, 32u, 32u };
+static const uint32_t m9s748[19] = { 32u, 32u, 32u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u, 32u };
+static const uint32_t m9s749[54] = { 109u, 111u, 100u, 117u, 108u, 101u, 45u, 108u, 101u, 118u, 101u, 108u, 32u, 115u, 116u, 97u, 116u, 101u, 32u, 114u, 101u, 113u, 117u, 105u, 114u, 101u, 115u, 32u, 83u, 84u, 65u, 84u, 69u, 70u, 85u, 76u, 32u, 111u, 110u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s750[46] = { 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 32u, 98u, 117u, 116u, 32u, 110u, 111u, 116u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 101u, 100u };
+static const uint32_t m9s751[45] = { 111u, 112u, 97u, 113u, 117u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 102u, 105u, 110u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s752[1] = { 67u };
+static const uint32_t m9s753[51] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 67u, 32u, 110u, 97u, 109u, 101u, 32u, 40u, 61u, 32u, 34u, 99u, 95u, 110u, 97u, 109u, 101u, 34u, 41u };
+static const uint32_t m9s754[47] = { 110u, 97u, 116u, 105u, 118u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 105u, 110u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 59u, 32u, 117u, 115u, 101u, 32u, 67u, 46u, 42u, 32u, 116u, 121u, 112u, 101u, 115u };
+static const uint32_t m9s755[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
+static const uint32_t m9s756[9] = { 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u };
+static const uint32_t m9s757[54] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 91u, 83u, 69u, 82u, 73u, 65u, 76u, 93u, 32u, 111u, 114u, 32u, 91u, 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u, 93u };
+static const uint32_t m9s758[44] = { 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u, 67u, 65u, 83u, 69u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 111u, 116u, 97u, 108u, 32u, 40u, 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s759[1] = { 41u };
+static const uint32_t m9s760[2] = { 32u, 40u };
+static const uint32_t m9s761[7] = { 44u, 32u, 108u, 105u, 110u, 101u, 32u };
+static const uint32_t m9s762[1] = { 41u };
+static const uint32_t m9s763[2] = { 119u, 58u };
+static const uint32_t m9s764[1] = { 45u };
+static const uint32_t m9s765[4] = { 98u, 117u, 115u, 121u };
+static const uint32_t m9s766[4] = { 98u, 117u, 115u, 121u };
+static const uint32_t m9s767[1] = { 45u };
+static const uint32_t m9s768[3] = { 78u, 69u, 87u };
+static const uint32_t m9s769[7] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u };
+static const uint32_t m9s770[1] = { 32u };
+static const uint32_t m9s771[8] = { 32u, 119u, 114u, 105u, 116u, 101u, 115u, 32u };
+static const uint32_t m9s772[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s773[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s774[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s775[8] = { 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u };
+static const uint32_t m9s776[8] = { 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u };
+static const uint32_t m9s777[55] = { 97u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 44u, 32u, 91u, 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u, 93u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u, 44u, 32u, 110u, 111u, 116u, 32u, 91u };
+static const uint32_t m9s778[1] = { 93u };
+static const uint32_t m9s779[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
+static const uint32_t m9s780[54] = { 41u, 58u, 32u, 116u, 104u, 101u, 32u, 116u, 97u, 114u, 103u, 101u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 111u, 102u, 32u, 116u, 104u, 105u, 115u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s781[53] = { 39u, 115u, 32u, 45u, 45u, 32u, 115u, 116u, 97u, 114u, 116u, 32u, 105u, 116u, 32u, 102u, 114u, 111u, 109u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 104u, 101u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u };
+static const uint32_t m9s782[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s783[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s784[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
+static const uint32_t m9s785[15] = { 41u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
+static const uint32_t m9s786[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s787[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s788[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
+static const uint32_t m9s789[15] = { 41u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 104u, 97u, 110u, 100u, 32u };
+static const uint32_t m9s790[71] = { 32u, 116u, 111u, 32u, 97u, 32u, 116u, 104u, 114u, 101u, 97u, 100u, 32u, 45u, 45u, 32u, 105u, 116u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 116u, 32u, 119u, 105u, 116u, 104u, 32u, 79u, 87u, 78u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s791[28] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 84u, 72u, 82u, 69u, 65u, 68u, 32u, 114u, 117u, 110u, 110u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s792[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
+static const uint32_t m9s793[25] = { 41u, 58u, 32u, 98u, 111u, 116u, 104u, 32u, 116u, 104u, 114u, 101u, 97u, 100u, 115u, 32u, 104u, 111u, 108u, 100u, 32u, 116u, 104u, 101u, 32u };
+static const uint32_t m9s794[186] = { 32u, 104u, 97u, 110u, 100u, 101u, 100u, 32u, 111u, 118u, 101u, 114u, 44u, 32u, 97u, 110u, 100u, 32u, 105u, 116u, 32u, 105u, 115u, 32u, 110u, 101u, 105u, 116u, 104u, 101u, 114u, 32u, 97u, 32u, 77u, 79u, 78u, 73u, 84u, 79u, 82u, 32u, 110u, 111u, 114u, 32u, 97u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 109u, 97u, 114u, 107u, 101u, 100u, 32u, 91u, 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u, 93u, 32u, 45u, 45u, 32u, 109u, 97u, 114u, 107u, 32u, 105u, 116u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 46u, 46u, 46u, 32u, 69u, 78u, 68u, 32u, 91u, 83u, 72u, 65u, 82u, 65u, 66u, 76u, 69u, 93u, 32u, 105u, 102u, 32u, 116u, 104u, 101u, 32u, 116u, 104u, 114u, 101u, 97u, 100u, 115u, 39u, 32u, 119u, 114u, 105u, 116u, 101u, 115u, 32u, 116u, 111u, 32u, 105u, 116u, 32u, 97u, 114u, 101u, 32u, 100u, 105u, 115u, 106u, 111u, 105u, 110u, 116u, 44u, 32u, 111u, 114u, 32u, 109u, 111u, 118u, 101u, 32u, 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u };
+static const uint32_t m9s795[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s796[27] = { 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 114u, 101u, 115u, 117u, 108u, 116u, 32u, 100u, 105u, 115u, 99u, 97u, 114u, 100u, 101u, 100u, 58u, 32u };
+static const uint32_t m9s797[9] = { 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u };
+static const uint32_t m9s798[5] = { 82u, 65u, 73u, 83u, 69u };
+static const uint32_t m9s799[5] = { 82u, 65u, 73u, 83u, 69u };
+static const uint32_t m9s800[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s801[54] = { 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 111u, 110u, 116u, 114u, 111u, 108u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 101u, 110u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 70u, 79u, 82u, 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
+static const uint32_t m9s802[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s803[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s804[54] = { 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 111u, 110u, 116u, 114u, 111u, 108u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 101u, 110u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 70u, 79u, 82u, 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
+static const uint32_t m9s805[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s806[73] = { 69u, 88u, 73u, 84u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 108u, 111u, 111u, 112u, 58u, 32u, 69u, 88u, 73u, 84u, 32u, 108u, 101u, 97u, 118u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 105u, 110u, 110u, 101u, 114u, 109u, 111u, 115u, 116u, 32u, 76u, 79u, 79u, 80u, 44u, 32u, 87u, 72u, 73u, 76u, 69u, 32u, 111u, 114u, 32u, 70u, 79u, 82u, 32u, 40u, 112u, 97u, 114u, 32u, 53u, 41u };
+static const uint32_t m9s807[113] = { 69u, 88u, 73u, 84u, 32u, 97u, 99u, 114u, 111u, 115u, 115u, 32u, 97u, 32u, 70u, 73u, 78u, 65u, 76u, 76u, 89u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 115u, 107u, 105u, 112u, 32u, 105u, 116u, 115u, 32u, 99u, 108u, 101u, 97u, 110u, 117u, 112u, 58u, 32u, 108u, 101u, 97u, 118u, 101u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 116u, 101u, 99u, 116u, 101u, 100u, 32u, 98u, 108u, 111u, 99u, 107u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 111u, 114u, 32u, 109u, 111u, 118u, 101u, 32u, 116u, 104u, 101u, 32u, 108u, 111u, 111u, 112u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 105u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 53u, 41u };
+static const uint32_t m9s808[88] = { 111u, 110u, 101u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 114u, 32u, 97u, 114u, 109u, 32u, 98u, 105u, 110u, 100u, 115u, 32u, 97u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 32u, 111u, 110u, 108u, 121u, 32u, 119u, 104u, 101u, 110u, 32u, 101u, 118u, 101u, 114u, 121u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 105u, 116u, 32u, 110u, 97u, 109u, 101u, 115u, 32u, 104u, 97u, 115u, 32u, 116u, 104u, 101u, 32u, 115u, 97u, 109u, 101u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 58u, 32u };
+static const uint32_t m9s809[1] = { 32u };
+static const uint32_t m9s810[5] = { 32u, 97u, 110u, 100u, 32u };
+static const uint32_t m9s811[1] = { 32u };
+static const uint32_t m9s812[57] = { 32u, 100u, 105u, 102u, 102u, 101u, 114u, 32u, 45u, 45u, 32u, 103u, 105u, 118u, 101u, 32u, 101u, 97u, 99u, 104u, 32u, 105u, 116u, 115u, 32u, 111u, 119u, 110u, 32u, 97u, 114u, 109u, 44u, 32u, 111u, 114u, 32u, 98u, 105u, 110u, 100u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u, 32u, 40u, 112u, 97u, 114u, 32u, 53u, 41u };
+static const uint32_t m9s813[3] = { 79u, 87u, 78u };
+static const uint32_t m9s814[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s815[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s816[1] = { 62u };
+static const uint32_t m9s817[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s818[22] = { 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 112u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s819[47] = { 44u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 39u, 115u, 44u, 32u, 109u, 97u, 121u, 32u, 100u, 105u, 101u, 32u, 98u, 101u, 102u, 111u, 114u, 101u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s820[126] = { 32u, 105u, 115u, 32u, 114u, 101u, 97u, 100u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u, 32u, 45u, 45u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 116u, 32u, 105u, 110u, 32u, 97u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 86u, 65u, 82u, 32u, 109u, 112u, 111u, 111u, 108u, 32u, 58u, 32u, 80u, 79u, 79u, 76u, 32u, 59u, 32u, 78u, 69u, 87u, 32u, 40u, 109u, 112u, 111u, 111u, 108u, 44u, 32u, 84u, 41u, 41u, 44u, 32u, 111u, 114u, 32u, 99u, 111u, 112u, 121u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 58u, 32u, 84u, 101u, 120u, 116u, 46u, 75u, 101u, 101u, 112u, 32u, 40u, 109u, 112u, 111u, 111u, 108u, 44u, 32u, 115u, 41u };
+static const uint32_t m9s821[3] = { 52u, 46u, 51u };
+static const uint32_t m9s822[3] = { 50u, 46u, 51u };
+static const uint32_t m9s823[62] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s824[6] = { 32u, 40u, 112u, 97u, 114u, 32u };
+static const uint32_t m9s825[1] = { 41u };
+static const uint32_t m9s826[108] = { 32u, 45u, 45u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 116u, 32u, 105u, 110u, 32u, 97u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 86u, 65u, 82u, 32u, 109u, 112u, 111u, 111u, 108u, 32u, 58u, 32u, 80u, 79u, 79u, 76u, 32u, 59u, 32u, 78u, 69u, 87u, 32u, 40u, 109u, 112u, 111u, 111u, 108u, 44u, 32u, 84u, 41u, 41u, 44u, 32u, 111u, 114u, 32u, 99u, 111u, 112u, 121u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 58u, 32u, 84u, 101u, 120u, 116u, 46u, 75u, 101u, 101u, 112u, 32u, 40u, 109u, 112u, 111u, 111u, 108u, 44u, 32u, 115u, 41u };
+static const uint32_t m9s827[51] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
+static const uint32_t m9s828[25] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 111u, 117u, 116u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 116u, 32u, 40u, 112u, 97u, 114u, 32u };
+static const uint32_t m9s829[1] = { 41u };
+static const uint32_t m9s830[44] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 104u, 101u, 108u, 100u, 32u, 98u, 121u, 32u };
+static const uint32_t m9s831[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s832[44] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 104u, 101u, 108u, 100u, 32u, 98u, 121u, 32u };
+static const uint32_t m9s833[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s834[51] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
+static const uint32_t m9s835[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s836[16] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u };
+static const uint32_t m9s837[18] = { 32u, 98u, 117u, 116u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 100u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s838[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s839[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s840[36] = { 116u, 104u, 101u, 32u, 114u, 105u, 103u, 104u, 116u, 45u, 104u, 97u, 110u, 100u, 32u, 115u, 105u, 100u, 101u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s841[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 115u, 115u, 105u, 103u, 110u, 32u };
+static const uint32_t m9s842[4] = { 32u, 116u, 111u, 32u };
+static const uint32_t m9s843[35] = { 32u, 40u, 110u, 111u, 32u, 105u, 109u, 112u, 108u, 105u, 99u, 105u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 115u, 44u, 32u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s844[16] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 32u };
+static const uint32_t m9s845[14] = { 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 102u, 105u, 116u, 32u };
+static const uint32_t m9s846[5] = { 109u, 111u, 118u, 101u, 100u };
+static const uint32_t m9s847[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s848[15] = { 79u, 80u, 84u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s849[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s850[15] = { 79u, 80u, 84u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s851[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s852[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s853[28] = { 99u, 111u, 110u, 100u, 105u, 116u, 105u, 111u, 110u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 66u, 79u, 79u, 76u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s854[4] = { 70u, 79u, 82u, 32u };
+static const uint32_t m9s855[86] = { 32u, 73u, 78u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 32u, 45u, 45u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 44u, 32u, 97u, 32u, 102u, 105u, 101u, 108u, 100u, 44u, 32u, 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 58u, 32u, 103u, 105u, 118u, 101u, 32u, 116u, 104u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 110u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 49u, 48u, 41u };
+static const uint32_t m9s856[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s857[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s858[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s859[4] = { 70u, 79u, 82u, 32u };
+static const uint32_t m9s860[49] = { 32u, 73u, 78u, 32u, 103u, 111u, 101u, 115u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 111u, 114u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s861[9] = { 32u, 40u, 112u, 97u, 114u, 32u, 49u, 48u, 41u };
+static const uint32_t m9s862[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
+static const uint32_t m9s863[11] = { 79u, 80u, 84u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u };
+static const uint32_t m9s864[4] = { 70u, 79u, 82u, 32u };
+static const uint32_t m9s865[111] = { 32u, 73u, 78u, 32u, 111u, 118u, 101u, 114u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 115u, 58u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 116u, 104u, 101u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 45u, 45u, 32u, 97u, 32u, 99u, 111u, 112u, 121u, 32u, 111u, 102u, 32u, 97u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 32u, 105u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 101u, 100u, 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 108u, 111u, 111u, 112u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 99u, 111u, 112u, 121u, 32u, 105u, 116u, 32u, 117u, 110u, 99u, 111u, 117u, 110u, 116u, 101u, 100u };
+static const uint32_t m9s866[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s867[16] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
+static const uint32_t m9s868[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s869[4] = { 32u, 105u, 115u, 32u };
+static const uint32_t m9s870[36] = { 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 115u, 32u, 105u, 116u, 32u, 103u, 111u, 101u, 115u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 114u, 101u, 32u };
+static const uint32_t m9s871[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s872[16] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
+static const uint32_t m9s873[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s874[4] = { 32u, 105u, 115u, 32u };
+static const uint32_t m9s875[21] = { 44u, 32u, 97u, 110u, 100u, 32u, 105u, 116u, 115u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 97u, 114u, 101u, 32u };
+static const uint32_t m9s876[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s877[4] = { 32u, 105u, 115u, 32u };
+static const uint32_t m9s878[52] = { 58u, 32u, 97u, 32u, 108u, 111u, 111u, 112u, 32u, 111u, 118u, 101u, 114u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 115u, 32u, 105u, 110u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u };
+static const uint32_t m9s879[59] = { 70u, 79u, 82u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 98u, 111u, 116u, 104u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 111u, 102u, 32u, 111u, 110u, 101u, 32u, 116u, 121u, 112u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s880[5] = { 32u, 97u, 110u, 100u, 32u };
+static const uint32_t m9s881[40] = { 70u, 79u, 82u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 110u, 111u, 32u, 66u, 89u, 32u, 115u, 116u, 101u, 112u };
+static const uint32_t m9s882[33] = { 70u, 79u, 82u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s883[33] = { 70u, 79u, 82u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s884[33] = { 70u, 79u, 82u, 32u, 115u, 116u, 101u, 112u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s885[87] = { 97u, 32u, 70u, 79u, 82u, 32u, 115u, 116u, 101u, 112u, 32u, 105u, 115u, 32u, 97u, 32u, 99u, 111u, 110u, 115u, 116u, 97u, 110u, 116u, 58u, 32u, 66u, 89u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 44u, 32u, 97u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 111u, 114u, 32u, 97u, 110u, 32u, 101u, 120u, 112u, 114u, 101u, 115u, 115u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 109u, 32u, 40u, 112u, 97u, 114u, 32u, 49u, 48u, 41u };
+static const uint32_t m9s886[39] = { 97u, 32u, 70u, 79u, 82u, 32u, 115u, 116u, 101u, 112u, 32u, 111u, 102u, 32u, 48u, 32u, 110u, 101u, 118u, 101u, 114u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 98u, 111u, 117u, 110u, 100u };
+static const uint32_t m9s887[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s888[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s889[12] = { 97u, 32u, 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u };
+static const uint32_t m9s890[71] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 69u, 76u, 83u, 69u, 58u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 110u, 111u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 110u, 97u, 109u, 101u, 115u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 104u, 97u, 118u, 101u, 32u, 110u, 111u, 119u, 104u, 101u, 114u, 101u, 32u, 116u, 111u, 32u, 103u, 111u, 32u, 40u, 112u, 97u, 114u, 32u, 56u, 41u };
+static const uint32_t m9s891[14] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s892[21] = { 32u, 98u, 117u, 116u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s893[14] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s894[21] = { 32u, 98u, 117u, 116u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s895[11] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u };
+static const uint32_t m9s896[14] = { 32u, 97u, 112u, 112u, 101u, 97u, 114u, 115u, 32u, 116u, 119u, 105u, 99u, 101u };
+static const uint32_t m9s897[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s898[41] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u };
+static const uint32_t m9s899[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s900[38] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 111u, 102u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 116u, 104u, 97u, 116u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s901[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u };
+static const uint32_t m9s902[25] = { 32u, 102u, 114u, 111u, 109u, 32u, 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
+static const uint32_t m9s903[40] = { 112u, 111u, 111u, 108u, 45u, 105u, 110u, 116u, 101u, 114u, 105u, 111u, 114u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 58u, 32u };
+static const uint32_t m9s904[10] = { 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s905[38] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s906[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s907[55] = { 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s908[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
+static const uint32_t m9s909[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s910[36] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s911[37] = { 97u, 32u, 110u, 101u, 115u, 116u, 101u, 100u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 58u, 32u };
+static const uint32_t m9s912[20] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u };
+static const uint32_t m9s913[36] = { 59u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 105u, 116u, 32u, 97u, 116u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 108u, 101u, 118u, 101u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
+static const uint32_t m9s914[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s915[4] = { 80u, 85u, 82u, 69u };
+static const uint32_t m9s916[47] = { 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 109u, 117u, 115u, 116u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u, 111u, 114u, 32u, 82u, 65u, 73u, 83u, 69u, 32u, 111u, 110u, 32u, 101u, 118u, 101u, 114u, 121u, 32u, 112u, 97u, 116u, 104u, 58u, 32u };
+static const uint32_t m9s917[26] = { 32u, 99u, 97u, 110u, 32u, 114u, 101u, 97u, 99u, 104u, 32u, 105u, 116u, 115u, 32u, 69u, 78u, 68u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
+static const uint32_t m9s918[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
+static const uint32_t m9s919[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
+static const uint32_t m9s920[11] = { 79u, 117u, 116u, 79u, 102u, 77u, 101u, 109u, 111u, 114u, 121u };
+static const uint32_t m9s921[2] = { 67u, 46u };
+static const uint32_t m9s922[1] = { 60u };
+static const uint32_t m9s923[5] = { 67u, 46u, 73u, 110u, 116u };
+static const uint32_t m9s924[7] = { 67u, 46u, 83u, 105u, 122u, 101u, 84u };
+static const uint32_t m9s925[3] = { 70u, 51u, 50u };
+static const uint32_t m9s926[3] = { 73u, 54u, 52u };
+static const uint32_t m9s927[3] = { 70u, 51u, 50u };
+static const uint32_t m9s928[3] = { 70u, 54u, 52u };
+static const uint32_t m9s929[5] = { 67u, 46u, 73u, 110u, 116u };
+static const uint32_t m9s930[7] = { 67u, 46u, 83u, 105u, 122u, 101u, 84u };
+static const uint32_t m9s931[7] = { 67u, 46u, 70u, 108u, 111u, 97u, 116u };
+static const uint32_t m9s932[3] = { 76u, 69u, 78u };
+static const uint32_t m9s933[7] = { 67u, 46u, 83u, 105u, 122u, 101u, 84u };
+static const uint32_t m9s934[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
+static const uint32_t m9s935[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
+static const uint32_t m9s936[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
+static const uint32_t m9s937[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
+static const uint32_t m9s938[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
+static const uint32_t m9s939[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
+static const uint32_t m9s940[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s941[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s942[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s943[1] = { 32u };
+static const uint32_t m9s944[1] = { 32u };
+static const uint32_t m9s945[1] = { 32u };
+static const uint32_t m9s946[17] = { 117u, 110u, 104u, 97u, 110u, 100u, 108u, 101u, 100u, 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
+static const uint32_t m9s947[6] = { 32u, 102u, 114u, 111u, 109u, 32u };
+static const uint32_t m9s948[62] = { 32u, 45u, 45u, 32u, 97u, 100u, 100u, 32u, 105u, 116u, 32u, 116u, 111u, 32u, 116u, 104u, 105u, 115u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 39u, 115u, 32u, 82u, 65u, 73u, 83u, 69u, 83u, 44u, 32u, 111u, 114u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 32u, 105u, 116u, 58u, 32u, 69u, 88u, 67u, 69u, 80u, 84u, 32u, 124u, 32u };
+static const uint32_t m9s949[6] = { 32u, 58u, 32u, 46u, 46u, 46u };
+static const uint32_t m9s950[4] = { 80u, 85u, 82u, 69u };
+static const uint32_t m9s951[21] = { 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 115u, 32u };
+static const uint32_t m9s952[29] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 80u, 85u, 82u, 69u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
+static const uint32_t m9s953[7] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u };
+static const uint32_t m9s954[41] = { 32u, 105u, 115u, 32u, 110u, 97u, 109u, 101u, 100u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 116u, 32u, 105u, 109u, 112u, 111u, 114u, 116u, 101u, 100u, 58u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 73u, 77u, 80u, 79u, 82u, 84u, 32u };
+static const uint32_t m9s955[8] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
+static const uint32_t m9s956[22] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 116u, 119u, 105u, 99u, 101u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s957[23] = { 58u, 32u, 116u, 104u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 105u, 115u, 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
+static const uint32_t m9s958[8] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
+static const uint32_t m9s959[3] = { 78u, 97u, 78u };
+static const uint32_t m9s960[52] = { 78u, 97u, 78u, 32u, 105u, 115u, 32u, 112u, 114u, 101u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 44u, 32u, 116u, 104u, 101u, 32u, 113u, 117u, 105u, 101u, 116u, 32u, 78u, 97u, 78u, 58u, 32u, 97u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 109u, 97u, 121u };
+static const uint32_t m9s961[28] = { 32u, 110u, 111u, 116u, 32u, 116u, 97u, 107u, 101u, 32u, 105u, 116u, 115u, 32u, 110u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s962[7] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u };
+static const uint32_t m9s963[10] = { 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u };
+static const uint32_t m9s964[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s965[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s966[3] = { 70u, 54u, 52u };
+static const uint32_t m9s967[3] = { 70u, 51u, 50u };
+static const uint32_t m9s968[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s969[21] = { 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 111u, 102u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u };
+static const uint32_t m9s970[4] = { 32u, 105u, 115u, 32u };
+static const uint32_t m9s971[105] = { 58u, 32u, 97u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 32u, 105u, 115u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 114u, 101u, 97u, 108u, 115u, 44u, 32u, 66u, 79u, 79u, 76u, 44u, 32u, 67u, 72u, 65u, 82u, 44u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 115u, 32u, 97u, 110u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 115u, 32u, 45u, 45u, 32u, 112u, 97u, 115u, 115u, 32u, 119u, 104u, 97u, 116u, 32u, 116u, 104u, 101u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 114u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 111u, 102u, 32u, 105u, 116u };
 
 static void Sem_Setup (m9_state *err);
 static void Sem_PushErr (m9_sl_m9_sl_CHAR *list, int64_t *n, m9_sl_CHAR s, m9_state *err);
@@ -1320,6 +1339,7 @@ static bool Sem_IsReadonlyT (Ast_Node * declN, Ast_Node * res, m9_state *err);
 static bool Sem_RoRefreshed (Ast_Node * d, m9_state *err);
 static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err);
 static bool Sem_CheckWrite0 (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err);
+static bool Sem_DerefBeyond (Ast_Node * d, m9_state *err);
 static bool Sem_IsRefTy (m9_sl_CHAR s0, m9_state *err);
 static bool Sem_EscHas (m9_sl_CHAR nm, m9_sl_CHAR tgt, m9_state *err);
 static void Sem_EscTarget (m9_sl_CHAR nm, m9_sl_CHAR tgt, m9_state *err);
@@ -1352,9 +1372,20 @@ static bool Sem_AnswersRo (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err);
 static bool Sem_RoExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_state *err);
 static bool Sem_RoEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, m9_state *err);
 static bool Sem_IsParamOf (Ast_Node * d, m9_sl_CHAR nm, m9_state *err);
-static bool Sem_AnswersView (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err);
-static bool Sem_ViewExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_state *err);
-static bool Sem_ViewEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, m9_state *err);
+static bool Sem_AnswersViewAt (m9_sl_CHAR qual, Sem_ProcInfo pr, int64_t j, m9_state *err);
+static bool Sem_ViewCarrier (m9_sl_CHAR cn, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_sl_CHAR nm, m9_state *err);
+static bool Sem_HandsBackFrom (m9_sl_CHAR qual, Sem_ProcInfo pr, int64_t i, int64_t j, m9_state *err);
+static bool Sem_HandsBackDeep (m9_sl_CHAR qual, Sem_ProcInfo pr, int64_t i, int64_t j, m9_state *err);
+static bool Sem_ParamViewBearing (Ast_Node * d, Ast_Node * e, m9_sl_CHAR mod, m9_state *err);
+static bool Sem_ParamSelBeyond (Ast_Node * d, Ast_Node * e, m9_sl_CHAR mod, m9_state *err);
+static m9_sl_CHAR Sem_ParamNameAt (Ast_Node * d, int64_t j, m9_state *err);
+static m9_sl_CHAR Sem_VarParamAt (Ast_Node * d, int64_t j, m9_state *err);
+static bool Sem_ViewExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_sl_CHAR nm, m9_state *err);
+static bool Sem_ViewEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, m9_sl_CHAR nm, m9_state *err);
+static bool Sem_CarrierEvidence (Ast_Node * k, m9_sl_CHAR cn, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_sl_CHAR nm, bool deep, m9_state *err);
+static bool Sem_AnswersViewAny (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err);
+static Ast_Node * Sem_ViewCallOf (Ast_Node * k, m9_state *err);
+static bool Sem_ViewArgOf (Ast_Node * vc, int64_t j, m9_state *err);
 static m9_sl_CHAR Sem_ViewedFrame (Ast_Node * dn, Ast_Node * args, m9_state *err);
 static m9_sl_CHAR Sem_CallAnswersFrame (Ast_Node * dn, m9_state *err);
 static Ast_Node * Sem_DeclPool (Ast_Node * t, m9_state *err);
@@ -1363,6 +1394,7 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err);
 static m9_sl_CHAR Sem_DesigPath (Ast_Node * d, m9_state *err);
 static m9_sl_CHAR Sem_LocalPoolOf (Ast_Node * e, m9_state *err);
 static m9_sl_CHAR Sem_ViewedPool (Ast_Node * dn, Ast_Node * args, m9_state *err);
+static m9_sl_CHAR Sem_TgtName (m9_sl_CHAR t, m9_state *err);
 static void Sem_EscStore (m9_sl_CHAR dst, bool dstSel, m9_sl_CHAR src, m9_state *err);
 static void Sem_PendPush (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR dst, m9_state *err);
 static bool Sem_CarryHas (m9_sl_CHAR nm, m9_sl_CHAR borrow, m9_state *err);
@@ -1463,6 +1495,7 @@ static m9_sl_CHAR Sem_VariantOwnerOf (m9_sl_CHAR tyName, m9_sl_CHAR vName, bool 
 static int64_t Sem_CountParams (Ast_Node * pl, m9_state *err);
 static bool Sem_BaseIsPtr (Ast_Node * d, m9_state *err);
 static bool Sem_PtrBearing (Ast_Node * t, int64_t depth, m9_state *err);
+static Ast_Node * Sem_ParamSelType (Ast_Node * d, Ast_Node * e, m9_sl_CHAR mod, bool *beyond, bool *known, m9_state *err);
 static bool Sem_PtrParamTy (Ast_Node * t, m9_state *err);
 static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err);
 static m9_sl_Ast_Nodep Sem_FlatFields (Ast_Node * fields, int64_t *n, m9_state *err);
@@ -1677,21 +1710,23 @@ void Sem_CheckFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err)
               bool m9t3 = (((*(Sem_ModuleInfo *) m9_at (mods.p, fm, mods.len, sizeof (Sem_ModuleInfo), err)).foreignLang).len == INT64_C(0));
               if (err->exc) goto L_ret;
               if (m9t3) {
+                m9_mark m9t4 = m9_pool_mark (err->res);
                 { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 40 }), imp->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 31 }), err), imp->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 11 }), err), imp->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 5 }), err)) m9a1 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 40 }), imp->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 31 }), err), imp->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 11 }), err), imp->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 5 }), err);
                   if (err->exc) goto L_ret;
                 Sem_ErrN (imp, u->a, m9a1, err);
                 if (err->exc) goto L_ret;
                 }
+                m9_pool_release (err->res, m9t4);
               }
             }
             { Ast_Node * ids = (*(Ast_Node * *) m9_at (imp->kids.p, INT64_C(0), imp->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (ids != NULL) {
-              { int64_t m9t4to;
+              { int64_t m9t5to;
               k = INT64_C(0);
-              m9t4to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
+              m9t5to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
               if (err->exc) goto L_ret;
-              for (; k <= m9t4to; k += 1) {
+              for (; k <= m9t5to; k += 1) {
                 { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, k, ids->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
                 if (id != NULL) {
@@ -1715,20 +1750,20 @@ void Sem_CheckFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err)
       if (err->exc) goto L_ret;
       Sem_ConstClear (err);
       if (err->exc) goto L_ret;
-      { int64_t m9t5to;
+      { int64_t m9t6to;
       j = INT64_C(0);
-      m9t5to = m9_sub_i64 (u->nkids, INT64_C(1), err);
+      m9t6to = m9_sub_i64 (u->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; j <= m9t5to; j += 1) {
+      for (; j <= m9t6to; j += 1) {
         { Ast_Node * cs = (*(Ast_Node * *) m9_at (u->kids.p, j, u->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (cs != NULL) {
           if ((cs->kind == Ast_NConstSection)) {
-            { int64_t m9t6to;
+            { int64_t m9t7to;
             k = INT64_C(0);
-            m9t6to = m9_sub_i64 (cs->nkids, INT64_C(1), err);
+            m9t7to = m9_sub_i64 (cs->nkids, INT64_C(1), err);
             if (err->exc) goto L_ret;
-            for (; k <= m9t6to; k += 1) {
+            for (; k <= m9t7to; k += 1) {
               { Ast_Node * cd = (*(Ast_Node * *) m9_at (cs->kids.p, k, cs->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (cd != NULL) {
@@ -1768,11 +1803,11 @@ void Sem_CheckFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err)
           Sem_CheckConformance (u, err);
           if (err->exc) goto L_ret;
         }
-        { int64_t m9t7to;
+        { int64_t m9t8to;
         j = INT64_C(0);
-        m9t7to = m9_sub_i64 (u->nkids, INT64_C(1), err);
+        m9t8to = m9_sub_i64 (u->nkids, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; j <= m9t7to; j += 1) {
+        for (; j <= m9t8to; j += 1) {
           { Ast_Node * d = (*(Ast_Node * *) m9_at (u->kids.p, j, u->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (d != NULL) {
@@ -2763,11 +2798,13 @@ static void Sem_CheckExcName (Ast_Node * n, m9_sl_CHAR ctx, m9_state *err)
   bool m9t1 = (!Sem_ExcKnown (qual, nm, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
+    m9_mark m9t2 = m9_pool_mark (err->res);
     { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s26, 19 }), nm, err)) m9a11 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s26, 19 }), nm, err);
       if (err->exc) goto L_ret;
     Sem_ErrN (n, ctx, m9a11, err);
     if (err->exc) goto L_ret;
     }
+    m9_pool_release (err->res, m9t2);
   }
 L_ret: ;
   err->res = m9res;
@@ -2874,11 +2911,13 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
       bool m9t2 = (((n->b).len > INT64_C(0)) && (!Sem_TypeKnown (n->a, n->b, err)));
       if (err->exc) goto L_ret;
       if (m9t2) {
+        m9_mark m9t3 = m9_pool_mark (err->res);
         { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s28, 14 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s29, 1 }), err), n->b, err), ((m9_sl_CHAR){ (uint32_t *) m9s30, 4 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 22 }), err)) m9a13 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s28, 14 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s29, 1 }), err), n->b, err), ((m9_sl_CHAR){ (uint32_t *) m9s30, 4 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 22 }), err);
           if (err->exc) goto L_ret;
         Sem_ErrN (n, ctx, m9a13, err);
         if (err->exc) goto L_ret;
         }
+        m9_pool_release (err->res, m9t3);
       }
     } break;
     case INT64_C(35):
@@ -2896,9 +2935,9 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
       Sem_CheckTypeNode (m9a15, ctx, err);
       if (err->exc) goto L_ret;
       }
-      bool m9t3 = Sem_OptOverValue ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err);
+      bool m9t4 = Sem_OptOverValue ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
-      if (m9t3) {
+      if (m9t4) {
         { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a16 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
         { __typeof__(Print_TypeText (&(pool), m9a16, err)) m9a17 = Print_TypeText (&(pool), m9a16, err);
@@ -2927,9 +2966,9 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
       Sem_CheckTypeNode (m9a20, ctx, err);
       if (err->exc) goto L_ret;
       }
-      bool m9t4 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err);
+      bool m9t5 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
-      if (m9t4) {
+      if (m9t5) {
         Sem_ErrN (n, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s34, 75 }), err);
         if (err->exc) goto L_ret;
       }
@@ -2941,9 +2980,9 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
       Sem_CheckTypeNode (m9a21, ctx, err);
       if (err->exc) goto L_ret;
       }
-      bool m9t5 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), err);
+      bool m9t6 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
-      if (m9t5) {
+      if (m9t6) {
         Sem_ErrN (n, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s35, 75 }), err);
         if (err->exc) goto L_ret;
       }
@@ -2961,11 +3000,11 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
       { Ast_Node * pl = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (pl != NULL) {
-        { int64_t m9t6to;
+        { int64_t m9t7to;
         i = INT64_C(0);
-        m9t6to = m9_sub_i64 (pl->nkids, INT64_C(1), err);
+        m9t7to = m9_sub_i64 (pl->nkids, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; i <= m9t6to; i += 1) {
+        for (; i <= m9t7to; i += 1) {
           { Ast_Node * grp = (*(Ast_Node * *) m9_at (pl->kids.p, i, pl->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (grp != NULL) {
@@ -3006,11 +3045,11 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(30):
     {
-      { int64_t m9t7to;
+      { int64_t m9t8to;
       i = INT64_C(0);
-      m9t7to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+      m9t8to = m9_sub_i64 (n->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t7to; i += 1) {
+      for (; i <= m9t8to; i += 1) {
         { Ast_Node * v = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (v != NULL) {
@@ -3126,6 +3165,7 @@ static void Sem_CheckDeclTypes (Ast_Node * u, m9_state *err)
             { Ast_Node * grp = (*(Ast_Node * *) m9_at (pl->kids.p, a, pl->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (grp != NULL) {
+              m9_mark m9t3 = m9_pool_mark (err->res);
               { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a31 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
               { __typeof__(m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s37, 1 }), err), d->a, err)) m9a32 = m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s37, 1 }), err), d->a, err);
@@ -3134,9 +3174,11 @@ static void Sem_CheckDeclTypes (Ast_Node * u, m9_state *err)
               if (err->exc) goto L_ret;
               }
               }
+              m9_pool_release (err->res, m9t3);
             } }
           } }
         } }
+        m9_mark m9t4 = m9_pool_mark (err->res);
         { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a33 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
         { __typeof__(m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s38, 1 }), err), d->a, err)) m9a34 = m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s38, 1 }), err), d->a, err);
@@ -3145,23 +3187,28 @@ static void Sem_CheckDeclTypes (Ast_Node * u, m9_state *err)
         if (err->exc) goto L_ret;
         }
         }
-        bool m9t3 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), err);
+        m9_pool_release (err->res, m9t4);
+        bool m9t5 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), err);
         if (err->exc) goto L_ret;
-        if (m9t3) {
+        if (m9t5) {
+          m9_mark m9t6 = m9_pool_mark (err->res);
           { __typeof__(m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s39, 1 }), err), d->a, err)) m9a35 = m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s39, 1 }), err), d->a, err);
             if (err->exc) goto L_ret;
           Sem_ErrN (d, m9a35, ((m9_sl_CHAR){ (uint32_t *) m9s40, 55 }), err);
           if (err->exc) goto L_ret;
           }
+          m9_pool_release (err->res, m9t6);
         }
         { Ast_Node * body = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (body != NULL) {
+          m9_mark m9t7 = m9_pool_mark (err->res);
           { __typeof__(m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s41, 1 }), err), d->a, err)) m9a36 = m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s41, 1 }), err), d->a, err);
             if (err->exc) goto L_ret;
           Sem_CheckVarTypes (body, m9a36, err);
           if (err->exc) goto L_ret;
           }
+          m9_pool_release (err->res, m9t7);
         } }
       }
     } }
@@ -6435,6 +6482,149 @@ L_ret: ;
   return m9ret;
 }
 
+static bool Sem_DerefBeyond (Ast_Node * d, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t j = 0; (void) j;
+  Ast_Node * declN = NULL; (void) declN;
+  Ast_Node * res = NULL; (void) res;
+  m9_sl_CHAR tmod = {0}; (void) tmod;
+  bool beyond = false; (void) beyond;
+  bool deref = false; (void) deref;
+  bool known = false; (void) known;
+  beyond = false;
+  tmod = (m9_sl_CHAR){ NULL, 0 };
+  if ((d->nkids == INT64_C(0))) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { __typeof__(declN) m9v = Sem_ScopeType (d->a, err);
+    if (err->exc) goto L_ret;
+    declN = m9v;
+  }
+  { int64_t m9t1to;
+  j = INT64_C(0);
+  m9t1to = m9_sub_i64 (d->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; j <= m9t1to; j += 1) {
+    known = false;
+    { Ast_Node * dn0 = declN;
+    if (dn0 != NULL) {
+      known = true;
+    } }
+    if ((!known)) {
+      err->res = m9res;
+      m9ret = beyond;
+      goto L_ret;
+    }
+    Sem_NoteMod (declN, &(tmod), err);
+    if (err->exc) goto L_ret;
+    { __typeof__(res) m9v = Sem_ResolveType (declN, err);
+      if (err->exc) goto L_ret;
+      res = m9v;
+    }
+    for (;;) {
+      deref = false;
+      { Ast_Node * r0 = res;
+      if (r0 != NULL) {
+        if (((r0->kind == Ast_NPtrType) || (r0->kind == Ast_NSharedType))) {
+          deref = true;
+          beyond = true;
+          { __typeof__((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err))) m9a123 = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+          { __typeof__(declN) m9v = Sem_InMod (m9a123, tmod, err);
+            if (err->exc) goto L_ret;
+            declN = m9v;
+          }
+          }
+          Sem_NoteMod (declN, &(tmod), err);
+          if (err->exc) goto L_ret;
+          { __typeof__(res) m9v = Sem_ResolveType (declN, err);
+            if (err->exc) goto L_ret;
+            res = m9v;
+          }
+        }
+      } }
+      if ((!deref)) {
+        break;
+      }
+    }
+    { Ast_Node * r = res;
+    if (r != NULL) {
+      { Ast_Node * sel = (*(Ast_Node * *) m9_at (d->kids.p, j, d->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (sel != NULL) {
+        if ((sel->kind == Ast_NSelField)) {
+          if ((r->kind == Ast_NRecordType)) {
+            { __typeof__(Sem_FieldTypeOf (r, sel->a, err)) m9a124 = Sem_FieldTypeOf (r, sel->a, err);
+              if (err->exc) goto L_ret;
+            { __typeof__(declN) m9v = Sem_InMod (m9a124, tmod, err);
+              if (err->exc) goto L_ret;
+              declN = m9v;
+            }
+            }
+          } else {
+            err->res = m9res;
+            m9ret = beyond;
+            goto L_ret;
+          }
+        } else {
+          if ((sel->kind == Ast_NSelIndex)) {
+            if ((r->kind == Ast_NGridType)) {
+              beyond = true;
+              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a125 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+              { __typeof__(declN) m9v = Sem_InMod (m9a125, tmod, err);
+                if (err->exc) goto L_ret;
+                declN = m9v;
+              }
+              }
+            } else {
+              if ((r->kind == Ast_NSliceType)) {
+                beyond = true;
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a126 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                { __typeof__(declN) m9v = Sem_InMod (m9a126, tmod, err);
+                  if (err->exc) goto L_ret;
+                  declN = m9v;
+                }
+                }
+            } else {
+              if ((r->kind == Ast_NArrayType)) {
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a127 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                { __typeof__(declN) m9v = Sem_InMod (m9a127, tmod, err);
+                  if (err->exc) goto L_ret;
+                  declN = m9v;
+                }
+                }
+            } else {
+              err->res = m9res;
+              m9ret = beyond;
+              goto L_ret;
+            } } }
+        } }
+      } }
+    } else {
+      err->res = m9res;
+      m9ret = beyond;
+      goto L_ret;
+    } }
+  } }
+  err->res = m9res;
+  m9ret = beyond;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 static bool Sem_IsRefTy (m9_sl_CHAR s0, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -6594,19 +6784,30 @@ static m9_sl_CHAR Sem_KindPool (m9_sl_CHAR what, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  bool m9t1 = Text_StartsWith (what, ((m9_sl_CHAR){ (uint32_t *) m9s111, 22 }), err);
+  bool m9t1 = Text_StartsWith (what, ((m9_sl_CHAR){ (uint32_t *) m9s111, 10 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ({ __typeof__(what) m9t2 = what; int64_t m9t2a = INT64_C(22), m9t2n = m9_sub_i64 ((what).len, INT64_C(22), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+    { __typeof__(({ __typeof__(what) m9t2 = what; int64_t m9t2a = INT64_C(10), m9t2n = m9_sub_i64 ((what).len, INT64_C(10), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a128 = ({ __typeof__(what) m9t2 = what; int64_t m9t2a = INT64_C(10), m9t2n = m9_sub_i64 ((what).len, INT64_C(10), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+      if (err->exc) goto L_ret;
+    m9ret = Sem_KindPool (m9a128, err);
     if (err->exc) goto L_ret;
+    }
     goto L_ret;
   }
-  bool m9t3 = Text_StartsWith (what, ((m9_sl_CHAR){ (uint32_t *) m9s112, 17 }), err);
+  bool m9t3 = Text_StartsWith (what, ((m9_sl_CHAR){ (uint32_t *) m9s112, 22 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = ({ __typeof__(what) m9t4 = what; int64_t m9t4a = INT64_C(17), m9t4n = m9_sub_i64 ((what).len, INT64_C(17), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+    m9ret = ({ __typeof__(what) m9t4 = what; int64_t m9t4a = INT64_C(22), m9t4n = m9_sub_i64 ((what).len, INT64_C(22), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  bool m9t5 = Text_StartsWith (what, ((m9_sl_CHAR){ (uint32_t *) m9s113, 17 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t5) {
+    err->res = m9res;
+    m9ret = ({ __typeof__(what) m9t6 = what; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((what).len, INT64_C(17), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -6669,7 +6870,7 @@ static void Sem_FvalAdd (m9_sl_CHAR nm, m9_sl_CHAR what, m9_state *err)
     bool m9t2 = Text_Eq ((*(m9_sl_CHAR *) m9_at (fvalName.p, i, fvalName.len, sizeof (m9_sl_CHAR), err)), nm, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      bool m9t3 = (((Sem_KindPool (what, err)).len > INT64_C(0)) || Text_StartsWith (what, ((m9_sl_CHAR){ (uint32_t *) m9s113, 10 }), err));
+      bool m9t3 = (((Sem_KindPool (what, err)).len > INT64_C(0)) || Text_StartsWith (what, ((m9_sl_CHAR){ (uint32_t *) m9s114, 10 }), err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         (*(m9_sl_CHAR *) m9_at (fvalKind.p, i, fvalKind.len, sizeof (m9_sl_CHAR), err)) = what;
@@ -6879,7 +7080,7 @@ static bool Sem_NewIsFrame (Ast_Node * e, m9_state *err)
       m9ret = false;
       goto L_ret;
     }
-    bool m9t1 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s114, 3 }), err) || Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), err));
+    bool m9t1 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s115, 3 }), err) || Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s116, 4 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
@@ -6990,11 +7191,11 @@ static m9_sl_CHAR Sem_EscRootOf (Ast_Node * k, m9_state *err)
       m9ret = e->a;
       goto L_ret;
     }
-    if (((e->kind == Ast_NSomeExpr) || (e->kind == Ast_NParen))) {
+    if ((((((e->kind == Ast_NSomeExpr) || (e->kind == Ast_NParen)) || (e->kind == Ast_NSliceOf3)) || (e->kind == Ast_NSharedExpr)) || (e->kind == Ast_NGridOf))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a123 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a129 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_EscRootOf (m9a123, err);
+      m9ret = Sem_EscRootOf (m9a129, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -7004,7 +7205,7 @@ static m9_sl_CHAR Sem_EscRootOf (Ast_Node * k, m9_state *err)
       if (err->exc) goto L_ret;
       if (cal != NULL) {
         if (((cal->kind == Ast_NDesignator) && (cal->nkids == INT64_C(0)))) {
-          bool m9t1 = ((Text_Eq (cal->a, ((m9_sl_CHAR){ (uint32_t *) m9s116, 5 }), err) || Text_Eq (cal->a, ((m9_sl_CHAR){ (uint32_t *) m9s117, 4 }), err)) || Text_Eq (cal->a, ((m9_sl_CHAR){ (uint32_t *) m9s118, 6 }), err));
+          bool m9t1 = ((Text_Eq (cal->a, ((m9_sl_CHAR){ (uint32_t *) m9s117, 5 }), err) || Text_Eq (cal->a, ((m9_sl_CHAR){ (uint32_t *) m9s118, 4 }), err)) || Text_Eq (cal->a, ((m9_sl_CHAR){ (uint32_t *) m9s119, 6 }), err));
           if (err->exc) goto L_ret;
           if (m9t1) {
             { Ast_Node * al = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
@@ -7012,9 +7213,9 @@ static m9_sl_CHAR Sem_EscRootOf (Ast_Node * k, m9_state *err)
             if (al != NULL) {
               if ((al->nkids > INT64_C(0))) {
                 err->res = m9res;
-                { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a124 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a130 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                m9ret = Sem_EscRootOf (m9a124, err);
+                m9ret = Sem_EscRootOf (m9a130, err);
                 if (err->exc) goto L_ret;
                 }
                 goto L_ret;
@@ -7063,9 +7264,9 @@ static Ast_Node * Sem_ParenCore (Ast_Node * k, m9_state *err)
   if (e != NULL) {
     if ((e->kind == Ast_NParen)) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a125 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a131 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_ParenCore (m9a125, err);
+      m9ret = Sem_ParenCore (m9a131, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -7092,9 +7293,9 @@ static Ast_Node * Sem_FrameCore (Ast_Node * k, m9_state *err)
   if (e != NULL) {
     if (((e->kind == Ast_NParen) || (e->kind == Ast_NSomeExpr))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a126 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a132 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_FrameCore (m9a126, err);
+      m9ret = Sem_FrameCore (m9a132, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -7335,14 +7536,14 @@ static bool Sem_AnswersFrame (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
   }
   if ((i >= INT64_C(0))) {
     err->res = m9res;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err))) m9a127 = (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err))) m9a133 = (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    m9ret = Text_Eq (m9a127, ((m9_sl_CHAR){ (uint32_t *) m9s119, 3 }), err);
+    m9ret = Text_Eq (m9a133, ((m9_sl_CHAR){ (uint32_t *) m9s120, 3 }), err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  Sem_AnsSet (qual, ((m9_sl_CHAR){ (uint32_t *) m9s120, 4 }), err);
+  Sem_AnsSet (qual, ((m9_sl_CHAR){ (uint32_t *) m9s121, 4 }), err);
   if (err->exc) goto L_ret;
   res = false;
   { Ast_Node * d = pr.body;
@@ -7363,7 +7564,7 @@ static bool Sem_AnswersFrame (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
           if (err->exc) goto L_ret;
           if (pt != NULL) {
             if ((pt->kind == Ast_NQualident)) {
-              bool m9t2 = (Text_Eq (pt->a, ((m9_sl_CHAR){ (uint32_t *) m9s121, 4 }), err) && ((pt->b).len == INT64_C(0)));
+              bool m9t2 = (Text_Eq (pt->a, ((m9_sl_CHAR){ (uint32_t *) m9s122, 4 }), err) && ((pt->b).len == INT64_C(0)));
               if (err->exc) goto L_ret;
               if (m9t2) {
                 hasPool = true;
@@ -7377,22 +7578,22 @@ static bool Sem_AnswersFrame (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
-      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a128 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a134 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_CanonT (m9a128, INT64_C(0), err)) m9a129 = Sem_CanonT (m9a128, INT64_C(0), err);
+      { __typeof__(Sem_CanonT (m9a134, INT64_C(0), err)) m9a135 = Sem_CanonT (m9a134, INT64_C(0), err);
         if (err->exc) goto L_ret;
-      { __typeof__(isStr) m9v = Text_Eq (m9a129, ((m9_sl_CHAR){ (uint32_t *) m9s122, 13 }), err);
+      { __typeof__(isStr) m9v = Text_Eq (m9a135, ((m9_sl_CHAR){ (uint32_t *) m9s123, 13 }), err);
         if (err->exc) goto L_ret;
         isStr = m9v;
       }
       }
       }
     } }
-    { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a130 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a136 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a131 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a137 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(res) m9v = Sem_FrameEvidence (m9a130, pr.modName, isStr, m9a131, (!hasPool), err);
+    { __typeof__(res) m9v = Sem_FrameEvidence (m9a136, pr.modName, isStr, m9a137, (!hasPool), err);
       if (err->exc) goto L_ret;
       res = m9v;
     }
@@ -7400,10 +7601,10 @@ static bool Sem_AnswersFrame (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
     }
   } }
   if (res) {
-    Sem_AnsSet (qual, ((m9_sl_CHAR){ (uint32_t *) m9s123, 3 }), err);
+    Sem_AnsSet (qual, ((m9_sl_CHAR){ (uint32_t *) m9s124, 3 }), err);
     if (err->exc) goto L_ret;
   } else {
-    Sem_AnsSet (qual, ((m9_sl_CHAR){ (uint32_t *) m9s124, 2 }), err);
+    Sem_AnsSet (qual, ((m9_sl_CHAR){ (uint32_t *) m9s125, 2 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -7432,9 +7633,9 @@ static Sem_ProcInfo Sem_ProcNamed (m9_sl_CHAR mod, m9_sl_CHAR callee, bool *foun
     dot = m9v;
   }
   if ((dot >= INT64_C(0))) {
-    { __typeof__(({ __typeof__(callee) m9t1 = callee; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a132 = ({ __typeof__(callee) m9t1 = callee; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    { __typeof__(({ __typeof__(callee) m9t1 = callee; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a138 = ({ __typeof__(callee) m9t1 = callee; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
       if (err->exc) goto L_ret;
-    { __typeof__(m) m9v = Sem_FindMod (m9a132, err);
+    { __typeof__(m) m9v = Sem_FindMod (m9a138, err);
       if (err->exc) goto L_ret;
       m = m9v;
     }
@@ -7444,9 +7645,9 @@ static Sem_ProcInfo Sem_ProcNamed (m9_sl_CHAR mod, m9_sl_CHAR callee, bool *foun
       m9ret = empty;
       goto L_ret;
     }
-    { __typeof__(({ __typeof__(callee) m9t2 = callee; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((callee).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a133 = ({ __typeof__(callee) m9t2 = callee; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((callee).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+    { __typeof__(({ __typeof__(callee) m9t2 = callee; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((callee).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a139 = ({ __typeof__(callee) m9t2 = callee; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((callee).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
       if (err->exc) goto L_ret;
-    { __typeof__(pi) m9v = Sem_FindProcIn (m, m9a133, err);
+    { __typeof__(pi) m9v = Sem_FindProcIn (m, m9a139, err);
       if (err->exc) goto L_ret;
       pi = m9v;
     }
@@ -7502,14 +7703,14 @@ static bool Sem_NewIsFrameIn (Ast_Node * e, m9_sl_CHAR mod, m9_state *err)
   if (err->exc) goto L_ret;
   if (d != NULL) {
     if ((d->nkids == INT64_C(0))) {
-      bool m9t1 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s125, 3 }), err) || Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s126, 4 }), err));
+      bool m9t1 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s126, 3 }), err) || Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s127, 4 }), err));
       if (err->exc) goto L_ret;
       if (m9t1) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
       }
-      bool m9t2 = (Sem_IsBuiltinTy (d->a, err) || Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s127, 3 }), err));
+      bool m9t2 = (Sem_IsBuiltinTy (d->a, err) || Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s128, 3 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
@@ -7586,9 +7787,9 @@ static bool Sem_ExprEvidence (Ast_Node * k, m9_sl_CHAR mod, bool isStr, Ast_Node
   if (e != NULL) {
     if (((e->kind == Ast_NParen) || (e->kind == Ast_NSomeExpr))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a134 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a140 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_ExprEvidence (m9a134, mod, isStr, body, depth, err);
+      m9ret = Sem_ExprEvidence (m9a140, mod, isStr, body, depth, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -7601,7 +7802,7 @@ static bool Sem_ExprEvidence (Ast_Node * k, m9_sl_CHAR mod, bool isStr, Ast_Node
     }
     if ((e->kind == Ast_NBin)) {
       err->res = m9res;
-      m9ret = (isStr && Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s128, 1 }), err));
+      m9ret = (isStr && Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s129, 1 }), err));
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -7621,9 +7822,9 @@ static bool Sem_ExprEvidence (Ast_Node * k, m9_sl_CHAR mod, bool isStr, Ast_Node
           if (found) {
             if (((pr.foreign).len == INT64_C(0))) {
               err->res = m9res;
-              { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a135 = Sem_Qualify (pr.modName, pr.name, err);
+              { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a141 = Sem_Qualify (pr.modName, pr.name, err);
                 if (err->exc) goto L_ret;
-              m9ret = Sem_AnswersFrame (m9a135, pr, err);
+              m9ret = Sem_AnswersFrame (m9a141, pr, err);
               if (err->exc) goto L_ret;
               }
               goto L_ret;
@@ -7637,9 +7838,9 @@ static bool Sem_ExprEvidence (Ast_Node * k, m9_sl_CHAR mod, bool isStr, Ast_Node
     }
     if (((e->kind == Ast_NDesignator) && (e->nkids == INT64_C(0)))) {
       err->res = m9res;
-      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a136 = m9_add_i64 (depth, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a142 = m9_add_i64 (depth, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      m9ret = Sem_AssignEvidence (body, e->a, mod, isStr, body, m9a136, err);
+      m9ret = Sem_AssignEvidence (body, e->a, mod, isStr, body, m9a142, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -7731,7 +7932,7 @@ static bool Sem_FrameEvidence (Ast_Node * k, m9_sl_CHAR mod, bool isStr, Ast_Nod
           if (err->exc) goto L_ret;
           if (vt != NULL) {
             if ((vt->kind == Ast_NQualident)) {
-              bool m9t2 = (Text_Eq (vt->a, ((m9_sl_CHAR){ (uint32_t *) m9s129, 4 }), err) && ((vt->b).len == INT64_C(0)));
+              bool m9t2 = (Text_Eq (vt->a, ((m9_sl_CHAR){ (uint32_t *) m9s130, 4 }), err) && ((vt->b).len == INT64_C(0)));
               if (err->exc) goto L_ret;
               if (m9t2) {
                 err->res = m9res;
@@ -7831,9 +8032,9 @@ static bool Sem_AnswersRo (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
   m9_sl_CHAR key = {0}; (void) key;
   m9_sl_CHAR t = {0}; (void) t;
   bool res = false; (void) res;
-  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s130, 3 }), qual, err)) m9a137 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s130, 3 }), qual, err);
+  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s131, 3 }), qual, err)) m9a143 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s131, 3 }), qual, err);
     if (err->exc) goto L_ret;
-  { __typeof__(key) m9v = Text_Keep (&(pool), m9a137, err);
+  { __typeof__(key) m9v = Text_Keep (&(pool), m9a143, err);
     if (err->exc) goto L_ret;
     key = m9v;
   }
@@ -7844,14 +8045,14 @@ static bool Sem_AnswersRo (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
   }
   if ((i >= INT64_C(0))) {
     err->res = m9res;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err))) m9a138 = (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err))) m9a144 = (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    m9ret = Text_Eq (m9a138, ((m9_sl_CHAR){ (uint32_t *) m9s131, 3 }), err);
+    m9ret = Text_Eq (m9a144, ((m9_sl_CHAR){ (uint32_t *) m9s132, 3 }), err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s132, 4 }), err);
+  Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s133, 4 }), err);
   if (err->exc) goto L_ret;
   res = false;
   { Ast_Node * d = pr.body;
@@ -7859,19 +8060,19 @@ static bool Sem_AnswersRo (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
-      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a139 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a145 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_CanonT (m9a139, INT64_C(0), err);
+      { __typeof__(t) m9v = Sem_CanonT (m9a145, INT64_C(0), err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
       }
-      bool m9t1 = (Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s133, 9 }), err) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s134, 5 }), err));
+      bool m9t1 = (Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s134, 9 }), err) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s135, 5 }), err));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a140 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a146 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(res) m9v = Sem_RoEvidence (m9a140, d, pr.modName, err);
+        { __typeof__(res) m9v = Sem_RoEvidence (m9a146, d, pr.modName, err);
           if (err->exc) goto L_ret;
           res = m9v;
         }
@@ -7880,10 +8081,10 @@ static bool Sem_AnswersRo (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
     } }
   } }
   if (res) {
-    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s135, 3 }), err);
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s136, 3 }), err);
     if (err->exc) goto L_ret;
   } else {
-    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s136, 2 }), err);
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s137, 2 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -7920,11 +8121,11 @@ static bool Sem_RoExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, int6
     }
     if (((e->kind == Ast_NSliceOf3) || (e->kind == Ast_NGridOf))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a141 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a147 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a142 = m9_add_i64 (depth, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a148 = m9_add_i64 (depth, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      m9ret = Sem_RoExprEvidence (m9a141, d, mod, m9a142, err);
+      m9ret = Sem_RoExprEvidence (m9a147, d, mod, m9a148, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -7969,9 +8170,9 @@ static bool Sem_RoExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, int6
               }
             } }
             err->res = m9res;
-            { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a143 = Sem_Qualify (pr.modName, pr.name, err);
+            { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a149 = Sem_Qualify (pr.modName, pr.name, err);
               if (err->exc) goto L_ret;
-            m9ret = Sem_AnswersRo (m9a143, pr, err);
+            m9ret = Sem_AnswersRo (m9a149, pr, err);
             if (err->exc) goto L_ret;
             }
             goto L_ret;
@@ -8084,7 +8285,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Sem_AnswersView (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
+static bool Sem_AnswersViewAt (m9_sl_CHAR qual, Sem_ProcInfo pr, int64_t j, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8094,12 +8295,16 @@ static bool Sem_AnswersView (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
   int64_t i = 0; (void) i;
   m9_sl_CHAR key = {0}; (void) key;
   m9_sl_CHAR t = {0}; (void) t;
+  m9_sl_CHAR nm = {0}; (void) nm;
   bool res = false; (void) res;
-  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s137, 5 }), qual, err)) m9a144 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s137, 5 }), qual, err);
+  { __typeof__(Sem_ItoA (j, err)) m9a150 = Sem_ItoA (j, err);
     if (err->exc) goto L_ret;
-  { __typeof__(key) m9v = Text_Keep (&(pool), m9a144, err);
+  { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s138, 5 }), qual, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), m9a150, err)) m9a151 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s138, 5 }), qual, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), m9a150, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(key) m9v = Text_Keep (&(pool), m9a151, err);
     if (err->exc) goto L_ret;
     key = m9v;
+  }
   }
   }
   { __typeof__(i) m9v = Sem_AnsFind (key, err);
@@ -8108,34 +8313,38 @@ static bool Sem_AnswersView (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
   }
   if ((i >= INT64_C(0))) {
     err->res = m9res;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err))) m9a145 = (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err))) m9a152 = (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    m9ret = Text_Eq (m9a145, ((m9_sl_CHAR){ (uint32_t *) m9s138, 3 }), err);
+    m9ret = Text_Eq (m9a152, ((m9_sl_CHAR){ (uint32_t *) m9s140, 3 }), err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s139, 4 }), err);
+  Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s141, 4 }), err);
   if (err->exc) goto L_ret;
   res = false;
   { Ast_Node * d = pr.body;
   if (d != NULL) {
+    { __typeof__(nm) m9v = Sem_ParamNameAt (d, j, err);
+      if (err->exc) goto L_ret;
+      nm = m9v;
+    }
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
-      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a146 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a153 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_CanonT (m9a146, INT64_C(0), err);
+      { __typeof__(t) m9v = Sem_CanonT (m9a153, INT64_C(0), err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
       }
-      bool m9t1 = (Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s140, 9 }), err) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s141, 5 }), err));
+      bool m9t1 = (((nm).len > INT64_C(0)) && ((Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s142, 9 }), err) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s143, 5 }), err))));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a147 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a154 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(res) m9v = Sem_ViewEvidence (m9a147, d, pr.modName, err);
+        { __typeof__(res) m9v = Sem_ViewEvidence (m9a154, d, pr.modName, nm, err);
           if (err->exc) goto L_ret;
           res = m9v;
         }
@@ -8144,10 +8353,10 @@ static bool Sem_AnswersView (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
     } }
   } }
   if (res) {
-    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s142, 3 }), err);
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s144, 3 }), err);
     if (err->exc) goto L_ret;
   } else {
-    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s143, 2 }), err);
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s145, 2 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -8159,7 +8368,421 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Sem_ViewExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_state *err)
+static bool Sem_ViewCarrier (m9_sl_CHAR cn, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_sl_CHAR nm, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  if ((depth > INT64_C(8))) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  bool m9t1 = Sem_IsParamOf (d, cn, err);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  err->res = m9res;
+  { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a155 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+  m9ret = Sem_CarrierEvidence (m9a155, cn, d, mod, depth, nm, false, err);
+  if (err->exc) goto L_ret;
+  }
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_HandsBackFrom (m9_sl_CHAR qual, Sem_ProcInfo pr, int64_t i, int64_t j, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t n = 0; (void) n;
+  m9_sl_CHAR key = {0}; (void) key;
+  m9_sl_CHAR cn = {0}; (void) cn;
+  m9_sl_CHAR src = {0}; (void) src;
+  bool res = false; (void) res;
+  if ((i == j)) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { __typeof__(Sem_ItoA (i, err)) m9a156 = Sem_ItoA (i, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Sem_ItoA (j, err)) m9a157 = Sem_ItoA (j, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s148, 1 }), m9a157, err)) m9a158 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s148, 1 }), m9a157, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s146, 5 }), qual, ((m9_sl_CHAR){ (uint32_t *) m9s147, 1 }), m9a156, m9a158, err)) m9a159 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s146, 5 }), qual, ((m9_sl_CHAR){ (uint32_t *) m9s147, 1 }), m9a156, m9a158, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(key) m9v = Text_Keep (&(pool), m9a159, err);
+    if (err->exc) goto L_ret;
+    key = m9v;
+  }
+  }
+  }
+  }
+  }
+  { __typeof__(n) m9v = Sem_AnsFind (key, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
+  if ((n >= INT64_C(0))) {
+    err->res = m9res;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (ansState.p, n, ansState.len, sizeof (m9_sl_CHAR), err))) m9a160 = (*(m9_sl_CHAR *) m9_at (ansState.p, n, ansState.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    m9ret = Text_Eq (m9a160, ((m9_sl_CHAR){ (uint32_t *) m9s149, 3 }), err);
+    if (err->exc) goto L_ret;
+    }
+    goto L_ret;
+  }
+  Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s150, 4 }), err);
+  if (err->exc) goto L_ret;
+  res = false;
+  { Ast_Node * d = pr.body;
+  if (d != NULL) {
+    { __typeof__(cn) m9v = Sem_VarParamAt (d, i, err);
+      if (err->exc) goto L_ret;
+      cn = m9v;
+    }
+    { __typeof__(src) m9v = Sem_ParamNameAt (d, j, err);
+      if (err->exc) goto L_ret;
+      src = m9v;
+    }
+    if ((((cn).len > INT64_C(0)) && ((src).len > INT64_C(0)))) {
+      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a161 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(res) m9v = Sem_CarrierEvidence (m9a161, cn, d, pr.modName, INT64_C(0), src, false, err);
+        if (err->exc) goto L_ret;
+        res = m9v;
+      }
+      }
+    }
+  } }
+  if (res) {
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s151, 3 }), err);
+    if (err->exc) goto L_ret;
+  } else {
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s152, 2 }), err);
+    if (err->exc) goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = res;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_HandsBackDeep (m9_sl_CHAR qual, Sem_ProcInfo pr, int64_t i, int64_t j, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t n = 0; (void) n;
+  m9_sl_CHAR key = {0}; (void) key;
+  m9_sl_CHAR cn = {0}; (void) cn;
+  m9_sl_CHAR src = {0}; (void) src;
+  bool res = false; (void) res;
+  if ((i == j)) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { __typeof__(Sem_ItoA (i, err)) m9a162 = Sem_ItoA (i, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Sem_ItoA (j, err)) m9a163 = Sem_ItoA (j, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s155, 1 }), m9a163, err)) m9a164 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s155, 1 }), m9a163, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s153, 5 }), qual, ((m9_sl_CHAR){ (uint32_t *) m9s154, 1 }), m9a162, m9a164, err)) m9a165 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s153, 5 }), qual, ((m9_sl_CHAR){ (uint32_t *) m9s154, 1 }), m9a162, m9a164, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(key) m9v = Text_Keep (&(pool), m9a165, err);
+    if (err->exc) goto L_ret;
+    key = m9v;
+  }
+  }
+  }
+  }
+  }
+  { __typeof__(n) m9v = Sem_AnsFind (key, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
+  if ((n >= INT64_C(0))) {
+    err->res = m9res;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (ansState.p, n, ansState.len, sizeof (m9_sl_CHAR), err))) m9a166 = (*(m9_sl_CHAR *) m9_at (ansState.p, n, ansState.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    m9ret = Text_Eq (m9a166, ((m9_sl_CHAR){ (uint32_t *) m9s156, 3 }), err);
+    if (err->exc) goto L_ret;
+    }
+    goto L_ret;
+  }
+  Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s157, 4 }), err);
+  if (err->exc) goto L_ret;
+  res = false;
+  { Ast_Node * d = pr.body;
+  if (d != NULL) {
+    { __typeof__(cn) m9v = Sem_VarParamAt (d, i, err);
+      if (err->exc) goto L_ret;
+      cn = m9v;
+    }
+    { __typeof__(src) m9v = Sem_ParamNameAt (d, j, err);
+      if (err->exc) goto L_ret;
+      src = m9v;
+    }
+    if ((((cn).len > INT64_C(0)) && ((src).len > INT64_C(0)))) {
+      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err))) m9a167 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(res) m9v = Sem_CarrierEvidence (m9a167, cn, d, pr.modName, INT64_C(0), src, true, err);
+        if (err->exc) goto L_ret;
+        res = m9v;
+      }
+      }
+    }
+  } }
+  if (res) {
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s158, 3 }), err);
+    if (err->exc) goto L_ret;
+  } else {
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s159, 2 }), err);
+    if (err->exc) goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = res;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_ParamViewBearing (Ast_Node * d, Ast_Node * e, m9_sl_CHAR mod, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  Ast_Node * tn = NULL; (void) tn;
+  bool beyond = false; (void) beyond;
+  bool known = false; (void) known;
+  bool m9t1 = (!Sem_IsParamOf (d, e->a, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { __typeof__(tn) m9v = Sem_ParamSelType (d, e, mod, &(beyond), &(known), err);
+    if (err->exc) goto L_ret;
+    tn = m9v;
+  }
+  if ((!known)) {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  }
+  { Ast_Node * tq = tn;
+  if (tq != NULL) {
+    bool m9t2 = (((tq->kind == Ast_NQualident) && ((tq->b).len == INT64_C(0))) && Sem_IsBuiltinTy (tq->a, err));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+  } }
+  { Ast_Node * r2 = Sem_ResolveType (tn, err);
+  if (err->exc) goto L_ret;
+  if (r2 != NULL) {
+    err->res = m9res;
+    m9ret = Sem_PtrBearing (tn, INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  } }
+  err->res = m9res;
+  m9ret = true;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_ParamSelBeyond (Ast_Node * d, Ast_Node * e, m9_sl_CHAR mod, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  Ast_Node * tn = NULL; (void) tn;
+  bool beyond = false; (void) beyond;
+  bool known = false; (void) known;
+  bool m9t1 = (!Sem_IsParamOf (d, e->a, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { __typeof__(tn) m9v = Sem_ParamSelType (d, e, mod, &(beyond), &(known), err);
+    if (err->exc) goto L_ret;
+    tn = m9v;
+  }
+  if ((!known)) {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = beyond;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_CHAR Sem_ParamNameAt (Ast_Node * d, int64_t j, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  int64_t g = 0; (void) g;
+  int64_t b = 0; (void) b;
+  int64_t k = 0; (void) k;
+  k = INT64_C(0);
+  { Ast_Node * ps = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(0), d->kids.len, sizeof (Ast_Node *), err));
+  if (err->exc) goto L_ret;
+  if (ps != NULL) {
+    { int64_t m9t1to;
+    g = INT64_C(0);
+    m9t1to = m9_sub_i64 (ps->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; g <= m9t1to; g += 1) {
+      { Ast_Node * grp = (*(Ast_Node * *) m9_at (ps->kids.p, g, ps->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (grp != NULL) {
+        { Ast_Node * ids = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(0), grp->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (ids != NULL) {
+          { int64_t m9t2to;
+          b = INT64_C(0);
+          m9t2to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          for (; b <= m9t2to; b += 1) {
+            if ((k == j)) {
+              { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, b, ids->kids.len, sizeof (Ast_Node *), err));
+              if (err->exc) goto L_ret;
+              if (id != NULL) {
+                err->res = m9res;
+                m9ret = id->a;
+                goto L_ret;
+              } }
+              err->res = m9res;
+              m9ret = (m9_sl_CHAR){ NULL, 0 };
+              goto L_ret;
+            }
+            { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+              if (err->exc) goto L_ret;
+              k = m9v;
+            }
+          } }
+        } }
+      } }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = (m9_sl_CHAR){ NULL, 0 };
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_CHAR Sem_VarParamAt (Ast_Node * d, int64_t j, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  int64_t g = 0; (void) g;
+  int64_t b = 0; (void) b;
+  int64_t k = 0; (void) k;
+  k = INT64_C(0);
+  { Ast_Node * ps = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(0), d->kids.len, sizeof (Ast_Node *), err));
+  if (err->exc) goto L_ret;
+  if (ps != NULL) {
+    { int64_t m9t1to;
+    g = INT64_C(0);
+    m9t1to = m9_sub_i64 (ps->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; g <= m9t1to; g += 1) {
+      { Ast_Node * grp = (*(Ast_Node * *) m9_at (ps->kids.p, g, ps->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (grp != NULL) {
+        { Ast_Node * ids = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(0), grp->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (ids != NULL) {
+          { int64_t m9t2to;
+          b = INT64_C(0);
+          m9t2to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          for (; b <= m9t2to; b += 1) {
+            if ((k == j)) {
+              { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, b, ids->kids.len, sizeof (Ast_Node *), err));
+              if (err->exc) goto L_ret;
+              if (id != NULL) {
+                if ((grp->f1 && (!grp->f2))) {
+                  err->res = m9res;
+                  m9ret = id->a;
+                  goto L_ret;
+                }
+              } }
+              err->res = m9res;
+              m9ret = (m9_sl_CHAR){ NULL, 0 };
+              goto L_ret;
+            }
+            { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+              if (err->exc) goto L_ret;
+              k = m9v;
+            }
+          } }
+        } }
+      } }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = (m9_sl_CHAR){ NULL, 0 };
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_ViewExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_sl_CHAR nm, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8167,7 +8790,6 @@ static bool Sem_ViewExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, in
   err->res = &m9frame;
   bool m9ret = false;
   bool found = false; (void) found;
-  m9_sl_CHAR nm = {0}; (void) nm;
   Sem_ProcInfo pr = {0}; (void) pr;
   int64_t i = 0; (void) i;
   if ((depth > INT64_C(8))) {
@@ -8177,22 +8799,45 @@ static bool Sem_ViewExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, in
   }
   { Ast_Node * e = k;
   if (e != NULL) {
-    if ((((e->kind == Ast_NSliceOf3) || (e->kind == Ast_NGridOf)) || (e->kind == Ast_NParen))) {
+    if (((((e->kind == Ast_NSliceOf3) || (e->kind == Ast_NGridOf)) || (e->kind == Ast_NParen)) || (e->kind == Ast_NSomeExpr))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a148 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a168 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a149 = m9_add_i64 (depth, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a169 = m9_add_i64 (depth, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      m9ret = Sem_ViewExprEvidence (m9a148, d, mod, m9a149, err);
+      m9ret = Sem_ViewExprEvidence (m9a168, d, mod, m9a169, nm, err);
       if (err->exc) goto L_ret;
       }
       }
       goto L_ret;
     }
-    if (((e->kind == Ast_NDesignator) && (e->nkids == INT64_C(0)))) {
-      err->res = m9res;
-      m9ret = Sem_IsParamOf (d, e->a, err);
+    if ((e->kind == Ast_NDesignator)) {
+      bool m9t1 = Text_Eq (e->a, nm, err);
       if (err->exc) goto L_ret;
+      if (m9t1) {
+        err->res = m9res;
+        m9ret = Sem_ParamViewBearing (d, e, mod, err);
+        if (err->exc) goto L_ret;
+        goto L_ret;
+      }
+      bool m9t2 = Sem_IsParamOf (d, e->a, err);
+      if (err->exc) goto L_ret;
+      if (m9t2) {
+        err->res = m9res;
+        m9ret = false;
+        goto L_ret;
+      }
+      if ((e->nkids == INT64_C(0))) {
+        err->res = m9res;
+        { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a170 = m9_add_i64 (depth, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+        m9ret = Sem_ViewCarrier (e->a, d, mod, m9a170, nm, err);
+        if (err->exc) goto L_ret;
+        }
+        goto L_ret;
+      }
+      err->res = m9res;
+      m9ret = false;
       goto L_ret;
     }
     if ((e->kind == Ast_NCallExpr)) {
@@ -8200,36 +8845,35 @@ static bool Sem_ViewExprEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, in
       if (err->exc) goto L_ret;
       if (dn != NULL) {
         if ((dn->kind == Ast_NDesignator)) {
-          { __typeof__(nm) m9v = Sem_DesigName (dn, err);
+          { __typeof__(Sem_DesigName (dn, err)) m9a171 = Sem_DesigName (dn, err);
             if (err->exc) goto L_ret;
-            nm = m9v;
-          }
-          { __typeof__(pr) m9v = Sem_ProcNamed (mod, nm, &(found), err);
+          { __typeof__(pr) m9v = Sem_ProcNamed (mod, m9a171, &(found), err);
             if (err->exc) goto L_ret;
             pr = m9v;
           }
+          }
           if ((found && ((pr.foreign).len == INT64_C(0)))) {
-            bool m9t1 = Sem_AnswersView (Sem_Qualify (pr.modName, pr.name, err), pr, err);
+            { Ast_Node * al = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-            if (m9t1) {
-              { Ast_Node * al = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+            if (al != NULL) {
+              { int64_t m9t3to;
+              i = INT64_C(0);
+              m9t3to = m9_sub_i64 (al->nkids, INT64_C(1), err);
               if (err->exc) goto L_ret;
-              if (al != NULL) {
-                { int64_t m9t2to;
-                i = INT64_C(0);
-                m9t2to = m9_sub_i64 (al->nkids, INT64_C(1), err);
+              for (; i <= m9t3to; i += 1) {
+                bool m9t4 = Sem_AnswersViewAt (Sem_Qualify (pr.modName, pr.name, err), pr, i, err);
                 if (err->exc) goto L_ret;
-                for (; i <= m9t2to; i += 1) {
-                  bool m9t3 = Sem_ViewExprEvidence ((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err)), d, mod, m9_add_i64 (depth, INT64_C(1), err), err);
+                if (m9t4) {
+                  bool m9t5 = Sem_ViewExprEvidence ((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err)), d, mod, m9_add_i64 (depth, INT64_C(1), err), nm, err);
                   if (err->exc) goto L_ret;
-                  if (m9t3) {
+                  if (m9t5) {
                     err->res = m9res;
                     m9ret = true;
                     goto L_ret;
                   }
-                } }
+                }
               } }
-            }
+            } }
           }
         }
       } }
@@ -8244,7 +8888,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Sem_ViewEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, m9_state *err)
+static bool Sem_ViewEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, m9_sl_CHAR nm, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8255,7 +8899,7 @@ static bool Sem_ViewEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, m9_sta
   { Ast_Node * e = k;
   if (e != NULL) {
     if ((e->kind == Ast_NReturn)) {
-      bool m9t1 = Sem_ViewExprEvidence ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), d, mod, INT64_C(0), err);
+      bool m9t1 = Sem_ViewExprEvidence ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), d, mod, INT64_C(0), nm, err);
       if (err->exc) goto L_ret;
       if (m9t1) {
         err->res = m9res;
@@ -8268,7 +8912,7 @@ static bool Sem_ViewEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, m9_sta
     m9t2to = m9_sub_i64 (e->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      bool m9t3 = Sem_ViewEvidence ((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err)), d, mod, err);
+      bool m9t3 = Sem_ViewEvidence ((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err)), d, mod, nm, err);
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
@@ -8276,6 +8920,295 @@ static bool Sem_ViewEvidence (Ast_Node * k, Ast_Node * d, m9_sl_CHAR mod, m9_sta
         goto L_ret;
       }
     } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_CarrierEvidence (Ast_Node * k, m9_sl_CHAR cn, Ast_Node * d, m9_sl_CHAR mod, int64_t depth, m9_sl_CHAR nm, bool deep, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  Sem_ProcInfo pr = {0}; (void) pr;
+  bool found = false; (void) found;
+  bool hit = false; (void) hit;
+  m9_sl_CHAR q = {0}; (void) q;
+  { Ast_Node * e = k;
+  if (e != NULL) {
+    if (((e->kind == Ast_NCallStmt) || (e->kind == Ast_NCallExpr))) {
+      { Ast_Node * dn = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (dn != NULL) {
+        if ((dn->kind == Ast_NDesignator)) {
+          { Ast_Node * al = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (al != NULL) {
+            { int64_t m9t1to;
+            i = INT64_C(0);
+            m9t1to = m9_sub_i64 (al->nkids, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            for (; i <= m9t1to; i += 1) {
+              { Ast_Node * ai = (*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err));
+              if (err->exc) goto L_ret;
+              if (ai != NULL) {
+                bool m9t2 = ((ai->kind == Ast_NDesignator) && Text_Eq (ai->a, cn, err));
+                if (err->exc) goto L_ret;
+                if (m9t2) {
+                  { __typeof__(Sem_DesigName (dn, err)) m9a172 = Sem_DesigName (dn, err);
+                    if (err->exc) goto L_ret;
+                  { __typeof__(pr) m9v = Sem_ProcNamed (mod, m9a172, &(found), err);
+                    if (err->exc) goto L_ret;
+                    pr = m9v;
+                  }
+                  }
+                  if ((found && ((pr.foreign).len == INT64_C(0)))) {
+                    { __typeof__(q) m9v = Sem_Qualify (pr.modName, pr.name, err);
+                      if (err->exc) goto L_ret;
+                      q = m9v;
+                    }
+                    { int64_t m9t3to;
+                    j = INT64_C(0);
+                    m9t3to = m9_sub_i64 (al->nkids, INT64_C(1), err);
+                    if (err->exc) goto L_ret;
+                    for (; j <= m9t3to; j += 1) {
+                      if ((j != i)) {
+                        { __typeof__(hit) m9v = Sem_HandsBackFrom (q, pr, i, j, err);
+                          if (err->exc) goto L_ret;
+                          hit = m9v;
+                        }
+                        if ((hit && deep)) {
+                          { __typeof__(hit) m9v = (Sem_HandsBackDeep (q, pr, i, j, err) || Sem_ParamSelBeyond (d, ai, mod, err));
+                            if (err->exc) goto L_ret;
+                            hit = m9v;
+                          }
+                        }
+                        if (hit) {
+                          bool m9t4 = Sem_ViewExprEvidence ((*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err)), d, mod, m9_add_i64 (depth, INT64_C(1), err), nm, err);
+                          if (err->exc) goto L_ret;
+                          if (m9t4) {
+                            err->res = m9res;
+                            m9ret = true;
+                            goto L_ret;
+                          }
+                        }
+                      }
+                    } }
+                  }
+                }
+              } }
+            } }
+          } }
+        }
+      } }
+    }
+    if ((e->kind == Ast_NAssign)) {
+      { Ast_Node * lhs = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (lhs != NULL) {
+        bool m9t5 = ((lhs->kind == Ast_NDesignator) && Text_Eq (lhs->a, cn, err));
+        if (err->exc) goto L_ret;
+        if (m9t5) {
+          bool m9t6 = ((!deep) || Sem_ParamSelBeyond (d, lhs, mod, err));
+          if (err->exc) goto L_ret;
+          if (m9t6) {
+            bool m9t7 = Sem_ViewExprEvidence ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), d, mod, m9_add_i64 (depth, INT64_C(1), err), nm, err);
+            if (err->exc) goto L_ret;
+            if (m9t7) {
+              err->res = m9res;
+              m9ret = true;
+              goto L_ret;
+            }
+          }
+        }
+      } }
+    }
+    if (((e->kind == Ast_NIs) && (!deep))) {
+      { Ast_Node * b = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (b != NULL) {
+        bool m9t8 = ((b->kind == Ast_NIsSome) && Text_Eq (b->a, cn, err));
+        if (err->exc) goto L_ret;
+        if (m9t8) {
+          bool m9t9 = Sem_ViewExprEvidence ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), d, mod, m9_add_i64 (depth, INT64_C(1), err), nm, err);
+          if (err->exc) goto L_ret;
+          if (m9t9) {
+            err->res = m9res;
+            m9ret = true;
+            goto L_ret;
+          }
+        }
+      } }
+    }
+    bool m9t10 = (((e->kind == Ast_NForIn) && (!deep)) && Text_Eq (e->a, cn, err));
+    if (err->exc) goto L_ret;
+    if (m9t10) {
+      bool m9t11 = Sem_ViewExprEvidence ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), d, mod, m9_add_i64 (depth, INT64_C(1), err), nm, err);
+      if (err->exc) goto L_ret;
+      if (m9t11) {
+        err->res = m9res;
+        m9ret = true;
+        goto L_ret;
+      }
+    }
+    { int64_t m9t12to;
+    i = INT64_C(0);
+    m9t12to = m9_sub_i64 (e->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t12to; i += 1) {
+      bool m9t13 = Sem_CarrierEvidence ((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err)), cn, d, mod, depth, nm, deep, err);
+      if (err->exc) goto L_ret;
+      if (m9t13) {
+        err->res = m9res;
+        m9ret = true;
+        goto L_ret;
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_AnswersViewAny (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t j = 0; (void) j;
+  int64_t n = 0; (void) n;
+  { Ast_Node * pn = pr.node;
+  if (pn != NULL) {
+    { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err))) m9a173 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+    { __typeof__(n) m9v = Sem_CountParams (m9a173, err);
+      if (err->exc) goto L_ret;
+      n = m9v;
+    }
+    }
+    { int64_t m9t1to;
+    j = INT64_C(0);
+    m9t1to = m9_sub_i64 (n, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; j <= m9t1to; j += 1) {
+      bool m9t2 = Sem_AnswersViewAt (qual, pr, j, err);
+      if (err->exc) goto L_ret;
+      if (m9t2) {
+        err->res = m9res;
+        m9ret = true;
+        goto L_ret;
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static Ast_Node * Sem_ViewCallOf (Ast_Node * k, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Ast_Node * m9ret = NULL;
+  Sem_ProcInfo pr = {0}; (void) pr;
+  bool found = false; (void) found;
+  { Ast_Node * e = k;
+  if (e != NULL) {
+    if (((((e->kind == Ast_NParen) || (e->kind == Ast_NSomeExpr)) || (e->kind == Ast_NSliceOf3)) || (e->kind == Ast_NGridOf))) {
+      err->res = m9res;
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a174 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      m9ret = Sem_ViewCallOf (m9a174, err);
+      if (err->exc) goto L_ret;
+      }
+      goto L_ret;
+    }
+    if ((e->kind == Ast_NCallExpr)) {
+      { Ast_Node * dn = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (dn != NULL) {
+        if ((dn->kind == Ast_NDesignator)) {
+          { __typeof__(Sem_DesigName (dn, err)) m9a175 = Sem_DesigName (dn, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(pr) m9v = Sem_LookupProc (m9a175, &(found), err);
+            if (err->exc) goto L_ret;
+            pr = m9v;
+          }
+          }
+          if ((found && ((pr.foreign).len == INT64_C(0)))) {
+            bool m9t1 = Sem_AnswersViewAny (Sem_Qualify (pr.modName, pr.name, err), pr, err);
+            if (err->exc) goto L_ret;
+            if (m9t1) {
+              err->res = m9res;
+              m9ret = e;
+              goto L_ret;
+            }
+          }
+        }
+      } }
+    }
+  } }
+  err->res = m9res;
+  m9ret = NULL;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_ViewArgOf (Ast_Node * vc, int64_t j, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  Sem_ProcInfo pr = {0}; (void) pr;
+  bool found = false; (void) found;
+  { Ast_Node * dn = (*(Ast_Node * *) m9_at (vc->kids.p, INT64_C(0), vc->kids.len, sizeof (Ast_Node *), err));
+  if (err->exc) goto L_ret;
+  if (dn != NULL) {
+    if ((dn->kind == Ast_NDesignator)) {
+      { __typeof__(Sem_DesigName (dn, err)) m9a176 = Sem_DesigName (dn, err);
+        if (err->exc) goto L_ret;
+      { __typeof__(pr) m9v = Sem_LookupProc (m9a176, &(found), err);
+        if (err->exc) goto L_ret;
+        pr = m9v;
+      }
+      }
+      if ((found && ((pr.foreign).len == INT64_C(0)))) {
+        err->res = m9res;
+        { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a177 = Sem_Qualify (pr.modName, pr.name, err);
+          if (err->exc) goto L_ret;
+        m9ret = Sem_AnswersViewAt (m9a177, pr, j, err);
+        if (err->exc) goto L_ret;
+        }
+        goto L_ret;
+      }
+    }
   } }
   err->res = m9res;
   m9ret = false;
@@ -8297,14 +9230,15 @@ static m9_sl_CHAR Sem_ViewedFrame (Ast_Node * dn, Ast_Node * args, m9_state *err
   bool found = false; (void) found;
   int64_t i = 0; (void) i;
   m9_sl_CHAR w = {0}; (void) w;
+  m9_sl_CHAR q = {0}; (void) q;
   if ((dn->kind != Ast_NDesignator)) {
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  { __typeof__(Sem_DesigName (dn, err)) m9a150 = Sem_DesigName (dn, err);
+  { __typeof__(Sem_DesigName (dn, err)) m9a178 = Sem_DesigName (dn, err);
     if (err->exc) goto L_ret;
-  { __typeof__(pr) m9v = Sem_LookupProc (m9a150, &(found), err);
+  { __typeof__(pr) m9v = Sem_LookupProc (m9a178, &(found), err);
     if (err->exc) goto L_ret;
     pr = m9v;
   }
@@ -8314,32 +9248,33 @@ static m9_sl_CHAR Sem_ViewedFrame (Ast_Node * dn, Ast_Node * args, m9_state *err
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  bool m9t1 = (!Sem_AnswersView (Sem_Qualify (pr.modName, pr.name, err), pr, err));
-  if (err->exc) goto L_ret;
-  if (m9t1) {
-    err->res = m9res;
-    m9ret = (m9_sl_CHAR){ NULL, 0 };
-    goto L_ret;
+  { __typeof__(q) m9v = Sem_Qualify (pr.modName, pr.name, err);
+    if (err->exc) goto L_ret;
+    q = m9v;
   }
   { Ast_Node * al = args;
   if (al != NULL) {
-    { int64_t m9t2to;
+    { int64_t m9t1to;
     i = INT64_C(0);
-    m9t2to = m9_sub_i64 (al->nkids, INT64_C(1), err);
+    m9t1to = m9_sub_i64 (al->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err))) m9a151 = (*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
-      { __typeof__(w) m9v = Sem_FrameWhat (m9a151, ((m9_sl_CHAR){ (uint32_t *) m9s144, 13 }), err);
-        if (err->exc) goto L_ret;
-        w = m9v;
-      }
-      }
-      if (((w).len > INT64_C(0))) {
-        err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s145, 10 }), w, err);
-        if (err->exc) goto L_ret;
-        goto L_ret;
+    for (; i <= m9t1to; i += 1) {
+      bool m9t2 = Sem_AnswersViewAt (q, pr, i, err);
+      if (err->exc) goto L_ret;
+      if (m9t2) {
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err))) m9a179 = (*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+        { __typeof__(w) m9v = Sem_FrameWhat (m9a179, ((m9_sl_CHAR){ (uint32_t *) m9s160, 13 }), err);
+          if (err->exc) goto L_ret;
+          w = m9v;
+        }
+        }
+        if (((w).len > INT64_C(0))) {
+          err->res = m9res;
+          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s161, 10 }), w, err);
+          if (err->exc) goto L_ret;
+          goto L_ret;
+        }
       }
     } }
   } }
@@ -8446,9 +9381,9 @@ static Ast_Node * Sem_DeclPool (Ast_Node * t, m9_state *err)
   if (r != NULL) {
     if ((r->kind == Ast_NOptType)) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a152 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a180 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_DeclPool (m9a152, err);
+      m9ret = Sem_DeclPool (m9a180, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -8489,7 +9424,7 @@ static m9_sl_CHAR Sem_AllocPoolOf (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       { Ast_Node * d = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (d != NULL) {
-        bool m9t1 = ((d->nkids == INT64_C(0)) && (!Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s146, 3 }), err)));
+        bool m9t1 = ((d->nkids == INT64_C(0)) && (!Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s162, 3 }), err)));
         if (err->exc) goto L_ret;
         if (m9t1) {
           bool m9t2 = Sem_IsPoolName (d->a, err);
@@ -8510,9 +9445,9 @@ static m9_sl_CHAR Sem_AllocPoolOf (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       if (err->exc) goto L_ret;
       if (dn != NULL) {
         if ((dn->kind == Ast_NDesignator)) {
-          { __typeof__(Sem_DesigName (dn, err)) m9a153 = Sem_DesigName (dn, err);
+          { __typeof__(Sem_DesigName (dn, err)) m9a181 = Sem_DesigName (dn, err);
             if (err->exc) goto L_ret;
-          { __typeof__(pr) m9v = Sem_LookupProc (m9a153, &(found), err);
+          { __typeof__(pr) m9v = Sem_LookupProc (m9a181, &(found), err);
             if (err->exc) goto L_ret;
             pr = m9v;
           }
@@ -8592,7 +9527,7 @@ static m9_sl_CHAR Sem_AllocPoolOf (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                           { Ast_Node * pt = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
                           if (err->exc) goto L_ret;
                           if (pt != NULL) {
-                            bool m9t8 = ((((pt->kind == Ast_NQualident) && Text_Eq (pt->a, ((m9_sl_CHAR){ (uint32_t *) m9s147, 4 }), err)) && ((pt->b).len == INT64_C(0))) && (want < INT64_C(0)));
+                            bool m9t8 = ((((pt->kind == Ast_NQualident) && Text_Eq (pt->a, ((m9_sl_CHAR){ (uint32_t *) m9s163, 4 }), err)) && ((pt->b).len == INT64_C(0))) && (want < INT64_C(0)));
                             if (err->exc) goto L_ret;
                             if (m9t8) {
                               want = ix;
@@ -8655,11 +9590,11 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
   { Ast_Node * e = Sem_FrameCore (k, err);
   if (err->exc) goto L_ret;
   if (e != NULL) {
-    bool m9t1 = (((e->kind == Ast_NBin) && Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s148, 1 }), err)) && Text_Eq (u, ((m9_sl_CHAR){ (uint32_t *) m9s149, 13 }), err));
+    bool m9t1 = (((e->kind == Ast_NBin) && Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s164, 1 }), err)) && Text_Eq (u, ((m9_sl_CHAR){ (uint32_t *) m9s165, 13 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s150, 15 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s166, 15 });
       goto L_ret;
     }
     if ((e->kind == Ast_NNewExpr)) {
@@ -8667,7 +9602,7 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s151, 18 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s167, 18 });
         goto L_ret;
       }
     }
@@ -8681,26 +9616,26 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
         }
         if (((nm).len > INT64_C(0))) {
           err->res = m9res;
-          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s152, 14 }), nm, err);
+          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s168, 14 }), nm, err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a154 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a182 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(p) m9v = Sem_ViewedPool (dn, m9a154, err);
+        { __typeof__(p) m9v = Sem_ViewedPool (dn, m9a182, err);
           if (err->exc) goto L_ret;
           p = m9v;
         }
         }
         if (((p).len > INT64_C(0))) {
           err->res = m9res;
-          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s153, 17 }), p, err);
+          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s169, 17 }), p, err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a155 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a183 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(p) m9v = Sem_ViewedFrame (dn, m9a155, err);
+        { __typeof__(p) m9v = Sem_ViewedFrame (dn, m9a183, err);
           if (err->exc) goto L_ret;
           p = m9v;
         }
@@ -8713,15 +9648,15 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
       } }
     }
     if (((e->kind == Ast_NSliceOf3) || (e->kind == Ast_NGridOf))) {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a156 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a184 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(p) m9v = Sem_FrameWhat (m9a156, ((m9_sl_CHAR){ (uint32_t *) m9s154, 13 }), err);
+      { __typeof__(p) m9v = Sem_FrameWhat (m9a184, ((m9_sl_CHAR){ (uint32_t *) m9s170, 13 }), err);
         if (err->exc) goto L_ret;
         p = m9v;
       }
       }
       if (((p).len > INT64_C(0))) {
-        bool m9t3 = Text_StartsWith (p, ((m9_sl_CHAR){ (uint32_t *) m9s155, 6 }), err);
+        bool m9t3 = Text_StartsWith (p, ((m9_sl_CHAR){ (uint32_t *) m9s171, 6 }), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
           err->res = m9res;
@@ -8729,7 +9664,7 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
           goto L_ret;
         }
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s156, 10 }), p, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s172, 10 }), p, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -8746,9 +9681,9 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
       }
     }
     if (((e->kind == Ast_NDesignator) && (e->nkids > INT64_C(0)))) {
-      { __typeof__(Sem_DesigPath (e, err)) m9a157 = Sem_DesigPath (e, err);
+      { __typeof__(Sem_DesigPath (e, err)) m9a185 = Sem_DesigPath (e, err);
         if (err->exc) goto L_ret;
-      { __typeof__(nm) m9v = Sem_FvalKindOf (m9a157, err);
+      { __typeof__(nm) m9v = Sem_FvalKindOf (m9a185, err);
         if (err->exc) goto L_ret;
         nm = m9v;
       }
@@ -8765,7 +9700,7 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
     }
     if (((p).len > INT64_C(0))) {
       err->res = m9res;
-      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s157, 22 }), p, err);
+      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s173, 22 }), p, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -8799,12 +9734,12 @@ static m9_sl_CHAR Sem_DesigPath (Ast_Node * d, m9_state *err)
     if (err->exc) goto L_ret;
     if (sel != NULL) {
       if ((sel->kind == Ast_NSelField)) {
-        { __typeof__(res) m9v = m9_cat (err->res, m9_cat (err->res, res, ((m9_sl_CHAR){ (uint32_t *) m9s158, 1 }), err), sel->a, err);
+        { __typeof__(res) m9v = m9_cat (err->res, m9_cat (err->res, res, ((m9_sl_CHAR){ (uint32_t *) m9s174, 1 }), err), sel->a, err);
           if (err->exc) goto L_ret;
           res = m9v;
         }
       } else {
-        { __typeof__(res) m9v = m9_cat (err->res, res, ((m9_sl_CHAR){ (uint32_t *) m9s159, 2 }), err);
+        { __typeof__(res) m9v = m9_cat (err->res, res, ((m9_sl_CHAR){ (uint32_t *) m9s175, 2 }), err);
           if (err->exc) goto L_ret;
           res = m9v;
         }
@@ -8878,9 +9813,9 @@ static m9_sl_CHAR Sem_ViewedPool (Ast_Node * dn, Ast_Node * args, m9_state *err)
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  { __typeof__(Sem_DesigName (dn, err)) m9a158 = Sem_DesigName (dn, err);
+  { __typeof__(Sem_DesigName (dn, err)) m9a186 = Sem_DesigName (dn, err);
     if (err->exc) goto L_ret;
-  { __typeof__(pr) m9v = Sem_LookupProc (m9a158, &(found), err);
+  { __typeof__(pr) m9v = Sem_LookupProc (m9a186, &(found), err);
     if (err->exc) goto L_ret;
     pr = m9v;
   }
@@ -8904,11 +9839,11 @@ static m9_sl_CHAR Sem_ViewedPool (Ast_Node * dn, Ast_Node * args, m9_state *err)
       m9t1to = m9_sub_i64 (al->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; i <= m9t1to; i += 1) {
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err))) m9a159 = (*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err))) m9a187 = (*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_FrameWhat (m9a159, (m9_sl_CHAR){ NULL, 0 }, err)) m9a160 = Sem_FrameWhat (m9a159, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Sem_FrameWhat (m9a187, (m9_sl_CHAR){ NULL, 0 }, err)) m9a188 = Sem_FrameWhat (m9a187, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        { __typeof__(p) m9v = Sem_KindPool (m9a160, err);
+        { __typeof__(p) m9v = Sem_KindPool (m9a188, err);
           if (err->exc) goto L_ret;
           p = m9v;
         }
@@ -8932,6 +9867,31 @@ L_ret: ;
   return m9ret;
 }
 
+static m9_sl_CHAR Sem_TgtName (m9_sl_CHAR t, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  bool m9t1 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s176, 1 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = ({ __typeof__(t) m9t2 = t; int64_t m9t2a = INT64_C(1), m9t2n = m9_sub_i64 ((t).len, INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = t;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 static void Sem_EscStore (m9_sl_CHAR dst, bool dstSel, m9_sl_CHAR src, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -8939,14 +9899,19 @@ static void Sem_EscStore (m9_sl_CHAR dst, bool dstSel, m9_sl_CHAR src, m9_state 
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m = {0}; (void) m;
-  { __typeof__(m) m9v = Sem_ScopeMode (dst, err);
+  m9_sl_CHAR nm = {0}; (void) nm;
+  { __typeof__(nm) m9v = Sem_TgtName (dst, err);
+    if (err->exc) goto L_ret;
+    nm = m9v;
+  }
+  { __typeof__(m) m9v = Sem_ScopeMode (nm, err);
     if (err->exc) goto L_ret;
     m = m9v;
   }
   bool m9t1 = Text_Eq (m, Sem_ModeModule, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_EscTarget (src, ((m9_sl_CHAR){ (uint32_t *) m9s160, 8 }), err);
+    Sem_EscTarget (src, ((m9_sl_CHAR){ (uint32_t *) m9s177, 8 }), err);
     if (err->exc) goto L_ret;
   } else {
     bool m9t2 = ((Text_Eq (m, Sem_ModeVar, err) || Text_Eq (m, Sem_ModeOwn, err)) || Text_Eq (m, Sem_ModeRo, err));
@@ -8964,7 +9929,7 @@ static void Sem_EscStore (m9_sl_CHAR dst, bool dstSel, m9_sl_CHAR src, m9_state 
     bool m9t4 = Sem_IsFrameMode (m, err);
     if (err->exc) goto L_ret;
     if (m9t4) {
-      Sem_EscAlias (dst, src, err);
+      Sem_EscAlias (nm, src, err);
       if (err->exc) goto L_ret;
   } } } }
 L_ret: ;
@@ -9282,34 +10247,37 @@ static void Sem_AppendTgt (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  bool m9t1 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s161, 8 }), err);
+  bool m9t1 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s178, 8 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s162, 12 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s179, 12 }), err);
     if (err->exc) goto L_ret;
   } else {
-    bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s163, 8 }), err);
+    bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s180, 8 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s164, 16 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s181, 16 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t3 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s165, 6 }), err);
+    bool m9t3 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s182, 6 }), err);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s166, 8 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s183, 8 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t4 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s167, 9 }), err);
+    bool m9t4 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s184, 9 }), err);
     if (err->exc) goto L_ret;
     if (m9t4) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s168, 15 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s185, 15 }), err);
       if (err->exc) goto L_ret;
   } else {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s169, 19 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s186, 19 }), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, t, err);
+    { __typeof__(Sem_TgtName (t, err)) m9a189 = Sem_TgtName (t, err);
+      if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, m9a189, err);
     if (err->exc) goto L_ret;
+    }
   } } } }
 L_ret: ;
   err->res = m9res;
@@ -9475,10 +10443,12 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
   err->res = &m9frame;
   bool selfHit = false; (void) selfHit;
   bool first = false; (void) first;
+  bool used = false; (void) used;
   int64_t j = 0; (void) j;
   int64_t n2 = 0; (void) n2;
   int64_t ntl = 0; (void) ntl;
   m9_sl_CHAR dmode = {0}; (void) dmode;
+  m9_sl_CHAR dn = {0}; (void) dn;
   m9_sl_m9_sl_CHAR tl = {0}; (void) tl;
   DynStr_DString * d = NULL; (void) d;
   DynStr_DString * de = NULL; (void) de;
@@ -9491,11 +10461,11 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
   DynStr_Append (&(ds), &(pool), src, err);
   if (err->exc) goto L_ret;
   if (((carrier).len > INT64_C(0))) {
-    DynStr_Append (&(ds), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s170, 13 }), err);
+    DynStr_Append (&(ds), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s187, 13 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(ds), &(pool), carrier, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(ds), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s171, 1 }), err);
+    DynStr_Append (&(ds), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s188, 1 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(tl) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
@@ -9503,14 +10473,18 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
     tl = m9v;
   }
   ntl = INT64_C(0);
-  { __typeof__(dmode) m9v = Sem_ScopeMode (dst, err);
+  { __typeof__(dn) m9v = Sem_TgtName (dst, err);
+    if (err->exc) goto L_ret;
+    dn = m9v;
+  }
+  { __typeof__(dmode) m9v = Sem_ScopeMode (dn, err);
     if (err->exc) goto L_ret;
     dmode = m9v;
   }
   bool m9t1 = Text_Eq (dmode, Sem_ModeModule, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_PushErr (&(tl), &(ntl), ((m9_sl_CHAR){ (uint32_t *) m9s172, 8 }), err);
+    Sem_PushErr (&(tl), &(ntl), ((m9_sl_CHAR){ (uint32_t *) m9s189, 8 }), err);
     if (err->exc) goto L_ret;
   } else {
     bool m9t2 = (((Text_Eq (dmode, Sem_ModeVar, err) || Text_Eq (dmode, Sem_ModeOwn, err)) || Text_Eq (dmode, Sem_ModeRo, err)) || Text_Eq (dmode, Sem_ModeVal, err));
@@ -9527,18 +10501,18 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
       m9t4to = m9_sub_i64 (nesc, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; j <= m9t4to; j += 1) {
-        bool m9t5 = Text_Eq ((*(m9_sl_CHAR *) m9_at (escName.p, j, escName.len, sizeof (m9_sl_CHAR), err)), dst, err);
+        bool m9t5 = Text_Eq ((*(m9_sl_CHAR *) m9_at (escName.p, j, escName.len, sizeof (m9_sl_CHAR), err)), dn, err);
         if (err->exc) goto L_ret;
         if (m9t5) {
-          { __typeof__((*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err))) m9a161 = (*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err));
+          { __typeof__((*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err))) m9a190 = (*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err));
             if (err->exc) goto L_ret;
-          Sem_PushErr (&(tl), &(ntl), m9a161, err);
+          Sem_PushErr (&(tl), &(ntl), m9a190, err);
           if (err->exc) goto L_ret;
           }
         }
       } }
   } else {
-    Sem_PushErr (&(tl), &(ntl), ((m9_sl_CHAR){ (uint32_t *) m9s173, 9 }), err);
+    Sem_PushErr (&(tl), &(ntl), ((m9_sl_CHAR){ (uint32_t *) m9s190, 9 }), err);
     if (err->exc) goto L_ret;
   } } }
   selfHit = false;
@@ -9548,7 +10522,7 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
   m9t6to = m9_sub_i64 (ntl, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; j <= m9t6to; j += 1) {
-    bool m9t7 = ((!selfHit) && Text_Eq ((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), src, err));
+    bool m9t7 = Text_Eq (Sem_TgtName ((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), err), src, err);
     if (err->exc) goto L_ret;
     if (m9t7) {
       selfHit = true;
@@ -9571,51 +10545,51 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
   }
   if ((ntl == INT64_C(0))) {
     if (selfHit) {
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s174, 21 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s191, 21 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__(DynStr_View (ds, err)) m9a162 = DynStr_View (ds, err);
+      { __typeof__(DynStr_View (ds, err)) m9a191 = DynStr_View (ds, err);
         if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), m9a162, err);
+      DynStr_Append (&(d), &(pool), m9a191, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s175, 13 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s192, 13 }), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), dst, err);
+      DynStr_Append (&(d), &(pool), dn, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s176, 40 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s193, 40 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(d), &(pool), src, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s177, 17 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s194, 17 }), err);
       if (err->exc) goto L_ret;
     } else {
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s178, 22 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s195, 22 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__(DynStr_View (ds, err)) m9a163 = DynStr_View (ds, err);
+      { __typeof__(DynStr_View (ds, err)) m9a192 = DynStr_View (ds, err);
         if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), m9a163, err);
+      DynStr_Append (&(d), &(pool), m9a192, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s179, 13 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s196, 13 }), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), dst, err);
+      DynStr_Append (&(d), &(pool), dn, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s180, 41 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s197, 41 }), err);
       if (err->exc) goto L_ret;
     }
   } else {
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s181, 20 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s198, 20 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__(DynStr_View (ds, err)) m9a164 = DynStr_View (ds, err);
+    { __typeof__(DynStr_View (ds, err)) m9a193 = DynStr_View (ds, err);
       if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), m9a164, err);
+    DynStr_Append (&(d), &(pool), m9a193, err);
     if (err->exc) goto L_ret;
     }
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s182, 13 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s199, 13 }), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), dst, err);
+    DynStr_Append (&(d), &(pool), dn, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s183, 12 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s200, 12 }), err);
     if (err->exc) goto L_ret;
     { int64_t m9t8to;
     j = INT64_C(0);
@@ -9623,81 +10597,89 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
     if (err->exc) goto L_ret;
     for (; j <= m9t8to; j += 1) {
       if ((j > INT64_C(0))) {
-        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s184, 2 }), err);
+        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s201, 2 }), err);
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err))) m9a165 = (*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err))) m9a194 = (*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      Sem_AppendTgt (&(d), &(pool), m9a165, err);
+      Sem_AppendTgt (&(d), &(pool), m9a194, err);
       if (err->exc) goto L_ret;
       }
     } }
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s185, 14 }), err);
-    if (err->exc) goto L_ret;
-    Sem_KeptUse (src, err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s202, 14 }), err);
     if (err->exc) goto L_ret;
     { __typeof__(de) m9v = DynStr_New (&(pool), err);
       if (err->exc) goto L_ret;
       de = m9v;
     }
     first = true;
+    used = false;
     { int64_t m9t9to;
     j = INT64_C(0);
     m9t9to = m9_sub_i64 (ntl, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t9to; j += 1) {
-      bool m9t10 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s186, 6 }), err));
+      bool m9t10 = ((!Text_Eq ((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s203, 8 }), err)) && (!Text_StartsWith ((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s204, 1 }), err)));
       if (err->exc) goto L_ret;
       if (m9t10) {
-        if ((!first)) {
-          DynStr_Append (&(de), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s187, 2 }), err);
-          if (err->exc) goto L_ret;
-        }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err))) m9a166 = (*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err));
-          if (err->exc) goto L_ret;
-        Sem_AppendTgt (&(de), &(pool), m9a166, err);
+        used = true;
+        bool m9t11 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s205, 6 }), err));
         if (err->exc) goto L_ret;
+        if (m9t11) {
+          if ((!first)) {
+            DynStr_Append (&(de), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s206, 2 }), err);
+            if (err->exc) goto L_ret;
+          }
+          { __typeof__((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err))) m9a195 = (*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err));
+            if (err->exc) goto L_ret;
+          Sem_AppendTgt (&(de), &(pool), m9a195, err);
+          if (err->exc) goto L_ret;
+          }
+          first = false;
         }
-        first = false;
       }
     } }
-    bool m9t11 = ((!first) && (!Sem_KeptHas (src, err)));
+    if (used) {
+      Sem_KeptUse (src, err);
+      if (err->exc) goto L_ret;
+    }
+    bool m9t12 = ((!first) && (!Sem_KeptHas (src, err)));
     if (err->exc) goto L_ret;
-    if (m9t11) {
+    if (m9t12) {
       { __typeof__(dm) m9v = DynStr_New (&(pool), err);
         if (err->exc) goto L_ret;
         dm = m9v;
       }
-      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s188, 31 }), err);
+      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s207, 31 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__(DynStr_View (ds, err)) m9a167 = DynStr_View (ds, err);
+      { __typeof__(DynStr_View (ds, err)) m9a196 = DynStr_View (ds, err);
         if (err->exc) goto L_ret;
-      DynStr_Append (&(dm), &(pool), m9a167, err);
+      DynStr_Append (&(dm), &(pool), m9a196, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s189, 9 }), err);
+      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s208, 9 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__(DynStr_View (de, err)) m9a168 = DynStr_View (de, err);
+      { __typeof__(DynStr_View (de, err)) m9a197 = DynStr_View (de, err);
         if (err->exc) goto L_ret;
-      DynStr_Append (&(dm), &(pool), m9a168, err);
+      DynStr_Append (&(dm), &(pool), m9a197, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s190, 17 }), err);
+      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s209, 17 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(dm), &(pool), src, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s191, 10 }), err);
+      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s210, 10 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__(DynStr_View (dm, err)) m9a169 = DynStr_View (dm, err);
+      { __typeof__(DynStr_View (dm, err)) m9a198 = DynStr_View (dm, err);
         if (err->exc) goto L_ret;
-      Sem_Diag (&(errs), &(nerrs), line, col, ctx, m9a169, err);
+      Sem_Diag (&(errs), &(nerrs), line, col, ctx, m9a198, err);
       if (err->exc) goto L_ret;
       }
     }
   }
-  { __typeof__(DynStr_View (d, err)) m9a170 = DynStr_View (d, err);
+  { __typeof__(DynStr_View (d, err)) m9a199 = DynStr_View (d, err);
     if (err->exc) goto L_ret;
-  Sem_Diag (&(ledger), &(nledger), line, col, ctx, m9a170, err);
+  Sem_Diag (&(ledger), &(nledger), line, col, ctx, m9a199, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -9748,9 +10730,9 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
           bool m9t4 = (!Sem_EscHas (b2, (*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err)), err));
           if (err->exc) goto L_ret;
           if (m9t4) {
-            { __typeof__((*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err))) m9a171 = (*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err))) m9a200 = (*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err));
               if (err->exc) goto L_ret;
-            Sem_EscTarget (b2, m9a171, err);
+            Sem_EscTarget (b2, m9a200, err);
             if (err->exc) goto L_ret;
             }
             changed = true;
@@ -9762,9 +10744,9 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
           bool m9t6 = (!Sem_EscHas (a2, (*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err)), err));
           if (err->exc) goto L_ret;
           if (m9t6) {
-            { __typeof__((*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err))) m9a172 = (*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err))) m9a201 = (*(m9_sl_CHAR *) m9_at (escTgt.p, j, escTgt.len, sizeof (m9_sl_CHAR), err));
               if (err->exc) goto L_ret;
-            Sem_EscTarget (a2, m9a172, err);
+            Sem_EscTarget (a2, m9a201, err);
             if (err->exc) goto L_ret;
             }
             changed = true;
@@ -9802,9 +10784,9 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
           bool m9t10 = (!Sem_CarryHas (a2, (*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err)), err));
           if (err->exc) goto L_ret;
           if (m9t10) {
-            { __typeof__((*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err))) m9a173 = (*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err))) m9a202 = (*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err));
               if (err->exc) goto L_ret;
-            Sem_CarryAdd (a2, m9a173, err);
+            Sem_CarryAdd (a2, m9a202, err);
             if (err->exc) goto L_ret;
             }
             changed = true;
@@ -9818,9 +10800,9 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
   m9t11to = m9_sub_i64 (npend, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t11to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err))) m9a174 = (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err))) m9a203 = (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(dmode) m9v = Sem_ScopeMode (m9a174, err);
+    { __typeof__(dmode) m9v = Sem_ScopeMode (m9a203, err);
       if (err->exc) goto L_ret;
       dmode = m9v;
     }
@@ -9828,15 +10810,15 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
     bool m9t12 = ((Text_Eq (dmode, Sem_ModeVal, err) || Text_Eq (dmode, Sem_ModeVar, err)) || Text_Eq (dmode, Sem_ModeRo, err));
     if (err->exc) goto L_ret;
     if (m9t12) {
-      { __typeof__((*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err))) m9a175 = (*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err))) m9a204 = (*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err))) m9a176 = (*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err))) m9a205 = (*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err))) m9a177 = (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err))) m9a206 = (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err))) m9a178 = (*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err))) m9a207 = (*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      Sem_EmitPend (m9a175, m9a176, m9a177, (m9_sl_CHAR){ NULL, 0 }, m9a178, ctx, err);
+      Sem_EmitPend (m9a204, m9a205, m9a206, (m9_sl_CHAR){ NULL, 0 }, m9a207, ctx, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -9854,17 +10836,17 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
           bool m9t15 = Text_Eq ((*(m9_sl_CHAR *) m9_at (carryN.p, j, carryN.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err)), err);
           if (err->exc) goto L_ret;
           if (m9t15) {
-            { __typeof__((*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err))) m9a179 = (*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err));
+            { __typeof__((*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err))) m9a208 = (*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err));
               if (err->exc) goto L_ret;
-            { __typeof__((*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err))) m9a180 = (*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err));
+            { __typeof__((*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err))) m9a209 = (*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err));
               if (err->exc) goto L_ret;
-            { __typeof__((*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err))) m9a181 = (*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err))) m9a210 = (*(m9_sl_CHAR *) m9_at (carryB.p, j, carryB.len, sizeof (m9_sl_CHAR), err));
               if (err->exc) goto L_ret;
-            { __typeof__((*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err))) m9a182 = (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err))) m9a211 = (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err));
               if (err->exc) goto L_ret;
-            { __typeof__((*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err))) m9a183 = (*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err))) m9a212 = (*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err));
               if (err->exc) goto L_ret;
-            Sem_EmitPend (m9a179, m9a180, m9a181, m9a182, m9a183, ctx, err);
+            Sem_EmitPend (m9a208, m9a209, m9a210, m9a211, m9a212, ctx, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -9883,15 +10865,15 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
     bool m9t17 = (!Sem_KeptUsedHas ((*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err)), err));
     if (err->exc) goto L_ret;
     if (m9t17) {
-      { __typeof__((*(int64_t *) m9_at (keptLn.p, i, keptLn.len, sizeof (int64_t), err))) m9a184 = (*(int64_t *) m9_at (keptLn.p, i, keptLn.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (keptLn.p, i, keptLn.len, sizeof (int64_t), err))) m9a213 = (*(int64_t *) m9_at (keptLn.p, i, keptLn.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(int64_t *) m9_at (keptCl.p, i, keptCl.len, sizeof (int64_t), err))) m9a185 = (*(int64_t *) m9_at (keptCl.p, i, keptCl.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (keptCl.p, i, keptCl.len, sizeof (int64_t), err))) m9a214 = (*(int64_t *) m9_at (keptCl.p, i, keptCl.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err))) m9a186 = (*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err))) m9a215 = (*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s192, 18 }), m9a186, ((m9_sl_CHAR){ (uint32_t *) m9s193, 48 }), err)) m9a187 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s192, 18 }), m9a186, ((m9_sl_CHAR){ (uint32_t *) m9s193, 48 }), err);
+      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s211, 18 }), m9a215, ((m9_sl_CHAR){ (uint32_t *) m9s212, 48 }), err)) m9a216 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s211, 18 }), m9a215, ((m9_sl_CHAR){ (uint32_t *) m9s212, 48 }), err);
         if (err->exc) goto L_ret;
-      Sem_Diag (&(ledger), &(nledger), m9a184, m9a185, ctx, m9a187, err);
+      Sem_Diag (&(ledger), &(nledger), m9a213, m9a214, ctx, m9a216, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -9925,9 +10907,9 @@ static Ast_Node * Sem_CallResultNode (Ast_Node * k, m9_state *err)
       { Ast_Node * cd = (*(Ast_Node * *) m9_at (ce->kids.p, INT64_C(0), ce->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (cd != NULL) {
-        { __typeof__(Sem_DesigName (cd, err)) m9a188 = Sem_DesigName (cd, err);
+        { __typeof__(Sem_DesigName (cd, err)) m9a217 = Sem_DesigName (cd, err);
           if (err->exc) goto L_ret;
-        { __typeof__(pr) m9v = Sem_LookupProc (m9a188, &(found), err);
+        { __typeof__(pr) m9v = Sem_LookupProc (m9a217, &(found), err);
           if (err->exc) goto L_ret;
           pr = m9v;
         }
@@ -9940,9 +10922,9 @@ static Ast_Node * Sem_CallResultNode (Ast_Node * k, m9_state *err)
               if (err->exc) goto L_ret;
               if (rt != NULL) {
                 err->res = m9res;
-                { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a189 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a218 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                m9ret = Sem_InMod (m9a189, pr.modName, err);
+                m9ret = Sem_InMod (m9a218, pr.modName, err);
                 if (err->exc) goto L_ret;
                 }
                 goto L_ret;
@@ -9971,9 +10953,9 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
   err->res = m9res;
   Ast_Node * m9ret = NULL;
   err->res = m9res;
-  { __typeof__(Sem_ScopeType (d->a, err)) m9a190 = Sem_ScopeType (d->a, err);
+  { __typeof__(Sem_ScopeType (d->a, err)) m9a219 = Sem_ScopeType (d->a, err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_SelWalk (d, ctx, m9a190, INT64_C(0), err);
+  m9ret = Sem_SelWalk (d, ctx, m9a219, INT64_C(0), err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -10017,9 +10999,9 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
         }
         if (((eb).len > INT64_C(0))) {
           if ((isel->nkids >= INT64_C(1))) {
-            { __typeof__((*(Ast_Node * *) m9_at (isel->kids.p, INT64_C(0), isel->kids.len, sizeof (Ast_Node *), err))) m9a191 = (*(Ast_Node * *) m9_at (isel->kids.p, INT64_C(0), isel->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (isel->kids.p, INT64_C(0), isel->kids.len, sizeof (Ast_Node *), err))) m9a220 = (*(Ast_Node * *) m9_at (isel->kids.p, INT64_C(0), isel->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(it) m9v = Sem_ExprType (m9a191, ctx, err);
+            { __typeof__(it) m9v = Sem_ExprType (m9a220, ctx, err);
               if (err->exc) goto L_ret;
               it = m9v;
             }
@@ -10027,19 +11009,19 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
             bool m9t2 = (((it).len > INT64_C(0)) && (!Text_Eq (it, eb, err)));
             if (err->exc) goto L_ret;
             if (m9t2) {
-              { __typeof__(Sem_TyName (eb, err)) m9a192 = Sem_TyName (eb, err);
+              { __typeof__(Sem_TyName (eb, err)) m9a221 = Sem_TyName (eb, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_TyName (eb, err)) m9a193 = Sem_TyName (eb, err);
+              { __typeof__(Sem_TyName (eb, err)) m9a222 = Sem_TyName (eb, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_TyName (it, err)) m9a194 = Sem_TyName (it, err);
+              { __typeof__(Sem_TyName (it, err)) m9a223 = Sem_TyName (it, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s196, 12 }), m9a194, err)) m9a195 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s196, 12 }), m9a194, err);
+              { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s215, 12 }), m9a223, err)) m9a224 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s215, 12 }), m9a223, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_Cat (m9a193, m9a195, err)) m9a196 = Sem_Cat (m9a193, m9a195, err);
+              { __typeof__(Sem_Cat (m9a222, m9a224, err)) m9a225 = Sem_Cat (m9a222, m9a224, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s194, 9 }), m9a192, ((m9_sl_CHAR){ (uint32_t *) m9s195, 20 }), m9a196, err)) m9a197 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s194, 9 }), m9a192, ((m9_sl_CHAR){ (uint32_t *) m9s195, 20 }), m9a196, err);
+              { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s213, 9 }), m9a221, ((m9_sl_CHAR){ (uint32_t *) m9s214, 20 }), m9a225, err)) m9a226 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s213, 9 }), m9a221, ((m9_sl_CHAR){ (uint32_t *) m9s214, 20 }), m9a225, err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (d, ctx, m9a197, err);
+              Sem_ErrN (d, ctx, m9a226, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -10055,9 +11037,9 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
           m9t3to = m9_sub_i64 (isel->nkids, INT64_C(1), err);
           if (err->exc) goto L_ret;
           for (; q <= m9t3to; q += 1) {
-            { __typeof__((*(Ast_Node * *) m9_at (isel->kids.p, q, isel->kids.len, sizeof (Ast_Node *), err))) m9a198 = (*(Ast_Node * *) m9_at (isel->kids.p, q, isel->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (isel->kids.p, q, isel->kids.len, sizeof (Ast_Node *), err))) m9a227 = (*(Ast_Node * *) m9_at (isel->kids.p, q, isel->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(it) m9v = Sem_ExprType (m9a198, ctx, err);
+            { __typeof__(it) m9v = Sem_ExprType (m9a227, ctx, err);
               if (err->exc) goto L_ret;
               it = m9v;
             }
@@ -10065,11 +11047,11 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
             bool m9t4 = (!Sem_IsIntish (it, err));
             if (err->exc) goto L_ret;
             if (m9t4) {
-              { __typeof__(Sem_TyName (it, err)) m9a199 = Sem_TyName (it, err);
+              { __typeof__(Sem_TyName (it, err)) m9a228 = Sem_TyName (it, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s197, 30 }), m9a199, err)) m9a200 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s197, 30 }), m9a199, err);
+              { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s216, 30 }), m9a228, err)) m9a229 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s216, 30 }), m9a228, err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (d, ctx, m9a200, err);
+              Sem_ErrN (d, ctx, m9a229, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -10100,9 +11082,9 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
       if (r0 != NULL) {
         if (((r0->kind == Ast_NPtrType) || (r0->kind == Ast_NSharedType))) {
           deref = true;
-          { __typeof__((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err))) m9a201 = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err))) m9a230 = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(declN) m9v = Sem_InMod (m9a201, tmod, err);
+          { __typeof__(declN) m9v = Sem_InMod (m9a230, tmod, err);
             if (err->exc) goto L_ret;
             declN = m9v;
           }
@@ -10122,9 +11104,9 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
     { Ast_Node * r = res;
     if (r != NULL) {
       if ((r->kind == Ast_NOptType)) {
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s198, 38 }), d->a, err)) m9a202 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s198, 38 }), d->a, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s217, 38 }), d->a, err)) m9a231 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s217, 38 }), d->a, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (d, ctx, m9a202, err);
+        Sem_ErrN (d, ctx, m9a231, err);
         if (err->exc) goto L_ret;
         }
         err->res = m9res;
@@ -10132,9 +11114,9 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
         goto L_ret;
       }
       if ((r->kind == Ast_NCaseRecordType)) {
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s199, 50 }), d->a, err)) m9a203 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s199, 50 }), d->a, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s218, 50 }), d->a, err)) m9a232 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s218, 50 }), d->a, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (d, ctx, m9a203, err);
+        Sem_ErrN (d, ctx, m9a232, err);
         if (err->exc) goto L_ret;
         }
         err->res = m9res;
@@ -10146,9 +11128,9 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
       if (sel != NULL) {
         if ((sel->kind == Ast_NSelField)) {
           if ((r->kind == Ast_NRecordType)) {
-            { __typeof__(Sem_FieldTypeOf (r, sel->a, err)) m9a204 = Sem_FieldTypeOf (r, sel->a, err);
+            { __typeof__(Sem_FieldTypeOf (r, sel->a, err)) m9a233 = Sem_FieldTypeOf (r, sel->a, err);
               if (err->exc) goto L_ret;
-            { __typeof__(declN) m9v = Sem_InMod (m9a204, tmod, err);
+            { __typeof__(declN) m9v = Sem_InMod (m9a233, tmod, err);
               if (err->exc) goto L_ret;
               declN = m9v;
             }
@@ -10162,9 +11144,9 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
               if (base != NULL) {
                 q = INT64_C(0);
               } else {
-                { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s200, 9 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s201, 23 }), d->a, err)) m9a205 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s200, 9 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s201, 23 }), d->a, err);
+                { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s219, 9 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s220, 23 }), d->a, err)) m9a234 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s219, 9 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s220, 23 }), d->a, err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (d, ctx, m9a205, err);
+                Sem_ErrN (d, ctx, m9a234, err);
                 if (err->exc) goto L_ret;
                 }
               } }
@@ -10174,15 +11156,15 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
               bool m9t5 = ((Text_Eq (boundMon, (m9_sl_CHAR){ NULL, 0 }, err) || (!Text_Eq (d->a, boundMon, err))) || (j != from));
               if (err->exc) goto L_ret;
               if (m9t5) {
-                { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s202, 14 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s203, 65 }), err)) m9a206 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s202, 14 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s203, 65 }), err);
+                { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s221, 14 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s222, 65 }), err)) m9a235 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s221, 14 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s222, 65 }), err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (d, ctx, m9a206, err);
+                Sem_ErrN (d, ctx, m9a235, err);
                 if (err->exc) goto L_ret;
                 }
               }
-              { __typeof__(Sem_MonFieldType (r, sel->a, err)) m9a207 = Sem_MonFieldType (r, sel->a, err);
+              { __typeof__(Sem_MonFieldType (r, sel->a, err)) m9a236 = Sem_MonFieldType (r, sel->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(declN) m9v = Sem_InMod (m9a207, tmod, err);
+              { __typeof__(declN) m9v = Sem_InMod (m9a236, tmod, err);
                 if (err->exc) goto L_ret;
                 declN = m9v;
               }
@@ -10198,21 +11180,21 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
               bool m9t6 = (sel->nkids != Sem_AtoI (Print_ExprText ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), err), err));
               if (err->exc) goto L_ret;
               if (m9t6) {
-                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a208 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a237 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(Print_ExprText (m9a208, err)) m9a209 = Print_ExprText (m9a208, err);
+                { __typeof__(Print_ExprText (m9a237, err)) m9a238 = Print_ExprText (m9a237, err);
                   if (err->exc) goto L_ret;
-                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a210 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a239 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(Print_ExprText (m9a210, err)) m9a211 = Print_ExprText (m9a210, err);
+                { __typeof__(Print_ExprText (m9a239, err)) m9a240 = Print_ExprText (m9a239, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Sem_ItoA (sel->nkids, err)) m9a212 = Sem_ItoA (sel->nkids, err);
+                { __typeof__(Sem_ItoA (sel->nkids, err)) m9a241 = Sem_ItoA (sel->nkids, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s206, 17 }), m9a212, err)) m9a213 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s206, 17 }), m9a212, err);
+                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s225, 17 }), m9a241, err)) m9a242 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s225, 17 }), m9a241, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s204, 7 }), m9a209, ((m9_sl_CHAR){ (uint32_t *) m9s205, 7 }), m9a211, m9a213, err)) m9a214 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s204, 7 }), m9a209, ((m9_sl_CHAR){ (uint32_t *) m9s205, 7 }), m9a211, m9a213, err);
+                { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s223, 7 }), m9a238, ((m9_sl_CHAR){ (uint32_t *) m9s224, 7 }), m9a240, m9a242, err)) m9a243 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s223, 7 }), m9a238, ((m9_sl_CHAR){ (uint32_t *) m9s224, 7 }), m9a240, m9a242, err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (d, ctx, m9a214, err);
+                Sem_ErrN (d, ctx, m9a243, err);
                 if (err->exc) goto L_ret;
                 }
                 }
@@ -10222,9 +11204,9 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
                 }
                 }
               }
-              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a215 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a244 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(declN) m9v = Sem_InMod (m9a215, tmod, err);
+              { __typeof__(declN) m9v = Sem_InMod (m9a244, tmod, err);
                 if (err->exc) goto L_ret;
                 declN = m9v;
               }
@@ -10232,18 +11214,18 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
             } else {
               if ((r->kind == Ast_NSliceType)) {
                 if ((sel->nkids != INT64_C(1))) {
-                  { __typeof__(Sem_ItoA (sel->nkids, err)) m9a216 = Sem_ItoA (sel->nkids, err);
+                  { __typeof__(Sem_ItoA (sel->nkids, err)) m9a245 = Sem_ItoA (sel->nkids, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s207, 33 }), m9a216, err)) m9a217 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s207, 33 }), m9a216, err);
+                  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s226, 33 }), m9a245, err)) m9a246 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s226, 33 }), m9a245, err);
                     if (err->exc) goto L_ret;
-                  Sem_ErrN (d, ctx, m9a217, err);
+                  Sem_ErrN (d, ctx, m9a246, err);
                   if (err->exc) goto L_ret;
                   }
                   }
                 }
-                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a218 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a247 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(declN) m9v = Sem_InMod (m9a218, tmod, err);
+                { __typeof__(declN) m9v = Sem_InMod (m9a247, tmod, err);
                   if (err->exc) goto L_ret;
                   declN = m9v;
                 }
@@ -10251,18 +11233,18 @@ static Ast_Node * Sem_SelWalk (Ast_Node * d, m9_sl_CHAR ctx, Ast_Node * start, i
             } else {
               if ((r->kind == Ast_NArrayType)) {
                 if ((sel->nkids != INT64_C(1))) {
-                  { __typeof__(Sem_ItoA (sel->nkids, err)) m9a219 = Sem_ItoA (sel->nkids, err);
+                  { __typeof__(Sem_ItoA (sel->nkids, err)) m9a248 = Sem_ItoA (sel->nkids, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s208, 34 }), m9a219, err)) m9a220 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s208, 34 }), m9a219, err);
+                  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s227, 34 }), m9a248, err)) m9a249 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s227, 34 }), m9a248, err);
                     if (err->exc) goto L_ret;
-                  Sem_ErrN (d, ctx, m9a220, err);
+                  Sem_ErrN (d, ctx, m9a249, err);
                   if (err->exc) goto L_ret;
                   }
                   }
                 }
-                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a221 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a250 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(declN) m9v = Sem_InMod (m9a221, tmod, err);
+                { __typeof__(declN) m9v = Sem_InMod (m9a250, tmod, err);
                   if (err->exc) goto L_ret;
                   declN = m9v;
                 }
@@ -10307,18 +11289,18 @@ static m9_sl_CHAR Sem_DesigCanon (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
   if (e != NULL) {
     if ((e->kind == Ast_NDesignator)) {
       err->res = m9res;
-      { __typeof__(Sem_DesigDeclType (e, ctx, err)) m9a222 = Sem_DesigDeclType (e, ctx, err);
+      { __typeof__(Sem_DesigDeclType (e, ctx, err)) m9a251 = Sem_DesigDeclType (e, ctx, err);
         if (err->exc) goto L_ret;
-      m9ret = Sem_CanonT (m9a222, INT64_C(0), err);
+      m9ret = Sem_CanonT (m9a251, INT64_C(0), err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     }
     if (((e->kind == Ast_NSomeExpr) || (e->kind == Ast_NParen))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a223 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a252 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_DesigCanon (m9a223, ctx, err);
+      m9ret = Sem_DesigCanon (m9a252, ctx, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -10403,9 +11385,9 @@ static m9_sl_CHAR Sem_S3 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *er
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  { __typeof__(Sem_Cat (a, b, err)) m9a224 = Sem_Cat (a, b, err);
+  { __typeof__(Sem_Cat (a, b, err)) m9a253 = Sem_Cat (a, b, err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_Cat (m9a224, c, err);
+  m9ret = Sem_Cat (m9a253, c, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -10424,11 +11406,11 @@ static m9_sl_CHAR Sem_S4 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_sl_CHAR d
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  { __typeof__(Sem_Cat (a, b, err)) m9a225 = Sem_Cat (a, b, err);
+  { __typeof__(Sem_Cat (a, b, err)) m9a254 = Sem_Cat (a, b, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Sem_Cat (c, d, err)) m9a226 = Sem_Cat (c, d, err);
+  { __typeof__(Sem_Cat (c, d, err)) m9a255 = Sem_Cat (c, d, err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_Cat (m9a225, m9a226, err);
+  m9ret = Sem_Cat (m9a254, m9a255, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -10448,9 +11430,9 @@ static m9_sl_CHAR Sem_S5 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_sl_CHAR d
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  { __typeof__(Sem_S4 (a, b, c, d, err)) m9a227 = Sem_S4 (a, b, c, d, err);
+  { __typeof__(Sem_S4 (a, b, c, d, err)) m9a256 = Sem_S4 (a, b, c, d, err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_Cat (m9a227, e, err);
+  m9ret = Sem_Cat (m9a256, e, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -10468,28 +11450,28 @@ static bool Sem_IsIntStr (m9_sl_CHAR s, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s209, 2 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s210, 3 }), err));
+  bool m9t1 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s228, 2 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s229, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s211, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s212, 3 }), err));
+  bool m9t2 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s230, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s231, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t3 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s213, 2 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s214, 3 }), err));
+  bool m9t3 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s232, 2 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s233, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t4 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s215, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s216, 3 }), err));
+  bool m9t4 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s234, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s235, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
@@ -10513,7 +11495,7 @@ static bool Sem_IsFloatStr (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s217, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s218, 3 }), err));
+  m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s236, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s237, 3 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -10535,7 +11517,7 @@ static bool Sem_IsIntish (m9_sl_CHAR s, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (Sem_IsIntStr (s, err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s219, 5 }), err));
+  m9ret = (Sem_IsIntStr (s, err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s238, 5 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -10556,7 +11538,7 @@ static bool Sem_IsNumStr (m9_sl_CHAR s, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t1 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s220, 5 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s221, 6 }), err));
+  bool m9t1 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s239, 5 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s240, 6 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -10580,51 +11562,51 @@ static m9_sl_CHAR Sem_TyName (m9_sl_CHAR s, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  bool m9t1 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s222, 5 }), err);
+  bool m9t1 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s241, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s223, 18 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s242, 18 });
     goto L_ret;
   }
-  bool m9t2 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s224, 6 }), err);
+  bool m9t2 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s243, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s225, 14 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s244, 14 });
     goto L_ret;
   }
-  bool m9t3 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s226, 6 }), err);
+  bool m9t3 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s245, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s227, 21 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s246, 21 });
     goto L_ret;
   }
-  bool m9t4 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s228, 6 }), err);
+  bool m9t4 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s247, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s229, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s248, 4 });
     goto L_ret;
   }
-  bool m9t5 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s230, 6 }), err);
+  bool m9t5 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s249, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s231, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s250, 8 });
     goto L_ret;
   }
-  bool m9t6 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s232, 5 }), err);
+  bool m9t6 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s251, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s233, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s252, 3 });
     goto L_ret;
   }
   if (((s).len == INT64_C(0))) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s234, 15 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s253, 15 });
     goto L_ret;
   }
   err->res = m9res;
@@ -10645,7 +11627,7 @@ static m9_sl_CHAR Sem_AfterOf (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t i = 0; (void) i;
-  { __typeof__(i) m9v = Text_Find (s, ((m9_sl_CHAR){ (uint32_t *) m9s235, 4 }), err);
+  { __typeof__(i) m9v = Text_Find (s, ((m9_sl_CHAR){ (uint32_t *) m9s254, 4 }), err);
     if (err->exc) goto L_ret;
     i = m9v;
   }
@@ -10675,14 +11657,14 @@ static int64_t Sem_GridRank (m9_sl_CHAR s, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
   int64_t k = 0; (void) k;
-  bool m9t1 = (!Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s236, 5 }), err));
+  bool m9t1 = (!Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s255, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
     m9ret = INT64_C(0);
     goto L_ret;
   }
-  { __typeof__(i) m9v = Text_Find (s, ((m9_sl_CHAR){ (uint32_t *) m9s237, 4 }), err);
+  { __typeof__(i) m9v = Text_Find (s, ((m9_sl_CHAR){ (uint32_t *) m9s256, 4 }), err);
     if (err->exc) goto L_ret;
     i = m9v;
   }
@@ -10731,9 +11713,9 @@ static m9_sl_CHAR Sem_GridOf (int64_t rank, m9_sl_CHAR elem, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(Sem_ItoA (rank, err)) m9a228 = Sem_ItoA (rank, err);
+  { __typeof__(Sem_ItoA (rank, err)) m9a257 = Sem_ItoA (rank, err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s238, 5 }), m9a228, ((m9_sl_CHAR){ (uint32_t *) m9s239, 4 }), elem, err);
+  m9ret = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s257, 5 }), m9a257, ((m9_sl_CHAR){ (uint32_t *) m9s258, 4 }), elem, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -10751,7 +11733,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s240, 2 }), err);
+  bool m9t1 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s259, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__((*lo)) m9v = m9_neg_i64 (INT64_C(128), err);
@@ -10763,7 +11745,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s241, 3 }), err);
+  bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s260, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     { __typeof__((*lo)) m9v = m9_neg_i64 (INT64_C(32768), err);
@@ -10775,7 +11757,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t3 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s242, 3 }), err);
+  bool m9t3 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s261, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     { __typeof__((*lo)) m9v = m9_neg_i64 (INT64_C(2147483648), err);
@@ -10787,7 +11769,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t4 = (Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s243, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s244, 4 }), err));
+  bool m9t4 = (Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s262, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s263, 4 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
     (*lo) = INT64_C(0);
@@ -10796,7 +11778,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t5 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s245, 3 }), err);
+  bool m9t5 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s264, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     (*lo) = INT64_C(0);
@@ -10805,7 +11787,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t6 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s246, 3 }), err);
+  bool m9t6 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s265, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
     (*lo) = INT64_C(0);
@@ -10814,7 +11796,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t7 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s247, 3 }), err);
+  bool m9t7 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s266, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t7) {
     (*lo) = INT64_C(0);
@@ -10898,7 +11880,7 @@ static bool Sem_LitOut (Ast_Node * n, m9_sl_CHAR t, int64_t *v, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  bool m9t2 = ((n->kind == Ast_NUn) && Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s248, 1 }), err));
+  bool m9t2 = ((n->kind == Ast_NUn) && Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s267, 1 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     { Ast_Node * c = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
@@ -10945,7 +11927,7 @@ static int64_t Sem_ProcHead (m9_sl_CHAR s, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t depth = 0; (void) depth;
   int64_t close = 0; (void) close;
-  bool m9t1 = (!Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s249, 11 }), err));
+  bool m9t1 = (!Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s268, 11 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -10996,7 +11978,7 @@ static int64_t Sem_ProcHead (m9_sl_CHAR s, m9_state *err)
     bool m9t4 = (m9_add_i64 (i, INT64_C(8), err) <= (s).len);
     if (err->exc) goto L_ret;
     if (!(m9t4)) break;
-    bool m9t6 = Text_Eq (({ __typeof__(s) m9t5 = s; int64_t m9t5a = i, m9t5n = INT64_C(8); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s250, 8 }), err);
+    bool m9t6 = Text_Eq (({ __typeof__(s) m9t5 = s; int64_t m9t5a = i, m9t5n = INT64_C(8); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s269, 8 }), err);
     if (err->exc) goto L_ret;
     if (m9t6) {
       err->res = m9res;
@@ -11056,11 +12038,11 @@ static bool Sem_RaisesWithin (m9_sl_CHAR src, m9_sl_CHAR dst, m9_state *err)
           eb = m9v;
         }
       }
-      { __typeof__(({ __typeof__(src) m9t3 = src; int64_t m9t3a = a, m9t3n = m9_sub_i64 (ea, a, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a229 = ({ __typeof__(src) m9t3 = src; int64_t m9t3a = a, m9t3n = m9_sub_i64 (ea, a, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+      { __typeof__(({ __typeof__(src) m9t3 = src; int64_t m9t3a = a, m9t3n = m9_sub_i64 (ea, a, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a258 = ({ __typeof__(src) m9t3 = src; int64_t m9t3a = a, m9t3n = m9_sub_i64 (ea, a, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(({ __typeof__(dst) m9t4 = dst; int64_t m9t4a = b, m9t4n = m9_sub_i64 (eb, b, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a230 = ({ __typeof__(dst) m9t4 = dst; int64_t m9t4a = b, m9t4n = m9_sub_i64 (eb, b, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+      { __typeof__(({ __typeof__(dst) m9t4 = dst; int64_t m9t4a = b, m9t4n = m9_sub_i64 (eb, b, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a259 = ({ __typeof__(dst) m9t4 = dst; int64_t m9t4a = b, m9t4n = m9_sub_i64 (eb, b, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(found) m9v = Text_Eq (m9a229, m9a230, err);
+      { __typeof__(found) m9v = Text_Eq (m9a258, m9a259, err);
         if (err->exc) goto L_ret;
         found = m9v;
       }
@@ -11130,11 +12112,11 @@ static bool Sem_ProcFits (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(({ __typeof__(src) m9t4 = src; int64_t m9t4a = m9_add_i64 (hs, INT64_C(8), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((src).len, hs, err), INT64_C(8), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a231 = ({ __typeof__(src) m9t4 = src; int64_t m9t4a = m9_add_i64 (hs, INT64_C(8), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((src).len, hs, err), INT64_C(8), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+  { __typeof__(({ __typeof__(src) m9t4 = src; int64_t m9t4a = m9_add_i64 (hs, INT64_C(8), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((src).len, hs, err), INT64_C(8), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a260 = ({ __typeof__(src) m9t4 = src; int64_t m9t4a = m9_add_i64 (hs, INT64_C(8), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((src).len, hs, err), INT64_C(8), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
     if (err->exc) goto L_ret;
-  { __typeof__(({ __typeof__(dst) m9t5 = dst; int64_t m9t5a = m9_add_i64 (hd, INT64_C(8), err), m9t5n = m9_sub_i64 (m9_sub_i64 ((dst).len, hd, err), INT64_C(8), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a232 = ({ __typeof__(dst) m9t5 = dst; int64_t m9t5a = m9_add_i64 (hd, INT64_C(8), err), m9t5n = m9_sub_i64 (m9_sub_i64 ((dst).len, hd, err), INT64_C(8), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+  { __typeof__(({ __typeof__(dst) m9t5 = dst; int64_t m9t5a = m9_add_i64 (hd, INT64_C(8), err), m9t5n = m9_sub_i64 (m9_sub_i64 ((dst).len, hd, err), INT64_C(8), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a261 = ({ __typeof__(dst) m9t5 = dst; int64_t m9t5a = m9_add_i64 (hd, INT64_C(8), err), m9t5n = m9_sub_i64 (m9_sub_i64 ((dst).len, hd, err), INT64_C(8), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
     if (err->exc) goto L_ret;
-  m9ret = Sem_RaisesWithin (m9a231, m9a232, err);
+  m9ret = Sem_RaisesWithin (m9a260, m9a261, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -11152,7 +12134,7 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s251, 6 }), err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s252, 6 }), err));
+  bool m9t1 = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s270, 6 }), err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s271, 6 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -11171,23 +12153,23 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t3 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s253, 5 }), err);
+  bool m9t3 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s272, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = (Sem_IsIntStr (dst, err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s254, 4 }), err));
+    m9ret = (Sem_IsIntStr (dst, err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s273, 4 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t4 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s255, 5 }), err);
+  bool m9t4 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s274, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
-    m9ret = (Sem_IsIntStr (src, err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s256, 4 }), err));
+    m9ret = (Sem_IsIntStr (src, err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s275, 4 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t5 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s257, 6 }), err);
+  bool m9t5 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s276, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     err->res = m9res;
@@ -11195,7 +12177,7 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t6 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s258, 6 }), err);
+  bool m9t6 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s277, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
     err->res = m9res;
@@ -11203,64 +12185,64 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t7 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s259, 6 }), err);
+  bool m9t7 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s278, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t7) {
     err->res = m9res;
-    m9ret = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s260, 4 }), err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s261, 13 }), err));
+    m9ret = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s279, 4 }), err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s280, 13 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t8 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s262, 6 }), err);
+  bool m9t8 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s281, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t8) {
     err->res = m9res;
-    m9ret = (Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s263, 4 }), err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s264, 13 }), err));
+    m9ret = (Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s282, 4 }), err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s283, 13 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t9 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s265, 6 }), err);
+  bool m9t9 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s284, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t9) {
     err->res = m9res;
-    m9ret = Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s266, 4 }), err);
+    m9ret = Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s285, 4 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t10 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s267, 6 }), err);
+  bool m9t10 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s286, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t10) {
     err->res = m9res;
-    m9ret = Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s268, 4 }), err);
+    m9ret = Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s287, 4 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t11 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s269, 5 }), err);
+  bool m9t11 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s288, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t11) {
     err->res = m9res;
-    m9ret = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s270, 10 }), err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s271, 8 }), err));
+    m9ret = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s289, 10 }), err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s290, 8 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t12 = (Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s272, 9 }), err) && Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s273, 6 }), err));
+  bool m9t12 = (Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s291, 9 }), err) && Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s292, 6 }), err));
   if (err->exc) goto L_ret;
   if (m9t12) {
     err->res = m9res;
-    { __typeof__(Sem_AfterOf (src, err)) m9a233 = Sem_AfterOf (src, err);
+    { __typeof__(Sem_AfterOf (src, err)) m9a262 = Sem_AfterOf (src, err);
       if (err->exc) goto L_ret;
-    { __typeof__(({ __typeof__(dst) m9t13 = dst; int64_t m9t13a = INT64_C(9), m9t13n = m9_sub_i64 ((dst).len, INT64_C(9), err); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; })) m9a234 = ({ __typeof__(dst) m9t13 = dst; int64_t m9t13a = INT64_C(9), m9t13n = m9_sub_i64 ((dst).len, INT64_C(9), err); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; });
+    { __typeof__(({ __typeof__(dst) m9t13 = dst; int64_t m9t13a = INT64_C(9), m9t13n = m9_sub_i64 ((dst).len, INT64_C(9), err); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; })) m9a263 = ({ __typeof__(dst) m9t13 = dst; int64_t m9t13a = INT64_C(9), m9t13n = m9_sub_i64 ((dst).len, INT64_C(9), err); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; });
       if (err->exc) goto L_ret;
-    m9ret = Text_Eq (m9a233, m9a234, err);
+    m9ret = Text_Eq (m9a262, m9a263, err);
     if (err->exc) goto L_ret;
     }
     }
     goto L_ret;
   }
-  bool m9t14 = Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s274, 4 }), err);
+  bool m9t14 = Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s293, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t14) {
-    bool m9t15 = Text_Eq (src, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s275, 7 }), dst, err), err);
+    bool m9t15 = Text_Eq (src, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s294, 7 }), dst, err), err);
     if (err->exc) goto L_ret;
     if (m9t15) {
       err->res = m9res;
@@ -11275,15 +12257,15 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t17 = (Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s276, 4 }), err) && Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s277, 4 }), err));
+  bool m9t17 = (Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s295, 4 }), err) && Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s296, 4 }), err));
   if (err->exc) goto L_ret;
   if (m9t17) {
     err->res = m9res;
-    { __typeof__(({ __typeof__(dst) m9t18 = dst; int64_t m9t18a = INT64_C(4), m9t18n = m9_sub_i64 ((dst).len, INT64_C(4), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; })) m9a235 = ({ __typeof__(dst) m9t18 = dst; int64_t m9t18a = INT64_C(4), m9t18n = m9_sub_i64 ((dst).len, INT64_C(4), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; });
+    { __typeof__(({ __typeof__(dst) m9t18 = dst; int64_t m9t18a = INT64_C(4), m9t18n = m9_sub_i64 ((dst).len, INT64_C(4), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; })) m9a264 = ({ __typeof__(dst) m9t18 = dst; int64_t m9t18a = INT64_C(4), m9t18n = m9_sub_i64 ((dst).len, INT64_C(4), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; });
       if (err->exc) goto L_ret;
-    { __typeof__(({ __typeof__(src) m9t19 = src; int64_t m9t19a = INT64_C(4), m9t19n = m9_sub_i64 ((src).len, INT64_C(4), err); (__typeof__(m9t19)){ m9t19.p + m9_chk_slice (m9t19a, m9t19n, m9t19.len, err), m9t19n }; })) m9a236 = ({ __typeof__(src) m9t19 = src; int64_t m9t19a = INT64_C(4), m9t19n = m9_sub_i64 ((src).len, INT64_C(4), err); (__typeof__(m9t19)){ m9t19.p + m9_chk_slice (m9t19a, m9t19n, m9t19.len, err), m9t19n }; });
+    { __typeof__(({ __typeof__(src) m9t19 = src; int64_t m9t19a = INT64_C(4), m9t19n = m9_sub_i64 ((src).len, INT64_C(4), err); (__typeof__(m9t19)){ m9t19.p + m9_chk_slice (m9t19a, m9t19n, m9t19.len, err), m9t19n }; })) m9a265 = ({ __typeof__(src) m9t19 = src; int64_t m9t19a = INT64_C(4), m9t19n = m9_sub_i64 ((src).len, INT64_C(4), err); (__typeof__(m9t19)){ m9t19.p + m9_chk_slice (m9t19a, m9t19n, m9t19.len, err), m9t19n }; });
       if (err->exc) goto L_ret;
-    m9ret = Sem_ProcFits (m9a235, m9a236, err);
+    m9ret = Sem_ProcFits (m9a264, m9a265, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -11390,9 +12372,9 @@ static Ast_Node * Sem_RecordNamed (m9_sl_CHAR name, m9_sl_CHAR *om, m9_sl_CHAR *
       m9ret = NULL;
       goto L_ret;
     }
-    { __typeof__(({ __typeof__(name) m9t2 = name; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a237 = ({ __typeof__(name) m9t2 = name; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+    { __typeof__(({ __typeof__(name) m9t2 = name; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a266 = ({ __typeof__(name) m9t2 = name; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
       if (err->exc) goto L_ret;
-    { __typeof__(t) m9v = Sem_FindTypeIn (m, m9a237, err);
+    { __typeof__(t) m9v = Sem_FindTypeIn (m, m9a266, err);
       if (err->exc) goto L_ret;
       t = m9v;
     }
@@ -11417,9 +12399,9 @@ static Ast_Node * Sem_RecordNamed (m9_sl_CHAR name, m9_sl_CHAR *om, m9_sl_CHAR *
   if (err->exc) goto L_ret;
   if (r != NULL) {
     if ((r->kind == Ast_NRecordType)) {
-      { __typeof__(Sem_LastPart (name, err)) m9a238 = Sem_LastPart (name, err);
+      { __typeof__(Sem_LastPart (name, err)) m9a267 = Sem_LastPart (name, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*canon)) m9v = Sem_Qualify ((*om), m9a238, err);
+      { __typeof__((*canon)) m9v = Sem_Qualify ((*om), m9a267, err);
         if (err->exc) goto L_ret;
         (*canon) = m9v;
       }
@@ -11602,42 +12584,42 @@ static m9_sl_CHAR Sem_AggElemType (Ast_Node * k, m9_state *err)
     case INT64_C(65):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s278, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 });
       goto L_ret;
     } break;
     case INT64_C(66):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s279, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s298, 3 });
       goto L_ret;
     } break;
     case INT64_C(67):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s280, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s299, 4 });
       goto L_ret;
     } break;
     case INT64_C(68):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s281, 13 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s300, 13 });
       goto L_ret;
     } break;
     case INT64_C(69):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s282, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s301, 4 });
       goto L_ret;
     } break;
     case INT64_C(70):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s283, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s302, 4 });
       goto L_ret;
     } break;
     case INT64_C(61):
     {
-      bool m9t2 = Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s284, 1 }), err);
+      bool m9t2 = Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s303, 1 }), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
         { Ast_Node * o = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
@@ -11645,12 +12627,12 @@ static m9_sl_CHAR Sem_AggElemType (Ast_Node * k, m9_state *err)
         if (o != NULL) {
           if ((o->kind == Ast_NInt)) {
             err->res = m9res;
-            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s285, 3 });
+            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s304, 3 });
             goto L_ret;
           }
           if ((o->kind == Ast_NReal)) {
             err->res = m9res;
-            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s286, 3 });
+            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s305, 3 });
             goto L_ret;
           }
         } }
@@ -11690,9 +12672,9 @@ static m9_sl_CHAR Sem_AggType (Ast_Node * e, m9_state *err)
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a239 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a268 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(t) m9v = Sem_AggElemType (m9a239, err);
+  { __typeof__(t) m9v = Sem_AggElemType (m9a268, err);
     if (err->exc) goto L_ret;
     t = m9v;
   }
@@ -11716,9 +12698,9 @@ static m9_sl_CHAR Sem_AggType (Ast_Node * e, m9_state *err)
     }
   } }
   err->res = m9res;
-  { __typeof__(Sem_ItoA (e->nkids, err)) m9a240 = Sem_ItoA (e->nkids, err);
+  { __typeof__(Sem_ItoA (e->nkids, err)) m9a269 = Sem_ItoA (e->nkids, err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s287, 6 }), m9a240, ((m9_sl_CHAR){ (uint32_t *) m9s288, 4 }), t, err);
+  m9ret = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s306, 6 }), m9a269, ((m9_sl_CHAR){ (uint32_t *) m9s307, 4 }), t, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -11758,50 +12740,50 @@ static m9_sl_CHAR Sem_LitType (Ast_Node * k, m9_state *err)
     case INT64_C(65):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s289, 5 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s308, 5 });
       goto L_ret;
     } break;
     case INT64_C(66):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s290, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s309, 6 });
       goto L_ret;
     } break;
     case INT64_C(67):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s291, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s310, 4 });
       goto L_ret;
     } break;
     case INT64_C(68):
     {
       if (((e->a).len == INT64_C(1))) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s292, 6 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s311, 6 });
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s293, 13 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s312, 13 });
       goto L_ret;
     } break;
     case INT64_C(69):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s294, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s313, 4 });
       goto L_ret;
     } break;
     case INT64_C(70):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s295, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s314, 4 });
       goto L_ret;
     } break;
     case INT64_C(64):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a241 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a270 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_LitType (m9a241, err);
+      m9ret = Sem_LitType (m9a270, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -11809,48 +12791,48 @@ static m9_sl_CHAR Sem_LitType (Ast_Node * k, m9_state *err)
     case INT64_C(61):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a242 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a271 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_LitType (m9a242, err);
+      m9ret = Sem_LitType (m9a271, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     } break;
     case INT64_C(60):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a243 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a272 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(l) m9v = Sem_LitType (m9a243, err);
+      { __typeof__(l) m9v = Sem_LitType (m9a272, err);
         if (err->exc) goto L_ret;
         l = m9v;
       }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a244 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a273 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(r) m9v = Sem_LitType (m9a244, err);
+      { __typeof__(r) m9v = Sem_LitType (m9a273, err);
         if (err->exc) goto L_ret;
         r = m9v;
       }
       }
-      bool m9t2 = ((Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s296, 5 }), err) && Text_Eq (r, ((m9_sl_CHAR){ (uint32_t *) m9s297, 5 }), err)) && Text_OneOf (e->a, ((m9_sl_m9_sl_CHAR){ ((*IntOps)).v, INT64_C(5) }), err));
+      bool m9t2 = ((Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s315, 5 }), err) && Text_Eq (r, ((m9_sl_CHAR){ (uint32_t *) m9s316, 5 }), err)) && Text_OneOf (e->a, ((m9_sl_m9_sl_CHAR){ ((*IntOps)).v, INT64_C(5) }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s298, 5 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s317, 5 });
         goto L_ret;
       }
-      bool m9t3 = ((Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s299, 6 }), err) && Text_Eq (r, ((m9_sl_CHAR){ (uint32_t *) m9s300, 6 }), err)) && Text_OneOf (e->a, ((m9_sl_m9_sl_CHAR){ ((*RealOps)).v, INT64_C(4) }), err));
+      bool m9t3 = ((Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s318, 6 }), err) && Text_Eq (r, ((m9_sl_CHAR){ (uint32_t *) m9s319, 6 }), err)) && Text_OneOf (e->a, ((m9_sl_m9_sl_CHAR){ ((*RealOps)).v, INT64_C(4) }), err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s301, 6 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s320, 6 });
         goto L_ret;
       }
-      bool m9t4 = ((Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s302, 1 }), err) && Sem_IsStrLit (l, err)) && Sem_IsStrLit (r, err));
+      bool m9t4 = ((Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s321, 1 }), err) && Sem_IsStrLit (l, err)) && Sem_IsStrLit (r, err));
       if (err->exc) goto L_ret;
       if (m9t4) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s303, 13 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s322, 13 });
         goto L_ret;
       }
       err->res = m9res;
@@ -11912,7 +12894,7 @@ static bool Sem_IsStrLit (m9_sl_CHAR t, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s304, 6 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s305, 13 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s306, 4 }), err));
+  m9ret = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s323, 6 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s324, 13 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s325, 4 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -12061,7 +13043,7 @@ static bool Sem_IsAggConst (m9_sl_CHAR nm, m9_state *err)
     t = m9v;
   }
   err->res = m9res;
-  m9ret = (found && Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s307, 6 }), err));
+  m9ret = (found && Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s326, 6 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -12097,19 +13079,21 @@ static void Sem_CheckRecordConst (Ast_Node * el, m9_sl_CHAR ctx, m9_sl_CHAR what
       { Ast_Node * rbase = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(0), rn->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (rbase != NULL) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s308, 39 }), ((m9_sl_CHAR){ (uint32_t *) m9s309, 50 }), err)) m9a245 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s308, 39 }), ((m9_sl_CHAR){ (uint32_t *) m9s309, 50 }), err);
+        m9_mark m9t1 = m9_pool_mark (err->res);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s327, 39 }), ((m9_sl_CHAR){ (uint32_t *) m9s328, 50 }), err)) m9a274 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s327, 39 }), ((m9_sl_CHAR){ (uint32_t *) m9s328, 50 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (name, m9a245, err)) m9a246 = Sem_Cat (name, m9a245, err);
+        { __typeof__(Sem_Cat (name, m9a274, err)) m9a275 = Sem_Cat (name, m9a274, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (el, ctx, m9a246, err);
+        Sem_ErrN (el, ctx, m9a275, err);
         if (err->exc) goto L_ret;
         }
         }
+        m9_pool_release (err->res, m9t1);
         goto L_ret;
       } }
-      { __typeof__((*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err))) m9a247 = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err))) m9a276 = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(flat) m9v = Sem_FlatFields (m9a247, &(nflat), err);
+      { __typeof__(flat) m9v = Sem_FlatFields (m9a276, &(nflat), err);
         if (err->exc) goto L_ret;
         flat = m9v;
       }
@@ -12119,24 +13103,24 @@ static void Sem_CheckRecordConst (Ast_Node * el, m9_sl_CHAR ctx, m9_sl_CHAR what
       if (al != NULL) {
         Sem_Arity (el, ctx, name, nflat, al->nkids, err);
         if (err->exc) goto L_ret;
-        { int64_t m9t1to;
+        { int64_t m9t2to;
         k = INT64_C(0);
-        m9t1to = m9_sub_i64 (al->nkids, INT64_C(1), err);
+        m9t2to = m9_sub_i64 (al->nkids, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; k <= m9t1to; k += 1) {
+        for (; k <= m9t2to; k += 1) {
           { Ast_Node * a = (*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (a != NULL) {
-            bool m9t2 = ((Sem_AggElemType ((*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err)), err)).len == INT64_C(0));
+            bool m9t3 = ((Sem_AggElemType ((*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err)), err)).len == INT64_C(0));
             if (err->exc) goto L_ret;
-            if (m9t2) {
-              { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a248 = m9_add_i64 (k, INT64_C(1), err);
+            if (m9t3) {
+              { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a277 = m9_add_i64 (k, INT64_C(1), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_ItoA (m9a248, err)) m9a249 = Sem_ItoA (m9a248, err);
+              { __typeof__(Sem_ItoA (m9a277, err)) m9a278 = Sem_ItoA (m9a277, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s310, 6 }), m9a249, ((m9_sl_CHAR){ (uint32_t *) m9s311, 4 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s312, 53 }), err)) m9a250 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s310, 6 }), m9a249, ((m9_sl_CHAR){ (uint32_t *) m9s311, 4 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s312, 53 }), err);
+              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s329, 6 }), m9a278, ((m9_sl_CHAR){ (uint32_t *) m9s330, 4 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s331, 53 }), err)) m9a279 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s329, 6 }), m9a278, ((m9_sl_CHAR){ (uint32_t *) m9s330, 4 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s331, 53 }), err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (a, ctx, m9a250, err);
+              Sem_ErrN (a, ctx, m9a279, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -12147,39 +13131,39 @@ static void Sem_CheckRecordConst (Ast_Node * el, m9_sl_CHAR ctx, m9_sl_CHAR what
                   if (err->exc) goto L_ret;
                   canonCtx = m9v;
                 }
-                { __typeof__((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err))) m9a251 = (*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err))) m9a280 = (*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(pTy) m9v = Sem_CanonT (m9a251, INT64_C(0), err);
+                { __typeof__(pTy) m9v = Sem_CanonT (m9a280, INT64_C(0), err);
                   if (err->exc) goto L_ret;
                   pTy = m9v;
                 }
                 }
                 canonCtx = (m9_sl_CHAR){ NULL, 0 };
-                { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err))) m9a252 = (*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err))) m9a281 = (*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(aTy) m9v = Sem_LitType (m9a252, err);
+                { __typeof__(aTy) m9v = Sem_LitType (m9a281, err);
                   if (err->exc) goto L_ret;
                   aTy = m9v;
                 }
                 }
-                bool m9t3 = (!Sem_Compat (pTy, aTy, err));
+                bool m9t4 = (!Sem_Compat (pTy, aTy, err));
                 if (err->exc) goto L_ret;
-                if (m9t3) {
-                  { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a253 = m9_add_i64 (k, INT64_C(1), err);
+                if (m9t4) {
+                  { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a282 = m9_add_i64 (k, INT64_C(1), err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Sem_ItoA (m9a253, err)) m9a254 = Sem_ItoA (m9a253, err);
+                  { __typeof__(Sem_ItoA (m9a282, err)) m9a283 = Sem_ItoA (m9a282, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Sem_TyName (aTy, err)) m9a255 = Sem_TyName (aTy, err);
+                  { __typeof__(Sem_TyName (aTy, err)) m9a284 = Sem_TyName (aTy, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Sem_TyName (pTy, err)) m9a256 = Sem_TyName (pTy, err);
+                  { __typeof__(Sem_TyName (pTy, err)) m9a285 = Sem_TyName (pTy, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Sem_Cat (m9a256, ((m9_sl_CHAR){ (uint32_t *) m9s317, 12 }), err)) m9a257 = Sem_Cat (m9a256, ((m9_sl_CHAR){ (uint32_t *) m9s317, 12 }), err);
+                  { __typeof__(Sem_Cat (m9a285, ((m9_sl_CHAR){ (uint32_t *) m9s336, 12 }), err)) m9a286 = Sem_Cat (m9a285, ((m9_sl_CHAR){ (uint32_t *) m9s336, 12 }), err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s315, 14 }), m9a255, ((m9_sl_CHAR){ (uint32_t *) m9s316, 7 }), m9a257, err)) m9a258 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s315, 14 }), m9a255, ((m9_sl_CHAR){ (uint32_t *) m9s316, 7 }), m9a257, err);
+                  { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s334, 14 }), m9a284, ((m9_sl_CHAR){ (uint32_t *) m9s335, 7 }), m9a286, err)) m9a287 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s334, 14 }), m9a284, ((m9_sl_CHAR){ (uint32_t *) m9s335, 7 }), m9a286, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s313, 6 }), m9a254, ((m9_sl_CHAR){ (uint32_t *) m9s314, 4 }), what, m9a258, err)) m9a259 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s313, 6 }), m9a254, ((m9_sl_CHAR){ (uint32_t *) m9s314, 4 }), what, m9a258, err);
+                  { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s332, 6 }), m9a283, ((m9_sl_CHAR){ (uint32_t *) m9s333, 4 }), what, m9a287, err)) m9a288 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s332, 6 }), m9a283, ((m9_sl_CHAR){ (uint32_t *) m9s333, 4 }), what, m9a287, err);
                     if (err->exc) goto L_ret;
-                  Sem_ErrN (a, ctx, m9a259, err);
+                  Sem_ErrN (a, ctx, m9a288, err);
                   if (err->exc) goto L_ret;
                   }
                   }
@@ -12224,16 +13208,16 @@ static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9
         if (err->exc) goto L_ret;
         if (rr != NULL) {
           if ((where == INT64_C(1))) {
-            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s318, 36 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s319, 12 }), err)) m9a260 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s318, 36 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s319, 12 }), err);
+            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s337, 36 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s338, 12 }), err)) m9a289 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s337, 36 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s338, 12 }), err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (cd, ctx, m9a260, err);
+            Sem_ErrN (cd, ctx, m9a289, err);
             if (err->exc) goto L_ret;
             }
           } else {
             if ((where == INT64_C(2))) {
-              { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s320, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s321, 12 }), err)) m9a261 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s320, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s321, 12 }), err);
+              { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s339, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s340, 12 }), err)) m9a290 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s339, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s340, 12 }), err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (cd, ctx, m9a261, err);
+              Sem_ErrN (cd, ctx, m9a290, err);
               if (err->exc) goto L_ret;
               }
           } }
@@ -12249,30 +13233,30 @@ static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9
     bool m9t2 = ((Sem_LitType (ce, err)).len == INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s322, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s323, 131 }), err)) m9a262 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s322, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s323, 131 }), err);
+      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s341, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s342, 131 }), err)) m9a291 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s341, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s342, 131 }), err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (cd, ctx, m9a262, err);
+      Sem_ErrN (cd, ctx, m9a291, err);
       if (err->exc) goto L_ret;
       }
     } else {
-      bool m9t3 = (Text_Eq (Sem_LitType (ce, err), ((m9_sl_CHAR){ (uint32_t *) m9s324, 5 }), err) && Sem_IsConstExpr (ce, err));
+      bool m9t3 = (Text_Eq (Sem_LitType (ce, err), ((m9_sl_CHAR){ (uint32_t *) m9s343, 5 }), err) && Sem_IsConstExpr (ce, err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         bool m9t4 = (!Ast_FoldInt (ce, &(cv), err));
         if (err->exc) goto L_ret;
         if (m9t4) {
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s325, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s326, 61 }), err)) m9a263 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s325, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s326, 61 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s344, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s345, 61 }), err)) m9a292 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s344, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s345, 61 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (cd, ctx, m9a263, err);
+          Sem_ErrN (cd, ctx, m9a292, err);
           if (err->exc) goto L_ret;
           }
         } else {
           bool m9t5 = (cv == m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err));
           if (err->exc) goto L_ret;
           if (m9t5) {
-            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s327, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s328, 83 }), err)) m9a264 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s327, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s328, 83 }), err);
+            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s346, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s347, 83 }), err)) m9a293 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s346, 6 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s347, 83 }), err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (cd, ctx, m9a264, err);
+            Sem_ErrN (cd, ctx, m9a293, err);
             if (err->exc) goto L_ret;
             }
         } }
@@ -12287,22 +13271,22 @@ static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9
         nAgg = m9v;
       }
       if ((where == INT64_C(1))) {
-        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s329, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s330, 12 }), err)) m9a265 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s329, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s330, 12 }), err);
+        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s348, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s349, 12 }), err)) m9a294 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s348, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s349, 12 }), err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (cd, ctx, m9a265, err);
+        Sem_ErrN (cd, ctx, m9a294, err);
         if (err->exc) goto L_ret;
         }
       } else {
         if ((where == INT64_C(2))) {
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s331, 44 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s332, 12 }), err)) m9a266 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s331, 44 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s332, 12 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s350, 44 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s351, 12 }), err)) m9a295 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s350, 44 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s351, 12 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (cd, ctx, m9a266, err);
+          Sem_ErrN (cd, ctx, m9a295, err);
           if (err->exc) goto L_ret;
           }
       } }
-      { __typeof__((*(Ast_Node * *) m9_at (ag->kids.p, INT64_C(0), ag->kids.len, sizeof (Ast_Node *), err))) m9a267 = (*(Ast_Node * *) m9_at (ag->kids.p, INT64_C(0), ag->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (ag->kids.p, INT64_C(0), ag->kids.len, sizeof (Ast_Node *), err))) m9a296 = (*(Ast_Node * *) m9_at (ag->kids.p, INT64_C(0), ag->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t0) m9v = Sem_AggElemType (m9a267, err);
+      { __typeof__(t0) m9v = Sem_AggElemType (m9a296, err);
         if (err->exc) goto L_ret;
         t0 = m9v;
       }
@@ -12315,9 +13299,9 @@ static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9
         { Ast_Node * el = (*(Ast_Node * *) m9_at (ag->kids.p, i, ag->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (el != NULL) {
-          { __typeof__((*(Ast_Node * *) m9_at (ag->kids.p, i, ag->kids.len, sizeof (Ast_Node *), err))) m9a268 = (*(Ast_Node * *) m9_at (ag->kids.p, i, ag->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (ag->kids.p, i, ag->kids.len, sizeof (Ast_Node *), err))) m9a297 = (*(Ast_Node * *) m9_at (ag->kids.p, i, ag->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(t) m9v = Sem_AggElemType (m9a268, err);
+          { __typeof__(t) m9v = Sem_AggElemType (m9a297, err);
             if (err->exc) goto L_ret;
             t = m9v;
           }
@@ -12325,13 +13309,13 @@ static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9
           bool m9t7 = Sem_IsRecordCall (el, err);
           if (err->exc) goto L_ret;
           if (m9t7) {
-            { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a269 = m9_add_i64 (i, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a298 = m9_add_i64 (i, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_ItoA (m9a269, err)) m9a270 = Sem_ItoA (m9a269, err);
+            { __typeof__(Sem_ItoA (m9a298, err)) m9a299 = Sem_ItoA (m9a298, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s333, 8 }), m9a270, ((m9_sl_CHAR){ (uint32_t *) m9s334, 4 }), cd->a, err)) m9a271 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s333, 8 }), m9a270, ((m9_sl_CHAR){ (uint32_t *) m9s334, 4 }), cd->a, err);
+            { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s352, 8 }), m9a299, ((m9_sl_CHAR){ (uint32_t *) m9s353, 4 }), cd->a, err)) m9a300 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s352, 8 }), m9a299, ((m9_sl_CHAR){ (uint32_t *) m9s353, 4 }), cd->a, err);
               if (err->exc) goto L_ret;
-            Sem_CheckRecordConst (el, ctx, m9a271, err);
+            Sem_CheckRecordConst (el, ctx, m9a300, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -12343,13 +13327,13 @@ static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9
             t = (m9_sl_CHAR){ NULL, 0 };
           } else {
             if (((t).len == INT64_C(0))) {
-              { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a272 = m9_add_i64 (i, INT64_C(1), err);
+              { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a301 = m9_add_i64 (i, INT64_C(1), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_ItoA (m9a272, err)) m9a273 = Sem_ItoA (m9a272, err);
+              { __typeof__(Sem_ItoA (m9a301, err)) m9a302 = Sem_ItoA (m9a301, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s335, 8 }), m9a273, ((m9_sl_CHAR){ (uint32_t *) m9s336, 4 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s337, 58 }), err)) m9a274 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s335, 8 }), m9a273, ((m9_sl_CHAR){ (uint32_t *) m9s336, 4 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s337, 58 }), err);
+              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s354, 8 }), m9a302, ((m9_sl_CHAR){ (uint32_t *) m9s355, 4 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s356, 58 }), err)) m9a303 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s354, 8 }), m9a302, ((m9_sl_CHAR){ (uint32_t *) m9s355, 4 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s356, 58 }), err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (el, ctx, m9a274, err);
+              Sem_ErrN (el, ctx, m9a303, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -12358,19 +13342,19 @@ static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9
             bool m9t9 = (((t0).len > INT64_C(0)) && (!Text_Eq (t, t0, err)));
             if (err->exc) goto L_ret;
             if (m9t9) {
-              { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a275 = m9_add_i64 (i, INT64_C(1), err);
+              { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a304 = m9_add_i64 (i, INT64_C(1), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_ItoA (m9a275, err)) m9a276 = Sem_ItoA (m9a275, err);
+              { __typeof__(Sem_ItoA (m9a304, err)) m9a305 = Sem_ItoA (m9a304, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_TyName (t, err)) m9a277 = Sem_TyName (t, err);
+              { __typeof__(Sem_TyName (t, err)) m9a306 = Sem_TyName (t, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_TyName (t0, err)) m9a278 = Sem_TyName (t0, err);
+              { __typeof__(Sem_TyName (t0, err)) m9a307 = Sem_TyName (t0, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s340, 4 }), m9a277, ((m9_sl_CHAR){ (uint32_t *) m9s341, 20 }), m9a278, ((m9_sl_CHAR){ (uint32_t *) m9s342, 47 }), err)) m9a279 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s340, 4 }), m9a277, ((m9_sl_CHAR){ (uint32_t *) m9s341, 20 }), m9a278, ((m9_sl_CHAR){ (uint32_t *) m9s342, 47 }), err);
+              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s359, 4 }), m9a306, ((m9_sl_CHAR){ (uint32_t *) m9s360, 20 }), m9a307, ((m9_sl_CHAR){ (uint32_t *) m9s361, 47 }), err)) m9a308 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s359, 4 }), m9a306, ((m9_sl_CHAR){ (uint32_t *) m9s360, 20 }), m9a307, ((m9_sl_CHAR){ (uint32_t *) m9s361, 47 }), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s338, 8 }), m9a276, ((m9_sl_CHAR){ (uint32_t *) m9s339, 4 }), cd->a, m9a279, err)) m9a280 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s338, 8 }), m9a276, ((m9_sl_CHAR){ (uint32_t *) m9s339, 4 }), cd->a, m9a279, err);
+              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s357, 8 }), m9a305, ((m9_sl_CHAR){ (uint32_t *) m9s358, 4 }), cd->a, m9a308, err)) m9a309 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s357, 8 }), m9a305, ((m9_sl_CHAR){ (uint32_t *) m9s358, 4 }), cd->a, m9a308, err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (el, ctx, m9a280, err);
+              Sem_ErrN (el, ctx, m9a309, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -12401,14 +13385,16 @@ static void Sem_AggWalk (Ast_Node * n, int64_t parent, m9_sl_CHAR ctx, m9_state 
     bool m9t1 = Sem_IsAggConst (n->a, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s344, 78 }), ((m9_sl_CHAR){ (uint32_t *) m9s345, 22 }), err)) m9a281 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s344, 78 }), ((m9_sl_CHAR){ (uint32_t *) m9s345, 22 }), err);
+      m9_mark m9t2 = m9_pool_mark (err->res);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s363, 78 }), ((m9_sl_CHAR){ (uint32_t *) m9s364, 22 }), err)) m9a310 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s363, 78 }), ((m9_sl_CHAR){ (uint32_t *) m9s364, 22 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s343, 16 }), n->a, m9a281, err)) m9a282 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s343, 16 }), n->a, m9a281, err);
+      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s362, 16 }), n->a, m9a310, err)) m9a311 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s362, 16 }), n->a, m9a310, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (n, ctx, m9a282, err);
+      Sem_ErrN (n, ctx, m9a311, err);
       if (err->exc) goto L_ret;
       }
       }
+      m9_pool_release (err->res, m9t2);
     }
   }
   first = INT64_C(0);
@@ -12421,11 +13407,11 @@ static void Sem_AggWalk (Ast_Node * n, int64_t parent, m9_sl_CHAR ctx, m9_state 
       }
     } }
   }
-  { int64_t m9t2to;
+  { int64_t m9t3to;
   i = first;
-  m9t2to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+  m9t3to = m9_sub_i64 (n->nkids, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
+  for (; i <= m9t3to; i += 1) {
     { Ast_Node * k = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (k != NULL) {
@@ -12452,15 +13438,15 @@ static void Sem_ConstArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
       if (err->exc) goto L_ret;
       if (m9t1) {
         if (isVar) {
-          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a283 = m9_add_i64 (k, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a312 = m9_add_i64 (k, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a283, err)) m9a284 = Sem_ItoA (m9a283, err);
+          { __typeof__(Sem_ItoA (m9a312, err)) m9a313 = Sem_ItoA (m9a312, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s348, 12 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s349, 43 }), err)) m9a285 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s348, 12 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s349, 43 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s367, 12 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s368, 43 }), err)) m9a314 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s367, 12 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s368, 43 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s346, 9 }), m9a284, ((m9_sl_CHAR){ (uint32_t *) m9s347, 4 }), name, m9a285, err)) m9a286 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s346, 9 }), m9a284, ((m9_sl_CHAR){ (uint32_t *) m9s347, 4 }), name, m9a285, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s365, 9 }), m9a313, ((m9_sl_CHAR){ (uint32_t *) m9s366, 4 }), name, m9a314, err)) m9a315 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s365, 9 }), m9a313, ((m9_sl_CHAR){ (uint32_t *) m9s366, 4 }), name, m9a314, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (site, ctx, m9a286, err);
+          Sem_ErrN (site, ctx, m9a315, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -12470,15 +13456,15 @@ static void Sem_ConstArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
           bool m9t2 = (((a->nkids == INT64_C(0)) && (!isRo)) && Sem_IsAggConst (a->a, err));
           if (err->exc) goto L_ret;
           if (m9t2) {
-            { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a287 = m9_add_i64 (k, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a316 = m9_add_i64 (k, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_ItoA (m9a287, err)) m9a288 = Sem_ItoA (m9a287, err);
+            { __typeof__(Sem_ItoA (m9a316, err)) m9a317 = Sem_ItoA (m9a316, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s352, 18 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s353, 48 }), err)) m9a289 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s352, 18 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s353, 48 }), err);
+            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s371, 18 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s372, 48 }), err)) m9a318 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s371, 18 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s372, 48 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s350, 9 }), m9a288, ((m9_sl_CHAR){ (uint32_t *) m9s351, 4 }), name, m9a289, err)) m9a290 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s350, 9 }), m9a288, ((m9_sl_CHAR){ (uint32_t *) m9s351, 4 }), name, m9a289, err);
+            { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s369, 9 }), m9a317, ((m9_sl_CHAR){ (uint32_t *) m9s370, 4 }), name, m9a318, err)) m9a319 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s369, 9 }), m9a317, ((m9_sl_CHAR){ (uint32_t *) m9s370, 4 }), name, m9a318, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (site, ctx, m9a290, err);
+            Sem_ErrN (site, ctx, m9a319, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -12535,9 +13521,9 @@ static m9_sl_CHAR Sem_RoFieldOf (Ast_Node * d, m9_state *err)
         if (r0 != NULL) {
           if (((r0->kind == Ast_NPtrType) || (r0->kind == Ast_NSharedType))) {
             deref = true;
-            { __typeof__((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err))) m9a291 = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err))) m9a320 = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(declN) m9v = Sem_InMod (m9a291, tmod, err);
+            { __typeof__(declN) m9v = Sem_InMod (m9a320, tmod, err);
               if (err->exc) goto L_ret;
               declN = m9v;
             }
@@ -12568,9 +13554,9 @@ static m9_sl_CHAR Sem_RoFieldOf (Ast_Node * d, m9_state *err)
                 m9ret = sel->a;
                 goto L_ret;
               }
-              { __typeof__(Sem_FieldTypeOf (r, sel->a, err)) m9a292 = Sem_FieldTypeOf (r, sel->a, err);
+              { __typeof__(Sem_FieldTypeOf (r, sel->a, err)) m9a321 = Sem_FieldTypeOf (r, sel->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(declN) m9v = Sem_InMod (m9a292, tmod, err);
+              { __typeof__(declN) m9v = Sem_InMod (m9a321, tmod, err);
                 if (err->exc) goto L_ret;
                 declN = m9v;
               }
@@ -12583,27 +13569,27 @@ static m9_sl_CHAR Sem_RoFieldOf (Ast_Node * d, m9_state *err)
           } else {
             if ((sel->kind == Ast_NSelIndex)) {
               if ((r->kind == Ast_NGridType)) {
-                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a293 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a322 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(declN) m9v = Sem_InMod (m9a293, tmod, err);
+                { __typeof__(declN) m9v = Sem_InMod (m9a322, tmod, err);
                   if (err->exc) goto L_ret;
                   declN = m9v;
                 }
                 }
               } else {
                 if ((r->kind == Ast_NSliceType)) {
-                  { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a294 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a323 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(declN) m9v = Sem_InMod (m9a294, tmod, err);
+                  { __typeof__(declN) m9v = Sem_InMod (m9a323, tmod, err);
                     if (err->exc) goto L_ret;
                     declN = m9v;
                   }
                   }
               } else {
                 if ((r->kind == Ast_NArrayType)) {
-                  { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a295 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a324 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(declN) m9v = Sem_InMod (m9a295, tmod, err);
+                  { __typeof__(declN) m9v = Sem_InMod (m9a324, tmod, err);
                     if (err->exc) goto L_ret;
                     declN = m9v;
                   }
@@ -12663,7 +13649,7 @@ static m9_sl_CHAR Sem_RoAnswerOf (Ast_Node * e, m9_state *err)
         if (pn != NULL) {
           if (pn->f3) {
             err->res = m9res;
-            m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s354, 17 }), name, err);
+            m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s373, 17 }), name, err);
             if (err->exc) goto L_ret;
             goto L_ret;
           }
@@ -12672,7 +13658,7 @@ static m9_sl_CHAR Sem_RoAnswerOf (Ast_Node * e, m9_state *err)
             if (err->exc) goto L_ret;
             if (m9t1) {
               err->res = m9res;
-              m9ret = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s355, 14 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s356, 82 }), err);
+              m9ret = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s374, 14 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s375, 82 }), err);
               if (err->exc) goto L_ret;
               goto L_ret;
             }
@@ -12709,14 +13695,14 @@ static m9_sl_CHAR Sem_RoWhatOf (Ast_Node * k, m9_state *err)
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s357, 16 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s376, 16 });
       goto L_ret;
     }
     if (((e->kind == Ast_NSliceOf3) || (e->kind == Ast_NGridOf))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a296 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a325 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_RoWhatOf (m9a296, err);
+      m9ret = Sem_RoWhatOf (m9a325, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -12734,7 +13720,7 @@ static m9_sl_CHAR Sem_RoWhatOf (Ast_Node * k, m9_state *err)
       }
       if (((r).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s358, 13 }), r, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s377, 13 }), r, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -12752,7 +13738,7 @@ static m9_sl_CHAR Sem_RoWhatOf (Ast_Node * k, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
-      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s359, 17 }), r, err);
+      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s378, 17 }), r, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -12760,7 +13746,7 @@ static m9_sl_CHAR Sem_RoWhatOf (Ast_Node * k, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
-      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s360, 16 }), r, err);
+      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s379, 16 }), r, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -12782,7 +13768,7 @@ static m9_sl_CHAR Sem_RoWhatOf (Ast_Node * k, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t4) {
       err->res = m9res;
-      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s361, 10 }), r, err);
+      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s380, 10 }), r, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -12833,19 +13819,19 @@ static bool Sem_RoSeedWalk (Ast_Node * k, m9_state *err)
               bool m9t2 = ((((Text_Eq (m, Sem_ModeLocal, err) || Text_Eq (m, Sem_ModeVal, err)) || Text_Eq (m, Sem_ModeVar, err)) || Text_Eq (m, Sem_ModeOwn, err)) || Text_Eq (m, Sem_ModeModule, err));
               if (err->exc) goto L_ret;
               if (m9t2) {
-                { __typeof__((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).ty) m9a297 = (*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).ty;
+                { __typeof__((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).ty) m9a326 = (*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).ty;
                   if (err->exc) goto L_ret;
-                { __typeof__(ty) m9v = Sem_CanonT (m9a297, INT64_C(0), err);
+                { __typeof__(ty) m9v = Sem_CanonT (m9a326, INT64_C(0), err);
                   if (err->exc) goto L_ret;
                   ty = m9v;
                 }
                 }
-                bool m9t3 = ((Text_StartsWith (ty, ((m9_sl_CHAR){ (uint32_t *) m9s362, 8 }), err) || Text_StartsWith (ty, ((m9_sl_CHAR){ (uint32_t *) m9s363, 5 }), err)) || Sem_PtrBearing ((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).ty, INT64_C(0), err));
+                bool m9t3 = ((Text_StartsWith (ty, ((m9_sl_CHAR){ (uint32_t *) m9s381, 8 }), err) || Text_StartsWith (ty, ((m9_sl_CHAR){ (uint32_t *) m9s382, 5 }), err)) || Sem_PtrBearing ((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).ty, INT64_C(0), err));
                 if (err->exc) goto L_ret;
                 if (m9t3) {
-                  { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a298 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a327 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(what) m9v = Sem_RoWhatOf (m9a298, err);
+                  { __typeof__(what) m9v = Sem_RoWhatOf (m9a327, err);
                     if (err->exc) goto L_ret;
                     what = m9v;
                   }
@@ -13077,14 +14063,14 @@ static m9_sl_CHAR Sem_ModRoWhat (Ast_Node * k, Ast_Node * scope, m9_state *err)
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s364, 16 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s383, 16 });
       goto L_ret;
     }
     if (((e->kind == Ast_NSliceOf3) || (e->kind == Ast_NGridOf))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a299 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a328 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_ModRoWhat (m9a299, scope, err);
+      m9ret = Sem_ModRoWhat (m9a328, scope, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -13125,7 +14111,7 @@ static m9_sl_CHAR Sem_ModRoWhat (Ast_Node * k, Ast_Node * scope, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
-      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s365, 10 }), r, err);
+      m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s384, 10 }), r, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -13162,19 +14148,19 @@ static bool Sem_ModRoWalk (Ast_Node * root, Ast_Node * u, Ast_Node * scope, Ast_
           bool m9t1 = ((Sem_MroFind (lhs->a, err) < INT64_C(0)) && (!Sem_ProcDeclares (scope, lhs->a, err)));
           if (err->exc) goto L_ret;
           if (m9t1) {
-            { __typeof__(Sem_ModVarType (root, u, lhs->a, err)) m9a300 = Sem_ModVarType (root, u, lhs->a, err);
+            { __typeof__(Sem_ModVarType (root, u, lhs->a, err)) m9a329 = Sem_ModVarType (root, u, lhs->a, err);
               if (err->exc) goto L_ret;
-            { __typeof__(ty) m9v = Sem_CanonT (m9a300, INT64_C(0), err);
+            { __typeof__(ty) m9v = Sem_CanonT (m9a329, INT64_C(0), err);
               if (err->exc) goto L_ret;
               ty = m9v;
             }
             }
-            bool m9t2 = (Text_StartsWith (ty, ((m9_sl_CHAR){ (uint32_t *) m9s366, 8 }), err) || Text_StartsWith (ty, ((m9_sl_CHAR){ (uint32_t *) m9s367, 5 }), err));
+            bool m9t2 = (Text_StartsWith (ty, ((m9_sl_CHAR){ (uint32_t *) m9s385, 8 }), err) || Text_StartsWith (ty, ((m9_sl_CHAR){ (uint32_t *) m9s386, 5 }), err));
             if (err->exc) goto L_ret;
             if (m9t2) {
-              { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a301 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a330 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(what) m9v = Sem_ModRoWhat (m9a301, scope, err);
+              { __typeof__(what) m9v = Sem_ModRoWhat (m9a330, scope, err);
                 if (err->exc) goto L_ret;
                 what = m9v;
               }
@@ -13333,9 +14319,9 @@ static void Sem_RoFreshWalk (Ast_Node * k, m9_state *err)
     m9t5to = m9_sub_i64 (e->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t5to; i += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err))) m9a302 = (*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err))) m9a331 = (*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_RoFreshWalk (m9a302, err);
+      Sem_RoFreshWalk (m9a331, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -13418,9 +14404,9 @@ static bool Sem_OwnFedBy (Ast_Node * k, m9_state *err)
   if (r0 != NULL) {
     if ((r0->kind == Ast_NParen)) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err))) m9a303 = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err))) m9a332 = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_OwnFedBy (m9a303, err);
+      m9ret = Sem_OwnFedBy (m9a332, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -13433,7 +14419,7 @@ static bool Sem_OwnFedBy (Ast_Node * k, m9_state *err)
       if (err->exc) goto L_ret;
       if (d != NULL) {
         err->res = m9res;
-        m9ret = (((d->kind == Ast_NDesignator) && (d->nkids == INT64_C(0))) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s368, 3 }), err));
+        m9ret = (((d->kind == Ast_NDesignator) && (d->nkids == INT64_C(0))) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s387, 3 }), err));
         if (err->exc) goto L_ret;
         goto L_ret;
       } }
@@ -13597,21 +14583,21 @@ static void Sem_RoArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t
   err->res = &m9frame;
   m9_sl_CHAR what = {0}; (void) what;
   what = (m9_sl_CHAR){ NULL, 0 };
-  bool m9t1 = (Text_StartsWith (pTy, ((m9_sl_CHAR){ (uint32_t *) m9s369, 8 }), err) || Text_StartsWith (pTy, ((m9_sl_CHAR){ (uint32_t *) m9s370, 5 }), err));
+  bool m9t1 = (Text_StartsWith (pTy, ((m9_sl_CHAR){ (uint32_t *) m9s388, 8 }), err) || Text_StartsWith (pTy, ((m9_sl_CHAR){ (uint32_t *) m9s389, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     { Ast_Node * a = an;
     if (a != NULL) {
       if ((a->kind == Ast_NString)) {
-        what = ((m9_sl_CHAR){ (uint32_t *) m9s371, 16 });
+        what = ((m9_sl_CHAR){ (uint32_t *) m9s390, 16 });
       } else {
-        bool m9t2 = ((a->kind == Ast_NDesignator) && (((Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s372, 8 }), err) || Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s373, 5 }), err)) || Text_Eq (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s374, 6 }), err))));
+        bool m9t2 = ((a->kind == Ast_NDesignator) && (((Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s391, 8 }), err) || Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s392, 5 }), err)) || Text_Eq (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s393, 6 }), err))));
         if (err->exc) goto L_ret;
         if (m9t2) {
           bool m9t3 = Text_Eq (Sem_ScopeMode (a->a, err), Sem_ModeRo, err);
           if (err->exc) goto L_ret;
           if (m9t3) {
-            { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s375, 17 }), a->a, err);
+            { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s394, 17 }), a->a, err);
               if (err->exc) goto L_ret;
               what = m9v;
             }
@@ -13619,7 +14605,7 @@ static void Sem_RoArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t
             bool m9t4 = Sem_ScopeRo (a->a, err);
             if (err->exc) goto L_ret;
             if (m9t4) {
-              { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s376, 16 }), a->a, err);
+              { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s395, 16 }), a->a, err);
                 if (err->exc) goto L_ret;
                 what = m9v;
               }
@@ -13627,13 +14613,13 @@ static void Sem_RoArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t
             bool m9t5 = ((Sem_ScopeRoFrom (a->a, err)).len > INT64_C(0));
             if (err->exc) goto L_ret;
             if (m9t5) {
-              { __typeof__(Sem_ScopeRoFrom (a->a, err)) m9a304 = Sem_ScopeRoFrom (a->a, err);
+              { __typeof__(Sem_ScopeRoFrom (a->a, err)) m9a333 = Sem_ScopeRoFrom (a->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_Cat (m9a304, ((m9_sl_CHAR){ (uint32_t *) m9s378, 1 }), err)) m9a305 = Sem_Cat (m9a304, ((m9_sl_CHAR){ (uint32_t *) m9s378, 1 }), err);
+              { __typeof__(Sem_Cat (m9a333, ((m9_sl_CHAR){ (uint32_t *) m9s397, 1 }), err)) m9a334 = Sem_Cat (m9a333, ((m9_sl_CHAR){ (uint32_t *) m9s397, 1 }), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s377, 14 }), m9a305, err)) m9a306 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s377, 14 }), m9a305, err);
+              { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s396, 14 }), m9a334, err)) m9a335 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s396, 14 }), m9a334, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(what) m9v = Sem_Cat (a->a, m9a306, err);
+              { __typeof__(what) m9v = Sem_Cat (a->a, m9a335, err);
                 if (err->exc) goto L_ret;
                 what = m9v;
               }
@@ -13644,7 +14630,7 @@ static void Sem_RoArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t
             bool m9t6 = Sem_IsConstHere (a->a, err);
             if (err->exc) goto L_ret;
             if (m9t6) {
-              { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s379, 10 }), a->a, err);
+              { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s398, 10 }), a->a, err);
                 if (err->exc) goto L_ret;
                 what = m9v;
               }
@@ -13652,16 +14638,16 @@ static void Sem_RoArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t
             bool m9t7 = ((Sem_RoFieldOf (a, err)).len > INT64_C(0));
             if (err->exc) goto L_ret;
             if (m9t7) {
-              { __typeof__(Sem_RoFieldOf (a, err)) m9a307 = Sem_RoFieldOf (a, err);
+              { __typeof__(Sem_RoFieldOf (a, err)) m9a336 = Sem_RoFieldOf (a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s380, 13 }), m9a307, err);
+              { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s399, 13 }), m9a336, err);
                 if (err->exc) goto L_ret;
                 what = m9v;
               }
               }
           } } } } }
       } else {
-        bool m9t8 = ((a->kind == Ast_NCallExpr) && ((Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s381, 8 }), err) || Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s382, 5 }), err))));
+        bool m9t8 = ((a->kind == Ast_NCallExpr) && ((Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s400, 8 }), err) || Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s401, 5 }), err))));
         if (err->exc) goto L_ret;
         if (m9t8) {
           { __typeof__(what) m9v = Sem_RoAnswerOf (a, err);
@@ -13672,15 +14658,15 @@ static void Sem_RoArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t
     } }
   }
   if (((what).len > INT64_C(0))) {
-    { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a308 = m9_add_i64 (k, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a337 = m9_add_i64 (k, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_ItoA (m9a308, err)) m9a309 = Sem_ItoA (m9a308, err);
+    { __typeof__(Sem_ItoA (m9a337, err)) m9a338 = Sem_ItoA (m9a337, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s385, 2 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s386, 46 }), err)) m9a310 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s385, 2 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s386, 46 }), err);
+    { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s404, 2 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s405, 46 }), err)) m9a339 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s404, 2 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s405, 46 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s383, 9 }), m9a309, ((m9_sl_CHAR){ (uint32_t *) m9s384, 4 }), name, m9a310, err)) m9a311 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s383, 9 }), m9a309, ((m9_sl_CHAR){ (uint32_t *) m9s384, 4 }), name, m9a310, err);
+    { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s402, 9 }), m9a338, ((m9_sl_CHAR){ (uint32_t *) m9s403, 4 }), name, m9a339, err)) m9a340 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s402, 9 }), m9a338, ((m9_sl_CHAR){ (uint32_t *) m9s403, 4 }), name, m9a339, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (site, ctx, m9a311, err);
+    Sem_ErrN (site, ctx, m9a340, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -13733,6 +14719,8 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
   m9_sl_CHAR om = {0}; (void) om;
   m9_sl_CHAR t = {0}; (void) t;
   m9_sl_CHAR hint = {0}; (void) hint;
+  m9_sl_CHAR hbMode = {0}; (void) hbMode;
+  m9_sl_CHAR hroot = {0}; (void) hroot;
   int64_t nargs = 0; (void) nargs;
   int64_t j = 0; (void) j;
   int64_t g = 0; (void) g;
@@ -13751,6 +14739,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
   Sem_ProcInfo pr = {0}; (void) pr;
   bool found = false; (void) found;
   bool isVar = false; (void) isVar;
+  bool hbBeyond = false; (void) hbBeyond;
   Ast_Node * fields = NULL; (void) fields;
   name = (m9_sl_CHAR){ NULL, 0 };
   { Ast_Node * d0 = dn;
@@ -13789,9 +14778,9 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
         (*(Ast_Node * *) m9_at (aNode.p, j, aNode.len, sizeof (Ast_Node *), err)) = m9v;
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (al1->kids.p, j, al1->kids.len, sizeof (Ast_Node *), err))) m9a312 = (*(Ast_Node * *) m9_at (al1->kids.p, j, al1->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al1->kids.p, j, al1->kids.len, sizeof (Ast_Node *), err))) m9a341 = (*(Ast_Node * *) m9_at (al1->kids.p, j, al1->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err))) m9v = Sem_ExprType (m9a312, ctx, err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err))) m9v = Sem_ExprType (m9a341, ctx, err);
         if (err->exc) goto L_ret;
         (*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)) = m9v;
         if (err->exc) goto L_ret;
@@ -13813,7 +14802,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9t2to = m9_sub_i64 (nargs, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t2to; j += 1) {
-      bool m9t3 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s387, 3 }), err);
+      bool m9t3 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s406, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
         { __typeof__(g) m9v = m9_add_i64 (g, INT64_C(1), err);
@@ -13821,7 +14810,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
           g = m9v;
         }
       }
-      bool m9t4 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s388, 3 }), err);
+      bool m9t4 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s407, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t4) {
         { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
@@ -13838,7 +14827,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
   bool m9t5 = Sem_IsConvVR (name, err);
   if (err->exc) goto L_ret;
   if (m9t5) {
-    bool m9t6 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s389, 3 }), err) && (nargs == INT64_C(1)));
+    bool m9t6 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s408, 3 }), err) && (nargs == INT64_C(1)));
     if (err->exc) goto L_ret;
     if (m9t6) {
       bool m9t7 = Sem_IsTotalWideningTo64 ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err);
@@ -13847,37 +14836,37 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
         Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
         if (err->exc) goto L_ret;
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s390, 3 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s409, 3 });
         goto L_ret;
       }
     }
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
-    bool m9t8 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s391, 3 }), err);
+    bool m9t8 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s410, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t8) {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s392, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s411, 4 });
       goto L_ret;
     }
     err->res = m9res;
     m9ret = name;
     goto L_ret;
   }
-  bool m9t9 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s393, 3 }), err);
+  bool m9t9 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s412, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t9) {
     if ((!curUnsafe)) {
-      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s394, 37 }), err);
+      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s413, 37 }), err);
       if (err->exc) goto L_ret;
     }
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s395, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s414, 5 });
     goto L_ret;
   }
-  bool m9t10 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s396, 3 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s397, 3 }), err));
+  bool m9t10 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s415, 3 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s416, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t10) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
@@ -13886,20 +14875,20 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9ret = name;
     goto L_ret;
   }
-  bool m9t11 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s398, 3 }), err);
+  bool m9t11 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s417, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t11) {
     if ((nargs == INT64_C(2))) {
       bool m9t12 = (Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err) == INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t12) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a313 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a342 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_TyName (m9a313, err)) m9a314 = Sem_TyName (m9a313, err);
+        { __typeof__(Sem_TyName (m9a342, err)) m9a343 = Sem_TyName (m9a342, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s399, 41 }), m9a314, err)) m9a315 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s399, 41 }), m9a314, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s418, 41 }), m9a343, err)) m9a344 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s418, 41 }), m9a343, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (site, ctx, m9a315, err);
+        Sem_ErrN (site, ctx, m9a344, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -13908,13 +14897,13 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       bool m9t13 = (!Sem_IsIntish ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(1), aTy.len, sizeof (m9_sl_CHAR), err)), err));
       if (err->exc) goto L_ret;
       if (m9t13) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(1), aTy.len, sizeof (m9_sl_CHAR), err))) m9a316 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(1), aTy.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(1), aTy.len, sizeof (m9_sl_CHAR), err))) m9a345 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(1), aTy.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_TyName (m9a316, err)) m9a317 = Sem_TyName (m9a316, err);
+        { __typeof__(Sem_TyName (m9a345, err)) m9a346 = Sem_TyName (m9a345, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s400, 33 }), m9a317, err)) m9a318 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s400, 33 }), m9a317, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s419, 33 }), m9a346, err)) m9a347 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s419, 33 }), m9a346, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (site, ctx, m9a318, err);
+        Sem_ErrN (site, ctx, m9a347, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -13930,13 +14919,13 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
             bool m9t15 = (Sem_AtoI (an1->a, err) >= Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err));
             if (err->exc) goto L_ret;
             if (m9t15) {
-              { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a319 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+              { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a348 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_Cat (m9a319, ((m9_sl_CHAR){ (uint32_t *) m9s403, 15 }), err)) m9a320 = Sem_Cat (m9a319, ((m9_sl_CHAR){ (uint32_t *) m9s403, 15 }), err);
+              { __typeof__(Sem_Cat (m9a348, ((m9_sl_CHAR){ (uint32_t *) m9s422, 15 }), err)) m9a349 = Sem_Cat (m9a348, ((m9_sl_CHAR){ (uint32_t *) m9s422, 15 }), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s401, 5 }), an1->a, ((m9_sl_CHAR){ (uint32_t *) m9s402, 6 }), m9a320, err)) m9a321 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s401, 5 }), an1->a, ((m9_sl_CHAR){ (uint32_t *) m9s402, 6 }), m9a320, err);
+              { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s420, 5 }), an1->a, ((m9_sl_CHAR){ (uint32_t *) m9s421, 6 }), m9a349, err)) m9a350 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s420, 5 }), an1->a, ((m9_sl_CHAR){ (uint32_t *) m9s421, 6 }), m9a349, err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (site, ctx, m9a321, err);
+              Sem_ErrN (site, ctx, m9a350, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -13946,31 +14935,31 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
         } }
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s404, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s423, 3 });
       goto L_ret;
     }
     bool m9t16 = (Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err) > INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t16) {
-      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s405, 39 }), err);
+      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s424, 39 }), err);
       if (err->exc) goto L_ret;
     }
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s406, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s425, 3 });
     goto L_ret;
   }
-  bool m9t17 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s407, 3 }), err);
+  bool m9t17 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s426, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t17) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s408, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s427, 3 });
     goto L_ret;
   }
-  bool m9t18 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s409, 4 }), err);
+  bool m9t18 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s428, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t18) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
@@ -13981,54 +14970,56 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       bool m9t20 = (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t20) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s410, 36 }), ((m9_sl_CHAR){ (uint32_t *) m9s411, 12 }), err)) m9a322 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s410, 36 }), ((m9_sl_CHAR){ (uint32_t *) m9s411, 12 }), err);
+        m9_mark m9t21 = m9_pool_mark (err->res);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s429, 36 }), ((m9_sl_CHAR){ (uint32_t *) m9s430, 12 }), err)) m9a351 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s429, 36 }), ((m9_sl_CHAR){ (uint32_t *) m9s430, 12 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a323 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a352 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_TyName (m9a323, err)) m9a324 = Sem_TyName (m9a323, err);
+        { __typeof__(Sem_TyName (m9a352, err)) m9a353 = Sem_TyName (m9a352, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (m9a322, m9a324, err)) m9a325 = Sem_Cat (m9a322, m9a324, err);
+        { __typeof__(Sem_Cat (m9a351, m9a353, err)) m9a354 = Sem_Cat (m9a351, m9a353, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (site, ctx, m9a325, err);
+        Sem_ErrN (site, ctx, m9a354, err);
         if (err->exc) goto L_ret;
         }
         }
         }
         }
+        m9_pool_release (err->res, m9t21);
       }
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s412, 13 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s431, 13 });
     goto L_ret;
   }
-  bool m9t21 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s413, 4 }), err);
+  bool m9t22 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s432, 4 }), err);
   if (err->exc) goto L_ret;
-  if (m9t21) {
+  if (m9t22) {
     if ((nargs < INT64_C(2))) {
-      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s414, 43 }), err);
+      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s433, 43 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
       goto L_ret;
     }
-    { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a326 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a355 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(rank) m9v = Sem_GridRank (m9a326, err);
+    { __typeof__(rank) m9v = Sem_GridRank (m9a355, err);
       if (err->exc) goto L_ret;
       rank = m9v;
     }
     }
     if ((rank == INT64_C(0))) {
-      bool m9t22 = (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
+      bool m9t23 = (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
       if (err->exc) goto L_ret;
-      if (m9t22) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a327 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+      if (m9t23) {
+        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a356 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_TyName (m9a327, err)) m9a328 = Sem_TyName (m9a327, err);
+        { __typeof__(Sem_TyName (m9a356, err)) m9a357 = Sem_TyName (m9a356, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s415, 23 }), m9a328, err)) m9a329 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s415, 23 }), m9a328, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s434, 23 }), m9a357, err)) m9a358 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s434, 23 }), m9a357, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (site, ctx, m9a329, err);
+        Sem_ErrN (site, ctx, m9a358, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -14038,22 +15029,22 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       m9ret = (m9_sl_CHAR){ NULL, 0 };
       goto L_ret;
     }
-    bool m9t23 = (m9_sub_i64 (nargs, INT64_C(1), err) != rank);
+    bool m9t24 = (m9_sub_i64 (nargs, INT64_C(1), err) != rank);
     if (err->exc) goto L_ret;
-    if (m9t23) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a330 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+    if (m9t24) {
+      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a359 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_ItoA (rank, err)) m9a331 = Sem_ItoA (rank, err);
+      { __typeof__(Sem_ItoA (rank, err)) m9a360 = Sem_ItoA (rank, err);
         if (err->exc) goto L_ret;
-      { __typeof__(m9_sub_i64 (nargs, INT64_C(1), err)) m9a332 = m9_sub_i64 (nargs, INT64_C(1), err);
+      { __typeof__(m9_sub_i64 (nargs, INT64_C(1), err)) m9a361 = m9_sub_i64 (nargs, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_ItoA (m9a332, err)) m9a333 = Sem_ItoA (m9a332, err);
+      { __typeof__(Sem_ItoA (m9a361, err)) m9a362 = Sem_ItoA (m9a361, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s418, 21 }), m9a333, err)) m9a334 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s418, 21 }), m9a333, err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s437, 21 }), m9a362, err)) m9a363 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s437, 21 }), m9a362, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s416, 2 }), m9a330, ((m9_sl_CHAR){ (uint32_t *) m9s417, 7 }), m9a331, m9a334, err)) m9a335 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s416, 2 }), m9a330, ((m9_sl_CHAR){ (uint32_t *) m9s417, 7 }), m9a331, m9a334, err);
+      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s435, 2 }), m9a359, ((m9_sl_CHAR){ (uint32_t *) m9s436, 7 }), m9a360, m9a363, err)) m9a364 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s435, 2 }), m9a359, ((m9_sl_CHAR){ (uint32_t *) m9s436, 7 }), m9a360, m9a363, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (site, ctx, m9a335, err);
+      Sem_ErrN (site, ctx, m9a364, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -14066,29 +15057,29 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       goto L_ret;
     }
     kept = INT64_C(0);
-    { int64_t m9t24to;
+    { int64_t m9t25to;
     j = INT64_C(1);
-    m9t24to = m9_sub_i64 (nargs, INT64_C(1), err);
+    m9t25to = m9_sub_i64 (nargs, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j <= m9t24to; j += 1) {
-      bool m9t25 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s419, 5 }), err);
+    for (; j <= m9t25to; j += 1) {
+      bool m9t26 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s438, 5 }), err);
       if (err->exc) goto L_ret;
-      if (m9t25) {
+      if (m9t26) {
         { __typeof__(kept) m9v = m9_add_i64 (kept, INT64_C(1), err);
           if (err->exc) goto L_ret;
           kept = m9v;
         }
       } else {
-        bool m9t26 = (!Sem_IsIntish ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), err));
+        bool m9t27 = (!Sem_IsIntish ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), err));
         if (err->exc) goto L_ret;
-        if (m9t26) {
-          { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err))) m9a336 = (*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err));
+        if (m9t27) {
+          { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err))) m9a365 = (*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (m9a336, err)) m9a337 = Sem_TyName (m9a336, err);
+          { __typeof__(Sem_TyName (m9a365, err)) m9a366 = Sem_TyName (m9a365, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s420, 36 }), m9a337, err)) m9a338 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s420, 36 }), m9a337, err);
+          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s439, 36 }), m9a366, err)) m9a367 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s439, 36 }), m9a366, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (site, ctx, m9a338, err);
+          Sem_ErrN (site, ctx, m9a367, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -14097,26 +15088,26 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       }
     } }
     if ((kept == INT64_C(0))) {
-      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s421, 59 }), err);
+      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s440, 59 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
       goto L_ret;
     }
     err->res = m9res;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a339 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a368 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_AfterOf (m9a339, err)) m9a340 = Sem_AfterOf (m9a339, err);
+    { __typeof__(Sem_AfterOf (m9a368, err)) m9a369 = Sem_AfterOf (m9a368, err);
       if (err->exc) goto L_ret;
-    m9ret = Sem_GridOf (kept, m9a340, err);
+    m9ret = Sem_GridOf (kept, m9a369, err);
     if (err->exc) goto L_ret;
     }
     }
     goto L_ret;
   }
-  bool m9t27 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s422, 3 }), err);
+  bool m9t28 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s441, 3 }), err);
   if (err->exc) goto L_ret;
-  if (m9t27) {
+  if (m9t28) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     if ((nargs == INT64_C(1))) {
@@ -14125,9 +15116,9 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       if (a0 != NULL) {
         if ((a0->kind == Ast_NDesignator)) {
           if ((a0->nkids == INT64_C(0))) {
-            bool m9t28 = Sem_IsBuiltinTy (a0->a, err);
+            bool m9t29 = Sem_IsBuiltinTy (a0->a, err);
             if (err->exc) goto L_ret;
-            if (m9t28) {
+            if (m9t29) {
               err->res = m9res;
               m9ret = a0->a;
               goto L_ret;
@@ -14140,61 +15131,61 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  bool m9t29 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s423, 6 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t29) {
-    Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
-    if (err->exc) goto L_ret;
-    err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s424, 3 });
-    goto L_ret;
-  }
-  bool m9t30 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s425, 8 }), err);
+  bool m9t30 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s442, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t30) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
-    bool m9t31 = (((nargs >= INT64_C(1)) && (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0))) && (!Text_StartsWith ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s426, 9 }), err)));
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s443, 3 });
+    goto L_ret;
+  }
+  bool m9t31 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s444, 8 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t31) {
+    Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
-    if (m9t31) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a341 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+    bool m9t32 = (((nargs >= INT64_C(1)) && (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0))) && (!Text_StartsWith ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s445, 9 }), err)));
+    if (err->exc) goto L_ret;
+    if (m9t32) {
+      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a370 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_TyName (m9a341, err)) m9a342 = Sem_TyName (m9a341, err);
+      { __typeof__(Sem_TyName (m9a370, err)) m9a371 = Sem_TyName (m9a370, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s427, 28 }), m9a342, err)) m9a343 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s427, 28 }), m9a342, err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s446, 28 }), m9a371, err)) m9a372 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s446, 28 }), m9a371, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (site, ctx, m9a343, err);
+      Sem_ErrN (site, ctx, m9a372, err);
       if (err->exc) goto L_ret;
       }
       }
       }
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s428, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s447, 3 });
     goto L_ret;
   }
-  bool m9t32 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s429, 15 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s430, 15 }), err));
+  bool m9t33 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s448, 15 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s449, 15 }), err));
   if (err->exc) goto L_ret;
-  if (m9t32) {
+  if (m9t33) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ({ __typeof__(name) m9t33 = name; int64_t m9t33a = INT64_C(0), m9t33n = INT64_C(3); (__typeof__(m9t33)){ m9t33.p + m9_chk_slice (m9t33a, m9t33n, m9t33.len, err), m9t33n }; });
+    m9ret = ({ __typeof__(name) m9t34 = name; int64_t m9t34a = INT64_C(0), m9t34n = INT64_C(3); (__typeof__(m9t34)){ m9t34.p + m9_chk_slice (m9t34a, m9t34n, m9t34.len, err), m9t34n }; });
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t34 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s431, 13 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s432, 13 }), err));
+  bool m9t35 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s450, 13 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s451, 13 }), err));
   if (err->exc) goto L_ret;
-  if (m9t34) {
+  if (m9t35) {
     Sem_Arity (site, ctx, name, INT64_C(2), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s433, 6 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s452, 6 });
     goto L_ret;
   }
-  bool m9t35 = Text_StartsWith (name, ((m9_sl_CHAR){ (uint32_t *) m9s434, 2 }), err);
+  bool m9t36 = Text_StartsWith (name, ((m9_sl_CHAR){ (uint32_t *) m9s453, 2 }), err);
   if (err->exc) goto L_ret;
-  if (m9t35) {
+  if (m9t36) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
@@ -14212,15 +15203,17 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     if (ptn != NULL) {
       if ((ptn->kind == Ast_NProcType)) {
         if (curPure) {
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s435, 49 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s436, 10 }), err)) m9a344 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s435, 49 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s436, 10 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s454, 49 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s455, 10 }), err)) m9a373 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s454, 49 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s455, 10 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (site, ctx, m9a344, err);
+          Sem_ErrN (site, ctx, m9a373, err);
           if (err->exc) goto L_ret;
           }
         }
         pr.node = ptn;
         pr.modName = (m9_sl_CHAR){ NULL, 0 };
         pr.foreign = (m9_sl_CHAR){ NULL, 0 };
+        pr.name = (m9_sl_CHAR){ NULL, 0 };
+        pr.body = NULL;
         { Ast_Node * tq = (*(Sem_Binding *) m9_at (scope.p, si, scope.len, sizeof (Sem_Binding), err)).ty;
         if (err->exc) goto L_ret;
         if (tq != NULL) {
@@ -14244,11 +15237,11 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     { Ast_Node * pn = pr.node;
     if (pn != NULL) {
       canonCtx = pr.modName;
-      { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err))) m9a345 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err))) m9a374 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_CountParams (m9a345, err)) m9a346 = Sem_CountParams (m9a345, err);
+      { __typeof__(Sem_CountParams (m9a374, err)) m9a375 = Sem_CountParams (m9a374, err);
         if (err->exc) goto L_ret;
-      Sem_Arity (site, ctx, name, m9a346, nargs, err);
+      Sem_Arity (site, ctx, name, m9a375, nargs, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -14257,27 +15250,27 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       { Ast_Node * pl0 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (pl0 != NULL) {
-        { int64_t m9t36to;
+        { int64_t m9t37to;
         g = INT64_C(0);
-        m9t36to = m9_sub_i64 (pl0->nkids, INT64_C(1), err);
+        m9t37to = m9_sub_i64 (pl0->nkids, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; g <= m9t36to; g += 1) {
+        for (; g <= m9t37to; g += 1) {
           { Ast_Node * grp0 = (*(Ast_Node * *) m9_at (pl0->kids.p, g, pl0->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (grp0 != NULL) {
             { Ast_Node * ids0 = (*(Ast_Node * *) m9_at (grp0->kids.p, INT64_C(0), grp0->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (ids0 != NULL) {
-              { int64_t m9t37to;
+              { int64_t m9t38to;
               j = INT64_C(0);
-              m9t37to = m9_sub_i64 (ids0->nkids, INT64_C(1), err);
+              m9t38to = m9_sub_i64 (ids0->nkids, INT64_C(1), err);
               if (err->exc) goto L_ret;
-              for (; j <= m9t37to; j += 1) {
+              for (; j <= m9t38to; j += 1) {
                 if ((k < nargs)) {
                   if (((grp0->f1 || grp0->f2) || grp0->f4)) {
-                    bool m9t38 = ((Sem_FrameWhat ((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err)), (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err)).len > INT64_C(0));
+                    bool m9t39 = ((Sem_FrameWhat ((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err)), (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err)).len > INT64_C(0));
                     if (err->exc) goto L_ret;
-                    if (m9t38) {
+                    if (m9t39) {
                       { __typeof__(nFrameKept) m9v = m9_add_i64 (nFrameKept, INT64_C(1), err);
                         if (err->exc) goto L_ret;
                         nFrameKept = m9v;
@@ -14298,17 +15291,17 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       { Ast_Node * pl = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (pl != NULL) {
-        { int64_t m9t39to;
+        { int64_t m9t40to;
         g = INT64_C(0);
-        m9t39to = m9_sub_i64 (pl->nkids, INT64_C(1), err);
+        m9t40to = m9_sub_i64 (pl->nkids, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; g <= m9t39to; g += 1) {
+        for (; g <= m9t40to; g += 1) {
           { Ast_Node * grp = (*(Ast_Node * *) m9_at (pl->kids.p, g, pl->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (grp != NULL) {
-            { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a347 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a376 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(pTy) m9v = Sem_CanonT (m9a347, INT64_C(0), err);
+            { __typeof__(pTy) m9v = Sem_CanonT (m9a376, INT64_C(0), err);
               if (err->exc) goto L_ret;
               pTy = m9v;
             }
@@ -14317,34 +15310,34 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
             { Ast_Node * ids = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(0), grp->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (ids != NULL) {
-              { int64_t m9t40to;
+              { int64_t m9t41to;
               j = INT64_C(0);
-              m9t40to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
+              m9t41to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
               if (err->exc) goto L_ret;
-              for (; j <= m9t40to; j += 1) {
+              for (; j <= m9t41to; j += 1) {
                 if ((k < nargs)) {
-                  { __typeof__((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err))) m9a348 = (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err))) m9a377 = (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  Sem_ConstArg (site, ctx, name, k, m9a348, isVar, grp->f3, err);
+                  Sem_ConstArg (site, ctx, name, k, m9a377, isVar, grp->f3, err);
                   if (err->exc) goto L_ret;
                   }
                   if (((!isVar) && (!grp->f3))) {
-                    { __typeof__((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err))) m9a349 = (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err))) m9a378 = (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a350 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a379 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_ret;
-                    Sem_RoArg (site, ctx, name, k, m9a349, pTy, m9a350, err);
+                    Sem_RoArg (site, ctx, name, k, m9a378, pTy, m9a379, err);
                     if (err->exc) goto L_ret;
                     }
                     }
                   }
-                  { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a351 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
+                  { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a380 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err))) m9a352 = (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err))) m9a381 = (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(((grp->f1 && Sem_PtrParamTy ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err)) && ((pr.foreign).len == INT64_C(0)))) m9a353 = ((grp->f1 && Sem_PtrParamTy ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err)) && ((pr.foreign).len == INT64_C(0)));
+                  { __typeof__(((grp->f1 && Sem_PtrParamTy ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err)) && ((pr.foreign).len == INT64_C(0)))) m9a382 = ((grp->f1 && Sem_PtrParamTy ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err)) && ((pr.foreign).len == INT64_C(0)));
                     if (err->exc) goto L_ret;
-                  Sem_CheckArg (site, ctx, name, k, pTy, m9a351, m9a352, isVar, grp->f2, grp->f4, nFrameKept, m9a353, argl, err);
+                  Sem_CheckArg (site, ctx, name, k, pTy, m9a380, m9a381, isVar, grp->f2, grp->f4, nFrameKept, m9a382, argl, err);
                   if (err->exc) goto L_ret;
                   }
                   }
@@ -14359,13 +15352,84 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
           } }
         } }
       } }
+      if (((pr.foreign).len == INT64_C(0))) {
+        k = INT64_C(0);
+        { Ast_Node * pl2 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (pl2 != NULL) {
+          { int64_t m9t42to;
+          g = INT64_C(0);
+          m9t42to = m9_sub_i64 (pl2->nkids, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          for (; g <= m9t42to; g += 1) {
+            { Ast_Node * grp2 = (*(Ast_Node * *) m9_at (pl2->kids.p, g, pl2->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+            if (grp2 != NULL) {
+              { Ast_Node * ids2 = (*(Ast_Node * *) m9_at (grp2->kids.p, INT64_C(0), grp2->kids.len, sizeof (Ast_Node *), err));
+              if (err->exc) goto L_ret;
+              if (ids2 != NULL) {
+                { int64_t m9t43to;
+                j = INT64_C(0);
+                m9t43to = m9_sub_i64 (ids2->nkids, INT64_C(1), err);
+                if (err->exc) goto L_ret;
+                for (; j <= m9t43to; j += 1) {
+                  if ((((k < nargs) && grp2->f1) && (!grp2->f2))) {
+                    { Ast_Node * ak = (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err));
+                    if (err->exc) goto L_ret;
+                    if (ak != NULL) {
+                      if ((ak->kind == Ast_NDesignator)) {
+                        { __typeof__(hbMode) m9v = Sem_ScopeMode (ak->a, err);
+                          if (err->exc) goto L_ret;
+                          hbMode = m9v;
+                        }
+                        { __typeof__(hbBeyond) m9v = Sem_DerefBeyond (ak, err);
+                          if (err->exc) goto L_ret;
+                          hbBeyond = m9v;
+                        }
+                        { int64_t m9t44to;
+                        iu = INT64_C(0);
+                        m9t44to = m9_sub_i64 (nargs, INT64_C(1), err);
+                        if (err->exc) goto L_ret;
+                        for (; iu <= m9t44to; iu += 1) {
+                          if ((iu != k)) {
+                            { __typeof__((*(Ast_Node * *) m9_at (aNode.p, iu, aNode.len, sizeof (Ast_Node *), err))) m9a383 = (*(Ast_Node * *) m9_at (aNode.p, iu, aNode.len, sizeof (Ast_Node *), err));
+                              if (err->exc) goto L_ret;
+                            { __typeof__(hroot) m9v = Sem_EscRootOf (m9a383, err);
+                              if (err->exc) goto L_ret;
+                              hroot = m9v;
+                            }
+                            }
+                            bool m9t45 = ((((hroot).len > INT64_C(0)) && Sem_TyBearing ((*(m9_sl_CHAR *) m9_at (aTy.p, iu, aTy.len, sizeof (m9_sl_CHAR), err)), err)) && Sem_HandsBackFrom (Sem_Qualify (pr.modName, pr.name, err), pr, k, iu, err));
+                            if (err->exc) goto L_ret;
+                            if (m9t45) {
+                              { __typeof__((hbBeyond || Sem_HandsBackDeep (Sem_Qualify (pr.modName, pr.name, err), pr, k, iu, err))) m9a384 = (hbBeyond || Sem_HandsBackDeep (Sem_Qualify (pr.modName, pr.name, err), pr, k, iu, err));
+                                if (err->exc) goto L_ret;
+                              Sem_StoreRef (site, ak, hroot, m9a384, hbMode, ctx, err);
+                              if (err->exc) goto L_ret;
+                              }
+                            }
+                          }
+                        } }
+                      }
+                    } }
+                  }
+                  { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+                    if (err->exc) goto L_ret;
+                    k = m9v;
+                  }
+                } }
+              } }
+            } }
+          } }
+        } }
+      }
       pTy = (m9_sl_CHAR){ NULL, 0 };
       { Ast_Node * rt = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (rt != NULL) {
-        { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a354 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a385 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(pTy) m9v = Sem_CanonT (m9a354, INT64_C(0), err);
+        { __typeof__(pTy) m9v = Sem_CanonT (m9a385, INT64_C(0), err);
           if (err->exc) goto L_ret;
           pTy = m9v;
         }
@@ -14385,7 +15449,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
         goto L_ret;
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s437, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s456, 6 });
       goto L_ret;
     } }
     err->res = m9res;
@@ -14398,7 +15462,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
   }
   isVar = false;
   if ((dot > INT64_C(0))) {
-    { __typeof__(t) m9v = ({ __typeof__(name) m9t41 = name; int64_t m9t41a = m9_add_i64 (dot, INT64_C(1), err), m9t41n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t41)){ m9t41.p + m9_chk_slice (m9t41a, m9t41n, m9t41.len, err), m9t41n }; });
+    { __typeof__(t) m9v = ({ __typeof__(name) m9t46 = name; int64_t m9t46a = m9_add_i64 (dot, INT64_C(1), err), m9t46n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t46)){ m9t46.p + m9_chk_slice (m9t46a, m9t46n, m9t46.len, err), m9t46n }; });
       if (err->exc) goto L_ret;
       t = m9v;
     }
@@ -14407,36 +15471,36 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       g = m9v;
     }
     if ((g > INT64_C(0))) {
-      { __typeof__(om) m9v = ({ __typeof__(name) m9t42 = name; int64_t m9t42a = INT64_C(0), m9t42n = dot; (__typeof__(m9t42)){ m9t42.p + m9_chk_slice (m9t42a, m9t42n, m9t42.len, err), m9t42n }; });
+      { __typeof__(om) m9v = ({ __typeof__(name) m9t47 = name; int64_t m9t47a = INT64_C(0), m9t47n = dot; (__typeof__(m9t47)){ m9t47.p + m9_chk_slice (m9t47a, m9t47n, m9t47.len, err), m9t47n }; });
         if (err->exc) goto L_ret;
         om = m9v;
       }
-      { __typeof__(Sem_FindMod (om, err)) m9a355 = Sem_FindMod (om, err);
+      { __typeof__(Sem_FindMod (om, err)) m9a386 = Sem_FindMod (om, err);
         if (err->exc) goto L_ret;
-      { __typeof__(({ __typeof__(t) m9t43 = t; int64_t m9t43a = INT64_C(0), m9t43n = g; (__typeof__(m9t43)){ m9t43.p + m9_chk_slice (m9t43a, m9t43n, m9t43.len, err), m9t43n }; })) m9a356 = ({ __typeof__(t) m9t43 = t; int64_t m9t43a = INT64_C(0), m9t43n = g; (__typeof__(m9t43)){ m9t43.p + m9_chk_slice (m9t43a, m9t43n, m9t43.len, err), m9t43n }; });
+      { __typeof__(({ __typeof__(t) m9t48 = t; int64_t m9t48a = INT64_C(0), m9t48n = g; (__typeof__(m9t48)){ m9t48.p + m9_chk_slice (m9t48a, m9t48n, m9t48.len, err), m9t48n }; })) m9a387 = ({ __typeof__(t) m9t48 = t; int64_t m9t48a = INT64_C(0), m9t48n = g; (__typeof__(m9t48)){ m9t48.p + m9_chk_slice (m9t48a, m9t48n, m9t48.len, err), m9t48n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(({ __typeof__(t) m9t44 = t; int64_t m9t44a = m9_add_i64 (g, INT64_C(1), err), m9t44n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t44)){ m9t44.p + m9_chk_slice (m9t44a, m9t44n, m9t44.len, err), m9t44n }; })) m9a357 = ({ __typeof__(t) m9t44 = t; int64_t m9t44a = m9_add_i64 (g, INT64_C(1), err), m9t44n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t44)){ m9t44.p + m9_chk_slice (m9t44a, m9t44n, m9t44.len, err), m9t44n }; });
+      { __typeof__(({ __typeof__(t) m9t49 = t; int64_t m9t49a = m9_add_i64 (g, INT64_C(1), err), m9t49n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t49)){ m9t49.p + m9_chk_slice (m9t49a, m9t49n, m9t49.len, err), m9t49n }; })) m9a388 = ({ __typeof__(t) m9t49 = t; int64_t m9t49a = m9_add_i64 (g, INT64_C(1), err), m9t49n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t49)){ m9t49.p + m9_chk_slice (m9t49a, m9t49n, m9t49.len, err), m9t49n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(isVar) m9v = Sem_TryVariantMod (m9a355, m9a356, m9a357, &(om), &(fields), err->res, err);
+      { __typeof__(isVar) m9v = Sem_TryVariantMod (m9a386, m9a387, m9a388, &(om), &(fields), err->res, err);
         if (err->exc) goto L_ret;
         isVar = m9v;
       }
       }
       }
       }
-      { __typeof__(t) m9v = ({ __typeof__(t) m9t45 = t; int64_t m9t45a = INT64_C(0), m9t45n = g; (__typeof__(m9t45)){ m9t45.p + m9_chk_slice (m9t45a, m9t45n, m9t45.len, err), m9t45n }; });
+      { __typeof__(t) m9v = ({ __typeof__(t) m9t50 = t; int64_t m9t50a = INT64_C(0), m9t50n = g; (__typeof__(m9t50)){ m9t50.p + m9_chk_slice (m9t50a, m9t50n, m9t50.len, err), m9t50n }; });
         if (err->exc) goto L_ret;
         t = m9v;
       }
     } else {
-      { __typeof__(({ __typeof__(name) m9t46 = name; int64_t m9t46a = INT64_C(0), m9t46n = dot; (__typeof__(m9t46)){ m9t46.p + m9_chk_slice (m9t46a, m9t46n, m9t46.len, err), m9t46n }; })) m9a358 = ({ __typeof__(name) m9t46 = name; int64_t m9t46a = INT64_C(0), m9t46n = dot; (__typeof__(m9t46)){ m9t46.p + m9_chk_slice (m9t46a, m9t46n, m9t46.len, err), m9t46n }; });
+      { __typeof__(({ __typeof__(name) m9t51 = name; int64_t m9t51a = INT64_C(0), m9t51n = dot; (__typeof__(m9t51)){ m9t51.p + m9_chk_slice (m9t51a, m9t51n, m9t51.len, err), m9t51n }; })) m9a389 = ({ __typeof__(name) m9t51 = name; int64_t m9t51a = INT64_C(0), m9t51n = dot; (__typeof__(m9t51)){ m9t51.p + m9_chk_slice (m9t51a, m9t51n, m9t51.len, err), m9t51n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(isVar) m9v = Sem_FindVariant (m9a358, t, &(om), &(fields), err->res, err);
+      { __typeof__(isVar) m9v = Sem_FindVariant (m9a389, t, &(om), &(fields), err->res, err);
         if (err->exc) goto L_ret;
         isVar = m9v;
       }
       }
-      { __typeof__(t) m9v = ({ __typeof__(name) m9t47 = name; int64_t m9t47a = INT64_C(0), m9t47n = dot; (__typeof__(m9t47)){ m9t47.p + m9_chk_slice (m9t47a, m9t47n, m9t47.len, err), m9t47n }; });
+      { __typeof__(t) m9v = ({ __typeof__(name) m9t52 = name; int64_t m9t52a = INT64_C(0), m9t52n = dot; (__typeof__(m9t52)){ m9t52.p + m9_chk_slice (m9t52a, m9t52n, m9t52.len, err), m9t52n }; });
         if (err->exc) goto L_ret;
         t = m9v;
       }
@@ -14449,45 +15513,48 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     }
     Sem_Arity (site, ctx, name, nflat, nargs, err);
     if (err->exc) goto L_ret;
-    canonCtx = om;
-    { int64_t m9t48to;
+    { __typeof__(canonCtx) m9v = Text_Keep (&(pool), om, err);
+      if (err->exc) goto L_ret;
+      canonCtx = m9v;
+    }
+    { int64_t m9t53to;
     k = INT64_C(0);
-    m9t48to = m9_sub_i64 (nargs, INT64_C(1), err);
+    m9t53to = m9_sub_i64 (nargs, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; k <= m9t48to; k += 1) {
+    for (; k <= m9t53to; k += 1) {
       if ((k < nflat)) {
-        { __typeof__((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err))) m9a359 = (*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err))) m9a390 = (*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(pTy) m9v = Sem_CanonT (m9a359, INT64_C(0), err);
+        { __typeof__(pTy) m9v = Sem_CanonT (m9a390, INT64_C(0), err);
           if (err->exc) goto L_ret;
           pTy = m9v;
         }
         }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a360 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a391 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        Sem_Agree (Sem_StArg, pTy, m9a360, site->line, err);
+        Sem_Agree (Sem_StArg, pTy, m9a391, site->line, err);
         if (err->exc) goto L_ret;
         }
-        bool m9t49 = (!Sem_Compat (pTy, (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err));
+        bool m9t54 = (!Sem_Compat (pTy, (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err));
         if (err->exc) goto L_ret;
-        if (m9t49) {
-          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a361 = m9_add_i64 (k, INT64_C(1), err);
+        if (m9t54) {
+          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a392 = m9_add_i64 (k, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a361, err)) m9a362 = Sem_ItoA (m9a361, err);
+          { __typeof__(Sem_ItoA (m9a392, err)) m9a393 = Sem_ItoA (m9a392, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a363 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
+          { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a394 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (m9a363, err)) m9a364 = Sem_TyName (m9a363, err);
+          { __typeof__(Sem_TyName (m9a394, err)) m9a395 = Sem_TyName (m9a394, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (pTy, err)) m9a365 = Sem_TyName (pTy, err);
+          { __typeof__(Sem_TyName (pTy, err)) m9a396 = Sem_TyName (pTy, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (m9a365, ((m9_sl_CHAR){ (uint32_t *) m9s442, 12 }), err)) m9a366 = Sem_Cat (m9a365, ((m9_sl_CHAR){ (uint32_t *) m9s442, 12 }), err);
+          { __typeof__(Sem_Cat (m9a396, ((m9_sl_CHAR){ (uint32_t *) m9s461, 12 }), err)) m9a397 = Sem_Cat (m9a396, ((m9_sl_CHAR){ (uint32_t *) m9s461, 12 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s440, 14 }), m9a364, ((m9_sl_CHAR){ (uint32_t *) m9s441, 7 }), m9a366, err)) m9a367 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s440, 14 }), m9a364, ((m9_sl_CHAR){ (uint32_t *) m9s441, 7 }), m9a366, err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s459, 14 }), m9a395, ((m9_sl_CHAR){ (uint32_t *) m9s460, 7 }), m9a397, err)) m9a398 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s459, 14 }), m9a395, ((m9_sl_CHAR){ (uint32_t *) m9s460, 7 }), m9a397, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s438, 9 }), m9a362, ((m9_sl_CHAR){ (uint32_t *) m9s439, 4 }), name, m9a367, err)) m9a368 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s438, 9 }), m9a362, ((m9_sl_CHAR){ (uint32_t *) m9s439, 4 }), name, m9a367, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s457, 9 }), m9a393, ((m9_sl_CHAR){ (uint32_t *) m9s458, 4 }), name, m9a398, err)) m9a399 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s457, 9 }), m9a393, ((m9_sl_CHAR){ (uint32_t *) m9s458, 4 }), name, m9a398, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (site, ctx, m9a368, err);
+          Sem_ErrN (site, ctx, m9a399, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -14513,18 +15580,18 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
   if (((t).len > INT64_C(0))) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
-    bool m9t50 = ((nargs == INT64_C(1)) && (!Sem_IsIntish ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err)));
+    bool m9t55 = ((nargs == INT64_C(1)) && (!Sem_IsIntish ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err)));
     if (err->exc) goto L_ret;
-    if (m9t50) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a369 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
+    if (m9t55) {
+      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))) m9a400 = (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_TyName (m9a369, err)) m9a370 = Sem_TyName (m9a369, err);
+      { __typeof__(Sem_TyName (m9a400, err)) m9a401 = Sem_TyName (m9a400, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (m9a370, ((m9_sl_CHAR){ (uint32_t *) m9s445, 51 }), err)) m9a371 = Sem_Cat (m9a370, ((m9_sl_CHAR){ (uint32_t *) m9s445, 51 }), err);
+      { __typeof__(Sem_Cat (m9a401, ((m9_sl_CHAR){ (uint32_t *) m9s464, 51 }), err)) m9a402 = Sem_Cat (m9a401, ((m9_sl_CHAR){ (uint32_t *) m9s464, 51 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s443, 14 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s444, 17 }), m9a371, err)) m9a372 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s443, 14 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s444, 17 }), m9a371, err);
+      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s462, 14 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s463, 17 }), m9a402, err)) m9a403 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s462, 14 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s463, 17 }), m9a402, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (site, ctx, m9a372, err);
+      Sem_ErrN (site, ctx, m9a403, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -14541,66 +15608,71 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     { Ast_Node * rbase = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(0), rn->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rbase != NULL) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s446, 39 }), ((m9_sl_CHAR){ (uint32_t *) m9s447, 50 }), err)) m9a373 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s446, 39 }), ((m9_sl_CHAR){ (uint32_t *) m9s447, 50 }), err);
+      m9_mark m9t56 = m9_pool_mark (err->res);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s465, 39 }), ((m9_sl_CHAR){ (uint32_t *) m9s466, 50 }), err)) m9a404 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s465, 39 }), ((m9_sl_CHAR){ (uint32_t *) m9s466, 50 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (name, m9a373, err)) m9a374 = Sem_Cat (name, m9a373, err);
+      { __typeof__(Sem_Cat (name, m9a404, err)) m9a405 = Sem_Cat (name, m9a404, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (site, ctx, m9a374, err);
+      Sem_ErrN (site, ctx, m9a405, err);
       if (err->exc) goto L_ret;
       }
       }
+      m9_pool_release (err->res, m9t56);
       err->res = m9res;
       m9ret = t;
       goto L_ret;
     } }
-    { __typeof__((*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err))) m9a375 = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err))) m9a406 = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(flat) m9v = Sem_FlatFields (m9a375, &(nflat), err);
+    { __typeof__(flat) m9v = Sem_FlatFields (m9a406, &(nflat), err);
       if (err->exc) goto L_ret;
       flat = m9v;
     }
     }
     Sem_Arity (site, ctx, name, nflat, nargs, err);
     if (err->exc) goto L_ret;
-    canonCtx = om;
-    { int64_t m9t51to;
+    { __typeof__(canonCtx) m9v = Text_Keep (&(pool), om, err);
+      if (err->exc) goto L_ret;
+      canonCtx = m9v;
+    }
+    { int64_t m9t57to;
     k = INT64_C(0);
-    m9t51to = m9_sub_i64 (nargs, INT64_C(1), err);
+    m9t57to = m9_sub_i64 (nargs, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; k <= m9t51to; k += 1) {
+    for (; k <= m9t57to; k += 1) {
       if ((k < nflat)) {
-        { __typeof__((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err))) m9a376 = (*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err))) m9a407 = (*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(pTy) m9v = Sem_CanonT (m9a376, INT64_C(0), err);
+        { __typeof__(pTy) m9v = Sem_CanonT (m9a407, INT64_C(0), err);
           if (err->exc) goto L_ret;
           pTy = m9v;
         }
         }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a377 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a408 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        Sem_Agree (Sem_StArg, pTy, m9a377, site->line, err);
+        Sem_Agree (Sem_StArg, pTy, m9a408, site->line, err);
         if (err->exc) goto L_ret;
         }
-        bool m9t52 = (!Sem_Compat (pTy, (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err));
+        bool m9t58 = (!Sem_Compat (pTy, (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err));
         if (err->exc) goto L_ret;
-        if (m9t52) {
-          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a378 = m9_add_i64 (k, INT64_C(1), err);
+        if (m9t58) {
+          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a409 = m9_add_i64 (k, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a378, err)) m9a379 = Sem_ItoA (m9a378, err);
+          { __typeof__(Sem_ItoA (m9a409, err)) m9a410 = Sem_ItoA (m9a409, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a380 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
+          { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err))) m9a411 = (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (m9a380, err)) m9a381 = Sem_TyName (m9a380, err);
+          { __typeof__(Sem_TyName (m9a411, err)) m9a412 = Sem_TyName (m9a411, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (pTy, err)) m9a382 = Sem_TyName (pTy, err);
+          { __typeof__(Sem_TyName (pTy, err)) m9a413 = Sem_TyName (pTy, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (m9a382, ((m9_sl_CHAR){ (uint32_t *) m9s452, 12 }), err)) m9a383 = Sem_Cat (m9a382, ((m9_sl_CHAR){ (uint32_t *) m9s452, 12 }), err);
+          { __typeof__(Sem_Cat (m9a413, ((m9_sl_CHAR){ (uint32_t *) m9s471, 12 }), err)) m9a414 = Sem_Cat (m9a413, ((m9_sl_CHAR){ (uint32_t *) m9s471, 12 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s450, 14 }), m9a381, ((m9_sl_CHAR){ (uint32_t *) m9s451, 7 }), m9a383, err)) m9a384 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s450, 14 }), m9a381, ((m9_sl_CHAR){ (uint32_t *) m9s451, 7 }), m9a383, err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s469, 14 }), m9a412, ((m9_sl_CHAR){ (uint32_t *) m9s470, 7 }), m9a414, err)) m9a415 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s469, 14 }), m9a412, ((m9_sl_CHAR){ (uint32_t *) m9s470, 7 }), m9a414, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s448, 6 }), m9a379, ((m9_sl_CHAR){ (uint32_t *) m9s449, 4 }), name, m9a384, err)) m9a385 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s448, 6 }), m9a379, ((m9_sl_CHAR){ (uint32_t *) m9s449, 4 }), name, m9a384, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s467, 6 }), m9a410, ((m9_sl_CHAR){ (uint32_t *) m9s468, 4 }), name, m9a415, err)) m9a416 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s467, 6 }), m9a410, ((m9_sl_CHAR){ (uint32_t *) m9s468, 4 }), name, m9a415, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (site, ctx, m9a385, err);
+          Sem_ErrN (site, ctx, m9a416, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -14629,11 +15701,11 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
         if (err->exc) goto L_ret;
         nu = m9v;
       }
-      { int64_t m9t53to;
+      { int64_t m9t59to;
       iu = INT64_C(0);
-      m9t53to = m9_sub_i64 (nunkArgs, INT64_C(1), err);
+      m9t59to = m9_sub_i64 (nunkArgs, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; iu <= m9t53to; iu += 1) {
+      for (; iu <= m9t59to; iu += 1) {
         { __typeof__((*(int64_t *) m9_at (nu.p, iu, nu.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (unkArgs.p, iu, unkArgs.len, sizeof (int64_t), err));
           if (err->exc) goto L_ret;
           (*(int64_t *) m9_at (nu.p, iu, nu.len, sizeof (int64_t), err)) = m9v;
@@ -14650,18 +15722,18 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     }
   } }
   if (((hint).len > INT64_C(0))) {
-    { __typeof__(Sem_Cat (hint, ((m9_sl_CHAR){ (uint32_t *) m9s455, 1 }), err)) m9a386 = Sem_Cat (hint, ((m9_sl_CHAR){ (uint32_t *) m9s455, 1 }), err);
+    { __typeof__(Sem_Cat (hint, ((m9_sl_CHAR){ (uint32_t *) m9s474, 1 }), err)) m9a417 = Sem_Cat (hint, ((m9_sl_CHAR){ (uint32_t *) m9s474, 1 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s453, 19 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s454, 17 }), m9a386, err)) m9a387 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s453, 19 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s454, 17 }), m9a386, err);
+    { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s472, 19 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s473, 17 }), m9a417, err)) m9a418 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s472, 19 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s473, 17 }), m9a417, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (site, ctx, m9a387, err);
+    Sem_ErrN (site, ctx, m9a418, err);
     if (err->exc) goto L_ret;
     }
     }
   } else {
-    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s456, 19 }), name, err)) m9a388 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s456, 19 }), name, err);
+    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s475, 19 }), name, err)) m9a419 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s475, 19 }), name, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (site, ctx, m9a388, err);
+    Sem_ErrN (site, ctx, m9a419, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -14694,25 +15766,25 @@ static m9_sl_CHAR Sem_DesigStrType (Ast_Node * d, bool guard, m9_sl_CHAR ctx, m9
   if (err->exc) goto L_ret;
   if (dn0 != NULL) {
     err->res = m9res;
-    { __typeof__(Sem_DesigDeclType (d, ctx, err)) m9a389 = Sem_DesigDeclType (d, ctx, err);
+    { __typeof__(Sem_DesigDeclType (d, ctx, err)) m9a420 = Sem_DesigDeclType (d, ctx, err);
       if (err->exc) goto L_ret;
-    m9ret = Sem_CanonT (m9a389, INT64_C(0), err);
+    m9ret = Sem_CanonT (m9a420, INT64_C(0), err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   } }
-  bool m9t1 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s457, 3 }), err) && (d->nkids == INT64_C(0)));
+  bool m9t1 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err) && (d->nkids == INT64_C(0)));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s458, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s477, 5 });
     goto L_ret;
   }
-  bool m9t2 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s459, 4 }), err) && (d->nkids == INT64_C(0)));
+  bool m9t2 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s478, 4 }), err) && (d->nkids == INT64_C(0)));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s460, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s479, 4 });
     goto L_ret;
   }
   { __typeof__(s) m9v = Sem_ConstType (d->a, &(found), err);
@@ -14731,9 +15803,9 @@ static m9_sl_CHAR Sem_DesigStrType (Ast_Node * d, bool guard, m9_sl_CHAR ctx, m9
       if (err->exc) goto L_ret;
       if (sel != NULL) {
         if ((sel->kind == Ast_NSelIndex)) {
-          { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err))) m9a390 = (*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err))) m9a421 = (*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(it) m9v = Sem_ExprType (m9a390, ctx, err);
+          { __typeof__(it) m9v = Sem_ExprType (m9a421, ctx, err);
             if (err->exc) goto L_ret;
             it = m9v;
           }
@@ -14741,21 +15813,21 @@ static m9_sl_CHAR Sem_DesigStrType (Ast_Node * d, bool guard, m9_sl_CHAR ctx, m9
           bool m9t5 = (!Sem_IsIntish (it, err));
           if (err->exc) goto L_ret;
           if (m9t5) {
-            { __typeof__(Sem_TyName (it, err)) m9a391 = Sem_TyName (it, err);
+            { __typeof__(Sem_TyName (it, err)) m9a422 = Sem_TyName (it, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s461, 30 }), m9a391, err)) m9a392 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s461, 30 }), m9a391, err);
+            { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s480, 30 }), m9a422, err)) m9a423 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s480, 30 }), m9a422, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (d, ctx, m9a392, err);
+            Sem_ErrN (d, ctx, m9a423, err);
             if (err->exc) goto L_ret;
             }
             }
           }
-          bool m9t6 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s462, 13 }), err);
+          bool m9t6 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s481, 13 }), err);
           if (err->exc) goto L_ret;
           if (m9t6) {
-            s = ((m9_sl_CHAR){ (uint32_t *) m9s463, 4 });
+            s = ((m9_sl_CHAR){ (uint32_t *) m9s482, 4 });
           } else {
-            bool m9t7 = Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s464, 6 }), err);
+            bool m9t7 = Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s483, 6 }), err);
             if (err->exc) goto L_ret;
             if (m9t7) {
               { __typeof__(s) m9v = Sem_AfterOf (s, err);
@@ -14828,9 +15900,9 @@ static m9_sl_CHAR Sem_DesigStrType (Ast_Node * d, bool guard, m9_sl_CHAR ctx, m9
     } }
   }
   err->res = m9res;
-  { __typeof__(Sem_DesigDeclType (d, ctx, err)) m9a393 = Sem_DesigDeclType (d, ctx, err);
+  { __typeof__(Sem_DesigDeclType (d, ctx, err)) m9a424 = Sem_DesigDeclType (d, ctx, err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_CanonT (m9a393, INT64_C(0), err);
+  m9ret = Sem_CanonT (m9a424, INT64_C(0), err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -14866,7 +15938,7 @@ static bool Sem_StrSide (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s465, 13 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s466, 6 }), err));
+  m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s484, 13 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s485, 6 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -14886,7 +15958,7 @@ static bool Sem_IsComposite (m9_sl_CHAR t, m9_state *err)
   m9_sl_CHAR md = {0}; (void) md;
   m9_sl_CHAR ty = {0}; (void) ty;
   Ast_Node * k = NULL; (void) k;
-  bool m9t1 = ((Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s467, 9 }), err) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s468, 6 }), err)) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s469, 5 }), err));
+  bool m9t1 = ((Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s486, 9 }), err) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s487, 6 }), err)) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s488, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -14948,215 +16020,223 @@ static m9_sl_CHAR Sem_BinType (Ast_Node * e, m9_sl_CHAR ctx, m9_state *err)
   m9_sl_CHAR rt = {0}; (void) rt;
   m9_sl_CHAR op = {0}; (void) op;
   op = e->a;
-  { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a394 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a425 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(lt) m9v = Sem_ExprType (m9a394, ctx, err);
+  { __typeof__(lt) m9v = Sem_ExprType (m9a425, ctx, err);
     if (err->exc) goto L_ret;
     lt = m9v;
   }
   }
-  { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a395 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a426 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(rt) m9v = Sem_ExprType (m9a395, ctx, err);
+  { __typeof__(rt) m9v = Sem_ExprType (m9a426, ctx, err);
     if (err->exc) goto L_ret;
     rt = m9v;
   }
   }
-  bool m9t1 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s470, 3 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s471, 2 }), err));
+  bool m9t1 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s489, 3 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s490, 2 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = (((lt).len > INT64_C(0)) && (!Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s472, 4 }), err)));
+    bool m9t2 = (((lt).len > INT64_C(0)) && (!Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s491, 4 }), err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(Sem_TyName (lt, err)) m9a396 = Sem_TyName (lt, err);
+      { __typeof__(Sem_TyName (lt, err)) m9a427 = Sem_TyName (lt, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s473, 26 }), m9a396, err)) m9a397 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s473, 26 }), m9a396, err);
+      { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s492, 26 }), m9a427, err)) m9a428 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s492, 26 }), m9a427, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (e, ctx, m9a397, err);
+      Sem_ErrN (e, ctx, m9a428, err);
       if (err->exc) goto L_ret;
       }
       }
     }
-    bool m9t3 = (((rt).len > INT64_C(0)) && (!Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s474, 4 }), err)));
+    bool m9t3 = (((rt).len > INT64_C(0)) && (!Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s493, 4 }), err)));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__(Sem_TyName (rt, err)) m9a398 = Sem_TyName (rt, err);
+      { __typeof__(Sem_TyName (rt, err)) m9a429 = Sem_TyName (rt, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s475, 26 }), m9a398, err)) m9a399 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s475, 26 }), m9a398, err);
+      { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s494, 26 }), m9a429, err)) m9a430 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s494, 26 }), m9a429, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (e, ctx, m9a399, err);
+      Sem_ErrN (e, ctx, m9a430, err);
       if (err->exc) goto L_ret;
       }
       }
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s476, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s495, 4 });
     goto L_ret;
   }
-  bool m9t4 = (((((Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s477, 1 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s478, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s479, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s480, 2 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s481, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s482, 2 }), err));
+  bool m9t4 = (((((Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s496, 1 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s497, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s498, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s499, 2 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s500, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s501, 2 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
-    bool m9t5 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s483, 6 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s484, 6 }), err));
+    bool m9t5 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s502, 6 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s503, 6 }), err));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s485, 38 }), err);
+      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s504, 38 }), err);
       if (err->exc) goto L_ret;
     } else {
       bool m9t6 = (Sem_IsNanLit ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err) || Sem_IsNanLit ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err));
       if (err->exc) goto L_ret;
       if (m9t6) {
-        { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s487, 37 }), ((m9_sl_CHAR){ (uint32_t *) m9s488, 60 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s489, 10 }), err)) m9a400 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s487, 37 }), ((m9_sl_CHAR){ (uint32_t *) m9s488, 60 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s489, 10 }), err);
+        m9_mark m9t7 = m9_pool_mark (err->res);
+        { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s506, 37 }), ((m9_sl_CHAR){ (uint32_t *) m9s507, 60 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s508, 10 }), err)) m9a431 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s506, 37 }), ((m9_sl_CHAR){ (uint32_t *) m9s507, 60 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s508, 10 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s486, 4 }), op, m9a400, err)) m9a401 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s486, 4 }), op, m9a400, err);
+        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s505, 4 }), op, m9a431, err)) m9a432 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s505, 4 }), op, m9a431, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a401, err);
+        Sem_ErrN (e, ctx, m9a432, err);
         if (err->exc) goto L_ret;
         }
         }
+        m9_pool_release (err->res, m9t7);
     } else {
       Sem_Agree (Sem_StOperand, lt, rt, e->line, err);
       if (err->exc) goto L_ret;
-      bool m9t7 = (!((Sem_Compat (lt, rt, err) || Sem_Compat (rt, lt, err))));
+      bool m9t8 = (!((Sem_Compat (lt, rt, err) || Sem_Compat (rt, lt, err))));
       if (err->exc) goto L_ret;
-      if (m9t7) {
-        { __typeof__(Sem_TyName (lt, err)) m9a402 = Sem_TyName (lt, err);
+      if (m9t8) {
+        { __typeof__(Sem_TyName (lt, err)) m9a433 = Sem_TyName (lt, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_TyName (rt, err)) m9a403 = Sem_TyName (rt, err);
+        { __typeof__(Sem_TyName (rt, err)) m9a434 = Sem_TyName (rt, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s490, 15 }), m9a402, ((m9_sl_CHAR){ (uint32_t *) m9s491, 6 }), m9a403, err)) m9a404 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s490, 15 }), m9a402, ((m9_sl_CHAR){ (uint32_t *) m9s491, 6 }), m9a403, err);
+        { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s509, 15 }), m9a433, ((m9_sl_CHAR){ (uint32_t *) m9s510, 6 }), m9a434, err)) m9a435 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s509, 15 }), m9a433, ((m9_sl_CHAR){ (uint32_t *) m9s510, 6 }), m9a434, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a404, err);
+        Sem_ErrN (e, ctx, m9a435, err);
         if (err->exc) goto L_ret;
         }
         }
         }
       } else {
-        bool m9t8 = ((Sem_StrSide (lt, err) && Sem_StrSide (rt, err)) && ((Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s492, 13 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s493, 13 }), err))));
-        if (err->exc) goto L_ret;
-        if (m9t8) {
-          { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s495, 30 }), ((m9_sl_CHAR){ (uint32_t *) m9s496, 53 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s497, 10 }), err)) m9a405 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s495, 30 }), ((m9_sl_CHAR){ (uint32_t *) m9s496, 53 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s497, 10 }), err);
-            if (err->exc) goto L_ret;
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s494, 4 }), op, m9a405, err)) m9a406 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s494, 4 }), op, m9a405, err);
-            if (err->exc) goto L_ret;
-          Sem_ErrN (e, ctx, m9a406, err);
-          if (err->exc) goto L_ret;
-          }
-          }
-      } else {
-        bool m9t9 = Sem_IsComposite (lt, err);
+        bool m9t9 = ((Sem_StrSide (lt, err) && Sem_StrSide (rt, err)) && ((Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s511, 13 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s512, 13 }), err))));
         if (err->exc) goto L_ret;
         if (m9t9) {
-          { __typeof__(Sem_TyName (lt, err)) m9a407 = Sem_TyName (lt, err);
+          m9_mark m9t10 = m9_pool_mark (err->res);
+          { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s514, 30 }), ((m9_sl_CHAR){ (uint32_t *) m9s515, 53 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s516, 10 }), err)) m9a436 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s514, 30 }), ((m9_sl_CHAR){ (uint32_t *) m9s515, 53 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s516, 10 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s500, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s501, 52 }), err)) m9a408 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s500, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s501, 52 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s513, 4 }), op, m9a436, err)) m9a437 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s513, 4 }), op, m9a436, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s498, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s499, 29 }), m9a407, m9a408, err)) m9a409 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s498, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s499, 29 }), m9a407, m9a408, err);
-            if (err->exc) goto L_ret;
-          Sem_ErrN (e, ctx, m9a409, err);
+          Sem_ErrN (e, ctx, m9a437, err);
           if (err->exc) goto L_ret;
           }
           }
-          }
+          m9_pool_release (err->res, m9t10);
       } else {
-        bool m9t10 = Sem_IsComposite (rt, err);
+        bool m9t11 = Sem_IsComposite (lt, err);
         if (err->exc) goto L_ret;
-        if (m9t10) {
-          { __typeof__(Sem_TyName (rt, err)) m9a410 = Sem_TyName (rt, err);
+        if (m9t11) {
+          m9_mark m9t12 = m9_pool_mark (err->res);
+          { __typeof__(Sem_TyName (lt, err)) m9a438 = Sem_TyName (lt, err);
             if (err->exc) goto L_ret;
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s504, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s505, 52 }), err)) m9a411 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s504, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s505, 52 }), err);
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s519, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s520, 52 }), err)) m9a439 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s519, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s520, 52 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s502, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s503, 29 }), m9a410, m9a411, err)) m9a412 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s502, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s503, 29 }), m9a410, m9a411, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s517, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s518, 29 }), m9a438, m9a439, err)) m9a440 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s517, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s518, 29 }), m9a438, m9a439, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (e, ctx, m9a412, err);
+          Sem_ErrN (e, ctx, m9a440, err);
           if (err->exc) goto L_ret;
           }
           }
           }
+          m9_pool_release (err->res, m9t12);
+      } else {
+        bool m9t13 = Sem_IsComposite (rt, err);
+        if (err->exc) goto L_ret;
+        if (m9t13) {
+          m9_mark m9t14 = m9_pool_mark (err->res);
+          { __typeof__(Sem_TyName (rt, err)) m9a441 = Sem_TyName (rt, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s523, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s524, 52 }), err)) m9a442 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s523, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s524, 52 }), err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s521, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s522, 29 }), m9a441, m9a442, err)) m9a443 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s521, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s522, 29 }), m9a441, m9a442, err);
+            if (err->exc) goto L_ret;
+          Sem_ErrN (e, ctx, m9a443, err);
+          if (err->exc) goto L_ret;
+          }
+          }
+          }
+          m9_pool_release (err->res, m9t14);
       } } } }
     } }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s506, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s525, 4 });
     goto L_ret;
   }
-  bool m9t11 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s507, 1 }), err) && ((Sem_StrSide (lt, err) || Sem_StrSide (rt, err))));
+  bool m9t15 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s526, 1 }), err) && ((Sem_StrSide (lt, err) || Sem_StrSide (rt, err))));
   if (err->exc) goto L_ret;
-  if (m9t11) {
-    bool m9t12 = (!((Sem_StrSide (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s508, 4 }), err))));
+  if (m9t15) {
+    bool m9t16 = (!((Sem_StrSide (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s527, 4 }), err))));
     if (err->exc) goto L_ret;
-    if (m9t12) {
-      { __typeof__(Sem_TyName (lt, err)) m9a413 = Sem_TyName (lt, err);
+    if (m9t16) {
+      { __typeof__(Sem_TyName (lt, err)) m9a444 = Sem_TyName (lt, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s509, 19 }), m9a413, ((m9_sl_CHAR){ (uint32_t *) m9s510, 14 }), err)) m9a414 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s509, 19 }), m9a413, ((m9_sl_CHAR){ (uint32_t *) m9s510, 14 }), err);
+      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s528, 19 }), m9a444, ((m9_sl_CHAR){ (uint32_t *) m9s529, 14 }), err)) m9a445 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s528, 19 }), m9a444, ((m9_sl_CHAR){ (uint32_t *) m9s529, 14 }), err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (e, ctx, m9a414, err);
+      Sem_ErrN (e, ctx, m9a445, err);
       if (err->exc) goto L_ret;
       }
       }
     } else {
-      bool m9t13 = (!((Sem_StrSide (rt, err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s511, 4 }), err))));
+      bool m9t17 = (!((Sem_StrSide (rt, err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s530, 4 }), err))));
       if (err->exc) goto L_ret;
-      if (m9t13) {
-        { __typeof__(Sem_TyName (rt, err)) m9a415 = Sem_TyName (rt, err);
+      if (m9t17) {
+        { __typeof__(Sem_TyName (rt, err)) m9a446 = Sem_TyName (rt, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s512, 33 }), m9a415, (m9_sl_CHAR){ NULL, 0 }, err)) m9a416 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s512, 33 }), m9a415, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s531, 33 }), m9a446, (m9_sl_CHAR){ NULL, 0 }, err)) m9a447 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s531, 33 }), m9a446, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a416, err);
+        Sem_ErrN (e, ctx, m9a447, err);
         if (err->exc) goto L_ret;
         }
         }
       }
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s513, 13 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s532, 13 });
     goto L_ret;
   }
-  bool m9t14 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s514, 4 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s515, 4 }), err));
+  bool m9t18 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s533, 4 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s534, 4 }), err));
   if (err->exc) goto L_ret;
-  if (m9t14) {
-    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s516, 59 }), err);
+  if (m9t18) {
+    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s535, 59 }), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  bool m9t15 = (!Sem_NumSide (lt, err));
+  bool m9t19 = (!Sem_NumSide (lt, err));
   if (err->exc) goto L_ret;
-  if (m9t15) {
-    { __typeof__(Sem_TyName (lt, err)) m9a417 = Sem_TyName (lt, err);
+  if (m9t19) {
+    { __typeof__(Sem_TyName (lt, err)) m9a448 = Sem_TyName (lt, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s517, 29 }), m9a417, err)) m9a418 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s517, 29 }), m9a417, err);
+    { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s536, 29 }), m9a448, err)) m9a449 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s536, 29 }), m9a448, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (e, ctx, m9a418, err);
+    Sem_ErrN (e, ctx, m9a449, err);
     if (err->exc) goto L_ret;
     }
     }
   } else {
-    bool m9t16 = (!Sem_NumSide (rt, err));
+    bool m9t20 = (!Sem_NumSide (rt, err));
     if (err->exc) goto L_ret;
-    if (m9t16) {
-      { __typeof__(Sem_TyName (rt, err)) m9a419 = Sem_TyName (rt, err);
+    if (m9t20) {
+      { __typeof__(Sem_TyName (rt, err)) m9a450 = Sem_TyName (rt, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s518, 29 }), m9a419, err)) m9a420 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s518, 29 }), m9a419, err);
+      { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s537, 29 }), m9a450, err)) m9a451 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s537, 29 }), m9a450, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (e, ctx, m9a420, err);
+      Sem_ErrN (e, ctx, m9a451, err);
       if (err->exc) goto L_ret;
       }
       }
     } else {
       Sem_Agree (Sem_StOperand, lt, rt, e->line, err);
       if (err->exc) goto L_ret;
-      bool m9t17 = (!((Sem_Compat (lt, rt, err) || Sem_Compat (rt, lt, err))));
+      bool m9t21 = (!((Sem_Compat (lt, rt, err) || Sem_Compat (rt, lt, err))));
       if (err->exc) goto L_ret;
-      if (m9t17) {
-        { __typeof__(Sem_TyName (lt, err)) m9a421 = Sem_TyName (lt, err);
+      if (m9t21) {
+        { __typeof__(Sem_TyName (lt, err)) m9a452 = Sem_TyName (lt, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_TyName (rt, err)) m9a422 = Sem_TyName (rt, err);
+        { __typeof__(Sem_TyName (rt, err)) m9a453 = Sem_TyName (rt, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s521, 1 }), m9a422, err)) m9a423 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s521, 1 }), m9a422, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s540, 1 }), m9a453, err)) m9a454 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s540, 1 }), m9a453, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s519, 25 }), m9a421, ((m9_sl_CHAR){ (uint32_t *) m9s520, 1 }), op, m9a423, err)) m9a424 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s519, 25 }), m9a421, ((m9_sl_CHAR){ (uint32_t *) m9s520, 1 }), op, m9a423, err);
+        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s538, 25 }), m9a452, ((m9_sl_CHAR){ (uint32_t *) m9s539, 1 }), op, m9a454, err)) m9a455 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s538, 25 }), m9a452, ((m9_sl_CHAR){ (uint32_t *) m9s539, 1 }), op, m9a454, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a424, err);
+        Sem_ErrN (e, ctx, m9a455, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -15165,42 +16245,42 @@ static m9_sl_CHAR Sem_BinType (Ast_Node * e, m9_sl_CHAR ctx, m9_state *err)
       }
     }
   }
-  bool m9t18 = Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s522, 1 }), err);
+  bool m9t22 = Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s541, 1 }), err);
   if (err->exc) goto L_ret;
-  if (m9t18) {
-    bool m9t19 = (((Sem_IsIntStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s523, 5 }), err)) || Sem_IsIntStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s524, 5 }), err));
+  if (m9t22) {
+    bool m9t23 = (((Sem_IsIntStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s542, 5 }), err)) || Sem_IsIntStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s543, 5 }), err));
     if (err->exc) goto L_ret;
-    if (m9t19) {
-      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s525, 39 }), err);
+    if (m9t23) {
+      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s544, 39 }), err);
       if (err->exc) goto L_ret;
     }
   } else {
-    bool m9t20 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s526, 3 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s527, 3 }), err));
+    bool m9t24 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s545, 3 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s546, 3 }), err));
     if (err->exc) goto L_ret;
-    if (m9t20) {
-      bool m9t21 = (((Sem_IsFloatStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s528, 6 }), err)) || Sem_IsFloatStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s529, 6 }), err));
+    if (m9t24) {
+      bool m9t25 = (((Sem_IsFloatStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s547, 6 }), err)) || Sem_IsFloatStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err));
       if (err->exc) goto L_ret;
-      if (m9t21) {
-        { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s530, 33 }), ((m9_sl_CHAR){ (uint32_t *) m9s531, 3 }), err)) m9a425 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s530, 33 }), ((m9_sl_CHAR){ (uint32_t *) m9s531, 3 }), err);
+      if (m9t25) {
+        { __typeof__(Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s549, 33 }), ((m9_sl_CHAR){ (uint32_t *) m9s550, 3 }), err)) m9a456 = Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s549, 33 }), ((m9_sl_CHAR){ (uint32_t *) m9s550, 3 }), err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a425, err);
+        Sem_ErrN (e, ctx, m9a456, err);
         if (err->exc) goto L_ret;
         }
       }
   } else {
-    bool m9t22 = ((Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s532, 2 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s533, 2 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s534, 2 }), err));
+    bool m9t26 = ((Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s551, 2 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s552, 2 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s553, 2 }), err));
     if (err->exc) goto L_ret;
-    if (m9t22) {
-      bool m9t23 = (((Sem_IsFloatStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s535, 6 }), err)) || Sem_IsFloatStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s536, 6 }), err));
+    if (m9t26) {
+      bool m9t27 = (((Sem_IsFloatStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s554, 6 }), err)) || Sem_IsFloatStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err));
       if (err->exc) goto L_ret;
-      if (m9t23) {
-        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s537, 35 }), err);
+      if (m9t27) {
+        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s556, 35 }), err);
         if (err->exc) goto L_ret;
       }
   } } }
-  bool m9t24 = Text_Eq (lt, rt, err);
+  bool m9t28 = Text_Eq (lt, rt, err);
   if (err->exc) goto L_ret;
-  if (m9t24) {
+  if (m9t28) {
     err->res = m9res;
     m9ret = lt;
     goto L_ret;
@@ -15210,16 +16290,16 @@ static m9_sl_CHAR Sem_BinType (Ast_Node * e, m9_sl_CHAR ctx, m9_state *err)
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  bool m9t25 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s539, 6 }), err));
+  bool m9t29 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s557, 5 }), err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s558, 6 }), err));
   if (err->exc) goto L_ret;
-  if (m9t25) {
+  if (m9t29) {
     err->res = m9res;
     m9ret = rt;
     goto L_ret;
   }
-  bool m9t26 = (Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s540, 5 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s541, 6 }), err));
+  bool m9t30 = (Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s559, 5 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), err));
   if (err->exc) goto L_ret;
-  if (m9t26) {
+  if (m9t30) {
     err->res = m9res;
     m9ret = lt;
     goto L_ret;
@@ -15262,7 +16342,7 @@ static bool Sem_BareNameKnown (m9_sl_CHAR nm, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = (Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s543, 4 }), err));
+  bool m9t2 = (Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s561, 3 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s562, 4 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
@@ -15424,9 +16504,9 @@ static bool Sem_ModHasName (m9_sl_CHAR modName, m9_sl_CHAR nm, m9_state *err)
       goto L_ret;
     }
   }
-  { __typeof__(Sem_Qualify (modName, nm, err)) m9a426 = Sem_Qualify (modName, nm, err);
+  { __typeof__(Sem_Qualify (modName, nm, err)) m9a457 = Sem_Qualify (modName, nm, err);
     if (err->exc) goto L_ret;
-  { __typeof__(pr) m9v = Sem_LookupProc (m9a426, &(found), err);
+  { __typeof__(pr) m9v = Sem_LookupProc (m9a457, &(found), err);
     if (err->exc) goto L_ret;
     pr = m9v;
   }
@@ -15476,9 +16556,9 @@ static bool Sem_UnknownNewType (Ast_Node * ty, Ast_Node * e, m9_sl_CHAR ctx, m9_
       bool m9t1 = (((Sem_CanonT (q, INT64_C(0), err)).len == INT64_C(0)) && (!Sem_IsBuiltinTy (q->a, err)));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s544, 14 }), q->a, err)) m9a427 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s544, 14 }), q->a, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s563, 14 }), q->a, err)) m9a458 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s563, 14 }), q->a, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a427, err);
+        Sem_ErrN (e, ctx, m9a458, err);
         if (err->exc) goto L_ret;
         }
         err->res = m9res;
@@ -15489,15 +16569,15 @@ static bool Sem_UnknownNewType (Ast_Node * ty, Ast_Node * e, m9_sl_CHAR ctx, m9_
       bool m9t2 = (!Sem_TypeKnown (q->a, q->b, err));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s546, 1 }), q->b, err)) m9a428 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s546, 1 }), q->b, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s565, 1 }), q->b, err)) m9a459 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s565, 1 }), q->b, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (q->a, m9a428, err)) m9a429 = Sem_Cat (q->a, m9a428, err);
+        { __typeof__(Sem_Cat (q->a, m9a459, err)) m9a460 = Sem_Cat (q->a, m9a459, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s547, 4 }), q->a, ((m9_sl_CHAR){ (uint32_t *) m9s548, 22 }), err)) m9a430 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s547, 4 }), q->a, ((m9_sl_CHAR){ (uint32_t *) m9s548, 22 }), err);
+        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s566, 4 }), q->a, ((m9_sl_CHAR){ (uint32_t *) m9s567, 22 }), err)) m9a461 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s566, 4 }), q->a, ((m9_sl_CHAR){ (uint32_t *) m9s567, 22 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s545, 14 }), m9a429, m9a430, err)) m9a431 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s545, 14 }), m9a429, m9a430, err);
+        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s564, 14 }), m9a460, m9a461, err)) m9a462 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s564, 14 }), m9a460, m9a461, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a431, err);
+        Sem_ErrN (e, ctx, m9a462, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -15531,7 +16611,7 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
   { Ast_Node * d = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (d != NULL) {
-    bool m9t1 = ((d->nkids == INT64_C(0)) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s549, 3 }), err));
+    bool m9t1 = ((d->nkids == INT64_C(0)) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s568, 3 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       { __typeof__((*ty)) m9v = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
@@ -15541,7 +16621,7 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
       { Ast_Node * x = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (x != NULL) {
-        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s550, 74 }), err);
+        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s569, 74 }), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
         m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -15555,12 +16635,12 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s551, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s570, 3 });
       goto L_ret;
     }
     isVar = true;
     if ((d->nkids == INT64_C(0))) {
-      bool m9t3 = ((Sem_ScopeFind (d->a, err) < INT64_C(0)) && (!Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s552, 4 }), err)));
+      bool m9t3 = ((Sem_ScopeFind (d->a, err) < INT64_C(0)) && (!Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s571, 4 }), err)));
       if (err->exc) goto L_ret;
       if (m9t3) {
         isVar = false;
@@ -15583,9 +16663,9 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
       bool m9t5 = (Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeVar, err) && Sem_PtrParamTy (Sem_ScopeType (d->a, err), err));
       if (err->exc) goto L_ret;
       if (m9t5) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a432 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a463 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__((*ty)) m9v = Sem_AsQual (m9a432, err);
+        { __typeof__((*ty)) m9v = Sem_AsQual (m9a463, err);
           if (err->exc) goto L_ret;
           (*ty) = m9v;
         }
@@ -15600,10 +16680,10 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
             goto L_ret;
           }
           err->res = m9res;
-          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s553, 4 });
+          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s572, 4 });
           goto L_ret;
         } }
-        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s554, 36 }), err);
+        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s573, 36 }), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
         m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -15611,21 +16691,21 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
       }
     }
     if (isVar) {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a433 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a464 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_ExprType (m9a433, ctx, err);
+      { __typeof__(t) m9v = Sem_ExprType (m9a464, ctx, err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
       }
-      bool m9t7 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s555, 4 }), err)));
+      bool m9t7 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s574, 4 }), err)));
       if (err->exc) goto L_ret;
       if (m9t7) {
-        { __typeof__(Sem_TyName (t, err)) m9a434 = Sem_TyName (t, err);
+        { __typeof__(Sem_TyName (t, err)) m9a465 = Sem_TyName (t, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s556, 38 }), m9a434, err)) m9a435 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s556, 38 }), m9a434, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s575, 38 }), m9a465, err)) m9a466 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s575, 38 }), m9a465, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a435, err);
+        Sem_ErrN (e, ctx, m9a466, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -15633,9 +16713,9 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
         m9ret = (m9_sl_CHAR){ NULL, 0 };
         goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a436 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a467 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*ty)) m9v = Sem_AsQual (m9a436, err);
+      { __typeof__((*ty)) m9v = Sem_AsQual (m9a467, err);
         if (err->exc) goto L_ret;
         (*ty) = m9v;
       }
@@ -15650,18 +16730,18 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
           goto L_ret;
         }
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s557, 4 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s576, 4 });
         goto L_ret;
       } }
-      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s558, 36 }), err);
+      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s577, 36 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
       goto L_ret;
     }
-    { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a437 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a468 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*ty)) m9v = Sem_AsQual (m9a437, err);
+    { __typeof__((*ty)) m9v = Sem_AsQual (m9a468, err);
       if (err->exc) goto L_ret;
       (*ty) = m9v;
     }
@@ -15671,9 +16751,9 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
       bool m9t9 = ((Sem_CanonT (q2, INT64_C(0), err)).len == INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t9) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a438 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a469 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(t) m9v = Sem_ExprType (m9a438, ctx, err);
+        { __typeof__(t) m9v = Sem_ExprType (m9a469, ctx, err);
           if (err->exc) goto L_ret;
           t = m9v;
         }
@@ -15685,7 +16765,7 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
     } }
     (*ext0) = INT64_C(1);
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s559, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s578, 5 });
     goto L_ret;
   } }
   { __typeof__((*ty)) m9v = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
@@ -15693,7 +16773,7 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
     (*ty) = m9v;
   }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s560, 5 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s579, 5 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -15727,74 +16807,74 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     case INT64_C(65):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s561, 5 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s580, 5 });
       goto L_ret;
     } break;
     case INT64_C(66):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s562, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s581, 6 });
       goto L_ret;
     } break;
     case INT64_C(67):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s563, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s582, 4 });
       goto L_ret;
     } break;
     case INT64_C(68):
     {
       if (((e->a).len == INT64_C(1))) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s564, 6 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s583, 6 });
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s565, 13 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s584, 13 });
       goto L_ret;
     } break;
     case INT64_C(69):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s566, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s585, 4 });
       goto L_ret;
     } break;
     case INT64_C(70):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s567, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s586, 4 });
       goto L_ret;
     } break;
     case INT64_C(71):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s568, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s587, 6 });
       goto L_ret;
     } break;
     case INT64_C(64):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a439 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a470 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_ExprType (m9a439, ctx, err);
+      m9ret = Sem_ExprType (m9a470, ctx, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     } break;
     case INT64_C(72):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a440 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a471 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_ExprType (m9a440, ctx, err);
+      { __typeof__(t) m9v = Sem_ExprType (m9a471, ctx, err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
       }
-      bool m9t2 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s569, 6 }), err)));
+      bool m9t2 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s588, 6 }), err)));
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s570, 4 }), t, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s589, 4 }), t, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -15804,9 +16884,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(73):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a441 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a472 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_ExprType (m9a441, ctx, err);
+      { __typeof__(t) m9v = Sem_ExprType (m9a472, ctx, err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
@@ -15815,7 +16895,7 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       if (err->exc) goto L_ret;
       if (inr != NULL) {
         if ((inr->kind == Ast_NDesignator)) {
-          bool m9t3 = ((inr->nkids == INT64_C(0)) && Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s571, 4 }), err));
+          bool m9t3 = ((inr->nkids == INT64_C(0)) && Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s590, 4 }), err));
           if (err->exc) goto L_ret;
           if (m9t3) {
             { __typeof__(u) m9v = Sem_ScopeMode (inr->a, err);
@@ -15825,36 +16905,36 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
             bool m9t4 = (((Text_Eq (u, Sem_ModeVal, err) || Text_Eq (u, Sem_ModeVar, err)) || Text_Eq (u, Sem_ModeBinder, err)) || Text_Eq (u, Sem_ModeRo, err));
             if (err->exc) goto L_ret;
             if (m9t4) {
-              { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s572, 34 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s573, 22 }), err)) m9a442 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s572, 34 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s573, 22 }), err);
+              { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s591, 34 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s592, 22 }), err)) m9a473 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s591, 34 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s592, 22 }), err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (e, ctx, m9a442, err);
+              Sem_ErrN (e, ctx, m9a473, err);
               if (err->exc) goto L_ret;
               }
             } else {
               bool m9t5 = Sem_FvalHas (inr->a, err);
               if (err->exc) goto L_ret;
               if (m9t5) {
-                { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s574, 32 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s575, 29 }), err)) m9a443 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s574, 32 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s575, 29 }), err);
+                { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s593, 32 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s594, 29 }), err)) m9a474 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s593, 32 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s594, 29 }), err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (e, ctx, m9a443, err);
+                Sem_ErrN (e, ctx, m9a474, err);
                 if (err->exc) goto L_ret;
                 }
             } else {
               bool m9t6 = (Sem_OwnedCandKind (inr->a, err) == INT64_C(1));
               if (err->exc) goto L_ret;
               if (m9t6) {
-                Sem_OwnMark (inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s576, 18 }), e, err);
+                Sem_OwnMark (inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s595, 18 }), e, err);
                 if (err->exc) goto L_ret;
               }
             } }
           }
         }
       } }
-      bool m9t7 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s577, 4 }), err);
+      bool m9t7 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s596, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s578, 7 }), t, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s597, 7 }), t, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -15873,7 +16953,7 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         m9ret = (m9_sl_CHAR){ NULL, 0 };
         goto L_ret;
       }
-      bool m9t8 = Text_Eq (form, ((m9_sl_CHAR){ (uint32_t *) m9s579, 4 }), err);
+      bool m9t8 = Text_Eq (form, ((m9_sl_CHAR){ (uint32_t *) m9s598, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t8) {
         if (curPure) {
@@ -15884,11 +16964,11 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
               bool m9t9 = ((Text_Eq (Sem_ScopeMode (pn->a, err), Sem_ModeVar, err) || Text_Eq (Sem_ScopeMode (pn->a, err), Sem_ModeOwn, err)) || Text_Eq (Sem_ScopeMode (pn->a, err), Sem_ModeModule, err));
               if (err->exc) goto L_ret;
               if (m9t9) {
-                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s580, 30 }), pn->a, err)) m9a444 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s580, 30 }), pn->a, err);
+                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s599, 30 }), pn->a, err)) m9a475 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s599, 30 }), pn->a, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Sem_Cat (m9a444, ((m9_sl_CHAR){ (uint32_t *) m9s581, 30 }), err)) m9a445 = Sem_Cat (m9a444, ((m9_sl_CHAR){ (uint32_t *) m9s581, 30 }), err);
+                { __typeof__(Sem_Cat (m9a475, ((m9_sl_CHAR){ (uint32_t *) m9s600, 30 }), err)) m9a476 = Sem_Cat (m9a475, ((m9_sl_CHAR){ (uint32_t *) m9s600, 30 }), err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (e, ctx, m9a445, err);
+                Sem_ErrN (e, ctx, m9a476, err);
                 if (err->exc) goto L_ret;
                 }
                 }
@@ -15897,7 +16977,7 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           } }
         }
       }
-      bool m9t10 = Text_Eq (form, ((m9_sl_CHAR){ (uint32_t *) m9s582, 5 }), err);
+      bool m9t10 = Text_Eq (form, ((m9_sl_CHAR){ (uint32_t *) m9s601, 5 }), err);
       if (err->exc) goto L_ret;
       if (m9t10) {
         { int64_t m9t11to;
@@ -15913,10 +16993,10 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
               if (err->exc) goto L_ret;
               if (ptn != NULL) {
                 if ((ptn->kind == Ast_NQualident)) {
-                  bool m9t12 = DynStr_Eq (ptn->a, ((m9_sl_CHAR){ (uint32_t *) m9s583, 4 }), err);
+                  bool m9t12 = DynStr_Eq (ptn->a, ((m9_sl_CHAR){ (uint32_t *) m9s602, 4 }), err);
                   if (err->exc) goto L_ret;
                   if (m9t12) {
-                    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s584, 39 }), err);
+                    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s603, 39 }), err);
                     if (err->exc) goto L_ret;
                     err->res = m9res;
                     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -15945,9 +17025,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
             if (err->exc) goto L_ret;
             nx = m9v;
           }
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err))) m9a446 = (*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err))) m9a477 = (*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(u) m9v = Sem_ExprType (m9a446, ctx, err);
+          { __typeof__(u) m9v = Sem_ExprType (m9a477, ctx, err);
             if (err->exc) goto L_ret;
             u = m9v;
           }
@@ -15955,11 +17035,11 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           bool m9t14 = (!Sem_IsIntish (u, err));
           if (err->exc) goto L_ret;
           if (m9t14) {
-            { __typeof__(Sem_TyName (u, err)) m9a447 = Sem_TyName (u, err);
+            { __typeof__(Sem_TyName (u, err)) m9a478 = Sem_TyName (u, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s585, 35 }), m9a447, err)) m9a448 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s585, 35 }), m9a447, err);
+            { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s604, 35 }), m9a478, err)) m9a479 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s604, 35 }), m9a478, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (e, ctx, m9a448, err);
+            Sem_ErrN (e, ctx, m9a479, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -15969,7 +17049,7 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       if ((nx == INT64_C(1))) {
         if (((t).len > INT64_C(0))) {
           err->res = m9res;
-          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s586, 9 }), t, err);
+          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s605, 9 }), t, err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
@@ -15985,7 +17065,7 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       }
       if (((t).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s587, 4 }), t, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s606, 4 }), t, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -15995,9 +17075,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(85):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a449 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a480 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_ExprType (m9a449, ctx, err);
+      { __typeof__(t) m9v = Sem_ExprType (m9a480, ctx, err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
@@ -16007,9 +17087,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       m9t15to = m9_sub_i64 (e->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; j <= m9t15to; j += 1) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err))) m9a450 = (*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err))) m9a481 = (*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(u) m9v = Sem_ExprType (m9a450, ctx, err);
+        { __typeof__(u) m9v = Sem_ExprType (m9a481, ctx, err);
           if (err->exc) goto L_ret;
           u = m9v;
         }
@@ -16017,11 +17097,11 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         bool m9t16 = (!Sem_IsIntish (u, err));
         if (err->exc) goto L_ret;
         if (m9t16) {
-          { __typeof__(Sem_TyName (u, err)) m9a451 = Sem_TyName (u, err);
+          { __typeof__(Sem_TyName (u, err)) m9a482 = Sem_TyName (u, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s588, 36 }), m9a451, err)) m9a452 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s588, 36 }), m9a451, err);
+          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s607, 36 }), m9a482, err)) m9a483 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s607, 36 }), m9a482, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (e, ctx, m9a452, err);
+          Sem_ErrN (e, ctx, m9a483, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -16030,37 +17110,37 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       bool m9t17 = (m9_sub_i64 (e->nkids, INT64_C(1), err) > INT64_C(4));
       if (err->exc) goto L_ret;
       if (m9t17) {
-        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s589, 40 }), err);
+        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s608, 40 }), err);
         if (err->exc) goto L_ret;
       }
       { Ast_Node * g0 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (g0 != NULL) {
         if ((g0->kind != Ast_NDesignator)) {
-          Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s590, 88 }), err);
+          Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s609, 88 }), err);
           if (err->exc) goto L_ret;
         }
       } }
-      bool m9t18 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s591, 9 }), err);
+      bool m9t18 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s610, 9 }), err);
       if (err->exc) goto L_ret;
       if (m9t18) {
         err->res = m9res;
-        { __typeof__(m9_sub_i64 (e->nkids, INT64_C(1), err)) m9a453 = m9_sub_i64 (e->nkids, INT64_C(1), err);
+        { __typeof__(m9_sub_i64 (e->nkids, INT64_C(1), err)) m9a484 = m9_sub_i64 (e->nkids, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_AfterOf (t, err)) m9a454 = Sem_AfterOf (t, err);
+        { __typeof__(Sem_AfterOf (t, err)) m9a485 = Sem_AfterOf (t, err);
           if (err->exc) goto L_ret;
-        m9ret = Sem_GridOf (m9a453, m9a454, err);
+        m9ret = Sem_GridOf (m9a484, m9a485, err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       }
       if (((t).len > INT64_C(0))) {
-        { __typeof__(Sem_TyName (t, err)) m9a455 = Sem_TyName (t, err);
+        { __typeof__(Sem_TyName (t, err)) m9a486 = Sem_TyName (t, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s592, 24 }), m9a455, err)) m9a456 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s592, 24 }), m9a455, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s611, 24 }), m9a486, err)) m9a487 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s611, 24 }), m9a486, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a456, err);
+        Sem_ErrN (e, ctx, m9a487, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -16071,16 +17151,16 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(75):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a457 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a488 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_ExprType (m9a457, ctx, err);
+      { __typeof__(t) m9v = Sem_ExprType (m9a488, ctx, err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a458 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a489 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(u) m9v = Sem_ExprType (m9a458, ctx, err);
+      { __typeof__(u) m9v = Sem_ExprType (m9a489, ctx, err);
         if (err->exc) goto L_ret;
         u = m9v;
       }
@@ -16088,18 +17168,18 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       bool m9t19 = (!Sem_IsIntish (u, err));
       if (err->exc) goto L_ret;
       if (m9t19) {
-        { __typeof__(Sem_TyName (u, err)) m9a459 = Sem_TyName (u, err);
+        { __typeof__(Sem_TyName (u, err)) m9a490 = Sem_TyName (u, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s593, 36 }), m9a459, err)) m9a460 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s593, 36 }), m9a459, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s612, 36 }), m9a490, err)) m9a491 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s612, 36 }), m9a490, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a460, err);
+        Sem_ErrN (e, ctx, m9a491, err);
         if (err->exc) goto L_ret;
         }
         }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err))) m9a461 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err))) m9a492 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(u) m9v = Sem_ExprType (m9a461, ctx, err);
+      { __typeof__(u) m9v = Sem_ExprType (m9a492, ctx, err);
         if (err->exc) goto L_ret;
         u = m9v;
       }
@@ -16107,47 +17187,47 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       bool m9t20 = (!Sem_IsIntish (u, err));
       if (err->exc) goto L_ret;
       if (m9t20) {
-        { __typeof__(Sem_TyName (u, err)) m9a462 = Sem_TyName (u, err);
+        { __typeof__(Sem_TyName (u, err)) m9a493 = Sem_TyName (u, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s594, 37 }), m9a462, err)) m9a463 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s594, 37 }), m9a462, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s613, 37 }), m9a493, err)) m9a494 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s613, 37 }), m9a493, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a463, err);
+        Sem_ErrN (e, ctx, m9a494, err);
         if (err->exc) goto L_ret;
         }
         }
       }
-      bool m9t21 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s595, 9 }), err);
+      bool m9t21 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s614, 9 }), err);
       if (err->exc) goto L_ret;
       if (m9t21) {
         err->res = m9res;
         m9ret = t;
         goto L_ret;
       }
-      bool m9t22 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s596, 6 }), err);
+      bool m9t22 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s615, 6 }), err);
       if (err->exc) goto L_ret;
       if (m9t22) {
         { Ast_Node * a0 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (a0 != NULL) {
           if ((a0->kind != Ast_NDesignator)) {
-            Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s597, 132 }), err);
+            Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s616, 132 }), err);
             if (err->exc) goto L_ret;
           }
         } }
         err->res = m9res;
-        { __typeof__(Sem_AfterOf (t, err)) m9a464 = Sem_AfterOf (t, err);
+        { __typeof__(Sem_AfterOf (t, err)) m9a495 = Sem_AfterOf (t, err);
           if (err->exc) goto L_ret;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s598, 9 }), m9a464, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s617, 9 }), m9a495, err);
         if (err->exc) goto L_ret;
         }
         goto L_ret;
       }
       if (((t).len > INT64_C(0))) {
-        { __typeof__(Sem_TyName (t, err)) m9a465 = Sem_TyName (t, err);
+        { __typeof__(Sem_TyName (t, err)) m9a496 = Sem_TyName (t, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s599, 34 }), m9a465, err)) m9a466 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s599, 34 }), m9a465, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s618, 34 }), m9a496, err)) m9a497 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s618, 34 }), m9a496, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a466, err);
+        Sem_ErrN (e, ctx, m9a497, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -16174,10 +17254,10 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                 if (err->exc) goto L_ret;
                 t = m9v;
               }
-              bool m9t23 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s600, 4 }), err)));
+              bool m9t23 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s619, 4 }), err)));
               if (err->exc) goto L_ret;
               if (m9t23) {
-                Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s601, 28 }), err);
+                Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s620, 28 }), err);
                 if (err->exc) goto L_ret;
               }
             } else {
@@ -16193,32 +17273,32 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                 { Ast_Node * rr = res;
                 if (rr != NULL) {
                   if ((rr->kind == Ast_NOptType)) {
-                    { __typeof__((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err))) m9a467 = (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err))) m9a498 = (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(Sem_ResolvedMod (err)) m9a468 = Sem_ResolvedMod (err);
+                    { __typeof__(Sem_ResolvedMod (err)) m9a499 = Sem_ResolvedMod (err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(Sem_InMod (m9a467, m9a468, err)) m9a469 = Sem_InMod (m9a467, m9a468, err);
+                    { __typeof__(Sem_InMod (m9a498, m9a499, err)) m9a500 = Sem_InMod (m9a498, m9a499, err);
                       if (err->exc) goto L_ret;
-                    Sem_BindName (b->a, m9a469, err);
+                    Sem_BindName (b->a, m9a500, err);
                     if (err->exc) goto L_ret;
                     }
                     }
                     }
                   } else {
-                    bool m9t24 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s602, 4 }), err)));
+                    bool m9t24 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s621, 4 }), err)));
                     if (err->exc) goto L_ret;
                     if (m9t24) {
-                      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s603, 28 }), err);
+                      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s622, 28 }), err);
                       if (err->exc) goto L_ret;
                     }
                     Sem_BindName (b->a, NULL, err);
                     if (err->exc) goto L_ret;
                   }
                 } else {
-                  bool m9t25 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s604, 4 }), err)));
+                  bool m9t25 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s623, 4 }), err)));
                   if (err->exc) goto L_ret;
                   if (m9t25) {
-                    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s605, 28 }), err);
+                    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s624, 28 }), err);
                     if (err->exc) goto L_ret;
                   }
                   Sem_BindName (b->a, NULL, err);
@@ -16233,9 +17313,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
             } }
           } }
         } else {
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a470 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a501 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(t) m9v = Sem_ExprType (m9a470, ctx, err);
+          { __typeof__(t) m9v = Sem_ExprType (m9a501, ctx, err);
             if (err->exc) goto L_ret;
             t = m9v;
           }
@@ -16244,10 +17324,10 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           if (err->exc) goto L_ret;
           if (b2 != NULL) {
             if (((b2->kind == Ast_NIsSome) && ((b2->a).len == INT64_C(0)))) {
-              bool m9t26 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s606, 4 }), err)));
+              bool m9t26 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s625, 4 }), err)));
               if (err->exc) goto L_ret;
               if (m9t26) {
-                Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s607, 28 }), err);
+                Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s626, 28 }), err);
                 if (err->exc) goto L_ret;
               }
             } else {
@@ -16257,9 +17337,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                   { Ast_Node * cd = (*(Ast_Node * *) m9_at (o->kids.p, INT64_C(0), o->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (cd != NULL) {
-                    { __typeof__(Sem_DesigName (cd, err)) m9a471 = Sem_DesigName (cd, err);
+                    { __typeof__(Sem_DesigName (cd, err)) m9a502 = Sem_DesigName (cd, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(pr) m9v = Sem_LookupProc (m9a471, &(found), err);
+                    { __typeof__(pr) m9v = Sem_LookupProc (m9a502, &(found), err);
                       if (err->exc) goto L_ret;
                       pr = m9v;
                     }
@@ -16281,20 +17361,20 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                             if (rr != NULL) {
                               if ((rr->kind == Ast_NOptType)) {
                                 if ((resolvedIn >= INT64_C(0))) {
-                                  { __typeof__((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err))) m9a472 = (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err));
+                                  { __typeof__((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err))) m9a503 = (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err));
                                     if (err->exc) goto L_ret;
-                                  { __typeof__(Sem_ResolvedMod (err)) m9a473 = Sem_ResolvedMod (err);
+                                  { __typeof__(Sem_ResolvedMod (err)) m9a504 = Sem_ResolvedMod (err);
                                     if (err->exc) goto L_ret;
-                                  { __typeof__(res) m9v = Sem_QualifiedIn (m9a472, m9a473, err);
+                                  { __typeof__(res) m9v = Sem_QualifiedIn (m9a503, m9a504, err);
                                     if (err->exc) goto L_ret;
                                     res = m9v;
                                   }
                                   }
                                   }
                                 } else {
-                                  { __typeof__((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err))) m9a474 = (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err));
+                                  { __typeof__((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err))) m9a505 = (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err));
                                     if (err->exc) goto L_ret;
-                                  { __typeof__(res) m9v = Sem_QualifiedIn (m9a474, pr.modName, err);
+                                  { __typeof__(res) m9v = Sem_QualifiedIn (m9a505, pr.modName, err);
                                     if (err->exc) goto L_ret;
                                     res = m9v;
                                   }
@@ -16310,10 +17390,10 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                     }
                   } }
                 }
-                bool m9t27 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s608, 4 }), err)));
+                bool m9t27 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s627, 4 }), err)));
                 if (err->exc) goto L_ret;
                 if (m9t27) {
-                  Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s609, 28 }), err);
+                  Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s628, 28 }), err);
                   if (err->exc) goto L_ret;
                 }
                 Sem_BindName (b2->a, res, err);
@@ -16323,45 +17403,45 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         }
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s610, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s629, 4 });
       goto L_ret;
     } break;
     case INT64_C(61):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a475 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a506 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_ExprType (m9a475, ctx, err);
+      { __typeof__(t) m9v = Sem_ExprType (m9a506, ctx, err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
       }
-      bool m9t28 = Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s611, 3 }), err);
+      bool m9t28 = Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s630, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t28) {
-        bool m9t29 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s612, 4 }), err)));
+        bool m9t29 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s631, 4 }), err)));
         if (err->exc) goto L_ret;
         if (m9t29) {
-          { __typeof__(Sem_TyName (t, err)) m9a476 = Sem_TyName (t, err);
+          { __typeof__(Sem_TyName (t, err)) m9a507 = Sem_TyName (t, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s613, 30 }), m9a476, err)) m9a477 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s613, 30 }), m9a476, err);
+          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s632, 30 }), m9a507, err)) m9a508 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s632, 30 }), m9a507, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (e, ctx, m9a477, err);
+          Sem_ErrN (e, ctx, m9a508, err);
           if (err->exc) goto L_ret;
           }
           }
         }
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s614, 4 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s633, 4 });
         goto L_ret;
       }
       bool m9t30 = (!Sem_NumSide (t, err));
       if (err->exc) goto L_ret;
       if (m9t30) {
-        { __typeof__(Sem_TyName (t, err)) m9a478 = Sem_TyName (t, err);
+        { __typeof__(Sem_TyName (t, err)) m9a509 = Sem_TyName (t, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s615, 6 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s616, 30 }), m9a478, err)) m9a479 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s615, 6 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s616, 30 }), m9a478, err);
+        { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s634, 6 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s635, 30 }), m9a509, err)) m9a510 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s634, 6 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s635, 30 }), m9a509, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a479, err);
+        Sem_ErrN (e, ctx, m9a510, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -16384,9 +17464,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       bool m9t31 = ((((e->nkids == INT64_C(0)) || (((e->nkids == INT64_C(1)) && (Sem_FindMod (e->a, err) >= INT64_C(0)))))) && (Sem_ScopeFind (e->a, err) < INT64_C(0)));
       if (err->exc) goto L_ret;
       if (m9t31) {
-        { __typeof__(Sem_DesigName (e, err)) m9a480 = Sem_DesigName (e, err);
+        { __typeof__(Sem_DesigName (e, err)) m9a511 = Sem_DesigName (e, err);
           if (err->exc) goto L_ret;
-        { __typeof__(pr) m9v = Sem_LookupProc (m9a480, &(found), err);
+        { __typeof__(pr) m9v = Sem_LookupProc (m9a511, &(found), err);
           if (err->exc) goto L_ret;
           pr = m9v;
         }
@@ -16395,11 +17475,11 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           { Ast_Node * pn = pr.node;
           if (pn != NULL) {
             if (((pr.foreign).len > INT64_C(0))) {
-              { __typeof__(Sem_DesigName (e, err)) m9a481 = Sem_DesigName (e, err);
+              { __typeof__(Sem_DesigName (e, err)) m9a512 = Sem_DesigName (e, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s617, 36 }), m9a481, ((m9_sl_CHAR){ (uint32_t *) m9s618, 12 }), err)) m9a482 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s617, 36 }), m9a481, ((m9_sl_CHAR){ (uint32_t *) m9s618, 12 }), err);
+              { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s636, 36 }), m9a512, ((m9_sl_CHAR){ (uint32_t *) m9s637, 12 }), err)) m9a513 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s636, 36 }), m9a512, ((m9_sl_CHAR){ (uint32_t *) m9s637, 12 }), err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (e, ctx, m9a482, err);
+              Sem_ErrN (e, ctx, m9a513, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -16408,13 +17488,13 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
               goto L_ret;
             }
             canonCtx = pr.modName;
-            { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err))) m9a483 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err))) m9a514 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a484 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a515 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(2), pn->kids.len, sizeof (Ast_Node *), err))) m9a485 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(2), pn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(2), pn->kids.len, sizeof (Ast_Node *), err))) m9a516 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(2), pn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(t) m9v = Sem_ProcSig (m9a483, m9a484, pn->f3, m9a485, INT64_C(0), err);
+            { __typeof__(t) m9v = Sem_ProcSig (m9a514, m9a515, pn->f3, m9a516, INT64_C(0), err);
               if (err->exc) goto L_ret;
               t = m9v;
             }
@@ -16431,9 +17511,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       bool m9t32 = ((e->nkids == INT64_C(0)) && (!Sem_BareNameKnown (e->a, err)));
       if (err->exc) goto L_ret;
       if (m9t32) {
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s619, 14 }), e->a, err)) m9a486 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s619, 14 }), e->a, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s638, 14 }), e->a, err)) m9a517 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s638, 14 }), e->a, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (e, ctx, m9a486, err);
+        Sem_ErrN (e, ctx, m9a517, err);
         if (err->exc) goto L_ret;
         }
       }
@@ -16446,15 +17526,15 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           bool m9t34 = ((msel->kind == Ast_NSelField) && (!Sem_ModHasName (e->a, msel->a, err)));
           if (err->exc) goto L_ret;
           if (m9t34) {
-            { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s621, 1 }), msel->a, err)) m9a487 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s621, 1 }), msel->a, err);
+            { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s640, 1 }), msel->a, err)) m9a518 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s640, 1 }), msel->a, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (e->a, m9a487, err)) m9a488 = Sem_Cat (e->a, m9a487, err);
+            { __typeof__(Sem_Cat (e->a, m9a518, err)) m9a519 = Sem_Cat (e->a, m9a518, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s622, 4 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s623, 22 }), err)) m9a489 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s622, 4 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s623, 22 }), err);
+            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s641, 4 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s642, 22 }), err)) m9a520 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s641, 4 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s642, 22 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s620, 14 }), m9a488, m9a489, err)) m9a490 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s620, 14 }), m9a488, m9a489, err);
+            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s639, 14 }), m9a519, m9a520, err)) m9a521 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s639, 14 }), m9a519, m9a520, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (e, ctx, m9a490, err);
+            Sem_ErrN (e, ctx, m9a521, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -16471,11 +17551,11 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     case INT64_C(76):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a491 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a522 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a492 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a523 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Sem_CallType (m9a491, m9a492, e, ctx, err);
+      m9ret = Sem_CallType (m9a522, m9a523, e, ctx, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -16483,16 +17563,16 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(87):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a493 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a524 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t) m9v = Sem_ExprType (m9a493, ctx, err);
+      { __typeof__(t) m9v = Sem_ExprType (m9a524, ctx, err);
         if (err->exc) goto L_ret;
         t = m9v;
       }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a494 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a525 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(res) m9v = Sem_CallResultNode (m9a494, err);
+      { __typeof__(res) m9v = Sem_CallResultNode (m9a525, err);
         if (err->exc) goto L_ret;
         res = m9v;
       }
@@ -16514,13 +17594,13 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           goto L_ret;
         } }
         if ((nerrs == j)) {
-          { __typeof__(Sem_TyName (t, err)) m9a495 = Sem_TyName (t, err);
+          { __typeof__(Sem_TyName (t, err)) m9a526 = Sem_TyName (t, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s624, 37 }), m9a495, err)) m9a496 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s624, 37 }), m9a495, err);
+          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s643, 37 }), m9a526, err)) m9a527 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s643, 37 }), m9a526, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (m9a496, ((m9_sl_CHAR){ (uint32_t *) m9s625, 60 }), err)) m9a497 = Sem_Cat (m9a496, ((m9_sl_CHAR){ (uint32_t *) m9s625, 60 }), err);
+          { __typeof__(Sem_Cat (m9a527, ((m9_sl_CHAR){ (uint32_t *) m9s644, 60 }), err)) m9a528 = Sem_Cat (m9a527, ((m9_sl_CHAR){ (uint32_t *) m9s644, 60 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (e, ctx, m9a497, err);
+          Sem_ErrN (e, ctx, m9a528, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -16528,7 +17608,7 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         }
       } else {
         if (((t).len > INT64_C(0))) {
-          Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s626, 87 }), err);
+          Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s645, 87 }), err);
           if (err->exc) goto L_ret;
         }
       } }
@@ -16542,9 +17622,9 @@ static m9_sl_CHAR Sem_ExprType0 (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       m9t35to = m9_sub_i64 (e->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; j <= m9t35to; j += 1) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err))) m9a498 = (*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err))) m9a529 = (*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(t) m9v = Sem_ExprType (m9a498, ctx, err);
+        { __typeof__(t) m9v = Sem_ExprType (m9a529, ctx, err);
           if (err->exc) goto L_ret;
           t = m9v;
         }
@@ -16671,7 +17751,7 @@ static Ast_Node * Sem_QualifiedIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *e
   { Ast_Node * tn = t;
   if (tn != NULL) {
     if ((tn->kind == Ast_NQualident)) {
-      bool m9t1 = ((((tn->b).len == INT64_C(0)) && (!Sem_IsBuiltinTy (tn->a, err))) && (!Text_Eq (tn->a, ((m9_sl_CHAR){ (uint32_t *) m9s627, 3 }), err)));
+      bool m9t1 = ((((tn->b).len == INT64_C(0)) && (!Sem_IsBuiltinTy (tn->a, err))) && (!Text_Eq (tn->a, ((m9_sl_CHAR){ (uint32_t *) m9s646, 3 }), err)));
       if (err->exc) goto L_ret;
       if (m9t1) {
         { __typeof__(n) m9v = Ast_NewNode (&(pool), Ast_NQualident, tn->line, tn->col, err);
@@ -16691,11 +17771,11 @@ static Ast_Node * Sem_QualifiedIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *e
           n = m9v;
         }
         if ((tn->nkids > INT64_C(0))) {
-          { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a499 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a530 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_QualifiedIn (m9a499, modName, err)) m9a500 = Sem_QualifiedIn (m9a499, modName, err);
+          { __typeof__(Sem_QualifiedIn (m9a530, modName, err)) m9a531 = Sem_QualifiedIn (m9a530, modName, err);
             if (err->exc) goto L_ret;
-          Ast_Add (&(pool), &(n), &(pool), m9a500, err);
+          Ast_Add (&(pool), &(n), &(pool), m9a531, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -16712,26 +17792,26 @@ static Ast_Node * Sem_QualifiedIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *e
           n = m9v;
         }
         if ((tn->kind == Ast_NArrayType)) {
-          { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a501 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a532 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_QualifiedBound (m9a501, modName, err)) m9a502 = Sem_QualifiedBound (m9a501, modName, err);
+          { __typeof__(Sem_QualifiedBound (m9a532, modName, err)) m9a533 = Sem_QualifiedBound (m9a532, modName, err);
             if (err->exc) goto L_ret;
-          Ast_Add (&(pool), &(n), &(pool), m9a502, err);
+          Ast_Add (&(pool), &(n), &(pool), m9a533, err);
           if (err->exc) goto L_ret;
           }
           }
         } else {
-          { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a503 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a534 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Ast_Add (&(pool), &(n), &(pool), m9a503, err);
+          Ast_Add (&(pool), &(n), &(pool), m9a534, err);
           if (err->exc) goto L_ret;
           }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(1), tn->kids.len, sizeof (Ast_Node *), err))) m9a504 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(1), tn->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(1), tn->kids.len, sizeof (Ast_Node *), err))) m9a535 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(1), tn->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_QualifiedIn (m9a504, modName, err)) m9a505 = Sem_QualifiedIn (m9a504, modName, err);
+        { __typeof__(Sem_QualifiedIn (m9a535, modName, err)) m9a536 = Sem_QualifiedIn (m9a535, modName, err);
           if (err->exc) goto L_ret;
-        Ast_Add (&(pool), &(n), &(pool), m9a505, err);
+        Ast_Add (&(pool), &(n), &(pool), m9a536, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -17018,11 +18098,11 @@ static bool Sem_PtrBearing (Ast_Node * t, int64_t depth, m9_state *err)
     case INT64_C(36):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a506 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a537 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a507 = m9_add_i64 (depth, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a538 = m9_add_i64 (depth, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      m9ret = Sem_PtrBearing (m9a506, m9a507, err);
+      m9ret = Sem_PtrBearing (m9a537, m9a538, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -17031,11 +18111,11 @@ static bool Sem_PtrBearing (Ast_Node * t, int64_t depth, m9_state *err)
     case INT64_C(27):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a508 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a539 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a509 = m9_add_i64 (depth, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a540 = m9_add_i64 (depth, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      m9ret = Sem_PtrBearing (m9a508, m9a509, err);
+      m9ret = Sem_PtrBearing (m9a539, m9a540, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -17128,6 +18208,187 @@ static bool Sem_PtrBearing (Ast_Node * t, int64_t depth, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static Ast_Node * Sem_ParamSelType (Ast_Node * d, Ast_Node * e, m9_sl_CHAR mod, bool *beyond, bool *known, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Ast_Node * m9ret = NULL;
+  int64_t g = 0; (void) g;
+  int64_t b = 0; (void) b;
+  int64_t j = 0; (void) j;
+  Ast_Node * tn = NULL; (void) tn;
+  Ast_Node * tq = NULL; (void) tq;
+  Ast_Node * res = NULL; (void) res;
+  m9_sl_CHAR tmod = {0}; (void) tmod;
+  bool found = false; (void) found;
+  bool deref = false; (void) deref;
+  (*beyond) = false;
+  (*known) = false;
+  found = false;
+  tn = NULL;
+  { Ast_Node * ps = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(0), d->kids.len, sizeof (Ast_Node *), err));
+  if (err->exc) goto L_ret;
+  if (ps != NULL) {
+    { int64_t m9t1to;
+    g = INT64_C(0);
+    m9t1to = m9_sub_i64 (ps->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; g <= m9t1to; g += 1) {
+      { Ast_Node * grp = (*(Ast_Node * *) m9_at (ps->kids.p, g, ps->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (grp != NULL) {
+        { Ast_Node * ids = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(0), grp->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (ids != NULL) {
+          { int64_t m9t2to;
+          b = INT64_C(0);
+          m9t2to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          for (; b <= m9t2to; b += 1) {
+            { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, b, ids->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+            if (id != NULL) {
+              bool m9t3 = ((!found) && Text_Eq (id->a, e->a, err));
+              if (err->exc) goto L_ret;
+              if (m9t3) {
+                found = true;
+                { __typeof__(tn) m9v = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                  tn = m9v;
+                }
+              }
+            } }
+          } }
+        } }
+      } }
+    } }
+  } }
+  if ((!found)) {
+    err->res = m9res;
+    m9ret = NULL;
+    goto L_ret;
+  }
+  tmod = mod;
+  { __typeof__(tq) m9v = Sem_InMod (tn, tmod, err);
+    if (err->exc) goto L_ret;
+    tq = m9v;
+  }
+  { int64_t m9t4to;
+  j = INT64_C(0);
+  m9t4to = m9_sub_i64 (e->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; j <= m9t4to; j += 1) {
+    Sem_NoteMod (tq, &(tmod), err);
+    if (err->exc) goto L_ret;
+    { __typeof__(res) m9v = Sem_ResolveType (tq, err);
+      if (err->exc) goto L_ret;
+      res = m9v;
+    }
+    for (;;) {
+      deref = false;
+      { Ast_Node * r0 = res;
+      if (r0 != NULL) {
+        if (((r0->kind == Ast_NPtrType) || (r0->kind == Ast_NSharedType))) {
+          deref = true;
+          (*beyond) = true;
+          { __typeof__((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err))) m9a541 = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+          { __typeof__(tq) m9v = Sem_InMod (m9a541, tmod, err);
+            if (err->exc) goto L_ret;
+            tq = m9v;
+          }
+          }
+          Sem_NoteMod (tq, &(tmod), err);
+          if (err->exc) goto L_ret;
+          { __typeof__(res) m9v = Sem_ResolveType (tq, err);
+            if (err->exc) goto L_ret;
+            res = m9v;
+          }
+        }
+      } }
+      if ((!deref)) {
+        break;
+      }
+    }
+    { Ast_Node * r = res;
+    if (r != NULL) {
+      { Ast_Node * sel = (*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (sel != NULL) {
+        if ((sel->kind == Ast_NSelField)) {
+          if ((r->kind == Ast_NRecordType)) {
+            { __typeof__(Sem_FieldTypeOf (r, sel->a, err)) m9a542 = Sem_FieldTypeOf (r, sel->a, err);
+              if (err->exc) goto L_ret;
+            { __typeof__(tq) m9v = Sem_InMod (m9a542, tmod, err);
+              if (err->exc) goto L_ret;
+              tq = m9v;
+            }
+            }
+          } else {
+            err->res = m9res;
+            m9ret = NULL;
+            goto L_ret;
+          }
+        } else {
+          if ((sel->kind == Ast_NSelIndex)) {
+            if ((r->kind == Ast_NSliceType)) {
+              (*beyond) = true;
+              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a543 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+              { __typeof__(tq) m9v = Sem_InMod (m9a543, tmod, err);
+                if (err->exc) goto L_ret;
+                tq = m9v;
+              }
+              }
+            } else {
+              if ((r->kind == Ast_NGridType)) {
+                (*beyond) = true;
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a544 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                { __typeof__(tq) m9v = Sem_InMod (m9a544, tmod, err);
+                  if (err->exc) goto L_ret;
+                  tq = m9v;
+                }
+                }
+            } else {
+              if ((r->kind == Ast_NArrayType)) {
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a545 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                { __typeof__(tq) m9v = Sem_InMod (m9a545, tmod, err);
+                  if (err->exc) goto L_ret;
+                  tq = m9v;
+                }
+                }
+            } else {
+              err->res = m9res;
+              m9ret = NULL;
+              goto L_ret;
+            } } }
+        } else {
+          err->res = m9res;
+          m9ret = NULL;
+          goto L_ret;
+        } }
+      } }
+    } else {
+      err->res = m9res;
+      m9ret = NULL;
+      goto L_ret;
+    } }
+  } }
+  (*known) = true;
+  err->res = m9res;
+  m9ret = tq;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -17251,7 +18512,7 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
-        m9ret = Sem_S4 (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s628, 35 }), root, ((m9_sl_CHAR){ (uint32_t *) m9s629, 45 }), err);
+        m9ret = Sem_S4 (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s647, 35 }), root, ((m9_sl_CHAR){ (uint32_t *) m9s648, 45 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       } else {
@@ -17259,7 +18520,7 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
         if (err->exc) goto L_ret;
         if (m9t4) {
           err->res = m9res;
-          m9ret = Sem_S3 (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s630, 33 }), root, err);
+          m9ret = Sem_S3 (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s649, 33 }), root, err);
           if (err->exc) goto L_ret;
           goto L_ret;
       } }
@@ -17279,7 +18540,7 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
       goto L_ret;
     }
     err->res = m9res;
-    m9ret = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s631, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s632, 16 }), err);
+    m9ret = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s650, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s651, 16 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } else {
@@ -17287,7 +18548,7 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t7) {
       err->res = m9res;
-      m9ret = Sem_Cat (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s633, 20 }), err);
+      m9ret = Sem_Cat (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s652, 20 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
   } else {
@@ -17302,7 +18563,7 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = Sem_Cat (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s634, 21 }), err);
+      m9ret = Sem_Cat (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s653, 21 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
   } } }
@@ -17404,13 +18665,13 @@ static void Sem_Arity (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t
   (void) m9res;
   err->res = &m9frame;
   if ((want != got)) {
-    { __typeof__(Sem_ItoA (want, err)) m9a510 = Sem_ItoA (want, err);
+    { __typeof__(Sem_ItoA (want, err)) m9a546 = Sem_ItoA (want, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_ItoA (got, err)) m9a511 = Sem_ItoA (got, err);
+    { __typeof__(Sem_ItoA (got, err)) m9a547 = Sem_ItoA (got, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_S5 (name, ((m9_sl_CHAR){ (uint32_t *) m9s635, 9 }), m9a510, ((m9_sl_CHAR){ (uint32_t *) m9s636, 18 }), m9a511, err)) m9a512 = Sem_S5 (name, ((m9_sl_CHAR){ (uint32_t *) m9s635, 9 }), m9a510, ((m9_sl_CHAR){ (uint32_t *) m9s636, 18 }), m9a511, err);
+    { __typeof__(Sem_S5 (name, ((m9_sl_CHAR){ (uint32_t *) m9s654, 9 }), m9a546, ((m9_sl_CHAR){ (uint32_t *) m9s655, 18 }), m9a547, err)) m9a548 = Sem_S5 (name, ((m9_sl_CHAR){ (uint32_t *) m9s654, 9 }), m9a546, ((m9_sl_CHAR){ (uint32_t *) m9s655, 18 }), m9a547, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (site, ctx, m9a512, err);
+    Sem_ErrN (site, ctx, m9a548, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -17442,9 +18703,9 @@ static void Sem_CheckRaisePayload (Ast_Node * xn, Ast_Node * args, m9_sl_CHAR ct
       if (err->exc) goto L_ret;
       decl = m9v;
     }
-    { __typeof__(Sem_Cat (xn->a, ((m9_sl_CHAR){ (uint32_t *) m9s637, 1 }), err)) m9a513 = Sem_Cat (xn->a, ((m9_sl_CHAR){ (uint32_t *) m9s637, 1 }), err);
+    { __typeof__(Sem_Cat (xn->a, ((m9_sl_CHAR){ (uint32_t *) m9s656, 1 }), err)) m9a549 = Sem_Cat (xn->a, ((m9_sl_CHAR){ (uint32_t *) m9s656, 1 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(name) m9v = Sem_Cat (m9a513, xn->b, err);
+    { __typeof__(name) m9v = Sem_Cat (m9a549, xn->b, err);
       if (err->exc) goto L_ret;
       name = m9v;
     }
@@ -17473,7 +18734,7 @@ static void Sem_CheckRaisePayload (Ast_Node * xn, Ast_Node * args, m9_sl_CHAR ct
     if (al != NULL) {
       na = al->nkids;
     } }
-    bool m9t1 = (((na == INT64_C(0)) && ((owner).len == INT64_C(0))) && Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s638, 10 }), err));
+    bool m9t1 = (((na == INT64_C(0)) && ((owner).len == INT64_C(0))) && Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s657, 10 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       goto L_ret;
@@ -17498,9 +18759,9 @@ static void Sem_CheckRaisePayload (Ast_Node * xn, Ast_Node * args, m9_sl_CHAR ct
           if (err->exc) goto L_ret;
           at = m9v;
         }
-        { __typeof__(Sem_ExcFieldType (decl, owner, k, err)) m9a514 = Sem_ExcFieldType (decl, owner, k, err);
+        { __typeof__(Sem_ExcFieldType (decl, owner, k, err)) m9a550 = Sem_ExcFieldType (decl, owner, k, err);
           if (err->exc) goto L_ret;
-        { __typeof__(ft) m9v = Sem_CanonT (m9a514, INT64_C(0), err);
+        { __typeof__(ft) m9v = Sem_CanonT (m9a550, INT64_C(0), err);
           if (err->exc) goto L_ret;
           ft = m9v;
         }
@@ -17508,21 +18769,21 @@ static void Sem_CheckRaisePayload (Ast_Node * xn, Ast_Node * args, m9_sl_CHAR ct
         bool m9t3 = ((((at).len > INT64_C(0)) && ((ft).len > INT64_C(0))) && (!Sem_Compat (ft, at, err)));
         if (err->exc) goto L_ret;
         if (m9t3) {
-          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a515 = m9_add_i64 (k, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a551 = m9_add_i64 (k, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a515, err)) m9a516 = Sem_ItoA (m9a515, err);
+          { __typeof__(Sem_ItoA (m9a551, err)) m9a552 = Sem_ItoA (m9a551, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (at, err)) m9a517 = Sem_TyName (at, err);
+          { __typeof__(Sem_TyName (at, err)) m9a553 = Sem_TyName (at, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (ft, err)) m9a518 = Sem_TyName (ft, err);
+          { __typeof__(Sem_TyName (ft, err)) m9a554 = Sem_TyName (ft, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (m9a518, ((m9_sl_CHAR){ (uint32_t *) m9s643, 12 }), err)) m9a519 = Sem_Cat (m9a518, ((m9_sl_CHAR){ (uint32_t *) m9s643, 12 }), err);
+          { __typeof__(Sem_Cat (m9a554, ((m9_sl_CHAR){ (uint32_t *) m9s662, 12 }), err)) m9a555 = Sem_Cat (m9a554, ((m9_sl_CHAR){ (uint32_t *) m9s662, 12 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s641, 14 }), m9a517, ((m9_sl_CHAR){ (uint32_t *) m9s642, 7 }), m9a519, err)) m9a520 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s641, 14 }), m9a517, ((m9_sl_CHAR){ (uint32_t *) m9s642, 7 }), m9a519, err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s660, 14 }), m9a553, ((m9_sl_CHAR){ (uint32_t *) m9s661, 7 }), m9a555, err)) m9a556 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s660, 14 }), m9a553, ((m9_sl_CHAR){ (uint32_t *) m9s661, 7 }), m9a555, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s639, 6 }), m9a516, ((m9_sl_CHAR){ (uint32_t *) m9s640, 4 }), name, m9a520, err)) m9a521 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s639, 6 }), m9a516, ((m9_sl_CHAR){ (uint32_t *) m9s640, 4 }), name, m9a520, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s658, 6 }), m9a552, ((m9_sl_CHAR){ (uint32_t *) m9s659, 4 }), name, m9a556, err)) m9a557 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s658, 6 }), m9a552, ((m9_sl_CHAR){ (uint32_t *) m9s659, 4 }), name, m9a556, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (xn, ctx, m9a521, err);
+          Sem_ErrN (xn, ctx, m9a557, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -17548,21 +18809,21 @@ static bool Sem_IsTotalWideningTo64 (m9_sl_CHAR t, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = (Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s644, 5 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s645, 8 }), err));
+  bool m9t1 = (Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s663, 5 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s664, 8 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s646, 4 }), err);
+  bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s665, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t3 = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s647, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s648, 3 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s649, 3 }), err));
+  bool m9t3 = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s666, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s667, 3 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s668, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
@@ -17570,7 +18831,7 @@ static bool Sem_IsTotalWideningTo64 (m9_sl_CHAR t, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s650, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s651, 3 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s652, 3 }), err));
+  m9ret = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s669, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s670, 3 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s671, 3 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -17757,9 +19018,9 @@ static m9_sl_CHAR Sem_CaseTwin (m9_sl_CHAR callee, m9_state *err)
     if (m9t4) {
       if ((dot >= INT64_C(0))) {
         err->res = m9res;
-        { __typeof__((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name) m9a522 = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name;
+        { __typeof__((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name) m9a558 = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name;
           if (err->exc) goto L_ret;
-        m9ret = Sem_S3 (modName, ((m9_sl_CHAR){ (uint32_t *) m9s653, 1 }), m9a522, err);
+        m9ret = Sem_S3 (modName, ((m9_sl_CHAR){ (uint32_t *) m9s672, 1 }), m9a558, err);
         if (err->exc) goto L_ret;
         }
         goto L_ret;
@@ -17869,15 +19130,15 @@ static void Sem_KeptRoot (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
     bool m9t2 = (!Sem_KeptHas (aroot, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a523 = m9_add_i64 (k, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a559 = m9_add_i64 (k, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_ItoA (m9a523, err)) m9a524 = Sem_ItoA (m9a523, err);
+      { __typeof__(Sem_ItoA (m9a559, err)) m9a560 = Sem_ItoA (m9a559, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s656, 11 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s657, 39 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s658, 10 }), err)) m9a525 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s656, 11 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s657, 39 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s658, 10 }), err);
+      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s675, 11 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s676, 39 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s677, 10 }), err)) m9a561 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s675, 11 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s676, 39 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s677, 10 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s654, 9 }), m9a524, ((m9_sl_CHAR){ (uint32_t *) m9s655, 4 }), name, m9a525, err)) m9a526 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s654, 9 }), m9a524, ((m9_sl_CHAR){ (uint32_t *) m9s655, 4 }), name, m9a525, err);
+      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s673, 9 }), m9a560, ((m9_sl_CHAR){ (uint32_t *) m9s674, 4 }), name, m9a561, err)) m9a562 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s673, 9 }), m9a560, ((m9_sl_CHAR){ (uint32_t *) m9s674, 4 }), name, m9a561, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (site, ctx, m9a526, err);
+      Sem_ErrN (site, ctx, m9a562, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -17888,7 +19149,7 @@ static void Sem_KeptRoot (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
   bool m9t3 = Sem_IsFrameMode (amode, err);
   if (err->exc) goto L_ret;
   if (m9t3) {
-    Sem_EscTarget (aroot, ((m9_sl_CHAR){ (uint32_t *) m9s659, 6 }), err);
+    Sem_EscTarget (aroot, ((m9_sl_CHAR){ (uint32_t *) m9s678, 6 }), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -17913,18 +19174,18 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
   int64_t nflat = 0; (void) nflat;
   int64_t j = 0; (void) j;
   m9_sl_Ast_Nodep flat = {0}; (void) flat;
-  bool m9t1 = Text_Eq (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s660, 6 }), err);
+  bool m9t1 = Text_Eq (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s679, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a527 = m9_add_i64 (k, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a563 = m9_add_i64 (k, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_ItoA (m9a527, err)) m9a528 = Sem_ItoA (m9a527, err);
+    { __typeof__(Sem_ItoA (m9a563, err)) m9a564 = Sem_ItoA (m9a563, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s663, 17 }), err)) m9a529 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s663, 17 }), err);
+    { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s682, 17 }), err)) m9a565 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s682, 17 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s661, 9 }), m9a528, ((m9_sl_CHAR){ (uint32_t *) m9s662, 4 }), m9a529, err)) m9a530 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s661, 9 }), m9a528, ((m9_sl_CHAR){ (uint32_t *) m9s662, 4 }), m9a529, err);
+    { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s680, 9 }), m9a564, ((m9_sl_CHAR){ (uint32_t *) m9s681, 4 }), m9a565, err)) m9a566 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s680, 9 }), m9a564, ((m9_sl_CHAR){ (uint32_t *) m9s681, 4 }), m9a565, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (site, ctx, m9a530, err);
+    Sem_ErrN (site, ctx, m9a566, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -17936,21 +19197,21 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
     bool m9t2 = (!Sem_Compat (pTy, aTy, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a531 = m9_add_i64 (k, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a567 = m9_add_i64 (k, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_ItoA (m9a531, err)) m9a532 = Sem_ItoA (m9a531, err);
+      { __typeof__(Sem_ItoA (m9a567, err)) m9a568 = Sem_ItoA (m9a567, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_TyName (aTy, err)) m9a533 = Sem_TyName (aTy, err);
+      { __typeof__(Sem_TyName (aTy, err)) m9a569 = Sem_TyName (aTy, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_TyName (pTy, err)) m9a534 = Sem_TyName (pTy, err);
+      { __typeof__(Sem_TyName (pTy, err)) m9a570 = Sem_TyName (pTy, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (m9a534, ((m9_sl_CHAR){ (uint32_t *) m9s668, 12 }), err)) m9a535 = Sem_Cat (m9a534, ((m9_sl_CHAR){ (uint32_t *) m9s668, 12 }), err);
+      { __typeof__(Sem_Cat (m9a570, ((m9_sl_CHAR){ (uint32_t *) m9s687, 12 }), err)) m9a571 = Sem_Cat (m9a570, ((m9_sl_CHAR){ (uint32_t *) m9s687, 12 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s666, 14 }), m9a533, ((m9_sl_CHAR){ (uint32_t *) m9s667, 7 }), m9a535, err)) m9a536 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s666, 14 }), m9a533, ((m9_sl_CHAR){ (uint32_t *) m9s667, 7 }), m9a535, err);
+      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s685, 14 }), m9a569, ((m9_sl_CHAR){ (uint32_t *) m9s686, 7 }), m9a571, err)) m9a572 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s685, 14 }), m9a569, ((m9_sl_CHAR){ (uint32_t *) m9s686, 7 }), m9a571, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s664, 9 }), m9a532, ((m9_sl_CHAR){ (uint32_t *) m9s665, 4 }), name, m9a536, err)) m9a537 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s664, 9 }), m9a532, ((m9_sl_CHAR){ (uint32_t *) m9s665, 4 }), name, m9a536, err);
+      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s683, 9 }), m9a568, ((m9_sl_CHAR){ (uint32_t *) m9s684, 4 }), name, m9a572, err)) m9a573 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s683, 9 }), m9a568, ((m9_sl_CHAR){ (uint32_t *) m9s684, 4 }), name, m9a572, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (site, ctx, m9a537, err);
+      Sem_ErrN (site, ctx, m9a573, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -17964,15 +19225,15 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
   { Ast_Node * a = an;
   if (a != NULL) {
     if ((isVar && (a->kind != Ast_NDesignator))) {
-      { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a538 = m9_add_i64 (k, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a574 = m9_add_i64 (k, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_ItoA (m9a538, err)) m9a539 = Sem_ItoA (m9a538, err);
+      { __typeof__(Sem_ItoA (m9a574, err)) m9a575 = Sem_ItoA (m9a574, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s671, 39 }), err)) m9a540 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s671, 39 }), err);
+      { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s690, 39 }), err)) m9a576 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s690, 39 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s669, 9 }), m9a539, ((m9_sl_CHAR){ (uint32_t *) m9s670, 4 }), m9a540, err)) m9a541 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s669, 9 }), m9a539, ((m9_sl_CHAR){ (uint32_t *) m9s670, 4 }), m9a540, err);
+      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s688, 9 }), m9a575, ((m9_sl_CHAR){ (uint32_t *) m9s689, 4 }), m9a576, err)) m9a577 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s688, 9 }), m9a575, ((m9_sl_CHAR){ (uint32_t *) m9s689, 4 }), m9a576, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (site, ctx, m9a541, err);
+      Sem_ErrN (site, ctx, m9a577, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -17984,15 +19245,15 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
         bool m9t3 = (Text_Eq (Sem_ScopeMode (a->a, err), Sem_ModeVal, err) && Sem_BaseIsPtr (a, err));
         if (err->exc) goto L_ret;
         if (m9t3) {
-          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a542 = m9_add_i64 (k, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a578 = m9_add_i64 (k, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a542, err)) m9a543 = Sem_ItoA (m9a542, err);
+          { __typeof__(Sem_ItoA (m9a578, err)) m9a579 = Sem_ItoA (m9a578, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s674, 34 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s675, 32 }), err)) m9a544 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s674, 34 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s675, 32 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s693, 34 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s694, 32 }), err)) m9a580 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s693, 34 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s694, 32 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s672, 9 }), m9a543, ((m9_sl_CHAR){ (uint32_t *) m9s673, 4 }), name, m9a544, err)) m9a545 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s672, 9 }), m9a543, ((m9_sl_CHAR){ (uint32_t *) m9s673, 4 }), name, m9a544, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s691, 9 }), m9a579, ((m9_sl_CHAR){ (uint32_t *) m9s692, 4 }), name, m9a580, err)) m9a581 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s691, 9 }), m9a579, ((m9_sl_CHAR){ (uint32_t *) m9s692, 4 }), name, m9a580, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (site, ctx, m9a545, err);
+          Sem_ErrN (site, ctx, m9a581, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -18006,17 +19267,17 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
           why = m9v;
         }
         if (((why).len > INT64_C(0))) {
-          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a546 = m9_add_i64 (k, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a582 = m9_add_i64 (k, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a546, err)) m9a547 = Sem_ItoA (m9a546, err);
+          { __typeof__(Sem_ItoA (m9a582, err)) m9a583 = Sem_ItoA (m9a582, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (why, ((m9_sl_CHAR){ (uint32_t *) m9s680, 10 }), err)) m9a548 = Sem_Cat (why, ((m9_sl_CHAR){ (uint32_t *) m9s680, 10 }), err);
+          { __typeof__(Sem_Cat (why, ((m9_sl_CHAR){ (uint32_t *) m9s699, 10 }), err)) m9a584 = Sem_Cat (why, ((m9_sl_CHAR){ (uint32_t *) m9s699, 10 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s678, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s679, 57 }), m9a548, err)) m9a549 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s678, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s679, 57 }), m9a548, err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s697, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s698, 57 }), m9a584, err)) m9a585 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s697, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s698, 57 }), m9a584, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s676, 9 }), m9a547, ((m9_sl_CHAR){ (uint32_t *) m9s677, 4 }), name, m9a549, err)) m9a550 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s676, 9 }), m9a547, ((m9_sl_CHAR){ (uint32_t *) m9s677, 4 }), name, m9a549, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s695, 9 }), m9a583, ((m9_sl_CHAR){ (uint32_t *) m9s696, 4 }), name, m9a585, err)) m9a586 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s695, 9 }), m9a583, ((m9_sl_CHAR){ (uint32_t *) m9s696, 4 }), name, m9a585, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (site, ctx, m9a550, err);
+          Sem_ErrN (site, ctx, m9a586, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -18035,15 +19296,15 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
         bool m9t4 = (((Text_Eq (amode, Sem_ModeVal, err) || Text_Eq (amode, Sem_ModeVar, err)) || Text_Eq (amode, Sem_ModeBinder, err)) || Text_Eq (amode, Sem_ModeRo, err));
         if (err->exc) goto L_ret;
         if (m9t4) {
-          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a551 = m9_add_i64 (k, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a587 = m9_add_i64 (k, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a551, err)) m9a552 = Sem_ItoA (m9a551, err);
+          { __typeof__(Sem_ItoA (m9a587, err)) m9a588 = Sem_ItoA (m9a587, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s683, 23 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s684, 32 }), err)) m9a553 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s683, 23 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s684, 32 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s702, 23 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s703, 32 }), err)) m9a589 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s702, 23 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s703, 32 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s681, 9 }), m9a552, ((m9_sl_CHAR){ (uint32_t *) m9s682, 4 }), name, m9a553, err)) m9a554 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s681, 9 }), m9a552, ((m9_sl_CHAR){ (uint32_t *) m9s682, 4 }), name, m9a553, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s700, 9 }), m9a588, ((m9_sl_CHAR){ (uint32_t *) m9s701, 4 }), name, m9a589, err)) m9a590 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s700, 9 }), m9a588, ((m9_sl_CHAR){ (uint32_t *) m9s701, 4 }), name, m9a589, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (site, ctx, m9a554, err);
+          Sem_ErrN (site, ctx, m9a590, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -18053,15 +19314,15 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
           bool m9t5 = Sem_FvalHas (a->a, err);
           if (err->exc) goto L_ret;
           if (m9t5) {
-            { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a555 = m9_add_i64 (k, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a591 = m9_add_i64 (k, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_ItoA (m9a555, err)) m9a556 = Sem_ItoA (m9a555, err);
+            { __typeof__(Sem_ItoA (m9a591, err)) m9a592 = Sem_ItoA (m9a591, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s687, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s688, 57 }), err)) m9a557 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s687, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s688, 57 }), err);
+            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s706, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s707, 57 }), err)) m9a593 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s706, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s707, 57 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s685, 9 }), m9a556, ((m9_sl_CHAR){ (uint32_t *) m9s686, 4 }), name, m9a557, err)) m9a558 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s685, 9 }), m9a556, ((m9_sl_CHAR){ (uint32_t *) m9s686, 4 }), name, m9a557, err);
+            { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s704, 9 }), m9a592, ((m9_sl_CHAR){ (uint32_t *) m9s705, 4 }), name, m9a593, err)) m9a594 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s704, 9 }), m9a592, ((m9_sl_CHAR){ (uint32_t *) m9s705, 4 }), name, m9a593, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (site, ctx, m9a558, err);
+            Sem_ErrN (site, ctx, m9a594, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -18075,15 +19336,15 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
               { Ast_Node * poolName = (*(Ast_Node * *) m9_at (ares->kids.p, INT64_C(1), ares->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (poolName != NULL) {
-                { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a559 = m9_add_i64 (k, INT64_C(1), err);
+                { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a595 = m9_add_i64 (k, INT64_C(1), err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Sem_ItoA (m9a559, err)) m9a560 = Sem_ItoA (m9a559, err);
+                { __typeof__(Sem_ItoA (m9a595, err)) m9a596 = Sem_ItoA (m9a595, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s691, 16 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s692, 10 }), err)) m9a561 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s691, 16 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s692, 10 }), err);
+                { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s710, 16 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s711, 10 }), err)) m9a597 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s710, 16 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s711, 10 }), err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s689, 9 }), m9a560, ((m9_sl_CHAR){ (uint32_t *) m9s690, 4 }), name, m9a561, err)) m9a562 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s689, 9 }), m9a560, ((m9_sl_CHAR){ (uint32_t *) m9s690, 4 }), name, m9a561, err);
+                { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s708, 9 }), m9a596, ((m9_sl_CHAR){ (uint32_t *) m9s709, 4 }), name, m9a597, err)) m9a598 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s708, 9 }), m9a596, ((m9_sl_CHAR){ (uint32_t *) m9s709, 4 }), name, m9a597, err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (site, ctx, m9a562, err);
+                Sem_ErrN (site, ctx, m9a598, err);
                 if (err->exc) goto L_ret;
                 }
                 }
@@ -18093,9 +19354,9 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
                 bool m9t6 = (Sem_OwnedCandKind (a->a, err) > INT64_C(0));
                 if (err->exc) goto L_ret;
                 if (m9t6) {
-                  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s693, 31 }), name, err)) m9a563 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s693, 31 }), name, err);
+                  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s712, 31 }), name, err)) m9a599 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s712, 31 }), name, err);
                     if (err->exc) goto L_ret;
-                  Sem_OwnMark (a->a, m9a563, site, err);
+                  Sem_OwnMark (a->a, m9a599, site, err);
                   if (err->exc) goto L_ret;
                   }
                 }
@@ -18104,9 +19365,9 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
               bool m9t7 = (Sem_OwnedCandKind (a->a, err) > INT64_C(0));
               if (err->exc) goto L_ret;
               if (m9t7) {
-                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s694, 31 }), name, err)) m9a564 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s694, 31 }), name, err);
+                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s713, 31 }), name, err)) m9a600 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s713, 31 }), name, err);
                   if (err->exc) goto L_ret;
-                Sem_OwnMark (a->a, m9a564, site, err);
+                Sem_OwnMark (a->a, m9a600, site, err);
                 if (err->exc) goto L_ret;
                 }
               }
@@ -18121,25 +19382,20 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
       if (err->exc) goto L_ret;
       what = m9v;
     }
-    bool m9t8 = Text_StartsWith (what, ((m9_sl_CHAR){ (uint32_t *) m9s695, 10 }), err);
+    bool m9t8 = ((((what).len > INT64_C(0)) && (nFrameKept <= INT64_C(1))) && (!Sem_PoolAmong (args, Sem_KindPool (what, err), err)));
     if (err->exc) goto L_ret;
     if (m9t8) {
-      what = (m9_sl_CHAR){ NULL, 0 };
-    }
-    bool m9t9 = ((((what).len > INT64_C(0)) && (nFrameKept <= INT64_C(1))) && (!Sem_PoolAmong (args, Sem_KindPool (what, err), err)));
-    if (err->exc) goto L_ret;
-    if (m9t9) {
-      { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a565 = m9_add_i64 (k, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (k, INT64_C(1), err)) m9a601 = m9_add_i64 (k, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_ItoA (m9a565, err)) m9a566 = Sem_ItoA (m9a565, err);
+      { __typeof__(Sem_ItoA (m9a601, err)) m9a602 = Sem_ItoA (m9a601, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s699, 79 }), ((m9_sl_CHAR){ (uint32_t *) m9s700, 73 }), err)) m9a567 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s699, 79 }), ((m9_sl_CHAR){ (uint32_t *) m9s700, 73 }), err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s717, 79 }), ((m9_sl_CHAR){ (uint32_t *) m9s718, 73 }), err)) m9a603 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s717, 79 }), ((m9_sl_CHAR){ (uint32_t *) m9s718, 73 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S4 (name, ((m9_sl_CHAR){ (uint32_t *) m9s698, 31 }), what, m9a567, err)) m9a568 = Sem_S4 (name, ((m9_sl_CHAR){ (uint32_t *) m9s698, 31 }), what, m9a567, err);
+      { __typeof__(Sem_S4 (name, ((m9_sl_CHAR){ (uint32_t *) m9s716, 31 }), what, m9a603, err)) m9a604 = Sem_S4 (name, ((m9_sl_CHAR){ (uint32_t *) m9s716, 31 }), what, m9a603, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s696, 9 }), m9a566, ((m9_sl_CHAR){ (uint32_t *) m9s697, 4 }), m9a568, err)) m9a569 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s696, 9 }), m9a566, ((m9_sl_CHAR){ (uint32_t *) m9s697, 4 }), m9a568, err);
+      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s714, 9 }), m9a602, ((m9_sl_CHAR){ (uint32_t *) m9s715, 4 }), m9a604, err)) m9a605 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s714, 9 }), m9a602, ((m9_sl_CHAR){ (uint32_t *) m9s715, 4 }), m9a604, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (site, ctx, m9a569, err);
+      Sem_ErrN (site, ctx, m9a605, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -18151,58 +19407,93 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
       if (err->exc) goto L_ret;
       aroot = m9v;
     }
-    bool m9t10 = (((aroot).len > INT64_C(0)) && Sem_TyBearing (aTy, err));
+    bool m9t9 = (((aroot).len > INT64_C(0)) && Sem_TyBearing (aTy, err));
     if (err->exc) goto L_ret;
-    if (m9t10) {
+    if (m9t9) {
       Sem_KeptRoot (site, ctx, name, k, aroot, err);
       if (err->exc) goto L_ret;
     } else {
-      if (((aroot).len == INT64_C(0))) {
-        { __typeof__(nflat) m9v = Sem_CtorFields (an, &(flat), &(om), err);
+      { Ast_Node * vc = Sem_ViewCallOf (an, err);
+      if (err->exc) goto L_ret;
+      if (vc != NULL) {
+        { Ast_Node * val = (*(Ast_Node * *) m9_at (vc->kids.p, INT64_C(1), vc->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (val != NULL) {
+          { int64_t m9t10to;
+          j = INT64_C(0);
+          m9t10to = m9_sub_i64 (val->nkids, INT64_C(1), err);
           if (err->exc) goto L_ret;
-          nflat = m9v;
-        }
-        if ((nflat >= INT64_C(0))) {
-          { Ast_Node * ce = an;
-          if (ce != NULL) {
-            { Ast_Node * al = (*(Ast_Node * *) m9_at (ce->kids.p, INT64_C(1), ce->kids.len, sizeof (Ast_Node *), err));
-            if (err->exc) goto L_ret;
-            if (al != NULL) {
-              { int64_t m9t11to;
-              j = INT64_C(0);
-              m9t11to = m9_sub_i64 (al->nkids, INT64_C(1), err);
+          for (; j <= m9t10to; j += 1) {
+            { __typeof__((*(Ast_Node * *) m9_at (val->kids.p, j, val->kids.len, sizeof (Ast_Node *), err))) m9a606 = (*(Ast_Node * *) m9_at (val->kids.p, j, val->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-              for (; j <= m9t11to; j += 1) {
-                if ((j < nflat)) {
-                  sv = canonCtx;
-                  canonCtx = om;
-                  { __typeof__((*(Ast_Node * *) m9_at (flat.p, j, flat.len, sizeof (Ast_Node *), err))) m9a570 = (*(Ast_Node * *) m9_at (flat.p, j, flat.len, sizeof (Ast_Node *), err));
-                    if (err->exc) goto L_ret;
-                  { __typeof__(fty) m9v = Sem_CanonT (m9a570, INT64_C(0), err);
-                    if (err->exc) goto L_ret;
-                    fty = m9v;
-                  }
-                  }
-                  canonCtx = sv;
-                  { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err))) m9a571 = (*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err));
-                    if (err->exc) goto L_ret;
-                  { __typeof__(aroot) m9v = Sem_EscRootOf (m9a571, err);
-                    if (err->exc) goto L_ret;
-                    aroot = m9v;
-                  }
-                  }
-                  bool m9t12 = (((aroot).len > INT64_C(0)) && Sem_TyBearing (fty, err));
+            { __typeof__(aroot) m9v = Sem_EscRootOf (m9a606, err);
+              if (err->exc) goto L_ret;
+              aroot = m9v;
+            }
+            }
+            if (((aroot).len > INT64_C(0))) {
+              { Ast_Node * varg = (*(Ast_Node * *) m9_at (val->kids.p, j, val->kids.len, sizeof (Ast_Node *), err));
+              if (err->exc) goto L_ret;
+              if (varg != NULL) {
+                bool m9t11 = (Sem_TyBearing (Ast_TyStrAt (varg->id, err), err) && Sem_ViewArgOf (vc, j, err));
+                if (err->exc) goto L_ret;
+                if (m9t11) {
+                  Sem_KeptRoot (site, ctx, name, k, aroot, err);
                   if (err->exc) goto L_ret;
-                  if (m9t12) {
-                    Sem_KeptRoot (site, ctx, name, k, aroot, err);
-                    if (err->exc) goto L_ret;
-                  }
                 }
               } }
-            } }
+            }
           } }
+        } }
+      } else {
+        if (((aroot).len == INT64_C(0))) {
+          { __typeof__(nflat) m9v = Sem_CtorFields (an, &(flat), &(om), err);
+            if (err->exc) goto L_ret;
+            nflat = m9v;
+          }
+          if ((nflat >= INT64_C(0))) {
+            { Ast_Node * ce = an;
+            if (ce != NULL) {
+              { Ast_Node * al = (*(Ast_Node * *) m9_at (ce->kids.p, INT64_C(1), ce->kids.len, sizeof (Ast_Node *), err));
+              if (err->exc) goto L_ret;
+              if (al != NULL) {
+                { int64_t m9t12to;
+                j = INT64_C(0);
+                m9t12to = m9_sub_i64 (al->nkids, INT64_C(1), err);
+                if (err->exc) goto L_ret;
+                for (; j <= m9t12to; j += 1) {
+                  if ((j < nflat)) {
+                    sv = canonCtx;
+                    canonCtx = om;
+                    { __typeof__((*(Ast_Node * *) m9_at (flat.p, j, flat.len, sizeof (Ast_Node *), err))) m9a607 = (*(Ast_Node * *) m9_at (flat.p, j, flat.len, sizeof (Ast_Node *), err));
+                      if (err->exc) goto L_ret;
+                    { __typeof__(fty) m9v = Sem_CanonT (m9a607, INT64_C(0), err);
+                      if (err->exc) goto L_ret;
+                      fty = m9v;
+                    }
+                    }
+                    canonCtx = sv;
+                    { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err))) m9a608 = (*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err));
+                      if (err->exc) goto L_ret;
+                    { __typeof__(aroot) m9v = Sem_EscRootOf (m9a608, err);
+                      if (err->exc) goto L_ret;
+                      aroot = m9v;
+                    }
+                    }
+                    bool m9t13 = (((aroot).len > INT64_C(0)) && Sem_TyBearing (fty, err));
+                    if (err->exc) goto L_ret;
+                    if (m9t13) {
+                      Sem_KeptRoot (site, ctx, name, k, aroot, err);
+                      if (err->exc) goto L_ret;
+                    }
+                  }
+                } }
+              } }
+            } }
+          }
         }
-    } }
+      } }
+    }
   }
 L_ret: ;
   err->res = m9res;
@@ -18360,11 +19651,11 @@ static void Sem_OwnMark (m9_sl_CHAR nm, m9_sl_CHAR what, Ast_Node * site, m9_sta
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(Sem_ItoA (site->line, err)) m9a572 = Sem_ItoA (site->line, err);
+  { __typeof__(Sem_ItoA (site->line, err)) m9a609 = Sem_ItoA (site->line, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Sem_S3 (what, ((m9_sl_CHAR){ (uint32_t *) m9s701, 9 }), m9a572, err)) m9a573 = Sem_S3 (what, ((m9_sl_CHAR){ (uint32_t *) m9s701, 9 }), m9a572, err);
+  { __typeof__(Sem_S3 (what, ((m9_sl_CHAR){ (uint32_t *) m9s719, 9 }), m9a609, err)) m9a610 = Sem_S3 (what, ((m9_sl_CHAR){ (uint32_t *) m9s719, 9 }), m9a609, err);
     if (err->exc) goto L_ret;
-  Sem_OwnSet (nm, m9a573, err);
+  Sem_OwnSet (nm, m9a610, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -18383,7 +19674,7 @@ static void Sem_OwnAlive (m9_sl_CHAR nm, m9_state *err)
   bool m9t1 = (Sem_OwnFind (nm, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_OwnSet (nm, ((m9_sl_CHAR){ (uint32_t *) m9s702, 5 }), err);
+    Sem_OwnSet (nm, ((m9_sl_CHAR){ (uint32_t *) m9s720, 5 }), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -18406,16 +19697,16 @@ static void Sem_NoteUse (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
   if ((i < INT64_C(0))) {
     goto L_ret;
   }
-  bool m9t1 = (!Text_Eq ((*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s703, 5 }), err));
+  bool m9t1 = (!Text_Eq ((*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s721, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__((*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode) m9a574 = (*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode;
+    { __typeof__((*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode) m9a611 = (*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode;
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_Cat (m9a574, ((m9_sl_CHAR){ (uint32_t *) m9s706, 10 }), err)) m9a575 = Sem_Cat (m9a574, ((m9_sl_CHAR){ (uint32_t *) m9s706, 10 }), err);
+    { __typeof__(Sem_Cat (m9a611, ((m9_sl_CHAR){ (uint32_t *) m9s724, 10 }), err)) m9a612 = Sem_Cat (m9a611, ((m9_sl_CHAR){ (uint32_t *) m9s724, 10 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s704, 7 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s705, 14 }), m9a575, err)) m9a576 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s704, 7 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s705, 14 }), m9a575, err);
+    { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s722, 7 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s723, 14 }), m9a612, err)) m9a613 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s722, 7 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s723, 14 }), m9a612, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (d, ctx, m9a576, err);
+    Sem_ErrN (d, ctx, m9a613, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -18474,11 +19765,11 @@ static void Sem_OwnRestore (m9_sl_Sem_Binding snap, int64_t n, m9_state *err)
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name) m9a577 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name;
+    { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name) m9a614 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name;
       if (err->exc) goto L_ret;
-    { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode) m9a578 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode;
+    { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode) m9a615 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode;
       if (err->exc) goto L_ret;
-    Sem_OwnSet (m9a577, m9a578, err);
+    Sem_OwnSet (m9a614, m9a615, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -18502,34 +19793,34 @@ static void Sem_OwnMergeMoves (m9_sl_Sem_Binding snap, int64_t n, m9_state *err)
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = (!Text_Eq ((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s707, 5 }), err));
+    bool m9t2 = (!Text_Eq ((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s725, 5 }), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name) m9a579 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name;
+      { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name) m9a616 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(ix) m9v = Sem_OwnFind (m9a579, err);
+      { __typeof__(ix) m9v = Sem_OwnFind (m9a616, err);
         if (err->exc) goto L_ret;
         ix = m9v;
       }
       }
       if ((ix < INT64_C(0))) {
-        { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name) m9a580 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name;
+        { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name) m9a617 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name;
           if (err->exc) goto L_ret;
-        { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode) m9a581 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode;
+        { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode) m9a618 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode;
           if (err->exc) goto L_ret;
-        Sem_OwnSet (m9a580, m9a581, err);
+        Sem_OwnSet (m9a617, m9a618, err);
         if (err->exc) goto L_ret;
         }
         }
       } else {
-        bool m9t3 = Text_Eq ((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s708, 5 }), err);
+        bool m9t3 = Text_Eq ((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s726, 5 }), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
-          { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name) m9a582 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name;
+          { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name) m9a619 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name;
             if (err->exc) goto L_ret;
-          { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode) m9a583 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode;
+          { __typeof__((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode) m9a620 = (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode;
             if (err->exc) goto L_ret;
-          Sem_OwnSet (m9a582, m9a583, err);
+          Sem_OwnSet (m9a619, m9a620, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -18555,9 +19846,9 @@ static int64_t Sem_FirstAppear (Ast_Node * k, m9_sl_CHAR nm, Ast_Node * *site, m
   { Ast_Node * e = k;
   if (e != NULL) {
     if ((e->kind == Ast_NAssign)) {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a584 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a621 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(r) m9v = Sem_FirstAppear (m9a584, nm, site, site_pool, err);
+      { __typeof__(r) m9v = Sem_FirstAppear (m9a621, nm, site, site_pool, err);
         if (err->exc) goto L_ret;
         r = m9v;
       }
@@ -18604,9 +19895,9 @@ static int64_t Sem_FirstAppear (Ast_Node * k, m9_sl_CHAR nm, Ast_Node * *site, m
     m9t3to = m9_sub_i64 (e->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err))) m9a585 = (*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err))) m9a622 = (*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(r) m9v = Sem_FirstAppear (m9a585, nm, site, site_pool, err);
+      { __typeof__(r) m9v = Sem_FirstAppear (m9a622, nm, site, site_pool, err);
         if (err->exc) goto L_ret;
         r = m9v;
       }
@@ -18745,18 +20036,18 @@ static void Sem_LoopCarry (m9_sl_Sem_Binding pre, int64_t npre, Ast_Node * body,
   m9t1to = m9_sub_i64 (npre, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = Text_Eq ((*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s709, 5 }), err);
+    bool m9t2 = Text_Eq ((*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s727, 5 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__((*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).name) m9a586 = (*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).name;
+      { __typeof__((*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).name) m9a623 = (*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(ix) m9v = Sem_OwnFind (m9a586, err);
+      { __typeof__(ix) m9v = Sem_OwnFind (m9a623, err);
         if (err->exc) goto L_ret;
         ix = m9v;
       }
       }
       if ((ix >= INT64_C(0))) {
-        bool m9t3 = ((!Text_Eq ((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s710, 5 }), err)) && (!Sem_LeavesAfter (body, Sem_MoveLine ((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode, err), err)));
+        bool m9t3 = ((!Text_Eq ((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s728, 5 }), err)) && (!Sem_LeavesAfter (body, Sem_MoveLine ((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode, err), err)));
         if (err->exc) goto L_ret;
         if (m9t3) {
           site = NULL;
@@ -18765,13 +20056,13 @@ static void Sem_LoopCarry (m9_sl_Sem_Binding pre, int64_t npre, Ast_Node * body,
           if (m9t4) {
             { Ast_Node * sn = site;
             if (sn != NULL) {
-              { __typeof__((*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).name) m9a587 = (*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).name;
+              { __typeof__((*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).name) m9a624 = (*(Sem_Binding *) m9_at (pre.p, i, pre.len, sizeof (Sem_Binding), err)).name;
                 if (err->exc) goto L_ret;
-              { __typeof__((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode) m9a588 = (*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode;
+              { __typeof__((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode) m9a625 = (*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode;
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s711, 7 }), m9a587, ((m9_sl_CHAR){ (uint32_t *) m9s712, 44 }), m9a588, ((m9_sl_CHAR){ (uint32_t *) m9s713, 10 }), err)) m9a589 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s711, 7 }), m9a587, ((m9_sl_CHAR){ (uint32_t *) m9s712, 44 }), m9a588, ((m9_sl_CHAR){ (uint32_t *) m9s713, 10 }), err);
+              { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s729, 7 }), m9a624, ((m9_sl_CHAR){ (uint32_t *) m9s730, 44 }), m9a625, ((m9_sl_CHAR){ (uint32_t *) m9s731, 10 }), err)) m9a626 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s729, 7 }), m9a624, ((m9_sl_CHAR){ (uint32_t *) m9s730, 44 }), m9a625, ((m9_sl_CHAR){ (uint32_t *) m9s731, 10 }), err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (sn, ctx, m9a589, err);
+              Sem_ErrN (sn, ctx, m9a626, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -18804,11 +20095,11 @@ static void Sem_CheckDispose (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       t = m9v;
     }
     if ((d->nkids > INT64_C(0))) {
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s715, 50 }), ((m9_sl_CHAR){ (uint32_t *) m9s716, 48 }), err)) m9a590 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s715, 50 }), ((m9_sl_CHAR){ (uint32_t *) m9s716, 48 }), err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s733, 50 }), ((m9_sl_CHAR){ (uint32_t *) m9s734, 48 }), err)) m9a627 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s733, 50 }), ((m9_sl_CHAR){ (uint32_t *) m9s734, 48 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s714, 37 }), d->a, m9a590, err)) m9a591 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s714, 37 }), d->a, m9a590, err);
+      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s732, 37 }), d->a, m9a627, err)) m9a628 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s732, 37 }), d->a, m9a627, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a591, err);
+      Sem_ErrN (st, ctx, m9a628, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -18816,11 +20107,11 @@ static void Sem_CheckDispose (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       bool m9t1 = (((Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeLocal, err) && (Sem_OwnedCandKind (d->a, err) == INT64_C(1))) && (!Sem_FvalHas (d->a, err))) && (!Sem_OwnFedHas (d->a, err)));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s718, 63 }), ((m9_sl_CHAR){ (uint32_t *) m9s719, 47 }), err)) m9a592 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s718, 63 }), ((m9_sl_CHAR){ (uint32_t *) m9s719, 47 }), err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s736, 63 }), ((m9_sl_CHAR){ (uint32_t *) m9s737, 47 }), err)) m9a629 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s736, 63 }), ((m9_sl_CHAR){ (uint32_t *) m9s737, 47 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s717, 15 }), d->a, m9a592, err)) m9a593 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s717, 15 }), d->a, m9a592, err);
+        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s735, 15 }), d->a, m9a629, err)) m9a630 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s735, 15 }), d->a, m9a629, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (st, ctx, m9a593, err);
+        Sem_ErrN (st, ctx, m9a630, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -18835,18 +20126,18 @@ static void Sem_CheckDispose (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         bool m9t2 = (((Text_Eq (amode, Sem_ModeVal, err) || Text_Eq (amode, Sem_ModeVar, err)) || Text_Eq (amode, Sem_ModeBinder, err)) || Text_Eq (amode, Sem_ModeRo, err));
         if (err->exc) goto L_ret;
         if (m9t2) {
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s720, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s721, 51 }), err)) m9a594 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s720, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s721, 51 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s738, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s739, 51 }), err)) m9a631 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s738, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s739, 51 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (st, ctx, m9a594, err);
+          Sem_ErrN (st, ctx, m9a631, err);
           if (err->exc) goto L_ret;
           }
         } else {
           bool m9t3 = Sem_FvalHas (d->a, err);
           if (err->exc) goto L_ret;
           if (m9t3) {
-            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s722, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s723, 47 }), err)) m9a595 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s722, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s723, 47 }), err);
+            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s740, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s741, 47 }), err)) m9a632 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s740, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s741, 47 }), err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (st, ctx, m9a595, err);
+            Sem_ErrN (st, ctx, m9a632, err);
             if (err->exc) goto L_ret;
             }
         } else {
@@ -18857,16 +20148,16 @@ static void Sem_CheckDispose (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
               { Ast_Node * pn = (*(Ast_Node * *) m9_at (dcl->kids.p, INT64_C(1), dcl->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (pn != NULL) {
-                { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s724, 14 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s725, 42 }), err)) m9a596 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s724, 14 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s725, 42 }), err);
+                { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s742, 14 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s743, 42 }), err)) m9a633 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s742, 14 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s743, 42 }), err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (st, ctx, m9a596, err);
+                Sem_ErrN (st, ctx, m9a633, err);
                 if (err->exc) goto L_ret;
                 }
               } else {
                 bool m9t4 = (Sem_OwnedCandKind (d->a, err) > INT64_C(0));
                 if (err->exc) goto L_ret;
                 if (m9t4) {
-                  Sem_OwnMark (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s726, 8 }), st, err);
+                  Sem_OwnMark (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s744, 8 }), st, err);
                   if (err->exc) goto L_ret;
                 }
               } }
@@ -18874,7 +20165,7 @@ static void Sem_CheckDispose (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
               bool m9t5 = (Sem_OwnedCandKind (d->a, err) > INT64_C(0));
               if (err->exc) goto L_ret;
               if (m9t5) {
-                Sem_OwnMark (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s727, 8 }), st, err);
+                Sem_OwnMark (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s745, 8 }), st, err);
                 if (err->exc) goto L_ret;
               }
             }
@@ -18900,17 +20191,17 @@ static m9_sl_CHAR Sem_SigDiff (m9_sl_CHAR want, m9_sl_CHAR got, m9_state *err)
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s728, 34 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s746, 34 }), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(pool), 10u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s729, 19 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s747, 19 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), want, err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(pool), 10u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s730, 19 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s748, 19 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), got, err);
   if (err->exc) goto L_ret;
@@ -18972,13 +20263,13 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
             bool m9t3 = (!Text_Eq ((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, pi, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).sig, isig, err));
             if (err->exc) goto L_ret;
             if (m9t3) {
-              { __typeof__(Sem_Qualify (u->a, d->a, err)) m9a597 = Sem_Qualify (u->a, d->a, err);
+              { __typeof__(Sem_Qualify (u->a, d->a, err)) m9a634 = Sem_Qualify (u->a, d->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, pi, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).sig) m9a598 = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, pi, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).sig;
+              { __typeof__((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, pi, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).sig) m9a635 = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, pi, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).sig;
                 if (err->exc) goto L_ret;
-              { __typeof__(Sem_SigDiff (m9a598, isig, err)) m9a599 = Sem_SigDiff (m9a598, isig, err);
+              { __typeof__(Sem_SigDiff (m9a635, isig, err)) m9a636 = Sem_SigDiff (m9a635, isig, err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (d, m9a597, m9a599, err);
+              Sem_ErrN (d, m9a634, m9a636, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -18992,7 +20283,7 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
   bool m9t4 = (hasVars && (!(*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).stateful));
   if (err->exc) goto L_ret;
   if (m9t4) {
-    Sem_ErrN (u, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s731, 54 }), err);
+    Sem_ErrN (u, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s749, 54 }), err);
     if (err->exc) goto L_ret;
   }
   { int64_t m9t5to;
@@ -19003,11 +20294,11 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
     bool m9t6 = ((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).fromDef && (!(*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).hasBody));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      { __typeof__((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name) m9a600 = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name;
+      { __typeof__((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name) m9a637 = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Qualify (u->a, m9a600, err)) m9a601 = Sem_Qualify (u->a, m9a600, err);
+      { __typeof__(Sem_Qualify (u->a, m9a637, err)) m9a638 = Sem_Qualify (u->a, m9a637, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (u, m9a601, ((m9_sl_CHAR){ (uint32_t *) m9s732, 46 }), err);
+      Sem_ErrN (u, m9a638, ((m9_sl_CHAR){ (uint32_t *) m9s750, 46 }), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -19026,11 +20317,11 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
       defined = false;
     } }
     if ((!defined)) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err))) m9a602 = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err))) m9a639 = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Qualify (u->a, m9a602, err)) m9a603 = Sem_Qualify (u->a, m9a602, err);
+      { __typeof__(Sem_Qualify (u->a, m9a639, err)) m9a640 = Sem_Qualify (u->a, m9a639, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (u, m9a603, ((m9_sl_CHAR){ (uint32_t *) m9s733, 45 }), err);
+      Sem_ErrN (u, m9a640, ((m9_sl_CHAR){ (uint32_t *) m9s751, 45 }), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -19052,7 +20343,7 @@ static bool Sem_IsCType (Ast_Node * k, m9_state *err)
   { Ast_Node * t = k;
   if (t != NULL) {
     err->res = m9res;
-    m9ret = (((t->kind == Ast_NQualident) && Text_Eq (t->a, ((m9_sl_CHAR){ (uint32_t *) m9s734, 1 }), err)) && ((t->b).len > INT64_C(0)));
+    m9ret = (((t->kind == Ast_NQualident) && Text_Eq (t->a, ((m9_sl_CHAR){ (uint32_t *) m9s752, 1 }), err)) && ((t->b).len > INT64_C(0)));
     if (err->exc) goto L_ret;
     goto L_ret;
   } }
@@ -19145,7 +20436,7 @@ static void Sem_CheckForeignDef (Ast_Node * u, m9_state *err)
           ctx = m9v;
         }
         if (((d->b).len == INT64_C(0))) {
-          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s735, 51 }), err);
+          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s753, 51 }), err);
           if (err->exc) goto L_ret;
         }
         ok = true;
@@ -19178,20 +20469,20 @@ static void Sem_CheckForeignDef (Ast_Node * u, m9_state *err)
           }
         } }
         if ((!ok)) {
-          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s736, 47 }), err);
+          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s754, 47 }), err);
           if (err->exc) goto L_ret;
         }
         ok = false;
         { Ast_Node * at = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(3), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (at != NULL) {
-          { __typeof__(ok) m9v = (Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s737, 6 }), err) || Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s738, 9 }), err));
+          { __typeof__(ok) m9v = (Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s755, 6 }), err) || Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s756, 9 }), err));
             if (err->exc) goto L_ret;
             ok = m9v;
           }
         } }
         if ((!ok)) {
-          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s739, 54 }), err);
+          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s757, 54 }), err);
           if (err->exc) goto L_ret;
         }
       }
@@ -19509,9 +20800,9 @@ static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   int64_t ncov = 0; (void) ncov;
   bool hasElse = false; (void) hasElse;
   bool labelsVariant = false; (void) labelsVariant;
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a604 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a641 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(selTy) m9v = Sem_DesigCanon (m9a604, ctx, err);
+  { __typeof__(selTy) m9v = Sem_DesigCanon (m9a641, ctx, err);
     if (err->exc) goto L_ret;
     selTy = m9v;
   }
@@ -19628,13 +20919,13 @@ static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       }
     } }
     if ((c == INT64_C(0))) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, k, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err))) m9a605 = (*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, k, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, k, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err))) m9a642 = (*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, k, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s740, 44 }), m9a605, err)) m9a606 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s740, 44 }), m9a605, err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s758, 44 }), m9a642, err)) m9a643 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s758, 44 }), m9a642, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (m9a606, ((m9_sl_CHAR){ (uint32_t *) m9s741, 1 }), err)) m9a607 = Sem_Cat (m9a606, ((m9_sl_CHAR){ (uint32_t *) m9s741, 1 }), err);
+      { __typeof__(Sem_Cat (m9a643, ((m9_sl_CHAR){ (uint32_t *) m9s759, 1 }), err)) m9a644 = Sem_Cat (m9a643, ((m9_sl_CHAR){ (uint32_t *) m9s759, 1 }), err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a607, err);
+      Sem_ErrN (st, ctx, m9a644, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -19747,9 +21038,9 @@ static bool Sem_SwPathMonitor (int64_t m, Ast_Node * ty, Ast_Node * d, int64_t f
       if (err->exc) goto L_ret;
       if (sel != NULL) {
         if (((sel->kind == Ast_NSelField) && (tn->kind == Ast_NRecordType))) {
-          { __typeof__(Sem_FieldTypeOf (tn, sel->a, err)) m9a608 = Sem_FieldTypeOf (tn, sel->a, err);
+          { __typeof__(Sem_FieldTypeOf (tn, sel->a, err)) m9a645 = Sem_FieldTypeOf (tn, sel->a, err);
             if (err->exc) goto L_ret;
-          { __typeof__(t) m9v = Sem_SwResolve (&(m), m9a608, err);
+          { __typeof__(t) m9v = Sem_SwResolve (&(m), m9a645, err);
             if (err->exc) goto L_ret;
             t = m9v;
           }
@@ -19817,9 +21108,9 @@ static m9_sl_CHAR Sem_SwVarAt (int64_t m, m9_sl_CHAR nm, Ast_Node * d, int64_t f
         goto L_ret;
       }
       err->res = m9res;
-      { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name) m9a609 = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
+      { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name) m9a646 = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
         if (err->exc) goto L_ret;
-      m9ret = Sem_Qualify (m9a609, nm, err);
+      m9ret = Sem_Qualify (m9a646, nm, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -19850,13 +21141,13 @@ static m9_sl_CHAR Sem_SwTarget (int64_t m, Ast_Node * proc, Ast_Node * d, m9_sta
   }
   if ((dot > INT64_C(0))) {
     err->res = m9res;
-    { __typeof__(({ __typeof__(d->a) m9t1 = d->a; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a610 = ({ __typeof__(d->a) m9t1 = d->a; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    { __typeof__(({ __typeof__(d->a) m9t1 = d->a; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a647 = ({ __typeof__(d->a) m9t1 = d->a; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_FindMod (m9a610, err)) m9a611 = Sem_FindMod (m9a610, err);
+    { __typeof__(Sem_FindMod (m9a647, err)) m9a648 = Sem_FindMod (m9a647, err);
       if (err->exc) goto L_ret;
-    { __typeof__(({ __typeof__(d->a) m9t2 = d->a; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((d->a).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a612 = ({ __typeof__(d->a) m9t2 = d->a; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((d->a).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+    { __typeof__(({ __typeof__(d->a) m9t2 = d->a; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((d->a).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a649 = ({ __typeof__(d->a) m9t2 = d->a; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((d->a).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
       if (err->exc) goto L_ret;
-    m9ret = Sem_SwVarAt (m9a611, m9a612, d, INT64_C(0), err);
+    m9ret = Sem_SwVarAt (m9a648, m9a649, d, INT64_C(0), err);
     if (err->exc) goto L_ret;
     }
     }
@@ -19908,15 +21199,15 @@ static m9_sl_CHAR Sem_SwAt (m9_sl_CHAR w, int64_t m, Ast_Node * proc, int64_t li
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name) m9a613 = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name) m9a650 = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
     if (err->exc) goto L_ret;
-  { __typeof__(Sem_Qualify (m9a613, proc->a, err)) m9a614 = Sem_Qualify (m9a613, proc->a, err);
+  { __typeof__(Sem_Qualify (m9a650, proc->a, err)) m9a651 = Sem_Qualify (m9a650, proc->a, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Sem_ItoA (line, err)) m9a615 = Sem_ItoA (line, err);
+  { __typeof__(Sem_ItoA (line, err)) m9a652 = Sem_ItoA (line, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Sem_Cat (m9a615, ((m9_sl_CHAR){ (uint32_t *) m9s744, 1 }), err)) m9a616 = Sem_Cat (m9a615, ((m9_sl_CHAR){ (uint32_t *) m9s744, 1 }), err);
+  { __typeof__(Sem_Cat (m9a652, ((m9_sl_CHAR){ (uint32_t *) m9s762, 1 }), err)) m9a653 = Sem_Cat (m9a652, ((m9_sl_CHAR){ (uint32_t *) m9s762, 1 }), err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s742, 2 }), m9a614, ((m9_sl_CHAR){ (uint32_t *) m9s743, 7 }), m9a616, err);
+  m9ret = Sem_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s760, 2 }), m9a651, ((m9_sl_CHAR){ (uint32_t *) m9s761, 7 }), m9a653, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -19940,9 +21231,9 @@ static m9_sl_CHAR Sem_StateWrite (m9_sl_CHAR qual, int64_t m, Ast_Node * body, m
   int64_t i = 0; (void) i;
   m9_sl_CHAR key = {0}; (void) key;
   m9_sl_CHAR w = {0}; (void) w;
-  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s745, 2 }), qual, err)) m9a617 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s745, 2 }), qual, err);
+  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s763, 2 }), qual, err)) m9a654 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s763, 2 }), qual, err);
     if (err->exc) goto L_ret;
-  { __typeof__(key) m9v = Text_Keep (&(pool), m9a617, err);
+  { __typeof__(key) m9v = Text_Keep (&(pool), m9a654, err);
     if (err->exc) goto L_ret;
     key = m9v;
   }
@@ -19952,7 +21243,7 @@ static m9_sl_CHAR Sem_StateWrite (m9_sl_CHAR qual, int64_t m, Ast_Node * body, m
     i = m9v;
   }
   if ((i >= INT64_C(0))) {
-    bool m9t1 = (Text_Eq ((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s746, 1 }), err) || Text_Eq ((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s747, 4 }), err));
+    bool m9t1 = (Text_Eq ((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s764, 1 }), err) || Text_Eq ((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s765, 4 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
@@ -19964,16 +21255,16 @@ static m9_sl_CHAR Sem_StateWrite (m9_sl_CHAR qual, int64_t m, Ast_Node * body, m
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s748, 4 }), err);
+  Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s766, 4 }), err);
   if (err->exc) goto L_ret;
   w = (m9_sl_CHAR){ NULL, 0 };
   if ((m >= INT64_C(0))) {
     { Ast_Node * pd = body;
     if (pd != NULL) {
       if ((pd->kind == Ast_NProcDecl)) {
-        { __typeof__((*(Ast_Node * *) m9_at (pd->kids.p, INT64_C(4), pd->kids.len, sizeof (Ast_Node *), err))) m9a618 = (*(Ast_Node * *) m9_at (pd->kids.p, INT64_C(4), pd->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (pd->kids.p, INT64_C(4), pd->kids.len, sizeof (Ast_Node *), err))) m9a655 = (*(Ast_Node * *) m9_at (pd->kids.p, INT64_C(4), pd->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(w) m9v = Sem_SwWalk (m, pd, m9a618, err);
+        { __typeof__(w) m9v = Sem_SwWalk (m, pd, m9a655, err);
           if (err->exc) goto L_ret;
           w = m9v;
         }
@@ -19982,12 +21273,12 @@ static m9_sl_CHAR Sem_StateWrite (m9_sl_CHAR qual, int64_t m, Ast_Node * body, m
     } }
   }
   if (((w).len == INT64_C(0))) {
-    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s749, 1 }), err);
+    Sem_AnsSet (key, ((m9_sl_CHAR){ (uint32_t *) m9s767, 1 }), err);
     if (err->exc) goto L_ret;
   } else {
-    { __typeof__(Text_Keep (&(pool), w, err)) m9a619 = Text_Keep (&(pool), w, err);
+    { __typeof__(Text_Keep (&(pool), w, err)) m9a656 = Text_Keep (&(pool), w, err);
       if (err->exc) goto L_ret;
-    Sem_AnsSet (key, m9a619, err);
+    Sem_AnsSet (key, m9a656, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -20019,7 +21310,7 @@ static m9_sl_CHAR Sem_SwCall (int64_t m, Ast_Node * proc, Ast_Node * cn, Ast_Nod
     if (err->exc) goto L_ret;
     callee = m9v;
   }
-  bool m9t1 = (Text_Eq (callee, ((m9_sl_CHAR){ (uint32_t *) m9s750, 3 }), err) || Text_Eq (callee, ((m9_sl_CHAR){ (uint32_t *) m9s751, 7 }), err));
+  bool m9t1 = (Text_Eq (callee, ((m9_sl_CHAR){ (uint32_t *) m9s768, 3 }), err) || Text_Eq (callee, ((m9_sl_CHAR){ (uint32_t *) m9s769, 7 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     { Ast_Node * al = args;
@@ -20047,9 +21338,9 @@ static m9_sl_CHAR Sem_SwCall (int64_t m, Ast_Node * proc, Ast_Node * cn, Ast_Nod
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name) m9a620 = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name) m9a657 = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
     if (err->exc) goto L_ret;
-  { __typeof__(pr) m9v = Sem_ProcNamed (m9a620, callee, &(found), err);
+  { __typeof__(pr) m9v = Sem_ProcNamed (m9a657, callee, &(found), err);
     if (err->exc) goto L_ret;
     pr = m9v;
   }
@@ -20113,11 +21404,11 @@ static m9_sl_CHAR Sem_SwCall (int64_t m, Ast_Node * proc, Ast_Node * cn, Ast_Nod
     } }
   } }
   err->res = m9res;
-  { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a621 = Sem_Qualify (pr.modName, pr.name, err);
+  { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a658 = Sem_Qualify (pr.modName, pr.name, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Sem_FindMod (pr.modName, err)) m9a622 = Sem_FindMod (pr.modName, err);
+  { __typeof__(Sem_FindMod (pr.modName, err)) m9a659 = Sem_FindMod (pr.modName, err);
     if (err->exc) goto L_ret;
-  m9ret = Sem_StateWrite (m9a621, m9a622, pr.body, err);
+  m9ret = Sem_StateWrite (m9a658, m9a659, pr.body, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -20181,9 +21472,9 @@ static m9_sl_CHAR Sem_SwWalk (int64_t m, Ast_Node * proc, Ast_Node * k, m9_state
         if (err->exc) goto L_ret;
         if (cn != NULL) {
           if ((cn->kind == Ast_NDesignator)) {
-            { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a623 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a660 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(w) m9v = Sem_SwCall (m, proc, cn, m9a623, n->line, err);
+            { __typeof__(w) m9v = Sem_SwCall (m, proc, cn, m9a660, n->line, err);
               if (err->exc) goto L_ret;
               w = m9v;
             }
@@ -20201,9 +21492,9 @@ static m9_sl_CHAR Sem_SwWalk (int64_t m, Ast_Node * proc, Ast_Node * k, m9_state
     m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a624 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a661 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(w) m9v = Sem_SwWalk (m, proc, m9a624, err);
+      { __typeof__(w) m9v = Sem_SwWalk (m, proc, m9a661, err);
         if (err->exc) goto L_ret;
         w = m9v;
       }
@@ -20251,11 +21542,11 @@ static void Sem_NoteThreadWrite (int64_t line, m9_sl_CHAR name, m9_sl_CHAR sw, m
     } }
     twText = nt;
   }
-  { __typeof__(Sem_ItoA (line, err)) m9a625 = Sem_ItoA (line, err);
+  { __typeof__(Sem_ItoA (line, err)) m9a662 = Sem_ItoA (line, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Sem_S5 (m9a625, ((m9_sl_CHAR){ (uint32_t *) m9s752, 1 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s753, 8 }), sw, err)) m9a626 = Sem_S5 (m9a625, ((m9_sl_CHAR){ (uint32_t *) m9s752, 1 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s753, 8 }), sw, err);
+  { __typeof__(Sem_S5 (m9a662, ((m9_sl_CHAR){ (uint32_t *) m9s770, 1 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s771, 8 }), sw, err)) m9a663 = Sem_S5 (m9a662, ((m9_sl_CHAR){ (uint32_t *) m9s770, 1 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s771, 8 }), sw, err);
     if (err->exc) goto L_ret;
-  { __typeof__((*(m9_sl_CHAR *) m9_at (twText.p, ntw, twText.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (&(pool), m9a626, err);
+  { __typeof__((*(m9_sl_CHAR *) m9_at (twText.p, ntw, twText.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (&(pool), m9a663, err);
     if (err->exc) goto L_ret;
     (*(m9_sl_CHAR *) m9_at (twText.p, ntw, twText.len, sizeof (m9_sl_CHAR), err)) = m9v;
     if (err->exc) goto L_ret;
@@ -20286,7 +21577,7 @@ static m9_sl_CHAR Sem_ShareWhy (m9_sl_CHAR aTy, m9_state *err)
   int64_t dot = 0; (void) dot;
   Ast_Node * body = NULL; (void) body;
   t = aTy;
-  bool m9t1 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s754, 4 }), err);
+  bool m9t1 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s772, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(t) m9v = ({ __typeof__(t) m9t2 = t; int64_t m9t2a = INT64_C(4), m9t2n = m9_sub_i64 ((t).len, INT64_C(4), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
@@ -20294,7 +21585,7 @@ static m9_sl_CHAR Sem_ShareWhy (m9_sl_CHAR aTy, m9_state *err)
       t = m9v;
     }
   }
-  bool m9t3 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s755, 11 }), err);
+  bool m9t3 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s773, 11 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     { __typeof__(t) m9v = ({ __typeof__(t) m9t4 = t; int64_t m9t4a = INT64_C(11), m9t4n = m9_sub_i64 ((t).len, INT64_C(11), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
@@ -20302,7 +21593,7 @@ static m9_sl_CHAR Sem_ShareWhy (m9_sl_CHAR aTy, m9_state *err)
       t = m9v;
     }
   } else {
-    bool m9t5 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s756, 4 }), err);
+    bool m9t5 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s774, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t5) {
       { __typeof__(t) m9v = ({ __typeof__(t) m9t6 = t; int64_t m9t6a = INT64_C(4), m9t6n = m9_sub_i64 ((t).len, INT64_C(4), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
@@ -20336,9 +21627,9 @@ static m9_sl_CHAR Sem_ShareWhy (m9_sl_CHAR aTy, m9_state *err)
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  { __typeof__(Sem_FindTypeIn (m, tn, err)) m9a627 = Sem_FindTypeIn (m, tn, err);
+  { __typeof__(Sem_FindTypeIn (m, tn, err)) m9a664 = Sem_FindTypeIn (m, tn, err);
     if (err->exc) goto L_ret;
-  { __typeof__(body) m9v = Sem_SwResolve (&(m), m9a627, err);
+  { __typeof__(body) m9v = Sem_SwResolve (&(m), m9a664, err);
     if (err->exc) goto L_ret;
     body = m9v;
   }
@@ -20350,7 +21641,7 @@ static m9_sl_CHAR Sem_ShareWhy (m9_sl_CHAR aTy, m9_state *err)
         { Ast_Node * at = (*(Ast_Node * *) m9_at (b->kids.p, INT64_C(2), b->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (at != NULL) {
-          bool m9t9 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s757, 8 }), err);
+          bool m9t9 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s775, 8 }), err);
           if (err->exc) goto L_ret;
           if (m9t9) {
             err->res = m9res;
@@ -20387,12 +21678,12 @@ static void Sem_RecordAttribWalk (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       { Ast_Node * at = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (at != NULL) {
-        bool m9t1 = (!Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s758, 8 }), err));
+        bool m9t1 = (!Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s776, 8 }), err));
         if (err->exc) goto L_ret;
         if (m9t1) {
-          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s759, 55 }), at->a, ((m9_sl_CHAR){ (uint32_t *) m9s760, 1 }), err)) m9a628 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s759, 55 }), at->a, ((m9_sl_CHAR){ (uint32_t *) m9s760, 1 }), err);
+          { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s777, 55 }), at->a, ((m9_sl_CHAR){ (uint32_t *) m9s778, 1 }), err)) m9a665 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s777, 55 }), at->a, ((m9_sl_CHAR){ (uint32_t *) m9s778, 1 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (at, ctx, m9a628, err);
+          Sem_ErrN (at, ctx, m9a665, err);
           if (err->exc) goto L_ret;
           }
         }
@@ -20403,9 +21694,9 @@ static void Sem_RecordAttribWalk (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     m9t2to = m9_sub_i64 (n->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a629 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a666 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_RecordAttribWalk (m9a629, ctx, err);
+      Sem_RecordAttribWalk (m9a666, ctx, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -20435,9 +21726,9 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   bool pooled = false; (void) pooled;
   bool moved = false; (void) moved;
   moved = false;
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a630 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a667 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(aTy) m9v = Sem_ExprType (m9a630, ctx, err);
+  { __typeof__(aTy) m9v = Sem_ExprType (m9a667, ctx, err);
     if (err->exc) goto L_ret;
     aTy = m9v;
   }
@@ -20460,11 +21751,11 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       bool m9t2 = (!Text_Eq (({ __typeof__(name) m9t1 = name; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), curMod, err));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__(({ __typeof__(name) m9t3 = name; int64_t m9t3a = INT64_C(0), m9t3n = dot; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a631 = ({ __typeof__(name) m9t3 = name; int64_t m9t3a = INT64_C(0), m9t3n = dot; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+        { __typeof__(({ __typeof__(name) m9t3 = name; int64_t m9t3a = INT64_C(0), m9t3n = dot; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a668 = ({ __typeof__(name) m9t3 = name; int64_t m9t3a = INT64_C(0), m9t3n = dot; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s761, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s762, 54 }), m9a631, ((m9_sl_CHAR){ (uint32_t *) m9s763, 53 }), err)) m9a632 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s761, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s762, 54 }), m9a631, ((m9_sl_CHAR){ (uint32_t *) m9s763, 53 }), err);
+        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s779, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s780, 54 }), m9a668, ((m9_sl_CHAR){ (uint32_t *) m9s781, 53 }), err)) m9a669 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s779, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s780, 54 }), m9a668, ((m9_sl_CHAR){ (uint32_t *) m9s781, 53 }), err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (st, ctx, m9a632, err);
+        Sem_ErrN (st, ctx, m9a669, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -20487,9 +21778,9 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
             { Ast_Node * grp = (*(Ast_Node * *) m9_at (pl->kids.p, INT64_C(0), pl->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (grp != NULL) {
-              { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a633 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a670 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(pTy) m9v = Sem_CanonT (m9a633, INT64_C(0), err);
+              { __typeof__(pTy) m9v = Sem_CanonT (m9a670, INT64_C(0), err);
                 if (err->exc) goto L_ret;
                 pTy = m9v;
               }
@@ -20501,11 +21792,11 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       } }
     }
     if (found) {
-      { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a634 = Sem_Qualify (pr.modName, pr.name, err);
+      { __typeof__(Sem_Qualify (pr.modName, pr.name, err)) m9a671 = Sem_Qualify (pr.modName, pr.name, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_FindMod (pr.modName, err)) m9a635 = Sem_FindMod (pr.modName, err);
+      { __typeof__(Sem_FindMod (pr.modName, err)) m9a672 = Sem_FindMod (pr.modName, err);
         if (err->exc) goto L_ret;
-      { __typeof__(sw) m9v = Sem_StateWrite (m9a634, m9a635, pr.body, err);
+      { __typeof__(sw) m9v = Sem_StateWrite (m9a671, m9a672, pr.body, err);
         if (err->exc) goto L_ret;
         sw = m9v;
       }
@@ -20519,18 +21810,18 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     Sem_Agree (Sem_StThread, pTy, aTy, st->line, err);
     if (err->exc) goto L_ret;
     if ((((pTy).len > INT64_C(0)) && ((aTy).len > INT64_C(0)))) {
-      bool m9t4 = (!(((Sem_Compat (pTy, aTy, err) || Sem_Compat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s764, 4 }), pTy, err), aTy, err)) || Sem_Compat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s765, 11 }), pTy, err), aTy, err))));
+      bool m9t4 = (!(((Sem_Compat (pTy, aTy, err) || Sem_Compat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s782, 4 }), pTy, err), aTy, err)) || Sem_Compat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s783, 11 }), pTy, err), aTy, err))));
       if (err->exc) goto L_ret;
       if (m9t4) {
-        { __typeof__(Sem_TyName (aTy, err)) m9a636 = Sem_TyName (aTy, err);
+        { __typeof__(Sem_TyName (aTy, err)) m9a673 = Sem_TyName (aTy, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_TyName (pTy, err)) m9a637 = Sem_TyName (pTy, err);
+        { __typeof__(Sem_TyName (pTy, err)) m9a674 = Sem_TyName (pTy, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s768, 7 }), m9a637, ((m9_sl_CHAR){ (uint32_t *) m9s769, 12 }), err)) m9a638 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s768, 7 }), m9a637, ((m9_sl_CHAR){ (uint32_t *) m9s769, 12 }), err);
+        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s786, 7 }), m9a674, ((m9_sl_CHAR){ (uint32_t *) m9s787, 12 }), err)) m9a675 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s786, 7 }), m9a674, ((m9_sl_CHAR){ (uint32_t *) m9s787, 12 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s766, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s767, 15 }), m9a636, m9a638, err)) m9a639 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s766, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s767, 15 }), m9a636, m9a638, err);
+        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s784, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s785, 15 }), m9a673, m9a675, err)) m9a676 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s784, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s785, 15 }), m9a673, m9a675, err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (st, ctx, m9a639, err);
+        Sem_ErrN (st, ctx, m9a676, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -20538,9 +21829,9 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         }
       }
     }
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a640 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a677 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(what) m9v = Sem_FrameWhat (m9a640, aTy, err);
+    { __typeof__(what) m9v = Sem_FrameWhat (m9a677, aTy, err);
       if (err->exc) goto L_ret;
       what = m9v;
     }
@@ -20549,9 +21840,9 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t5) {
       moved = true;
-      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s770, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s771, 15 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s772, 71 }), err)) m9a641 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s770, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s771, 15 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s772, 71 }), err);
+      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s788, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s789, 15 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s790, 71 }), err)) m9a678 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s788, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s789, 15 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s790, 71 }), err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a641, err);
+      Sem_ErrN (st, ctx, m9a678, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -20580,9 +21871,9 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                 bool m9t7 = ((((!pooled) && (Sem_OwnedCandKind (an->a, err) > INT64_C(0))) && (!Sem_FvalHas (an->a, err))) && (!Sem_PvalHas (an->a, err)));
                 if (err->exc) goto L_ret;
                 if (m9t7) {
-                  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s773, 28 }), name, err)) m9a642 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s773, 28 }), name, err);
+                  { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s791, 28 }), name, err)) m9a679 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s791, 28 }), name, err);
                     if (err->exc) goto L_ret;
-                  Sem_OwnMark (an->a, m9a642, st, err);
+                  Sem_OwnMark (an->a, m9a679, st, err);
                   if (err->exc) goto L_ret;
                   }
                   moved = true;
@@ -20599,9 +21890,9 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         sh = m9v;
       }
       if (((sh).len > INT64_C(0))) {
-        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s774, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s775, 25 }), sh, ((m9_sl_CHAR){ (uint32_t *) m9s776, 186 }), err)) m9a643 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s774, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s775, 25 }), sh, ((m9_sl_CHAR){ (uint32_t *) m9s776, 186 }), err);
+        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s792, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s793, 25 }), sh, ((m9_sl_CHAR){ (uint32_t *) m9s794, 186 }), err)) m9a680 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s792, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s793, 25 }), sh, ((m9_sl_CHAR){ (uint32_t *) m9s794, 186 }), err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (st, ctx, m9a643, err);
+        Sem_ErrN (st, ctx, m9a680, err);
         if (err->exc) goto L_ret;
         }
       }
@@ -20623,28 +21914,28 @@ static void Sem_CheckCallStmt (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   { Ast_Node * dn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (dn != NULL) {
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a644 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a681 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a645 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a682 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(t) m9v = Sem_CallType (m9a644, m9a645, st, ctx, err);
+    { __typeof__(t) m9v = Sem_CallType (m9a681, m9a682, st, ctx, err);
       if (err->exc) goto L_ret;
       t = m9v;
     }
     }
     }
-    bool m9t1 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s777, 6 }), err)));
+    bool m9t1 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s795, 6 }), err)));
     if (err->exc) goto L_ret;
     if (m9t1) {
-      { __typeof__(Sem_DesigName (dn, err)) m9a646 = Sem_DesigName (dn, err);
+      { __typeof__(Sem_DesigName (dn, err)) m9a683 = Sem_DesigName (dn, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_TyName (t, err)) m9a647 = Sem_TyName (t, err);
+      { __typeof__(Sem_TyName (t, err)) m9a684 = Sem_TyName (t, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s779, 9 }), m9a647, err)) m9a648 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s779, 9 }), m9a647, err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s797, 9 }), m9a684, err)) m9a685 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s797, 9 }), m9a684, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s778, 27 }), m9a646, m9a648, err)) m9a649 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s778, 27 }), m9a646, m9a648, err);
+      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s796, 27 }), m9a683, m9a685, err)) m9a686 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s796, 27 }), m9a683, m9a685, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a649, err);
+      Sem_ErrN (st, ctx, m9a686, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -20695,9 +21986,9 @@ static void Sem_BindPat (Ast_Node * lbl, m9_sl_CHAR selRoot, m9_state *err)
         bool m9t4 = ((!done) && Text_Eq ((*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err)), lbl->a, err));
         if (err->exc) goto L_ret;
         if (m9t4) {
-          { __typeof__((*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err))) m9a650 = (*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err))) m9a687 = (*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(flat) m9v = Sem_FlatFields (m9a650, &(nflat), err);
+          { __typeof__(flat) m9v = Sem_FlatFields (m9a687, &(nflat), err);
             if (err->exc) goto L_ret;
             flat = m9v;
           }
@@ -20719,9 +22010,9 @@ static void Sem_BindPat (Ast_Node * lbl, m9_sl_CHAR selRoot, m9_state *err)
       if (err->exc) goto L_ret;
       if (id != NULL) {
         if ((n < nflat)) {
-          { __typeof__((*(Ast_Node * *) m9_at (flat.p, n, flat.len, sizeof (Ast_Node *), err))) m9a651 = (*(Ast_Node * *) m9_at (flat.p, n, flat.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (flat.p, n, flat.len, sizeof (Ast_Node *), err))) m9a688 = (*(Ast_Node * *) m9_at (flat.p, n, flat.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Sem_BindName (id->a, m9a651, err);
+          Sem_BindName (id->a, m9a688, err);
           if (err->exc) goto L_ret;
           }
         } else {
@@ -20801,9 +22092,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     {
       Sem_CheckAssign (st, ctx, err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a652 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a689 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkExpr (m9a652, ctx, err);
+      Sem_WalkExpr (m9a689, ctx, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -20814,15 +22105,15 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       { Ast_Node * cn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (cn != NULL) {
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a653 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a690 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_NoteCall (cn, m9a653, ctx, err);
+        Sem_NoteCall (cn, m9a690, ctx, err);
         if (err->exc) goto L_ret;
         }
       } }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a654 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a691 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkArgs (m9a654, ctx, err);
+      Sem_WalkArgs (m9a691, ctx, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -20834,21 +22125,21 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         Sem_CheckExcName (xn, ctx, err);
         if (err->exc) goto L_ret;
         if (((xn->b).len > INT64_C(0))) {
-          Sem_RaisedAdd (xn->b, ((m9_sl_CHAR){ (uint32_t *) m9s780, 5 }), err);
+          Sem_RaisedAdd (xn->b, ((m9_sl_CHAR){ (uint32_t *) m9s798, 5 }), err);
           if (err->exc) goto L_ret;
         } else {
-          Sem_RaisedAdd (xn->a, ((m9_sl_CHAR){ (uint32_t *) m9s781, 5 }), err);
+          Sem_RaisedAdd (xn->a, ((m9_sl_CHAR){ (uint32_t *) m9s799, 5 }), err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a655 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a692 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_CheckRaisePayload (xn, m9a655, ctx, err);
+        Sem_CheckRaisePayload (xn, m9a692, ctx, err);
         if (err->exc) goto L_ret;
         }
       } }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a656 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a693 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkArgs (m9a656, ctx, err);
+      Sem_WalkArgs (m9a693, ctx, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -20856,9 +22147,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     {
       Sem_CheckReturn (st, ctx, err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a657 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a694 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkExpr (m9a657, ctx, err);
+      Sem_WalkExpr (m9a694, ctx, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -20874,9 +22165,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(41):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a658 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a695 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_CheckCond (m9a658, ctx, err);
+      Sem_CheckCond (m9a695, ctx, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(pre) m9v = Sem_OwnSnap (err);
@@ -20884,9 +22175,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         pre = m9v;
       }
       npre = nown;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a659 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a696 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkSeq (m9a659, ctx, err);
+      Sem_WalkSeq (m9a696, ctx, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(acc) m9v = Sem_OwnSnap (err);
@@ -20905,27 +22196,27 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         if (err->exc) goto L_ret;
         if (arm != NULL) {
           if ((arm->kind == Ast_NElsif)) {
-            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a660 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a697 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Sem_CheckCond (m9a660, ctx, err);
+            Sem_CheckCond (m9a697, ctx, err);
             if (err->exc) goto L_ret;
             }
-            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a661 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a698 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Sem_WalkSeq (m9a661, ctx, err);
+            Sem_WalkSeq (m9a698, ctx, err);
             if (err->exc) goto L_ret;
             }
           } else {
             if ((arm->kind == Ast_NElse)) {
-              { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a662 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a699 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              Sem_WalkSeq (m9a662, ctx, err);
+              Sem_WalkSeq (m9a699, ctx, err);
               if (err->exc) goto L_ret;
               }
           } else {
-            { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, j, st->kids.len, sizeof (Ast_Node *), err))) m9a663 = (*(Ast_Node * *) m9_at (st->kids.p, j, st->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, j, st->kids.len, sizeof (Ast_Node *), err))) m9a700 = (*(Ast_Node * *) m9_at (st->kids.p, j, st->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Sem_WalkSeq (m9a663, ctx, err);
+            Sem_WalkSeq (m9a700, ctx, err);
             if (err->exc) goto L_ret;
             }
           } }
@@ -20945,9 +22236,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(43):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a664 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a701 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_CheckCond (m9a664, ctx, err);
+      Sem_CheckCond (m9a701, ctx, err);
       if (err->exc) goto L_ret;
       }
       sv = finSinceLoop;
@@ -20961,14 +22252,14 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         pre = m9v;
       }
       npre = nown;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a665 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a702 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkSeq (m9a665, ctx, err);
+      Sem_WalkSeq (m9a702, ctx, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a666 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a703 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_LoopCarry (pre, npre, m9a666, ctx, err);
+      Sem_LoopCarry (pre, npre, m9a703, ctx, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(loopsOpen) m9v = m9_sub_i64 (loopsOpen, INT64_C(1), err);
@@ -20989,15 +22280,15 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         bool m9t4 = Text_Eq ((*(m9_sl_CHAR *) m9_at (forNames.p, j, forNames.len, sizeof (m9_sl_CHAR), err)), st->a, err);
         if (err->exc) goto L_ret;
         if (m9t4) {
-          { __typeof__((*(int64_t *) m9_at (forLines.p, j, forLines.len, sizeof (int64_t), err))) m9a667 = (*(int64_t *) m9_at (forLines.p, j, forLines.len, sizeof (int64_t), err));
+          { __typeof__((*(int64_t *) m9_at (forLines.p, j, forLines.len, sizeof (int64_t), err))) m9a704 = (*(int64_t *) m9_at (forLines.p, j, forLines.len, sizeof (int64_t), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a667, err)) m9a668 = Sem_ItoA (m9a667, err);
+          { __typeof__(Sem_ItoA (m9a704, err)) m9a705 = Sem_ItoA (m9a704, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (m9a668, ((m9_sl_CHAR){ (uint32_t *) m9s784, 10 }), err)) m9a669 = Sem_Cat (m9a668, ((m9_sl_CHAR){ (uint32_t *) m9s784, 10 }), err);
+          { __typeof__(Sem_Cat (m9a705, ((m9_sl_CHAR){ (uint32_t *) m9s802, 10 }), err)) m9a706 = Sem_Cat (m9a705, ((m9_sl_CHAR){ (uint32_t *) m9s802, 10 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s782, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s783, 54 }), m9a669, err)) m9a670 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s782, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s783, 54 }), m9a669, err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s800, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s801, 54 }), m9a706, err)) m9a707 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s800, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s801, 54 }), m9a706, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (st, ctx, m9a670, err);
+          Sem_ErrN (st, ctx, m9a707, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -21028,9 +22319,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           if (err->exc) goto L_ret;
           nforActive = m9v;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a671 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a708 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_WalkSeq (m9a671, ctx, err);
+        Sem_WalkSeq (m9a708, ctx, err);
         if (err->exc) goto L_ret;
         }
         { __typeof__(nforActive) m9v = m9_sub_i64 (nforActive, INT64_C(1), err);
@@ -21038,15 +22329,15 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           nforActive = m9v;
         }
       } else {
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a672 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a709 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_WalkSeq (m9a672, ctx, err);
+        Sem_WalkSeq (m9a709, ctx, err);
         if (err->exc) goto L_ret;
         }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a673 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a710 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_LoopCarry (pre, npre, m9a673, ctx, err);
+      Sem_LoopCarry (pre, npre, m9a710, ctx, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(loopsOpen) m9v = m9_sub_i64 (loopsOpen, INT64_C(1), err);
@@ -21069,15 +22360,15 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         bool m9t6 = Text_Eq ((*(m9_sl_CHAR *) m9_at (forNames.p, j, forNames.len, sizeof (m9_sl_CHAR), err)), st->a, err);
         if (err->exc) goto L_ret;
         if (m9t6) {
-          { __typeof__((*(int64_t *) m9_at (forLines.p, j, forLines.len, sizeof (int64_t), err))) m9a674 = (*(int64_t *) m9_at (forLines.p, j, forLines.len, sizeof (int64_t), err));
+          { __typeof__((*(int64_t *) m9_at (forLines.p, j, forLines.len, sizeof (int64_t), err))) m9a711 = (*(int64_t *) m9_at (forLines.p, j, forLines.len, sizeof (int64_t), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_ItoA (m9a674, err)) m9a675 = Sem_ItoA (m9a674, err);
+          { __typeof__(Sem_ItoA (m9a711, err)) m9a712 = Sem_ItoA (m9a711, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (m9a675, ((m9_sl_CHAR){ (uint32_t *) m9s787, 10 }), err)) m9a676 = Sem_Cat (m9a675, ((m9_sl_CHAR){ (uint32_t *) m9s787, 10 }), err);
+          { __typeof__(Sem_Cat (m9a712, ((m9_sl_CHAR){ (uint32_t *) m9s805, 10 }), err)) m9a713 = Sem_Cat (m9a712, ((m9_sl_CHAR){ (uint32_t *) m9s805, 10 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s785, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s786, 54 }), m9a676, err)) m9a677 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s785, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s786, 54 }), m9a676, err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s803, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s804, 54 }), m9a713, err)) m9a714 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s803, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s804, 54 }), m9a713, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (st, ctx, m9a677, err);
+          Sem_ErrN (st, ctx, m9a714, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -21097,9 +22388,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       }
       npre = nown;
       if ((headOk && (st->nkids > INT64_C(2)))) {
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err))) m9a678 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err))) m9a715 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_WalkStmt (m9a678, ctx, err);
+        Sem_WalkStmt (m9a715, ctx, err);
         if (err->exc) goto L_ret;
         }
       }
@@ -21115,9 +22406,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           if (err->exc) goto L_ret;
           nforActive = m9v;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a679 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a716 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_WalkSeq (m9a679, ctx, err);
+        Sem_WalkSeq (m9a716, ctx, err);
         if (err->exc) goto L_ret;
         }
         { __typeof__(nforActive) m9v = m9_sub_i64 (nforActive, INT64_C(1), err);
@@ -21125,15 +22416,15 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           nforActive = m9v;
         }
       } else {
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a680 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a717 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_WalkSeq (m9a680, ctx, err);
+        Sem_WalkSeq (m9a717, ctx, err);
         if (err->exc) goto L_ret;
         }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a681 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a718 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_LoopCarry (pre, npre, m9a681, ctx, err);
+      Sem_LoopCarry (pre, npre, m9a718, ctx, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(loopsOpen) m9v = m9_sub_i64 (loopsOpen, INT64_C(1), err);
@@ -21155,14 +22446,14 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         pre = m9v;
       }
       npre = nown;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a682 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a719 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkSeq (m9a682, ctx, err);
+      Sem_WalkSeq (m9a719, ctx, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a683 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a720 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_LoopCarry (pre, npre, m9a683, ctx, err);
+      Sem_LoopCarry (pre, npre, m9a720, ctx, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(loopsOpen) m9v = m9_sub_i64 (loopsOpen, INT64_C(1), err);
@@ -21174,11 +22465,11 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     case INT64_C(47):
     {
       if ((loopsOpen == INT64_C(0))) {
-        Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s788, 73 }), err);
+        Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s806, 73 }), err);
         if (err->exc) goto L_ret;
       } else {
         if ((finSinceLoop > INT64_C(0))) {
-          Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s789, 113 }), err);
+          Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s807, 113 }), err);
           if (err->exc) goto L_ret;
       } }
     } break;
@@ -21240,25 +22531,25 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                     bool m9t10 = (!Text_Eq (Sem_ExcFieldsText (hq0, err), Sem_ExcFieldsText (hq3, err), err));
                     if (err->exc) goto L_ret;
                     if (m9t10) {
-                      { __typeof__(Sem_ExcSpelled (hq0, err)) m9a684 = Sem_ExcSpelled (hq0, err);
+                      { __typeof__(Sem_ExcSpelled (hq0, err)) m9a721 = Sem_ExcSpelled (hq0, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_ExcFieldsText (hq0, err)) m9a685 = Sem_ExcFieldsText (hq0, err);
+                      { __typeof__(Sem_ExcFieldsText (hq0, err)) m9a722 = Sem_ExcFieldsText (hq0, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s791, 1 }), m9a685, err)) m9a686 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s791, 1 }), m9a685, err);
+                      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s809, 1 }), m9a722, err)) m9a723 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s809, 1 }), m9a722, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_Cat (m9a684, m9a686, err)) m9a687 = Sem_Cat (m9a684, m9a686, err);
+                      { __typeof__(Sem_Cat (m9a721, m9a723, err)) m9a724 = Sem_Cat (m9a721, m9a723, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_ExcSpelled (hq3, err)) m9a688 = Sem_ExcSpelled (hq3, err);
+                      { __typeof__(Sem_ExcSpelled (hq3, err)) m9a725 = Sem_ExcSpelled (hq3, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_ExcFieldsText (hq3, err)) m9a689 = Sem_ExcFieldsText (hq3, err);
+                      { __typeof__(Sem_ExcFieldsText (hq3, err)) m9a726 = Sem_ExcFieldsText (hq3, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s793, 1 }), m9a689, err)) m9a690 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s793, 1 }), m9a689, err);
+                      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s811, 1 }), m9a726, err)) m9a727 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s811, 1 }), m9a726, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_Cat (m9a688, m9a690, err)) m9a691 = Sem_Cat (m9a688, m9a690, err);
+                      { __typeof__(Sem_Cat (m9a725, m9a727, err)) m9a728 = Sem_Cat (m9a725, m9a727, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s790, 88 }), m9a687, ((m9_sl_CHAR){ (uint32_t *) m9s792, 5 }), m9a691, ((m9_sl_CHAR){ (uint32_t *) m9s794, 57 }), err)) m9a692 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s790, 88 }), m9a687, ((m9_sl_CHAR){ (uint32_t *) m9s792, 5 }), m9a691, ((m9_sl_CHAR){ (uint32_t *) m9s794, 57 }), err);
+                      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s808, 88 }), m9a724, ((m9_sl_CHAR){ (uint32_t *) m9s810, 5 }), m9a728, ((m9_sl_CHAR){ (uint32_t *) m9s812, 57 }), err)) m9a729 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s808, 88 }), m9a724, ((m9_sl_CHAR){ (uint32_t *) m9s810, 5 }), m9a728, ((m9_sl_CHAR){ (uint32_t *) m9s812, 57 }), err);
                         if (err->exc) goto L_ret;
-                      Sem_ErrN (h, ctx, m9a692, err);
+                      Sem_ErrN (h, ctx, m9a729, err);
                       if (err->exc) goto L_ret;
                       }
                       }
@@ -21277,9 +22568,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           }
         } }
       } }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a693 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a730 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkSeq (m9a693, ctx, err);
+      Sem_WalkSeq (m9a730, ctx, err);
       if (err->exc) goto L_ret;
       }
       { int64_t m9t11to;
@@ -21320,18 +22611,18 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                 if (err->exc) goto L_ret;
                 if (hb != NULL) {
                   if ((hb->kind == Ast_NIdent)) {
-                    { __typeof__(Sem_ExcFieldType (xdecl, xowner, hk, err)) m9a694 = Sem_ExcFieldType (xdecl, xowner, hk, err);
+                    { __typeof__(Sem_ExcFieldType (xdecl, xowner, hk, err)) m9a731 = Sem_ExcFieldType (xdecl, xowner, hk, err);
                       if (err->exc) goto L_ret;
-                    Sem_BindName (hb->a, m9a694, err);
+                    Sem_BindName (hb->a, m9a731, err);
                     if (err->exc) goto L_ret;
                     }
                   }
                 } }
               } }
             } }
-            { __typeof__((*(Ast_Node * *) m9_at (part->kids.p, INT64_C(2), part->kids.len, sizeof (Ast_Node *), err))) m9a695 = (*(Ast_Node * *) m9_at (part->kids.p, INT64_C(2), part->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (part->kids.p, INT64_C(2), part->kids.len, sizeof (Ast_Node *), err))) m9a732 = (*(Ast_Node * *) m9_at (part->kids.p, INT64_C(2), part->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Sem_WalkSeq (m9a695, ctx, err);
+            Sem_WalkSeq (m9a732, ctx, err);
             if (err->exc) goto L_ret;
             }
           } else {
@@ -21340,9 +22631,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                 if (err->exc) goto L_ret;
                 finSinceLoop = m9v;
               }
-              { __typeof__((*(Ast_Node * *) m9_at (part->kids.p, INT64_C(0), part->kids.len, sizeof (Ast_Node *), err))) m9a696 = (*(Ast_Node * *) m9_at (part->kids.p, INT64_C(0), part->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (part->kids.p, INT64_C(0), part->kids.len, sizeof (Ast_Node *), err))) m9a733 = (*(Ast_Node * *) m9_at (part->kids.p, INT64_C(0), part->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              Sem_WalkSeq (m9a696, ctx, err);
+              Sem_WalkSeq (m9a733, ctx, err);
               if (err->exc) goto L_ret;
               }
           } }
@@ -21351,9 +22642,9 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(48):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a697 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a734 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkQuiet (m9a697, ctx, err);
+      Sem_WalkQuiet (m9a734, ctx, err);
       if (err->exc) goto L_ret;
       }
       Sem_CheckCaseLabels (st, ctx, err);
@@ -21371,23 +22662,23 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         if (err->exc) goto L_ret;
         if (arm != NULL) {
           if ((arm->kind == Ast_NCaseArm)) {
-            { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a698 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a735 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_EscRootOf (m9a698, err)) m9a699 = Sem_EscRootOf (m9a698, err);
+            { __typeof__(Sem_EscRootOf (m9a735, err)) m9a736 = Sem_EscRootOf (m9a735, err);
               if (err->exc) goto L_ret;
-            Sem_BindPats (arm, m9a699, err);
+            Sem_BindPats (arm, m9a736, err);
             if (err->exc) goto L_ret;
             }
             }
-            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a700 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a737 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Sem_WalkSeq (m9a700, ctx, err);
+            Sem_WalkSeq (m9a737, ctx, err);
             if (err->exc) goto L_ret;
             }
           } else {
-            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a701 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a738 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            Sem_WalkSeq (m9a701, ctx, err);
+            Sem_WalkSeq (m9a738, ctx, err);
             if (err->exc) goto L_ret;
             }
           }
@@ -21418,9 +22709,9 @@ static void Sem_WalkSeq (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     m9t1to = m9_sub_i64 (s->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t1to; j += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (s->kids.p, j, s->kids.len, sizeof (Ast_Node *), err))) m9a702 = (*(Ast_Node * *) m9_at (s->kids.p, j, s->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (s->kids.p, j, s->kids.len, sizeof (Ast_Node *), err))) m9a739 = (*(Ast_Node * *) m9_at (s->kids.p, j, s->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkStmt (m9a702, ctx, err);
+      Sem_WalkStmt (m9a739, ctx, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -21444,7 +22735,7 @@ static bool Sem_IsPoolNew (Ast_Node * k, m9_state *err)
       { Ast_Node * d = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (d != NULL) {
-        bool m9t1 = ((d->nkids == INT64_C(0)) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s795, 3 }), err));
+        bool m9t1 = ((d->nkids == INT64_C(0)) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s813, 3 }), err));
         if (err->exc) goto L_ret;
         if (m9t1) {
           err->res = m9res;
@@ -21474,7 +22765,7 @@ static bool Sem_IsPoolName (m9_sl_CHAR nm, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s796, 4 }), err);
+  bool m9t1 = Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s814, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -21486,7 +22777,7 @@ static bool Sem_IsPoolName (m9_sl_CHAR nm, m9_state *err)
   if (q != NULL) {
     if ((q->kind == Ast_NQualident)) {
       err->res = m9res;
-      m9ret = (Text_Eq (q->a, ((m9_sl_CHAR){ (uint32_t *) m9s797, 4 }), err) && ((q->b).len == INT64_C(0)));
+      m9ret = (Text_Eq (q->a, ((m9_sl_CHAR){ (uint32_t *) m9s815, 4 }), err) && ((q->b).len == INT64_C(0)));
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -21545,13 +22836,13 @@ static int64_t Sem_CtorFields (Ast_Node * k, m9_sl_Ast_Nodep *flat, m9_sl_CHAR *
                 if (err->exc) goto L_ret;
                 (*om) = m9v;
               }
-              { __typeof__(Sem_FindMod ((*om), err)) m9a703 = Sem_FindMod ((*om), err);
+              { __typeof__(Sem_FindMod ((*om), err)) m9a740 = Sem_FindMod ((*om), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(({ __typeof__(t) m9t3 = t; int64_t m9t3a = INT64_C(0), m9t3n = g; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a704 = ({ __typeof__(t) m9t3 = t; int64_t m9t3a = INT64_C(0), m9t3n = g; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+              { __typeof__(({ __typeof__(t) m9t3 = t; int64_t m9t3a = INT64_C(0), m9t3n = g; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a741 = ({ __typeof__(t) m9t3 = t; int64_t m9t3a = INT64_C(0), m9t3n = g; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
                 if (err->exc) goto L_ret;
-              { __typeof__(({ __typeof__(t) m9t4 = t; int64_t m9t4a = m9_add_i64 (g, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a705 = ({ __typeof__(t) m9t4 = t; int64_t m9t4a = m9_add_i64 (g, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+              { __typeof__(({ __typeof__(t) m9t4 = t; int64_t m9t4a = m9_add_i64 (g, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a742 = ({ __typeof__(t) m9t4 = t; int64_t m9t4a = m9_add_i64 (g, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
                 if (err->exc) goto L_ret;
-              { __typeof__(isVar) m9v = Sem_TryVariantMod (m9a703, m9a704, m9a705, om, &(fields), err->res, err);
+              { __typeof__(isVar) m9v = Sem_TryVariantMod (m9a740, m9a741, m9a742, om, &(fields), err->res, err);
                 if (err->exc) goto L_ret;
                 isVar = m9v;
               }
@@ -21559,9 +22850,9 @@ static int64_t Sem_CtorFields (Ast_Node * k, m9_sl_Ast_Nodep *flat, m9_sl_CHAR *
               }
               }
             } else {
-              { __typeof__(({ __typeof__(name) m9t5 = name; int64_t m9t5a = INT64_C(0), m9t5n = dot; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a706 = ({ __typeof__(name) m9t5 = name; int64_t m9t5a = INT64_C(0), m9t5n = dot; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+              { __typeof__(({ __typeof__(name) m9t5 = name; int64_t m9t5a = INT64_C(0), m9t5n = dot; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a743 = ({ __typeof__(name) m9t5 = name; int64_t m9t5a = INT64_C(0), m9t5n = dot; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
                 if (err->exc) goto L_ret;
-              { __typeof__(isVar) m9v = Sem_FindVariant (m9a706, t, om, &(fields), err->res, err);
+              { __typeof__(isVar) m9v = Sem_FindVariant (m9a743, t, om, &(fields), err->res, err);
                 if (err->exc) goto L_ret;
                 isVar = m9v;
               }
@@ -21580,9 +22871,9 @@ static int64_t Sem_CtorFields (Ast_Node * k, m9_sl_Ast_Nodep *flat, m9_sl_CHAR *
           { Ast_Node * rn = Sem_RecordNamed (name, om, &(canon), err);
           if (err->exc) goto L_ret;
           if (rn != NULL) {
-            { __typeof__((*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err))) m9a707 = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err))) m9a744 = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__((*flat)) m9v = Sem_FlatFields (m9a707, &(n), err);
+            { __typeof__((*flat)) m9v = Sem_FlatFields (m9a744, &(n), err);
               if (err->exc) goto L_ret;
               (*flat) = m9v;
             }
@@ -21640,9 +22931,9 @@ static bool Sem_TyBearing (m9_sl_CHAR u, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  { __typeof__(({ __typeof__(u) m9t3 = u; int64_t m9t3a = INT64_C(0), m9t3n = dot; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a708 = ({ __typeof__(u) m9t3 = u; int64_t m9t3a = INT64_C(0), m9t3n = dot; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+  { __typeof__(({ __typeof__(u) m9t3 = u; int64_t m9t3a = INT64_C(0), m9t3n = dot; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a745 = ({ __typeof__(u) m9t3 = u; int64_t m9t3a = INT64_C(0), m9t3n = dot; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
     if (err->exc) goto L_ret;
-  { __typeof__(m) m9v = Sem_FindMod (m9a708, err);
+  { __typeof__(m) m9v = Sem_FindMod (m9a745, err);
     if (err->exc) goto L_ret;
     m = m9v;
   }
@@ -21652,9 +22943,9 @@ static bool Sem_TyBearing (m9_sl_CHAR u, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  { __typeof__(({ __typeof__(u) m9t4 = u; int64_t m9t4a = m9_add_i64 (dot, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((u).len, dot, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a709 = ({ __typeof__(u) m9t4 = u; int64_t m9t4a = m9_add_i64 (dot, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((u).len, dot, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+  { __typeof__(({ __typeof__(u) m9t4 = u; int64_t m9t4a = m9_add_i64 (dot, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((u).len, dot, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a746 = ({ __typeof__(u) m9t4 = u; int64_t m9t4a = m9_add_i64 (dot, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((u).len, dot, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
     if (err->exc) goto L_ret;
-  { __typeof__(t) m9v = Sem_FindTypeIn (m, m9a709, err);
+  { __typeof__(t) m9v = Sem_FindTypeIn (m, m9a746, err);
     if (err->exc) goto L_ret;
     t = m9v;
   }
@@ -21676,30 +22967,43 @@ static void Sem_StoreRef (Ast_Node * st, Ast_Node * lhs, m9_sl_CHAR vname, bool 
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m = {0}; (void) m;
+  m9_sl_CHAR dst = {0}; (void) dst;
   { __typeof__(m) m9v = Sem_ScopeMode (vname, err);
     if (err->exc) goto L_ret;
     m = m9v;
   }
-  bool m9t1 = ((((Text_Eq (m, Sem_ModeVal, err) || Text_Eq (m, Sem_ModeVar, err)) || Text_Eq (m, Sem_ModeRo, err)) || Text_Eq (m, Sem_ModeLocal, err)) || Text_Eq (m, Sem_ModeBinder, err));
+  dst = lhs->a;
+  bool m9t1 = (Text_Eq (lhsMode, Sem_ModeVar, err) && (!beyond));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = ((beyond || Text_Eq (lhsMode, Sem_ModeModule, err)) || ((Text_Eq (lhsMode, Sem_ModeVar, err) && (lhs->nkids > INT64_C(0)))));
+    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s816, 1 }), lhs->a, err)) m9a747 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s816, 1 }), lhs->a, err);
+      if (err->exc) goto L_ret;
+    { __typeof__(dst) m9v = Text_Keep (&(pool), m9a747, err);
+      if (err->exc) goto L_ret;
+      dst = m9v;
+    }
+    }
+  }
+  bool m9t2 = ((((Text_Eq (m, Sem_ModeVal, err) || Text_Eq (m, Sem_ModeVar, err)) || Text_Eq (m, Sem_ModeRo, err)) || Text_Eq (m, Sem_ModeLocal, err)) || Text_Eq (m, Sem_ModeBinder, err));
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    bool m9t3 = ((beyond || Text_Eq (lhsMode, Sem_ModeModule, err)) || ((Text_Eq (lhsMode, Sem_ModeVar, err) && (lhs->nkids > INT64_C(0)))));
     if (err->exc) goto L_ret;
-    if (m9t2) {
-      Sem_PendPush (st->line, st->col, vname, lhs->a, err);
+    if (m9t3) {
+      Sem_PendPush (st->line, st->col, vname, dst, err);
       if (err->exc) goto L_ret;
     }
   }
-  bool m9t3 = (Text_Eq (lhsMode, Sem_ModeLocal, err) || Text_Eq (lhsMode, Sem_ModeBinder, err));
+  bool m9t4 = (Text_Eq (lhsMode, Sem_ModeLocal, err) || Text_Eq (lhsMode, Sem_ModeBinder, err));
   if (err->exc) goto L_ret;
-  if (m9t3) {
+  if (m9t4) {
     Sem_CarryFrom (lhs->a, vname, err);
     if (err->exc) goto L_ret;
   }
-  bool m9t4 = Sem_IsFrameMode (m, err);
+  bool m9t5 = Sem_IsFrameMode (m, err);
   if (err->exc) goto L_ret;
-  if (m9t4) {
-    Sem_EscStore (lhs->a, (lhs->nkids > INT64_C(0)), vname, err);
+  if (m9t5) {
+    Sem_EscStore (dst, (lhs->nkids > INT64_C(0)), vname, err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -21727,9 +23031,11 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   m9_sl_CHAR om = {0}; (void) om;
   m9_sl_CHAR fty = {0}; (void) fty;
   m9_sl_CHAR pp = {0}; (void) pp;
+  m9_sl_CHAR vroot = {0}; (void) vroot;
   int64_t lv = 0; (void) lv;
   int64_t nflat = 0; (void) nflat;
   int64_t k = 0; (void) k;
+  int64_t vj = 0; (void) vj;
   m9_sl_Ast_Nodep flat = {0}; (void) flat;
   { Ast_Node * lhs = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
@@ -21741,15 +23047,15 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     bool m9t1 = ((lhs->nkids == INT64_C(0)) && (!Sem_BareNameKnown (lhs->a, err)));
     if (err->exc) goto L_ret;
     if (m9t1) {
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s798, 14 }), lhs->a, err)) m9a710 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s798, 14 }), lhs->a, err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s817, 14 }), lhs->a, err)) m9a748 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s817, 14 }), lhs->a, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (lhs, ctx, m9a710, err);
+      Sem_ErrN (lhs, ctx, m9a748, err);
       if (err->exc) goto L_ret;
       }
     }
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a711 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a749 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(u) m9v = Sem_ExprType (m9a711, ctx, err);
+    { __typeof__(u) m9v = Sem_ExprType (m9a749, ctx, err);
       if (err->exc) goto L_ret;
       u = m9v;
     }
@@ -21763,9 +23069,9 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     { Ast_Node * frhs = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (frhs != NULL) {
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a712 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a750 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(what) m9v = Sem_FrameWhat (m9a712, u, err);
+      { __typeof__(what) m9v = Sem_FrameWhat (m9a750, u, err);
         if (err->exc) goto L_ret;
         what = m9v;
       }
@@ -21780,11 +23086,11 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         bool m9t4 = (((pp).len > INT64_C(0)) && Text_Eq (Sem_ScopeMode (pp, err), Sem_ModeVar, err));
         if (err->exc) goto L_ret;
         if (m9t4) {
-          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s800, 47 }), lhs->a, err)) m9a713 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s800, 47 }), lhs->a, err);
+          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s819, 47 }), lhs->a, err)) m9a751 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s819, 47 }), lhs->a, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s799, 22 }), pp, m9a713, ((m9_sl_CHAR){ (uint32_t *) m9s801, 126 }), err)) m9a714 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s799, 22 }), pp, m9a713, ((m9_sl_CHAR){ (uint32_t *) m9s801, 126 }), err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s818, 22 }), pp, m9a751, ((m9_sl_CHAR){ (uint32_t *) m9s820, 126 }), err)) m9a752 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s818, 22 }), pp, m9a751, ((m9_sl_CHAR){ (uint32_t *) m9s820, 126 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (frhs, ctx, m9a714, err);
+          Sem_ErrN (frhs, ctx, m9a752, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -21794,9 +23100,9 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         bool m9t5 = ((Sem_KindPool (what, err)).len > INT64_C(0));
         if (err->exc) goto L_ret;
         if (m9t5) {
-          par = ((m9_sl_CHAR){ (uint32_t *) m9s802, 3 });
+          par = ((m9_sl_CHAR){ (uint32_t *) m9s821, 3 });
         } else {
-          par = ((m9_sl_CHAR){ (uint32_t *) m9s803, 3 });
+          par = ((m9_sl_CHAR){ (uint32_t *) m9s822, 3 });
         }
         { __typeof__(dmode) m9v = Sem_ScopeMode (lhs->a, err);
           if (err->exc) goto L_ret;
@@ -21805,11 +23111,11 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         bool m9t6 = (Text_Eq (dmode, Sem_ModeModule, err) && (!curInBody));
         if (err->exc) goto L_ret;
         if (m9t6) {
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s805, 6 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s806, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s807, 108 }), err)) m9a715 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s805, 6 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s806, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s807, 108 }), err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s824, 6 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s825, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s826, 108 }), err)) m9a753 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s824, 6 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s825, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s826, 108 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s804, 62 }), lhs->a, m9a715, err)) m9a716 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s804, 62 }), lhs->a, m9a715, err);
+          { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s823, 62 }), lhs->a, m9a753, err)) m9a754 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s823, 62 }), lhs->a, m9a753, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (frhs, ctx, m9a716, err);
+          Sem_ErrN (frhs, ctx, m9a754, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -21817,11 +23123,11 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
           bool m9t7 = (Text_Eq (dmode, Sem_ModeRo, err) || (((((Text_Eq (dmode, Sem_ModeVar, err) || Text_Eq (dmode, Sem_ModeOwn, err)) || Text_Eq (dmode, Sem_ModeVal, err))) && (lhs->nkids > INT64_C(0)))));
           if (err->exc) goto L_ret;
           if (m9t7) {
-            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s809, 25 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s810, 1 }), err)) m9a717 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s809, 25 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s810, 1 }), err);
+            { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s828, 25 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s829, 1 }), err)) m9a755 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s828, 25 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s829, 1 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s808, 51 }), lhs->a, m9a717, err)) m9a718 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s808, 51 }), lhs->a, m9a717, err);
+            { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s827, 51 }), lhs->a, m9a755, err)) m9a756 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s827, 51 }), lhs->a, m9a755, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (frhs, ctx, m9a718, err);
+            Sem_ErrN (frhs, ctx, m9a756, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -21838,18 +23144,18 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                 bool m9t10 = ((Sem_KindPool (what, err)).len == INT64_C(0));
                 if (err->exc) goto L_ret;
                 if (m9t10) {
-                  { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s811, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s812, 39 }), err)) m9a719 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s811, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s812, 39 }), err);
+                  { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s830, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s831, 39 }), err)) m9a757 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s830, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s831, 39 }), err);
                     if (err->exc) goto L_ret;
-                  Sem_ErrN (frhs, ctx, m9a719, err);
+                  Sem_ErrN (frhs, ctx, m9a757, err);
                   if (err->exc) goto L_ret;
                   }
                 } else {
                   bool m9t11 = ((!Text_Eq (Sem_ScopeMode (dp->a, err), Sem_ModeLocal, err)) && ((Sem_AllocPoolOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err)).len == INT64_C(0)));
                   if (err->exc) goto L_ret;
                   if (m9t11) {
-                    { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s813, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s814, 39 }), err)) m9a720 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s813, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s814, 39 }), err);
+                    { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s832, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s833, 39 }), err)) m9a758 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s832, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s833, 39 }), err);
                       if (err->exc) goto L_ret;
-                    Sem_ErrN (frhs, ctx, m9a720, err);
+                    Sem_ErrN (frhs, ctx, m9a758, err);
                     if (err->exc) goto L_ret;
                     }
                 } }
@@ -21871,20 +23177,20 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
               bool m9t13 = (((Sem_KindPool (what, err)).len == INT64_C(0)) || (!Text_Eq (Sem_ScopeMode (dp2->a, err), Sem_ModeLocal, err)));
               if (err->exc) goto L_ret;
               if (m9t13) {
-                { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s815, 51 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s816, 39 }), err)) m9a721 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s815, 51 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s816, 39 }), err);
+                { __typeof__(Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s834, 51 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s835, 39 }), err)) m9a759 = Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s834, 51 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s835, 39 }), err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (frhs, ctx, m9a721, err);
+                Sem_ErrN (frhs, ctx, m9a759, err);
                 if (err->exc) goto L_ret;
                 }
               }
             } else {
               Sem_FvalAdd (lhs->a, what, err);
               if (err->exc) goto L_ret;
-              { __typeof__(Sem_DesigPath (lhs, err)) m9a722 = Sem_DesigPath (lhs, err);
+              { __typeof__(Sem_DesigPath (lhs, err)) m9a760 = Sem_DesigPath (lhs, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Text_Keep (&(pool), m9a722, err)) m9a723 = Text_Keep (&(pool), m9a722, err);
+              { __typeof__(Text_Keep (&(pool), m9a760, err)) m9a761 = Text_Keep (&(pool), m9a760, err);
                 if (err->exc) goto L_ret;
-              Sem_FvalAdd (m9a723, what, err);
+              Sem_FvalAdd (m9a761, what, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -21898,9 +23204,9 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         bool m9t14 = Text_Eq (Sem_ScopeMode (lhs->a, err), Sem_ModeLocal, err);
         if (err->exc) goto L_ret;
         if (m9t14) {
-          { __typeof__(Sem_DesigPath (lhs, err)) m9a724 = Sem_DesigPath (lhs, err);
+          { __typeof__(Sem_DesigPath (lhs, err)) m9a762 = Sem_DesigPath (lhs, err);
             if (err->exc) goto L_ret;
-          Sem_FvalDel (m9a724, err);
+          Sem_FvalDel (m9a762, err);
           if (err->exc) goto L_ret;
           }
       } } }
@@ -21919,9 +23225,9 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         { Ast_Node * dp = Sem_DeclPool (Sem_ScopeType (lhs->a, err), err);
         if (err->exc) goto L_ret;
         if (dp != NULL) {
-          { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a725 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a763 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(apool) m9v = Sem_AllocPoolOf (m9a725, ctx, err);
+          { __typeof__(apool) m9v = Sem_AllocPoolOf (m9a763, ctx, err);
             if (err->exc) goto L_ret;
             apool = m9v;
           }
@@ -21929,11 +23235,11 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
           bool m9t16 = (((apool).len > INT64_C(0)) && (!Text_Eq (apool, dp->a, err)));
           if (err->exc) goto L_ret;
           if (m9t16) {
-            { __typeof__(Sem_Cat (apool, ((m9_sl_CHAR){ (uint32_t *) m9s819, 10 }), err)) m9a726 = Sem_Cat (apool, ((m9_sl_CHAR){ (uint32_t *) m9s819, 10 }), err);
+            { __typeof__(Sem_Cat (apool, ((m9_sl_CHAR){ (uint32_t *) m9s838, 10 }), err)) m9a764 = Sem_Cat (apool, ((m9_sl_CHAR){ (uint32_t *) m9s838, 10 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S5 (lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s817, 16 }), dp->a, ((m9_sl_CHAR){ (uint32_t *) m9s818, 18 }), m9a726, err)) m9a727 = Sem_S5 (lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s817, 16 }), dp->a, ((m9_sl_CHAR){ (uint32_t *) m9s818, 18 }), m9a726, err);
+            { __typeof__(Sem_S5 (lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s836, 16 }), dp->a, ((m9_sl_CHAR){ (uint32_t *) m9s837, 18 }), m9a764, err)) m9a765 = Sem_S5 (lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s836, 16 }), dp->a, ((m9_sl_CHAR){ (uint32_t *) m9s837, 18 }), m9a764, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (frhs, ctx, m9a727, err);
+            Sem_ErrN (frhs, ctx, m9a765, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -21944,10 +23250,10 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     { Ast_Node * rhn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rhn != NULL) {
-      bool m9t17 = Text_Eq (u, ((m9_sl_CHAR){ (uint32_t *) m9s820, 6 }), err);
+      bool m9t17 = Text_Eq (u, ((m9_sl_CHAR){ (uint32_t *) m9s839, 6 }), err);
       if (err->exc) goto L_ret;
       if (m9t17) {
-        Sem_ErrN (rhn, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s821, 36 }), err);
+        Sem_ErrN (rhn, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s840, 36 }), err);
         if (err->exc) goto L_ret;
       } else {
         Sem_Agree (Sem_StAssign, t, u, rhn->line, err);
@@ -21955,13 +23261,13 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         bool m9t18 = (!Sem_Compat (t, u, err));
         if (err->exc) goto L_ret;
         if (m9t18) {
-          { __typeof__(Sem_TyName (u, err)) m9a728 = Sem_TyName (u, err);
+          { __typeof__(Sem_TyName (u, err)) m9a766 = Sem_TyName (u, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (t, err)) m9a729 = Sem_TyName (t, err);
+          { __typeof__(Sem_TyName (t, err)) m9a767 = Sem_TyName (t, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s822, 14 }), m9a728, ((m9_sl_CHAR){ (uint32_t *) m9s823, 4 }), m9a729, ((m9_sl_CHAR){ (uint32_t *) m9s824, 35 }), err)) m9a730 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s822, 14 }), m9a728, ((m9_sl_CHAR){ (uint32_t *) m9s823, 4 }), m9a729, ((m9_sl_CHAR){ (uint32_t *) m9s824, 35 }), err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s841, 14 }), m9a766, ((m9_sl_CHAR){ (uint32_t *) m9s842, 4 }), m9a767, ((m9_sl_CHAR){ (uint32_t *) m9s843, 35 }), err)) m9a768 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s841, 14 }), m9a766, ((m9_sl_CHAR){ (uint32_t *) m9s842, 4 }), m9a767, ((m9_sl_CHAR){ (uint32_t *) m9s843, 35 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (rhn, ctx, m9a730, err);
+          Sem_ErrN (rhn, ctx, m9a768, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -21970,13 +23276,13 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
           bool m9t19 = Sem_LitOut (rhn, t, &(lv), err);
           if (err->exc) goto L_ret;
           if (m9t19) {
-            { __typeof__(Sem_ItoA (lv, err)) m9a731 = Sem_ItoA (lv, err);
+            { __typeof__(Sem_ItoA (lv, err)) m9a769 = Sem_ItoA (lv, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_TyName (t, err)) m9a732 = Sem_TyName (t, err);
+            { __typeof__(Sem_TyName (t, err)) m9a770 = Sem_TyName (t, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s825, 16 }), m9a731, ((m9_sl_CHAR){ (uint32_t *) m9s826, 14 }), m9a732, err)) m9a733 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s825, 16 }), m9a731, ((m9_sl_CHAR){ (uint32_t *) m9s826, 14 }), m9a732, err);
+            { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s844, 16 }), m9a769, ((m9_sl_CHAR){ (uint32_t *) m9s845, 14 }), m9a770, err)) m9a771 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s844, 16 }), m9a769, ((m9_sl_CHAR){ (uint32_t *) m9s845, 14 }), m9a770, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (rhn, ctx, m9a733, err);
+            Sem_ErrN (rhn, ctx, m9a771, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -22003,7 +23309,7 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
             bool m9t21 = ((!Sem_FvalHas (rhs->a, err)) && (!Sem_PvalHas (rhs->a, err)));
             if (err->exc) goto L_ret;
             if (m9t21) {
-              Sem_OwnMark (rhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s827, 5 }), st, err);
+              Sem_OwnMark (rhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s846, 5 }), st, err);
               if (err->exc) goto L_ret;
             }
           }
@@ -22014,14 +23320,14 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       Sem_OwnAlive (lhs->a, err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a734 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a772 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(vname) m9v = Sem_EscRootOf (m9a734, err);
+    { __typeof__(vname) m9v = Sem_EscRootOf (m9a772, err);
       if (err->exc) goto L_ret;
       vname = m9v;
     }
     }
-    { __typeof__(isShared) m9v = (Text_StartsWith (u, ((m9_sl_CHAR){ (uint32_t *) m9s828, 11 }), err) || Text_StartsWith (u, ((m9_sl_CHAR){ (uint32_t *) m9s829, 15 }), err));
+    { __typeof__(isShared) m9v = (Text_StartsWith (u, ((m9_sl_CHAR){ (uint32_t *) m9s847, 11 }), err) || Text_StartsWith (u, ((m9_sl_CHAR){ (uint32_t *) m9s848, 15 }), err));
       if (err->exc) goto L_ret;
       isShared = m9v;
     }
@@ -22034,11 +23340,48 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     if (m9t22) {
       Sem_StoreRef (st, lhs, vname, beyond, lhsMode, ctx, err);
       if (err->exc) goto L_ret;
-    }
-    if (((vname).len == INT64_C(0))) {
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a735 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+    } else {
+      bool m9t23 = ((((vname).len == INT64_C(0)) && Sem_TyBearing (u, err)) && (!isShared));
+      if (err->exc) goto L_ret;
+      if (m9t23) {
+        { Ast_Node * vc = Sem_ViewCallOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), err);
         if (err->exc) goto L_ret;
-      { __typeof__(nflat) m9v = Sem_CtorFields (m9a735, &(flat), &(om), err);
+        if (vc != NULL) {
+          { Ast_Node * val = (*(Ast_Node * *) m9_at (vc->kids.p, INT64_C(1), vc->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (val != NULL) {
+            { int64_t m9t24to;
+            vj = INT64_C(0);
+            m9t24to = m9_sub_i64 (val->nkids, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            for (; vj <= m9t24to; vj += 1) {
+              { __typeof__((*(Ast_Node * *) m9_at (val->kids.p, vj, val->kids.len, sizeof (Ast_Node *), err))) m9a773 = (*(Ast_Node * *) m9_at (val->kids.p, vj, val->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+              { __typeof__(vroot) m9v = Sem_EscRootOf (m9a773, err);
+                if (err->exc) goto L_ret;
+                vroot = m9v;
+              }
+              }
+              if (((vroot).len > INT64_C(0))) {
+                { Ast_Node * varg = (*(Ast_Node * *) m9_at (val->kids.p, vj, val->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+                if (varg != NULL) {
+                  bool m9t25 = (Sem_TyBearing (Ast_TyStrAt (varg->id, err), err) && Sem_ViewArgOf (vc, vj, err));
+                  if (err->exc) goto L_ret;
+                  if (m9t25) {
+                    Sem_StoreRef (st, lhs, vroot, beyond, lhsMode, ctx, err);
+                    if (err->exc) goto L_ret;
+                  }
+                } }
+              }
+            } }
+          } }
+        } }
+    } }
+    if (((vname).len == INT64_C(0))) {
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a774 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(nflat) m9v = Sem_CtorFields (m9a774, &(flat), &(om), err);
         if (err->exc) goto L_ret;
         nflat = m9v;
       }
@@ -22050,31 +23393,31 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
           { Ast_Node * al = (*(Ast_Node * *) m9_at (ce->kids.p, INT64_C(1), ce->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (al != NULL) {
-            { int64_t m9t23to;
+            { int64_t m9t26to;
             k = INT64_C(0);
-            m9t23to = m9_sub_i64 (al->nkids, INT64_C(1), err);
+            m9t26to = m9_sub_i64 (al->nkids, INT64_C(1), err);
             if (err->exc) goto L_ret;
-            for (; k <= m9t23to; k += 1) {
+            for (; k <= m9t26to; k += 1) {
               if ((k < nflat)) {
                 canonCtx = om;
-                { __typeof__((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err))) m9a736 = (*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err))) m9a775 = (*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(fty) m9v = Sem_CanonT (m9a736, INT64_C(0), err);
+                { __typeof__(fty) m9v = Sem_CanonT (m9a775, INT64_C(0), err);
                   if (err->exc) goto L_ret;
                   fty = m9v;
                 }
                 }
                 canonCtx = (m9_sl_CHAR){ NULL, 0 };
-                { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err))) m9a737 = (*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err))) m9a776 = (*(Ast_Node * *) m9_at (al->kids.p, k, al->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(vname) m9v = Sem_EscRootOf (m9a737, err);
+                { __typeof__(vname) m9v = Sem_EscRootOf (m9a776, err);
                   if (err->exc) goto L_ret;
                   vname = m9v;
                 }
                 }
-                bool m9t24 = (((((vname).len > INT64_C(0)) && Sem_TyBearing (fty, err)) && (!Text_StartsWith (fty, ((m9_sl_CHAR){ (uint32_t *) m9s830, 11 }), err))) && (!Text_StartsWith (fty, ((m9_sl_CHAR){ (uint32_t *) m9s831, 15 }), err)));
+                bool m9t27 = (((((vname).len > INT64_C(0)) && Sem_TyBearing (fty, err)) && (!Text_StartsWith (fty, ((m9_sl_CHAR){ (uint32_t *) m9s849, 11 }), err))) && (!Text_StartsWith (fty, ((m9_sl_CHAR){ (uint32_t *) m9s850, 15 }), err)));
                 if (err->exc) goto L_ret;
-                if (m9t24) {
+                if (m9t27) {
                   Sem_StoreRef (st, lhs, vname, beyond, lhsMode, ctx, err);
                   if (err->exc) goto L_ret;
                 }
@@ -22138,9 +23481,9 @@ static void Sem_OwnSeed (m9_state *err)
     bool m9t2 = (Sem_OwnedCandKind ((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).name, err) > INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).name) m9a738 = (*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).name;
+      { __typeof__((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).name) m9a777 = (*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).name;
         if (err->exc) goto L_ret;
-      Sem_OwnSet (m9a738, ((m9_sl_CHAR){ (uint32_t *) m9s832, 5 }), err);
+      Sem_OwnSet (m9a777, ((m9_sl_CHAR){ (uint32_t *) m9s851, 5 }), err);
       if (err->exc) goto L_ret;
       }
     }
@@ -22186,16 +23529,16 @@ static void Sem_CheckCond (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
   }
   Sem_WalkQuiet (k, ctx, err);
   if (err->exc) goto L_ret;
-  bool m9t1 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s833, 4 }), err)));
+  bool m9t1 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s852, 4 }), err)));
   if (err->exc) goto L_ret;
   if (m9t1) {
     { Ast_Node * c = k;
     if (c != NULL) {
-      { __typeof__(Sem_TyName (t, err)) m9a739 = Sem_TyName (t, err);
+      { __typeof__(Sem_TyName (t, err)) m9a778 = Sem_TyName (t, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s834, 28 }), m9a739, err)) m9a740 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s834, 28 }), m9a739, err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s853, 28 }), m9a778, err)) m9a779 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s853, 28 }), m9a778, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (c, ctx, m9a740, err);
+      Sem_ErrN (c, ctx, m9a779, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -22226,25 +23569,25 @@ static bool Sem_CheckForIn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   if (e != NULL) {
     if ((e->kind != Ast_NDesignator)) {
       ok = false;
-      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s835, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s836, 86 }), err)) m9a741 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s835, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s836, 86 }), err);
+      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s854, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s855, 86 }), err)) m9a780 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s854, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s855, 86 }), err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a741, err);
+      Sem_ErrN (st, ctx, m9a780, err);
       if (err->exc) goto L_ret;
       }
     }
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a742 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a781 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(t) m9v = Sem_ExprType (m9a742, ctx, err);
+    { __typeof__(t) m9v = Sem_ExprType (m9a781, ctx, err);
       if (err->exc) goto L_ret;
       t = m9v;
     }
     }
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a743 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a782 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Sem_WalkQuiet (m9a743, ctx, err);
+    Sem_WalkQuiet (m9a782, ctx, err);
     if (err->exc) goto L_ret;
     }
-    bool m9t1 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s837, 9 }), err);
+    bool m9t1 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s856, 9 }), err);
     if (err->exc) goto L_ret;
     if (m9t1) {
       { __typeof__(elem) m9v = ({ __typeof__(t) m9t2 = t; int64_t m9t2a = INT64_C(9), m9t2n = m9_sub_i64 ((t).len, INT64_C(9), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
@@ -22252,10 +23595,10 @@ static bool Sem_CheckForIn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         elem = m9v;
       }
     } else {
-      bool m9t3 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s838, 6 }), err);
+      bool m9t3 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s857, 6 }), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__(at) m9v = Text_Find (t, ((m9_sl_CHAR){ (uint32_t *) m9s839, 4 }), err);
+        { __typeof__(at) m9v = Text_Find (t, ((m9_sl_CHAR){ (uint32_t *) m9s858, 4 }), err);
           if (err->exc) goto L_ret;
           at = m9v;
         }
@@ -22268,22 +23611,22 @@ static bool Sem_CheckForIn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     } else {
       if (((t).len > INT64_C(0))) {
         ok = false;
-        { __typeof__(Sem_TyName (t, err)) m9a744 = Sem_TyName (t, err);
+        { __typeof__(Sem_TyName (t, err)) m9a783 = Sem_TyName (t, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s840, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s841, 49 }), m9a744, ((m9_sl_CHAR){ (uint32_t *) m9s842, 9 }), err)) m9a745 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s840, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s841, 49 }), m9a744, ((m9_sl_CHAR){ (uint32_t *) m9s842, 9 }), err);
+        { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s859, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s860, 49 }), m9a783, ((m9_sl_CHAR){ (uint32_t *) m9s861, 9 }), err)) m9a784 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s859, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s860, 49 }), m9a783, ((m9_sl_CHAR){ (uint32_t *) m9s861, 9 }), err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (st, ctx, m9a745, err);
+        Sem_ErrN (st, ctx, m9a784, err);
         if (err->exc) goto L_ret;
         }
         }
     } } }
-    bool m9t5 = (Text_StartsWith (elem, ((m9_sl_CHAR){ (uint32_t *) m9s843, 7 }), err) || Text_StartsWith (elem, ((m9_sl_CHAR){ (uint32_t *) m9s844, 11 }), err));
+    bool m9t5 = (Text_StartsWith (elem, ((m9_sl_CHAR){ (uint32_t *) m9s862, 7 }), err) || Text_StartsWith (elem, ((m9_sl_CHAR){ (uint32_t *) m9s863, 11 }), err));
     if (err->exc) goto L_ret;
     if (m9t5) {
       ok = false;
-      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s845, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s846, 111 }), err)) m9a746 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s845, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s846, 111 }), err);
+      { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s864, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s865, 111 }), err)) m9a785 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s864, 4 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s865, 111 }), err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a746, err);
+      Sem_ErrN (st, ctx, m9a785, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -22292,17 +23635,17 @@ static bool Sem_CheckForIn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t6) {
     ok = false;
-    { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s847, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s848, 16 }), err)) m9a747 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s847, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s848, 16 }), err);
+    { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s866, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s867, 16 }), err)) m9a786 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s866, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s867, 16 }), err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (st, ctx, m9a747, err);
+    Sem_ErrN (st, ctx, m9a786, err);
     if (err->exc) goto L_ret;
     }
     Sem_BindName (st->a, NULL, err);
     if (err->exc) goto L_ret;
   } else {
-    { __typeof__(Sem_ScopeType (st->a, err)) m9a748 = Sem_ScopeType (st->a, err);
+    { __typeof__(Sem_ScopeType (st->a, err)) m9a787 = Sem_ScopeType (st->a, err);
       if (err->exc) goto L_ret;
-    { __typeof__(vt) m9v = Sem_CanonT (m9a748, INT64_C(0), err);
+    { __typeof__(vt) m9v = Sem_CanonT (m9a787, INT64_C(0), err);
       if (err->exc) goto L_ret;
       vt = m9v;
     }
@@ -22311,15 +23654,15 @@ static bool Sem_CheckForIn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t7) {
       ok = false;
-      { __typeof__(Sem_TyName (vt, err)) m9a749 = Sem_TyName (vt, err);
+      { __typeof__(Sem_TyName (vt, err)) m9a788 = Sem_TyName (vt, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_TyName (elem, err)) m9a750 = Sem_TyName (elem, err);
+      { __typeof__(Sem_TyName (elem, err)) m9a789 = Sem_TyName (elem, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s851, 36 }), m9a750, err)) m9a751 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s851, 36 }), m9a750, err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s870, 36 }), m9a789, err)) m9a790 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s870, 36 }), m9a789, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s849, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s850, 4 }), m9a749, m9a751, err)) m9a752 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s849, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s850, 4 }), m9a749, m9a751, err);
+      { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s868, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s869, 4 }), m9a788, m9a790, err)) m9a791 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s868, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s869, 4 }), m9a788, m9a790, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a752, err);
+      Sem_ErrN (st, ctx, m9a791, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -22346,17 +23689,17 @@ static void Sem_CheckForVar (Ast_Node * st, m9_sl_CHAR ctx, m9_sl_CHAR bound, bo
   bool m9t1 = (Sem_ScopeFind (st->a, err) < INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s852, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s853, 16 }), err)) m9a753 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s852, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s853, 16 }), err);
+    { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s871, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s872, 16 }), err)) m9a792 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s871, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s872, 16 }), err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (st, ctx, m9a753, err);
+    Sem_ErrN (st, ctx, m9a792, err);
     if (err->exc) goto L_ret;
     }
     Sem_BindName (st->a, NULL, err);
     if (err->exc) goto L_ret;
   } else {
-    { __typeof__(Sem_ScopeType (st->a, err)) m9a754 = Sem_ScopeType (st->a, err);
+    { __typeof__(Sem_ScopeType (st->a, err)) m9a793 = Sem_ScopeType (st->a, err);
       if (err->exc) goto L_ret;
-    { __typeof__(vt) m9v = Sem_CanonT (m9a754, INT64_C(0), err);
+    { __typeof__(vt) m9v = Sem_CanonT (m9a793, INT64_C(0), err);
       if (err->exc) goto L_ret;
       vt = m9v;
     }
@@ -22366,15 +23709,15 @@ static void Sem_CheckForVar (Ast_Node * st, m9_sl_CHAR ctx, m9_sl_CHAR bound, bo
         bool m9t2 = (((bound).len > INT64_C(0)) && (!Text_Eq (vt, bound, err)));
         if (err->exc) goto L_ret;
         if (m9t2) {
-          { __typeof__(Sem_TyName (vt, err)) m9a755 = Sem_TyName (vt, err);
+          { __typeof__(Sem_TyName (vt, err)) m9a794 = Sem_TyName (vt, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (bound, err)) m9a756 = Sem_TyName (bound, err);
+          { __typeof__(Sem_TyName (bound, err)) m9a795 = Sem_TyName (bound, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s856, 21 }), m9a756, err)) m9a757 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s856, 21 }), m9a756, err);
+          { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s875, 21 }), m9a795, err)) m9a796 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s875, 21 }), m9a795, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s854, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s855, 4 }), m9a755, m9a757, err)) m9a758 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s854, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s855, 4 }), m9a755, m9a757, err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s873, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s874, 4 }), m9a794, m9a796, err)) m9a797 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s873, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s874, 4 }), m9a794, m9a796, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (st, ctx, m9a758, err);
+          Sem_ErrN (st, ctx, m9a797, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -22385,11 +23728,11 @@ static void Sem_CheckForVar (Ast_Node * st, m9_sl_CHAR ctx, m9_sl_CHAR bound, bo
         bool m9t3 = (!Sem_IsIntStr (vt, err));
         if (err->exc) goto L_ret;
         if (m9t3) {
-          { __typeof__(Sem_TyName (vt, err)) m9a759 = Sem_TyName (vt, err);
+          { __typeof__(Sem_TyName (vt, err)) m9a798 = Sem_TyName (vt, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s857, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s858, 4 }), m9a759, ((m9_sl_CHAR){ (uint32_t *) m9s859, 52 }), err)) m9a760 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s857, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s858, 4 }), m9a759, ((m9_sl_CHAR){ (uint32_t *) m9s859, 52 }), err);
+          { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s876, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s877, 4 }), m9a798, ((m9_sl_CHAR){ (uint32_t *) m9s878, 52 }), err)) m9a799 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s876, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s877, 4 }), m9a798, ((m9_sl_CHAR){ (uint32_t *) m9s878, 52 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (st, ctx, m9a760, err);
+          Sem_ErrN (st, ctx, m9a799, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -22462,28 +23805,28 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   m9_sl_CHAR u = {0}; (void) u;
   int64_t sv = 0; (void) sv;
   bool sch = false; (void) sch;
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a761 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a800 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(t) m9v = Sem_ExprType (m9a761, ctx, err);
+  { __typeof__(t) m9v = Sem_ExprType (m9a800, ctx, err);
     if (err->exc) goto L_ret;
     t = m9v;
   }
   }
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a762 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a801 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(u) m9v = Sem_ExprType (m9a762, ctx, err);
+  { __typeof__(u) m9v = Sem_ExprType (m9a801, ctx, err);
     if (err->exc) goto L_ret;
     u = m9v;
   }
   }
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a763 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a802 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  Sem_WalkQuiet (m9a763, ctx, err);
+  Sem_WalkQuiet (m9a802, ctx, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a764 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a803 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  Sem_WalkQuiet (m9a764, ctx, err);
+  Sem_WalkQuiet (m9a803, ctx, err);
   if (err->exc) goto L_ret;
   }
   bool m9t1 = (Sem_IsTagged (t, err) || Sem_IsTagged (u, err));
@@ -22492,13 +23835,13 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     bool m9t2 = (!Text_Eq (t, u, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(Sem_TyName (t, err)) m9a765 = Sem_TyName (t, err);
+      { __typeof__(Sem_TyName (t, err)) m9a804 = Sem_TyName (t, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_TyName (u, err)) m9a766 = Sem_TyName (u, err);
+      { __typeof__(Sem_TyName (u, err)) m9a805 = Sem_TyName (u, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s860, 59 }), m9a765, ((m9_sl_CHAR){ (uint32_t *) m9s861, 5 }), m9a766, err)) m9a767 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s860, 59 }), m9a765, ((m9_sl_CHAR){ (uint32_t *) m9s861, 5 }), m9a766, err);
+      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s879, 59 }), m9a804, ((m9_sl_CHAR){ (uint32_t *) m9s880, 5 }), m9a805, err)) m9a806 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s879, 59 }), m9a804, ((m9_sl_CHAR){ (uint32_t *) m9s880, 5 }), m9a805, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a767, err);
+      Sem_ErrN (st, ctx, m9a806, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -22507,7 +23850,7 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     { Ast_Node * estep = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (estep != NULL) {
-      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s862, 40 }), err);
+      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s881, 40 }), err);
       if (err->exc) goto L_ret;
     } }
     Sem_CheckForVar (st, ctx, t, true, err);
@@ -22517,11 +23860,11 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   bool m9t3 = (!Sem_IsIntish (t, err));
   if (err->exc) goto L_ret;
   if (m9t3) {
-    { __typeof__(Sem_TyName (t, err)) m9a768 = Sem_TyName (t, err);
+    { __typeof__(Sem_TyName (t, err)) m9a807 = Sem_TyName (t, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s863, 33 }), m9a768, err)) m9a769 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s863, 33 }), m9a768, err);
+    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s882, 33 }), m9a807, err)) m9a808 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s882, 33 }), m9a807, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (st, ctx, m9a769, err);
+    Sem_ErrN (st, ctx, m9a808, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -22529,11 +23872,11 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   bool m9t4 = (!Sem_IsIntish (u, err));
   if (err->exc) goto L_ret;
   if (m9t4) {
-    { __typeof__(Sem_TyName (u, err)) m9a770 = Sem_TyName (u, err);
+    { __typeof__(Sem_TyName (u, err)) m9a809 = Sem_TyName (u, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s864, 33 }), m9a770, err)) m9a771 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s864, 33 }), m9a770, err);
+    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s883, 33 }), m9a809, err)) m9a810 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s883, 33 }), m9a809, err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (st, ctx, m9a771, err);
+    Sem_ErrN (st, ctx, m9a810, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -22541,9 +23884,9 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   { Ast_Node * step = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (step != NULL) {
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err))) m9a772 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err))) m9a811 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(t) m9v = Sem_ExprType (m9a772, ctx, err);
+    { __typeof__(t) m9v = Sem_ExprType (m9a811, ctx, err);
       if (err->exc) goto L_ret;
       t = m9v;
     }
@@ -22551,11 +23894,11 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     bool m9t5 = (!Sem_IsIntish (t, err));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      { __typeof__(Sem_TyName (t, err)) m9a773 = Sem_TyName (t, err);
+      { __typeof__(Sem_TyName (t, err)) m9a812 = Sem_TyName (t, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s865, 33 }), m9a773, err)) m9a774 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s865, 33 }), m9a773, err);
+      { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s884, 33 }), m9a812, err)) m9a813 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s884, 33 }), m9a812, err);
         if (err->exc) goto L_ret;
-      Sem_ErrN (st, ctx, m9a774, err);
+      Sem_ErrN (st, ctx, m9a813, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -22563,14 +23906,14 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       bool m9t6 = (!Sem_StepConst (step, err));
       if (err->exc) goto L_ret;
       if (m9t6) {
-        Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s866, 87 }), err);
+        Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s885, 87 }), err);
         if (err->exc) goto L_ret;
     } else {
       bool m9t7 = Ast_ScalarConst ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err)), &(sv), &(sch), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
         if ((sv == INT64_C(0))) {
-          Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s867, 39 }), err);
+          Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s886, 39 }), err);
           if (err->exc) goto L_ret;
         }
     } } }
@@ -22595,9 +23938,9 @@ static void Sem_CheckCaseElse (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     if (err->exc) goto L_ret;
     quietWalk = m9v;
   }
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a775 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a814 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(t) m9v = Sem_ExprType (m9a775, ctx, err);
+  { __typeof__(t) m9v = Sem_ExprType (m9a814, ctx, err);
     if (err->exc) goto L_ret;
     t = m9v;
   }
@@ -22606,7 +23949,7 @@ static void Sem_CheckCaseElse (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     if (err->exc) goto L_ret;
     quietWalk = m9v;
   }
-  bool m9t1 = (!(((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s868, 4 }), err) || Sem_IsIntStr (t, err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s869, 4 }), err))));
+  bool m9t1 = (!(((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s887, 4 }), err) || Sem_IsIntStr (t, err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s888, 4 }), err))));
   if (err->exc) goto L_ret;
   if (m9t1) {
     goto L_ret;
@@ -22624,11 +23967,11 @@ static void Sem_CheckCaseElse (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       }
     } }
   } }
-  { __typeof__(Sem_TyName (t, err)) m9a776 = Sem_TyName (t, err);
+  { __typeof__(Sem_TyName (t, err)) m9a815 = Sem_TyName (t, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s870, 12 }), m9a776, ((m9_sl_CHAR){ (uint32_t *) m9s871, 71 }), err)) m9a777 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s870, 12 }), m9a776, ((m9_sl_CHAR){ (uint32_t *) m9s871, 71 }), err);
+  { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s889, 12 }), m9a815, ((m9_sl_CHAR){ (uint32_t *) m9s890, 71 }), err)) m9a816 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s889, 12 }), m9a815, ((m9_sl_CHAR){ (uint32_t *) m9s890, 71 }), err);
     if (err->exc) goto L_ret;
-  Sem_ErrN (st, ctx, m9a777, err);
+  Sem_ErrN (st, ctx, m9a816, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -22654,9 +23997,9 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   m9_arr_256_m9_sl_CHAR seen = {0}; (void) seen;
   bool dup = false; (void) dup;
   nseen = INT64_C(0);
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a778 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a817 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(selTy) m9v = Sem_ExprType (m9a778, ctx, err);
+  { __typeof__(selTy) m9v = Sem_ExprType (m9a817, ctx, err);
     if (err->exc) goto L_ret;
     selTy = m9v;
   }
@@ -22685,9 +24028,9 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                 bool m9t3 = (!Sem_IsVariantLabel (lbl, err));
                 if (err->exc) goto L_ret;
                 if (m9t3) {
-                  { __typeof__((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err))) m9a779 = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err))) m9a818 = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(t) m9v = Sem_ExprType (m9a779, ctx, err);
+                  { __typeof__(t) m9v = Sem_ExprType (m9a818, ctx, err);
                     if (err->exc) goto L_ret;
                     t = m9v;
                   }
@@ -22697,13 +24040,13 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                   bool m9t4 = (!((Sem_Compat (selTy, t, err) || Sem_Compat (t, selTy, err))));
                   if (err->exc) goto L_ret;
                   if (m9t4) {
-                    { __typeof__(Sem_TyName (t, err)) m9a780 = Sem_TyName (t, err);
+                    { __typeof__(Sem_TyName (t, err)) m9a819 = Sem_TyName (t, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(Sem_TyName (selTy, err)) m9a781 = Sem_TyName (selTy, err);
+                    { __typeof__(Sem_TyName (selTy, err)) m9a820 = Sem_TyName (selTy, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s872, 14 }), m9a780, ((m9_sl_CHAR){ (uint32_t *) m9s873, 21 }), m9a781, err)) m9a782 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s872, 14 }), m9a780, ((m9_sl_CHAR){ (uint32_t *) m9s873, 21 }), m9a781, err);
+                    { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s891, 14 }), m9a819, ((m9_sl_CHAR){ (uint32_t *) m9s892, 21 }), m9a820, err)) m9a821 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s891, 14 }), m9a819, ((m9_sl_CHAR){ (uint32_t *) m9s892, 21 }), m9a820, err);
                       if (err->exc) goto L_ret;
-                    Sem_ErrN (lbl, ctx, m9a782, err);
+                    Sem_ErrN (lbl, ctx, m9a821, err);
                     if (err->exc) goto L_ret;
                     }
                     }
@@ -22712,9 +24055,9 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                   { Ast_Node * hi = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (hi != NULL) {
-                    { __typeof__((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err))) m9a783 = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err))) m9a822 = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(t) m9v = Sem_ExprType (m9a783, ctx, err);
+                    { __typeof__(t) m9v = Sem_ExprType (m9a822, ctx, err);
                       if (err->exc) goto L_ret;
                       t = m9v;
                     }
@@ -22724,22 +24067,22 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                     bool m9t5 = (!((Sem_Compat (selTy, t, err) || Sem_Compat (t, selTy, err))));
                     if (err->exc) goto L_ret;
                     if (m9t5) {
-                      { __typeof__(Sem_TyName (t, err)) m9a784 = Sem_TyName (t, err);
+                      { __typeof__(Sem_TyName (t, err)) m9a823 = Sem_TyName (t, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_TyName (selTy, err)) m9a785 = Sem_TyName (selTy, err);
+                      { __typeof__(Sem_TyName (selTy, err)) m9a824 = Sem_TyName (selTy, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s874, 14 }), m9a784, ((m9_sl_CHAR){ (uint32_t *) m9s875, 21 }), m9a785, err)) m9a786 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s874, 14 }), m9a784, ((m9_sl_CHAR){ (uint32_t *) m9s875, 21 }), m9a785, err);
+                      { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s893, 14 }), m9a823, ((m9_sl_CHAR){ (uint32_t *) m9s894, 21 }), m9a824, err)) m9a825 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s893, 14 }), m9a823, ((m9_sl_CHAR){ (uint32_t *) m9s894, 21 }), m9a824, err);
                         if (err->exc) goto L_ret;
-                      Sem_ErrN (hi, ctx, m9a786, err);
+                      Sem_ErrN (hi, ctx, m9a825, err);
                       if (err->exc) goto L_ret;
                       }
                       }
                       }
                     }
                   } else {
-                    { __typeof__((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err))) m9a787 = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err))) m9a826 = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(lblTxt) m9v = Print_ExprText (m9a787, err);
+                    { __typeof__(lblTxt) m9v = Print_ExprText (m9a826, err);
                       if (err->exc) goto L_ret;
                       lblTxt = m9v;
                     }
@@ -22760,9 +24103,9 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                         }
                       } }
                       if (dup) {
-                        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s876, 11 }), lblTxt, ((m9_sl_CHAR){ (uint32_t *) m9s877, 14 }), err)) m9a788 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s876, 11 }), lblTxt, ((m9_sl_CHAR){ (uint32_t *) m9s877, 14 }), err);
+                        { __typeof__(Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s895, 11 }), lblTxt, ((m9_sl_CHAR){ (uint32_t *) m9s896, 14 }), err)) m9a827 = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s895, 11 }), lblTxt, ((m9_sl_CHAR){ (uint32_t *) m9s896, 14 }), err);
                           if (err->exc) goto L_ret;
-                        Sem_ErrN (lbl, ctx, m9a788, err);
+                        Sem_ErrN (lbl, ctx, m9a827, err);
                         if (err->exc) goto L_ret;
                         }
                       } else {
@@ -22870,23 +24213,23 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   { Ast_Node * v = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (v != NULL) {
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a789 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a828 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(t) m9v = Sem_ExprType (m9a789, ctx, err);
+    { __typeof__(t) m9v = Sem_ExprType (m9a828, ctx, err);
       if (err->exc) goto L_ret;
       t = m9v;
     }
     }
-    bool m9t1 = Text_Eq (curRetTy, ((m9_sl_CHAR){ (uint32_t *) m9s878, 6 }), err);
+    bool m9t1 = Text_Eq (curRetTy, ((m9_sl_CHAR){ (uint32_t *) m9s897, 6 }), err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s879, 41 }), err);
+      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s898, 41 }), err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s880, 6 }), err);
+      bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s899, 6 }), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
-        Sem_ErrN (v, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s881, 38 }), err);
+        Sem_ErrN (v, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s900, 38 }), err);
         if (err->exc) goto L_ret;
       } else {
         Sem_Agree (Sem_StReturn, curRetTy, t, v->line, err);
@@ -22894,13 +24237,13 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         bool m9t3 = (!Sem_Compat (curRetTy, t, err));
         if (err->exc) goto L_ret;
         if (m9t3) {
-          { __typeof__(Sem_TyName (t, err)) m9a790 = Sem_TyName (t, err);
+          { __typeof__(Sem_TyName (t, err)) m9a829 = Sem_TyName (t, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_TyName (curRetTy, err)) m9a791 = Sem_TyName (curRetTy, err);
+          { __typeof__(Sem_TyName (curRetTy, err)) m9a830 = Sem_TyName (curRetTy, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s882, 14 }), m9a790, ((m9_sl_CHAR){ (uint32_t *) m9s883, 25 }), m9a791, err)) m9a792 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s882, 14 }), m9a790, ((m9_sl_CHAR){ (uint32_t *) m9s883, 25 }), m9a791, err);
+          { __typeof__(Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s901, 14 }), m9a829, ((m9_sl_CHAR){ (uint32_t *) m9s902, 25 }), m9a830, err)) m9a831 = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s901, 14 }), m9a829, ((m9_sl_CHAR){ (uint32_t *) m9s902, 25 }), m9a830, err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (v, ctx, m9a792, err);
+          Sem_ErrN (v, ctx, m9a831, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -22920,9 +24263,9 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
               bool m9t4 = Text_Eq (Sem_ScopeMode (pn->a, err), Sem_ModeLocal, err);
               if (err->exc) goto L_ret;
               if (m9t4) {
-                { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s884, 40 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s885, 10 }), pn->a, ((m9_sl_CHAR){ (uint32_t *) m9s886, 38 }), err)) m9a793 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s884, 40 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s885, 10 }), pn->a, ((m9_sl_CHAR){ (uint32_t *) m9s886, 38 }), err);
+                { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s903, 40 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s904, 10 }), pn->a, ((m9_sl_CHAR){ (uint32_t *) m9s905, 38 }), err)) m9a832 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s903, 40 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s904, 10 }), pn->a, ((m9_sl_CHAR){ (uint32_t *) m9s905, 38 }), err);
                   if (err->exc) goto L_ret;
-                Sem_ErrN (st, ctx, m9a793, err);
+                Sem_ErrN (st, ctx, m9a832, err);
                 if (err->exc) goto L_ret;
                 }
                 said = true;
@@ -22932,12 +24275,12 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         } }
       }
     }
-    bool m9t5 = ((!said) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s887, 13 }), err)));
+    bool m9t5 = ((!said) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s906, 13 }), err)));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a794 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a833 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(what) m9v = Sem_FrameWhat (m9a794, t, err);
+      { __typeof__(what) m9v = Sem_FrameWhat (m9a833, t, err);
         if (err->exc) goto L_ret;
         what = m9v;
       }
@@ -22945,16 +24288,16 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       bool m9t6 = ((Sem_KindPool (what, err)).len > INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t6) {
-        { __typeof__(Sem_Cat (what, ((m9_sl_CHAR){ (uint32_t *) m9s888, 55 }), err)) m9a795 = Sem_Cat (what, ((m9_sl_CHAR){ (uint32_t *) m9s888, 55 }), err);
+        { __typeof__(Sem_Cat (what, ((m9_sl_CHAR){ (uint32_t *) m9s907, 55 }), err)) m9a834 = Sem_Cat (what, ((m9_sl_CHAR){ (uint32_t *) m9s907, 55 }), err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (st, ctx, m9a795, err);
+        Sem_ErrN (st, ctx, m9a834, err);
         if (err->exc) goto L_ret;
         }
       }
     }
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a796 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a835 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(t) m9v = Sem_EscRootOf (m9a796, err);
+    { __typeof__(t) m9v = Sem_EscRootOf (m9a835, err);
       if (err->exc) goto L_ret;
       t = m9v;
     }
@@ -22963,15 +24306,15 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       bool m9t7 = Sem_IsFrameMode (Sem_ScopeMode (t, err), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
-        Sem_EscTarget (t, ((m9_sl_CHAR){ (uint32_t *) m9s889, 8 }), err);
+        Sem_EscTarget (t, ((m9_sl_CHAR){ (uint32_t *) m9s908, 8 }), err);
         if (err->exc) goto L_ret;
       }
     }
   } else {
-    bool m9t8 = (!Text_Eq (curRetTy, ((m9_sl_CHAR){ (uint32_t *) m9s890, 6 }), err));
+    bool m9t8 = (!Text_Eq (curRetTy, ((m9_sl_CHAR){ (uint32_t *) m9s909, 6 }), err));
     if (err->exc) goto L_ret;
     if (m9t8) {
-      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s891, 36 }), err);
+      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s910, 36 }), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -23159,9 +24502,9 @@ static bool Sem_EndsStmt (Ast_Node * n, m9_state *err)
   case INT64_C(46):
   {
     err->res = m9res;
-    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a797 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a836 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    m9ret = (!Sem_HasExit (m9a797, err));
+    m9ret = (!Sem_HasExit (m9a836, err));
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -23245,11 +24588,13 @@ static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_st
       if (err->exc) goto L_ret;
       if (nd != NULL) {
         if ((nd->kind == Ast_NProcDecl)) {
-          { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s892, 37 }), nd->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s893, 20 }), err), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s894, 36 }), err)) m9a798 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s892, 37 }), nd->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s893, 20 }), err), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s894, 36 }), err);
+          m9_mark m9t3 = m9_pool_mark (err->res);
+          { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s911, 37 }), nd->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s912, 20 }), err), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s913, 36 }), err)) m9a837 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s911, 37 }), nd->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s912, 20 }), err), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s913, 36 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (nd, ctx, m9a798, err);
+          Sem_ErrN (nd, ctx, m9a837, err);
           if (err->exc) goto L_ret;
           }
+          m9_pool_release (err->res, m9t3);
         }
       } }
     } }
@@ -23270,23 +24615,23 @@ static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_st
     svConsts = nconsts;
     Sem_AddConstsOf (body, ctx, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err))) m9a799 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err))) m9a838 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Sem_RoSeed (m9a799, err);
+    Sem_RoSeed (m9a838, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err))) m9a800 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err))) m9a839 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Sem_OwnFedSeed (m9a800, err);
+    Sem_OwnFedSeed (m9a839, err);
     if (err->exc) goto L_ret;
     }
-    curRetTy = ((m9_sl_CHAR){ (uint32_t *) m9s895, 6 });
+    curRetTy = ((m9_sl_CHAR){ (uint32_t *) m9s914, 6 });
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
-      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a801 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a840 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(curRetTy) m9v = Sem_CanonT (m9a801, INT64_C(0), err);
+      { __typeof__(curRetTy) m9v = Sem_CanonT (m9a840, INT64_C(0), err);
         if (err->exc) goto L_ret;
         curRetTy = m9v;
       }
@@ -23308,9 +24653,9 @@ static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_st
     { Ast_Node * at = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(3), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (at != NULL) {
-      bool m9t3 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s896, 4 }), err);
+      bool m9t4 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s915, 4 }), err);
       if (err->exc) goto L_ret;
-      if (m9t3) {
+      if (m9t4) {
         curPure = true;
       }
     } }
@@ -23324,14 +24669,16 @@ static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_st
       { Ast_Node * blk0 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (blk0 != NULL) {
-        bool m9t4 = (!Sem_EndsStmt (blk0, err));
+        bool m9t5 = (!Sem_EndsStmt (blk0, err));
         if (err->exc) goto L_ret;
-        if (m9t4) {
-          { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s897, 47 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s898, 26 }), err)) m9a802 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s897, 47 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s898, 26 }), err);
+        if (m9t5) {
+          m9_mark m9t6 = m9_pool_mark (err->res);
+          { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s916, 47 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s917, 26 }), err)) m9a841 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s916, 47 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s917, 26 }), err);
             if (err->exc) goto L_ret;
-          Sem_ErrN (d, ctx, m9a802, err);
+          Sem_ErrN (d, ctx, m9a841, err);
           if (err->exc) goto L_ret;
           }
+          m9_pool_release (err->res, m9t6);
         }
       } }
     } }
@@ -23343,9 +24690,9 @@ static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_st
         if (err->exc) goto L_ret;
       } }
     }
-    { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err))) m9a803 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err))) m9a842 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Sem_WalkStmt (m9a803, ctx, err);
+    Sem_WalkStmt (m9a842, ctx, err);
     if (err->exc) goto L_ret;
     }
     Sem_FlushPend (ctx, err);
@@ -23353,15 +24700,15 @@ static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_st
     { Ast_Node * blk2 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (blk2 != NULL) {
-      { __typeof__(Sem_RaisesOf (&(pool), d, err)) m9a804 = Sem_RaisesOf (&(pool), d, err);
+      { __typeof__(Sem_RaisesOf (&(pool), d, err)) m9a843 = Sem_RaisesOf (&(pool), d, err);
         if (err->exc) goto L_ret;
-      Sem_ReportUnhandled (blk2, ctx, m9a804, err);
+      Sem_ReportUnhandled (blk2, ctx, m9a843, err);
       if (err->exc) goto L_ret;
       }
     } else {
-      { __typeof__(Sem_RaisesOf (&(pool), d, err)) m9a805 = Sem_RaisesOf (&(pool), d, err);
+      { __typeof__(Sem_RaisesOf (&(pool), d, err)) m9a844 = Sem_RaisesOf (&(pool), d, err);
         if (err->exc) goto L_ret;
-      Sem_ReportUnhandled (body, ctx, m9a805, err);
+      Sem_ReportUnhandled (body, ctx, m9a844, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -23518,7 +24865,7 @@ static bool Sem_IsUnchecked (m9_sl_CHAR nm, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s899, 8 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s900, 10 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s901, 11 }), err));
+  m9ret = ((Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s918, 8 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s919, 10 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s920, 11 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -23534,14 +24881,14 @@ static bool Sem_CTotal (m9_sl_CHAR name, m9_sl_CHAR t, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = ((((t).len == INT64_C(0)) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s902, 2 }), err)) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s903, 1 }), err));
+  bool m9t1 = ((((t).len == INT64_C(0)) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s921, 2 }), err)) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s922, 1 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s904, 5 }), err);
+  bool m9t2 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s923, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
@@ -23549,7 +24896,7 @@ static bool Sem_CTotal (m9_sl_CHAR name, m9_sl_CHAR t, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   } else {
-    bool m9t3 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s905, 7 }), err);
+    bool m9t3 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s924, 7 }), err);
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
@@ -23558,7 +24905,7 @@ static bool Sem_CTotal (m9_sl_CHAR name, m9_sl_CHAR t, m9_state *err)
       goto L_ret;
   } }
   err->res = m9res;
-  m9ret = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s906, 3 }), err);
+  m9ret = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s925, 3 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -23591,7 +24938,7 @@ static bool Sem_TotalWidening (m9_sl_CHAR name, m9_sl_CHAR argTy, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = (!Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s907, 3 }), err));
+  bool m9t1 = (!Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s926, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -23621,15 +24968,15 @@ static void Sem_WalkExpr (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       { Ast_Node * dn = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (dn != NULL) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a806 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a845 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_NoteCall (dn, m9a806, ctx, err);
+        Sem_NoteCall (dn, m9a845, ctx, err);
         if (err->exc) goto L_ret;
         }
       } }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a807 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a846 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkArgs (m9a807, ctx, err);
+      Sem_WalkArgs (m9a846, ctx, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -23639,9 +24986,9 @@ static void Sem_WalkExpr (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     m9t1to = m9_sub_i64 (e->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err))) m9a808 = (*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err))) m9a847 = (*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkExpr (m9a808, ctx, err);
+      Sem_WalkExpr (m9a847, ctx, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -23685,9 +25032,9 @@ static void Sem_WalkArgs (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     m9t3to = m9_sub_i64 (al->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err))) m9a809 = (*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err))) m9a848 = (*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_WalkExpr (m9a809, ctx, err);
+      Sem_WalkExpr (m9a848, ctx, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -23719,9 +25066,9 @@ static m9_sl_CHAR Sem_ArgCanon (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       { Ast_Node * cd = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (cd != NULL) {
-        { __typeof__(Sem_DesigName (cd, err)) m9a810 = Sem_DesigName (cd, err);
+        { __typeof__(Sem_DesigName (cd, err)) m9a849 = Sem_DesigName (cd, err);
           if (err->exc) goto L_ret;
-        { __typeof__(pr) m9v = Sem_LookupProc (m9a810, &(found), err);
+        { __typeof__(pr) m9v = Sem_LookupProc (m9a849, &(found), err);
           if (err->exc) goto L_ret;
           pr = m9v;
         }
@@ -23730,9 +25077,9 @@ static m9_sl_CHAR Sem_ArgCanon (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           { Ast_Node * pn = pr.node;
           if (pn != NULL) {
             err->res = m9res;
-            { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a811 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a850 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            m9ret = Sem_CanonT (m9a811, INT64_C(0), err);
+            m9ret = Sem_CanonT (m9a850, INT64_C(0), err);
             if (err->exc) goto L_ret;
             }
             goto L_ret;
@@ -23791,14 +25138,14 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
       m9t1to = m9_sub_i64 (alc->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; jj <= m9t1to; jj += 1) {
-        { __typeof__((*(Ast_Node * *) m9_at (alc->kids.p, jj, alc->kids.len, sizeof (Ast_Node *), err))) m9a812 = (*(Ast_Node * *) m9_at (alc->kids.p, jj, alc->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (alc->kids.p, jj, alc->kids.len, sizeof (Ast_Node *), err))) m9a851 = (*(Ast_Node * *) m9_at (alc->kids.p, jj, alc->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(argTy) m9v = Sem_ArgCanon (m9a812, ctx, err);
+        { __typeof__(argTy) m9v = Sem_ArgCanon (m9a851, ctx, err);
           if (err->exc) goto L_ret;
           argTy = m9v;
         }
         }
-        bool m9t2 = Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s908, 3 }), err);
+        bool m9t2 = Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s927, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t2) {
           { __typeof__(nf32) m9v = m9_add_i64 (nf32, INT64_C(1), err);
@@ -23806,7 +25153,7 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
             nf32 = m9v;
           }
         }
-        bool m9t3 = Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s909, 3 }), err);
+        bool m9t3 = Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s928, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
           { __typeof__(nf64) m9v = m9_add_i64 (nf64, INT64_C(1), err);
@@ -23821,7 +25168,7 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
       }
     }
   } }
-  bool m9t4 = ((Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s910, 5 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s911, 7 }), err)) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s912, 7 }), err));
+  bool m9t4 = ((Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s929, 5 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s930, 7 }), err)) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s931, 7 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
     argTy = (m9_sl_CHAR){ NULL, 0 };
@@ -23840,7 +25187,7 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
             { Ast_Node * lc = (*(Ast_Node * *) m9_at (a0->kids.p, INT64_C(0), a0->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (lc != NULL) {
-              { __typeof__(lenArg) m9v = ((lc->kind == Ast_NDesignator) && Text_Eq (Sem_DesigName (lc, err), ((m9_sl_CHAR){ (uint32_t *) m9s913, 3 }), err));
+              { __typeof__(lenArg) m9v = ((lc->kind == Ast_NDesignator) && Text_Eq (Sem_DesigName (lc, err), ((m9_sl_CHAR){ (uint32_t *) m9s932, 3 }), err));
                 if (err->exc) goto L_ret;
                 lenArg = m9v;
               }
@@ -23848,9 +25195,9 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
           }
         } }
         if (((argTy).len == INT64_C(0))) {
-          { __typeof__((*(Ast_Node * *) m9_at (al2->kids.p, INT64_C(0), al2->kids.len, sizeof (Ast_Node *), err))) m9a813 = (*(Ast_Node * *) m9_at (al2->kids.p, INT64_C(0), al2->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (al2->kids.p, INT64_C(0), al2->kids.len, sizeof (Ast_Node *), err))) m9a852 = (*(Ast_Node * *) m9_at (al2->kids.p, INT64_C(0), al2->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(argTy) m9v = Sem_ArgCanon (m9a813, ctx, err);
+          { __typeof__(argTy) m9v = Sem_ArgCanon (m9a852, ctx, err);
             if (err->exc) goto L_ret;
             argTy = m9v;
           }
@@ -23858,7 +25205,7 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
         }
       }
     } }
-    bool m9t5 = (lenArg && Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s914, 7 }), err));
+    bool m9t5 = (lenArg && Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s933, 7 }), err));
     if (err->exc) goto L_ret;
     if (m9t5) {
       goto L_ret;
@@ -23866,9 +25213,9 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
     bool m9t6 = (!Sem_CTotal (name, argTy, err));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s916, 11 }), err)) m9a814 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s916, 11 }), err);
+      { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s935, 11 }), err)) m9a853 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s935, 11 }), err);
         if (err->exc) goto L_ret;
-      Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s915, 10 }), m9a814, err);
+      Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s934, 10 }), m9a853, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -23881,9 +25228,9 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
     { Ast_Node * al = argl;
     if (al != NULL) {
       if ((al->nkids > INT64_C(0))) {
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a815 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a854 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(argTy) m9v = Sem_ArgCanon (m9a815, ctx, err);
+        { __typeof__(argTy) m9v = Sem_ArgCanon (m9a854, ctx, err);
           if (err->exc) goto L_ret;
           argTy = m9v;
         }
@@ -23893,9 +25240,9 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
     bool m9t8 = (!Sem_TotalWidening (name, argTy, err));
     if (err->exc) goto L_ret;
     if (m9t8) {
-      { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s918, 11 }), err)) m9a816 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s918, 11 }), err);
+      { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s937, 11 }), err)) m9a855 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s937, 11 }), err);
         if (err->exc) goto L_ret;
-      Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s917, 10 }), m9a816, err);
+      Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s936, 10 }), m9a855, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -23904,9 +25251,9 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
   bool m9t9 = ((Sem_EnumConvType (name, err)).len > INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t9) {
-    { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s920, 11 }), err)) m9a817 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s920, 11 }), err);
+    { __typeof__(Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s939, 11 }), err)) m9a856 = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s939, 11 }), err);
       if (err->exc) goto L_ret;
-    Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s919, 10 }), m9a817, err);
+    Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s938, 10 }), m9a856, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -23931,15 +25278,15 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
             if (err->exc) goto L_ret;
             if (q != NULL) {
               if (((q->b).len > INT64_C(0))) {
-                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s921, 8 }), name, err)) m9a818 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s921, 8 }), name, err);
+                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s940, 8 }), name, err)) m9a857 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s940, 8 }), name, err);
                   if (err->exc) goto L_ret;
-                Sem_RaisedAdd (q->b, m9a818, err);
+                Sem_RaisedAdd (q->b, m9a857, err);
                 if (err->exc) goto L_ret;
                 }
               } else {
-                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s922, 8 }), name, err)) m9a819 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s922, 8 }), name, err);
+                { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s941, 8 }), name, err)) m9a858 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s941, 8 }), name, err);
                   if (err->exc) goto L_ret;
-                Sem_RaisedAdd (q->a, m9a819, err);
+                Sem_RaisedAdd (q->a, m9a858, err);
                 if (err->exc) goto L_ret;
                 }
               }
@@ -23964,11 +25311,11 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
   m9t11to = m9_sub_i64 ((pr.raises).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; j <= m9t11to; j += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (pr.raises.p, j, pr.raises.len, sizeof (m9_sl_CHAR), err))) m9a820 = (*(m9_sl_CHAR *) m9_at (pr.raises.p, j, pr.raises.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (pr.raises.p, j, pr.raises.len, sizeof (m9_sl_CHAR), err))) m9a859 = (*(m9_sl_CHAR *) m9_at (pr.raises.p, j, pr.raises.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s923, 8 }), name, err)) m9a821 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s923, 8 }), name, err);
+    { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s942, 8 }), name, err)) m9a860 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s942, 8 }), name, err);
       if (err->exc) goto L_ret;
-    Sem_RaisedAdd (m9a820, m9a821, err);
+    Sem_RaisedAdd (m9a859, m9a860, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -24012,12 +25359,14 @@ static void Sem_ReportUnhandled (Ast_Node * body, m9_sl_CHAR ctx, m9_sl_m9_sl_CH
           }
         } }
         if (((!ok) && ((showName).len > INT64_C(0)))) {
-          bool m9t6 = (!Text_Contains (shownRaises, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s924, 1 }), (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s925, 1 }), err), err));
+          m9_mark m9t6 = m9_pool_mark (err->res);
+          bool m9t7 = (!Text_Contains (shownRaises, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s943, 1 }), (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s944, 1 }), err), err));
           if (err->exc) goto L_ret;
-          if (m9t6) {
-            { __typeof__(m9_cat (err->res, m9_cat (err->res, shownRaises, (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s926, 1 }), err)) m9a822 = m9_cat (err->res, m9_cat (err->res, shownRaises, (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s926, 1 }), err);
+          m9_pool_release (err->res, m9t6);
+          if (m9t7) {
+            { __typeof__(m9_cat (err->res, m9_cat (err->res, shownRaises, (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s945, 1 }), err)) m9a861 = m9_cat (err->res, m9_cat (err->res, shownRaises, (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s945, 1 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(shownRaises) m9v = Text_Keep (&(pool), m9a822, err);
+            { __typeof__(shownRaises) m9v = Text_Keep (&(pool), m9a861, err);
               if (err->exc) goto L_ret;
               shownRaises = m9v;
             }
@@ -24025,25 +25374,25 @@ static void Sem_ReportUnhandled (Ast_Node * body, m9_sl_CHAR ctx, m9_sl_m9_sl_CH
           }
         } else {
           if ((!ok)) {
-            { __typeof__((*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name) m9a823 = (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name;
+            { __typeof__((*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name) m9a862 = (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name;
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s927, 17 }), m9a823, err)) m9a824 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s927, 17 }), m9a823, err);
+            { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s946, 17 }), m9a862, err)) m9a863 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s946, 17 }), m9a862, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (m9a824, ((m9_sl_CHAR){ (uint32_t *) m9s928, 6 }), err)) m9a825 = Sem_Cat (m9a824, ((m9_sl_CHAR){ (uint32_t *) m9s928, 6 }), err);
+            { __typeof__(Sem_Cat (m9a863, ((m9_sl_CHAR){ (uint32_t *) m9s947, 6 }), err)) m9a864 = Sem_Cat (m9a863, ((m9_sl_CHAR){ (uint32_t *) m9s947, 6 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__((*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).mode) m9a826 = (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).mode;
+            { __typeof__((*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).mode) m9a865 = (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).mode;
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (m9a825, m9a826, err)) m9a827 = Sem_Cat (m9a825, m9a826, err);
+            { __typeof__(Sem_Cat (m9a864, m9a865, err)) m9a866 = Sem_Cat (m9a864, m9a865, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (m9a827, ((m9_sl_CHAR){ (uint32_t *) m9s929, 62 }), err)) m9a828 = Sem_Cat (m9a827, ((m9_sl_CHAR){ (uint32_t *) m9s929, 62 }), err);
+            { __typeof__(Sem_Cat (m9a866, ((m9_sl_CHAR){ (uint32_t *) m9s948, 62 }), err)) m9a867 = Sem_Cat (m9a866, ((m9_sl_CHAR){ (uint32_t *) m9s948, 62 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__((*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name) m9a829 = (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name;
+            { __typeof__((*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name) m9a868 = (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name;
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (m9a829, ((m9_sl_CHAR){ (uint32_t *) m9s930, 6 }), err)) m9a830 = Sem_Cat (m9a829, ((m9_sl_CHAR){ (uint32_t *) m9s930, 6 }), err);
+            { __typeof__(Sem_Cat (m9a868, ((m9_sl_CHAR){ (uint32_t *) m9s949, 6 }), err)) m9a869 = Sem_Cat (m9a868, ((m9_sl_CHAR){ (uint32_t *) m9s949, 6 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Sem_Cat (m9a828, m9a830, err)) m9a831 = Sem_Cat (m9a828, m9a830, err);
+            { __typeof__(Sem_Cat (m9a867, m9a869, err)) m9a870 = Sem_Cat (m9a867, m9a869, err);
               if (err->exc) goto L_ret;
-            Sem_ErrN (body, ctx, m9a831, err);
+            Sem_ErrN (body, ctx, m9a870, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -24081,24 +25430,24 @@ static void Sem_ReportImpureCalls (Ast_Node * body, m9_sl_CHAR ctx, m9_state *er
   m9t1to = m9_sub_i64 (ncalls, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err))) m9a832 = (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err))) m9a871 = (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(pr) m9v = Sem_LookupProc (m9a832, &(found), err);
+    { __typeof__(pr) m9v = Sem_LookupProc (m9a871, &(found), err);
       if (err->exc) goto L_ret;
       pr = m9v;
     }
     }
     if (found) {
-      bool m9t2 = (!Text_Eq (pr.attrib, ((m9_sl_CHAR){ (uint32_t *) m9s931, 4 }), err));
+      bool m9t2 = (!Text_Eq (pr.attrib, ((m9_sl_CHAR){ (uint32_t *) m9s950, 4 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err))) m9a833 = (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err))) m9a872 = (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s932, 21 }), m9a833, err)) m9a834 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s932, 21 }), m9a833, err);
+        { __typeof__(Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s951, 21 }), m9a872, err)) m9a873 = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s951, 21 }), m9a872, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Cat (m9a834, ((m9_sl_CHAR){ (uint32_t *) m9s933, 29 }), err)) m9a835 = Sem_Cat (m9a834, ((m9_sl_CHAR){ (uint32_t *) m9s933, 29 }), err);
+        { __typeof__(Sem_Cat (m9a873, ((m9_sl_CHAR){ (uint32_t *) m9s952, 29 }), err)) m9a874 = Sem_Cat (m9a873, ((m9_sl_CHAR){ (uint32_t *) m9s952, 29 }), err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (body, ctx, m9a835, err);
+        Sem_ErrN (body, ctx, m9a874, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -24655,25 +26004,27 @@ static void Sem_ImportWalk (Ast_Node * root, Ast_Node * u, Ast_Node * scope, Ast
             if (m9t3) {
               (*(bool *) m9_at ((*seen).p, m, (*seen).len, sizeof (bool), err)) = true;
               if (err->exc) goto L_ret;
-              { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s934, 7 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s935, 41 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s936, 8 }), err)) m9a836 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s934, 7 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s935, 41 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s936, 8 }), err);
+              m9_mark m9t4 = m9_pool_mark (err->res);
+              { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s953, 7 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s954, 41 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s955, 8 }), err)) m9a875 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s953, 7 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s954, 41 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s955, 8 }), err);
                 if (err->exc) goto L_ret;
-              Sem_ErrN (n, u->a, m9a836, err);
+              Sem_ErrN (n, u->a, m9a875, err);
               if (err->exc) goto L_ret;
               }
+              m9_pool_release (err->res, m9t4);
             }
           }
         }
       }
     }
     if ((((n->kind == Ast_NIf) || (n->kind == Ast_NElsif)) || (n->kind == Ast_NWhile))) {
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a837 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a876 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_ImportWalk (root, u, scope, m9a837, seen, err);
+      Sem_ImportWalk (root, u, scope, m9a876, seen, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a838 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a877 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(b) m9v = Sem_CondBinder (m9a838, err);
+      { __typeof__(b) m9v = Sem_CondBinder (m9a877, err);
         if (err->exc) goto L_ret;
         b = m9v;
       }
@@ -24682,89 +26033,89 @@ static void Sem_ImportWalk (Ast_Node * root, Ast_Node * u, Ast_Node * scope, Ast
         Sem_BinderPush (b, err);
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a839 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a878 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Sem_ImportWalk (root, u, scope, m9a839, seen, err);
+      Sem_ImportWalk (root, u, scope, m9a878, seen, err);
       if (err->exc) goto L_ret;
       }
       if (((b).len > INT64_C(0))) {
         Sem_BinderPop (INT64_C(1), err);
         if (err->exc) goto L_ret;
       }
-      { int64_t m9t4to;
+      { int64_t m9t5to;
       i = INT64_C(2);
-      m9t4to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+      m9t5to = m9_sub_i64 (n->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t4to; i += 1) {
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a840 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      for (; i <= m9t5to; i += 1) {
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a879 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_ImportWalk (root, u, scope, m9a840, seen, err);
+        Sem_ImportWalk (root, u, scope, m9a879, seen, err);
         if (err->exc) goto L_ret;
         }
       } }
     } else {
       if ((n->kind == Ast_NCaseArm)) {
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a841 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a880 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_ImportWalk (root, u, scope, m9a841, seen, err);
+        Sem_ImportWalk (root, u, scope, m9a880, seen, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a842 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a881 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(np) m9v = Sem_PushBinders (m9a842, err);
+        { __typeof__(np) m9v = Sem_PushBinders (m9a881, err);
           if (err->exc) goto L_ret;
           np = m9v;
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a843 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a882 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_ImportWalk (root, u, scope, m9a843, seen, err);
+        Sem_ImportWalk (root, u, scope, m9a882, seen, err);
         if (err->exc) goto L_ret;
         }
         Sem_BinderPop (np, err);
         if (err->exc) goto L_ret;
     } else {
       if ((n->kind == Ast_NHandler)) {
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a844 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a883 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_ImportWalk (root, u, scope, m9a844, seen, err);
+        Sem_ImportWalk (root, u, scope, m9a883, seen, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a845 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a884 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_ImportWalk (root, u, scope, m9a845, seen, err);
+        Sem_ImportWalk (root, u, scope, m9a884, seen, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a846 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a885 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(np) m9v = Sem_PushBinders (m9a846, err);
+        { __typeof__(np) m9v = Sem_PushBinders (m9a885, err);
           if (err->exc) goto L_ret;
           np = m9v;
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err))) m9a847 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err))) m9a886 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(2), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_ImportWalk (root, u, scope, m9a847, seen, err);
+        Sem_ImportWalk (root, u, scope, m9a886, seen, err);
         if (err->exc) goto L_ret;
         }
         Sem_BinderPop (np, err);
         if (err->exc) goto L_ret;
     } else {
-      { int64_t m9t5to;
+      { int64_t m9t6to;
       i = INT64_C(0);
-      m9t5to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+      m9t6to = m9_sub_i64 (n->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t5to; i += 1) {
+      for (; i <= m9t6to; i += 1) {
         if (((n->kind == Ast_NProcDecl) || (n->kind == Ast_NModBody))) {
-          { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a848 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a887 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Sem_ImportWalk (root, u, k, m9a848, seen, err);
+          Sem_ImportWalk (root, u, k, m9a887, seen, err);
           if (err->exc) goto L_ret;
           }
         } else {
-          { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a849 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a888 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Sem_ImportWalk (root, u, scope, m9a849, seen, err);
+          Sem_ImportWalk (root, u, scope, m9a888, seen, err);
           if (err->exc) goto L_ret;
           }
         }
@@ -24940,15 +26291,15 @@ static void Sem_AddModuleVars (Ast_Node * root, Ast_Node * u, m9_state *err)
       m9t5to = m9_sub_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nvrs, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; k <= m9t5to; k += 1) {
-        { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name) m9a850 = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
+        { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name) m9a889 = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
           if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrNames.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrNames.len, sizeof (m9_sl_CHAR), err))) m9a851 = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrNames.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrNames.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrNames.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrNames.len, sizeof (m9_sl_CHAR), err))) m9a890 = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrNames.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrNames.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Sem_Qualify (m9a850, m9a851, err)) m9a852 = Sem_Qualify (m9a850, m9a851, err);
+        { __typeof__(Sem_Qualify (m9a889, m9a890, err)) m9a891 = Sem_Qualify (m9a889, m9a890, err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrTypes.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrTypes.len, sizeof (Ast_Node *), err))) m9a853 = (*(Ast_Node * *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrTypes.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrTypes.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrTypes.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrTypes.len, sizeof (Ast_Node *), err))) m9a892 = (*(Ast_Node * *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrTypes.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vrTypes.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_ScopeAdd (m9a852, m9a853, Sem_ModeModule, err);
+        Sem_ScopeAdd (m9a891, m9a892, Sem_ModeModule, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -24992,9 +26343,9 @@ static void Sem_CheckImports (Ast_Node * root, Ast_Node * u, m9_state *err)
   m9t1to = m9_sub_i64 (u->nkids, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err))) m9a854 = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err))) m9a893 = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Sem_ImportWalk (root, u, NULL, m9a854, &(seen), err);
+    Sem_ImportWalk (root, u, NULL, m9a893, &(seen), err);
     if (err->exc) goto L_ret;
     }
   } }
@@ -25028,26 +26379,30 @@ static void Sem_DeclOnce (Ast_Node * id, int64_t what, m9_sl_CHAR me, m9_sl_CHAR
         (*(bool *) m9_at ((*open).p, i, (*open).len, sizeof (bool), err)) = false;
         if (err->exc) goto L_ret;
       } else {
-        { __typeof__((*(int64_t *) m9_at ((*lines).p, i, (*lines).len, sizeof (int64_t), err))) m9a855 = (*(int64_t *) m9_at ((*lines).p, i, (*lines).len, sizeof (int64_t), err));
+        m9_mark m9t4 = m9_pool_mark (err->res);
+        { __typeof__((*(int64_t *) m9_at ((*lines).p, i, (*lines).len, sizeof (int64_t), err))) m9a894 = (*(int64_t *) m9_at ((*lines).p, i, (*lines).len, sizeof (int64_t), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, id->a, ((m9_sl_CHAR){ (uint32_t *) m9s937, 22 }), err), where, err), ((m9_sl_CHAR){ (uint32_t *) m9s938, 23 }), err), Sem_ItoA (m9a855, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s939, 8 }), err)) m9a856 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, id->a, ((m9_sl_CHAR){ (uint32_t *) m9s937, 22 }), err), where, err), ((m9_sl_CHAR){ (uint32_t *) m9s938, 23 }), err), Sem_ItoA (m9a855, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s939, 8 }), err);
+        { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, id->a, ((m9_sl_CHAR){ (uint32_t *) m9s956, 22 }), err), where, err), ((m9_sl_CHAR){ (uint32_t *) m9s957, 23 }), err), Sem_ItoA (m9a894, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s958, 8 }), err)) m9a895 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, id->a, ((m9_sl_CHAR){ (uint32_t *) m9s956, 22 }), err), where, err), ((m9_sl_CHAR){ (uint32_t *) m9s957, 23 }), err), Sem_ItoA (m9a894, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s958, 8 }), err);
           if (err->exc) goto L_ret;
-        Sem_ErrN (id, me, m9a856, err);
+        Sem_ErrN (id, me, m9a895, err);
         if (err->exc) goto L_ret;
         }
         }
+        m9_pool_release (err->res, m9t4);
       }
       goto L_ret;
     }
   } }
-  bool m9t4 = Text_Eq (id->a, ((m9_sl_CHAR){ (uint32_t *) m9s940, 3 }), err);
+  bool m9t5 = Text_Eq (id->a, ((m9_sl_CHAR){ (uint32_t *) m9s959, 3 }), err);
   if (err->exc) goto L_ret;
-  if (m9t4) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s941, 52 }), ((m9_sl_CHAR){ (uint32_t *) m9s942, 28 }), err)) m9a857 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s941, 52 }), ((m9_sl_CHAR){ (uint32_t *) m9s942, 28 }), err);
+  if (m9t5) {
+    m9_mark m9t6 = m9_pool_mark (err->res);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s960, 52 }), ((m9_sl_CHAR){ (uint32_t *) m9s961, 28 }), err)) m9a896 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s960, 52 }), ((m9_sl_CHAR){ (uint32_t *) m9s961, 28 }), err);
       if (err->exc) goto L_ret;
-    Sem_ErrN (id, me, m9a857, err);
+    Sem_ErrN (id, me, m9a896, err);
     if (err->exc) goto L_ret;
     }
+    m9_pool_release (err->res, m9t6);
   }
   if (((*n) == ((*names)).len)) {
     { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (*n), err), INT64_C(16), err), err);
@@ -25062,11 +26417,11 @@ static void Sem_DeclOnce (Ast_Node * id, int64_t what, m9_sl_CHAR me, m9_sl_CHAR
       if (err->exc) goto L_ret;
       os = m9v;
     }
-    { int64_t m9t5to;
+    { int64_t m9t7to;
     i = INT64_C(0);
-    m9t5to = m9_sub_i64 ((*n), INT64_C(1), err);
+    m9t7to = m9_sub_i64 ((*n), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t5to; i += 1) {
+    for (; i <= m9t7to; i += 1) {
       { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*names).p, i, (*names).len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
         (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
@@ -25196,7 +26551,7 @@ static void Sem_CheckDeclaredOnce (Ast_Node * u, m9_state *err)
     open = m9v;
   }
   n = INT64_C(0);
-  { __typeof__(where) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s943, 7 }), u->a, err);
+  { __typeof__(where) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s962, 7 }), u->a, err);
     if (err->exc) goto L_ret;
     where = m9v;
   }
@@ -25220,9 +26575,9 @@ static void Sem_CheckDeclaredOnce (Ast_Node * u, m9_state *err)
         Sem_DeclOnce (d, what, u->a, where, &(names), &(lines), &(open), &(n), err);
         if (err->exc) goto L_ret;
       } else {
-        { __typeof__((*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err))) m9a858 = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err))) m9a897 = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Sem_SectionNames (m9a858, u->a, where, &(names), &(lines), &(open), &(n), err);
+        Sem_SectionNames (m9a897, u->a, where, &(names), &(lines), &(open), &(n), err);
         if (err->exc) goto L_ret;
         }
       }
@@ -25238,7 +26593,7 @@ static void Sem_CheckDeclaredOnce (Ast_Node * u, m9_state *err)
     if (p != NULL) {
       if ((p->kind == Ast_NProcDecl)) {
         n = INT64_C(0);
-        { __typeof__(where) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s944, 10 }), p->a, err);
+        { __typeof__(where) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s963, 10 }), p->a, err);
           if (err->exc) goto L_ret;
           where = m9v;
         }
@@ -25281,9 +26636,9 @@ static void Sem_CheckDeclaredOnce (Ast_Node * u, m9_state *err)
             m9t5to = m9_sub_i64 (body->nkids, INT64_C(1), err);
             if (err->exc) goto L_ret;
             for (; j <= m9t5to; j += 1) {
-              { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, j, body->kids.len, sizeof (Ast_Node *), err))) m9a859 = (*(Ast_Node * *) m9_at (body->kids.p, j, body->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, j, body->kids.len, sizeof (Ast_Node *), err))) m9a898 = (*(Ast_Node * *) m9_at (body->kids.p, j, body->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              Sem_SectionNames (m9a859, u->a, where, &(names), &(lines), &(open), &(n), err);
+              Sem_SectionNames (m9a898, u->a, where, &(names), &(lines), &(open), &(n), err);
               if (err->exc) goto L_ret;
               }
             } }
@@ -25342,11 +26697,11 @@ static void Sem_AddDefConsts (Ast_Node * root, Ast_Node * u, m9_state *err)
                     ty = m9v;
                   }
                   if ((!seen)) {
-                    { __typeof__((*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err))) m9a860 = (*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err))) m9a899 = (*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(Sem_LitType (m9a860, err)) m9a861 = Sem_LitType (m9a860, err);
+                    { __typeof__(Sem_LitType (m9a899, err)) m9a900 = Sem_LitType (m9a899, err);
                       if (err->exc) goto L_ret;
-                    Sem_ConstAdd (cd->a, m9a861, err);
+                    Sem_ConstAdd (cd->a, m9a900, err);
                     if (err->exc) goto L_ret;
                     }
                     }
@@ -25403,21 +26758,21 @@ static void Sem_CheckExcFields (Ast_Node * u, m9_state *err)
                 { Ast_Node * grp = (*(Ast_Node * *) m9_at (fs->kids.p, g, fs->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
                 if (grp != NULL) {
-                  { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a862 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a901 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(t) m9v = Sem_CanonT (m9a862, INT64_C(0), err);
+                  { __typeof__(t) m9v = Sem_CanonT (m9a901, INT64_C(0), err);
                     if (err->exc) goto L_ret;
                     t = m9v;
                   }
                   }
-                  bool m9t4 = (((((((((t).len > INT64_C(0)) && (!Sem_IsIntish (t, err))) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s945, 4 }), err))) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s946, 4 }), err))) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s947, 3 }), err))) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s948, 3 }), err))) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s949, 9 }), err))) && (!Sem_AllPayloadless (Sem_ResolveType ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err), err)));
+                  bool m9t4 = (((((((((t).len > INT64_C(0)) && (!Sem_IsIntish (t, err))) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s964, 4 }), err))) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s965, 4 }), err))) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s966, 3 }), err))) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s967, 3 }), err))) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s968, 9 }), err))) && (!Sem_AllPayloadless (Sem_ResolveType ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err), err)));
                   if (err->exc) goto L_ret;
                   if (m9t4) {
-                    { __typeof__(Sem_TyName (t, err)) m9a863 = Sem_TyName (t, err);
+                    { __typeof__(Sem_TyName (t, err)) m9a902 = Sem_TyName (t, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s950, 21 }), xd->a, ((m9_sl_CHAR){ (uint32_t *) m9s951, 4 }), m9a863, ((m9_sl_CHAR){ (uint32_t *) m9s952, 105 }), err)) m9a864 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s950, 21 }), xd->a, ((m9_sl_CHAR){ (uint32_t *) m9s951, 4 }), m9a863, ((m9_sl_CHAR){ (uint32_t *) m9s952, 105 }), err);
+                    { __typeof__(Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s969, 21 }), xd->a, ((m9_sl_CHAR){ (uint32_t *) m9s970, 4 }), m9a902, ((m9_sl_CHAR){ (uint32_t *) m9s971, 105 }), err)) m9a903 = Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s969, 21 }), xd->a, ((m9_sl_CHAR){ (uint32_t *) m9s970, 4 }), m9a902, ((m9_sl_CHAR){ (uint32_t *) m9s971, 105 }), err);
                       if (err->exc) goto L_ret;
-                    Sem_ErrN (grp, u->a, m9a864, err);
+                    Sem_ErrN (grp, u->a, m9a903, err);
                     if (err->exc) goto L_ret;
                     }
                     }
