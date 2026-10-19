@@ -171,7 +171,7 @@ type
     procedure EmitHandler (h: TNode; const dlbl: string; ind: Integer);
     function Allocates (k: TNode): Boolean;
     function CalleeHead (dn: TNode): TNode;
-    function FrameArenaArg (k: TNode): Boolean;
+    function HeadType (t, dn: TNode): TNode;
     function SinkAlloc (k: TNode): Boolean;
     function Releasable (st: TNode): Boolean;
     function CondMark (k: TNode; ind: Integer): string;
@@ -2246,12 +2246,14 @@ var
   pv : Boolean;                     { a call through a procedure value }
   svt : TNode;
   pi, g, j, k, nargs, dot : Integer;
-  pl, grp, arg, vt, vd, pnode, xvt, enode, rec : TNode;
+  pl, grp, arg, vt, vd, pnode, xvt, enode, rec, pty : TNode;
+  pmod : string;
   ec, rk : Integer;
   isref : Boolean;
   ctype : string;
 begin
   tag := '?';
+  pmod := '';
   name := dnode.a;
   { the dotted callee name: every field selector joins, so
     Mod.Type.Variant reaches the constructor branch whole -- the
@@ -2702,6 +2704,9 @@ begin
     begin
       pnode := TNode (extProcs.Objects[g]);
       cfunc := tn + '_' + vn;
+      { its parameter and result types are written in ITS module
+        (OneFlux, 2026-10-19; mirrors Gen.CallC's pmod) }
+      pmod := tn;
     end;
   end
   else
@@ -2801,7 +2806,10 @@ begin
     Exit ('0');
   end;
   if pnode.kids[1] <> nil then
-    tag := TagOfType (pnode.kids[1]);
+  begin
+    if pmod <> '' then tag := TagOfType (QualIn (pnode.kids[1], pmod))
+    else tag := TagOfType (pnode.kids[1]);
+  end;
   args := '';
   pl := pnode.kids[0];
   k := 0;
@@ -2809,6 +2817,8 @@ begin
     for g := 0 to High (pl.kids) do
     begin
       grp := pl.kids[g];
+      pty := grp.kids[1];
+      if pmod <> '' then pty := QualIn (grp.kids[1], pmod);
       isref := grp.f1 or grp.f2;
       for j := 0 to High (grp.kids[0].kids) do
       begin
@@ -2830,12 +2840,12 @@ begin
             { rule 2: the object's pool rides behind it, named from
               the root of the designator (mirrors Gen.CallC) }
             if grp.f1 and (arg.kind = nkDesignator) and
-               PoolParamTy (grp.kids[1]) then
+               PoolParamTy (pty) then
               args := args + ', ' + ObjPoolC (arg);
           end
           else
           begin
-            want := TagOfType (grp.kids[1]);
+            want := TagOfType (pty);
             { ARRAY N OF T is the view of all N elements where a
               SLICE OF T is expected (par 2.2) }
             if (want = 'SLICE') and (arg.kind = nkDesignator) and
@@ -2843,7 +2853,7 @@ begin
             begin
               vt := Resolve (DesigDecl (arg));
               if (vt <> nil) and (vt.kind = nkArrayType) then
-                args := args + '((' + TyC (grp.kids[1]) + '){ (' +
+                args := args + '((' + TyC (pty) + '){ (' +
                   EX (arg, '') + ').v, INT64_C(' +
                   ArrCount (vt.kids[0]) + ') })'
               else
@@ -3669,21 +3679,14 @@ end;
 { does a sink under K receive an expression containing an allocation:
   an argument in VAR, OWN or KEPT position, or any argument of a
   callee without a head (a builtin keeps nothing and is walked through) }
-{ a VAR pointer argument whose object lives in the arena the statement
-  marks: rule 2 passes that arena behind the pointer as the object's
-  pool, the callee may grow the object above the mark, and the release
-  would free the growth under the caller's pointer (DynStr.Append
-  through a frame-form d; cp-kernel's Cs.Canonical, 2026-10-18).  A
-  sink whether or not the argument allocates (mirrors Gen.FrameArenaArg) }
-function TGen.FrameArenaArg (k: TNode): Boolean;
-var p : string;
+
+{ a parameter type of the head a call names, read in the module that
+  wrote it (mirrors Gen.HeadType) }
+function TGen.HeadType (t, dn: TNode): TNode;
 begin
-  Result := False;
-  if (k <> nil) and (k.kind = nkDesignator) then
-  begin
-    p := ObjPoolC (k);
-    Result := (p = 'err->res') or (inMain and (p = '&m9mframe'));
-  end;
+  Result := t;
+  if (Length (dn.kids) > 0) and (extMods.IndexOf (dn.a) >= 0) then
+    Result := QualIn (t, dn.a);
 end;
 
 function TGen.SinkAlloc (k: TNode): Boolean;
@@ -3714,8 +3717,13 @@ begin
             begin
               if (n <= High (al.kids)) and (grp.f1 or grp.f2 or grp.f4) then
                 if Allocates (al.kids[n]) then Exit (True);
-              if (n <= High (al.kids)) and grp.f1 and PoolParamTy (grp.kids[1]) then
-                if FrameArenaArg (al.kids[n]) then Exit (True);
+              { a VAR argument that carries a pointer is a sink whether
+                or not it allocates: what the callee stores there may be
+                re-homed into the marked arena (mirrors Gen.SinkAlloc;
+                OneFlux's Va.m9, 2026-10-19) }
+              if (n <= High (al.kids)) and grp.f1 and
+                 HasPtr (HeadType (grp.kids[1], dn), 0) then
+                Exit (True);
               Inc (n);
             end;
           end;
@@ -3733,6 +3741,10 @@ function TGen.Releasable (st: TNode): Boolean;
 var lt : TNode;
 begin
   Result := False;
+  { never in a module body: the marked arena is &m9mframe, the pool of
+    every module variable without IN and where a callee's kept frame
+    allocations are adopted (OneFlux, 2026-10-19; mirrors Gen.Releasable) }
+  if inMain then Exit;
   if st.kind = nkCallStmt then
     Exit (Allocates (st.kids[1]) and not SinkAlloc (st));
   if st.kind = nkAssign then
@@ -3752,7 +3764,7 @@ end;
 function TGen.CondMark (k: TNode; ind: Integer): string;
 begin
   Result := '';
-  if Allocates (k) and not SinkAlloc (k) then
+  if not inMain and Allocates (k) and not SinkAlloc (k) then
   begin
     Result := NewTmp;
     Line (pbuf, ind, 'm9_mark ' + Result + ' = m9_pool_mark (err->res);');

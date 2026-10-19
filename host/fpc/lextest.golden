@@ -22,7 +22,7 @@
 ../../corpus/FmtTest.m9                  tokens=1155 errors=0
 ../../corpus/Frame.m9                    tokens=21660 errors=0
 ../../corpus/FrameTest.m9                tokens=5785 errors=0
-../../corpus/Gen.m9                      tokens=44875 errors=0
+../../corpus/Gen.m9                      tokens=44940 errors=0
 ../../corpus/Grib.m9                     tokens=3540 errors=0
 ../../corpus/Hash.m9                     tokens=1469 errors=0
 ../../corpus/HashTest.m9                 tokens=1640 errors=0
@@ -60,7 +60,7 @@
 ../../corpus/Palette.m9                  tokens=116 errors=0
 ../../corpus/Parquet.m9                  tokens=16058 errors=0
 ../../corpus/ParquetTest.m9              tokens=4762 errors=0
-../../corpus/Parse.m9                    tokens=11834 errors=0
+../../corpus/Parse.m9                    tokens=12251 errors=0
 ../../corpus/Pg.m9                       tokens=4412 errors=0
 ../../corpus/PgTest.m9                   tokens=2670 errors=0
 ../../corpus/Plot.m9                     tokens=17732 errors=0
@@ -76,7 +76,7 @@
 ../../corpus/Review.m9                   tokens=4020 errors=0
 ../../corpus/Rsa.m9                      tokens=2169 errors=0
 ../../corpus/RsaTest.m9                  tokens=2390 errors=0
-../../corpus/Sem.m9                      tokens=66886 errors=0
+../../corpus/Sem.m9                      tokens=66913 errors=0
 ../../corpus/Seq.m9                      tokens=1363 errors=0
 ../../corpus/SeqTest.m9                  tokens=833 errors=0
 ../../corpus/ShareUse.m9                 tokens=1285 errors=0

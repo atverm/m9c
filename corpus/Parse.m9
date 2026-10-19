@@ -887,8 +887,66 @@ BEGIN
   RETURN n
 END PType ;
 
+(* a QUALIFIED variant with binders, `Frame.Data.F64s (v, m)', read
+   as the call it looks like and turned into the pattern it is: the
+   callee nothing but field selectors, every argument a bare name.
+   The one-token lookahead cannot see past `Frame.' to the `(', so the
+   label went down as an expression and its binders as unknown names
+   (OneFlux, 2026-10-19 -- and the m9 skill's own example is the
+   qualified form).  The variant is the last selector; the type the
+   qualification names is the selector's, which the checker holds the
+   label to as for the bare form.  NONE when E is anything else. *)
+PROCEDURE QualPattern (VAR pool: POOL ; VAR KEPT p: Parser ;
+                       e: PTR Ast.Node) : Ast.Kid =
+VAR
+  n, ids, id : PTR Ast.Node ;
+  i : I64 ;
+BEGIN
+  IF e.kind # Ast.NCallExpr OR e.nkids < 2 THEN RETURN NONE END ;
+  IF e.kids[0] IS SOME d THEN
+    IF d.kind # Ast.NDesignator OR d.nkids = 0 THEN RETURN NONE END ;
+    FOR i := 0 TO d.nkids - 1 DO
+      IF d.kids[i] IS SOME sf THEN
+        IF sf.kind # Ast.NSelField THEN RETURN NONE END
+      ELSE
+        RETURN NONE
+      END
+    END ;
+    IF e.kids[1] IS SOME al THEN
+      IF al.nkids = 0 THEN RETURN NONE END ;
+      FOR i := 0 TO al.nkids - 1 DO
+        IF al.kids[i] IS SOME a THEN
+          IF a.kind # Ast.NDesignator OR a.nkids # 0 THEN RETURN NONE END
+        ELSE
+          RETURN NONE
+        END
+      END ;
+      n := Nn (pool, p, Ast.NLabelPattern) ;
+      n.line := e.line ;
+      n.col := e.col ;
+      IF d.kids[d.nkids - 1] IS SOME last THEN n.a := last.a END ;
+      ids := Nn (pool, p, Ast.NIdentList) ;
+      ids.line := al.line ;
+      ids.col := al.col ;
+      FOR i := 0 TO al.nkids - 1 DO
+        IF al.kids[i] IS SOME a2 THEN
+          id := Nn (pool, p, Ast.NIdent) ;
+          id.line := a2.line ;
+          id.col := a2.col ;
+          id.a := a2.a ;
+          Ast.Add (pool, ids, SOME (id))
+        END
+      END ;
+      Ast.Add (pool, n, SOME (ids)) ;
+      RETURN SOME (n)
+    END
+  END ;
+  RETURN NONE
+END QualPattern ;
+
 PROCEDURE PCaseLabel (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
-VAR n : PTR Ast.Node ;
+VAR
+  n, e : PTR Ast.Node ;
 BEGIN
   IF p.cur.kind = TkIdent THEN
     IF NxtKind (p) = TkLParen THEN
@@ -901,7 +959,11 @@ BEGIN
     END
   END ;
   n := Nn (pool, p, Ast.NLabelRange) ;
-  Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+  e := PExpr (pool, p) ;
+  IF p.cur.kind # TkDotDot THEN
+    IF QualPattern (pool, p, e) IS SOME qp THEN RETURN qp END
+  END ;
+  Ast.Add (pool, n, SOME (e)) ;
   IF p.cur.kind = TkDotDot THEN
     Bump (p) ;
     Ast.Add (pool, n, SOME (PExpr (pool, p)))

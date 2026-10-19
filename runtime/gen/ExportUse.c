@@ -60,13 +60,11 @@ int main (int argc, char **argv)
     Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s1, 16 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  m9_mark m9t3 = m9_pool_mark (err->res);
   { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err)) m9a1 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s2, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s4, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s5, 10 }), err), Fmt_I64Str (INT64_C(4), err), err);
     if (err->exc) goto L_hdl_m9t1;
   Io_WriteLine (m9a1, err);
   if (err->exc) goto L_hdl_m9t1;
   }
-  m9_pool_release (err->res, m9t3);
   { __typeof__((*ExportDef_count)) m9v = m9_add_i64 ((*ExportDef_count), INT64_C(2), err);
     if (err->exc) goto L_hdl_m9t1;
     (*ExportDef_count) = m9v;

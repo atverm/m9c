@@ -1,0 +1,39 @@
+MODULE GfBigElem ;
+
+(* WANT: caught 9 of 2, intact 7.0 7.0 *)
+
+(* An index out of range into a slice of records BIGGER than the
+   runtime's 64 KB out-of-bounds cell (OneFlux, 2026-10-19: Eprp.Chunk,
+   ~100 KB; gcc's -Wstringop-overflow at offset 104280 into
+   m9_poison[65536]).  The store happens before the error is tested,
+   into the cell -- and past its end into whatever followed it.  Such
+   an element gets a cell of its own size now; the records around it
+   stay as they were. *)
+
+IMPORT Io, Fmt ;
+
+TYPE Big = RECORD w : ARRAY 20000 OF F64 ; tag : I64 END ;
+
+VAR
+  pool : POOL ;
+  bs : SLICE OF Big ;
+  b : Big ;
+  i : I64 ;
+BEGIN
+  bs := NEW (pool, Big, 2) ;
+  b.w[0] := 7.0 ; b.w[19999] := 7.0 ; b.tag := 1 ;
+  bs[0] := b ;
+  bs[1] := b ;
+  i := 9 ;
+  BEGIN
+    bs[i] := b
+  EXCEPT
+  | IndexError (k, n) :
+      Io.WriteLine ('caught ' + Fmt.I64Str (k) + ' of ' + Fmt.I64Str (n)
+                    + ', intact ' + Fmt.Fixed (bs[1].w[0], 1) + ' '
+                    + Fmt.Fixed (bs[1].w[19999], 1))
+  END
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+| ValueRange : Io.WriteLine ('range')
+END GfBigElem.

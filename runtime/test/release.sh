@@ -48,8 +48,10 @@ echo "release:         sink:     pool $sp1 -> $sp4 KB, peak $sk1 -> $sk4 KB"
 cp releasegrow.m9 "$OUT/"
 ( cd "$OUT" && "$M9C" --make -o releasegrow releasegrow.m9 )
 "$OUT/releasegrow" > "$OUT/grow.out" 2>&1 || { echo "release: releasegrow failed"; cat "$OUT/grow.out"; exit 1; }
-for tag in module local; do
+for tag in module local callee; do
   grep -qx "$tag length 225 nul 0" "$OUT/grow.out" || {
     echo "release: a buffer grown through a VAR pointer was freed under it:"; cat "$OUT/grow.out"; exit 1; }
 done
+grep -qx "varstr same" "$OUT/grow.out" || {
+  echo "release: a string a callee gave a VAR STR was freed under it:"; cat "$OUT/grow.out"; exit 1; }
 echo "release: PASS -- a statement's concatenation dies with the statement; the sink's accumulate; a buffer grown for the caller does not"

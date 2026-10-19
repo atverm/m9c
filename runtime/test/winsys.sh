@@ -65,7 +65,11 @@ else
 fi
 
 # --- the Windows half ------------------------------------------------
-if ! command -v wine >/dev/null 2>&1; then
+if [ "${M9WINE:-0}" != 1 ]; then
+  # wine retired as a Windows (2026-10-19): this half runs on the
+  # Windows 11 VM, tools/release/win/vmgates.sh; M9WINE=1 for wine
+  echo "  SKIP  windows: runs on the Windows 11 VM (tools/release/win/vmgates.sh); M9WINE=1 for wine"
+elif ! command -v wine >/dev/null 2>&1; then
   echo "  SKIP  windows: no wine"
 elif ! command -v "$XC" >/dev/null 2>&1; then
   echo "  SKIP  windows: no $XC (set \$M9WINCC)"

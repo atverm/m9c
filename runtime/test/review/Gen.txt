@@ -2,10 +2,10 @@ REVIEW Gen -- 153 procedures with a body, 112 of them functions; 26 headings in 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path             112
-  assignments                                  1134
-  arguments                                    5433
-  RETURN values                                 525
-  operands of a comparison or an operator       936
+  assignments                                  1138
+  arguments                                    5443
+  RETURN values                                 526
+  operands of a comparison or an operator       939
   CASE labels                                    92
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    1   gpool
   local pools                                     0
   pool parameters                                 0
-  KEPT parameters                                27   PoolReg, OutReg, AdoptReg, AdoptReg, AdoptReg, SetPrefix, +21 more
+  KEPT parameters                                28   PoolReg, OutReg, AdoptReg, AdoptReg, AdoptReg, SetPrefix, +22 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

@@ -35,6 +35,12 @@ set -u
 R=$(cd "$(dirname "$0")/../.." && pwd)
 TC=${M9WINTOOLCHAIN:-}
 
+# WINE IS RETIRED AS A WINDOWS (Alex, 2026-10-19: "skip the wine part
+# and move to the UTM Win11").  The zip is installed, compiled with and
+# its tutor run on Windows 11 by tools/release/win/vmsmoke.sh, whose
+# smoke line the release receipt carries; M9WINE=1 runs this gate
+# under wine as before, for a machine without the VM.
+[ "${M9WINE:-0}" = 1 ] || { echo "winzip: SKIP -- the Windows checks run on the Windows 11 VM ($0's successor: tools/release/win/vmsmoke.sh); M9WINE=1 for wine"; exit 0; }
 command -v wine >/dev/null 2>&1 || { echo "winzip: SKIP -- no wine"; exit 0; }
 [ -n "$TC" ] && [ -x "$TC/bin/gcc.exe" ] || {
   echo "winzip: SKIP -- no MSYS2 subset (set \$M9WINTOOLCHAIN; see tools/release/win/subset.sh)"

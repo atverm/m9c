@@ -3655,12 +3655,14 @@ VAR
   svRaise : BOOL ;
   gname, xtn : STR ;
   pi, g, j, k, k2, nargs, dot, dot2, nf32, nf64, eln : I64 ;
-  pnodeK, ak, vgrid, aliasK, enode : Ast.Kid ;
+  pnodeK, ak, vgrid, aliasK, enode, pty : Ast.Kid ;
   ser, pv : BOOL ;
   d3 : PTR DynStr.DString IN gpool ;
+  pmod : STR ;            (* the callee's module, for an imported head *)
 BEGIN
   tag := '?' ;
   name := '' ;
+  pmod := '' ;
   nargs := 0 ;
   eln := 0 ;
   IF dn IS SOME d9 THEN eln := d9.line END ;
@@ -4114,7 +4116,13 @@ BEGIN
     g := MFind (extProcs, name) ;
     IF g >= 0 THEN
       pnodeK := extProcs.es[g].v ;
-      cfunc := S3 (CP (tn), '_', vn)
+      cfunc := S3 (CP (tn), '_', vn) ;
+      (* its parameter and result types are written in ITS module: a
+         bare `V' there is Pa.V, not whichever imported module's V
+         ExtBare meets first (OneFlux, 2026-10-19: Clean.Verdict, no
+         pointer, imported before Outlier.Verdict, three slices, and
+         the call to Outlier.Detect went without its hidden pool) *)
+      pmod := Text.Keep (gpool, tn)
     END
   ELSE
     (* a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or
@@ -4212,12 +4220,20 @@ BEGIN
     END
   END ;
   IF pnodeK IS SOME pn THEN
-    IF pn.kids[1] IS SOME rt THEN tag := TagOfType (pn.kids[1]) END ;
+    IF pn.kids[1] IS SOME rt THEN
+      IF LEN (pmod) > 0 THEN
+        tag := TagOfType (QualIn (pn.kids[1], pmod))
+      ELSE
+        tag := TagOfType (pn.kids[1])
+      END
+    END ;
     args := '' ;
     k2 := 0 ;
     IF pn.kids[0] IS SOME pl THEN
       FOR g := 0 TO pl.nkids - 1 DO
         IF pl.kids[g] IS SOME grp THEN
+          pty := grp.kids[1] ;
+          IF LEN (pmod) > 0 THEN pty := QualIn (grp.kids[1], pmod) END ;
           IF grp.kids[0] IS SOME gids THEN
             FOR j := 0 TO gids.nkids - 1 DO
               IF k2 < nargs THEN
@@ -4241,11 +4257,11 @@ BEGIN
                       (* rule 2: the object's pool rides behind it,
                          named from the root of the designator *)
                       IF grp.f1 AND arg.kind = Ast.NDesignator AND
-                         PoolParamTy (grp.kids[1]) THEN
+                         PoolParamTy (pty) THEN
                         args := S3 (args, ', ', ObjPoolC (arg))
                       END
                     ELSE
-                      want2 := TagOfType (grp.kids[1]) ;
+                      want2 := TagOfType (pty) ;
                       (* ARRAY N OF T is the view of all N elements
                          where a SLICE OF T is expected (par 2.2) *)
                       IF DynStr.Eq (want2, 'SLICE') AND
@@ -4253,7 +4269,7 @@ BEGIN
                          DynStr.Eq (TagOfExpr (ak), 'ARR') THEN
                         IF Resolve (DesigDecl (arg)) IS SOME av THEN
                           IF av.kind = Ast.NArrayType THEN
-                            e1 := TyC (grp.kids[1]) ;   (* order: TyC, *)
+                            e1 := TyC (pty) ;   (* order: TyC, *)
                             e2 := EX (ak, '') ;         (* then EX     *)
                             cnt := ArrCount2 (av.kids[0]) ;
                             args := S2 (args, S7 ('((', e1, '){ (', e2,
@@ -4652,29 +4668,19 @@ END CalleeHead ;
    -- an argument in VAR, OWN or KEPT position, or any argument of a
    callee without a head (a builtin keeps nothing and is walked
    through) *)
-(* A VAR pointer argument whose object lives in the arena the
-   statement marks.  Rule 2 passes the object's pool behind a VAR
-   pointer (CallC above, `ObjPoolC`), and for a frame-form local that
-   pool IS err->res -- so the callee may grow the object above the
-   mark, and the release frees the growth under the caller's pointer:
-   `DynStr.Append (d, 'prev ' + h + Lf)` with `d : PTR DynStr.DString`
-   and no IN clause, Append's Grow carving the doubled buffer in the
-   caller's frame arena (cp-kernel's Cs.Canonical, 2026-10-18: 48,847
-   of 48,867 bytes NUL).  Such a statement is a sink whether or not
-   the argument allocates; it is the one place the marked arena
-   leaves the frame.  In the module body the arena is &m9mframe, and
-   a module variable without IN names it. *)
-PROCEDURE FrameArenaArg (k: Ast.Kid) : BOOL =
-VAR p : STR ;
+
+(* a parameter type of the head a call names, read in the module
+   that wrote it: QualIn for an imported callee (`Mod.Proc'), the node
+   itself for this module's own (CallC's pmod) *)
+PROCEDURE HeadType (KEPT t: Ast.Kid ; dn: PTR Ast.Node) : Ast.Kid =
 BEGIN
-  IF k IS SOME a THEN
-    IF a.kind = Ast.NDesignator THEN
-      p := ObjPoolC (a) ;
-      RETURN DynStr.Eq (p, 'err->res') OR (inMain AND DynStr.Eq (p, '&m9mframe'))
+  IF dn.nkids > 0 THEN
+    IF MFind (extMods, dn.a) >= 0 THEN
+      RETURN QualIn (t, Text.Keep (gpool, dn.a))
     END
   END ;
-  RETURN FALSE
-END FrameArenaArg ;
+  RETURN t
+END HeadType ;
 
 PROCEDURE SinkAlloc (k: Ast.Kid) : BOOL =
 VAR
@@ -4696,8 +4702,22 @@ BEGIN
                       IF n < al.nkids AND (grp.f1 OR grp.f2 OR grp.f4) THEN
                         IF Allocates (al.kids[n]) THEN RETURN TRUE END
                       END ;
-                      IF n < al.nkids AND grp.f1 AND PoolParamTy (grp.kids[1]) THEN
-                        IF FrameArenaArg (al.kids[n]) THEN RETURN TRUE END
+                      (* A VAR ARGUMENT THAT CARRIES A POINTER is a sink
+                         whether or not it allocates: what the callee
+                         stores there may be re-homed into the arena the
+                         statement marks -- the hidden pool behind a VAR
+                         pointer or record is that arena for a frame-form
+                         root (DynStr.Append growing `d`: cp-kernel's
+                         Cs.Canonical, 2026-10-18), and a new string or
+                         slice the callee assigns to a VAR STR or SLICE is
+                         adopted into the caller's arena at its exit
+                         (`Add (a, x + y)` with `line := line + datum`:
+                         OneFlux's Va.m9 and EddyPro's header lines,
+                         2026-10-19).  Either lands above the mark and the
+                         release freed it. *)
+                      IF n < al.nkids AND grp.f1 AND
+                         HasPtr (HeadType (grp.kids[1], dn), 0) THEN
+                        RETURN TRUE
                       END ;
                       n := n + 1
                     END
@@ -4718,9 +4738,22 @@ BEGIN
   RETURN FALSE
 END SinkAlloc ;
 
-(* is this call statement or assignment released with the statement? *)
+(* is this call statement or assignment released with the statement?
+
+   NEVER IN A MODULE BODY (OneFlux, 2026-10-19).  There the marked
+   arena is &m9mframe, and that is not this statement's alone: it is
+   the pool every module variable without IN names (rule 2), so any
+   procedure of the module the statement calls may grow such a
+   variable's object in it -- `Line (s + t)` appending to a module
+   `out : PTR DynStr.DString` -- and every frame allocation a callee
+   keeps in a module variable is adopted into it at the callee's exit
+   (rule 1).  Both land above the mark, and the release freed them:
+   OneFlux's gate programs printed NUL bytes.  What a callee can reach
+   in a PROCEDURE's frame arena is only what its arguments name, which
+   SinkAlloc sees. *)
 PROCEDURE Releasable (st: PTR Ast.Node) : BOOL =
 BEGIN
+  IF inMain THEN RETURN FALSE END ;
   IF st.kind = Ast.NCallStmt THEN
     RETURN Allocates (st.kids[1]) AND NOT SinkAlloc (SOME (st))
   END ;
@@ -4743,7 +4776,8 @@ END Releasable ;
 PROCEDURE CondMark (k: Ast.Kid ; ind: I64) : STR =
 VAR mk : STR ;
 BEGIN
-  IF Allocates (k) AND NOT SinkAlloc (k) THEN
+  (* not in a module body: Releasable says why *)
+  IF NOT inMain AND Allocates (k) AND NOT SinkAlloc (k) THEN
     mk := NewTmp () ;
     Line (KPbuf, ind, S3 ('m9_mark ', mk, ' = m9_pool_mark (err->res);')) ;
     RETURN mk

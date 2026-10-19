@@ -1334,15 +1334,28 @@ end;
   copied (`buf[i] := s[i]').  A type this checker cannot resolve is
   taken as bearing.  Mirrors Sem.ParamViewBearing }
 function TSem.ParamViewBearing (d, e: TNode; const modn: string): Boolean;
-var tn : TNode; beyond, known : Boolean;
+var tn : TNode; cq : string; beyond, known : Boolean;
 begin
   Result := False;
   if not IsParamOfD (d, e.a) then Exit;
   tn := ParamSelType (d, e, modn, beyond, known);
   if not known then Exit (True);
-  { a builtin scalar resolves to nothing, being nothing's alias }
-  if (tn <> nil) and (tn.kind = nkQualident) and (tn.b = '') and
-     InList (tn.a, BuiltinTypes) then Exit;
+  { a builtin scalar resolves to nothing, being nothing's alias -- and
+    so does a NAME for one, `Kind.FlexFloat = F32`: chased to the
+    builtin it abbreviates as Sem.ScalarAlias chases a conversion's
+    name (2026-10-18, pull request 23: the FLEXPART port's
+    Getfields.Adopt copying elements of a SLICE OF Kind.FlexFloat read
+    as a borrow handed back, and its callers were asked for KEPT) }
+  if (tn <> nil) and (tn.kind = nkQualident) then
+  begin
+    if tn.b = '' then
+    begin
+      if InList (tn.a, BuiltinTypes) then Exit;
+      cq := CanonQual ('', tn.a, 0);
+    end
+    else cq := CanonQual (tn.a, tn.b, 0);
+    if InList (cq, BuiltinTypes) then Exit;
+  end;
   if ResolveType (tn) <> nil then Exit (PtrBearing (tn, 0));
   Result := True;
 end;

@@ -1,0 +1,23 @@
+DEFINITION MODULE GfHpB ;
+
+(* helper of GfHiddenPool: a record of the SAME NAME with no pointer *)
+
+TYPE
+  V = RECORD
+    n : I64 ;
+    ok : BOOL ;
+  END ;
+
+PROCEDURE Zero (VAR v: V) ;
+
+END GfHpB.
+
+IMPLEMENTATION MODULE GfHpB ;
+
+PROCEDURE Zero (VAR v: V) =
+BEGIN
+  v.n := 0 ;
+  v.ok := FALSE
+END Zero ;
+
+END GfHpB.

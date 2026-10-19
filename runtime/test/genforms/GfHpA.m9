@@ -1,0 +1,25 @@
+DEFINITION MODULE GfHpA ;
+
+(* helper of GfHiddenPool: a record named V that carries pointers *)
+
+TYPE
+  V = RECORD
+    a : SLICE OF F64 ;
+    b : SLICE OF BOOL ;
+    r : BOOL ;
+  END ;
+
+PROCEDURE Fill (VAR pool: POOL ; n: I64 ; VAR v: V) ;
+
+END GfHpA.
+
+IMPLEMENTATION MODULE GfHpA ;
+
+PROCEDURE Fill (VAR pool: POOL ; n: I64 ; VAR v: V) =
+BEGIN
+  v.a := NEW (pool, F64, n) ;
+  v.b := NEW (pool, BOOL, n) ;
+  v.r := TRUE
+END Fill ;
+
+END GfHpA.

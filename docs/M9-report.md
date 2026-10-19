@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.23.0, 2026-10-18
+## Report — revision 0.24.0, 2026-10-19
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -35,7 +35,7 @@ to reduce, so the list is meant to shrink.
 | **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6; since 2026-10-11 `m9c --review` LISTS each `THREAD` whose target writes one, not refused); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path, a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
 | **Accepted by the checker, refused by the generator** | `VIEW` over a grid a call answers (`VIEW (Mk (), 1, ALL)`).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` as COMPUTED (§6: since 2026-10-11 it is DECLARED, `RECORD ... END [SHARABLE]`, and checked at `THREAD`; the `SHARED` count is atomic since 2026-10-18); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.23.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
+| **Release** | 0.24.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
 

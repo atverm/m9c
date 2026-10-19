@@ -2,8 +2,8 @@ REVIEW Sem -- 360 procedures with a body, 240 of them functions; 46 headings in 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path             240
-  assignments                                  1384
-  arguments                                    5604
+  assignments                                  1386
+  arguments                                    5605
   RETURN values                                 887
   operands of a comparison or an operator      1730
   CASE labels                                    90

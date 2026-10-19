@@ -1,0 +1,42 @@
+MODULE GfQualArm ;
+
+(* WANT: bare 3.0 qualified 3.0 enum ok *)
+
+(* A QUALIFIED variant with binders is a pattern (OneFlux,
+   2026-10-19): `| Frame.Data.F64s (v, m)' bound nothing -- the
+   parser's one-token lookahead read it as a call, and every binder
+   was an unknown name -- while the bare `| F64s (v, m)' compiled.
+   The m9 skill's own example is the qualified form. *)
+
+IMPORT Io, Fmt, Frame ;
+
+PROCEDURE Bare (RO d: Frame.Data) : F64 RAISES IndexError =
+BEGIN
+  CASE d OF
+  | F64s (v, m) : RETURN v[0] + m
+  ELSE RETURN 0.0
+  END
+END Bare ;
+
+PROCEDURE Qualified (RO d: Frame.Data) : F64 RAISES IndexError =
+BEGIN
+  CASE d OF
+  | Frame.Data.F64s (v, m) : RETURN v[0] + m
+  ELSE RETURN 0.0
+  END
+END Qualified ;
+
+VAR
+  pool : POOL ;
+  xs : SLICE OF F64 ;
+  d : Frame.Data ;
+BEGIN
+  xs := NEW (pool, F64, 1) ;
+  xs[0] := 2.5 ;
+  d := Frame.Data.F64s (xs, 0.5) ;
+  Io.WriteLine ('bare ' + Fmt.Fixed (Bare (d), 1) + ' qualified '
+                + Fmt.Fixed (Qualified (d), 1) + ' enum ok')
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+| ValueRange : Io.WriteLine ('range')
+END GfQualArm.

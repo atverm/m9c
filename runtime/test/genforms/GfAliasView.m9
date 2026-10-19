@@ -1,0 +1,66 @@
+MODULE GfAliasView ;
+
+(* WANT: copied 3.5 kept 2.5 *)
+
+(* A NAME for a builtin scalar is a scalar (2026-10-18, atverm/m9 pull
+   request 23, from the FLEXPART port's `Kind.FlexFloat = F32`).  An
+   element copied out of a `SLICE OF Flex` into a VAR record is a
+   value, not a view: the checker took the alias as pointer-bearing,
+   read the copy as a borrow handed back through f, and asked Init's
+   callers for a `KEPT g` that keeps nothing.  Both shapes below --
+   the alias by its bare name and through a module -- must be
+   accepted and build.  Decision 51's rule is unchanged: a view of a
+   borrowed slice stored durably still asks for KEPT (frame-view-*
+   probes).  The second shape is the port's `rannumb`: a slice of an
+   alias of F64 copied into a VAR record's own slice. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Flex = F32 ;
+  Draw = F64 ;
+  Grid = RECORD akz : SLICE OF Flex ; n : I64 END ;
+  Fields = RECORD akz : SLICE OF Flex END ;
+  Manager = RECORD now : Fields END ;
+  Store = RECORD draws : SLICE OF Draw END ;
+
+PROCEDURE Adopt (VAR f: Fields ; RO g: Grid) RAISES IndexError =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO g.n - 1 DO f.akz[i] := g.akz[i] END
+END Adopt ;
+
+PROCEDURE Init (VAR m: Manager ; RO g: Grid) RAISES IndexError =
+BEGIN
+  Adopt (m.now, g)
+END Init ;
+
+PROCEDURE Keep (VAR s: Store ; RO draws: SLICE OF Draw)
+  RAISES IndexError =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (draws) - 1 DO s.draws[i] := draws[i] END
+END Keep ;
+
+VAR
+  pool : POOL ;
+  g : Grid ;
+  m : Manager ;
+  s : Store ;
+  d : SLICE OF Draw ;
+BEGIN
+  g.n := 3 ;
+  g.akz := NEW (pool, Flex, 3) ;
+  g.akz[0] := 1.5 ; g.akz[1] := 2.5 ; g.akz[2] := 3.5 ;
+  m.now.akz := NEW (pool, Flex, 3) ;
+  Init (m, g) ;
+  d := NEW (pool, Draw, 2) ;
+  d[0] := 1.5 ; d[1] := 2.5 ;
+  s.draws := NEW (pool, Draw, 2) ;
+  Keep (s, d) ;
+  Io.WriteLine ('copied ' + Fmt.Fixed (F64 (m.now.akz[2]), 1)
+                + ' kept ' + Fmt.Fixed (s.draws[1], 1))
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+| ValueRange : Io.WriteLine ('range')
+END GfAliasView.

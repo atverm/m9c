@@ -1406,13 +1406,11 @@ m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err)
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(scratch), bnd, err);
     if (err->exc) goto L_ret;
-    m9_mark m9t2 = m9_pool_mark (err->res);
     { __typeof__(m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err)) m9a14 = m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err);
       if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(scratch), m9a14, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t2);
     DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s18, 37 }), err);
     if (err->exc) goto L_ret;
     { __typeof__((*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).name) m9a15 = (*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).name;
@@ -1420,9 +1418,9 @@ m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err)
     Http_Quoted (&(d), &(scratch), m9a15, err);
     if (err->exc) goto L_ret;
     }
-    bool m9t3 = (*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).isFile;
+    bool m9t2 = (*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).isFile;
     if (err->exc) goto L_ret;
-    if (m9t3) {
+    if (m9t2) {
       DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s19, 11 }), err);
       if (err->exc) goto L_ret;
       { __typeof__((*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).file) m9a16 = (*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).file;
@@ -1430,18 +1428,16 @@ m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err)
       Http_Quoted (&(d), &(scratch), m9a16, err);
       if (err->exc) goto L_ret;
       }
-      m9_mark m9t4 = m9_pool_mark (err->res);
       { __typeof__(m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err)) m9a17 = m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err);
         if (err->exc) goto L_ret;
       DynStr_Append (&(d), &(scratch), m9a17, err);
       if (err->exc) goto L_ret;
       }
-      m9_pool_release (err->res, m9t4);
       DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s20, 14 }), err);
       if (err->exc) goto L_ret;
-      bool m9t5 = (((*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).ctype).len == INT64_C(0));
+      bool m9t3 = (((*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).ctype).len == INT64_C(0));
       if (err->exc) goto L_ret;
-      if (m9t5) {
+      if (m9t3) {
         DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s21, 24 }), err);
         if (err->exc) goto L_ret;
       } else {
@@ -1452,13 +1448,11 @@ m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err)
         }
       }
     }
-    m9_mark m9t6 = m9_pool_mark (err->res);
     { __typeof__(m9_cat_ch (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err), 13u, err), 10u, err)) m9a19 = m9_cat_ch (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err), 13u, err), 10u, err);
       if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(scratch), m9a19, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t6);
     { __typeof__(DynStr_View (d, err)) m9a20 = DynStr_View (d, err);
       if (err->exc) goto L_ret;
     { __typeof__((*(m9_sl_BYTE *) m9_at (heads.p, i, heads.len, sizeof (m9_sl_BYTE), err))) m9v = DynStr_Utf8 (&(scratch), m9a20, err);
@@ -1488,16 +1482,16 @@ m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err)
     out = m9v;
   }
   o = INT64_C(0);
-  { int64_t m9t7to;
+  { int64_t m9t4to;
   i = INT64_C(0);
-  m9t7to = m9_sub_i64 (f->n, INT64_C(1), err);
+  m9t4to = m9_sub_i64 (f->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t7to; i += 1) {
-    { int64_t m9t8to;
+  for (; i <= m9t4to; i += 1) {
+    { int64_t m9t5to;
     j = INT64_C(0);
-    m9t8to = m9_sub_i64 (((*(m9_sl_BYTE *) m9_at (heads.p, i, heads.len, sizeof (m9_sl_BYTE), err))).len, INT64_C(1), err);
+    m9t5to = m9_sub_i64 (((*(m9_sl_BYTE *) m9_at (heads.p, i, heads.len, sizeof (m9_sl_BYTE), err))).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j <= m9t8to; j += 1) {
+    for (; j <= m9t5to; j += 1) {
       { __typeof__((*(uint8_t *) m9_at (out.p, o, out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at ((*(m9_sl_BYTE *) m9_at (heads.p, i, heads.len, sizeof (m9_sl_BYTE), err)).p, j, (*(m9_sl_BYTE *) m9_at (heads.p, i, heads.len, sizeof (m9_sl_BYTE), err)).len, sizeof (uint8_t), err));
         if (err->exc) goto L_ret;
         (*(uint8_t *) m9_at (out.p, o, out.len, sizeof (uint8_t), err)) = m9v;
@@ -1508,11 +1502,11 @@ m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err)
         o = m9v;
       }
     } }
-    { int64_t m9t9to;
+    { int64_t m9t6to;
     j = INT64_C(0);
-    m9t9to = m9_sub_i64 (((*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).data).len, INT64_C(1), err);
+    m9t6to = m9_sub_i64 (((*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).data).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j <= m9t9to; j += 1) {
+    for (; j <= m9t6to; j += 1) {
       { __typeof__((*(uint8_t *) m9_at (out.p, o, out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at ((*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).data.p, j, (*(Http_Part *) m9_at (f->parts.p, i, f->parts.len, sizeof (Http_Part), err)).data.len, sizeof (uint8_t), err));
         if (err->exc) goto L_ret;
         (*(uint8_t *) m9_at (out.p, o, out.len, sizeof (uint8_t), err)) = m9v;
@@ -1532,11 +1526,11 @@ m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err)
       o = m9v;
     }
   } }
-  { int64_t m9t10to;
+  { int64_t m9t7to;
   j = INT64_C(0);
-  m9t10to = m9_sub_i64 ((tail).len, INT64_C(1), err);
+  m9t7to = m9_sub_i64 ((tail).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t10to; j += 1) {
+  for (; j <= m9t7to; j += 1) {
     { __typeof__((*(uint8_t *) m9_at (out.p, o, out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (tail.p, j, tail.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (out.p, o, out.len, sizeof (uint8_t), err)) = m9v;

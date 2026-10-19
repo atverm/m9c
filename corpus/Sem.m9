@@ -6335,15 +6335,22 @@ END ParamSelType ;
 PROCEDURE ParamViewBearing (d: PTR Ast.Node ; e: PTR Ast.Node ; RO mod: STR) : BOOL =
 VAR
   tn : Ast.Kid ;
+  qn : STR ;
   beyond, known : BOOL ;
 BEGIN
   IF NOT IsParamOf (d, e.a) THEN RETURN FALSE END ;
   tn := ParamSelType (d, e, mod, beyond, known) ;
   IF NOT known THEN RETURN TRUE END ;
-  (* a builtin scalar resolves to nothing, being nothing's alias *)
+  (* a builtin scalar resolves to nothing, being nothing's alias --
+     and so does a NAME for one, `Kind.FlexFloat = F32`: chased through
+     ScalarAlias as a conversion chases it, or every element copied
+     out of a `SLICE OF Kind.FlexFloat` reads as a borrow and the
+     FLEXPART port's Getfields.Adopt asks its callers for a KEPT that
+     keeps nothing (2026-10-18, atverm/m9 pull request 23) *)
   IF tn IS SOME tq THEN
-    IF tq.kind = Ast.NQualident AND LEN (tq.b) = 0 AND IsBuiltinTy (tq.a) THEN
-      RETURN FALSE
+    IF tq.kind = Ast.NQualident THEN
+      IF LEN (tq.b) = 0 THEN qn := tq.a ELSE qn := tq.a + '.' + tq.b END ;
+      IF IsBuiltinTy (ScalarAlias (qn)) THEN RETURN FALSE END
     END
   END ;
   IF ResolveType (tn) IS SOME r2 THEN RETURN PtrBearing (tn, 0) END ;

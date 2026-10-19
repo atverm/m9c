@@ -45,6 +45,7 @@ type
     function PStatement: TNode;
     function PCaseArm: TNode;
     function PCaseLabel: TNode;
+    function QualPattern (e: TNode): TNode;
     { expressions }
     function PExpr: TNode;
     function PDisj: TNode;
@@ -1071,7 +1072,45 @@ begin
   Result.Add (PStmtSeq ([tkBar, tkELSE, tkEND]));
 end;
 
+{ a QUALIFIED variant with binders, `Frame.Data.F64s (v, m)', read as
+  the call it looks like and turned into the pattern it is (OneFlux,
+  2026-10-19; mirrors Parse.QualPattern) }
+function TParser.QualPattern (e: TNode): TNode;
+var
+  d, al, ids, id : TNode;
+  i : Integer;
+begin
+  Result := nil;
+  if (e = nil) or (e.kind <> nkCallExpr) or (Length (e.kids) < 2) then Exit;
+  d := e.kids[0];
+  if (d = nil) or (d.kind <> nkDesignator) or (Length (d.kids) = 0) then Exit;
+  for i := 0 to High (d.kids) do
+    if (d.kids[i] = nil) or (d.kids[i].kind <> nkSelField) then Exit;
+  al := e.kids[1];
+  if (al = nil) or (Length (al.kids) = 0) then Exit;
+  for i := 0 to High (al.kids) do
+    if (al.kids[i] = nil) or (al.kids[i].kind <> nkDesignator) or
+       (Length (al.kids[i].kids) <> 0) then Exit;
+  Result := NewNode (nkLabelPattern);
+  Result.line := e.line;
+  Result.col := e.col;
+  Result.a := d.kids[High (d.kids)].a;
+  ids := NewNode (nkIdentList);
+  ids.line := al.line;
+  ids.col := al.col;
+  for i := 0 to High (al.kids) do
+  begin
+    id := NewNode (nkIdent);
+    id.line := al.kids[i].line;
+    id.col := al.kids[i].col;
+    id.a := al.kids[i].a;
+    ids.Add (id);
+  end;
+  Result.Add (ids);
+end;
+
 function TParser.PCaseLabel: TNode;
+var e, qp : TNode;
 begin
   if (cur.kind = tkIdent) and (Nxt.kind = tkLParen) then
   begin
@@ -1084,7 +1123,17 @@ begin
   else
   begin
     Result := NewNode (nkLabelRange);
-    Result.Add (PExpr);
+    e := PExpr;
+    if cur.kind <> tkDotDot then
+    begin
+      qp := QualPattern (e);
+      if qp <> nil then
+      begin
+        Result.Free;
+        Exit (qp);
+      end;
+    end;
+    Result.Add (e);
     if cur.kind = tkDotDot then
     begin
       Bump;

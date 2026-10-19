@@ -3790,13 +3790,11 @@ static Regex_Node * Regex_Escape (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_poo
   bool m9t4 = Regex_IsAsciiLetter (c, err);
   if (err->exc) goto L_ret;
   if (m9t4) {
-    m9_mark m9t5 = m9_pool_mark (err->res);
     { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s12, 12 }), c, err)) m9a15 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s12, 12 }), c, err);
       if (err->exc) goto L_ret;
     Regex_Fail (ps, ps_pool, m9a15, at, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t5);
   }
   err->res = m9res;
   m9ret = Regex_CharNode (sp, ps, ps_pool, re, re_pool, (int64_t)(c), err);
@@ -3911,13 +3909,11 @@ static bool Regex_ClassItem (m9_pool *sp, Regex_Parser *ps, m9_pool *ps_pool, Re
   bool m9t5 = (Regex_IsAsciiLetter (c, err) || Regex_IsDigit (c, err));
   if (err->exc) goto L_ret;
   if (m9t5) {
-    m9_mark m9t6 = m9_pool_mark (err->res);
     { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s15, 12 }), c, err)) m9a16 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s15, 12 }), c, err);
       if (err->exc) goto L_ret;
     Regex_Fail (ps, ps_pool, m9a16, at, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t6);
   }
   (*code) = (int64_t)(c);
   err->res = m9res;
@@ -4404,13 +4400,11 @@ static Regex_Node * Regex_ParseGroup (m9_pool *sp, Regex_Parser *ps, m9_pool *ps
         m9ret = g;
         goto L_ret;
     } else {
-      m9_mark m9t15 = m9_pool_mark (err->res);
       { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s42, 19 }), c, err)) m9a24 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s42, 19 }), c, err);
         if (err->exc) goto L_ret;
       Regex_Fail (ps, ps_pool, m9a24, at, err);
       if (err->exc) goto L_ret;
       }
-      m9_pool_release (err->res, m9t15);
     } } } } } } } } }
   } else {
     { __typeof__((*re)->ngroups) m9v = m9_add_i64 ((*re)->ngroups, INT64_C(1), err);
@@ -4423,9 +4417,9 @@ static Regex_Node * Regex_ParseGroup (m9_pool *sp, Regex_Parser *ps, m9_pool *ps
     if (err->exc) goto L_ret;
     body = m9v;
   }
-  bool m9t16 = ((Regex_Cur (ps, ps_pool, err) != 41u) || Regex_AtEnd (ps, ps_pool, err));
+  bool m9t15 = ((Regex_Cur (ps, ps_pool, err) != 41u) || Regex_AtEnd (ps, ps_pool, err));
   if (err->exc) goto L_ret;
-  if (m9t16) {
+  if (m9t15) {
     Regex_Fail (ps, ps_pool, ((m9_sl_CHAR){ (uint32_t *) m9s43, 34 }), at, err);
     if (err->exc) goto L_ret;
   }

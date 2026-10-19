@@ -128,6 +128,17 @@ M9_SLICE_T (m9_sl_CHAR, uint32_t)   /* CHAR is a Unicode scalar */
    every record in this repository thirty times over, and a bigger
    one is caught by the same warning that caught this.              */
 extern unsigned char m9_poison[65536];
+/* AND A BIGGER ONE FOR A BIGGER ELEMENT (OneFlux, 2026-10-19: gcc's
+   -Wstringop-overflow at offset 104280 into the 64 KB cell, Eprp_Chunk
+   -- a record of ~100 KB, the case the paragraph above said the
+   warning would catch, and it did).  An element larger than the cell
+   gets a zeroed block of its own size, never freed: it exists only on
+   the IndexError path, which the program is leaving.  sz is a constant
+   at every inlined call, so the test folds and the cell stays the only
+   code on the common path. */
+void *m9_poison_big (size_t sz);
+#define M9_POISON_CELL(sz_) \
+  ((sz_) <= sizeof m9_poison ? (void *) m9_poison : m9_poison_big (sz_))
 
 static inline void *m9_at (void *p, int64_t i, int64_t len,
                            size_t sz, m9_state *err)
@@ -135,7 +146,7 @@ static inline void *m9_at (void *p, int64_t i, int64_t len,
   if ((uint64_t) i >= (uint64_t) len) {
     err->i[0] = i; err->i[1] = len;
     m9_raise (err, &m9_exc_IndexError);
-    return m9_poison;
+    return M9_POISON_CELL (sz);
   }
   return (unsigned char *) p + (uint64_t) i * sz;
 }
@@ -172,7 +183,7 @@ static inline void *m9_gat (void *p, size_t sz, const int64_t *n,
     if ((uint64_t) idx[k] >= (uint64_t) n[k]) {
       err->i[0] = idx[k]; err->i[1] = n[k]; err->i[2] = k;
       m9_raise (err, &m9_exc_IndexError);
-      return m9_poison;
+      return M9_POISON_CELL (sz);
     }
     off += idx[k] * s[k];
   }
@@ -201,7 +212,7 @@ static inline void *m9_gat (void *p, size_t sz, const int64_t *n,
   if ((uint64_t) (i_) >= (uint64_t) (n_)) { \
     err->i[0] = (i_); err->i[1] = (n_); err->i[2] = (k_); \
     m9_raise (err, &m9_exc_IndexError); \
-    return m9_poison; \
+    return M9_POISON_CELL (sz); \
   }
 
 static inline void *m9_gat1 (void *p, size_t sz, int64_t n0, int64_t s0,

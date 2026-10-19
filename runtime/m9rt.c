@@ -41,6 +41,16 @@ unsigned char m9_poison[65536] __attribute__((aligned(16)));
 unsigned char m9_poison[65536];
 #endif
 
+/* the out-of-bounds cell for an element bigger than m9_poison (m9rt.h,
+   M9_POISON_CELL): its own zeroed block, never freed, and only ever on
+   the IndexError path */
+void *m9_poison_big (size_t sz)
+{
+  void *p = calloc (1, sz);
+  if (p == NULL) abort ();     /* no memory even for the error path */
+  return p;
+}
+
 const m9_exc m9_exc_Overflow    = { "Overflow" };
 const m9_exc m9_exc_IndexError  = { "IndexError" };
 const m9_exc m9_exc_OutOfMemory = { "OutOfMemory" };

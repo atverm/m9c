@@ -61,7 +61,9 @@ st=0
 # run, rather than passing quietly.
 TC=${M9WINTOOLCHAIN:-}
 why=""
-command -v wine >/dev/null 2>&1 || why="no wine"
+# wine retired as a Windows (2026-10-19); M9WINE=1 runs this half
+[ "${M9WINE:-0}" = 1 ] || why="wine retired: tools/release/win/vmgates.sh runs it on the Windows 11 VM, M9WINE=1 under wine"
+command -v wine >/dev/null 2>&1 || why="${why:+$why, }no wine"
 command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 || why="${why:+$why, }no mingw"
 { [ -n "$TC" ] && [ -f "$TC/lib/libssl.a" ]; } || why="${why:+$why, }no Windows OpenSSL (\$M9WINTOOLCHAIN)"
 if [ -n "$why" ]; then

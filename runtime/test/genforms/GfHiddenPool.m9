@@ -1,0 +1,34 @@
+MODULE GfHiddenPool ;
+
+(* WANT: filled 3 true zero 0 *)
+
+(* A VAR record parameter's hidden pool is decided by the CALLEE's
+   type, read in the callee's module (OneFlux, 2026-10-19).  GfHpB.V
+   has no pointer and is imported first; GfHpA.V has slices.  The
+   generator read the bare `V' of GfHpA.Fill's heading in this
+   module's import order, found GfHpB.V, and emitted the call without
+   the pool -- gcc: too few arguments to function 'GfHpA_Fill'. *)
+
+IMPORT GfHpB ;
+IMPORT GfHpA ;
+IMPORT Io, Fmt ;
+
+PROCEDURE Run () RAISES ValueRange =
+VAR
+  work : POOL ;
+  v : GfHpA.V ;
+  q : GfHpB.V ;
+BEGIN
+  GfHpB.Zero (q) ;
+  GfHpA.Fill (work, 3, v) ;
+  IF v.r THEN
+    Io.WriteLine ('filled ' + Fmt.I64Str (LEN (v.a)) + ' true zero '
+                  + Fmt.I64Str (q.n))
+  END
+END Run ;
+
+BEGIN
+  Run ()
+EXCEPT
+| ValueRange : Io.WriteLine ('range')
+END GfHiddenPool.

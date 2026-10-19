@@ -1491,15 +1491,13 @@ static m9_sl_CHAR Smtp_EncodedWord (m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t3) {
       if ((start > INT64_C(0))) {
-        m9_mark m9t4 = m9_pool_mark (err->res);
         { __typeof__(m9_cat (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s52, 1 }), err)) m9a25 = m9_cat (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s52, 1 }), err);
           if (err->exc) goto L_ret;
         DynStr_Append (&(d), &(scratch), m9a25, err);
         if (err->exc) goto L_ret;
         }
-        m9_pool_release (err->res, m9t4);
       }
-      { __typeof__(({ __typeof__(all) m9t5 = all; int64_t m9t5a = nb, m9t5n = cost; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a26 = ({ __typeof__(all) m9t5 = all; int64_t m9t5a = nb, m9t5n = cost; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+      { __typeof__(({ __typeof__(all) m9t4 = all; int64_t m9t4a = nb, m9t4n = cost; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a26 = ({ __typeof__(all) m9t4 = all; int64_t m9t4a = nb, m9t4n = cost; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
         if (err->exc) goto L_ret;
       { __typeof__(Smtp_OneWord (m9a26, useB, err)) m9a27 = Smtp_OneWord (m9a26, useB, err);
         if (err->exc) goto L_ret;
@@ -1521,15 +1519,13 @@ static m9_sl_CHAR Smtp_EncodedWord (m9_sl_CHAR s, m9_state *err)
     }
   } }
   if ((start > INT64_C(0))) {
-    m9_mark m9t6 = m9_pool_mark (err->res);
     { __typeof__(m9_cat (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 1 }), err)) m9a28 = m9_cat (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, 13u, err), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 1 }), err);
       if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(scratch), m9a28, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t6);
   }
-  { __typeof__(({ __typeof__(all) m9t7 = all; int64_t m9t7a = nb, m9t7n = m9_sub_i64 ((all).len, nb, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; })) m9a29 = ({ __typeof__(all) m9t7 = all; int64_t m9t7a = nb, m9t7n = m9_sub_i64 ((all).len, nb, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
+  { __typeof__(({ __typeof__(all) m9t5 = all; int64_t m9t5a = nb, m9t5n = m9_sub_i64 ((all).len, nb, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a29 = ({ __typeof__(all) m9t5 = all; int64_t m9t5a = nb, m9t5n = m9_sub_i64 ((all).len, nb, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
     if (err->exc) goto L_ret;
   { __typeof__(Smtp_OneWord (m9a29, useB, err)) m9a30 = Smtp_OneWord (m9a29, useB, err);
     if (err->exc) goto L_ret;
@@ -2184,13 +2180,11 @@ static void Smtp_Dialogue (m9_sl_CHAR host, int64_t port, int64_t security, m9_s
     if (err->exc) goto L_fin_m9t4;
     }
     m9_pool_release (err->res, m9t10);
-    m9_mark m9t11 = m9_pool_mark (err->res);
     { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s88, 8 }), (*(m9_sl_CHAR *) m9_at (rcpts.p, i, rcpts.len, sizeof (m9_sl_CHAR), err)), err)) m9a45 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s88, 8 }), (*(m9_sl_CHAR *) m9_at (rcpts.p, i, rcpts.len, sizeof (m9_sl_CHAR), err)), err);
       if (err->exc) goto L_fin_m9t4;
     Smtp_Need (&(c), INT64_C(2), m9a45, &(text), err);
     if (err->exc) goto L_fin_m9t4;
     }
-    m9_pool_release (err->res, m9t11);
   } }
   Smtp_Cmd (&(c), ((m9_sl_CHAR){ (uint32_t *) m9s89, 4 }), err);
   if (err->exc) goto L_fin_m9t4;
