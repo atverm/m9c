@@ -59,12 +59,8 @@ sh "$REPO/tools/tutor/setup.sh" "$REPO" "$W" "$M9C" >/dev/null
 
 ( cd "$B" && \
   M9RUNTIME="$RT" M9LIBRARY="$REPO/corpus" \
-    "$M9C" --make -c "$REPO/tools/tutor/Tutor.m9" >/dev/null && \
-  M9RUNTIME="$RT" M9LIBRARY="$REPO/corpus" \
-    "$M9C" --make -c "$REPO/tools/tutor/TutorMain.m9" \
-    -I "$REPO/tools/tutor" >/dev/null && \
-  gcc -O2 -flto TutorMain.o Tutor.o Diag.o Lex.o Io.o DynStr.o DynUtf.o \
-      "$RT/m9rt.c" "$RT/tcpshim.c" -iquote "$RT" -lm -o tutorm9 )
+    "$M9C" --make -I "$REPO/tools/tutor" \
+    -o tutorm9 "$REPO/tools/tutor/TutorMain.m9" >/dev/null )
 
 "$B/tutorm9" $PORT 64 "$W/site" "$W" \
     "$REPO/docs/tutorial/examples/data" > "$B/tutor.log" 2>&1 &
