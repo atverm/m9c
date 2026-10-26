@@ -35,8 +35,9 @@ PROCEDURE Pair () : PTR List ;
 PROCEDURE Label (VAR pool: POOL ; v: I64) : STR ;
   (* the digits of v after 'v=' *)
 
-PROCEDURE Remember (VAR pool: POOL ; RO s: STR) ;
-  (* keeps a copy of s in the module's table, in pool *)
+PROCEDURE Remember (VAR KEPT pool: POOL ; RO s: STR) ;
+  (* keeps a copy of s in the module's table, in pool -- KEPT: the
+     caller's pool must outlive the table (the region judgement) *)
 
 PROCEDURE Count () : I64 ;
   (* how many were remembered *)
@@ -128,7 +129,7 @@ BEGIN
   RETURN Text.Cat (pool, 'v=', Fmt.I64Str (v))
 END Label ;
 
-PROCEDURE Remember (VAR pool: POOL ; RO s: STR) =
+PROCEDURE Remember (VAR KEPT pool: POOL ; RO s: STR) =
 VAR
   nb : SLICE OF STR ;
   i : I64 ;

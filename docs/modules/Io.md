@@ -16,9 +16,13 @@ invites the truncation bugs Http.RecvMax already had to fix.
 
 ### WriteLine (RO s: STR)
 
+**Deprecated** (the UTF transition): WriteLineUtf is its UTF form.
+
 _(documented with the group below)_
 
 ### Write (RO s: STR)
+
+**Deprecated** (the UTF transition): WriteUtf is its UTF form.
 
 _(documented with the group below)_
 
@@ -44,12 +48,16 @@ binary on every platform.
 
 ### ErrLine (RO s: STR)
 
+**Deprecated** (the UTF transition): ErrLineUtf is its UTF form.
+
 to STDERR, and flushed.  Diagnostics do not belong in the
 program's output stream: the museum's HALT piece is three of
 them lost, and a log line interleaved into a data file is the
 same accident with a longer fuse.
 
 ### Err (RO s: STR)
+
+**Deprecated** (the UTF transition): ErrUtf is its UTF form.
 
 to STDERR without a newline, flushed -- Write's twin.  For
 text that already carries its line ends: what a child process
@@ -76,11 +84,15 @@ to exit 0, a failure reported as success.
 
 ### ParseI64 (RO s: STR) : I64 RAISES ValueRange
 
+**Deprecated** (the UTF transition): ParseI64Utf is its UTF form.
+
 decimal, optional leading '-'.  Anything else raises: a command
 line is input, and input that is not what it claims is exactly
 what the checked-conversion story exists for.
 
 ### Run (RO cmd: STR) : I64 RAISES ValueRange
+
+**Deprecated** (the UTF transition): RunUtf is its UTF form.
 
 hands one command line to the shell and answers its status.
 The shell is what knows how cc is spelled here, so m9c does not
@@ -90,17 +102,23 @@ something it cannot predict.
 
 ### Env (VAR pool: POOL ; RO name: STR) : STR RAISES ValueRange
 
+**Deprecated** (the UTF transition): EnvUtf is its UTF form.
+
 the variable's value, or empty when it is unset.  Unset and
 empty are not distinguished, because no caller here needs to
 and a two-valued answer nobody reads is a trap.
 
 ### Exists (RO path: STR) : BOOL RAISES ValueRange
 
+**Deprecated** (the UTF transition): ExistsUtf is its UTF form.
+
 readable?  A probe, not an open: the caller that asks this is
 choosing between candidates, and reading each one to find out
 would be an answer bought at the price of the question.
 
 ### ModTime (RO path: STR) : I64 RAISES ValueRange
+
+**Deprecated** (the UTF transition): ModTimeUtf is its UTF form.
 
 when the file was last written, in seconds since the epoch, or
 -1 if it cannot be looked at.
@@ -115,11 +133,15 @@ build whose inputs nobody could have read either.
 
 ### Remove (RO path: STR) : BOOL RAISES ValueRange
 
+**Deprecated** (the UTF transition): RemoveUtf is its UTF form.
+
 deletes a file; answers whether it is gone.  A by-product that
 cannot be removed is worth a word, not a raise: the object it
 came from was still built.
 
 ### ListDir (VAR pool: POOL ; RO path: STR) : SLICE OF STR RAISES IOError, ValueRange
+
+**Deprecated** (the UTF transition): ListDirUtf is its UTF form.
 
 the entries of a directory, '.' and '..' excluded, in the order
 the filesystem hands them out -- readdir order, NOT sorted,
@@ -134,6 +156,8 @@ the Python reference gets from the same syscall.
 
 ### Arg (VAR pool: POOL ; i: I64) : STR RAISES IndexError, ValueRange
 
+**Deprecated** (the UTF transition): ArgUtf is its UTF form.
+
 argument i as a fresh string in pool, copied out of the C argv
 rather than borrowed from it.
 
@@ -144,6 +168,8 @@ rather than borrowed from it.
        command line is exactly where that difference bites.
 
 ### ReadFile (VAR pool: POOL ; RO path: STR) : STR RAISES ValueRange, IOError
+
+**Deprecated** (the UTF transition): ReadFileUtf is its UTF form.
 
 the whole file as text, in one allocation.  There is no
 seeking and no partial read anywhere in this module, for the
@@ -169,6 +195,8 @@ tutorial's port file met exactly that (2026-09-11).
 
 ### ReadFileBytes (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE RAISES ValueRange, IOError
 
+**Deprecated** (the UTF transition): ReadFileBytesUtf is its UTF form.
+
 the same read, as OCTETS.  A CHAR is a Unicode scalar and so
 four bytes wide, which is right for text and wrong for a file:
 ReadFile on a 207 MB CSV allocates 828 MB and spends a pass
@@ -179,9 +207,13 @@ cannot run off the buffer.
 
 ### WriteFile (RO path: STR ; RO content: STR) RAISES ValueRange, IOError
 
+**Deprecated** (the UTF transition): WriteFileUtf is its UTF form.
+
 _(documented with the group below)_
 
 ### AppendFile (RO path: STR ; RO content: STR) RAISES ValueRange, IOError
+
+**Deprecated** (the UTF transition): AppendFileUtf is its UTF form.
 
 the file's bytes become, or gain, the UTF-8 of content: every
 Unicode scalar encoded (DynStr.Utf8).  Until 2026-10-09 WriteFile
@@ -210,6 +242,8 @@ reply and then blocks reading the next request; without this the
 reply sits in the buffer and the client waits on the silence.
 
 ### FileSize (RO path: STR) : I64 RAISES ValueRange, IOError
+
+**Deprecated** (the UTF transition): FileSizeUtf is its UTF form.
 
 how many bytes the file holds, without reading them: the size
 probe ReadFileBytes has always made first, exported.  A caller
@@ -246,10 +280,14 @@ Seekable files only: a plain file is, a pipe is not.
 
 ### MkDir (RO path: STR) RAISES ValueRange, IOError
 
+**Deprecated** (the UTF transition): MkDirUtf is its UTF form.
+
 create the directory, one level, existing is fine -- what an
 output directory needs before the first file goes into it.
 
 ### MkDirs (RO path: STR) RAISES ValueRange, IOError
+
+**Deprecated** (the UTF transition): MkDirsUtf is its UTF form.
 
 mkdir -p: create the directory and every missing parent; an
 existing one is fine.  `/' separates, and `\' too on Windows.
@@ -258,11 +296,15 @@ IOError names the path where a level could not be made
 
 ### Rename (RO from: STR ; RO to: STR) RAISES ValueRange, IOError
 
+**Deprecated** (the UTF transition): RenameUtf is its UTF form.
+
 rename(2): atomic replace on one filesystem -- write the temp
 file, Rename over the target, and a reader never sees a half-
 written document.
 
 ### WriteFileBytes (RO path: STR ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
+
+**Deprecated** (the UTF transition): WriteFileBytesUtf is its UTF form.
 
 the file's bytes become exactly `content` -- the twin of
 ReadFileBytes, which existed while writing stayed text-only.
@@ -271,6 +313,8 @@ a large binary: writing a 345 MB field cache through it would
 build 1.4 GB of CHARs first.  That cache is what forced this.
 
 ### AppendFileBytes (RO path: STR ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
+
+**Deprecated** (the UTF transition): AppendFileBytesUtf is its UTF form.
 
 the same octets APPENDED, the file created if it is absent.  For
 a caller who has a STREAM and a consumer that wants a PATH: a
@@ -282,11 +326,111 @@ one 4 MB one.
 
 _(undocumented)_
 
+### WriteUtf (RO u: UTF)
+
+_(documented with the group below)_
+
+### WriteLineUtf (RO u: UTF)
+
+the line and its LF in one write, as WriteLine's are
+
+### ErrLineUtf (RO u: UTF)
+
+_(documented with the group below)_
+
+### ReadFileUtf (RO path: UTF) : UTF RAISES ValueRange, IOError [FRESH]
+
+the whole file as text: its octets validated as UTF-8 (ValueRange,
+with the offset of the first that is not) and kept as they are --
+a UTF of the file's size, where ReadFile's STR is four times it.
+Not ReadFile's twin by shape: it answers in the caller's frame,
+where ReadFile answers into a pool (`UTF (pool, Io.ReadFileUtf
+(path))` keeps it)
+
+### WriteFileUtf (RO path: UTF ; RO content: UTF) RAISES ValueRange, IOError
+
+_(documented with the group below)_
+
+### AppendFileUtf (RO path: UTF ; RO content: UTF) RAISES ValueRange, IOError
+
+the file's bytes become, or gain, content's octets
+
+### RunUtf (RO cmd: UTF) : I64 RAISES ValueRange
+
+_(documented with the group below)_
+
+### EnvUtf (VAR pool: POOL ; RO name: UTF) : UTF RAISES ValueRange
+
+the value's bytes validated as UTF-8 (ValueRange when they are
+not) -- Env answers them one CHAR a byte, so `UTF (Io.Env (..))`
+would encode each byte again
+
+### ArgUtf (VAR pool: POOL ; i: I64) : UTF RAISES IndexError, ValueRange
+
+_(documented with the group below)_
+
+### ExistsUtf (RO path: UTF) : BOOL RAISES ValueRange
+
+_(documented with the group below)_
+
+### ModTimeUtf (RO path: UTF) : I64 RAISES ValueRange
+
+_(documented with the group below)_
+
+### RemoveUtf (RO path: UTF) : BOOL RAISES ValueRange
+
+_(documented with the group below)_
+
+### FileSizeUtf (RO path: UTF) : I64 RAISES ValueRange, IOError
+
+_(documented with the group below)_
+
+### MkDirUtf (RO path: UTF) RAISES ValueRange, IOError
+
+_(documented with the group below)_
+
+### MkDirsUtf (RO path: UTF) RAISES ValueRange, IOError
+
+_(documented with the group below)_
+
+### RenameUtf (RO from: UTF ; RO to: UTF) RAISES ValueRange, IOError
+
+_(documented with the group below)_
+
+### ListDirUtf (VAR pool: POOL ; RO path: UTF) : SLICE OF UTF RAISES IOError, ValueRange
+
+a name that is not UTF-8 is ValueRange, where ListDir answers it
+one CHAR a byte
+
+### ReadFileBytesUtf (VAR pool: POOL ; RO path: UTF) : SLICE OF BYTE RAISES ValueRange, IOError
+
+_(undocumented)_
+
+### WriteFileBytesUtf (RO path: UTF ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
+
+_(undocumented)_
+
+### AppendFileBytesUtf (RO path: UTF ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
+
+_(undocumented)_
+
+### ParseI64Utf (RO s: UTF) : I64 RAISES ValueRange
+
+_(undocumented)_
+
+### ErrUtf (RO u: UTF)
+
+_(undocumented)_
+
 ### PutChars (buf: C.ConstPtr ; n: C.SizeT) [REENTRANT]
 
 _(documented with the group below)_
 
 ### PutBytes (buf: C.ConstPtr ; n: C.SizeT) [REENTRANT]
+
+_(documented with the group below)_
+
+### PutErrBytes (buf: C.ConstPtr ; n: C.SizeT) [REENTRANT]
 
 CHARs straight out as UTF-8.  Console output is TOTAL: every
 Unicode scalar has a UTF-8 encoding, so unlike DynStr.Bytes --
@@ -355,13 +499,13 @@ _(undocumented)_
 
 ### ReadWhole (path: C.ConstPtr ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [REENTRANT]
 
-cap = 0 asks for the size and touches nothing.  REENTRANT: the
-shim opens a PRIVATE FILE* on its own path, reads, and closes it,
-touching no shared state -- the identical shape as m9_read_at,
-which was REENTRANT from the start.  glibc stdio locks each FILE
-and the open-file table internally, so two threads reading two
-files do not race.  The audit the old note deferred is this
-sentence; SERIAL had been provisional, not asserted.
+_(undocumented)_
+
+### CAdopt (p: C.ConstPtr ; n: C.SSizeT ; out: C.MutPtr) : C.SSizeT [REENTRANT]
+
+the bytes validated in place and answered as a UTF over the same
+storage (m9rt.h), for ReadFileUtf: -1, or the offset of the first
+byte that is no UTF-8
 
 ### CMkDir (path: C.ConstPtr) : C.Int [REENTRANT]
 

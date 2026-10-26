@@ -1,0 +1,17 @@
+MODULE R3OwnN17b ;
+(* a slice allocated in an owned object's POOL field read after the object is disposed *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;
+PROCEDURE Go () =
+VAR o : PTR Store ; s : SLICE OF I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  s := o.data ;
+  DISPOSE (o) ;
+  Io.WriteLine (Fmt.I64Str (s[0]))
+END Go ;
+BEGIN
+  Go ()
+END R3OwnN17b.

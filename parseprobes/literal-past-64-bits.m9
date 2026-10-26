@@ -1,0 +1,9 @@
+MODULE LiteralPast64Bits ;
+(* an integer literal is at most 64 bits: 18446744073709551615 is the
+   largest, a U64; one more reached C as a constant too large for its
+   type and printed 1 (2026-10-21, the compiler review's F1) *)
+VAR u : U64 ;
+BEGIN
+  u := 18446744073709551615 ;
+  u := 18446744073709551616
+END LiteralPast64Bits.

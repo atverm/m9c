@@ -1,0 +1,31 @@
+(* EXPECT: x is declared twice in the binders of Two (par 2.2) *)
+MODULE m ;
+(* a binder list names each binder once: `| Two (x, x) :' and a
+   handler's `| Bad (c, c) :' passed the checker and cc refused the
+   redefinition (2026-10-25, the case decision 26 left open).  Legal
+   forms first: distinct binders, a binder named like a field, a
+   handler's literal patterns repeated, the same name in two arms *)
+TYPE
+  Pair = CASE RECORD
+  | Two : a : I64 ; b : I64
+  | One : a : I64
+  END ;
+EXCEPTION Bad (code : I64 ; more : I64) ;
+PROCEDURE Legal (p: Pair) : I64 RAISES Bad =
+BEGIN
+  CASE p OF
+  | Pair.Two (a, y) : RETURN a + y
+  | Pair.One (a) : RAISE Bad (a, a)
+  END
+EXCEPT
+| Bad (c, d) : RETURN c + d
+END Legal ;
+PROCEDURE Twice (p: Pair) : I64 =
+BEGIN
+  CASE p OF
+  | Pair.Two (x, x) : RETURN x
+  | Pair.One (x) : RETURN x
+  END
+END Twice ;
+BEGIN
+END m.

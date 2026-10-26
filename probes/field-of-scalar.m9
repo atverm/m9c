@@ -1,0 +1,14 @@
+(* EXPECT: n.f: no field f -- the type I64 has no fields *)
+(* A field needs a record.  Of a scalar, a slice or an array the
+   checker passed it and the generator refused it as `selection through
+   a non-record unsupported yet' (2026-10-22, the review's F4). *)
+MODULE m ;
+TYPE R = RECORD f : I64 END ;
+VAR
+  r : R ;
+  n : I64 ;
+BEGIN
+  r.f := 1 ;
+  n := r.f ;
+  n := n.f
+END m.

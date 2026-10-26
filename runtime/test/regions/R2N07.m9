@@ -1,0 +1,21 @@
+MODULE R2N07 ;
+(* a function answering a slice of its own LOCAL ARRAY *)
+IMPORT Io, Fmt ;
+PROCEDURE Mk () : SLICE OF I64 =
+VAR a : ARRAY 4 OF I64 ; i : I64 ;
+BEGIN
+  FOR i := 0 TO 3 DO a[i] := 41 END ;
+  RETURN SLICE (a, 0, 4)
+END Mk ;
+PROCEDURE Churn () =
+VAR b : ARRAY 64 OF I64 ; i : I64 ;
+BEGIN
+  FOR i := 0 TO 63 DO b[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (b[3]))
+END Churn ;
+VAR s : SLICE OF I64 ;
+BEGIN
+  s := Mk () ;
+  Churn () ;
+  Io.WriteLine (Fmt.I64Str (s[0]))
+END R2N07.

@@ -1,0 +1,45 @@
+MODULE SanPoisonCell ;
+
+(* WANT: poison cell: IndexError IndexError live.n=1 *)
+
+(* The compiler review's G3 (2026-10-21): m9_at answers one global
+   poison cell for a failed index, and the generator tests the error
+   only AFTER the selectors through it -- so a failed `s[9].q := live'
+   left a live pointer in the cell, and the next failed `s[8].q.n :=
+   77' wrote through it into live.  Both IndexErrors are raised and
+   caught; live is never written in bounds after it is set to 1. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Leaf = RECORD n : I64 END ;
+  Node = RECORD q : PTR Leaf END ;
+
+VAR
+  s : SLICE OF Node ;
+  p : POOL ;
+  live : PTR Leaf IN p ;
+  k : I64 ;
+  out : STR ;
+
+BEGIN
+  out := 'poison cell:' ;
+  s := NEW (p, Node, 2) ;
+  s[0].q := NEW (p, Leaf) ;
+  s[1].q := NEW (p, Leaf) ;
+  live := s[1].q ;
+  live.n := 1 ;
+  k := 9 ;
+  BEGIN
+    s[k].q := live
+  EXCEPT
+  | IndexError : out := out + ' IndexError'
+  END ;
+  k := 8 ;
+  BEGIN
+    s[k].q.n := 77
+  EXCEPT
+  | IndexError : out := out + ' IndexError'
+  END ;
+  Io.WriteLine (out + ' live.n=' + Fmt.I64Str (live.n))
+END SanPoisonCell.

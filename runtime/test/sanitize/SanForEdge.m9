@@ -1,0 +1,36 @@
+MODULE SanForEdge ;
+
+(* WANT: for edge: 8 4 4 3 *)
+
+(* The compiler review's G5 (2026-10-21): FOR was emitted as
+   `for (; i <= to; i += step)', so a loop whose bound is its type's
+   last value stepped past it -- I8 120 TO 127 and U8 3 TO 0 BY -1
+   did not stop, I64 MAX-2 TO MAX is signed overflow in C.  Each loop
+   here is cut at 50 passes so a wrong one ends; the counts are the
+   passes each must make. *)
+
+IMPORT Io, Fmt ;
+
+VAR
+  a : I8 ;
+  b, d : U8 ;
+  c : I64 ;
+  n : I64 ;
+  out : STR ;
+
+BEGIN
+  out := 'for edge:' ;
+  n := 0 ;
+  FOR a := 120 TO 127 DO n := n + 1 ; IF n > 50 THEN EXIT END END ;
+  out := out + ' ' + Fmt.I64Str (n) ;
+  n := 0 ;
+  FOR b := 3 TO 0 BY -1 DO n := n + 1 ; IF n > 50 THEN EXIT END END ;
+  out := out + ' ' + Fmt.I64Str (n) ;
+  n := 0 ;
+  FOR d := 252 TO 255 DO n := n + 1 ; IF n > 50 THEN EXIT END END ;
+  out := out + ' ' + Fmt.I64Str (n) ;
+  n := 0 ;
+  FOR c := MAX (I64) - 2 TO MAX (I64) DO n := n + 1 ; IF n > 50 THEN EXIT END END ;
+  out := out + ' ' + Fmt.I64Str (n) ;
+  Io.WriteLine (out)
+END SanForEdge.

@@ -14,6 +14,11 @@
 # Both sides normalise -Idir to -I: the joined spelling is the same
 # option, and a set that distinguished them would report a difference
 # that does not exist.
+# scratch files in a directory of this run's own: fixed /tmp names
+# collided between two checkouts or two gates run at once (the compiler
+# review's tier 3, 2026-10-22)
+TG=$(mktemp -d "${TMPDIR:-/tmp}/m9gate.XXXXXX")
+trap 'rm -rf "$TG"' EXIT
 set -e
 cd "$(dirname "$0")"
 MAN=../../man/m9c.1
@@ -21,10 +26,7 @@ MAN=../../man/m9c.1
 # $M9C, else the harness build, else the source-tree build.  A package
 # build has only the latter, and a check that only runs where it is
 # convenient is a check that stops running.
-M9C=${M9C:-}
-[ -n "$M9C" ] || { [ -x ./m9c ] && M9C=./m9c; }
-[ -n "$M9C" ] || { [ -x ../../out/m9c ] && M9C=../../out/m9c; }
-[ -n "$M9C" ] || { echo "mandiff: no m9c (run m9c.sh or build.sh)"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 [ -f "$MAN" ] || { echo "mandiff: no manual page at $MAN"; exit 1; }
 
 # A flag is a dash run that starts a word: preceded by start-of-line, a
@@ -38,42 +40,42 @@ flags () {
 }
 
  "$M9C" --help | sed -n 's/^  \(-.*\)/\1/p' | sed 's/   .*//' | tr ',' ' ' |
-  flags > /tmp/m9c-help-opts.txt
+  flags > "$TG"/m9c-help-opts.txt
 
 # the OPTIONS section only: the rest of the page mentions cc's flags in
 # its examples, and -iquote is not ours to document
 sed -n '/^\.SH OPTIONS/,/^\.SH [A-Z]/p' "$MAN" | sed 's/\\-/-/g' |
-  flags > /tmp/m9c-man-opts.txt
+  flags > "$TG"/m9c-man-opts.txt
 
 miss=0
 while read -r o; do
-  grep -qxF -- "$o" /tmp/m9c-man-opts.txt || {
+  grep -qxF -- "$o" "$TG"/m9c-man-opts.txt || {
     echo "mandiff: $o is in --help but not in the manual page"
     miss=$((miss + 1)); }
-done < /tmp/m9c-help-opts.txt
+done < "$TG"/m9c-help-opts.txt
 
 while read -r o; do
-  grep -qxF -- "$o" /tmp/m9c-help-opts.txt || {
+  grep -qxF -- "$o" "$TG"/m9c-help-opts.txt || {
     echo "mandiff: $o is documented but --help does not list it"
     miss=$((miss + 1)); }
-done < /tmp/m9c-man-opts.txt
+done < "$TG"/m9c-man-opts.txt
 
 if [ "$miss" -ne 0 ]; then
-  echo "--- --help lists ---"; cat /tmp/m9c-help-opts.txt
-  echo "--- m9c.1 documents ---"; cat /tmp/m9c-man-opts.txt
+  echo "--- --help lists ---"; cat "$TG"/m9c-help-opts.txt
+  echo "--- m9c.1 documents ---"; cat "$TG"/m9c-man-opts.txt
   echo "mandiff: $miss discrepancies"
   exit 1
 fi
-n=$(grep -c . /tmp/m9c-help-opts.txt)
+n=$(grep -c . "$TG"/m9c-help-opts.txt)
 
 # It must also be a page a formatter accepts, not merely a file with
 # the right words in it.
 if command -v groff >/dev/null 2>&1; then
-  if ! groff -man -Tutf8 -ww -z "$MAN" 2>/tmp/m9c-man-warn.txt; then
-    echo "mandiff: groff rejected the page"; cat /tmp/m9c-man-warn.txt; exit 1
+  if ! groff -man -Tutf8 -ww -z "$MAN" 2>"$TG"/m9c-man-warn.txt; then
+    echo "mandiff: groff rejected the page"; cat "$TG"/m9c-man-warn.txt; exit 1
   fi
-  if [ -s /tmp/m9c-man-warn.txt ]; then
-    echo "mandiff: groff warnings"; cat /tmp/m9c-man-warn.txt; exit 1
+  if [ -s "$TG"/m9c-man-warn.txt ]; then
+    echo "mandiff: groff warnings"; cat "$TG"/m9c-man-warn.txt; exit 1
   fi
   echo "mandiff: $n options, --help and m9c.1 agree, groff clean"
 else

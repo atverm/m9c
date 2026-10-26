@@ -1,0 +1,16 @@
+DEFINITION MODULE CcDef ;
+
+TYPE R = RECORD s : STR ; n : I64 END ;
+
+PROCEDURE Mk (RO a, b: STR) : R ;
+
+END CcDef.
+
+IMPLEMENTATION MODULE CcDef ;
+
+PROCEDURE Mk (RO a, b: STR) : R =
+BEGIN
+  RETURN R (a + b, 1)
+END Mk ;
+
+END CcDef.

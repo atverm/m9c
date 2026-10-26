@@ -1,0 +1,52 @@
+(* EXPECT: Same is bound to the monitor g, which this procedure is bound to and holds the lock of: the call waits for that lock for ever -- pass what it needs instead of the monitor, or call it from a procedure that is not bound (par 6) *)
+MODULE m ;
+(* a procedure bound to a monitor holds its lock for the whole body, and
+   the lock is not recursive: calling another procedure bound to the SAME
+   monitor waits for ever (m9downloadstats' RespCache.LookupB calling
+   SameKey (g, ...), 2026-10-25; Alex: "yes for the bound refusal").
+   Legal forms first: a bound procedure calling an unbound helper with a
+   field's value, a bound procedure of a monitor of ANOTHER TYPE (one of the same type
+   is monitor-reaches-own-type's refusal since 2026-10-26), and an unbound
+   procedure calling two bound ones in turn. *)
+TYPE
+  Gate = MONITOR RECORD
+    n : I64 ;
+  END ;
+  Lamp = MONITOR RECORD
+    on : BOOL ;
+  END ;
+VAR
+  a : Gate ;
+  l : Lamp ;
+PROCEDURE Twice (v: I64) : I64 =
+BEGIN
+  RETURN 2 * v
+END Twice ;
+PROCEDURE Same (VAR g: Gate ; k: I64) : BOOL =
+BEGIN
+  RETURN g.n = k
+END Same ;
+PROCEDURE Bump (VAR g: Gate) =
+BEGIN
+  g.n := Twice (g.n) + 1
+END Bump ;
+PROCEDURE Lit (VAR x: Lamp) : BOOL =
+BEGIN
+  RETURN x.on
+END Lit ;
+PROCEDURE Other (VAR g: Gate) : BOOL =
+BEGIN
+  g.n := g.n + 1 ;
+  RETURN Lit (l)
+END Other ;
+PROCEDURE Outside () : BOOL =
+BEGIN
+  Bump (a) ;
+  RETURN Same (a, 3)
+END Outside ;
+PROCEDURE Looks (VAR g: Gate ; k: I64) : BOOL =
+BEGIN
+  RETURN Same (g, k)
+END Looks ;
+BEGIN
+END m.

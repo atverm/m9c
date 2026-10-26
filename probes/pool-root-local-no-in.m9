@@ -1,0 +1,53 @@
+(* EXPECT: argument 1 of SetName: the pool of n is not known here, and the callee may allocate in it -- n holds a pool allocation and is declared without IN *)
+(* Rule 2 hands a callee the pool of the object behind a VAR pointer
+   argument, named from the argument's ROOT: a local's is its IN clause
+   or else the FRAME.  For a local that holds a POOL allocation and
+   says no IN (`n := NEW (pool, Node)`, nobody's to own since stage 6)
+   the frame is the wrong pool: the callee's `NEW (n, ...)` grows the
+   object in this frame, and the object lives on in its pool with a
+   dangling part -- the parser's first UTF cut allocated every node's
+   name so (2026-10-23), the checker silent, the names read back as
+   freed storage; runtime/test/museum/object-pool-form.m9 traps under
+   ASan.  What must NOT be refused comes first: the IN spelling, a
+   frame-form local (the frame IS its pool), a module variable without
+   IN (the module frame lives as long as the program), and a local
+   whose pool allocation was replaced by a frame one. *)
+MODULE m ;
+TYPE
+  Node = RECORD name : STR END ;
+VAR
+  pool : POOL ;
+  shared : PTR Node ;
+PROCEDURE SetName (VAR n: PTR Node ; RO s: STR) =
+VAR c : STR ;
+BEGIN
+  c := NEW (n, CHAR, LEN (s)) ;
+  COPY (c, s) ;
+  n.name := c
+END SetName ;
+PROCEDURE Fine (RO s: STR) =
+VAR
+  p : PTR Node IN pool ;
+  f : PTR Node ;
+BEGIN
+  p := NEW (pool, Node) ;
+  SetName (p, s) ;
+  f := NEW (Node) ;
+  SetName (f, s) ;
+  shared := NEW (pool, Node) ;
+  SetName (shared, s) ;
+  f := NEW (pool, Node) ;
+  f := NEW (Node) ;
+  SetName (f, s)
+END Fine ;
+PROCEDURE Bad (RO s: STR) =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (pool, Node) ;
+  SetName (n, s) ;
+  shared := n
+END Bad ;
+BEGIN
+  Fine ('x') ;
+  Bad ('x')
+END m.

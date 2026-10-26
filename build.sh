@@ -51,7 +51,7 @@ case $(uname -s) in
 esac
 
 # the modules m9c itself is made of, in dependency order
-COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc Review M9c"
+COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc DynUtf Review M9c"
 
 # everything else a program may import: the standard library, shipped
 # as source (M9 has no binary module format -- the .m9 IS the
@@ -61,7 +61,7 @@ COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc Review M9c"
 # did, and /usr/lib/m9 of that release held no Lsp.m9: the claim had
 # no gate.  debian/tests/compile-a-program builds both now.
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
-         Json Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
+         Json JsonUtf Chars DynUtf Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
          NetCDF Grib Csv Delim Zip Pg Sparql Rdf Regex Xml Hash Smtp Rsa Map Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
@@ -108,7 +108,7 @@ install -m 644 runtime/m9rt.h    "$DESTDIR/usr/include/m9/m9rt.h"
 # its own tree, NOT beside the header in include/m9, where sources would
 # win over the archive and every flagless link would compile them
 install -d "$DESTDIR/usr/share/m9/runtime"
-for f in m9rt.h m9rt.c tcpshim.c fmtshim.c tlsshim.c m9session.c pgshim.c sha256shim.c; do
+for f in m9rt.h m9rt.c m9powfive.h m9powten.h tcpshim.c fmtshim.c tlsshim.c m9session.c pgshim.c sha256shim.c; do
   install -m 644 "runtime/$f" "$DESTDIR/usr/share/m9/runtime/$f"
 done
 

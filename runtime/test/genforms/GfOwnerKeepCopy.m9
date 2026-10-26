@@ -1,0 +1,38 @@
+MODULE GfOwnerKeepCopy ;
+
+(* WANT: abc *)
+
+(* Text.Keep (r.pool, o.name) then DISPOSE (o): the copy lives in r's
+  pool (the fourth review's F1, a false refusal of the owner walk) *)
+(* SAFE: the object name COPIED into the caller pool, then the object disposed *)
+IMPORT Io, Fmt, Text ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 ; name : STR END ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[3]))
+END Churn ;
+PROCEDURE Mk () : PTR Store =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  RETURN o
+END Mk ;
+TYPE Out = RECORD pool : POOL ; name : STR END ;
+PROCEDURE Go (VAR r : Out) =
+VAR o : PTR Store ;
+BEGIN
+  o := Mk () ;
+  o.name := Text.Keep (o.pool, 'abc') ;
+  r.name := Text.Keep (r.pool, o.name) ;
+  DISPOSE (o)
+END Go ;
+VAR r : Out ;
+BEGIN
+  Go (r) ;
+  Io.WriteLine (r.name)
+END GfOwnerKeepCopy.

@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Sort ;
 
 (* Sorting, stable, in place, over a slice -- so a sub-range needs no
@@ -114,9 +115,17 @@ PROCEDURE FindStr (RO a: SLICE OF STR ; RO s: STR) : I64 ;
 END Sort.
 
 
-IMPLEMENTATION MODULE Sort ;
+UNSAFE IMPLEMENTATION MODULE Sort ;
+
+(* UNSAFE for ADR: a slice's storage goes to the runtime's radix sorts
+   (csort, at the end of this file; m9rt.h); the merge sorts below are
+   the portable twin, taken where the runtime declines (no memory, or
+   M9_SORT_PORTABLE in the environment -- the gates run both ways).
+   2026-10-25, Alex: "then sort": a million F64s 125 -> 52 ms on the
+   Xeon, the argsort 156 -> 53. *)
 
 IMPORT Math ;
+FROM csort IMPORT CSortF64, CSortI64, CArgF64, CArgI64 ;
 
 (* one merge sort per element type -- no generics, per-type twins as
    Math and Frame do -- each the same twenty lines: halve, sort the
@@ -159,6 +168,7 @@ BEGIN
   FOR i := 0 TO LEN (a) - 1 DO
     IF Math.IsNaN (a[i]) THEN RAISE NotANumber (i) END
   END ;
+  IF LEN (a) > 0 AND I64 (CSortF64 (ADR (a), C.SSizeT (LEN (a)))) = 1 THEN RETURN END ;
   tmp := NEW (scratch, F64, LEN (a)) ;
   SortF64 (a, tmp, 0, LEN (a))
 END F64s ;
@@ -194,6 +204,7 @@ VAR
   scratch : POOL ;
   tmp : SLICE OF I64 ;
 BEGIN
+  IF LEN (a) > 0 AND I64 (CSortI64 (ADR (a), C.SSizeT (LEN (a)))) = 1 THEN RETURN END ;
   tmp := NEW (scratch, I64, LEN (a)) ;
   SortI64 (a, tmp, 0, LEN (a))
 END I64s ;
@@ -317,6 +328,7 @@ BEGIN
     IF Math.IsNaN (v[i]) THEN RAISE NotANumber (i) END ;
     idx[i] := i
   END ;
+  IF LEN (v) > 0 AND I64 (CArgF64 (ADR (v), ADR (idx), C.SSizeT (LEN (v)))) = 1 THEN RETURN END ;
   tmp := NEW (scratch, I64, LEN (v)) ;
   SortArg (v, idx, tmp, 0, LEN (v))
 END ArgF64 ;
@@ -357,6 +369,7 @@ VAR
   i : I64 ;
 BEGIN
   IF LEN (idx) # LEN (v) THEN RAISE IndexError (LEN (idx), LEN (v)) END ;
+  IF LEN (v) > 0 AND I64 (CArgI64 (ADR (v), ADR (idx), C.SSizeT (LEN (v)))) = 1 THEN RETURN END ;
   FOR i := 0 TO LEN (v) - 1 DO idx[i] := i END ;
   tmp := NEW (scratch, I64, LEN (v)) ;
   SortArgI64 (v, idx, tmp, 0, LEN (v))
@@ -591,3 +604,20 @@ BEGIN
 END FindStr ;
 
 END Sort.
+
+
+UNSAFE DEFINITION MODULE FOR "C" csort ;
+
+(* runtime/m9rt.c (m9rt.h): LSD radix sorts over a slice's storage,
+   stable, answering 1 when done and 0 when the caller's merge sort
+   must do it.  No LINK: the runtime's.  REENTRANT: scratch from
+   malloc, no shared state. *)
+
+PROCEDURE CSortF64 = "m9_sort_f64" (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT] ;
+PROCEDURE CSortI64 = "m9_sort_i64" (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT] ;
+PROCEDURE CArgF64 = "m9_argsort_f64" (v: C.ConstPtr ; idx: C.MutPtr ; n: C.SSizeT) : C.Int
+  [REENTRANT] ;
+PROCEDURE CArgI64 = "m9_argsort_i64" (v: C.ConstPtr ; idx: C.MutPtr ; n: C.SSizeT) : C.Int
+  [REENTRANT] ;
+
+END csort.

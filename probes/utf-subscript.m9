@@ -1,0 +1,25 @@
+(* EXPECT: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i *)
+MODULE m ;
+(* legal forms first: a UTF is assigned, passed, answered and stored;
+   a literal adapts to it, also lent to a parameter that is not RO *)
+TYPE Named = RECORD name : UTF ; n : I64 END ;
+VAR
+  u, v : UTF ;
+  r : Named ;
+  c : BYTE ;
+PROCEDURE Id (x: UTF) : UTF =
+BEGIN
+  RETURN x
+END Id ;
+PROCEDURE Lit () : UTF =
+BEGIN
+  RETURN 'Grüße'
+END Lit ;
+BEGIN
+  u := 'abc' ;
+  v := Id ('x') ;
+  v := Id (u) ;
+  v := Lit () ;
+  r := Named ('field', 2) ;
+  c := u[0]
+END m.

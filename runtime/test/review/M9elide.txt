@@ -1,10 +1,10 @@
-REVIEW M9elide -- 77 procedures with a body, 52 of them functions; 2 headings in a DEFINITION
+REVIEW M9elide -- 78 procedures with a body, 53 of them functions; 2 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              52
-  assignments                                   426
-  arguments                                     782
-  RETURN values                                 188
+  functions answering on every path              53
+  assignments                                   419
+  arguments                                     839
+  RETURN values                                 189
   operands of a comparison or an operator       515
   CASE labels                                    10
   THREAD arguments                                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 1
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        5
   NEW in the frame                                0
   NEW in a named pool                            45
+  calls of a STR form with a UTF twin            13   Text.OneOf -> Text.OneOfUtf, Ast.SetA -> Ast.SetAUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, +7 more
+  STR subscripts, writes and LEN                  0

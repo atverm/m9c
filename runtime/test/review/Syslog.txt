@@ -29,10 +29,14 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              2
     of them [REENTRANT]                           1
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     4   writes or reads in Open, writes or reads in Open, writes or reads in Send, writes or reads in SendAscii
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 1
   RAISE statements                                0
-  handlers                                        3
+  handlers                                        4
   NEW in the frame                                0
   NEW in a named pool                             0
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

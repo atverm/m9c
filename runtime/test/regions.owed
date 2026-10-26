@@ -1,0 +1,47 @@
+# regions.sh: the review's checker repros the checker ACCEPTS today and
+# that fail under ASan+UBSan -- the one region judgement of
+# docs/region-plan.md is to refuse each (2026-10-21).  A line here must
+# still be accepted and still fail; a program not here must be refused.
+# (the families -- C1 to C4 -- are the review's; which repro is which is
+#  in docs/compiler-review-2026-10-21.md, Part 2)
+# 2026-10-21: the FRAME family switched over (plan, step 5) -- A1, A1b,
+# A3, A4, A4a, A4b, A5, B2, B2b, B3, B3c refused by the region
+# judgement; D3 and E1 by the OLD analyses, whose memoised summaries
+# answer by visit order (the review's C3) and are now asked first by the
+# region walk -- an accident of that order, removed with the summaries
+# by SCC.  The READ-ONLY family the same day: E2-E10 refused.
+# RETENTION and RETURN the next day (2026-10-22), once the answer
+# summaries removed the three imprecise findings: K1a refused.  The list
+# is empty: every one of the review's 24 is refused.
+# 2026-10-25: W1, an RO answer stored in an ELEMENT of a record's field
+# and written through it (`o.names[0] := Pick ('abc') ; o.names[0][0]
+# := 'X'`) -- the judgement tracks x.f and x[].f, not x.f[]; found
+# testing the table's size, accepted by 0.24 and 0.25 alike, SIGBUS --
+# refused the same evening: a field's element is judged by what was
+# stored into the field, as a bare name's is.  The list is empty again.
+# 2026-10-26: the second review's region holes, accepted by 0.25.0 and
+# unsafe under the sanitizers (docs/compiler-review-2026-10-26.md),
+# refused before they were added, so none is owed: R2N04/R2N04b/R2N21/
+# R2N21b/R2N27 a call-selection F (x).f, R2N05/R2N05b/R2N05c a loop the
+# fixpoint gave up on after 9 passes, R2N06/R2N07/R2N13/R2N14 a SLICE of
+# a local ARRAY escaping, R2N23 a GRID over a literal in a record field,
+# R2N37/R2N38 an IS SOME binder in a WHILE and an ELSIF.
+# The same night's second batch, refused before added: R2N39 a literal
+# lent to a VAR STR the callee writes through (S5), R2G19 an element of
+# a by-value slice handed to a VAR STR, which the callee re-homed into
+# the frame (gen N4), R2F04/R2F04b a record answer whose aggregate holds
+# a frame string, its field kept (fuzz N4).
+# 2026-10-26, tier 1 of the third review, refused before added: R3Cyc3 a
+# three-procedure cycle accepted in 288 of its 720 declaration orders
+# (the memo's busy entries; iteration at a cycle's head now), R3K48 a
+# KEPT parameter past the 48th (the judgement failed open), R3RoField a
+# literal in a record field lent to a VAR STR the callee writes
+# through, R3DisposeModVar (was sanitize/SanDisposeModVar) DISPOSE of a
+# borrowed answer in the module body.
+# 2026-10-26, tier 2 (read-only storage by depth): R3Depth3 a write of a
+# literal's octets two levels down; R3DepthAlias and R3DepthBack the same
+# through `rows[0] := row' with the literal stored through the other
+# name afterwards -- SIGBUS, accepted by every compiler before this (the
+# flow-sensitive walk copies a name's contents when it is stored, not
+# what is stored through either name later; the depth scan, flow-
+# insensitive and both ways across the pair, sees it).

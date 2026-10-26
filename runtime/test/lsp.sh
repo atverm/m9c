@@ -25,10 +25,7 @@ rm -rf "$W"; mkdir -p "$W"
 # never a leftover binary (the stale-artifact trap, twice bitten)
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c \
-    ../gen/Text.c ../gen/System.c ../gen/Lex.c ../gen/Ast.c ../gen/Print.c \
-    ../gen/Parse.c ../gen/Sem.c ../gen/Doc.c ../gen/Review.c ../gen/Gen.c \
-    ../gen/Io.c ../gen/M9c.c -lm -o "$W/m9c"
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c"
 
 # the server, compiled by the m9c it will later invoke
 cd "$W"
@@ -57,18 +54,20 @@ FIN
 # stage 2 of the typed tree the same evening, a variable FOR step until
 # stage 3, when the checker learned to refuse it, a SLICE of a call's
 # array until the checker refused that too, a VIEW of a call's grid
-# now)
+# until the generator learned it (2026-10-25), two VAR arguments in two
+# pools now)
 cat > Late.m9 <<'LATE'
 MODULE Late ;
 IMPORT Io ;
-(* a VIEW of a grid a call answers: the checker passes it, the
+(* two VAR string arguments in two pools: the checker passes it, the
    generator refuses it, and the refusal must reach the editor
    with the generator's own words *)
-PROCEDURE Mk () : GRID 2 OF F64 = BEGIN RETURN NEW (F64, 2, 3) END Mk ;
-VAR g : GRID 1 OF F64 ;
+TYPE Box = RECORD s : STR END ;
+VAR mp : POOL ; b : PTR Box IN mp ; g : STR ;
+PROCEDURE Set2 (VAR x: STR ; VAR y: STR) = BEGIN x := 'one' ; y := 'two' END Set2 ;
+PROCEDURE Use () = BEGIN Set2 (b.s, g) END Use ;
 BEGIN
-  g := VIEW (Mk (), 1, ALL) ;
-  Io.WriteLine ('viewed')
+  b := NEW (mp, Box) ; Use () ; Io.WriteLine (b.s + g)
 END Late.
 LATE
 
@@ -142,10 +141,10 @@ r = recv()
 check(r['params']['uri'] == uri3, 'the generator-refused file answers')
 ds = r['params']['diagnostics']
 check(len(ds) >= 1, "the generator's refusal reaches the editor")
-check(ds and 'gen: VIEW form' in ds[0]['message'],
+check(ds and 'gen: VAR arguments whose storage lives in two pools' in ds[0]['message'],
       "and it is the generator's own line")
 check(ds and ds[0]['range']['start']['line'] == 8,
-      'anchored at the assignment, 0-based 8')
+      'anchored at the call, 0-based 8')
 
 send({'jsonrpc':'2.0','id':7,'method':'no/such','params':{}})
 r = recv()

@@ -1,0 +1,55 @@
+MODULE SwTwin ;
+
+(* WANT: twin utf 5 T *)
+
+(* The collapse under --utf-str: Show has a twin ShowUtf in this
+   module, so Show's body -- which subscripts its STR and would be
+   refused -- is neither checked nor emitted, and the call Show ('x')
+   is ShowUtf's.  Len likewise, called with no string argument at all
+   (the twins of ToBase64's shape). *)
+
+IMPORT SwPut ;
+
+PROCEDURE Show (RO s: STR) =
+BEGIN
+  IF s[0] = 'x' THEN SwPut.Put ('twin str') END
+END Show ;
+
+PROCEDURE ShowUtf (RO s: UTF) =
+BEGIN
+  SwPut.Put ('twin utf')
+END ShowUtf ;
+
+PROCEDURE Len (n: I64) : STR =
+VAR s : STR ;
+BEGIN
+  s := NEW (CHAR, n) ;
+  RETURN s
+END Len ;
+
+PROCEDURE LenUtf (n: I64) : UTF =
+BEGIN
+  IF n = 5 THEN RETURN '5' END ;
+  RETURN '?'
+END LenUtf ;
+
+PROCEDURE Tag () : STR =
+VAR s : STR ;
+BEGIN
+  s := NEW (CHAR, 1) ;
+  RETURN s
+END Tag ;
+
+PROCEDURE TagUtf () : UTF =
+BEGIN
+  RETURN 'T'
+END TagUtf ;
+
+BEGIN
+  Show ('x') ;
+  SwPut.Put (' ') ;
+  SwPut.Put (Len (5)) ;
+  SwPut.Put (' ') ;
+  SwPut.Put (Tag ()) ;
+  SwPut.Put ('' + 0AC)
+END SwTwin.

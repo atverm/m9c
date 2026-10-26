@@ -8,6 +8,7 @@
 #include "Math.h"
 #include "Plot.h"
 #include "Stats.h"
+#include "Text.h"
 
 void Map_m9init (m9_state *err);
 

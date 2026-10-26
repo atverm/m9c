@@ -10,17 +10,24 @@ STATEFUL DEFINITION MODULE Lex ;
    positions in a sorted list: a new keyword APPENDS at the next
    free code rather than renumbering its alphabetical neighbours.
    Errors are tokens carrying their message; lexing continues.
-   STATEFUL for one small truth: the unexpected-character message
-   is composed in a module buffer.                                   *)
+   STATEFUL for the comment side channel's list (Collect, below); the
+   unexpected-character message was the other reason, a module buffer
+   until 2026-10-23.  The source is UTF-8 (step 4 of
+   docs/utf8-stage3-plan.md): Init takes a STR and encodes it, InitUtf
+   takes the octets as they are.                                     *)
 
 TYPE
   Token = RECORD
     kind, line, col : I64 ;
-    text : STR ;      (* verbatim source; for Error, message *)
+    text : UTF ;      (* verbatim source; for Error, message *)
   END ;
 
+  (* the source is UTF-8 and pos a BYTE offset into it (since
+     2026-10-23, docs/utf8-stage3-plan.md step 4); line and col count
+     characters, as they always did, so a diagnostic's position is the
+     same on both sides of the switch *)
   Lexer = RECORD
-    src : STR ;
+    src : UTF ;
     pos, line, col : I64 ;
   END ;
 
@@ -31,12 +38,16 @@ TYPE
      back. *)
   Comment = RECORD
     line, col, endLine : I64 ;
-    text : STR ;
+    text : UTF ;
   END ;
 
 PROCEDURE Init (VAR lx: Lexer ; RO src: STR) ;
-  (* the lexer keeps the source slice; keep it alive while lexing --
-     the Json.Parse contract again                                   *)
+  (* src encoded into the lexer's own pool: the STR form, for a caller
+     that has not moved to UTF; Lex.Init (lx, u) with a UTF is InitUtf *)
+
+PROCEDURE InitUtf (VAR lx: Lexer ; RO src: UTF) ;
+  (* the lexer keeps the source; keep it alive while lexing -- the
+     Json.Parse contract again.  Nothing is copied *)
 
 PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) ;
   (* the next token, skipping blanks and nested comments on the way.
@@ -105,6 +116,7 @@ UNSAFE IMPLEMENTATION MODULE Lex ;
    unused.  Drop UNSAFE the day the checker minds.                   *)
 
 IMPORT DynStr ;
+IMPORT Text ;
 
 CONST
   KEOF     = 0 ;
@@ -136,9 +148,25 @@ CONST
   KDotDot = 222 ; KBar = 223 ; KCaret = 224 ;
 
   HexMsg   = '0123456789abcdef' ;
+  HexUp    = '0123456789ABCDEF' ;
+  (* the ASCII characters by code: a byte below 128 read as its CHAR
+     with no conversion to check -- CHR would put a RAISES ValueRange
+     on every Peek *)
+  Ascii = [
+    0C, 1C, 2C, 3C, 4C, 5C, 6C, 7C, 8C, 9C, 0AC, 0BC,
+    0CC, 0DC, 0EC, 0FC, 10C, 11C, 12C, 13C, 14C, 15C, 16C, 17C,
+    18C, 19C, 1AC, 1BC, 1CC, 1DC, 1EC, 1FC, 20C, 21C, 22C, 23C,
+    24C, 25C, 26C, 27C, 28C, 29C, 2AC, 2BC, 2CC, 2DC, 2EC, 2FC,
+    30C, 31C, 32C, 33C, 34C, 35C, 36C, 37C, 38C, 39C, 3AC, 3BC,
+    3CC, 3DC, 3EC, 3FC, 40C, 41C, 42C, 43C, 44C, 45C, 46C, 47C,
+    48C, 49C, 4AC, 4BC, 4CC, 4DC, 4EC, 4FC, 50C, 51C, 52C, 53C,
+    54C, 55C, 56C, 57C, 58C, 59C, 5AC, 5BC, 5CC, 5DC, 5EC, 5FC,
+    60C, 61C, 62C, 63C, 64C, 65C, 66C, 67C, 68C, 69C, 6AC, 6BC,
+    6CC, 6DC, 6EC, 6FC, 70C, 71C, 72C, 73C, 74C, 75C, 76C, 77C,
+    78C, 79C, 7AC, 7BC, 7CC, 7DC, 7EC, 7FC
+  ] ;
 
 VAR
-  errBuf : ARRAY 32 OF CHAR ;   (* 'unexpected character 0xNN' *)
   comOn  : BOOL ;               (* Collect armed? *)
   coms   : SLICE OF Comment ;   (* grown in HEAP, doubling *)
   ncom   : I64 ;
@@ -166,10 +194,9 @@ END ComAt ;
    into HEAP too: a view of the source would be module state keeping
    the lexer's input, and every lexer up to the parser's callers
    would have to say KEPT for a comment list (par 4.1, 2026-10-18). *)
-PROCEDURE Note (line, col, endLine: I64 ; RO text: STR) =
+PROCEDURE Note (line, col, endLine: I64 ; RO text: UTF) =
 VAR
   nc : SLICE OF Comment ;
-  cp : STR ;
   i  : I64 ;
 BEGIN
   IF ncom = LEN (coms) THEN
@@ -184,9 +211,7 @@ BEGIN
   coms[ncom].line := line ;
   coms[ncom].col := col ;
   coms[ncom].endLine := endLine ;
-  cp := NEW (HEAP, CHAR, LEN (text)) ;
-  FOR i := 0 TO LEN (text) - 1 DO cp[i] := text[i] END ;
-  coms[ncom].text := cp ;
+  coms[ncom].text := UTF (HEAP, text) ;
   ncom := ncom + 1
 END Note ;
 
@@ -302,16 +327,43 @@ BEGIN
   END
 END KindName ;
 
-PROCEDURE Lookup (RO s: STR) : I64 =
+(* the character the byte at i of u is, for an ASCII run (digits,
+   names): 0C for a byte past ASCII, which no such run holds *)
+PROCEDURE At (RO u: UTF ; i: I64) : CHAR =
+VAR b : I64 ;
+BEGIN
+  b := I64 (Text.BAt (u, i)) ;
+  IF b < 128 THEN RETURN Ascii[b] END ;
+  RETURN 0C
+END At ;
+
+(* u, an identifier's octets, spells the keyword s *)
+PROCEDURE SpellsKw (RO u: UTF ; RO s: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF Text.BLen (u) # LEN (s) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF At (u, i) # s[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END SpellsKw ;
+
+PROCEDURE Lookup (RO s: UTF) : I64 =
 VAR i : I64 ;
 BEGIN
   FOR i := KwFirst TO KwLast DO
-    IF DynStr.Eq (s, KwName (i)) THEN RETURN i END
+    IF SpellsKw (s, KwName (i)) THEN RETURN i END
   END ;
   RETURN KIdent
 END Lookup ;
 
 PROCEDURE Init (VAR lx: Lexer ; RO src: STR) =
+BEGIN
+  InitUtf (lx, UTF (lx, src))
+END Init ;
+
+PROCEDURE InitUtf (VAR lx: Lexer ; RO src: UTF) =
+VAR at : I64 ;
 BEGIN
   lx.src := src ;
   lx.pos := 0 ;
@@ -321,32 +373,63 @@ BEGIN
      program that runs this file as a script (`#!/usr/bin/m9c --run`),
      and is not M9 (report par 2).  Skipped to its line end, not past
      it, so the newline is counted and every line keeps its number. *)
-  IF LEN (src) >= 2 THEN
-    IF src[0] = '#' AND src[1] = '!' THEN
-      WHILE lx.pos < LEN (src) AND src[lx.pos] # 0AC DO
+  (* a byte order mark (U+FEFF), which some editors write first, is
+     not M9 either: skipped, the column stays 1.  It was refused as
+     `unexpected character 0xff', its low byte (the review's F6) *)
+  IF Text.BLen (src) >= 3 THEN
+    at := 0 ;
+    IF Text.NextCp (src, at) = 0FEFFC THEN lx.pos := at END
+  END ;
+  IF Text.BLen (src) >= lx.pos + 2 THEN
+    IF At (src, lx.pos) = '#' AND At (src, lx.pos + 1) = '!' THEN
+      WHILE lx.pos < Text.BLen (src) AND At (src, lx.pos) # 0AC DO
         lx.pos := lx.pos + 1
       END
     END
   END
-END Init ;
+END InitUtf ;
 
+(* the character ahead characters on from pos (0 the one at pos); 0C
+   past the end.  An ASCII byte is its character; past ASCII the
+   character is decoded *)
 PROCEDURE Peek (VAR lx: Lexer ; ahead: I64) : CHAR =
+VAR
+  at, k, b : I64 ;
+  c : CHAR ;
 BEGIN
-  IF lx.pos + ahead < LEN (lx.src) THEN
-    RETURN lx.src[lx.pos + ahead]
-  END ;
-  RETURN 0C
+  at := lx.pos ;
+  k := ahead ;
+  LOOP
+    IF at >= Text.BLen (lx.src) THEN RETURN 0C END ;
+    b := I64 (Text.BAt (lx.src, at)) ;
+    IF b < 128 THEN
+      c := Ascii[b] ;
+      at := at + 1
+    ELSE
+      c := Text.NextCp (lx.src, at)
+    END ;
+    IF k = 0 THEN RETURN c END ;
+    k := k - 1
+  END
 END Peek ;
 
 PROCEDURE Advance (VAR lx: Lexer) =
+VAR c : CHAR ;
 BEGIN
-  IF Peek (lx, 0) = 0AC THEN
+  (* a line ends at LF, and at a CR no LF follows: a file with CR-only
+     line ends was one line (the review's F6) *)
+  IF Peek (lx, 0) = 0AC OR (Peek (lx, 0) = 0DC AND Peek (lx, 1) # 0AC) THEN
     lx.line := lx.line + 1 ;
     lx.col := 1
   ELSE
     lx.col := lx.col + 1
   END ;
-  lx.pos := lx.pos + 1
+  (* past the character: one byte, or the octets of one past ASCII *)
+  IF lx.pos < Text.BLen (lx.src) AND I64 (Text.BAt (lx.src, lx.pos)) >= 128 THEN
+    c := Text.NextCp (lx.src, lx.pos)
+  ELSE
+    lx.pos := lx.pos + 1
+  END
 END Advance ;
 
 PROCEDURE IsLetter (c: CHAR) : BOOL =
@@ -425,7 +508,7 @@ BEGIN
   END
 END Skip ;
 
-PROCEDURE Mk (VAR t: Token ; kind: I64 ; RO text: STR ;
+PROCEDURE Mk (VAR t: Token ; kind: I64 ; RO text: UTF ;
               line, col: I64) =
 BEGIN
   t.kind := kind ;
@@ -488,10 +571,104 @@ BEGIN
   RETURN FALSE
 END Punct ;
 
+(* ---- literals beyond 64 bits (2026-10-21, the compiler review's F1).
+   A literal the lexer accepted was any length: `18446744073709551617'
+   reached C as an integer constant too large for its type, which gcc
+   truncates with a warning -- the program printed 1 -- and a real
+   literal past F64's range became an infinity.  Refused here, in both
+   lexers, where the digits are.  An integer literal is at most 64 bits,
+   decimal or hex (one past MAX (I64) is a U64, which the checker
+   types it as); a real must not round to infinity as an F64, held
+   EXACTLY: it does when its value is at least 2^1024 - 2^970, whose
+   309 digits are F64Top (written by Python's int, round to nearest
+   even sends that value itself to infinity). ---- *)
+CONST
+  U64Top = '18446744073709551615' ;
+  F64Top = '179769313486231580793728971405303415079934132710037826936173778980444968292764750946649017977587207096330286416692887910946555547851940402630657488671505820681908902000708383676273854845817711531764475730270069855571366959622842914819860834936475292719074168444365510704342711559699508093042880177904174497792' ;
+
+(* the digits of a run with its leading zeros dropped *)
+PROCEDURE Significant (RO run: UTF ; from: I64) : I64 =
+VAR i : I64 ;
+BEGIN
+  i := from ;
+  WHILE i < Text.BLen (run) - 1 AND At (run, i) = '0' DO i := i + 1 END ;
+  RETURN i
+END Significant ;
+
+(* a decimal integer literal past 64 bits *)
+PROCEDURE IntPast64 (RO run: UTF) : BOOL =
+VAR i, n, k : I64 ;
+BEGIN
+  i := Significant (run, 0) ;
+  n := Text.BLen (run) - i ;
+  IF n # LEN (U64Top) THEN RETURN n > LEN (U64Top) END ;
+  FOR k := 0 TO n - 1 DO
+    IF At (run, i + k) # U64Top[k] THEN RETURN At (run, i + k) > U64Top[k] END
+  END ;
+  RETURN FALSE
+END IntPast64 ;
+
+(* a real literal `ddd.ddd' with an optional exponent that rounds to
+   infinity as an F64: its value is 0.D * 10^n with D its digits, the
+   leading zeros moved into n, compared with F64Top digit by digit *)
+PROCEDURE RealTooBig (RO run: UTF) : BOOL =
+VAR
+  i, m, e, nInt, lead, n, j : I64 ;
+  neg : BOOL ;
+BEGIN
+  m := 0 ;
+  WHILE m < Text.BLen (run) AND At (run, m) # 'e' AND At (run, m) # 'E' DO m := m + 1 END ;
+  nInt := 0 ;
+  WHILE nInt < m AND At (run, nInt) # '.' DO nInt := nInt + 1 END ;
+  e := 0 ;
+  IF m < Text.BLen (run) THEN
+    i := m + 1 ;
+    neg := FALSE ;
+    IF At (run, i) = '+' THEN
+      i := i + 1
+    ELSIF At (run, i) = '-' THEN
+      neg := TRUE ;
+      i := i + 1
+    END ;
+    WHILE i < Text.BLen (run) DO
+      (* capped: E999999999999999999 is past every bound, and its value
+         must not overflow the counting *)
+      IF e < 100000 THEN e := e * 10 + (ORD (At (run, i)) - 48) END ;
+      i := i + 1
+    END ;
+    IF neg THEN e := -e END
+  END ;
+  lead := 0 ;
+  i := 0 ;
+  WHILE i < m AND (At (run, i) = '0' OR At (run, i) = '.') DO
+    IF At (run, i) = '0' THEN lead := lead + 1 END ;
+    i := i + 1
+  END ;
+  IF i = m THEN RETURN FALSE END ;             (* zero *)
+  n := nInt - lead + e ;
+  IF n # LEN (F64Top) THEN RETURN n > LEN (F64Top) END ;
+  j := 0 ;
+  WHILE i < m DO
+    IF At (run, i) # '.' THEN
+      IF j = LEN (F64Top) THEN RETURN TRUE END ;
+      IF At (run, i) # F64Top[j] THEN RETURN At (run, i) > F64Top[j] END ;
+      j := j + 1
+    END ;
+    i := i + 1
+  END ;
+  (* the literal's digits ran out first: it is below the threshold
+     unless every digit of the threshold left is a zero *)
+  WHILE j < LEN (F64Top) DO
+    IF F64Top[j] # '0' THEN RETURN FALSE END ;
+    j := j + 1
+  END ;
+  RETURN TRUE
+END RealTooBig ;
+
 PROCEDURE Number (VAR lx: Lexer ; VAR t: Token ; ln, cl, start: I64) =
 VAR
   hasHexLetter, isReal : BOOL ;
-  run : STR ;
+  run : UTF ;
   i, cv, d : I64 ;
   c : CHAR ;
 BEGIN
@@ -506,6 +683,11 @@ BEGIN
     IF IsLetter (Peek (lx, 0)) THEN
       Mk (t, KError,
           'letter may not immediately follow a numeric literal', ln, cl) ;
+      RETURN
+    END ;
+    run := SLICE (lx.src, start + 2, lx.pos - start - 2) ;
+    IF Text.BLen (run) - Significant (run, 0) > 16 THEN
+      Mk (t, KError, 'hex literal beyond 64 bits', ln, cl) ;
       RETURN
     END ;
     Mk (t, KInt, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
@@ -523,7 +705,7 @@ BEGIN
   run := SLICE (lx.src, start, lx.pos - start) ;
 
   IF hasHexLetter THEN
-    IF run[LEN (run) - 1] # 'C' THEN
+    IF At (run, Text.BLen (run) - 1) # 'C' THEN
       Mk (t, KError,
           'malformed numeric literal; forms are 10, 0x1F, 1.5, 1.5e-3, 0AC',
           ln, cl) ;
@@ -535,8 +717,8 @@ BEGIN
       RETURN
     END ;
     cv := 0 ;
-    FOR i := 0 TO LEN (run) - 2 DO
-      c := run[i] ;
+    FOR i := 0 TO Text.BLen (run) - 2 DO
+      c := At (run, i) ;
       IF IsDigit (c) THEN d := ORD (c) - 48 ELSE d := ORD (c) - 55 END ;
       cv := cv * 16 + d ;
       IF cv > 1114111 THEN
@@ -584,19 +766,28 @@ BEGIN
         ln, cl) ;
     RETURN
   END ;
+  run := SLICE (lx.src, start, lx.pos - start) ;
   IF isReal THEN
-    Mk (t, KReal, SLICE (lx.src, start, lx.pos - start), ln, cl)
+    IF RealTooBig (run) THEN
+      Mk (t, KError, 'real literal beyond F64 (it would be an infinity)', ln, cl)
+    ELSE
+      Mk (t, KReal, run, ln, cl)
+    END
+  ELSIF IntPast64 (run) THEN
+    Mk (t, KError,
+        'integer literal beyond 64 bits (the largest is 18446744073709551615, a U64; above MAX (I64) a literal is a U64)',
+        ln, cl)
   ELSE
-    Mk (t, KInt, SLICE (lx.src, start, lx.pos - start), ln, cl)
+    Mk (t, KInt, run, ln, cl)
   END
 END Number ;
 
 PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) =
 VAR
   bad : BOOL ;
-  ln, cl, start, n : I64 ;
+  ln, cl, start, n, nd, p, k : I64 ;
   c, q : CHAR ;
-  head : STR ;
+  msg : UTF ;
 BEGIN
   Skip (lx, bad, ln, cl) ;
   IF bad THEN
@@ -610,6 +801,13 @@ BEGIN
   c := Peek (lx, 0) ;
 
   IF c = 0C THEN
+    (* Peek answers 0C past the end; a NUL before it is a character,
+       and ended the source without a word (the review's F6) *)
+    IF lx.pos < Text.BLen (lx.src) THEN
+      Advance (lx) ;
+      Mk (t, KError, 'unexpected character 0x00', ln, cl) ;
+      RETURN
+    END ;
     Mk (t, KEOF, '', ln, cl) ;
     RETURN
   END ;
@@ -651,17 +849,31 @@ BEGIN
 
   IF Punct (lx, t, c, ln, cl) THEN RETURN END ;
 
-  (* 'unexpected character 0xNN' (25 chars), composed in the module
-     buffer -- the one dynamic message, and the reason for STATEFUL *)
+  (* 'unexpected character 0xNN', composed as a UTF in the frame and
+     adopted with the token (it was a module buffer until 2026-10-23,
+     the reason Lex was STATEFUL then) *)
   Advance (lx) ;
-  n := ORD (lx.src[start]) ;
-  head := 'unexpected character 0x' ;
-  FOR start := 0 TO LEN (head) - 1 DO
-    errBuf[start] := head[start]
+  n := ORD (Text.NextCp (lx.src, start)) ;
+  IF n < 128 THEN
+    msg := 'unexpected character 0x' ;
+    (* the digit as the octet it is (ASCII): the same both sides of the
+       UTF switch, where a subscript of a string CONST is refused *)
+    msg := msg + Text.BChar (HexMsg, (n DIV 16) MOD 16) + Text.BChar (HexMsg, n MOD 16)
+  ELSE
+    (* past ASCII the scalar, U+XXXX with at least four digits: its
+       low byte named another character (U+FEFF read 0xff) *)
+    msg := 'unexpected character U+' ;
+    nd := 4 ;
+    IF n >= 65536 THEN nd := 5 END ;
+    IF n >= 1048576 THEN nd := 6 END ;
+    p := 1 ;
+    FOR k := 2 TO nd DO p := p * 16 END ;
+    WHILE p > 0 DO
+      msg := msg + Text.BChar (HexUp, (n DIV p) MOD 16) ;
+      p := p DIV 16
+    END
   END ;
-  errBuf[23] := HexMsg[(n DIV 16) MOD 16] ;
-  errBuf[24] := HexMsg[n MOD 16] ;
-  Mk (t, KError, SLICE (errBuf, 0, 25), ln, cl)
+  Mk (t, KError, msg, ln, cl)
 END Next ;
 
 END Lex.

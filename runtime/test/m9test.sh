@@ -18,26 +18,37 @@
 #
 # Errors are values: every test runs, every failure is named, and
 # the exit status says whether there was one.
+#
+# THE TESTS BUILD AND RUN IN PARALLEL (2026-10-21; Alex: "make the
+# m9test gate ... work in parallel"): each one builds its program and
+# its closure in a directory of its own, so they are independent, and
+# run one by one they took 230 s on the MacBook.  The script calls
+# itself as `m9test.sh --one FILE' through xargs -P (M9_JOBS, default
+# the cores), each worker leaving its status in $W/NAME.rc; the
+# judging below is serial and in file order, so the output is what it
+# was.  The tests write only under names of their own (IoTest's
+# /tmp/m9iotest*, the others' by process id), so two never collide.
 cd "$(dirname "$0")" || exit 1
-. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 
 SRC=$(cd ../../corpus && pwd)
 RT=$(cd .. && pwd)
 HERE=$(pwd)
-# a work directory of this run's own: a fixed /tmp/m9test-gate was
-# shared by every checkout on a machine, and on 2026-10-09 two sessions'
-# runs overlapped in it -- one reported ParquetTest PASS with 29 checks
-# where the test makes 44, having run the other tree's binary
-W=$(mktemp -d /tmp/m9test-gate.XXXXXX)
+if [ "$1" != --one ]; then
+  . ./lib/gen.sh          # runtime/gen is BUILT here, not found
+  # a work directory of this run's own: a fixed /tmp/m9test-gate was
+  # shared by every checkout on a machine, and on 2026-10-09 two
+  # sessions' runs overlapped in it -- one reported ParquetTest PASS
+  # with 29 checks where the test makes 44, having run the other tree's
+  # binary
+  W=$(mktemp -d /tmp/m9test-gate.XXXXXX)
 
-gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
-    -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c \
-    ../gen/Text.c ../gen/System.c ../gen/Lex.c ../gen/Ast.c ../gen/Print.c \
-    ../gen/Parse.c ../gen/Sem.c ../gen/Doc.c ../gen/Review.c ../gen/Gen.c \
-    ../gen/Io.c ../gen/M9c.c -lm -o "$W/m9c" || { echo "m9test: FAIL building m9c"; exit 1; }
+  gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
+      -Wno-unused-parameter -Wno-unused-function \
+      -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c" || { echo "m9test: FAIL building m9c"; exit 1; }
+fi
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
+export W
 M9C="$W/m9c"
 
 fail=0
@@ -82,8 +93,6 @@ run_test () {
   name=$(basename "$1" .m9)
   mkdir -p "$W/$name"
   if ! ( cd "$W/$name" && build_test "$1" "$name" > build.log 2>&1 ); then
-    echo "m9test: $name does not build:"
-    sed 's/^/    /' "$W/$name/build.log" | tail -12
     return 99
   fi
   # run from the repository root: a test finds its golden file at
@@ -92,16 +101,28 @@ run_test () {
   ( cd "$HERE/../.." && "$W/$name/$name" > "$W/$name/out" 2>&1 )
 }
 
-# ---- the control first: a test that must fail ----------------------
-run_test "$HERE/m9test/FailTest.m9"; rc=$?
-if [ "$rc" != 1 ]; then
-  bad "the control FailTest exited $rc, not 1: a failing check does not reach the exit status"
-elif ! grep -q '^FAILED 1 of 2 -- Fail$' "$W/FailTest/out"; then
-  bad "the control FailTest did not print FAILED 1 of 2:"; cat "$W/FailTest/out"
+# a worker: one test, its status into $W/NAME.rc
+if [ "$1" = --one ]; then
+  run_test "$2"
+  echo $? > "$W/$(basename "$2" .m9).rc"
+  exit 0
 fi
 
-# ---- every test beside its module ----------------------------------
+# rc_of NAME: the status a worker left; a test that did not build has
+# its compiler's lines shown here, in order
+rc_of () {
+  rc=$(cat "$W/$1.rc" 2>/dev/null || echo 98)
+  if [ "$rc" = 99 ]; then
+    echo "m9test: $1 does not build:"
+    sed 's/^/    /' "$W/$1/build.log" | tail -12
+  fi
+}
+
+# ---- the list, then every build and run at once --------------------
 n=0; checks=0
+: > "$W/list"
+: > "$W/order"
+echo "$HERE/m9test/FailTest.m9" >> "$W/list"
 for f in "$SRC"/*Test.m9; do
   [ -f "$f" ] || continue
   name=$(basename "$f" .m9)
@@ -114,11 +135,33 @@ for f in "$SRC"/*Test.m9; do
     if [ -n "$GITHUB_ACTIONS" ]; then
       bad "PgTest: no PGHOST on CI (the drivers job's postgres service)"
     else
-      echo "  PgTest: SKIP -- PGHOST unset (a Postgres server is needed)"
+      echo "skip $f" >> "$W/order"
     fi
     continue
   fi
-  run_test "$f"; rc=$?
+  echo "$f" >> "$W/list"
+  echo "run $f" >> "$W/order"
+done
+J=${M9_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}
+xargs -P "$J" -I{} "$HERE/m9test.sh" --one {} < "$W/list"
+
+# ---- the control first: a test that must fail ----------------------
+rc_of FailTest
+if [ "$rc" != 1 ]; then
+  bad "the control FailTest exited $rc, not 1: a failing check does not reach the exit status"
+elif ! grep -q '^FAILED 1 of 2 -- Fail$' "$W/FailTest/out"; then
+  bad "the control FailTest did not print FAILED 1 of 2:"; cat "$W/FailTest/out"
+fi
+
+# ---- every test beside its module, judged in file order -------------
+while read -r how f; do
+  name=$(basename "$f" .m9)
+  mod=${name%Test}
+  if [ "$how" = skip ]; then
+    echo "  PgTest: SKIP -- PGHOST unset (a Postgres server is needed)"
+    continue
+  fi
+  rc_of "$name"
   [ "$rc" = 99 ] && { fail=$((fail+1)); continue; }
   out="$W/$name/out"
   last=$(tail -1 "$out")
@@ -147,8 +190,33 @@ for f in "$SRC"/*Test.m9; do
   fi
   c=${last#PASS (}; c=${c%% *}; checks=$((checks+c))
   echo "  $name: $last"
-done
+done < "$W/order"
 [ "$n" -gt 0 ] || bad "no corpus/*Test.m9 found"
+
+# ---- the twins' tests once more on their M9 side ----------------------
+# Fmt.Fixed and Fmt.Sci take their digits from the C library through
+# the runtime (m9_fmt_fixed/m9_fmt_sci, 2026-10-25) and Sort's four
+# sorts their order from its radix sorts (m9_sort_*, the same day), and
+# each keeps its own M9 code for where the runtime declines.  The run
+# above held the C paths to the goldens (Python's, numpy's); this holds
+# the M9 paths to the same goldens, so neither twin goes unwatched.
+again () {   # again TEST MODULE VAR=1 WORDS
+  t=$1; mod=$2; v=$3; shift 3
+  [ -x "$W/$t/$t" ] || return 0
+  ( cd "$HERE/../.." && env "$v" "$W/$t/$t" > "$W/$t/out2" 2>&1 )
+  rc2=$?
+  last2=$(tail -1 "$W/$t/out2")
+  case "$last2" in
+    "PASS ("*" checks) -- $mod") [ "$rc2" = 0 ] && ! grep -q '^FAIL' "$W/$t/out2" \
+      && echo "  $t ($v, $*): $last2" \
+      || { bad "$t on $* (exit $rc2):"; grep '^FAIL' "$W/$t/out2" | sed 's/^/    /'; } ;;
+    *) bad "$t on $* (exit $rc2): last line: $last2" ;;
+  esac
+}
+again FmtTest Fmt M9_FMT_PORTABLE=1 the M9 digits
+again SortTest Sort M9_SORT_PORTABLE=1 the merge sorts
+again CsvTest Csv M9_CSV_PORTABLE=1 IsNumber in M9
+again FrameTest Frame M9_CSV_PORTABLE=1 IsNumber in M9
 
 # how much of the library has one: printed, never gated
 lib=$(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh | tr -d '"\\' | sed 's/^LIBRARY=//' | tr -s ' \n' '\n\n' | grep -c .)

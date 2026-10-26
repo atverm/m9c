@@ -1,0 +1,19 @@
+(* EXPECT: UTF converts a STR (encoding it) or a SLICE OF BYTE (validating it), not I64 *)
+MODULE m ;
+(* legal forms first: UTF of a STR, of a UTF, of a literal; STR and
+   OCTETS of a UTF *)
+VAR
+  u : UTF ;
+  s : STR ;
+  o : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  s := 'abc' ;
+  u := UTF (s) ;
+  u := UTF (u) ;
+  u := UTF ('x') ;
+  s := STR (u) ;
+  o := OCTETS (u) ;
+  n := LEN (o) ;
+  u := UTF (n)
+END m.

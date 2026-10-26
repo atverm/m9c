@@ -1,0 +1,625 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE Sort ;
+
+(* Sorting, stable, in place, over a slice -- so a sub-range needs no
+   offsets in the signature: name the view, then sort it,
+
+       sub := SLICE (a, start, len) ;
+       Sort.I64s (sub) ;
+
+   and the parent's elements move, since a view shares the buffer.
+   The two lines are not one: `Sort.I64s (SLICE (a, 0, n))` is
+   refused, because a VAR argument must be a designator and a SLICE
+   expression is not one (probe `var-arg-not-designator`; the zarr
+   proxy port hit it on 2026-09-28 after this comment had said
+   otherwise).
+
+   Until 2026-09-27 the corpus exported no sort at all: Stats kept a
+   private heapsort, Zarr an insertion sort whose comment said "the
+   corpus exports none", Json a third, m9edit a fourth, and the
+   ONEFlux port wrote its own merge sort when a heapsort's instability
+   changed an answer.  The review of that day counted them
+   (docs/agent-review-2026-09-27.md F7) and the port asked for exactly
+   two properties: a sort over a sub-range, and a stable one.  Both
+   are here, as a merge sort: n log n, stable by construction, the
+   scratch half in a pool that dies with the call.
+
+   `By` is the corpus's first use of a procedure type (report par
+   2.2.3): the caller's own order over I64 keys, which is how a table
+   of records is sorted by any column -- sort its row indices with a
+   Less that reads the column.                                       *)
+
+TYPE
+  Less = PROCEDURE (a: I64 ; b: I64) : BOOL ;
+  (* a strict order: TRUE when a goes before b, FALSE for equal keys,
+     which is what keeps the sort stable *)
+
+EXCEPTION
+  NotANumber (at: I64) ;
+  (* an F64 sort met a NaN at index `at`: no order holds it, and a
+     sort that put it somewhere would be inventing one (the Stats
+     rule, par 2.1) *)
+
+PROCEDURE F64s (VAR a: SLICE OF F64) RAISES NotANumber ;
+  (* ascending, stable; -0.0 and 0.0 are equal and keep their order *)
+
+PROCEDURE I64s (VAR a: SLICE OF I64) ;
+  (* ascending, stable *)
+
+PROCEDURE Strs (VAR a: SLICE OF STR) ;
+  (* ascending by scalar value, position by position, the shorter
+     first when one is a prefix of the other; stable.  No locale:
+     'B' sorts before 'a'.
+
+     Not KEPT, on purpose.  The first version merged through a
+     scratch SLICE OF STR, and `tmp[k] := a[j]` is, to the checker,
+     a borrowed string stored into another parameter's storage: it
+     demanded KEPT a, and the mark climbed into every caller -- in
+     the zarr proxy port from Shuttle.FlatVars up into SetupRun, a
+     thread root (2026-09-28).  This version
+     sorts an index permutation (the strings are only READ, through
+     RO) and applies it in place through one local, which the
+     checker sees as movement within the caller's own slice.  Same
+     n log n, same stability, no scratch strings. *)
+
+PROCEDURE ArgF64 (RO v: SLICE OF F64 ; VAR idx: SLICE OF I64)
+  RAISES NotANumber, IndexError ;
+  (* the indices 0 .. LEN (v) - 1 in the order that sorts v, stable:
+     equal values keep index order.  LEN (idx) must be LEN (v)
+     (IndexError otherwise); v is not moved *)
+
+PROCEDURE ArgI64 (RO v: SLICE OF I64 ; VAR idx: SLICE OF I64)
+  RAISES IndexError ;
+PROCEDURE ArgStr (RO v: SLICE OF STR ; VAR idx: SLICE OF I64)
+  RAISES IndexError ;
+  (* ArgF64 for integers and for strings (in Strs's order): the
+     indices that sort v, stable, v not moved; LEN (idx) must be
+     LEN (v) *)
+
+PROCEDURE By (VAR keys: SLICE OF I64 ; less: Less) ;
+  (* the keys in the caller's order, stable *)
+
+PROCEDURE UniqueF64 (RO v: SLICE OF F64) : SLICE OF F64
+  RAISES NotANumber ;
+PROCEDURE UniqueI64 (RO v: SLICE OF I64) : SLICE OF I64 ;
+PROCEDURE UniqueStrs (RO v: SLICE OF STR) : SLICE OF STR ;
+  (* the distinct values of v, ascending: numpy.unique.  The answer
+     is new storage in the caller's frame and v is not moved; the
+     strings of UniqueStrs are copies, so the answer does not hold
+     on to v.  -0.0 and 0.0 are
+     one value (the first met stays); a NaN is NotANumber, as it is
+     for the sort this stands on. *)
+
+PROCEDURE LowerF64 (RO a: SLICE OF F64 ; x: F64) : I64 ;
+PROCEDURE UpperF64 (RO a: SLICE OF F64 ; x: F64) : I64 ;
+PROCEDURE FindF64 (RO a: SLICE OF F64 ; x: F64) : I64 ;
+PROCEDURE LowerI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
+PROCEDURE UpperI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
+PROCEDURE FindI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
+PROCEDURE FindStr (RO a: SLICE OF STR ; RO s: STR) : I64 ;
+  (* BINARY SEARCH in a slice that is ASCENDING -- which is the
+     caller's to ensure: these read about log2 (LEN (a)) elements and
+     cannot notice a slice that is not sorted.
+
+       Lower:  the first index whose element is not less than x,
+               0 .. LEN (a): where x would be inserted to stay
+               before its equals (numpy.searchsorted, side='left')
+       Upper:  the first index whose element is greater than x:
+               after its equals (side='right').  Upper - Lower is
+               how many elements equal x.
+       Find:   the index of the FIRST element equal to x, or -1
+
+     A NaN x is after everything, as numpy has it: Lower and Upper
+     answer LEN (a), and Find -1. *)
+
+END Sort.
+
+
+UNSAFE IMPLEMENTATION MODULE Sort ;
+
+IMPORT Text ;
+
+(* UNSAFE for ADR: a slice's storage goes to the runtime's radix sorts
+   (csort, at the end of this file; m9rt.h); the merge sorts below are
+   the portable twin, taken where the runtime declines (no memory, or
+   M9_SORT_PORTABLE in the environment -- the gates run both ways).
+   2026-10-25, Alex: "then sort": a million F64s 125 -> 52 ms on the
+   Xeon, the argsort 156 -> 53. *)
+
+IMPORT Math ;
+FROM csort IMPORT CSortF64, CSortI64, CArgF64, CArgI64 ;
+
+(* one merge sort per element type -- no generics, per-type twins as
+   Math and Frame do -- each the same twenty lines: halve, sort the
+   halves, merge into scratch, copy back.  The comparison is the one
+   place they differ, and By's is a call through the caller's Less. *)
+
+PROCEDURE MergeF64 (VAR a: SLICE OF F64 ; VAR tmp: SLICE OF F64 ;
+                    lo: I64 ; mid: I64 ; hi: I64) =
+VAR i, j, k : I64 ;
+BEGIN
+  i := lo ; j := mid ; k := lo ;
+  WHILE i < mid AND j < hi DO
+    (* take from the right only when strictly smaller: stability *)
+    IF a[j] < a[i] THEN tmp[k] := a[j] ; j := j + 1
+    ELSE tmp[k] := a[i] ; i := i + 1 END ;
+    k := k + 1
+  END ;
+  WHILE i < mid DO tmp[k] := a[i] ; i := i + 1 ; k := k + 1 END ;
+  WHILE j < hi DO tmp[k] := a[j] ; j := j + 1 ; k := k + 1 END ;
+  FOR k := lo TO hi - 1 DO a[k] := tmp[k] END
+END MergeF64 ;
+
+PROCEDURE SortF64 (VAR a: SLICE OF F64 ; VAR tmp: SLICE OF F64 ;
+                   lo: I64 ; hi: I64) =
+VAR mid : I64 ;
+BEGIN
+  IF hi - lo < 2 THEN RETURN END ;
+  mid := lo + (hi - lo) DIV 2 ;
+  SortF64 (a, tmp, lo, mid) ;
+  SortF64 (a, tmp, mid, hi) ;
+  MergeF64 (a, tmp, lo, mid, hi)
+END SortF64 ;
+
+PROCEDURE F64s (VAR a: SLICE OF F64) RAISES NotANumber =
+VAR
+  scratch : POOL ;
+  tmp : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF Math.IsNaN (a[i]) THEN RAISE NotANumber (i) END
+  END ;
+  IF LEN (a) > 0 AND I64 (CSortF64 (ADR (a), C.SSizeT (LEN (a)))) = 1 THEN RETURN END ;
+  tmp := NEW (scratch, F64, LEN (a)) ;
+  SortF64 (a, tmp, 0, LEN (a))
+END F64s ;
+
+PROCEDURE MergeI64 (VAR a: SLICE OF I64 ; VAR tmp: SLICE OF I64 ;
+                    lo: I64 ; mid: I64 ; hi: I64) =
+VAR i, j, k : I64 ;
+BEGIN
+  i := lo ; j := mid ; k := lo ;
+  WHILE i < mid AND j < hi DO
+    IF a[j] < a[i] THEN tmp[k] := a[j] ; j := j + 1
+    ELSE tmp[k] := a[i] ; i := i + 1 END ;
+    k := k + 1
+  END ;
+  WHILE i < mid DO tmp[k] := a[i] ; i := i + 1 ; k := k + 1 END ;
+  WHILE j < hi DO tmp[k] := a[j] ; j := j + 1 ; k := k + 1 END ;
+  FOR k := lo TO hi - 1 DO a[k] := tmp[k] END
+END MergeI64 ;
+
+PROCEDURE SortI64 (VAR a: SLICE OF I64 ; VAR tmp: SLICE OF I64 ;
+                   lo: I64 ; hi: I64) =
+VAR mid : I64 ;
+BEGIN
+  IF hi - lo < 2 THEN RETURN END ;
+  mid := lo + (hi - lo) DIV 2 ;
+  SortI64 (a, tmp, lo, mid) ;
+  SortI64 (a, tmp, mid, hi) ;
+  MergeI64 (a, tmp, lo, mid, hi)
+END SortI64 ;
+
+PROCEDURE I64s (VAR a: SLICE OF I64) =
+VAR
+  scratch : POOL ;
+  tmp : SLICE OF I64 ;
+BEGIN
+  IF LEN (a) > 0 AND I64 (CSortI64 (ADR (a), C.SSizeT (LEN (a)))) = 1 THEN RETURN END ;
+  tmp := NEW (scratch, I64, LEN (a)) ;
+  SortI64 (a, tmp, 0, LEN (a))
+END I64s ;
+
+(* scalar order, the shorter first on a common prefix *)
+PROCEDURE StrLess (RO a: STR ; RO b: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < Text.BLen (a) AND i < Text.BLen (b) DO
+    IF Text.BAt (a, i) # Text.BAt (b, i) THEN RETURN Text.BAt (a, i) < Text.BAt (b, i) END ;
+    i := i + 1
+  END ;
+  RETURN Text.BLen (a) < Text.BLen (b)
+END StrLess ;
+
+(* the string sort is an ARGSORT over indices (the ArgF64 shape below)
+   followed by an in-place permutation: the strings are read through
+   RO and moved only within a, so no KEPT -- see the definition *)
+PROCEDURE MergeArgStrs (RO v: SLICE OF STR ; VAR idx: SLICE OF I64 ;
+                        VAR tmp: SLICE OF I64 ; lo: I64 ; mid: I64 ;
+                        hi: I64) =
+VAR i, j, k : I64 ;
+BEGIN
+  i := lo ; j := mid ; k := lo ;
+  WHILE i < mid AND j < hi DO
+    IF StrLess (v[idx[j]], v[idx[i]]) THEN tmp[k] := idx[j] ; j := j + 1
+    ELSE tmp[k] := idx[i] ; i := i + 1 END ;
+    k := k + 1
+  END ;
+  WHILE i < mid DO tmp[k] := idx[i] ; i := i + 1 ; k := k + 1 END ;
+  WHILE j < hi DO tmp[k] := idx[j] ; j := j + 1 ; k := k + 1 END ;
+  FOR k := lo TO hi - 1 DO idx[k] := tmp[k] END
+END MergeArgStrs ;
+
+PROCEDURE SortArgStrs (RO v: SLICE OF STR ; VAR idx: SLICE OF I64 ;
+                       VAR tmp: SLICE OF I64 ; lo: I64 ; hi: I64) =
+VAR mid : I64 ;
+BEGIN
+  IF hi - lo < 2 THEN RETURN END ;
+  mid := lo + (hi - lo) DIV 2 ;
+  SortArgStrs (v, idx, tmp, lo, mid) ;
+  SortArgStrs (v, idx, tmp, mid, hi) ;
+  MergeArgStrs (v, idx, tmp, lo, mid, hi)
+END SortArgStrs ;
+
+PROCEDURE Strs (VAR a: SLICE OF STR) =
+VAR
+  scratch : POOL ;
+  idx, tmp : SLICE OF I64 ;
+  i, k, j : I64 ;
+  hold : STR ;
+BEGIN
+  IF LEN (a) < 2 THEN RETURN END ;
+  idx := NEW (scratch, I64, LEN (a)) ;
+  tmp := NEW (scratch, I64, LEN (a)) ;
+  FOR i := 0 TO LEN (a) - 1 DO idx[i] := i END ;
+  SortArgStrs (a, idx, tmp, 0, LEN (a)) ;
+  (* apply the permutation in place, one cycle at a time: idx[k] is
+     where the element that belongs at k now sits.  Lift a[i] out,
+     pull each element of the cycle one seat forward, drop the lifted
+     one into the last seat; idx[k] := k marks a seat filled, so the
+     outer loop skips cycles already walked.  Every element moves
+     once. *)
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF idx[i] # i THEN
+      hold := a[i] ;
+      k := i ;
+      j := idx[k] ;
+      WHILE j # i DO
+        a[k] := a[j] ;
+        idx[k] := k ;
+        k := j ;
+        j := idx[k]
+      END ;
+      a[k] := hold ;
+      idx[k] := k
+    END
+  END
+END Strs ;
+
+(* indices ordered by the values they index: the merge compares
+   v[a[i]] where the plain sort compares a[i] *)
+PROCEDURE MergeArg (RO v: SLICE OF F64 ; VAR a: SLICE OF I64 ;
+                    VAR tmp: SLICE OF I64 ; lo: I64 ; mid: I64 ; hi: I64)
+  RAISES IndexError =
+VAR i, j, k : I64 ;
+BEGIN
+  i := lo ; j := mid ; k := lo ;
+  WHILE i < mid AND j < hi DO
+    IF v[a[j]] < v[a[i]] THEN tmp[k] := a[j] ; j := j + 1
+    ELSE tmp[k] := a[i] ; i := i + 1 END ;
+    k := k + 1
+  END ;
+  WHILE i < mid DO tmp[k] := a[i] ; i := i + 1 ; k := k + 1 END ;
+  WHILE j < hi DO tmp[k] := a[j] ; j := j + 1 ; k := k + 1 END ;
+  FOR k := lo TO hi - 1 DO a[k] := tmp[k] END
+END MergeArg ;
+
+PROCEDURE SortArg (RO v: SLICE OF F64 ; VAR a: SLICE OF I64 ;
+                   VAR tmp: SLICE OF I64 ; lo: I64 ; hi: I64)
+  RAISES IndexError =
+VAR mid : I64 ;
+BEGIN
+  IF hi - lo < 2 THEN RETURN END ;
+  mid := lo + (hi - lo) DIV 2 ;
+  SortArg (v, a, tmp, lo, mid) ;
+  SortArg (v, a, tmp, mid, hi) ;
+  MergeArg (v, a, tmp, lo, mid, hi)
+END SortArg ;
+
+PROCEDURE ArgF64 (RO v: SLICE OF F64 ; VAR idx: SLICE OF I64)
+  RAISES NotANumber, IndexError =
+VAR
+  scratch : POOL ;
+  tmp : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (idx) # LEN (v) THEN RAISE IndexError (LEN (idx), LEN (v)) END ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF Math.IsNaN (v[i]) THEN RAISE NotANumber (i) END ;
+    idx[i] := i
+  END ;
+  IF LEN (v) > 0 AND I64 (CArgF64 (ADR (v), ADR (idx), C.SSizeT (LEN (v)))) = 1 THEN RETURN END ;
+  tmp := NEW (scratch, I64, LEN (v)) ;
+  SortArg (v, idx, tmp, 0, LEN (v))
+END ArgF64 ;
+
+(* the integer twin of MergeArg and SortArg: one comparison differs *)
+PROCEDURE MergeArgI64 (RO v: SLICE OF I64 ; VAR a: SLICE OF I64 ;
+                       VAR tmp: SLICE OF I64 ; lo: I64 ; mid: I64 ;
+                       hi: I64) =
+VAR i, j, k : I64 ;
+BEGIN
+  i := lo ; j := mid ; k := lo ;
+  WHILE i < mid AND j < hi DO
+    IF v[a[j]] < v[a[i]] THEN tmp[k] := a[j] ; j := j + 1
+    ELSE tmp[k] := a[i] ; i := i + 1 END ;
+    k := k + 1
+  END ;
+  WHILE i < mid DO tmp[k] := a[i] ; i := i + 1 ; k := k + 1 END ;
+  WHILE j < hi DO tmp[k] := a[j] ; j := j + 1 ; k := k + 1 END ;
+  FOR k := lo TO hi - 1 DO a[k] := tmp[k] END
+END MergeArgI64 ;
+
+PROCEDURE SortArgI64 (RO v: SLICE OF I64 ; VAR a: SLICE OF I64 ;
+                      VAR tmp: SLICE OF I64 ; lo: I64 ; hi: I64) =
+VAR mid : I64 ;
+BEGIN
+  IF hi - lo < 2 THEN RETURN END ;
+  mid := lo + (hi - lo) DIV 2 ;
+  SortArgI64 (v, a, tmp, lo, mid) ;
+  SortArgI64 (v, a, tmp, mid, hi) ;
+  MergeArgI64 (v, a, tmp, lo, mid, hi)
+END SortArgI64 ;
+
+PROCEDURE ArgI64 (RO v: SLICE OF I64 ; VAR idx: SLICE OF I64)
+  RAISES IndexError =
+VAR
+  scratch : POOL ;
+  tmp : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (idx) # LEN (v) THEN RAISE IndexError (LEN (idx), LEN (v)) END ;
+  IF LEN (v) > 0 AND I64 (CArgI64 (ADR (v), ADR (idx), C.SSizeT (LEN (v)))) = 1 THEN RETURN END ;
+  FOR i := 0 TO LEN (v) - 1 DO idx[i] := i END ;
+  tmp := NEW (scratch, I64, LEN (v)) ;
+  SortArgI64 (v, idx, tmp, 0, LEN (v))
+END ArgI64 ;
+
+PROCEDURE ArgStr (RO v: SLICE OF STR ; VAR idx: SLICE OF I64)
+  RAISES IndexError =
+VAR
+  scratch : POOL ;
+  tmp : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (idx) # LEN (v) THEN RAISE IndexError (LEN (idx), LEN (v)) END ;
+  FOR i := 0 TO LEN (v) - 1 DO idx[i] := i END ;
+  tmp := NEW (scratch, I64, LEN (v)) ;
+  SortArgStrs (v, idx, tmp, 0, LEN (v))
+END ArgStr ;
+
+(* the caller's order, called through: the one comparison that is a
+   procedure value.  Stable for the same reason as the others -- the
+   right side is taken only when less (right, left) holds. *)
+PROCEDURE MergeBy (VAR a: SLICE OF I64 ; VAR tmp: SLICE OF I64 ;
+                   less: Less ; lo: I64 ; mid: I64 ; hi: I64) =
+VAR i, j, k : I64 ;
+BEGIN
+  i := lo ; j := mid ; k := lo ;
+  WHILE i < mid AND j < hi DO
+    IF less (a[j], a[i]) THEN tmp[k] := a[j] ; j := j + 1
+    ELSE tmp[k] := a[i] ; i := i + 1 END ;
+    k := k + 1
+  END ;
+  WHILE i < mid DO tmp[k] := a[i] ; i := i + 1 ; k := k + 1 END ;
+  WHILE j < hi DO tmp[k] := a[j] ; j := j + 1 ; k := k + 1 END ;
+  FOR k := lo TO hi - 1 DO a[k] := tmp[k] END
+END MergeBy ;
+
+PROCEDURE SortBy (VAR a: SLICE OF I64 ; VAR tmp: SLICE OF I64 ;
+                  less: Less ; lo: I64 ; hi: I64) =
+VAR mid : I64 ;
+BEGIN
+  IF hi - lo < 2 THEN RETURN END ;
+  mid := lo + (hi - lo) DIV 2 ;
+  SortBy (a, tmp, less, lo, mid) ;
+  SortBy (a, tmp, less, mid, hi) ;
+  MergeBy (a, tmp, less, lo, mid, hi)
+END SortBy ;
+
+PROCEDURE By (VAR keys: SLICE OF I64 ; less: Less) =
+VAR
+  scratch : POOL ;
+  tmp : SLICE OF I64 ;
+BEGIN
+  tmp := NEW (scratch, I64, LEN (keys)) ;
+  SortBy (keys, tmp, less, 0, LEN (keys))
+END By ;
+
+(* ---- unique: sort a copy, keep the first of each run ---- *)
+
+PROCEDURE UniqueF64 (RO v: SLICE OF F64) : SLICE OF F64
+  RAISES NotANumber =
+VAR
+  w, out : SLICE OF F64 ;
+  i, n : I64 ;
+BEGIN
+  w := NEW (F64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := v[i] END ;
+  F64s (w) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (w) - 1 DO
+    IF i = 0 THEN
+      n := 1
+    ELSIF w[i] # w[n - 1] THEN
+      w[n] := w[i] ;
+      n := n + 1
+    END
+  END ;
+  out := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO out[i] := w[i] END ;
+  RETURN out
+END UniqueF64 ;
+
+PROCEDURE UniqueI64 (RO v: SLICE OF I64) : SLICE OF I64 =
+VAR
+  w, out : SLICE OF I64 ;
+  i, n : I64 ;
+BEGIN
+  w := NEW (I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := v[i] END ;
+  I64s (w) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (w) - 1 DO
+    IF i = 0 THEN
+      n := 1
+    ELSIF w[i] # w[n - 1] THEN
+      w[n] := w[i] ;
+      n := n + 1
+    END
+  END ;
+  out := NEW (I64, n) ;
+  FOR i := 0 TO n - 1 DO out[i] := w[i] END ;
+  RETURN out
+END UniqueI64 ;
+
+(* the indices are sorted, and the answer takes a COPY of the first
+   string of each run of equals.  A copy, because an answer holding
+   v's own strings is a retention: the checker asks for KEPT on v
+   (it did, on the first version of this), and a KEPT parameter
+   refuses a caller whose strings are frame values -- the pieces of a
+   Text.Split, which is who asks for unique strings. *)
+PROCEDURE UniqueStrs (RO v: SLICE OF STR) : SLICE OF STR =
+VAR
+  scratch : POOL ;
+  idx, tmp : SLICE OF I64 ;
+  out : SLICE OF STR ;
+  i, n, last : I64 ;
+BEGIN
+  idx := NEW (scratch, I64, LEN (v)) ;
+  tmp := NEW (scratch, I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO idx[i] := i END ;
+  SortArgStrs (v, idx, tmp, 0, LEN (v)) ;
+  (* count the runs, then take the head of each *)
+  n := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF i = 0 THEN
+      n := 1
+    ELSIF StrLess (v[idx[i - 1]], v[idx[i]]) THEN
+      n := n + 1
+    END
+  END ;
+  out := NEW (STR, n) ;
+  n := 0 ;
+  last := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF i = 0 THEN
+      out[0] := v[idx[0]] + '' ;
+      n := 1
+    ELSIF StrLess (v[last], v[idx[i]]) THEN
+      out[n] := v[idx[i]] + '' ;
+      n := n + 1
+    END ;
+    last := idx[i]
+  END ;
+  RETURN out
+END UniqueStrs ;
+
+(* ---- binary search ---- *)
+
+PROCEDURE LowerF64 (RO a: SLICE OF F64 ; x: F64) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  IF Math.IsNaN (x) THEN RETURN LEN (a) END ;
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF a[mid] < x THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  RETURN lo
+END LowerF64 ;
+
+PROCEDURE UpperF64 (RO a: SLICE OF F64 ; x: F64) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  IF Math.IsNaN (x) THEN RETURN LEN (a) END ;
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF a[mid] <= x THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  RETURN lo
+END UpperF64 ;
+
+PROCEDURE FindF64 (RO a: SLICE OF F64 ; x: F64) : I64 =
+VAR i : I64 ;
+BEGIN
+  i := LowerF64 (a, x) ;
+  IF i < LEN (a) THEN
+    IF a[i] = x THEN RETURN i END
+  END ;
+  RETURN -1
+END FindF64 ;
+
+PROCEDURE LowerI64 (RO a: SLICE OF I64 ; x: I64) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF a[mid] < x THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  RETURN lo
+END LowerI64 ;
+
+PROCEDURE UpperI64 (RO a: SLICE OF I64 ; x: I64) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF a[mid] <= x THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  RETURN lo
+END UpperI64 ;
+
+PROCEDURE FindI64 (RO a: SLICE OF I64 ; x: I64) : I64 =
+VAR i : I64 ;
+BEGIN
+  i := LowerI64 (a, x) ;
+  IF i < LEN (a) THEN
+    IF a[i] = x THEN RETURN i END
+  END ;
+  RETURN -1
+END FindI64 ;
+
+PROCEDURE FindStr (RO a: SLICE OF STR ; RO s: STR) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF StrLess (a[mid], s) THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  IF lo < LEN (a) THEN
+    (* a[lo] is not less than s; equal when s is not less than it *)
+    IF NOT StrLess (s, a[lo]) THEN RETURN lo END
+  END ;
+  RETURN -1
+END FindStr ;
+
+END Sort.
+
+
+UNSAFE DEFINITION MODULE FOR "C" csort ;
+
+(* runtime/m9rt.c (m9rt.h): LSD radix sorts over a slice's storage,
+   stable, answering 1 when done and 0 when the caller's merge sort
+   must do it.  No LINK: the runtime's.  REENTRANT: scratch from
+   malloc, no shared state. *)
+
+PROCEDURE CSortF64 = "m9_sort_f64" (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT] ;
+PROCEDURE CSortI64 = "m9_sort_i64" (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT] ;
+PROCEDURE CArgF64 = "m9_argsort_f64" (v: C.ConstPtr ; idx: C.MutPtr ; n: C.SSizeT) : C.Int
+  [REENTRANT] ;
+PROCEDURE CArgI64 = "m9_argsort_i64" (v: C.ConstPtr ; idx: C.MutPtr ; n: C.SSizeT) : C.Int
+  [REENTRANT] ;
+
+END csort.

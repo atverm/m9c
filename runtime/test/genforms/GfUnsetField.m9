@@ -1,0 +1,69 @@
+MODULE GfUnsetField ;
+
+(* WANT: unset: followed -1 0, element -1 0, copied -1 0, set 7 *)
+
+(* A PTR field of a record that arrived zeroed holds nothing until it is
+   set (2026-10-21, the compiler review's C8; Alex: "runtime check
+   everywhere").  Following it -- `p.next.n' -- was a SIGSEGV with no
+   handler run; copying it out (`q := p.next') let the NULL travel on to
+   fail where nothing tests.  Both raise IndexError now, with the payload
+   (-1, 0) that tells it from a subscript.  A field that was set is
+   followed as before. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Node = RECORD
+    n : I64 ;
+    next : PTR Node ;
+  END ;
+
+VAR
+  pool : POOL ;
+  out : STR ;
+
+PROCEDURE Followed () : STR =
+VAR p : PTR Node ;
+BEGIN
+  p := NEW (pool, Node) ;
+  RETURN Fmt.I64Str (p.next.n)
+EXCEPT
+| IndexError (i, len) : RETURN Fmt.I64Str (i) + ' ' + Fmt.I64Str (len)
+END Followed ;
+
+PROCEDURE Element () : STR =
+VAR s : SLICE OF Node ;
+BEGIN
+  s := NEW (pool, Node, 3) ;
+  RETURN Fmt.I64Str (s[1].next.n)
+EXCEPT
+| IndexError (i, len) : RETURN Fmt.I64Str (i) + ' ' + Fmt.I64Str (len)
+END Element ;
+
+PROCEDURE Copied () : STR =
+VAR p, q : PTR Node ;
+BEGIN
+  p := NEW (pool, Node) ;
+  q := p.next ;
+  RETURN 'copied an unset pointer'
+EXCEPT
+| IndexError (i, len) : RETURN Fmt.I64Str (i) + ' ' + Fmt.I64Str (len)
+END Copied ;
+
+PROCEDURE Set () : STR =
+VAR p, q : PTR Node ;
+BEGIN
+  p := NEW (pool, Node) ;
+  q := NEW (pool, Node) ;
+  q.n := 7 ;
+  p.next := q ;
+  RETURN Fmt.I64Str (p.next.n)
+EXCEPT
+| IndexError (i, len) : RETURN 'IndexError on a set field'
+END Set ;
+
+BEGIN
+  out := 'unset: followed ' + Followed () + ', element ' + Element () +
+    ', copied ' + Copied () + ', set ' + Set () ;
+  Io.WriteLine (out)
+END GfUnsetField.

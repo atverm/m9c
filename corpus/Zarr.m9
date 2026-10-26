@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Zarr ;
 
 (* WRITING a zarr v2 store: groups, attributes, chunked arrays and the
@@ -466,14 +467,16 @@ PROCEDURE MkDirP (VAR pool: POOL ; RO path: STR)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
-  i : I64 ;
+  c : CHAR ;
 BEGIN
   d := DynStr.New (scratch) ;
-  FOR i := 0 TO LEN (path) - 1 DO
-    IF path[i] = '/' AND DynStr.Len (d) > 0 THEN
+  (* FOR c IN path: over characters, the same both sides of the UTF
+     switch *)
+  FOR c IN path DO
+    IF c = '/' AND DynStr.Len (d) > 0 THEN
       Io.MkDir (DynStr.View (d))
     END ;
-    DynStr.AppendChar (d, path[i])
+    DynStr.AppendChar (d, c)
   END ;
   IF DynStr.Len (d) > 0 THEN Io.MkDir (DynStr.View (d)) END
 EXCEPT

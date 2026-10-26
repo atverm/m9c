@@ -1,0 +1,32 @@
+(* EXPECT: argument 1 of cm.Set: cannot pass C.ConstPtr where C.MutPtr is expected *)
+(* ADR of read-only storage -- a literal, a CONST, what an RO parameter
+   lends, OCTETS -- or of a UTF answers a const pointer, which a C.MutPtr
+   parameter does not take: ADR's one pointer fitting both let a
+   literal's octets reach memset (SIGBUS) and C write 0xFF under a UTF
+   (the third review's trust T4, T6, 2026-10-26).  Legal forms first:
+   ADR of a writable slice to a C.MutPtr, and of an RO one to a
+   C.ConstPtr. *)
+UNSAFE DEFINITION MODULE FOR "C" cm ;
+PROCEDURE Set = "m9_cm_set" (p: C.MutPtr ; n: C.SizeT) [REENTRANT] ;
+PROCEDURE Len = "m9_cm_len" (p: C.ConstPtr) : C.SizeT [REENTRANT] ;
+END cm.
+DEFINITION MODULE m ;
+PROCEDURE Fill (b: SLICE OF BYTE) ;
+PROCEDURE Size (RO b: SLICE OF BYTE) : I64 RAISES ValueRange ;
+PROCEDURE Poke (RO b: SLICE OF BYTE) ;
+END m.
+UNSAFE IMPLEMENTATION MODULE m ;
+IMPORT cm ;
+PROCEDURE Fill (b: SLICE OF BYTE) =
+BEGIN
+  cm.Set (ADR (b), C.SizeT (LEN (b)))
+END Fill ;
+PROCEDURE Size (RO b: SLICE OF BYTE) : I64 RAISES ValueRange =
+BEGIN
+  RETURN I64 (cm.Len (ADR (b)))
+END Size ;
+PROCEDURE Poke (RO b: SLICE OF BYTE) =
+BEGIN
+  cm.Set (ADR (b), C.SizeT (1))
+END Poke ;
+END m.

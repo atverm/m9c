@@ -1,0 +1,59 @@
+--- RdfTest.m9
++++ RdfTest.m9
+@@ -720,33 +720,41 @@
+   (* the lines of N-Triples text, sorted, every blank node label
+      replaced by _: -- what grouping may renumber -- and a language
+      tag lowercased, as JSON-LD normalises it and RDF compares it *)
++  (* the text between the two ASCII shapes goes over as RUNS, SLICE (l,
++     from, j - from) -- an octet appended as a character would encode a
++     character past ASCII twice; the answer is a fresh slice, since
++     Split's elements view nt, which is read-only *)
+ VAR
+-  lines : SLICE OF STR ;
+-  i, j : I64 ;
+-  o : STR ;
++  lines, out : SLICE OF STR ;
++  l, o : STR ;
++  i, j, from : I64 ;
+ BEGIN
+   lines := Text.Split (nt, 0AC) ;
++  out := NEW (STR, LEN (lines)) ;
+   FOR i := 0 TO LEN (lines) - 1 DO
++    l := lines[i] ;
+     o := '' ;
+     j := 0 ;
+-    WHILE j < Text.BLen (lines[i]) DO
+-      IF Text.BIs (lines[i], j, '_') AND j + 1 < Text.BLen (lines[i]) AND Text.BIs (lines[i], j + 1, ':') THEN
+-        o := o + '_:' ;
+-        j := j + 2 ;
+-        WHILE j < Text.BLen (lines[i]) AND NOT Text.BIs (lines[i], j, ' ') DO j := j + 1 END
+-      ELSIF Text.BIs (lines[i], j, '"') AND j + 1 < Text.BLen (lines[i]) AND Text.BIs (lines[i], j + 1, '@') THEN
+-        o := o + '"@' ;
++    from := 0 ;
++    WHILE j < Text.BLen (l) DO
++      IF Text.BIs (l, j, '_') AND j + 1 < Text.BLen (l) AND Text.BIs (l, j + 1, ':') THEN
++        o := o + SLICE (l, from, j - from) + '_:' ;
+         j := j + 2 ;
+-        WHILE j < Text.BLen (lines[i]) AND NOT Text.BIs (lines[i], j, ' ') DO o := o + Text.Lower ('' + lines[i][j]) ; j := j + 1 END
++        WHILE j < Text.BLen (l) AND NOT Text.BIs (l, j, ' ') DO j := j + 1 END ;
++        from := j
++      ELSIF Text.BIs (l, j, '"') AND j + 1 < Text.BLen (l) AND Text.BIs (l, j + 1, '@') THEN
++        o := o + SLICE (l, from, j - from) + '"@' ;
++        j := j + 2 ;
++        WHILE j < Text.BLen (l) AND NOT Text.BIs (l, j, ' ') DO o := o + Text.Lower ('' + Text.BChar (l, j)) ; j := j + 1 END ;
++        from := j
+       ELSE
+-        o := o + lines[i][j] ;
+         j := j + 1
+       END
+     END ;
+-    lines[i] := o
++    out[i] := o + SLICE (l, from, Text.BLen (l) - from)
+   END ;
+-  Sort.Strs (lines) ;
+-  RETURN lines
++  Sort.Strs (out) ;
++  RETURN out
+ END Blanked ;
+ 
+ PROCEDURE Recorded () =

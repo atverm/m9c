@@ -29,10 +29,7 @@ rm -rf "$W"; mkdir -p "$W/fix" "$W/orig" "$W/pooled" "$W/decided" "$W/bad" "$W/c
 
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c \
-    ../gen/Text.c ../gen/System.c ../gen/Lex.c ../gen/Ast.c ../gen/Print.c \
-    ../gen/Parse.c ../gen/Sem.c ../gen/Doc.c ../gen/Review.c ../gen/Gen.c \
-    ../gen/Io.c ../gen/M9c.c -lm -o "$W/m9c"
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c"
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 ( cd "$W" && ./m9c --make -o m9elide "$SRC/M9elide.m9" >build.log 2>&1 ) || \

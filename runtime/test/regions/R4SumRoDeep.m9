@@ -1,0 +1,27 @@
+MODULE R4SumRoDeep ;
+IMPORT Io ;
+PROCEDURE Mk () : STR =
+VAR t1, t2, t3, t4, t5, t6, t7, t8, t9, t10 : STR ;
+BEGIN
+  t1 := 'abcdef' ;
+  t2 := t1 ;
+  t3 := t2 ;
+  t4 := t3 ;
+  t5 := t4 ;
+  t6 := t5 ;
+  t7 := t6 ;
+  t8 := t7 ;
+  t9 := t8 ;
+  t10 := t9 ;
+  RETURN t10
+END Mk ;
+PROCEDURE Poke () =
+VAR s : STR ;
+BEGIN
+  s := Mk () ;
+  s[0] := 'X' ;
+  Io.WriteLine (s)
+END Poke ;
+BEGIN
+  Poke ()
+END R4SumRoDeep.

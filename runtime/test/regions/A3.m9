@@ -1,0 +1,22 @@
+(* the compiler review of 2026-10-21, checker repro A3 (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE A3 ;
+IMPORT Io, Fmt ;
+VAR keep : SLICE OF STR ;
+VAR kpool : POOL ;
+PROCEDURE Fill (out: SLICE OF STR ; n: I64) =
+VAR o : SLICE OF STR ;
+BEGIN
+  o := out ; o[0] := 'number ' + Fmt.I64Str (n)
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  keep := NEW (kpool, STR, 2) ;
+  Fill (keep, 7) ;
+  Churn () ;
+  Io.WriteLine (keep[0])
+END A3.

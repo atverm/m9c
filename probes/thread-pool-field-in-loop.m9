@@ -1,0 +1,39 @@
+(* EXPECT: THREAD (Own): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock *)
+MODULE m ;
+(* a POOL field is the worker's own only when each thread is handed its
+   own object: one record handed to eight threads in a loop shares its
+   pool field, and NEW (j.wp, T) from eight workers at once left 129,000
+   of 160,000 cells wrong (the fourth review's PoolField, 2026-10-26).
+   Legal forms first: the record handed once, outside any loop, and an
+   element of a slice of records handed in a loop (zarrm9's Shuttle). *)
+TYPE
+  Cell = RECORD n : I64 END ;
+  Job = RECORD wp : POOL ; n : I64 END [SHARABLE] ;
+  JobP = PTR Job ;
+VAR
+  mp : POOL ;
+  a, d : JobP ;
+  js : SLICE OF JobP ;
+  i : I64 ;
+PROCEDURE Own (VAR j: Job) =
+VAR c : PTR Cell IN j.wp ;
+BEGIN
+  c := NEW (j.wp, Cell) ;
+  c.n := 1 ;
+  j.n := c.n
+END Own ;
+BEGIN
+  a := NEW (mp, Job) ;
+  THREAD (Own, a) ;
+  js := NEW (mp, JobP, 4) ;
+  FOR i := 0 TO 3 DO
+    js[i] := NEW (mp, Job) ;
+    THREAD (Own, js[i])
+  END ;
+  d := NEW (mp, Job) ;
+  FOR i := 0 TO 3 DO
+    THREAD (Own, d)
+  END
+EXCEPT
+| IndexError : i := 0
+END m.

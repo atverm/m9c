@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.24.0, 2026-10-19
+## Report — revision 0.25.0, 2026-10-26
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -31,11 +31,11 @@ to reduce, so the list is meant to shrink.
 |---|---|
 | **Compiler** | `m9c`, self-hosted. Lexer, parser and code generator are written in M9; the three-stage bootstrap is byte-identical at the fixpoint (§9.5) |
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
-| **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a `RAISE`'s payload held to its `EXCEPTION`'s fields, count and types (§5, since 0.20.0), a `FOR` step a constant other than 0 (§10, since 0.20.0), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
+| **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02) and written by its loop alone (§2.1, since 2026-10-25), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a `RAISE`'s payload held to its `EXCEPTION`'s fields, count and types (§5, since 0.20.0), a `FOR` step a constant other than 0 (§10, since 0.20.0), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a member an enumeration lacks, an assignment to a procedure, an exception used as a type, a selector or LEN the type cannot take and an ARRAY count below 1 (§3 rule 7, since 2026-10-22), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
 | **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6; since 2026-10-11 `m9c --review` LISTS each `THREAD` whose target writes one, not refused); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path, a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
-| **Accepted by the checker, refused by the generator** | `VIEW` over a grid a call answers (`VIEW (Mk (), 1, ALL)`).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
+| **Accepted by the checker, refused by the generator** | None known (`VIEW` over a grid a call answers, the last owed form, builds since 2026-10-25; the generator still refuses two VAR string arguments whose storage lives in two pools, by name).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` as COMPUTED (§6: since 2026-10-11 it is DECLARED, `RECORD ... END [SHARABLE]`, and checked at `THREAD`; the `SHARED` count is atomic since 2026-10-18); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.24.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
+| **Release** | 0.25.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
 
@@ -101,6 +101,16 @@ runs the file as a script (`#!/usr/bin/m9c --run`). The lexer skips
 it to its end, so every line keeps its number, and `m9fmt` writes it
 back first and verbatim. Nowhere else is `#!` anything but `#`
 (not-equal) and an error. *(2026-10-04, with `m9c --run`.)*
+
+A byte order mark (U+FEFF) as a file's first character is skipped the
+same way, before a `#!` line if there is one; anywhere else it is a
+character M9 does not have. A line ends at a line feed, and at a
+carriage return that no line feed follows, so a file with CR-only line
+ends counts its lines. A NUL is a character, refused like any other the
+language does not have, and a character past ASCII is named by its
+scalar, `unexpected character U+2713`. *(2026-10-22, the review's F6:
+the mark was refused as `0xff`, its low byte; a NUL ended the source
+without a word; a CR-only file was one line.)*
 
 Comments are not tokens. The lexer records each one -- text, start
 line and column, end line -- beside the token stream, and the parser
@@ -173,6 +183,22 @@ exactly in 64 bits and held to the type's range, U64 as its own
 unsigned arithmetic; `corpus/Narrow.m9` runs every case under
 build.sh.*
 
+**A literal holds what it says.** An integer literal is at most 64
+bits, decimal or hex, and a real literal may not round to infinity as
+an `F64` -- held exactly, at 2^1024 - 2^970 -- both refused by the
+lexer.  A decimal literal past `MAX (I64)` is a `U64` literal, and is
+held where it lands as every `U64` is: `u := 18446744073709551615` for
+a `U64`, never `x := 9223372036854775808` for an `I64`.  `MIN (I64)`
+is written `-9223372036854775807 - 1`.  A hex literal is a bit
+pattern and adapts as before.  *(Since 2026-10-21, the compiler
+review's F1: until then a literal of any length reached C, which
+truncates a constant too large for its type with a warning --
+`x := 18446744073709551617` printed 1, `9223372036854775808` its
+negative -- and `1.0e400` was an infinity.  Parse probes
+`literal-past-64-bits`, `hex-past-64-bits`, `real-past-f64`; probe
+`literal-beyond-i64`.  Not yet: a real literal adapting to `F32`
+beyond its range is still an infinity.)*
+
 There are **no implicit conversions**, including widenings.
 `F64(i)`, `I32(x) RAISES ValueRange` — every conversion is written,
 and every narrowing to an integer, and every float-to-int conversion,
@@ -187,7 +213,16 @@ becoming an infinity -- IEEE 754 defines that infinity, and it is
 still a surprise -- while an infinity or a NaN passes through as
 itself, and a value in range is rounded to nearest as before.  *(It
 was the stated exception until then; the checker's `RAISES` had
-always counted it.)*
+always counted it.)*  The check is made by SOURCE as well as target
+(since 2026-10-21): a real into any integer narrower than `I64`, into
+`BYTE` or into `U64` is checked for NaN, infinity and range, and a
+`U64` into `I64` or anything narrower for range.  *(Until then only
+`I64 (x)` of a real was: `I32 (NaN)` answered 0 with no `ValueRange`
+-- the museum's founding failure, alive for six widths -- `U64
+(1.0e30)` answered, and `I64 (u)` of a `U64` past `MAX (I64)` was C's
+cast, a negative number, while the checker counted its `RAISES`.
+The compiler review of 2026-10-21, G2;
+`runtime/test/sanitize/SanNarrowReal.m9`.)*
 
 **A loop variable is a variable like any other**: declared, of an
 integer type when the bounds are integers and of the enumeration when
@@ -209,7 +244,32 @@ and which here is the one assignment the language itself makes.
 *(Observed in a user's program built with 0.18.0: it compiled, ran,
 and the outer loop ran once — the one logic error of that session no
 compiler saw.
-`museum/implicit-through-loop-variable.m9`.)*
+`museum/implicit-through-loop-variable.m9`.)* **And the loop alone
+writes its control variable** (since 2026-10-25): inside a `FOR` over
+`j`, `j := e` is refused, and so is `j` handed to a `VAR` or `OWN`
+parameter -- leave with `EXIT`, count in a `WHILE`, or pass a copy.
+A `FOR x IN s` variable is a copy of the element and stays writable.
+*(Observed in zarrm9's port to 0.25.0: a first-match search ended with
+`j := LEN (vars)`; up to 0.24 the loop stepped and then tested and so
+ended, while 0.25's exit test below holds only while `j` is within its
+bounds, and the loop read `vars[4]` of three.  The meaning had moved
+with the generator; a rule does not.
+`museum/for-variable-past-bound.m9`, probes `for-variable-assigned`,
+`for-variable-var-arg`.)*
+**A `FOR`'s bounds are of its variable's type** (since 2026-10-21),
+held to it as an assignment's right side is -- a bound of a wider
+type is refused, a literal must fit -- and **the variable never
+leaves `lo .. hi`**: the loop is entered when the first bound reaches
+the second at all, and left when what is still to go is less than
+the step, so a loop up to its type's last value ends, and after a
+loop that ran to its end the variable holds the last value it took.
+*(Until then the loop stepped and then tested: `FOR b : I8 := 120 TO
+127` and `FOR u : U8 := 3 TO 0 BY -1` never ended, `MAX (I64) - 2 TO
+MAX (I64)` was signed overflow in C, and a bound held in an `int64_t`
+truncated a `U64`'s; an `I64` bound of 3e9 for an `I32` variable gave
+2 passes at -O2 and 1001 at -O1.  The compiler review of 2026-10-21,
+G5; probes `for-bound-wider`, `for-bound-literal-out`,
+`runtime/test/sanitize/SanForEdge.m9`.)*
 **`FOR x IN s` goes over the elements** of a slice, an array, a string
 or a constant table (since 2026-10-11): `s` is a NAME — a variable, a
 field, an element — evaluated once; `x` is declared, of the element
@@ -256,7 +316,50 @@ PTR T                  (* non-nil pointer *)
 OPT T                  (* T or NONE; must be guarded before use;
                           T a pointer or a procedure type *)
 STR                    (* predeclared alias for SLICE OF CHAR *)
+UTF                    (* predeclared: UTF-8 text, since 2026-10-23 *)
 ```
+
+**`UTF`** (since 2026-10-23, the first stage of the transition to
+UTF-8 text, `docs/utf8-plan.md`) is a predeclared identifier for a
+slice of octets of valid UTF-8 -- `SLICE OF <u8>`, an element type no
+program can write, so a UTF is held to every rule a slice is held to
+(ownership, frames, read-only storage) while it is neither a `SLICE OF
+BYTE` nor a `STR`: nothing converts into it silently.  A string literal
+adapts to it where a UTF is wanted, as a numeric literal adapts to a
+width, and is stored as its UTF-8 octets; so does a `CONST` naming a
+string literal (`CONST Mode = 'v'`, this module's or an imported
+`Mod.C`), being that literal under a name.  A UTF has **no subscript and
+no `LEN`**: UTF-8 has no O(1) i-th character, so each operation names
+its unit and its cost -- `Text.BLen`/`BAt` for bytes, `CpCount`/`CpAt`
+and `FOR c IN u` for characters -- and the checker refuses `u[i]` and
+`LEN (u)` naming them.  Nothing writes through a UTF, so read-only
+storage may be lent to any UTF parameter (§2.4's rule protects a write
+that cannot happen).  `=` and the orderings are refused as for strings.
+Four builtins convert and view, each a conversion under its type's name
+(decision 13): `UTF (s)` encodes a STR; `UTF (b)` validates a `SLICE OF
+BYTE` and COPIES it -- a view would let the slice's owner write invalid
+octets under it -- raising ValueRange when it is not UTF-8 (strictly, as
+RFC 3629: no overlong form, no surrogate, nothing past U+10FFFF); `STR
+(u)` decodes; `OCTETS (u)` is a read-only `SLICE OF BYTE` view of the
+octets, O(1), read-only so that the UTF stays valid.  `UTF (pool, x)`
+places the answer in a pool, as `NEW (pool, T)` does, and is held to the
+rules a NEW in that pool is held to; its first argument is what NEW's
+may be -- a POOL, or a VAR pointer parameter `f`, which names the pool
+of the object it leads to (§4, rule 2), so `UTF (f, s)` keeps a copy of
+s in the object's own storage without a pool in scope.  `u + v`
+concatenates two UTF, a UTF and a CHAR (its encoding) or a UTF and a
+literal; a STR does not join a UTF.  The `Text` procedures over them --
+`BLen`, `BAt`, `CpCount`, `CpAt`, `NextCp`, `ToUtf`, `FromUtf`,
+`FromUtf8`, `EqUtf`, `CompareUtf` -- are ordinary M9.  `SLICE (u, at,
+n)` takes BYTE offsets and raises IndexError when either end falls
+inside a character, so a slice of a UTF is a UTF.  `FOR c IN u` decodes:
+c is a CHAR, one code point a pass, O(n) for the whole -- the walk, where
+`CpAt` in a loop would be quadratic.  **Twins by type**: a call with a
+UTF argument is the procedure of the same name with the suffix `Utf`
+when its module declares one -- a UTF argument or a slice of them; `Text.Eq (u, v)` is `Text.EqUtf (u, v)`
+-- decision 13's width rule (`Math.Sqrt` on an F32 is `SqrtF32`) with
+another suffix, so a module moves from STR to UTF by its declarations
+and not by its calls.
 
 `STR` is a predeclared *identifier*, not a keyword: it adds nothing to
 the lexer's keyword table and nothing to the grammar's productions, and a program may still write `SLICE OF CHAR` wherever it
@@ -270,6 +373,18 @@ place on a count: 198 occurrences of `SLICE OF CHAR` across 12 of the
 repeat it 62 times. That is the same evidence rule the rest of this
 report runs on, applied to ergonomics instead of safety, and it is
 stated plainly rather than dressed up as a correctness argument.
+
+**A type refers to itself only through a pointer to a record.** A
+`RECORD`, `CASE RECORD` or `MONITOR` may hold a `PTR`, `SHARED PTR` or
+`OPT PTR` to itself, directly or through other names -- that is what a
+list or a tree is. Any other way back to the type being declared is
+refused where it is declared: `H = PTR H` and `A = B ; B = A` name
+nothing a value can end at, and a record holding itself by value, an
+`ARRAY`, `SLICE` or `GRID` of itself, a case record's fields or a
+procedure type's parameters or result leading back without such a
+pointer have no size. Until 2026-10-21 the checker followed such a
+name until it ran out of stack or for ever, and the record forms
+reached the C compiler as incomplete types.
 
 ### 2.2.x Sizes: `SizeOf` and `ByteSize`
 
@@ -296,6 +411,26 @@ in memory -- because they ask *this* machine's layout; a **wire**
 format still uses the exact-width types and `ToBytesLE`/`FromBytesLE`,
 which fix the width regardless of the host. Asking `SizeOf` at the
 wire is the `LONGREAL`-stride bug in a new hat.
+
+### 2.2.y A block copy: `COPY (to, from)`
+
+`COPY (to, from)` copies the elements of one slice or array into
+another: `COPY (SLICE (ring, w, n), SLICE (data, at, n))`,
+`COPY (grown, buf)`.  A predeclared identifier like `LEN`, a
+statement.  Both arguments are slices or arrays with ONE element type,
+a scalar one (an integer, a real, `CHAR`, `BOOL`, `BYTE`, an
+enumeration): a pointer element is a store the ownership rules of §4
+follow element by element, so such a copy stays a loop.  `to` is
+written, so read-only storage is refused there as it is for a writable
+parameter (§2.4; a `SLICE` of it too).  The lengths must be equal --
+unequal ones raise `IndexError` (index: `from`'s length, length:
+`to`'s) and copy nothing -- and ranges that overlap copy as if through
+a temporary, which is NOT what a forward loop does on overlapping
+ranges: an LZ77 match shorter than its distance reads what it just
+wrote and keeps its loop.  It is one length compare and a `memmove`;
+it pays on LONG copies, and a short one is faster as the loop
+(measured, `docs/blockcopy-plan.md`). *(2026-10-22, Alex's decision on
+the owed ledger.)*
 
 ### 2.2.2 Enumerations — a closed set of names, checked as one
 
@@ -680,8 +815,10 @@ in its caller's arena.  When this was measured, every one of the
 corpus's 75 pool-less pointer answers was of the first two kinds, so
 the checker reads the body: a procedure ANSWERS FRAME STORAGE when a
 `RETURN` of its answers a frame `NEW`, a `+` (in a function answering
-a string), a local that was assigned one of these, or a call to a
-procedure that answers frame storage; and, when it takes no pool and
+a string, a `UTF` being one), a UTF builtin -- `UTF (x)`, `UTF (b)`,
+`STR (u)`; `OCTETS (x)` is a view of x and follows it -- a local that
+was assigned one of these, or a call to a procedure that answers
+frame storage; and, when it takes no pool and
 answers a string, when it declares a local `POOL`, because the
 generator now re-homes a string answer out of every local pool as it
 does out of the frame -- `VAR scratch: POOL` + `DynStr` + `RETURN
@@ -975,7 +1112,34 @@ Rules:
    loggable event. Observed failure to fix: `HALT` with unflushed
    stdout swallowed its own diagnosis three times in one day; in M9,
    raising and program exit both run pending FINALLY blocks, which
-   flush.)*
+   flush.)*  **A handler catches for its block's guarded sequence and
+   nothing else**: not for a statement after the block, not for its
+   own body or another handler's, not for the block's `FINALLY`.
+   *(Since 2026-10-21, the compiler review's C6: both checkers held
+   one handled set for the whole procedure, so a handler anywhere
+   counted as catching everywhere.  It hid four escapes in the
+   library -- `HttpServer.Serve1`'s close in a `FINALLY` outside its
+   handlers, `Syslog.Open`'s handler converting again, a read in
+   `RdfTest` whose `ValueRange` only a later block named, a `CHR`
+   in `TextTest`'s body -- and six in the applications.  Probes
+   `handled-only-inside`, `handled-reraise`; museum
+   `handled-flat.m9`.)*  **And an exception is its module and its
+   name**: a handler or a `RAISES` clause that names one by module
+   covers that module's alone -- `| Csv.ParseError` does not catch
+   Json's -- a bare name covers its own module's exception, or, where
+   the module declares none, any of that name as before; and a
+   module's own `EXCEPTION Overflow` is checked, the exemption being
+   for the predeclared three.  *(Since 2026-10-21, the same review:
+   the accounting compared bare names.  Probe
+   `own-overflow-checked`; museum `handled-by-other-module.m9`,
+   `raises-other-module.m9`.)*  A procedure FITS a procedure type
+   by the same keys (§2.2.3): the canonical text names each
+   exception as the accounting does, `EA.Error` beside `EB.Error`,
+   and a bare name in the type covers any of that name.  *(Since
+   2026-10-21: the canonical text rendered the names bare, so a
+   procedure raising one module's `Error` fitted a type raising
+   another's and its exception went past the handler written for
+   the type's.  Museum `proc-type-other-module.m9`.)*
 2. **PURE** may be declared, and **is checked** — by both checkers,
    held to identical diagnostics. A `[PURE]` procedure has no effect
    observable outside its own frame, which is four refusals:
@@ -1095,6 +1259,18 @@ Rules:
    55 files, every one an implementation leaning on its definition's
    imports, which is why it is not read that way.
    `museum/named-not-imported.m9` is the piece.)*
+   Two definitions may import each other.  Types do not change at run
+   time, so each one's generated header carries the names of the
+   other's record, monitor, case record, enumeration and opaque types,
+   and a build writes every header of the cycle before it compiles any
+   module of it.  What a cycle cannot give is a record FIELD that holds
+   the other's record by value in both directions -- no order of
+   declarations has both complete -- nor, in one direction, unless the
+   module holding the field is compiled second; parameters, answers and
+   pointers are free.  *(2026-10-22, Alex's decision on the compiler
+   review's F6 item: not refused.  Until then a clean `--make` failed on
+   the partner's missing header, a second run passed on the leftovers,
+   and a partner's type in a prototype was `unknown type name'.)*
 
 6. **A name is declared once in its scope.** At a module's own level
    every `CONST`, `TYPE`, `VAR`, `EXCEPTION` and `PROCEDURE` name is
@@ -1130,8 +1306,13 @@ Rules:
    (`unknown type: Nosuch`, or `unknown type: Mod.T -- Mod declares
    no such type` for a loaded module). The softness contract stands
    where it belongs: a module the checker has not loaded says
-   nothing, since that may be a missing import, and a bare type name
-   in a declaration stays soft for the same reason. *(Built
+   nothing, since that may be a missing import.  A bare type name no
+   loaded module declares stayed soft for the same reason until
+   2026-10-22; it is refused now (`unknown type: Nosuch -- no module
+   declares it; declare it, or write the module it is in (Mod.Nosuch)
+   and IMPORT that module`), and a TYPE declared in a procedure, which
+   the grammar allows and nothing implements, is refused where it is
+   declared. *(Built
    2026-10-08, the owed ledger's three. Observed: `NEW (pool,
    AttrsKids, 64)` with no such type passed `--check` while `Xml` was
    written and surfaced as the generator's `unknown name` without the
@@ -1140,6 +1321,34 @@ Rules:
    `unknown name: Math` (found by `m9c --show`, 2026-10-05).
    Measured over every `.m9` in the tree with both checkers: nothing
    refused. `museum/undeclared-type-in-new.m9` is the piece.)*
+   A fourth shape since 2026-10-22: a member an enumeration or case
+   record does not declare, `Hue.Nope` for this module's type and
+   `Csv.Kind.Nope` for a loaded module's (`unknown member: Hue.Nope --
+   Hue declares no such member`); a name in scope called like the
+   type is still that name. *(The review of 2026-10-21, F4: it passed
+   `--check` and reached the C compiler as an undeclared identifier.
+   Measured over 927 files of the tree and 325 of the applications:
+   only the review's own repro refused. Probe `enum-member-unknown`.)*
+   A fifth and sixth the same day: an assignment whose target names a
+   procedure (`cannot assign to P -- P is a PROCEDURE, not a
+   variable`; a bare one read `unknown name`, a qualified one reached
+   the C compiler), and a bare exception name in a type position (`Bad
+   is an EXCEPTION, not a type`; §5: an exception has no values).
+   *(Probes `assign-to-procedure`, `exception-as-type`; the review's
+   f2, f2b, k3, k13, k14 and g6 moved, nothing else in the tree or the
+   applications.)*
+   And five that the generator refused as if they were its own limits
+   (`unsupported yet`), each a type error with every type known: a
+   subscript of a value with no elements (`r[0]: cannot index -- the
+   type R is no array, slice, grid or string`), a field of a value with
+   no fields (`n.f: no field f -- the type I64 has no fields`), `LEN`
+   of a type name or a scalar (§2.2.1), an `ARRAY` count that folds
+   below 1, and a handler's exception qualified by a variable (`| v.E`;
+   rule 5: a name in scope is never a module). *(Probes
+   `index-not-indexable`, `field-of-scalar`, `len-of-type`,
+   `array-count-not-positive`, `handler-qualified-by-variable`; only
+   the review's fuzz repros moved, from a generator refusal or a
+   misleading one to the checker's.)*
 8. **A procedure is declared at module level.** The grammar lets a
    declaration section hold a `PROCEDURE` (§10), and no part of the
    toolchain supports a nested one; it is refused by name at its
@@ -1156,6 +1365,33 @@ Rules:
 M9 has no garbage collector. It has three storage classes, and the
 central bet of the language: **Wirth's parameter modes were always
 borrows.**
+
+**One region judgement** (since 2026-10-21, `docs/region-plan.md`; the
+FRAME family enforced, the others listed): every value that can hold a
+reference is given the set of regions its storage may live in -- static,
+the module's, owned, the caller's arena, what a parameter leads to, a
+local pool, this frame -- followed through copies, binders, CASE
+patterns, fields, elements, constructors, slices and views, call answers
+and the VAR parameters a callee fills, joined at IF and CASE and taken to
+a fixpoint in loops.  A store is judged by lifetime: what is stored must
+outlive where it is stored.  Storage of this frame stored where it
+outlives the frame is refused (`... it dies with this frame, and what is
+stored there outlives it (par 4, regions)`), wherever the walk sees it --
+until then each form of it was its own rule, and a copy of a pointer, a
+binder, a CASE pattern or a slice a callee filled let it through
+(the compiler review's C1, C2; its repros in `runtime/test/regions/`).
+Read-only storage -- a literal, a CONST, what an `RO` parameter lends
+-- is followed the same way, through a callee's `VAR` parameter, a field,
+an element, a module variable's field, a CASE pattern and a record value,
+and a write into it is refused (`(par 2.4, regions)`; the review's C4).
+A borrow kept where it outlives the call without `KEPT` (par 4.1) and a
+frame's storage answered to the caller (par 4.3) are refused the same
+way, and a call through a procedure value is judged by the sound
+default -- it may answer fresh storage, any argument, read-only storage
+(the review's C3).  An allocation in a caller's pool kept in the module's
+state -- bare or through a field -- is refused unless the pool parameter
+is declared `KEPT`, the caller's promise that it outlives that state.
+The judgement is the M9 checker's alone.
 
 ### 4.1 Parameter modes are the borrow checker
 
@@ -1309,6 +1545,27 @@ so a handle to a `[SHARABLE]` record (§6) may be copied and dropped
 from any thread. *(The form was forced by ZarrStore: an Array must retain its
 Store, and retention is exactly what plain borrows refuse.)*
 
+**A handle counts wherever it is copied from a binding** (since
+2026-10-26).  A binding is a name, a field or an element, or `SOME`
+of one.  A copy of a binding into any variable, field or element of a
+`SHARED` or `OPT SHARED` type is a second holder: the generator adds
+to the count, and each holder's `DISPOSE` gives up its own.  This
+covers four copies: a record aggregate holding a handle; a `RETURN`
+of a binding, so that `x := Id (h) ; DISPOSE (x)` leaves `h` alive; an
+`OPT SHARED` parameter stored; and `SOME (p)` returned or handed on.
+`SHARED (o)` and a call's answer are moves: each hands over a count
+of its own, so `s := Make ()` takes the one `Make` made.  A `RETURN`
+of a local or an `OWN` parameter hands its count over.  *(Until then
+only `x := y` and `x := SOME (y)` counted; the other copies were
+holders that did not count, and `DISPOSE` of one freed the object
+the first still named.)*
+
+In a procedure, a module variable is no owner (since 2026-10-26).
+Its `DISPOSE`, or its move into an `OWN` parameter, is refused: the
+procedure cannot see who else holds what it points to, and the module
+body reads it after the call.  The module body moves and disposes its
+own variables.
+
 A move inside a loop carries into the next turn (since 2026-10-10): a
 name moved in the body -- handed to an `OWN` parameter, `DISPOSE`d --
 and not given a fresh value before the body ends is refused where the
@@ -1324,9 +1581,34 @@ another such name.  Ownership moved into a record field is not
 followed there, so `DISPOSE (b.p)` is refused, and so is `DISPOSE (r)`
 after `r := b.p` -- a copy of a field owns nothing.  *(Both passed:
 `r := b.p ; DISPOSE (r) ; DISPOSE (b.p)` freed one object twice.)*  A
+call's answer owns only when the callee does not answer what it was
+lent: a function answering a pointer parameter that is not `OWN`, a
+component of one or a local carrying one gives a borrow, and `r := Id
+(p) ; DISPOSE (r)` is refused.  *(Since 2026-10-21, the compiler
+review's O4b: it freed p twice, or pool storage when p was in a pool.
+Not followed: a callee answering a further callee's borrowed answer,
+`RETURN Id (a)`.)*  A
 pointer moved into a field is not freed by `DISPOSE`: it stays
 allocated -- a leak the checker accepts, where a double free is what
 it refuses.
+
+**What is derived from an owned object lives as long as its owner**
+(since 2026-10-26).  A view of a field, an allocation in a `POOL`
+field the object holds (`NEW (o.pool, T)`, `UTF (o.pool, x)`), and a
+call's answer that may view the object all die when the owner is
+`DISPOSE`d, handed to an `OWN` parameter, or handed to a `THREAD`.  A
+read of such a value after that point is refused: `c := ReadChunk (a,
+co) ; CloseArray (a) ; c[0]` read the freed chunk cache.  Killing an
+owner whose storage was stored where it outlives the procedure is also
+refused: into a module variable, through a parameter's storage, a
+`KEPT` argument, a `THREAD`.  Without the kill, the object only leaks,
+as above.  Moving an owner (`p := o`, `h := SHARED (o)`) moves what
+was derived from it.  Each `SHARED` handle counts on its own: a
+handle stored is a copy of the count, and a view taken through a
+handle that outlives the disposed one lives.  The judgement is flow-
+sensitive and per procedure; a call is read by what its callee's
+heading and body say it answers.  When the checker cannot tell, it
+takes any reference argument as viewed.
 
 ### 4.3 Pools
 
@@ -1336,7 +1618,32 @@ over the fresh storage — the only runtime-sized allocation. Pool
 storage is defined-zero; an uninitialized read does not exist in M9.
 (Principle, not yet a museum piece: the M2 Mat handed out
 uninitialized REALs, masked only by every caller filling before
-reading.) The pool frees as a unit. References into a pool are typed `PTR T IN pool`
+reading.)  **A local pointer is given a value before it is read**: a local of
+type `PTR T` or `SHARED PTR T` -- not `OPT` -- read on a path where
+nothing gave it a value is refused (definite assignment: an assignment
+or a VAR/OWN argument gives it; IF and CASE give what every arm that
+goes on gives, an arm ending in RAISE, RETURN or EXIT gives everything;
+a loop's body and a handler give nothing to what follows).  *(Since
+2026-10-21, the compiler review's C8; it was NULL, and the read a
+SIGSEGV.  It refuses correct code whose read a flag guards, which is
+then written with the value given before the branch.  Probe
+`read-before-assigned`, museum `read-before-assigned.m9`.)*
+**Zero is no pointer**: a field of type `PTR T` or `SHARED
+PTR T` -- not `OPT` -- in a record that arrived zeroed holds nothing
+until it is set, and following it, or copying it out of the field or
+the element, raises `IndexError` with the payload (-1, 0), which a
+handler tells from a subscript by the -1.  *(Since 2026-10-21, the
+compiler review's C8, Alex: "runtime check everywhere" -- an initial
+value at the NEW was weighed and measured at 21 single and 6 many
+allocations to rewrite.  Until then it was a SIGSEGV with no handler
+run; `runtime/test/genforms/GfUnsetField.m9`.)*  The same holds for a
+MODULE variable, a zeroed static any procedure may read, and for a
+`VAR` parameter, which is the caller's own storage and may be such a
+variable or an output nobody filled: following the pointer in one, or
+copying it out, raises the same `IndexError` (-1, 0).  *(Since the same
+day, the first findings of `runtime/test/soundfuzz.sh`; genforms
+`GfUnsetModVar.m9`.  About 3% on a parse that follows a `VAR` cursor at
+every step, the null branch marked unlikely.)* The pool frees as a unit. References into a pool are typed `PTR T IN pool`
 and cannot be stored anywhere that outlives the pool — checked by
 scope, not by inference. This is the intended idiom for
 parse-trees, request handlers, and chunk caches: the Json module of
@@ -1389,14 +1696,30 @@ and are refused at the call — an `OWN` parameter's object (heap
 storage), a component reached through a value parameter (a borrow
 whose pool nobody stated) and a `VAR` slice (an output slot): `the
 pool of h is not known here, and the callee may allocate in it -- h
-is a value parameter`.  A `VAR` target set to a frame allocation is
+is a value parameter`.  A fourth, since 2026-10-23, where the callee
+MAY allocate through that parameter (a `NEW` on it, or the parameter
+handed on as `VAR` to a callee that does -- read off the body,
+memoised): a local declared without `IN` that holds a POOL allocation
+(`n := NEW (pool, Node)`, nobody's to own), because the frame it
+would lend is the wrong pool -- the callee's growth dies with the
+frame while the object lives on; `n : PTR Node IN pool` says it.  A
+local given a frame allocation lends the frame rightly, and a callee
+that allocates through none of its parameters takes any root.  A `VAR` target set to a frame allocation is
 adopted into that pool at exit rather than into the caller's arena,
 and a `THREAD` target receives its argument's pool through the thunk
 (§6).  Two things follow for the checker: a local declared `IN` a
 pool may not be given a frame value, since its growth would outlive
 its head (`it cannot be held by n, which is declared IN a pool`), and
 a bare slice, grid or string `VAR` parameter carries nothing and
-stays what it was — re-homed or adopted at exit.  The price is one
+stays what it was — re-homed or adopted at exit into the arena it was
+called from.  Where its argument outlives that arena -- a module
+variable, an object reached from a local or binder with a named pool
+-- the call is made from the argument's pool, so the value lands
+where the variable lives; a `VAR` parameter's own root needs nothing,
+its procedure adopting at its own exit.  *(Since 2026-10-21, the
+compiler review's C5: `SetIt (last, 5)` with `last` a module `STR`
+left the string in the caller's frame, freed when it returned;
+genforms `GfVarModuleStr`.)*  The price is one
 pointer argument per such parameter whether or not the callee
 allocates, paid so that the ABI is read off the heading and both
 generators agree without reading a body; a container therefore
@@ -1497,7 +1820,13 @@ inside a nested `WHILE` or `FOR` is that loop's, not the `LOOP`'s.)*
 
 `RAISE FormatError('dtype is not <f8')` unwinds to the nearest
 matching `EXCEPT` clause; `FINALLY` blocks on the way run
-unconditionally. **A call that raised answered nothing**: in
+unconditionally, and run WHOLE: a cleanup runs with nothing pending,
+the exception goes on after it, and one the cleanup raises and does
+not handle replaces it. *(Stated 2026-10-21: until then the cleanup
+ran with the raise pending, stopped at its first checked statement,
+and a callee handling an exception of its own cleared the pending
+one, which vanished; `runtime/test/genforms/GfFinallyRaise.m9`.)*
+**A call that raised answered nothing**: in
 `store := Open (url)` the target is written only when `Open` has
 answered, so a handler — and every line after it — finds `store` as
 it was, never the zero a failed call left in its result. *(Stated
@@ -1547,10 +1876,31 @@ cause chain" until 2026-09-27; nothing implemented one.)*
 read, and only then `F` -- the generated C hoists a raising argument
 into a temporary with its own guard, `{ __typeof__(G (x)) m9a1 =
 G (x); if (err->exc) goto L; F (m9a1, err); }`, in an assignment, a
-call statement or a RETURN.  Not in the right operand of `AND` or
-`OR`, which is evaluated only when the left decides nothing (§2.3),
-and not in a loop's or an `ELSIF`'s condition, where the statement's
-guard after the fact stands as before.  *(Until then one C expression
+call statement, a RETURN, and -- since 2026-10-21 -- an `IF`'s, an
+`ELSIF`'s and a `WHILE`'s condition, hoisted where the condition is
+evaluated (an `ELSIF`'s in its own branch, a `WHILE`'s inside the loop
+before its test, so as often as the condition itself).  In the right
+operand of `AND` or `OR`, which is evaluated only when the left decides
+nothing (§2.3), the temporaries are made inside the branch that
+evaluates it, so they too run only then (since 2026-10-22; until then
+the right operand's arguments were not guarded at all, and `p AND F
+(b.c)` with `b.c` unset called `F` on a NULL --
+`runtime/test/sanitize/SanAndOrRight.m9`).  A `CASE` selector and a `FOR`'s bounds are
+evaluated once, and their raising arguments are hoisted before the
+switch or the loop (since 2026-10-21).
+A `SLICE` whose check fails answers an EMPTY view, so nothing reads
+past its storage before the error is seen.  *(The condition case and
+the empty view since 2026-10-21, the compiler review's G6:
+`IF Count (SLICE (s, 1, k)) > 0` called `Count` with the requested
+length over a 3-character string, a read past it under ASan;
+`runtime/test/sanitize/SanCondSlice.m9`.)*  **And a selector after a
+subscript does not go through what a failed subscript answered**
+(since 2026-10-21, the review's G3): a failed index answers the
+runtime's poison cell, and the error is tested before a pointer is
+followed or a slice taken out of the element is subscripted -- until
+then a failed `s[9].q := live` left live's pointer in the cell and a
+failed `s[8].q.n := 77` wrote through it into live, both IndexErrors
+caught (`runtime/test/sanitize/SanPoisonCell.m9`).  *(Until then one C expression
 under one guard: `F` ran on whatever `G` had answered when it raised
 -- a zero, a NULL -- before the handler saw `G`'s error; ONEFlux's
 report 18, the generator's owed item.  Measured: 3,805 hoists in the
@@ -1603,6 +1953,15 @@ the same fields; without binders the names may differ in their fields.
 
 Threads are in the language; data races are not.
 
+Monitors (since 2026-10-25, widened 2026-10-26).  A procedure bound to
+a monitor holds its lock for its whole body, and the lock is not
+recursive.  So a bound procedure may not call another procedure bound
+to the same monitor, nor anything that may enter a monitor of the same
+TYPE at any depth: both checkers refuse it.  A monitor entered again
+through a procedure value, which the checker cannot follow, stops the
+program by name at run time; it does not hang.  A per-thread list of
+held monitors is checked at each entry.
+
 - `THREAD (proc, arg)` starts a thread. `arg` must be of a
   **SHARABLE** type: immutable, or a MONITOR, or an owned value
   being moved into the thread. A MONITOR is shared *by reference* —
@@ -1611,7 +1970,11 @@ Threads are in the language; data races are not.
   `VAR g: Gate`. Anything else must already be pointer-shaped.  The
   target is a procedure of the module that starts the thread (the
   thunk is made beside it; an imported target is refused by name
-  since 2026-10-08, where it was a link error).  Since
+  since 2026-10-08, where it was a link error).  A target that allocates
+  through its parameter (`NEW (j, T)` with `j` the parameter, or a
+  callee that does) in the pool of a record both threads hold is
+  refused, since a pool takes no lock; a `POOL` of the worker's own,
+  in a field or as an argument, is the edit (since 2026-10-26).  Since
   rule 2 of the pool elision plan (§4.3) the thread also receives the
   pool `gate` lives in, as `P`'s hidden argument: the pool is exactly
   as shared as the object, and the sharability rule below covers
@@ -1782,10 +2145,33 @@ END cblosc.
    Uncontended the lock costs about twenty nanoseconds against a
    foreign call costing microseconds, and it is not measurable in a
    real program's GRIB decoding: one field, 2.05 s before and after.*
+
+   The arguments of a foreign call are evaluated before the call, and
+   before the gate is entered (since 2026-10-26).  A raising argument
+   is tested before C sees the zero it answered.  No argument runs
+   inside the gate, so `F (G (x))`, both `[SERIAL]` in one unit,
+   enters G's gate and leaves it before F's.
 4. UNSAFE modules are the only place pointer arithmetic, unchecked
    casts, and NIL exist. They are grep-able, listable, and small —
    the audit surface is enumerated. (Modula-3's best idea, kept
    whole.)
+5. `ADR` gives C the address of M9 storage (since 2026-10-26).
+   - Of read-only storage, or of a `UTF`, it is a `C.ConstPtr`, which a
+     `C.MutPtr` parameter does not take.
+   - Of a variable whose type holds a reference (a record or array of
+     strings or pointers), it is refused unless the procedure states
+     `[FRESH]`.
+   - `[FRESH]` is allowed only in an UNSAFE implementation. It says
+     that the procedure's C fills such a descriptor with storage it
+     builds in the caller's arena. The checker cannot read that C, so
+     the attribute is the stated effect, and the region judgement takes
+     the answer as built there. `Io.ReadFileUtf` is the library's one.
+   - The attributes are closed: a procedure takes `[PURE]` or, in an
+     UNSAFE implementation, `[FRESH]`; a record `[SHARABLE]`; a foreign
+     procedure `[SERIAL]` or `[REENTRANT]`. Any other name is refused,
+     where it was ignored.
+   - `m9c --review` counts every `ADR` site under TRUSTED, the
+     descriptors apart.
 
 ---
 
@@ -1935,7 +2321,12 @@ bracketed list is the value of a `CONST` and of nothing else, so `[`
 in an expression is still only a subscript.)  Sixty-two keywords: the fifty-eight the language was
 designed with, plus RO, GRID, KEPT and LINK, each appended to the table
 rather than inserted into it, because a token code that moves is a
-code no one can rely on. Terminals are quoted; ident, number (IntLit, RealLit,
+code no one can rely on. A source may nest at most 1000 levels -- each
+nested expression, statement and type is one, and so is each further
+operand of a chain like `1 + 1 + ...` -- and a type at most 100: the
+parser refuses deeper with the line and column, since every later pass
+walks the tree by recursion and a deeper one ran the compiler's stack
+out with no message (2026-10-21). Terminals are quoted; ident, number (IntLit, RealLit,
 CharLit), and string are lexis (§2). Comments are lexis too, and
 appear in no production: the lexer records them beside the token
 stream and the parser never sees one.
@@ -2129,7 +2520,15 @@ through `SLICE OF BYTE` and explicit conversion, always — the
 LONGREAL lesson generalized. `RO`, `KEPT` and `IN pool` are checker
 facts, erased in C. Every `NEW (OWN, T)` carries the rc header (8 bytes)
 so `SHARED (x)` is `rc := 1` in place, handle copies are `rc++`, and
-`DISPOSE` of a handle is `rc--`, freeing at zero; pool allocations
+`DISPOSE` of a handle is `rc--`, freeing at zero.  A copy is an
+assignment FROM A BINDING -- a name, a field, an element -- that keeps
+its own count; `s := SHARED (o)` and `s := Make ()` for a function
+answering a handle are moves, the count going with the handle, since
+no exit releases one (only `DISPOSE` does).  *(Since 2026-10-21, the
+compiler review's G7: both were counted again, so every such handle
+was left a count too many and never freed -- 2000 rounds of a
+100,000-element store peaked at 1.62 GB, 4.6 GB for the 3000 of
+`runtime/test/sanitize/SanShared.m9`.)*; pool allocations
 carry no header — the pool owns them and frees as a unit.  A frame
 allocation is a pool allocation from `err->res` (below), and a
 procedure whose result or reference parameter can carry a pointer
@@ -2150,7 +2549,9 @@ price of errors-as-values, the same price the FPC oracle paid for
 status returns, made uniform and unforgettable. `EXCEPT` handlers
 compare descriptor addresses; `FINALLY` is a labeled cleanup chain
 entered on normal exit, on RAISE, and on RETURN (result parked in a
-temporary). No setjmp: unwinding that skips cleanup is how the M2
+temporary); at its label the pending exception and its payload are
+saved and cleared (`m9_fin_save`, the strings copied into the
+activation's arena) and put back after the cleanup (`m9_fin_restore`). No setjmp: unwinding that skips cleanup is how the M2
 stack lost three diagnostics in one day.
 
 **Checks are emitted, unconditionally.** Integer `+ - *` via

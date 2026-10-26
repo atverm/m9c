@@ -17,6 +17,7 @@ static const m9_exc ShareUse_Empty = { "Empty" };
 
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
+extern void m9_put_bytes_err (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -32,6 +33,7 @@ extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
+extern int64_t m9_utf_adopt_p (const void *, int64_t, void *);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
@@ -231,11 +233,11 @@ static void ShareUse_Try (int64_t n, m9_state *err)
   err->res = &m9frame;
   { __typeof__(b) m9v = ShareUse_Make (n, err);
     if (err->exc) goto L_hdl_m9t1;
-    b = ((__typeof__(b)) m9_share_copy (m9v));
+    b = m9v;
   }
   Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s4, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Io_WriteI64 (b->n, err);
+  Io_WriteI64 (({ __auto_type m9g = (b); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err);
   if (err->exc) goto L_hdl_m9t1;
   Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -291,16 +293,18 @@ static void ShareUse_GridOf (int64_t n0, int64_t n1, m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     s = m9v;
   }
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = INT64_C(5);
-  for (; i <= m9t3to; i += 1) {
+  if (i <= m9t3to) for (;;) {
     (*(double *) m9_at (s.p, i, s.len, sizeof (double), err)) = 1.0;
     if (err->exc) goto L_hdl_m9t1;
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   (*(double *) m9_at (s.p, INT64_C(5), s.len, sizeof (double), err)) = 7.0;
   if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(g) m9v = ({ __typeof__(s) m9t4 = s; m9_gd2_double m9t4r; int64_t m9t4n[2] = { n0, n1 }; m9_gridof (m9t4.len, m9t4n, 2, m9t4r.n, m9t4r.s, err); m9t4r.p = m9t4.p; m9t4r; });
+  { __typeof__(g) m9v = ({ __auto_type m9t4 = s; m9_gd2_double m9t4r; int64_t m9t4n[2] = { n0, n1 }; m9_gridof (m9t4.len, m9t4n, 2, m9t4r.n, m9t4r.s, err); m9t4r.p = m9t4.p; m9t4r; });
     if (err->exc) goto L_hdl_m9t1;
     g = m9v;
   }
@@ -472,8 +476,10 @@ L_hdl_m9t3: ;
   goto L_fin_m9t2;
 L_dn_m9t4: ;
 L_fin_m9t2: ;
+  m9_fin m9t1f; m9_fin_save (err, &m9t1f);
   Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s22, 10 }), err);
   if (err->exc) goto L_ret;
+  m9_fin_restore (err, &m9t1f);
   if (m9t1) goto L_ret;
   if (err->exc) goto L_ret;
   i = INT64_C(0);
@@ -630,19 +636,25 @@ int main (int argc, char **argv)
   if (err->exc) goto L_ret;
   ShareUse_Try (INT64_C(0), err);
   if (err->exc) goto L_ret;
-  c = ((__typeof__(b)) m9_share_copy (b));
+  { __typeof__(c) m9v = ({ __auto_type m9n = (b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+    c = ((__typeof__(c)) m9_share_copy (m9v));
+  }
   Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s33, 7 }), err);
   if (err->exc) goto L_ret;
-  Io_WriteI64 (c->n, err);
+  Io_WriteI64 (({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n, err);
   if (err->exc) goto L_ret;
   Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
   Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s34, 7 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(ShareUse_Peek (b, err)) m9a5 = ShareUse_Peek (b, err);
+  { __typeof__(({ __auto_type m9n = (b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a5 = ({ __auto_type m9n = (b); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
     if (err->exc) goto L_ret;
-  Io_WriteI64 (m9a5, err);
+  { __typeof__(ShareUse_Peek (m9a5, err)) m9a6 = ShareUse_Peek (m9a5, err);
+    if (err->exc) goto L_ret;
+  Io_WriteI64 (m9a6, err);
   if (err->exc) goto L_ret;
+  }
   }
   Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;

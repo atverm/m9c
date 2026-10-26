@@ -1,11 +1,11 @@
-REVIEW Parse -- 52 procedures with a body, 44 of them functions; 8 headings in a DEFINITION
+REVIEW Parse -- 57 procedures with a body, 46 of them functions; 9 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              44
-  assignments                                   238
-  arguments                                    1655
-  RETURN values                                 139
-  operands of a comparison or an operator       234
+  functions answering on every path              46
+  assignments                                   215
+  arguments                                    1833
+  RETURN values                                 142
+  operands of a comparison or an operator       266
   CASE labels                                    37
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -13,9 +13,9 @@ PROVED BY THE CHECKER -- examined, and nothing refused
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     0
-  pool parameters                                36   Nn, PQualident, PIdentList, PArgList, DesigToQual, PNew, +30 more
-  KEPT parameters                                30   PArgList, PNew, PFactor, PTerm, PSimple, PRel, +24 more
-  HEAP named                                      1   Keep
+  pool parameters                                38   Nn, PQualident, PIdentList, PArgList, DesigToQual, PNew, +32 more
+  KEPT parameters                                32   PArgList, PNew, PFactor, PTerm, PSimple, PRel, +26 more
+  HEAP named                                      1   ErrAt
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 3
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        0
   NEW in the frame                                0
   NEW in a named pool                             1
+  calls of a STR form with a UTF twin            14   Lex.Init -> Lex.InitUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, +8 more
+  STR subscripts, writes and LEN                  0

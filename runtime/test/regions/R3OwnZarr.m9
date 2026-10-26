@@ -1,0 +1,27 @@
+MODULE R3OwnZarr ;
+(* the library's own API in N19's shape: a view of an owned Array's cache
+   pool (ReadChunk's RO answer) read after the Array is consumed by
+   CloseArray (OWN a).  The definition's comment says the caller "cannot
+   retain it past the next call". *)
+IMPORT Io, Fmt, ZarrStore ;
+PROCEDURE Go (RO dir: STR) RAISES ZarrStore.StoreError, ZarrStore.FormatError =
+VAR
+  st : SHARED PTR ZarrStore.Store ;
+  a : PTR ZarrStore.Array ;
+  c : SLICE OF BYTE ;
+  co : ARRAY 2 OF I64 ;
+BEGIN
+  st := ZarrStore.Open (dir) ;
+  a := ZarrStore.OpenArray (st, '') ;
+  co[0] := 0 ; co[1] := 0 ;
+  c := ZarrStore.ReadChunk (a, co) ;
+  ZarrStore.CloseArray (a) ;
+  ZarrStore.Close (st) ;
+  Io.WriteLine ('first byte ' + Fmt.I64Str (I64 (c[0])) + ' of ' + Fmt.I64Str (LEN (c)))
+END Go ;
+BEGIN
+  Go ('docs/tutorial/examples/data/co2.zarr')
+EXCEPT
+| ZarrStore.StoreError (m) : Io.WriteLine ('store: ' + m)
+| ZarrStore.FormatError (m) : Io.WriteLine ('format: ' + m)
+END R3OwnZarr.

@@ -1,0 +1,28 @@
+MODULE GfSerialGuard ;
+
+(* WANT: second call ok *)
+
+(* a NULL guard inside a [SERIAL] call's argument no longer leaves the
+  gate locked: the arguments are evaluated before the gate is entered
+  (B2) *)
+FROM cm IMPORT CFabs ;
+IMPORT Io ;
+TYPE R = RECORD x : F64 END ;
+     H = RECORD r : PTR R END ;
+VAR h : H ; y : F64 ; mp : POOL ;
+PROCEDURE Try () =
+BEGIN
+  y := F64 (CFabs (C.Double (h.r.x)))
+EXCEPT
+| IndexError : Io.WriteLine ('unset field: IndexError handled')
+END Try ;
+BEGIN
+  Try () ;
+  h.r := NEW (mp, R) ; h.r.x := -2.0 ;
+  Try () ;
+  IF y = 2.0 THEN Io.WriteLine ('second call ok') END
+END GfSerialGuard.
+
+UNSAFE DEFINITION MODULE FOR "C" cm ;
+PROCEDURE CFabs = "fabs" (x: C.Double) : C.Double [SERIAL] ;
+END cm.

@@ -1,0 +1,41 @@
+MODULE MonValue ;
+
+(* A procedure bound to a monitor reaches another bound to the same
+   monitor through a PROCEDURE VALUE, which the checker's MonReach cannot
+   follow: the lock is not recursive, and the program hung (the reviews'
+   S11 shape N30, through a value).  The runtime now stops it by name.
+   run.sh holds the message and a non-zero exit within its time bound. *)
+
+IMPORT Io ;
+
+TYPE
+  Gate = MONITOR RECORD n : I64 END ;
+  Probe = PROCEDURE (k: I64) : BOOL ;
+
+VAR
+  g : Gate ;
+  p : OPT Probe ;
+
+PROCEDURE Same (VAR h: Gate ; k: I64) : BOOL =
+BEGIN
+  RETURN h.n = k
+END Same ;
+
+PROCEDURE Ask (k: I64) : BOOL =
+BEGIN
+  RETURN Same (g, k)
+END Ask ;
+
+PROCEDURE Other (VAR h: Gate) : BOOL =
+BEGIN
+  h.n := h.n + 1 ;
+  IF p IS SOME f THEN RETURN f (3) END ;
+  RETURN FALSE
+END Other ;
+
+BEGIN
+  p := SOME (Ask) ;
+  Io.WriteLine ('before') ;
+  IF Other (g) THEN Io.WriteLine ('three') ELSE Io.WriteLine ('not three') END ;
+  Io.WriteLine ('after')
+END MonValue.

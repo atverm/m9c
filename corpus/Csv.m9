@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Csv ;
 
 (* A reader for delimited text tables with a column header.
@@ -181,6 +182,19 @@ PROCEDURE TextAt (VAR pool: POOL ; t: PTR Table ; c, row: I64) : STR
      table of a hundred thousand rows does not want a hundred
      thousand strings nobody asked for                              *)
 
+(* ---- the UTF twins (docs/utf8-plan.md, stage 2; Alex: twins in Csv,
+   not a second module -- the file is held as octets already).  Name and
+   TextAt widen one octet to one CHAR, so a header or a field past ASCII
+   comes back as its UTF-8 octets read as Latin-1; these answer the text
+   itself, its octets validated into pool (ValueRange when the file holds
+   a field that is not UTF-8).  Csv.Find (t, u) with a UTF is FindUtf. ---- *)
+
+PROCEDURE NameUtf (VAR pool: POOL ; t: PTR Table ; c: I64) : UTF
+  RAISES IndexError, ValueRange ;
+PROCEDURE TextAtUtf (VAR pool: POOL ; t: PTR Table ; c, row: I64) : UTF
+  RAISES IndexError, ValueRange ;
+PROCEDURE FindUtf (t: PTR Table ; RO name: UTF) : I64 ;
+
 END Csv.
 
 
@@ -190,6 +204,14 @@ PROCEDURE StrToF64 = "m9_strtod" (s: C.ConstPtr) : C.Double
   [REENTRANT] ;
 PROCEDURE StrToF32 = "m9_strtof" (s: C.ConstPtr) : C.Double
   [REENTRANT] ;
+PROCEDURE CNumber = "m9_csv_number" (p: C.ConstPtr ; n: C.SSizeT) : C.Int
+  [REENTRANT] ;
+PROCEDURE CFieldF64 = "m9_field_f64" (p: C.ConstPtr ; n: C.SSizeT ; out: C.MutPtr) : C.Int
+  [REENTRANT] ;
+  (* IsNumber's grammar in one pass in the runtime (m9rt.h,
+     2026-10-25), CFieldF64 with the value: 1 a number, 0 not one, -1
+     under M9_CSV_PORTABLE -- then IsNumber and FieldF64 below decide,
+     the portable twin.  IsNumber and Word were 31% of a CSV read. *)
   (* the runtime's one-line shim over strtof, not strtof itself:
      C.ConstPtr is `const void *` and stdlib.h has already declared
      strtof with `const char *`, so a direct binding collides.  The
@@ -215,7 +237,10 @@ UNSAFE IMPLEMENTATION MODULE Csv ;
 
 IMPORT DynStr ;
 IMPORT Io ;
-FROM ccsv IMPORT StrToF32, StrToF64 ;
+FROM ccsv IMPORT StrToF32, StrToF64, CNumber, CFieldF64 ;
+
+(* a double the runtime fills through ADR (h) *)
+TYPE Held = RECORD v : F64 END ;
 
 (* Delimiters and quotes are compared as byte VALUES rather than named
    CHAR constants because this reads octets from a file, not Unicode
@@ -632,7 +657,10 @@ BEGIN
   RETURN F32 (StrToF32 (ADR (v)))
 END FieldF32 ;
 
-(* THE WIDE FIELD GOES STRAIGHT THROUGH strtod, with none of the
+(* THE WIDE FIELD GOES STRAIGHT THROUGH strtod -- since 2026-10-25
+   through the runtime's m9_strtod, which is Eisel-Lemire where it
+   decides and strtod where it does not, the same value either way
+   (glibc's strtod was 44% of a CSV read) -- with none of the
    fast path FieldF32 keeps.  That fast path exists because a float32
    result is a single rounding whichever way it is reached; a float64
    one is not, and a hand-rolled mantissa would be an ulp out on the
@@ -794,9 +822,11 @@ END FieldStamp ;
 PROCEDURE Parse (VAR pool: POOL ; VAR t: PTR Table)
   RAISES ParseError, RangeError, ValueRange, IndexError =
 VAR
-  i, c, row, start, len, nb, ofs : I64 ;
+  i, c, row, start, len, nb, ofs, k : I64 ;
   f : F32 ;
   d : F64 ;
+  v : SLICE OF BYTE ;
+  h : Held ;
   inQuote, atEnd : BOOL ;
 BEGIN
   FOR c := 0 TO t.ncols - 1 DO
@@ -847,17 +877,31 @@ BEGIN
       IF c < t.ncols THEN
         CASE t.kinds[c] OF
         | Real64 :
-          IF len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
-            t.dcols[c][row] := NaN
+          (* the runtime's one pass -- the grammar and the value -- or,
+             where it declines, IsNumber and FieldF64 as before *)
+          k := 0 ;
+          IF len > 0 THEN
+            v := SLICE (t.buf, ofs, len) ;
+            k := I64 (CFieldF64 (ADR (v), C.SSizeT (len), ADR (h)))
+          END ;
+          IF k = 1 THEN
+            d := h.v
+          ELSIF k = 0 OR len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
+            d := NaN
           ELSE
-            d := FieldF64 (t.buf, ofs, len) ;
-            IF t.opt.hasMissing THEN
-              IF d = F64 (t.opt.missing) THEN d := NaN END
-            END ;
-            t.dcols[c][row] := d
-          END
+            d := FieldF64 (t.buf, ofs, len)
+          END ;
+          IF k # 0 AND len > 0 AND t.opt.hasMissing THEN
+            IF d = F64 (t.opt.missing) THEN d := NaN END
+          END ;
+          t.dcols[c][row] := d
         | Real :
-          IF len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
+          k := 0 ;
+          IF len > 0 THEN
+            v := SLICE (t.buf, ofs, len) ;
+            k := I64 (CNumber (ADR (v), C.SSizeT (len)))
+          END ;
+          IF len = 0 OR k = 0 OR (k < 0 AND NOT IsNumber (t.buf, ofs, len)) THEN
             t.fcols[c][row] := NaN
           ELSE
             f := FieldF32 (t.buf, ofs, len) ;
@@ -968,5 +1012,60 @@ BEGIN
   END ;
   RETURN DynStr.Chars (pool, keep)
 END TextAt ;
+
+(* ---- the UTF twins ---- *)
+
+PROCEDURE NameUtf (VAR pool: POOL ; t: PTR Table ; c: I64) : UTF
+  RAISES IndexError, ValueRange =
+VAR raw : SLICE OF BYTE ;
+BEGIN
+  raw := SLICE (t.buf, t.nameOfs[c], t.nameLen[c]) ;
+  RETURN UTF (pool, raw)
+END NameUtf ;
+
+PROCEDURE TextAtUtf (VAR pool: POOL ; t: PTR Table ; c, row: I64) : UTF
+  RAISES IndexError, ValueRange =
+VAR
+  scratch : POOL ;
+  raw, keep : SLICE OF BYTE ;
+  i, n : I64 ;
+BEGIN
+  raw := SLICE (t.buf, t.tofs[c][row], t.tlen[c][row]) ;
+  IF NOT t.opt.quoted THEN RETURN UTF (pool, raw) END ;
+  (* "" undoubled, as TextAt does *)
+  keep := NEW (scratch, BYTE, LEN (raw)) ;
+  n := 0 ;
+  i := 0 ;
+  WHILE i < LEN (raw) DO
+    keep[n] := raw[i] ;
+    n := n + 1 ;
+    IF I64 (raw[i]) = 34 AND i + 1 < LEN (raw) AND I64 (raw[i + 1]) = 34 THEN
+      i := i + 2
+    ELSE
+      i := i + 1
+    END
+  END ;
+  keep := SLICE (keep, 0, n) ;
+  RETURN UTF (pool, keep)
+END TextAtUtf ;
+
+PROCEDURE FindUtf (t: PTR Table ; RO name: UTF) : I64 =
+VAR
+  o : SLICE OF BYTE ;
+  c, i : I64 ;
+  same : BOOL ;
+BEGIN
+  o := OCTETS (name) ;
+  FOR c := 0 TO t.ncols - 1 DO
+    IF t.nameLen[c] = LEN (o) THEN
+      same := TRUE ;
+      FOR i := 0 TO LEN (o) - 1 DO
+        IF t.buf[t.nameOfs[c] + i] # o[i] THEN same := FALSE END
+      END ;
+      IF same THEN RETURN c END
+    END
+  END ;
+  RETURN -1
+END FindUtf ;
 
 END Csv.

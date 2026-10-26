@@ -1,0 +1,8 @@
+MODULE MutMain ;
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT MutA ;
+IMPORT MutB ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (MutA.F (MutB.Mk (4))) + ' ' + Fmt.I64Str (MutB.G (MutA.Mk (7))))
+END MutMain.

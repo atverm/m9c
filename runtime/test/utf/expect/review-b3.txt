@@ -1,0 +1,54 @@
+Frame.m9:580:10: review: not a rule -- cannot RETURN SLICE OF CHAR from a function of type UTF
+Frame.m9:698:41: review: not a rule -- undeclared retention: borrowed long reaches the caller through f -- declare KEPT long (par 4.1)
+Frame.m9:699:37: review: not a rule -- undeclared retention: borrowed cf reaches the caller through f -- declare KEPT cf (par 4.1)
+Frame.m9:700:41: review: not a rule -- undeclared retention: borrowed unit reaches the caller through f -- declare KEPT unit (par 4.1)
+Frame.m9:1097:29: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1098:29: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1099:29: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1100:29: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1101:29: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1102:32: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1103:29: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1104:28: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1112:11: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1112:11: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1112:11: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1184:9: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1206:13: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1263:9: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1293:9: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1322:9: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1359:9: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1413:9: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1457:9: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1568:11: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1568:11: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1568:11: review: not a rule -- undeclared retention: borrowed c reaches the caller through out -- declare KEPT c (par 4.1)
+Frame.m9:1901:11: review: not a rule -- undeclared retention: borrowed long reaches the caller through f -- declare KEPT long (par 4.1)
+Frame.m9:1901:11: review: not a rule -- undeclared retention: borrowed cf reaches the caller through f -- declare KEPT cf (par 4.1)
+Frame.m9:1901:11: review: not a rule -- undeclared retention: borrowed unit reaches the caller through f -- declare KEPT unit (par 4.1)
+Frame.m9:578:13: review: a subscript read as a CHAR, written as the octet (Text.BChar): right for ASCII structure, not for a character past ASCII -- s[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Frame.m9:2010:25: review: ORD of a subscript, written as the octet: a code only for ASCII -- a glyph or a code point wants FOR c IN -- s[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:851:8: review: not a rule -- cannot assign SLICE OF CHAR to UTF (no implicit conversions, par 2.1)
+Json.m9:899:18: review: not a rule -- undeclared retention: borrowed n (carried by p) reaches the caller through c -- declare KEPT n (par 4.1)
+Json.m9:900:17: review: not a rule -- undeclared retention: borrowed n (carried by p) reaches the caller through c -- declare KEPT n (par 4.1)
+Json.m9:902:41: review: not a rule -- undeclared retention: borrowed n (carried by cc) reaches the caller through c -- declare KEPT n (par 4.1)
+Json.m9:906:11: review: not a rule -- undeclared retention: borrowed n (carried by head) reaches the caller through c -- declare KEPT n (par 4.1)
+Json.m9:912:18: review: not a rule -- undeclared retention: borrowed n (carried by p) reaches the caller through c -- declare KEPT n (par 4.1)
+Json.m9:914:41: review: not a rule -- undeclared retention: borrowed n (carried by cc) reaches the caller through c -- declare KEPT n (par 4.1)
+Json.m9:919:11: review: not a rule -- undeclared retention: borrowed n (carried by head) reaches the caller through c -- declare KEPT n (par 4.1)
+Json.m9:937:37: review: not a rule -- undeclared retention: borrowed n reaches the caller through c -- declare KEPT n (par 4.1)
+Json.m9:396:38: review: a subscript read as a CHAR, written as the octet (Text.BChar): right for ASCII structure, not for a character past ASCII -- c.src[c.pos]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:852:32: review: a write through a STR -- build it with DynStr or + -- c[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:852:40: review: a subscript read as a CHAR, written as the octet (Text.BChar): right for ASCII structure, not for a character past ASCII -- s[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:955:13: review: ORD of a subscript, written as the octet: a code only for ASCII -- a glyph or a code point wants FOR c IN -- t[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:983:18: review: a subscript read as a CHAR, written as the octet (Text.BChar): right for ASCII structure, not for a character past ASCII -- t[at + k]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:1008:11: review: a subscript read as a CHAR, written as the octet (Text.BChar): right for ASCII structure, not for a character past ASCII -- t[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:1013:13: review: a subscript read as a CHAR, written as the octet (Text.BChar): right for ASCII structure, not for a character past ASCII -- t[i + 1]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:1027:39: review: ORD of a subscript, written as the octet: a code only for ASCII -- a glyph or a code point wants FOR c IN -- t[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Json.m9:1016:31: review: ch holds an octet since line 1013 and is appended as a character: a character past ASCII is several octets -- read it as a CHARACTER (FOR c IN, Text.NextCp) -- ch
+Json.m9:1046:29: review: ch holds an octet since line 1013 and is appended as a character: a character past ASCII is several octets -- read it as a CHARACTER (FOR c IN, Text.NextCp) -- ch
+NbCells.m9:109:10: review: a subscript read as a CHAR, written as the octet (Text.BChar): right for ASCII structure, not for a character past ASCII -- name[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+Parquet.m9:1236:10: review: not a rule -- cannot RETURN SLICE OF CHAR from a function of type UTF
+Parquet.m9:2361:25: review: ORD of a subscript, written as the octet: a code only for ASCII -- a glyph or a code point wants FOR c IN -- s[i]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character
+ParquetTest.m9:197:49: review: ORD of a subscript, written as the octet: a code only for ASCII -- a glyph or a code point wants FOR c IN -- notes[i][j]: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character

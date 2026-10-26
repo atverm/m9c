@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Delim ;
 
 (* A ROW CURSOR over a delimited text file, in bounded memory.

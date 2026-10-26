@@ -1,0 +1,19 @@
+MODULE R4RoRecField ;
+(* a record field holding a slice of strings with a literal element, the field handed by value to a writer *)
+IMPORT Io ;
+TYPE R = RECORD xs : SLICE OF STR END ;
+PROCEDURE Up (s : SLICE OF STR) =
+BEGIN
+  s[0][0] := 'X'
+END Up ;
+PROCEDURE Fill () =
+VAR r : R ;
+BEGIN
+  r.xs := NEW (STR, 2) ;
+  r.xs[0] := 'abc' ;
+  Up (r.xs) ;
+  Io.WriteLine (r.xs[0])
+END Fill ;
+BEGIN
+  Fill ()
+END R4RoRecField.

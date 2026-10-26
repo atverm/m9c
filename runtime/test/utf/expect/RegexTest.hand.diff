@@ -1,0 +1,76 @@
+--- RegexTest.m9
++++ RegexTest.m9
+@@ -91,7 +91,24 @@
+   RETURN DynStr.View (d)
+ END Spans ;
+ 
+-PROCEDURE Want (RO v: SLICE OF I64 ; at, n: I64) : STR =
++(* the BYTE offset of character k of s: re's spans and `from' count
++   characters, and Regex's, like every position in Text, count bytes
++   under the UTF switch; -1 stays -1 *)
++PROCEDURE Bo (RO s: STR ; k: I64) : I64 =
++VAR
++  at, i : I64 ;
++  c : CHAR ;
++BEGIN
++  IF k < 0 THEN RETURN k END ;
++  at := 0 ;
++  FOR i := 1 TO k DO
++    IF at >= Text.BLen (s) THEN RETURN at END ;
++    c := Text.NextCp (s, at)
++  END ;
++  RETURN at
++END Bo ;
++
++PROCEDURE Want (RO s: STR ; RO v: SLICE OF I64 ; at, n: I64) : STR =
+ VAR
+   scratch : POOL ;
+   d : PTR DynStr.DString IN scratch ;
+@@ -100,7 +117,7 @@
+   d := DynStr.New (scratch) ;
+   FOR i := 0 TO n - 1 DO
+     IF i > 0 THEN DynStr.AppendChar (d, ' ') END ;
+-    DynStr.Append (d, Fmt.I64Str (v[at + i]))
++    DynStr.Append (d, Fmt.I64Str (Bo (s, v[at + i])))
+   END ;
+   RETURN DynStr.View (d)
+ END Want ;
+@@ -138,8 +155,8 @@
+       IF Regex.Groups (re) # groups[i] THEN
+         Check.EqI64 (t, what + ': groups', Regex.Groups (re), groups[i])
+       ELSE
+-        IF how[i] = 0 THEN r := Regex.Search (re, s, from[i])
+-        ELSIF how[i] = 1 THEN r := Regex.Match (re, s, from[i])
++        IF how[i] = 0 THEN r := Regex.Search (re, s, Bo (s, from[i]))
++        ELSIF how[i] = 1 THEN r := Regex.Match (re, s, Bo (s, from[i]))
+         ELSE r := Regex.FullMatch (re, s)
+         END ;
+         n := 2 * (groups[i] + 1) ;
+@@ -147,7 +164,7 @@
+         IF r IS SOME m THEN got := Spans (m) END ;
+         want := 'none' ;
+         IF found[i] THEN
+-          want := Want (spans, at, n) ;
++          want := Want (s, spans, at, n) ;
+           at := at + n
+         END ;
+         IF Text.Eq (got, want) THEN agree := agree + 1
+@@ -186,7 +203,7 @@
+     fl := Dec (p, flags[i]) ;
+     s := Dec (p, text[i]) ;
+     what := 'find-all ' + Show (pa, fl, s) ;
+-    want := Want (spans, at, 2 * count[i]) ;
++    want := Want (s, spans, at, 2 * count[i]) ;
+     at := at + 2 * count[i] ;
+     BEGIN
+       re := Regex.Compile (p, pa, fl) ;
+@@ -399,7 +416,8 @@
+     (* u: Python's classes *)
+     re := Regex.Compile (p, '\w+', 'u') ;
+     r := Regex.Search (re, 'caf' + 0E9C + ' ok', 0) ;
+-    IF r IS SOME m4 THEN Check.EqI64 (t, 'u: \w takes the e acute', Regex.End (m4, 0), 4)
++    (* the span's end is a BYTE offset: café is five octets *)
++    IF r IS SOME m4 THEN Check.EqI64 (t, 'u: \w takes the e acute', Regex.End (m4, 0), 5)
+     ELSE Check.That (t, 'u: a word', FALSE)
+     END ;
+     re := Regex.Compile (p, '\w+', '') ;

@@ -16,24 +16,38 @@ IMPORT Ast ;
 IMPORT Lex ;
 
 CONST
+  MaxErr = 64 ;
   (* the first MaxErr are KEPT, all of them are COUNTED.  A fixed
      array rather than a pool: Init takes no pool (the Parser is a
      record the caller owns, and Doc/M9c/parsetest all rely on that),
      and a module-level list would make this module STATEFUL for the
      sake of a diagnostic.  Nothing reads past the eighth. *)
-  MaxErr = 64 ;
+  MaxDepth = 1000 ;
+  (* the deepest tree the parser builds: a level for each nested
+     expression, statement or type and for each further operand of a
+     chain like 1 + 1 + ... (2026-10-21, the compiler review's F3).
+     Every pass after the parser walks the tree by recursion, and a
+     source nested 12,000 deep or a sum of 60,000 terms ran the stack
+     out with no message; under a 1 MB stack the walks reach 1,000 and
+     not 2,000, so a deeper source is refused here, where the line is
+     known. *)
+  MaxTypeDepth = 100 ;
+  (* the deepest TYPE: a type's text is carried whole at every
+     level it is resolved through, so `SLICE OF' 990 deep took 0.66
+     GB and `ARRAY 2 OF' 1.1 GB within MaxDepth; 100 levels is a few
+     megabytes, and no type written to be read nests a tenth of it *)
 
 TYPE
+  Perr = RECORD
+    line, col : I64 ;
+    msg : UTF ;
+  END ;
   (* one kept error.  An ARRAY OF it in Parser, bounded by MaxErr: the
      parser kept three parallel arrays with the literal 64 until
      2026-10-10, because the generator wrote the array's typedef after
      every struct (gcc: unknown type name) and read the bare bound in
      an IMPORTER's namespace (array count form unsupported).  Both
      fixed in both generators; genforms' GfArrRecField holds them. *)
-  Perr = RECORD
-    line, col : I64 ;
-    msg : STR ;
-  END ;
   Parser = RECORD
     lx : Lex.Lexer ;
     cur, peekTok : Lex.Token ;
@@ -41,6 +55,9 @@ TYPE
     nerr : I64 ;               (* every error *)
     nkept : I64 ;              (* those kept: MIN (nerr, MaxErr) *)
     errs : ARRAY MaxErr OF Perr ;
+    depth : I64 ;              (* levels open, against MaxDepth *)
+    tdepth : I64 ;             (* type levels open, against MaxTypeDepth *)
+    deep : BOOL ;              (* a bound passed: the rest is EOF *)
   END ;
 
 PROCEDURE Init (VAR p: Parser ; RO src: STR) ;
@@ -51,6 +68,8 @@ PROCEDURE Init (VAR p: Parser ; RO src: STR) ;
               in the AST are SLICES of this, not copies.  The
               caller's buffer must outlive both, which is the same
               contract Json.Parse has with its document.          *)
+PROCEDURE InitUtf (VAR p: Parser ; RO src: UTF) ;
+  (* Init over a UTF, the same contract; the text is lexed as it is *)
 
 PROCEDURE File (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node ;
   (* parses a whole file and answers its NFile node, whose kids are
@@ -74,7 +93,7 @@ IMPLEMENTATION MODULE Parse ;
 
 IMPORT Ast ;
 IMPORT Lex ;
-IMPORT DynStr ;
+IMPORT Text ;
 
 CONST
   (* token kind codes, matching Lex *)
@@ -183,7 +202,7 @@ END OpText ;
    NAME ('Semi'), which is what a message says was FOUND -- the two
    are different questions and the oracle asks both.  Keywords spell
    themselves, so KwName is the whole answer for them. *)
-PROCEDURE Spell (k: I64) : STR =
+PROCEDURE Spell (k: I64) : UTF =
 BEGIN
   CASE k OF
   | TkAssign : RETURN ':='
@@ -202,7 +221,7 @@ BEGIN
     (* a KEYWORD spells itself, and Lex.KindName already answers the
        keyword table for those, so the fallback is the whole rest of
        the answer *)
-  ELSE RETURN Lex.KindName (k)
+  ELSE RETURN UTF (Lex.KindName (k))
   END
 END Spell ;
 
@@ -217,33 +236,32 @@ END Spell ;
    stored into p`).  HEAP is the right home -- a compiler's
    diagnostics die with the process, which is what HEAP is for --
    and at most MaxErr of them are ever kept. *)
-PROCEDURE Keep (RO s: STR) : STR =
-VAR d : PTR DynStr.DString IN HEAP ;
+PROCEDURE ErrAt (VAR p: Parser ; ln: I64 ; cl: I64 ; RO msg: UTF) =
 BEGIN
-  d := DynStr.New (HEAP) ;
-  DynStr.Append (d, s) ;
-  RETURN DynStr.View (d)
-END Keep ;
-
-PROCEDURE ErrAt (VAR p: Parser ; ln: I64 ; cl: I64 ; RO msg: STR) =
-BEGIN
+  (* past MaxDepth the parser unwinds through an EOF it made: what it
+     says on the way out is about that EOF, not the source *)
+  IF p.deep THEN RETURN END ;
   IF p.nerr < MaxErr THEN
     p.errs[p.nerr].line := ln ;
     p.errs[p.nerr].col := cl ;
-    p.errs[p.nerr].msg := Keep (msg) ;
+    p.errs[p.nerr].msg := UTF (HEAP, msg) ;
     p.nkept := p.nerr + 1
   END ;
   p.nerr := p.nerr + 1
 END ErrAt ;
 
 (* at the current token, which is where all but the lexical ones are *)
-PROCEDURE Rerr (VAR p: Parser ; RO msg: STR) =
+PROCEDURE Rerr (VAR p: Parser ; RO msg: UTF) =
 BEGIN
   ErrAt (p, p.cur.line, p.cur.col, msg)
 END Rerr ;
 
 PROCEDURE Bump (VAR p: Parser) =
 BEGIN
+  IF p.deep THEN
+    p.cur.kind := TkEOF ;
+    RETURN
+  END ;
   LOOP
     IF p.peeked THEN
       p.cur := p.peekTok ;
@@ -258,6 +276,7 @@ END Bump ;
 
 PROCEDURE NxtKind (VAR p: Parser) : I64 =
 BEGIN
+  IF p.deep THEN RETURN TkEOF END ;
   IF NOT p.peeked THEN
     LOOP
       Lex.Next (p.lx, p.peekTok) ;
@@ -280,7 +299,7 @@ BEGIN
     (* the oracle passes the spelling at all 83 call sites; here it
        is DERIVED from the kind, which is the same string and cannot
        drift from the token it names *)
-    Rerr (p, Spell (k) + ' expected, found ' + Lex.KindName (p.cur.kind)
+    Rerr (p, Spell (k) + ' expected, found ' + UTF (Lex.KindName (p.cur.kind))
              + " '" + p.cur.text + "'")
   END
 END Expect ;
@@ -290,8 +309,10 @@ END Expect ;
    twenty identifiers on the line says nothing.  The oracle's own
    phrases, kept word for word so the two parsers can be held to the
    same diagnostics. *)
-PROCEDURE TakeIdent (VAR p: Parser ; RO what: STR) : STR =
-VAR s : STR ;
+(* the identifier's text, a view of the source (Ast.SetA copies it into
+   the node) *)
+PROCEDURE TakeIdent (VAR p: Parser ; RO what: UTF) : UTF =
+VAR s : UTF ;
 BEGIN
   IF p.cur.kind = TkIdent THEN
     s := p.cur.text ;
@@ -299,9 +320,22 @@ BEGIN
     RETURN s
   END ;
   Rerr (p, what + ' (identifier) expected, found '
-           + Lex.KindName (p.cur.kind)) ;
+           + UTF (Lex.KindName (p.cur.kind))) ;
   RETURN ''
 END TakeIdent ;
+
+(* one more level open; past MaxDepth the one refusal, and the parser
+   sees the end of the file from here on, so it returns through every
+   level it opened without opening another *)
+PROCEDURE Deeper (VAR p: Parser ; by: I64) =
+BEGIN
+  p.depth := p.depth + by ;
+  IF p.depth > MaxDepth AND NOT p.deep THEN
+    Rerr (p, 'nesting deeper than 1000 levels: the expression, statement or type here is too deep to compile -- give a part a name of its own, a local, a procedure or a TYPE') ;
+    p.deep := TRUE ;
+    p.cur.kind := TkEOF
+  END
+END Deeper ;
 
 PROCEDURE Nn (VAR pool: POOL ; VAR p: Parser ; kind: I64)
   : PTR Ast.Node =
@@ -309,13 +343,29 @@ BEGIN
   RETURN Ast.NewNode (pool, kind, p.cur.line, p.cur.col)
 END Nn ;
 
+(* the state once the lexer is pointed: no error, no depth, the first
+   token read *)
+PROCEDURE Started (VAR p: Parser) =
+BEGIN
+  p.peeked := FALSE ;
+  p.nerr := 0 ;
+  p.depth := 0 ;
+  p.tdepth := 0 ;
+  p.deep := FALSE ;
+  Bump (p)
+END Started ;
+
 PROCEDURE Init (VAR p: Parser ; RO src: STR) =
 BEGIN
   Lex.Init (p.lx, src) ;
-  p.peeked := FALSE ;
-  p.nerr := 0 ;
-  Bump (p)
+  Started (p)
 END Init ;
+
+PROCEDURE InitUtf (VAR p: Parser ; RO src: UTF) =
+BEGIN
+  Lex.InitUtf (p.lx, src) ;
+  Started (p)
+END InitUtf ;
 
 (* forward heads for the mutual recursion *)
 PROCEDURE PExpr (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node ;
@@ -333,10 +383,10 @@ PROCEDURE PQualident (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NQualident) ;
-  n.a := TakeIdent (p, 'name') ;
+  Ast.SetA (pool, n, TakeIdent (p, 'name')) ;
   IF p.cur.kind = TkDot THEN
     Bump (p) ;
-    n.b := TakeIdent (p, 'name after .')
+    Ast.SetB (pool, n, TakeIdent (p, 'name after .'))
   END ;
   RETURN n
 END PQualident ;
@@ -346,12 +396,12 @@ VAR n, id : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NIdentList) ;
   id := Nn (pool, p, Ast.NIdent) ;
-  id.a := TakeIdent (p, 'name') ;
+  Ast.SetA (pool, id, TakeIdent (p, 'name')) ;
   Ast.Add (pool, n, SOME (id)) ;
   WHILE p.cur.kind = TkComma DO
     Bump (p) ;
     id := Nn (pool, p, Ast.NIdent) ;
-    id.a := TakeIdent (p, 'name') ;
+    Ast.SetA (pool, id, TakeIdent (p, 'name')) ;
     Ast.Add (pool, n, SOME (id))
   END ;
   RETURN n
@@ -374,12 +424,12 @@ PROCEDURE DesigToQual (VAR pool: POOL ; VAR p: Parser ;
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NQualident) ;
-  n.a := d.a ;
+  Ast.SetA (pool, n, d.au) ;
   IF d.nkids = 0 THEN RETURN n END ;
   IF d.nkids = 1 THEN
     IF d.kids[0] IS SOME sel THEN
       IF sel.kind = Ast.NSelField THEN
-        n.b := sel.a ;
+        Ast.SetB (pool, n, sel.au) ;
         RETURN n
       END
     END
@@ -406,7 +456,7 @@ BEGIN
   Expect (p, TkLParen) ;
   IF p.cur.kind = TkOWN THEN
     d1 := Nn (pool, p, Ast.NDesignator) ;
-    d1.a := 'OWN' ;
+    Ast.SetA (pool, d1, 'OWN') ;
     Bump (p) ;
     Expect (p, TkComma) ;
     d2 := PDesignator (pool, p) ;
@@ -441,17 +491,27 @@ BEGIN
   RETURN n
 END PNew ;
 
+(* does the token end a statement, a list or a construct? *)
+PROCEDURE Closes (k: I64) : BOOL =
+BEGIN
+  RETURN k = TkSemi OR k = TkEND OR k = TkELSE OR k = TkELSIF OR
+         k = TkTHEN OR k = TkDO OR k = TkOF OR k = TkRParen OR
+         k = TkRBrack OR k = TkComma OR k = TkBar OR k = TkEXCEPT OR
+         k = TkFINALLY OR k = TkTO OR k = TkBY OR k = TkEOF
+END Closes ;
+
 PROCEDURE PFactor (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, d, cs : PTR Ast.Node ;
 BEGIN
+  Deeper (p, 1) ;
   IF p.cur.kind = TkInt THEN
-    n := Nn (pool, p, Ast.NInt) ; n.a := p.cur.text ; Bump (p)
+    n := Nn (pool, p, Ast.NInt) ; Ast.SetA (pool, n, p.cur.text) ; Bump (p)
   ELSIF p.cur.kind = TkReal THEN
-    n := Nn (pool, p, Ast.NReal) ; n.a := p.cur.text ; Bump (p)
+    n := Nn (pool, p, Ast.NReal) ; Ast.SetA (pool, n, p.cur.text) ; Bump (p)
   ELSIF p.cur.kind = TkChar THEN
-    n := Nn (pool, p, Ast.NChar) ; n.a := p.cur.text ; Bump (p)
+    n := Nn (pool, p, Ast.NChar) ; Ast.SetA (pool, n, p.cur.text) ; Bump (p)
   ELSIF p.cur.kind = TkStr THEN
-    n := Nn (pool, p, Ast.NString) ; n.a := p.cur.text ; Bump (p)
+    n := Nn (pool, p, Ast.NString) ; Ast.SetA (pool, n, p.cur.text) ; Bump (p)
   ELSIF p.cur.kind = TkTRUE THEN
     n := Nn (pool, p, Ast.NTrue) ; Bump (p)
   ELSIF p.cur.kind = TkFALSE THEN
@@ -495,7 +555,7 @@ BEGIN
     Expect (p, TkRParen)
   ELSIF p.cur.kind = TkNOT THEN
     n := Nn (pool, p, Ast.NUn) ;
-    n.a := 'NOT' ;
+    Ast.SetA (pool, n, 'NOT') ;
     Bump (p) ;
     Ast.Add (pool, n, SOME (PFactor (pool, p)))
   ELSIF p.cur.kind = TkLParen THEN
@@ -526,53 +586,68 @@ BEGIN
       n := d
     END
   ELSE
-    Rerr (p, 'expression expected, found ' + Lex.KindName (p.cur.kind)) ;
+    Rerr (p, 'expression expected, found ' + UTF (Lex.KindName (p.cur.kind))) ;
     n := Nn (pool, p, Ast.NInt) ;
-    n.a := '0' ;
-    Bump (p)
+    Ast.SetA (pool, n, '0') ;
+    (* a token that ends a statement or a construct is left for whoever
+       owns it: consuming the `;' of `x := 1 + ;' made the next statement
+       an error too, and a literal the lexer refused cascaded to 65
+       errors (2026-10-22, the compiler review's tier 3) *)
+    IF NOT Closes (p.cur.kind) THEN Bump (p) END
   END ;
+  p.depth := p.depth - 1 ;
   RETURN n
 END PFactor ;
 
 PROCEDURE PTerm (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r : PTR Ast.Node ;
+  k : I64 ;
 BEGIN
   r := PFactor (pool, p) ;
+  k := 0 ;
   WHILE IsMulOp (p.cur.kind) DO
+    Deeper (p, 1) ;
+    k := k + 1 ;
     n := Nn (pool, p, Ast.NBin) ;
-    n.a := OpText (p.cur.kind) ;
+    Ast.SetA (pool, n, OpText (p.cur.kind)) ;
     Bump (p) ;
     Ast.Add (pool, n, SOME (r)) ;
     Ast.Add (pool, n, SOME (PFactor (pool, p))) ;
     r := n
   END ;
+  p.depth := p.depth - k ;
   RETURN r
 END PTerm ;
 
 PROCEDURE PSimple (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r, sgn : PTR Ast.Node ;
-  neg : BOOL ;
+  k : I64 ;
 BEGIN
-  neg := FALSE ;
+  (* the sign and its operand on one path: under a flag set by one IF
+     and read by another, definite assignment cannot see that sgn was
+     given a value *)
   IF p.cur.kind = TkPlus OR p.cur.kind = TkMinus THEN
     sgn := Nn (pool, p, Ast.NUn) ;
-    sgn.a := OpText (p.cur.kind) ;
+    Ast.SetA (pool, sgn, OpText (p.cur.kind)) ;
     Bump (p) ;
-    neg := TRUE
-  END ;
-  r := PTerm (pool, p) ;
-  IF neg THEN
+    r := PTerm (pool, p) ;
     Ast.Add (pool, sgn, SOME (r)) ;
     r := sgn
+  ELSE
+    r := PTerm (pool, p)
   END ;
+  k := 0 ;
   WHILE IsAddOp (p.cur.kind) DO
+    Deeper (p, 1) ;
+    k := k + 1 ;
     n := Nn (pool, p, Ast.NBin) ;
-    n.a := OpText (p.cur.kind) ;
+    Ast.SetA (pool, n, OpText (p.cur.kind)) ;
     Bump (p) ;
     Ast.Add (pool, n, SOME (r)) ;
     Ast.Add (pool, n, SOME (PTerm (pool, p))) ;
     r := n
   END ;
+  p.depth := p.depth - k ;
   RETURN r
 END PSimple ;
 
@@ -582,7 +657,7 @@ BEGIN
   r := PSimple (pool, p) ;
   IF IsRelOp (p.cur.kind) THEN
     n := Nn (pool, p, Ast.NBin) ;
-    n.a := OpText (p.cur.kind) ;
+    Ast.SetA (pool, n, OpText (p.cur.kind)) ;
     Bump (p) ;
     Ast.Add (pool, n, SOME (r)) ;
     Ast.Add (pool, n, SOME (PSimple (pool, p))) ;
@@ -593,31 +668,41 @@ END PRel ;
 
 PROCEDURE PConj (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r : PTR Ast.Node ;
+  k : I64 ;
 BEGIN
   r := PRel (pool, p) ;
+  k := 0 ;
   WHILE p.cur.kind = TkAND DO
+    Deeper (p, 1) ;
+    k := k + 1 ;
     n := Nn (pool, p, Ast.NBin) ;
-    n.a := 'AND' ;
+    Ast.SetA (pool, n, 'AND') ;
     Bump (p) ;
     Ast.Add (pool, n, SOME (r)) ;
     Ast.Add (pool, n, SOME (PRel (pool, p))) ;
     r := n
   END ;
+  p.depth := p.depth - k ;
   RETURN r
 END PConj ;
 
 PROCEDURE PDisj (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r : PTR Ast.Node ;
+  k : I64 ;
 BEGIN
   r := PConj (pool, p) ;
+  k := 0 ;
   WHILE p.cur.kind = TkOR DO
+    Deeper (p, 1) ;
+    k := k + 1 ;
     n := Nn (pool, p, Ast.NBin) ;
-    n.a := 'OR' ;
+    Ast.SetA (pool, n, 'OR') ;
     Bump (p) ;
     Ast.Add (pool, n, SOME (r)) ;
     Ast.Add (pool, n, SOME (PConj (pool, p))) ;
     r := n
   END ;
+  p.depth := p.depth - k ;
   RETURN r
 END PDisj ;
 
@@ -635,7 +720,7 @@ BEGIN
       (* `x IS SOME p' binds, as the whole condition of IF/ELSIF/WHILE;
          `x IS SOME' and `x IS NONE' are BOOL expressions, no binder
          (cp-kernel's issue 4, 2026-10-09) *)
-      IF p.cur.kind = TkIdent THEN t.a := TakeIdent (p, 'binding name') END ;
+      IF p.cur.kind = TkIdent THEN Ast.SetA (pool, t, TakeIdent (p, 'binding name')) END ;
       Ast.Add (pool, n, SOME (t))
     ELSIF p.cur.kind = TkNONE THEN
       t := Nn (pool, p, Ast.NIsSome) ;
@@ -655,7 +740,7 @@ PROCEDURE PDesignator (VAR pool: POOL ; VAR KEPT p: Parser)
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NDesignator) ;
-  n.a := TakeIdent (p, 'name') ;
+  Ast.SetA (pool, n, TakeIdent (p, 'name')) ;
   PSels (pool, p, n) ;
   RETURN n
 END PDesignator ;
@@ -669,7 +754,7 @@ BEGIN
     IF p.cur.kind = TkDot THEN
       Bump (p) ;
       sel := Nn (pool, p, Ast.NSelField) ;
-      sel.a := TakeIdent (p, 'field name') ;
+      Ast.SetA (pool, sel, TakeIdent (p, 'field name')) ;
       Ast.Add (pool, n, SOME (sel))
     ELSE
       (* one subscript per axis: a[i] on a slice, a[i, j, k] on a
@@ -693,7 +778,7 @@ BEGIN
   IF p.cur.kind = TkLBrack THEN
     n := Nn (pool, p, Ast.NAttrib) ;
     Bump (p) ;
-    n.a := TakeIdent (p, 'attribute name') ;
+    Ast.SetA (pool, n, TakeIdent (p, 'attribute name')) ;
     Expect (p, TkRBrack) ;
     RETURN SOME (n)
   END ;
@@ -737,7 +822,7 @@ VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NVariant) ;
   Expect (p, TkBar) ;
-  n.a := TakeIdent (p, 'variant name') ;
+  Ast.SetA (pool, n, TakeIdent (p, 'variant name')) ;
   IF p.cur.kind = TkColon THEN
     Bump (p) ;
     Ast.Add (pool, n, SOME (PFieldSeq (pool, p, SVariantF)))
@@ -747,7 +832,7 @@ BEGIN
   RETURN n
 END PVariant ;
 
-PROCEDURE PType (VAR pool: POOL ; VAR KEPT p: Parser)
+PROCEDURE PType0 (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node =
 VAR n, n2 : PTR Ast.Node ;
 BEGIN
@@ -755,7 +840,7 @@ BEGIN
     RETURN PQualident (pool, p)
   ELSIF p.cur.kind = TkPOOL THEN
     n := Nn (pool, p, Ast.NQualident) ;
-    n.a := 'POOL' ;
+    Ast.SetA (pool, n, 'POOL') ;
     Bump (p) ;
     RETURN n
   ELSIF p.cur.kind = TkARRAY THEN
@@ -844,12 +929,12 @@ BEGIN
     n := Nn (pool, p, Ast.NEnumType) ;
     Bump (p) ;
     n2 := Nn (pool, p, Ast.NIdent) ;
-    n2.a := TakeIdent (p, 'enumeration member') ;
+    Ast.SetA (pool, n2, TakeIdent (p, 'enumeration member')) ;
     Ast.Add (pool, n, SOME (n2)) ;
     WHILE p.cur.kind = TkComma DO
       Bump (p) ;
       n2 := Nn (pool, p, Ast.NIdent) ;
-      n2.a := TakeIdent (p, 'enumeration member') ;
+      Ast.SetA (pool, n2, TakeIdent (p, 'enumeration member')) ;
       Ast.Add (pool, n, SOME (n2))
     END ;
     Expect (p, TkRParen) ;
@@ -880,10 +965,27 @@ BEGIN
     END ;
     RETURN n
   END ;
-  Rerr (p, 'type expected, found ' + Lex.KindName (p.cur.kind)) ;
+  Rerr (p, 'type expected, found ' + UTF (Lex.KindName (p.cur.kind))) ;
   n := Nn (pool, p, Ast.NQualident) ;
-  n.a := '?' ;
+  Ast.SetA (pool, n, '?') ;
   Bump (p) ;
+  RETURN n
+END PType0 ;
+
+PROCEDURE PType (VAR pool: POOL ; VAR KEPT p: Parser)
+  : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  Deeper (p, 1) ;
+  p.tdepth := p.tdepth + 1 ;
+  IF p.tdepth > MaxTypeDepth AND NOT p.deep THEN
+    Rerr (p, 'a type nested deeper than 100 levels: give a part a TYPE name of its own') ;
+    p.deep := TRUE ;
+    p.cur.kind := TkEOF
+  END ;
+  n := PType0 (pool, p) ;
+  p.tdepth := p.tdepth - 1 ;
+  p.depth := p.depth - 1 ;
   RETURN n
 END PType ;
 
@@ -924,7 +1026,7 @@ BEGIN
       n := Nn (pool, p, Ast.NLabelPattern) ;
       n.line := e.line ;
       n.col := e.col ;
-      IF d.kids[d.nkids - 1] IS SOME last THEN n.a := last.a END ;
+      IF d.kids[d.nkids - 1] IS SOME last THEN Ast.SetA (pool, n, last.au) END ;
       ids := Nn (pool, p, Ast.NIdentList) ;
       ids.line := al.line ;
       ids.col := al.col ;
@@ -933,7 +1035,7 @@ BEGIN
           id := Nn (pool, p, Ast.NIdent) ;
           id.line := a2.line ;
           id.col := a2.col ;
-          id.a := a2.a ;
+          Ast.SetA (pool, id, a2.au) ;
           Ast.Add (pool, ids, SOME (id))
         END
       END ;
@@ -951,7 +1053,7 @@ BEGIN
   IF p.cur.kind = TkIdent THEN
     IF NxtKind (p) = TkLParen THEN
       n := Nn (pool, p, Ast.NLabelPattern) ;
-      n.a := TakeIdent (p, 'variant name') ;
+      Ast.SetA (pool, n, TakeIdent (p, 'variant name')) ;
       Expect (p, TkLParen) ;
       Ast.Add (pool, n, SOME (PIdentList (pool, p))) ;
       Expect (p, TkRParen) ;
@@ -996,7 +1098,7 @@ BEGIN
          k = TkEXCEPT OR k = TkFINALLY OR k = TkBar OR k = TkEOF
 END IsStmtEndK ;
 
-PROCEDURE PStatement (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
+PROCEDURE PStatement0 (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, d, e : PTR Ast.Node ;
 BEGIN
   IF p.cur.kind = TkIdent THEN
@@ -1056,7 +1158,7 @@ BEGIN
   ELSIF p.cur.kind = TkFOR THEN
     n := Nn (pool, p, Ast.NFor) ;
     Bump (p) ;
-    n.a := TakeIdent (p, 'loop variable') ;
+    Ast.SetA (pool, n, TakeIdent (p, 'loop variable')) ;
     (* FOR x IN s DO ... END, over a slice's or an array's elements
        (2026-10-11) *)
     IF p.cur.kind = TkIN THEN
@@ -1158,9 +1260,18 @@ BEGIN
     Expect (p, TkRParen) ;
     RETURN n
   END ;
-  Rerr (p, 'statement expected, found ' + Lex.KindName (p.cur.kind)) ;
+  Rerr (p, 'statement expected, found ' + UTF (Lex.KindName (p.cur.kind))) ;
   n := Nn (pool, p, Ast.NStmtSeq) ;
   Bump (p) ;
+  RETURN n
+END PStatement0 ;
+
+PROCEDURE PStatement (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  Deeper (p, 1) ;
+  n := PStatement0 (pool, p) ;
+  p.depth := p.depth - 1 ;
   RETURN n
 END PStatement ;
 
@@ -1179,7 +1290,7 @@ BEGIN
       END
     ELSE
       IF NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF) THEN
-        Rerr (p, '; or end of statement list expected, found ' + Lex.KindName (p.cur.kind)) ;
+        Rerr (p, '; or end of statement list expected, found ' + UTF (Lex.KindName (p.cur.kind))) ;
         WHILE NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkSemi
                    OR p.cur.kind = TkEOF) DO
           Bump (p)
@@ -1219,19 +1330,19 @@ BEGIN
     args := Nn (pool, p, Ast.NArgList) ;
     LOOP
       IF p.cur.kind = TkIdent THEN
-        h := Nn (pool, p, Ast.NIdent) ; h.a := p.cur.text ; Bump (p)
+        h := Nn (pool, p, Ast.NIdent) ; Ast.SetA (pool, h, p.cur.text) ; Bump (p)
       ELSIF p.cur.kind = TkInt THEN
-        h := Nn (pool, p, Ast.NInt) ; h.a := p.cur.text ; Bump (p)
+        h := Nn (pool, p, Ast.NInt) ; Ast.SetA (pool, h, p.cur.text) ; Bump (p)
       ELSIF p.cur.kind = TkReal THEN
-        h := Nn (pool, p, Ast.NReal) ; h.a := p.cur.text ; Bump (p)
+        h := Nn (pool, p, Ast.NReal) ; Ast.SetA (pool, h, p.cur.text) ; Bump (p)
       ELSIF p.cur.kind = TkChar THEN
-        h := Nn (pool, p, Ast.NChar) ; h.a := p.cur.text ; Bump (p)
+        h := Nn (pool, p, Ast.NChar) ; Ast.SetA (pool, h, p.cur.text) ; Bump (p)
       ELSIF p.cur.kind = TkStr THEN
-        h := Nn (pool, p, Ast.NString) ; h.a := p.cur.text ; Bump (p)
+        h := Nn (pool, p, Ast.NString) ; Ast.SetA (pool, h, p.cur.text) ; Bump (p)
       ELSE
-        Rerr (p, 'case label expected, found ' + Lex.KindName (p.cur.kind)) ;
+        Rerr (p, 'case label expected, found ' + UTF (Lex.KindName (p.cur.kind))) ;
         h := Nn (pool, p, Ast.NIdent) ;
-        h.a := '?' ;
+        Ast.SetA (pool, h, '?') ;
         Bump (p)
       END ;
       Ast.Add (pool, args, SOME (h)) ;
@@ -1318,7 +1429,7 @@ BEGIN
 END PRaises ;
 
 PROCEDURE PProcBody (VAR pool: POOL ; VAR KEPT p: Parser ;
-                     RO name: STR) : PTR Ast.Node =
+                     RO name: UTF) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NProcBody) ;
@@ -1327,7 +1438,7 @@ BEGIN
   END ;
   Ast.Add (pool, n, SOME (PBlock (pool, p))) ;
   IF p.cur.kind = TkIdent THEN
-    IF NOT DynStr.Eq (p.cur.text, name) THEN Rerr (p, 'END ' + p.cur.text + ' does not match PROCEDURE ' + name) END ;
+    IF NOT Text.Eq (p.cur.text, name) THEN Rerr (p, 'END ' + p.cur.text + ' does not match PROCEDURE ' + name) END ;
     Bump (p)
   ELSE
     Rerr (p, 'procedure name expected after END')
@@ -1340,11 +1451,11 @@ VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NProcDecl) ;
   Expect (p, TkPROCEDURE) ;
-  n.a := TakeIdent (p, 'procedure name') ;
+  Ast.SetA (pool, n, TakeIdent (p, 'procedure name')) ;
   IF p.cur.kind = TkEq THEN
     Bump (p) ;
     IF p.cur.kind = TkStr THEN
-      n.b := p.cur.text ;
+      Ast.SetB (pool, n, p.cur.text) ;
       Bump (p)
     ELSE
       Rerr (p, 'handler argument expected')
@@ -1372,7 +1483,7 @@ BEGIN
   Ast.Add (pool, n, PAttribOpt (pool, p)) ;
   IF p.cur.kind = TkEq THEN
     Bump (p) ;
-    Ast.Add (pool, n, SOME (PProcBody (pool, p, n.a)))
+    Ast.Add (pool, n, SOME (PProcBody (pool, p, n.au)))
   ELSE
     Ast.Add (pool, n, NONE)
   END ;
@@ -1408,7 +1519,7 @@ BEGIN
     Bump (p) ;
     WHILE p.cur.kind = TkIdent DO
       d := Nn (pool, p, Ast.NConstDecl) ;
-      d.a := TakeIdent (p, 'constant name') ;
+      Ast.SetA (pool, d, TakeIdent (p, 'constant name')) ;
       Expect (p, TkEq) ;
       IF p.cur.kind = TkLBrack THEN
         Ast.Add (pool, d, SOME (PAggregate (pool, p)))
@@ -1424,7 +1535,7 @@ BEGIN
     Bump (p) ;
     WHILE p.cur.kind = TkIdent DO
       d := Nn (pool, p, Ast.NTypeDecl) ;
-      d.a := TakeIdent (p, 'type name') ;
+      Ast.SetA (pool, d, TakeIdent (p, 'type name')) ;
       IF p.cur.kind = TkEq THEN
         Bump (p) ;
         Ast.Add (pool, d, SOME (PType (pool, p)))
@@ -1456,7 +1567,7 @@ BEGIN
     Bump (p) ;
     WHILE p.cur.kind = TkIdent DO
       d := Nn (pool, p, Ast.NExcDecl) ;
-      d.a := TakeIdent (p, 'exception name') ;
+      Ast.SetA (pool, d, TakeIdent (p, 'exception name')) ;
       IF p.cur.kind = TkLParen THEN
         Bump (p) ;
         Ast.Add (pool, d, SOME (PFieldSeq (pool, p, SRParen))) ;
@@ -1485,7 +1596,7 @@ BEGIN
     IF p.cur.kind = TkFROM THEN
       n := Nn (pool, p, Ast.NFromImport) ;
       Bump (p) ;
-      n.a := TakeIdent (p, 'module name') ;
+      Ast.SetA (pool, n, TakeIdent (p, 'module name')) ;
       Expect (p, TkIMPORT)
     ELSE
       n := Nn (pool, p, Ast.NImportList) ;
@@ -1525,25 +1636,30 @@ BEGIN
     IF p.cur.kind = TkFOR THEN
       Bump (p) ;
       IF p.cur.kind = TkStr THEN
-        n.b := p.cur.text ;
+        Ast.SetB (pool, n, p.cur.text) ;
         Bump (p)
       ELSE
         Rerr (p, 'foreign language string expected after FOR')
       END
     END ;
-    n.a := TakeIdent (p, 'module name') ;
+    Ast.SetA (pool, n, TakeIdent (p, 'module name')) ;
+    (* a placeholder until LINK makes the list: hasLinks guards every
+       use, and a PTR that is not OPT is given a value before it can be
+       read (par 4, definite assignment, 2026-10-21) -- a node of its
+       own, since `links := n' would move n *)
+    links := Nn (pool, p, Ast.NLinkList) ;
     IF p.cur.kind = TkLINK THEN
       (* LINK "w", ...: what the foreign unit links (par 7); the node
          goes in LAST, after the declarations, so that nothing walking
          a unit's kids by position moves *)
-      IF LEN (n.b) = 0 THEN Rerr (p, 'LINK belongs to a FOR "C" unit') END ;
+      IF Text.BLen (n.bu) = 0 THEN Rerr (p, 'LINK belongs to a FOR "C" unit') END ;
       Bump (p) ;
       links := Nn (pool, p, Ast.NLinkList) ;
       hasLinks := TRUE ;
       LOOP
         IF p.cur.kind = TkStr THEN
           ws := Nn (pool, p, Ast.NString) ;
-          ws.a := p.cur.text ;
+          Ast.SetA (pool, ws, p.cur.text) ;
           Ast.Add (pool, links, SOME (ws)) ;
           Bump (p)
         ELSE
@@ -1557,7 +1673,7 @@ BEGIN
     PDecls (pool, p, n) ;
     IF hasLinks THEN Ast.Add (pool, n, SOME (links)) END ;
     Expect (p, TkEND) ;
-    IF NOT DynStr.Eq (TakeIdent (p, 'module name after END'), n.a) THEN Rerr (p, 'END name does not match MODULE ' + n.a) END ;
+    IF NOT Text.Eq (TakeIdent (p, 'module name after END'), n.au) THEN Rerr (p, 'END name does not match MODULE ' + n.au) END ;
     Expect (p, TkDot) ;
     RETURN n
   END ;
@@ -1568,7 +1684,7 @@ BEGIN
     IF stf THEN Rerr (p, 'STATEFUL belongs on the definition') END ;
     Bump (p) ;
     Expect (p, TkMODULE) ;
-    n.a := TakeIdent (p, 'module name') ;
+    Ast.SetA (pool, n, TakeIdent (p, 'module name')) ;
     Expect (p, TkSemi) ;
     PImports (pool, p, n) ;
     PDecls (pool, p, n) ;
@@ -1581,7 +1697,7 @@ BEGIN
     ELSE
       Expect (p, TkEND)
     END ;
-    IF NOT DynStr.Eq (TakeIdent (p, 'module name after END'), n.a) THEN Rerr (p, 'END name does not match MODULE ' + n.a) END ;
+    IF NOT Text.Eq (TakeIdent (p, 'module name after END'), n.au) THEN Rerr (p, 'END name does not match MODULE ' + n.au) END ;
     Expect (p, TkDot) ;
     RETURN n
   END ;
@@ -1591,7 +1707,7 @@ BEGIN
     IF uns THEN Rerr (p, 'UNSAFE program modules are not a thing') END ;
     IF stf THEN Rerr (p, 'STATEFUL belongs on definitions') END ;
     Bump (p) ;
-    n.a := TakeIdent (p, 'module name') ;
+    Ast.SetA (pool, n, TakeIdent (p, 'module name')) ;
     Expect (p, TkSemi) ;
     PImports (pool, p, n) ;
     PDecls (pool, p, n) ;
@@ -1604,14 +1720,14 @@ BEGIN
     ELSE
       Expect (p, TkEND)
     END ;
-    IF NOT DynStr.Eq (TakeIdent (p, 'module name after END'), n.a) THEN Rerr (p, 'END name does not match MODULE ' + n.a) END ;
+    IF NOT Text.Eq (TakeIdent (p, 'module name after END'), n.au) THEN Rerr (p, 'END name does not match MODULE ' + n.au) END ;
     Expect (p, TkDot) ;
     RETURN n
   END ;
 
-  Rerr (p, 'DEFINITION, IMPLEMENTATION, or MODULE expected, found ' + Lex.KindName (p.cur.kind)) ;
+  Rerr (p, 'DEFINITION, IMPLEMENTATION, or MODULE expected, found ' + UTF (Lex.KindName (p.cur.kind))) ;
   n := Nn (pool, p, Ast.NProgram) ;
-  n.a := '?' ;
+  Ast.SetA (pool, n, '?') ;
   Bump (p) ;
   RETURN n
 END PUnit ;

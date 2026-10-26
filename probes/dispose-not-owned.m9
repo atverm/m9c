@@ -1,4 +1,4 @@
-(* EXPECT: cannot DISPOSE r: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call does (par 4.2) *)
+(* EXPECT: cannot DISPOSE r: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2) *)
 (* DISPOSE frees only a name that may own what it holds (2026-10-10):
    `r := b.p ; DISPOSE (r) ; DISPOSE (b.p)' freed one object twice and
    both checkers accepted it.  The legal forms first: NEW (OWN, T), an

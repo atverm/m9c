@@ -1,0 +1,29 @@
+MODULE GfShareAggregate ;
+
+(* WANT: agg 41 *)
+
+(* a SHARED handle stored by a record aggregate counts (B1) *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 END ;
+TYPE Box = RECORD h : SHARED PTR Store ; k : I64 END ;
+VAR keep : Box ;
+PROCEDURE Hold (KEPT p : SHARED PTR Store) =
+BEGIN
+  keep := Box (p, 1)
+END Hold ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END
+END Churn ;
+PROCEDURE Go () =
+VAR o : PTR Store ; h : SHARED PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ; o.n := 41 ; h := SHARED (o) ;
+  Hold (h) ; DISPOSE (h)
+END Go ;
+BEGIN
+  Go () ; Churn () ;
+  Io.WriteLine ('agg ' + Fmt.I64Str (keep.h.n))
+END GfShareAggregate.

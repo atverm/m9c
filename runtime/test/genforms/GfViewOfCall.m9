@@ -1,24 +1,43 @@
 MODULE GfViewOfCall ;
 
-(* WANT: a view of a grid a call answers: 3 *)
+(* WANT: a view of a grid a call answers: 3, Bad kept *)
 
 (* VIEW over a GRID a call answers.  Unlike an ARRAY (a value: SLICE of
    one is refused by the checker), a grid's cells live in the caller's
-   arena, so the view would be sound; the generator reads VIEW's grid
-   off a declaration and refuses a call (found 2026-10-10, looking for a
-   generator refusal once SLICE of a call's array became the checker's). *)
+   arena, so the view is sound.  The generator read VIEW's grid off a
+   declaration and refused a call (found 2026-10-10, looking for a
+   generator refusal once SLICE of a call's array became the checker's);
+   since 2026-10-25 it reads the callee's declared result, and a call
+   that raised is tested before the view is taken. *)
 
 IMPORT Io, Fmt ;
+
+EXCEPTION Bad ;
 
 PROCEDURE Mk () : GRID 2 OF F64 =
 BEGIN
   RETURN NEW (F64, 2, 3)
 END Mk ;
 
+PROCEDURE Fails () : GRID 2 OF F64 RAISES Bad =
+BEGIN
+  RAISE Bad
+END Fails ;
+
 VAR
   g : GRID 1 OF F64 ;
+  kept : STR ;
 
 BEGIN
   g := VIEW (Mk (), 1, ALL) ;
-  Io.WriteLine ('a view of a grid a call answers: ' + Fmt.I64Str (LEN (g, 0)))
+  kept := 'lost' ;
+  (* the drop of row 0 of the empty grid would raise IndexError over Bad
+     if the call were not tested first *)
+  BEGIN
+    g := VIEW (Fails (), 0, ALL)
+  EXCEPT
+  | Bad : kept := 'kept'
+  | IndexError : kept := 'replaced by IndexError'
+  END ;
+  Io.WriteLine ('a view of a grid a call answers: ' + Fmt.I64Str (LEN (g, 0)) + ', Bad ' + kept)
 END GfViewOfCall.

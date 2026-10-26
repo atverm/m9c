@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
 /* pgshim.c -- the one libpq call an M9 FOR "C" unit cannot express.
  *
  * corpus/Pg.m9's, lifted with it from m9downloadstats (pqshim.c there,

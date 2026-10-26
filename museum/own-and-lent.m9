@@ -1,0 +1,20 @@
+(* EXPECT-ERROR: is moved into an OWN parameter and lent as argument 2 of the same call *)
+(* One object handed to a callee twice: once to own and DISPOSE, once
+   to read.  Observed 2026-10-21 by the compiler review (C7): it
+   compiled, the callee freed the first and read the second, ASan
+   reported a heap-use-after-free, and a plain run raised a stray
+   IndexError out of storage reused by the next allocation. *)
+MODULE m ;
+TYPE Node = RECORD n : I64 ; data : SLICE OF I64 ; pool : POOL END ;
+PROCEDURE Use (OWN a: PTR Node ; b: PTR Node) : I64 =
+BEGIN
+  DISPOSE (a) ;
+  RETURN b.n
+END Use ;
+VAR
+  p : PTR Node ;
+  v : I64 ;
+BEGIN
+  p := NEW (OWN, Node) ;
+  v := Use (p, p)
+END m.

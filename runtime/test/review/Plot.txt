@@ -2,10 +2,10 @@ REVIEW Plot -- 74 procedures with a body, 33 of them functions; 21 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              33
-  assignments                                   492
+  assignments                                   494
   arguments                                    1845
   RETURN values                                  68
-  operands of a comparison or an operator       877
+  operands of a comparison or an operator       875
   CASE labels                                    23
   THREAD arguments                                0
   CASE over variants, proved total                1
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           1
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     1   writes or reads in EmitR
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 5
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        0
   NEW in the frame                                1
   NEW in a named pool                             0
+  calls of a STR form with a UTF twin            15   Text.IndexOf -> Text.IndexOfUtf, Fmt.Fixed -> Fmt.FixedUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, +9 more
+  STR subscripts, writes and LEN                 34   len serHex[s], len barHex[s], index t[0], index t[0], len class, len anchor, +28 more

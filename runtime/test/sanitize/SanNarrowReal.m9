@@ -1,0 +1,38 @@
+MODULE SanNarrowReal ;
+
+(* WANT: narrow real: VR VR VR VR 7 *)
+
+(* The compiler review's G2 (2026-10-21), the museum's founding class:
+   a real converted to an integer narrower than I64 went through C's
+   own conversion, undefined out of range -- I32 (NaN) answered 0 with
+   no ValueRange, U64 (1.0e30) answered, while I64 (NaN) raised.  Each
+   must raise ValueRange; an in-range value converts. *)
+
+IMPORT Io, Fmt ;
+
+VAR
+  x : F64 ;
+  i : I32 ;
+  u : U64 ;
+  b : I8 ;
+  out : STR ;
+
+BEGIN
+  out := 'narrow real:' ;
+  x := NaN ;
+  BEGIN i := I32 (x) ; out := out + ' answered'
+  EXCEPT | ValueRange : out := out + ' VR' END ;
+  x := 1.0e30 ;
+  BEGIN u := U64 (x) ; out := out + ' answered'
+  EXCEPT | ValueRange : out := out + ' VR' END ;
+  x := 300.0 ;
+  BEGIN b := I8 (x) ; out := out + ' answered'
+  EXCEPT | ValueRange : out := out + ' VR' END ;
+  x := -1.0 ;
+  BEGIN u := U64 (x) ; out := out + ' answered'
+  EXCEPT | ValueRange : out := out + ' VR' END ;
+  x := 7.25 ;
+  BEGIN i := I32 (x) ; out := out + ' ' + Fmt.I64Str (I64 (i))
+  EXCEPT | ValueRange : out := out + ' VR' END ;
+  Io.WriteLine (out)
+END SanNarrowReal.

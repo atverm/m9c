@@ -1,0 +1,108 @@
+MODULE JsonUtfTest ;
+
+(* JsonUtf, the UTF-native Json of the transition (docs/utf8-plan.md,
+   stage 2), held to Python's json: a document with characters past ASCII
+   and every escape json.loads knows parsed, read back and rendered --
+   json.dumps (ensure_ascii=False) with the compact separators, the
+   default ones, sort_keys and indent=2 -- each expected string written
+   by Python.  Then what is Json's own: the raw numbers of NewRaw, the
+   clone into a pool, a parse error's position in characters. *)
+
+IMPORT Check ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT JsonUtf ;
+IMPORT Text ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE Lines (RO u: UTF) : I64 =
+VAR n : I64 ; c : CHAR ;
+BEGIN
+  n := 1 ;
+  FOR c IN u DO
+    IF c = 0AC THEN n := n + 1 END
+  END ;
+  RETURN n
+END Lines ;
+
+PROCEDURE Document () =
+VAR
+  src, want : UTF ;
+  root, n, c : PTR JsonUtf.Node ;
+  k : PTR JsonUtf.Node IN pool ;
+BEGIN
+  src := '{"name": "Grüße ✓", "esc": "a\"b\\cé𝄞", "n": [1, 2.5, -0.0, 1e400, true, null], "z": {}, "a": [], "b": "x"}' ;
+  root := JsonUtf.Parse (src) ;
+  want := '{"name":"Grüße ✓","esc":"a\"b\\cé𝄞","n":[1,2.5,-0.0,Infinity,true,null],"z":{},"a":[],"b":"x"}' ;
+  Check.That (t, 'Compact is json.dumps, separators compact', Text.Eq (JsonUtf.Compact (root), want)) ;
+  Check.EqI64 (t, 'and its octets', Text.BLen (JsonUtf.Compact (root)), 102) ;
+  want := '{"name": "Grüße ✓", "esc": "a\"b\\cé𝄞", "n": [1, 2.5, -0.0, Infinity, true, null], "z": {}, "a": [], "b": "x"}' ;
+  Check.That (t, 'Spaced is json.dumps', Text.Eq (JsonUtf.Spaced (root), want)) ;
+  want := '{"a":[],"b":"x","esc":"a\"b\\cé𝄞","n":[1,2.5,-0.0,Infinity,true,null],"name":"Grüße ✓","z":{}}' ;
+  Check.That (t, 'CompactSorted is sort_keys', Text.Eq (JsonUtf.CompactSorted (root), want)) ;
+  Check.EqI64 (t, 'Pretty is indent=2: 15 lines', Lines (JsonUtf.Pretty (root)), 15) ;
+  (* reading *)
+  IF JsonUtf.Field (root, 'name') IS SOME nm THEN
+    Check.That (t, 'Field finds a name past ASCII', Text.Eq (JsonUtf.Text (nm), 'Grüße ✓'))
+  ELSE
+    Check.That (t, 'Field finds a name past ASCII', FALSE)
+  END ;
+  IF JsonUtf.Field (root, 'esc') IS SOME es THEN
+    Check.EqI64 (t, 'Text decodes the escapes: 11 octets', Text.BLen (JsonUtf.Text (es)), 11) ;
+    Check.That (t, 'the surrogate pair is one code point', Text.Eq (JsonUtf.Text (es), 'a"b\cé𝄞')) ;
+    Check.That (t, 'AsStr is the raw document text', Text.Eq (JsonUtf.AsStr (es), 'a\"b\\cé𝄞'))
+  ELSE
+    Check.That (t, 'Field esc', FALSE)
+  END ;
+  Check.EqI64 (t, 'MemberCount', JsonUtf.MemberCount (root), 6) ;
+  Check.That (t, 'NameAt 0', Text.Eq (JsonUtf.NameAt (root, 0), 'name')) ;
+  IF JsonUtf.Field (root, 'n') IS SOME arr THEN
+    Check.EqI64 (t, 'Count', JsonUtf.Count (arr), 6) ;
+    Check.EqF64 (t, 'AsF64', JsonUtf.AsF64 (JsonUtf.Item (arr, 1)), 2.5) ;
+    Check.That (t, 'IsNull', JsonUtf.IsNull (JsonUtf.Item (arr, 5)))
+  ELSE
+    Check.That (t, 'Field n', FALSE)
+  END ;
+  (* the clone owns its text: compared after the source would be gone *)
+  c := JsonUtf.Clone (root) ;
+  k := JsonUtf.CloneIn (pool, root) ;
+  Check.That (t, 'Clone renders the same', Text.Eq (JsonUtf.Compact (c), JsonUtf.Compact (root))) ;
+  Check.That (t, 'CloneIn renders the same', Text.Eq (JsonUtf.Compact (k), JsonUtf.Compact (root))) ;
+  (* building *)
+  n := JsonUtf.NewObj () ;
+  c := JsonUtf.NewStr ('back\slash and "quote" ✓') ;
+  JsonUtf.Set (n, 'k', c) ;
+  c := JsonUtf.NewRaw ('2.50') ;
+  JsonUtf.Set (n, 'r', c) ;
+  want := '{"k":"back\\slash and \"quote\" ✓","r":2.50}' ;
+  Check.That (t, 'NewStr escapes its value, NewRaw keeps its text', Text.Eq (JsonUtf.Compact (n), want)) ;
+  Check.EqStr (t, 'NumText of a raw number', Text.FromUtf (JsonUtf.NumText (c)), '2.50') ;
+  Check.EqF64 (t, 'its value', JsonUtf.AsF64 (c), Fmt.ParseF64 ('2.50'))
+EXCEPT
+| JsonUtf.ParseError (m, l, col) : Check.That (t, 'the document parses: ' + m, FALSE)
+| JsonUtf.TypeMismatch (m) : Check.That (t, 'no type mismatch: ' + m, FALSE)
+| ValueRange : Check.That (t, 'no ValueRange', FALSE)
+| IndexError : Check.That (t, 'no IndexError', FALSE)
+END Document ;
+
+(* json.loads ('{"ü": x}'): Expecting value: line 1 column 7 -- the
+   column counted in characters, ü one of them *)
+PROCEDURE Position () =
+VAR n : PTR JsonUtf.Node ;
+BEGIN
+  n := JsonUtf.Parse ('{"ü": x}') ;
+  Check.That (t, 'a bad value is refused', FALSE)
+EXCEPT
+| JsonUtf.ParseError (m, l, col) :
+    Check.EqI64 (t, 'on line 1', l, 1) ;
+    Check.EqI64 (t, 'at column 7, in characters', col, 7)
+END Position ;
+
+BEGIN
+  Document () ;
+  Position () ;
+  Io.Halt (Check.Done (t, 'JsonUtf'))
+END JsonUtfTest.

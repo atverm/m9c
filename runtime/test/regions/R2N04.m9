@@ -1,0 +1,27 @@
+MODULE R2N04 ;
+(* a call-selection of a record answer holding a frame string, kept *)
+IMPORT Io, Fmt ;
+TYPE R = RECORD n : I64 ; s : STR END ;
+VAR last : STR ;
+PROCEDURE Mk (n: I64) : R =
+VAR r : R ;
+BEGIN
+  r.n := n ;
+  r.s := 'value ' + Fmt.I64Str (n) ;
+  RETURN r
+END Mk ;
+PROCEDURE Fill () =
+BEGIN
+  last := Mk (41).s
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (last)
+END R2N04.

@@ -1,0 +1,22 @@
+MODULE R4SumFrame5 ;
+IMPORT Io, Fmt ;
+VAR last : STR ;
+PROCEDURE Mk (RO a: STR ; n: I64) : STR =
+VAR t1, t2, t3, t4, t5 : STR ;
+BEGIN
+  t1 := 'frame ' + Fmt.I64Str (n) ;
+  t2 := t1 ;
+  t3 := t2 ;
+  t4 := t3 ;
+  t5 := t4 ;
+  RETURN t5
+END Mk ;
+PROCEDURE Fill () =
+VAR t, s : STR ;
+BEGIN
+  last := Mk ('x', 1)
+END Fill ;
+BEGIN
+  Fill () ;
+  Io.WriteLine (last)
+END R4SumFrame5.

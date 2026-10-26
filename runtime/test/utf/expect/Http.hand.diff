@@ -1,0 +1,69 @@
+--- Http.m9
++++ Http.m9
+@@ -1949,15 +1949,19 @@
+ END UrlEncode ;
+ 
+ PROCEDURE UrlDecode (RO s: STR) : STR RAISES ValueRange =
++  (* every byte of s goes to one octet buffer -- a %XX as the octet it
++     names, any other byte as itself -- and the buffer is decoded
++     STRICTLY once at the end.  The same answer as decoding each run of
++     %-octets on its own: a %XX triple is ASCII, so a run ends at a
++     character boundary of s, and a byte of s copied whole can never
++     complete a run's dangling sequence.  (The tool's BChar at the
++     byte appended to r would have made a character of each octet.) *)
+ VAR
+-  scratch : POOL ;
+   run : SLICE OF BYTE ;
+-  r : STR ;
+   i, n, hi, lo : I64 ;
+ BEGIN
+-  run := NEW (scratch, BYTE, Text.BLen (s) + 1) ;
++  run := NEW (BYTE, Text.BLen (s) + 1) ;
+   n := 0 ;
+-  r := '' ;
+   i := 0 ;
+   WHILE i < Text.BLen (s) DO
+     hi := -1 ;
+@@ -1968,22 +1972,14 @@
+     END ;
+     IF hi >= 0 AND lo >= 0 THEN
+       run[n] := BYTE (hi * 16 + lo) ;
+-      n := n + 1 ;
+       i := i + 3
+     ELSE
+-      (* a run of octets ends: decoded whole, strictly *)
+-      IF n > 0 THEN
+-        r := r + UTF (scratch, SLICE (run, 0, n)) ;
+-        n := 0
+-      END ;
+-      r := r + s[i] ;
++      run[n] := Text.BAt (s, i) ;
+       i := i + 1
+-    END
++    END ;
++    n := n + 1
+   END ;
+-  IF n > 0 THEN
+-    r := r + UTF (scratch, SLICE (run, 0, n))
+-  END ;
+-  RETURN r
++  RETURN UTF (SLICE (run, 0, n))
+ END UrlDecode ;
+ 
+ 
+@@ -2028,13 +2024,9 @@
+ END NextPart ;
+ 
+ PROCEDURE KeepStr (VAR f: PTR Form ; RO s: STR) : STR =
+-VAR
+-  c : STR ;
+-  i : I64 ;
++  (* a copy in the Form's own pool, where NEW (f, T) allocates *)
+ BEGIN
+-  c := NEW (f, CHAR, Text.BLen (s)) ;
+-  FOR i := 0 TO Text.BLen (s) - 1 DO c[i] := Text.BChar (s, i) END ;
+-  RETURN c
++  RETURN UTF (f, s)
+ END KeepStr ;
+ 
+ PROCEDURE KeepBytes (VAR f: PTR Form ; RO b: SLICE OF BYTE) : SLICE OF BYTE =

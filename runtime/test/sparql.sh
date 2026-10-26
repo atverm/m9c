@@ -6,15 +6,12 @@
 # POST arrived (docs/datalib-plan.md par 2).
 #
 # Needs rdflib (python3-rdflib; SPARQL_PY names another Python).  Without
-# it the gate SKIPS out loud on a workstation and FAILS on CI.  Uses the
-# m9c that m9c.sh builds, or $M9C, or out/m9c.
+# it the gate SKIPS out loud on a workstation and FAILS on CI.  Uses an
+# m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
 set -e
 cd "$(dirname "$0")"
 
-M9C=${M9C:-}
-[ -n "$M9C" ] || { [ -x ./m9c ] && M9C=$(pwd)/m9c; }
-[ -n "$M9C" ] || { [ -x ../../out/m9c ] && M9C=$(cd ../../out && pwd)/m9c; }
-[ -n "$M9C" ] || { echo "sparql: no m9c (run m9c.sh or build.sh)"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 
 PY=${SPARQL_PY:-python3}
 if ! "$PY" -c 'import rdflib' 2>/dev/null; then

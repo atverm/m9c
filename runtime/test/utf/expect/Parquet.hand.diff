@@ -1,0 +1,11 @@
+--- Parquet.m9
++++ Parquet.m9
+@@ -1229,7 +1229,7 @@
+   RAISES Faults.BadArg, Overflow, ValueRange =
+ VAR
+   n, i : I64 ;
+-  s : SLICE OF CHAR ;
++  s : STR ;      (* was spelled SLICE OF CHAR, the type the switch moves *)
+ BEGIN
+   n := RVar (r) ;
+   IF r.at + n > LEN (r.b) THEN RAISE Faults.BadArg ('truncated string') END ;

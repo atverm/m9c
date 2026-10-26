@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Parquet ;
 
 (* A Parquet subset for Frame.m9: flat schemas.  pyarrow is the oracle

@@ -1,0 +1,21 @@
+MODULE R4SumRoLocal ;
+IMPORT Io, Fmt ;
+VAR last : STR ;
+PROCEDURE Mk (RO a: STR ; n: I64) : STR =
+VAR t1, t2 : STR ;
+BEGIN
+  t1 := 'abcdef' ;
+
+  RETURN t1
+END Mk ;
+PROCEDURE Fill () =
+VAR t, s : STR ;
+BEGIN
+  s := Mk ('x', 1) ;
+  s[0] := 'X' ;
+  Io.WriteLine (s)
+END Fill ;
+BEGIN
+  Fill () ;
+  Io.WriteLine (last)
+END R4SumRoLocal.

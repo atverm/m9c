@@ -1,0 +1,65 @@
+MODULE SanAndOrRight ;
+
+(* WANT: and-or right: IE IE IE ran 1 *)
+
+(* The IR lowering's step 3 (2026-10-22, docs/ir-plan.md): the right
+   operand of AND and OR was not lowered, so a raising argument in it
+   was not guarded before its call ran -- `go AND Use (b.c)' with b.c
+   NULL called Use on the NULL m9_nn had let through, and Use read c.n
+   (UBSan: member access within null pointer), where the same call as a
+   statement raised IndexError first.  Each form must raise IndexError
+   without running Use; with the left operand deciding, Use is not run
+   at all; with a cell, it runs once. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Cell = RECORD n : I64 END ;
+  Box = RECORD c : PTR Cell END ;
+
+VAR
+  ran : I64 ;
+
+PROCEDURE Use (c: PTR Cell) : BOOL =
+BEGIN
+  RETURN c.n = 0
+END Use ;
+
+PROCEDURE Count (c: PTR Cell) : BOOL =
+BEGIN
+  ran := ran + 1 ;
+  RETURN c.n = 0
+END Count ;
+
+PROCEDURE AndForm (b: PTR Box ; go: BOOL) : BOOL RAISES IndexError =
+BEGIN
+  RETURN go AND Use (b.c)
+END AndForm ;
+
+PROCEDURE OrForm (b: PTR Box ; stop: BOOL) : BOOL RAISES IndexError =
+BEGIN
+  RETURN stop OR Use (b.c)
+END OrForm ;
+
+VAR
+  b, full : PTR Box ;
+  r : BOOL ;
+  out : STR ;
+
+BEGIN
+  out := 'and-or right:' ;
+  b := NEW (Box) ;
+  full := NEW (Box) ;
+  full.c := NEW (Cell) ;
+  BEGIN r := AndForm (b, TRUE) ; out := out + ' answered'
+  EXCEPT | IndexError : out := out + ' IE' END ;
+  BEGIN r := OrForm (b, FALSE) ; out := out + ' answered'
+  EXCEPT | IndexError : out := out + ' IE' END ;
+  BEGIN
+    IF TRUE AND Use (b.c) THEN out := out + ' then' END
+  EXCEPT | IndexError : out := out + ' IE' END ;
+  r := AndForm (b, FALSE) ;
+  ran := 0 ;
+  IF TRUE AND Count (full.c) THEN r := TRUE END ;
+  Io.WriteLine (out + ' ran ' + Fmt.I64Str (ran))
+END SanAndOrRight.

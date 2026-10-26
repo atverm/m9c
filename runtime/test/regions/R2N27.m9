@@ -1,0 +1,27 @@
+MODULE R2N27 ;
+(* a frame UTF (a conversion) kept in a module variable through a call-selection *)
+IMPORT Io, Fmt ;
+TYPE R = RECORD n : I64 ; u : UTF END ;
+VAR gu : UTF ;
+PROCEDURE Mk (n: I64) : R =
+VAR r : R ;
+BEGIN
+  r.n := n ;
+  r.u := UTF ('value ' + Fmt.I64Str (n)) ;
+  RETURN r
+END Mk ;
+PROCEDURE Fill () =
+BEGIN
+  gu := Mk (41).u
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (STR (gu))
+END R2N27.

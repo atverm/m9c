@@ -1,0 +1,25 @@
+(* EXPECT: COPY writes into the RO parameter s, which is read-only *)
+(* COPY (to, from), the block copy (2026-10-22): two slices or arrays of
+   one scalar element type, `to' writable. *)
+MODULE m ;
+VAR
+  a, b : SLICE OF I64 ;
+  f : SLICE OF F64 ;
+  arr : ARRAY 3 OF I64 ;
+  ps, qs : SLICE OF PTR I64 ;
+  n : I64 ;
+PROCEDURE Fill (RO s: SLICE OF I64) =
+VAR t : SLICE OF I64 ;
+BEGIN
+  t := NEW (I64, LEN (s)) ;
+  COPY (t, s) ;
+  COPY (s, t)
+END Fill ;
+BEGIN
+  a := NEW (I64, 3) ;
+  b := NEW (I64, 3) ;
+  COPY (a, b) ;
+  COPY (SLICE (a, 0, 2), SLICE (b, 1, 2)) ;
+  COPY (arr, a) ;
+  Fill (a)
+END m.

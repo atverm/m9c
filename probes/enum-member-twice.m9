@@ -1,0 +1,12 @@
+(* EXPECT: A is declared twice in type E (par 2.2) *)
+(* An enumeration's member is declared once (since 2026-10-22, the
+   compiler review's F4): `(A, B, A)' compiled, and the second A was the
+   first.  The legal form first: two enumerations sharing a member's
+   name. *)
+MODULE m ;
+TYPE
+  F = (A, B) ;
+  G = (A, C) ;
+  E = (A, B, A) ;
+BEGIN
+END m.

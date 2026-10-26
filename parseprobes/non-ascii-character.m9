@@ -1,0 +1,5 @@
+MODULE NonAscii ;
+VAR x : I64 ;
+BEGIN
+  x := 1 ✓ 2
+END NonAscii.

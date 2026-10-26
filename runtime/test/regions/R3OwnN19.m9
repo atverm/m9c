@@ -1,0 +1,21 @@
+MODULE R3OwnN19 ;
+(* a view into an owned object kept across the object's move into an OWN parameter that disposes it *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;
+PROCEDURE Eat (OWN o: PTR Store) =
+BEGIN
+  DISPOSE (o)
+END Eat ;
+PROCEDURE Go () =
+VAR o : PTR Store ; s : SLICE OF I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  s := o.data ;
+  Eat (o) ;
+  Io.WriteLine (Fmt.I64Str (s[0]))
+END Go ;
+BEGIN
+  Go ()
+END R3OwnN19.

@@ -10,6 +10,11 @@
 # It is the gate for porting the checker's expression typing into
 # Sem.m9.  Until that is done it reports how many probes the two
 # checkers disagree about, which is the worklist.
+# scratch files in a directory of this run's own: fixed /tmp names
+# collided between two checkouts or two gates run at once (the compiler
+# review's tier 3, 2026-10-22)
+TG=$(mktemp -d "${TMPDIR:-/tmp}/m9gate.XXXXXX")
+trap 'rm -rf "$TG"' EXIT
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
@@ -17,22 +22,22 @@ P=../../probes
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Lex.c \
-    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c \
+    ../gen/Ast.c ../gen/Parse.c ../gen/DynUtf.c ../gen/Print.c ../gen/Text.c \
     ../gen/Sem.c semdump_m9.c -o semdump_m9
 ( cd ../../host/fpc && fpc -O2 semdump.pas >/dev/null )
 
 n=0; bad=0
 for f in "$P"/*.m9; do
   b=$(basename "$f")
-  ( cd ../../host/fpc && ./semdump "../../probes/$b" ) > /tmp/probe_fpc.txt 2>&1
+  ( cd ../../host/fpc && ./semdump "../../probes/$b" ) > "$TG"/probe_fpc.txt 2>&1
   ( cd ../../host/fpc && ../../runtime/test/semdump_m9 "../../probes/$b" ) \
-    > /tmp/probe_m9.txt 2>&1
+    > "$TG"/probe_m9.txt 2>&1
   n=$((n + 1))
-  if ! cmp -s /tmp/probe_fpc.txt /tmp/probe_m9.txt; then
+  if ! cmp -s "$TG"/probe_fpc.txt "$TG"/probe_m9.txt; then
     bad=$((bad + 1))
     if [ -n "$VERBOSE" ]; then
       echo "--- $b"
-      diff /tmp/probe_fpc.txt /tmp/probe_m9.txt | sed 's/^/    /' | head -8
+      diff "$TG"/probe_fpc.txt "$TG"/probe_m9.txt | sed 's/^/    /' | head -8
     else
       echo "DIVERGES: $b"
     fi

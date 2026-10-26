@@ -2,10 +2,10 @@ REVIEW Map -- 42 procedures with a body, 20 of them functions; 12 headings in a 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              20
-  assignments                                   211
+  assignments                                   212
   arguments                                     487
   RETURN values                                  33
-  operands of a comparison or an operator       408
+  operands of a comparison or an operator       407
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        1
   NEW in the frame                               11
   NEW in a named pool                             1
+  calls of a STR form with a UTF twin             4   Fmt.Fixed -> Fmt.FixedUtf, Fmt.Fixed -> Fmt.FixedUtf, Fmt.Fixed -> Fmt.FixedUtf, Fmt.Fixed -> Fmt.FixedUtf
+  STR subscripts, writes and LEN                  9   index t[0], len spec.backdrop.href, len markers[i].colour, len markers[i].label, len spec.title, len spec.credit, +3 more

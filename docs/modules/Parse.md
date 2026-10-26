@@ -14,6 +14,32 @@ chapter's own advice got `1 parse errors` and no line.  Written
 
 ### CONST MaxErr
 
+the first MaxErr are KEPT, all of them are COUNTED.  A fixed
+array rather than a pool: Init takes no pool (the Parser is a
+record the caller owns, and Doc/M9c/parsetest all rely on that),
+and a module-level list would make this module STATEFUL for the
+sake of a diagnostic.  Nothing reads past the eighth.
+
+### CONST MaxDepth
+
+the deepest tree the parser builds: a level for each nested
+expression, statement or type and for each further operand of a
+chain like 1 + 1 + ... (2026-10-21, the compiler review's F3).
+Every pass after the parser walks the tree by recursion, and a
+source nested 12,000 deep or a sum of 60,000 terms ran the stack
+out with no message; under a 1 MB stack the walks reach 1,000 and
+not 2,000, so a deeper source is refused here, where the line is
+known.
+
+### CONST MaxTypeDepth
+
+the deepest TYPE: a type's text is carried whole at every
+level it is resolved through, so `SLICE OF' 990 deep took 0.66
+GB and `ARRAY 2 OF' 1.1 GB within MaxDepth; 100 levels is a few
+megabytes, and no type written to be read nests a tenth of it
+
+### TYPE Perr
+
 one kept error.  An ARRAY OF it in Parser, bounded by MaxErr: the
 parser kept three parallel arrays with the literal 64 until
 2026-10-10, because the generator wrote the array's typedef after
@@ -21,15 +47,13 @@ every struct (gcc: unknown type name) and read the bare bound in
 an IMPORTER's namespace (array count form unsupported).  Both
 fixed in both generators; genforms' GfArrRecField holds them.
 
-### TYPE Perr
-
-_(undocumented)_
-
 ### TYPE Parser
 
 every error
 
 ### Init (VAR p: Parser ; RO src: STR)
+
+**Deprecated** (the UTF transition): InitUtf is its UTF form.
 
 points a parser at source text and reads the first token.
 
@@ -38,6 +62,10 @@ src -- BORROWED for as long as p is used, and for as long as
        in the AST are SLICES of this, not copies.  The
        caller's buffer must outlive both, which is the same
        contract Json.Parse has with its document.
+
+### InitUtf (VAR p: Parser ; RO src: UTF)
+
+Init over a UTF, the same contract; the text is lexed as it is
 
 ### File (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node
 

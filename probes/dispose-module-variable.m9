@@ -1,0 +1,25 @@
+(* EXPECT: cannot DISPOSE the module variable g in a procedure *)
+MODULE m ;
+(* in a procedure a module variable is no owner: nothing there shows
+   that no other name still holds what it points to, and the module body
+   reads it after the call (the third review's ownership O2).  Legal
+   forms first: an owned local disposed, and an OWN parameter. *)
+TYPE R = RECORD n : I64 END ;
+VAR g : PTR R ;
+PROCEDURE Local () =
+VAR p : PTR R ;
+BEGIN
+  p := NEW (OWN, R) ;
+  DISPOSE (p)
+END Local ;
+PROCEDURE Eat (OWN q: PTR R) =
+BEGIN
+  DISPOSE (q)
+END Eat ;
+PROCEDURE Drop () =
+BEGIN
+  DISPOSE (g)
+END Drop ;
+BEGIN
+  g := NEW (OWN, R)
+END m.

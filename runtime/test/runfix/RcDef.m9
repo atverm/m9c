@@ -1,0 +1,39 @@
+DEFINITION MODULE RcDef ;
+
+(* A builder in the caller's pool whose answer counts with an integer
+   `+' (RcUse holds it): the region judgement read `c.nent := c.nent + 1'
+   as a frame string given to the answer's field, and a caller keeping
+   the answer in a module variable was refused (zarrm9's Serve.Run,
+   2026-10-26).  In another module's body nothing is typed, so a `+'
+   there counts as a string's only by its shape. *)
+
+TYPE
+  Ent = RECORD name : STR ; n : I64 END ;
+  EntP = PTR Ent ;
+  Cache = RECORD ents : SLICE OF EntP ; nent : I64 END ;
+
+PROCEDURE Build (VAR pool: POOL ; RO root: STR) : PTR Cache ;
+
+END RcDef.
+
+IMPLEMENTATION MODULE RcDef ;
+
+IMPORT Text ;
+
+PROCEDURE Build (VAR pool: POOL ; RO root: STR) : PTR Cache =
+VAR
+  c : PTR Cache IN pool ;
+  e : PTR Ent IN pool ;
+BEGIN
+  c := NEW (pool, Cache) ;
+  c.ents := NEW (pool, EntP, 4) ;
+  c.nent := 0 ;
+  e := NEW (pool, Ent) ;
+  e.name := Text.Keep (pool, root + '/x') ;
+  e.n := 7 ;
+  c.ents[c.nent] := e ;
+  c.nent := c.nent + 1 ;
+  RETURN c
+END Build ;
+
+END RcDef.

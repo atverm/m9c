@@ -14,7 +14,7 @@ cd "$(dirname "$0")"
 SRC=$(cd ../../corpus && pwd)
 RT=$(cd .. && pwd)
 ED=$(cd ../../tools/edit && pwd)
-W=/tmp/m9edit-gate
+W=$(mktemp -d "${TMPDIR:-/tmp}/m9edit.XXXXXX")   # a fixed /tmp name collided between runs (tier 3)
 PORT=8039
 # a stale server from an aborted run holds the port; match the
 # cmdline in /proc, never pgrep -f (which matches the shell asking)
@@ -29,14 +29,11 @@ for i in 1 2 3 4 5 6 7 8 9 10; do
   curl -s -o /dev/null --max-time 1 http://127.0.0.1:$PORT/ || break
   sleep 0.3
 done
-rm -rf "$W"; mkdir -p "$W/work"
+mkdir -p "$W/work"
 
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c \
-    ../gen/Text.c ../gen/System.c ../gen/Lex.c ../gen/Ast.c ../gen/Print.c \
-    ../gen/Parse.c ../gen/Sem.c ../gen/Doc.c ../gen/Review.c ../gen/Gen.c \
-    ../gen/Io.c ../gen/M9c.c -lm -o "$W/m9c"
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c"
 ( cd "$W" && M9RUNTIME="$RT" M9LIBRARY="$SRC" \
     ./m9c --make -o m9edit "$ED/EditMain.m9" "$ED/Edit.m9" >build.log 2>&1 ) || \
   { echo "edit: FAIL building m9edit:"; tail -5 "$W/build.log"; exit 1; }
@@ -65,13 +62,21 @@ st=1
 finish () {
   s=$?
   kill "$SRV" 2>/dev/null || true
+  rm -rf "$W"
   exit $s
 }
 trap finish EXIT
-sleep 1
-
-[ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:$PORT/)" = 200 ] || \
-  { echo "edit: the page does not serve"; exit 1; }
+# asked until it answers, ten seconds at most: one second was the whole
+# allowance, and with the other gates of a round on every core the
+# server was not up yet (2026-10-22, "the page does not serve")
+up=0
+for t in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+  if [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:$PORT/)" = 200 ]; then
+    up=1; break
+  fi
+  sleep 0.5
+done
+[ "$up" = 1 ] || { echo "edit: the page does not serve"; exit 1; }
 # the page loads its cell script from /cell.js: the bytes, verbatim
 curl -s http://127.0.0.1:$PORT/cell.js > "$W/cell.got"
 cmp -s "$W/cell.got" "$ED/cell.js" || \

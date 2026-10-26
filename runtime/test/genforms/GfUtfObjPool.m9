@@ -1,0 +1,54 @@
+MODULE GfUtfObjPool ;
+
+(* WANT: utf objpool: Grüße, Welt kept 2 *)
+
+(* UTF (f, s) with f a VAR pointer parameter: the copy lives in the
+   OBJECT's hidden pool, where NEW (f, T) allocates (rule 2 of
+   docs/pool-elision-plan.md; Alex, 2026-10-24: "ok with UTF(f,s)"),
+   so a procedure that keeps a caller's string in an object it was
+   lent needs no pool name -- Http.KeepStr, Json.CopyStrTo and
+   Frame.Copy under the switch.  The strings kept here are built by
+   + in a frame that is gone when they are read; sanitize.sh reruns
+   this program under ASan, where a frame copy traps. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Form = RECORD
+    names : SLICE OF UTF ;
+    n     : I64
+  END ;
+
+VAR
+  pool : POOL ;
+  f    : PTR Form IN pool ;
+
+PROCEDURE Keep (VAR f: PTR Form ; RO s: UTF) : UTF =
+BEGIN
+  RETURN UTF (f, s)
+END Keep ;
+
+PROCEDURE Add (VAR f: PTR Form ; RO s: UTF) =
+BEGIN
+  f.names[f.n] := Keep (f, s) ;
+  f.n := f.n + 1
+END Add ;
+
+PROCEDURE Fill (VAR f: PTR Form) =
+VAR
+  a, b : UTF ;
+BEGIN
+  a := UTF ('Grü' + 'ße') ;
+  b := UTF ('We' + 'lt') ;
+  Add (f, a) ;
+  Add (f, b)
+END Fill ;
+
+BEGIN
+  f := NEW (pool, Form) ;
+  f.names := NEW (pool, UTF, 4) ;
+  f.n := 0 ;
+  Fill (f) ;
+  Io.WriteLine ('utf objpool: ' + f.names[0] + ', ' + f.names[1] +
+                ' kept ' + UTF (Fmt.I64Str (f.n)))
+END GfUtfObjPool .

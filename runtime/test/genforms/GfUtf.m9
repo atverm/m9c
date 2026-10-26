@@ -1,0 +1,39 @@
+MODULE GfUtf ;
+
+(* WANT: utf: built *)
+
+(* The UTF-8 plan's stage 1, commit U1 (docs/utf8-plan.md): UTF, a
+   predeclared name for SLICE OF <u8>, takes a literal -- as its UTF-8
+   octets in static storage -- in an assignment, an argument, a RETURN
+   and a record field, and travels like any slice.  The program has
+   nothing to print a UTF with until Text's primitives (U2); it holds
+   that the C the forms make compiles and runs. *)
+
+IMPORT Io ;
+
+TYPE
+  Named = RECORD name : UTF ; n : I64 END ;
+
+VAR
+  u, v : UTF ;
+  r : Named ;
+
+PROCEDURE Id (x: UTF) : UTF =
+BEGIN
+  RETURN x
+END Id ;
+
+PROCEDURE Lit () : UTF =
+BEGIN
+  RETURN 'Grüße ✓ 𝄞'
+END Lit ;
+
+BEGIN
+  u := 'abc' ;
+  v := Id ('x') ;
+  v := Id (u) ;
+  v := Lit () ;
+  r := Named ('field', 2) ;
+  u := '' ;
+  Io.WriteLine ('utf: built')
+END GfUtf.

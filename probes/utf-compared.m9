@@ -1,0 +1,10 @@
+(* EXPECT: no '=' between two strings: Text.Eq (a, b) answers equality *)
+MODULE m ;
+VAR
+  u, v : UTF ;
+  hit : BOOL ;
+BEGIN
+  u := 'a' ;
+  v := 'b' ;
+  IF u = v THEN hit := TRUE END
+END m.

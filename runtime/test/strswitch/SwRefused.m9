@@ -1,0 +1,18 @@
+MODULE SwRefused ;
+
+(* EXPECT-ERROR a UTF has no subscript *)
+(* EXPECT-ERROR LEN of a UTF *)
+
+(* Under --utf-str the two forms the switch refuses: a subscript of a
+   STR and LEN of one.  Without the flag this program is accepted. *)
+
+VAR
+  s : STR ;
+  c : CHAR ;
+  n : I64 ;
+
+BEGIN
+  s := 'abc' ;
+  c := s[0] ;
+  n := LEN (s)
+END SwRefused.

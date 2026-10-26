@@ -1,0 +1,70 @@
+MODULE CharsTest ;
+
+(* Chars, held to Python's str: s[x] and len(s) of a text past ASCII long
+   enough to cross four index blocks (1,000 code points: 'aé✓𝄞' 250
+   times), through Str and through the index, at every position; an
+   index made from another string refused. *)
+
+IMPORT Chars ;
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Text ;
+
+VAR
+  t : Check.T ;
+
+(* Python: ord(('aé✓𝄞' * 250)[x]) *)
+PROCEDURE Want (x: I64) : I64 =
+BEGIN
+  CASE x MOD 4 OF
+  | 0 : RETURN 97
+  | 1 : RETURN 233
+  | 2 : RETURN 10003
+  ELSE RETURN 119070
+  END
+END Want ;
+
+PROCEDURE Run () =
+VAR
+  s, other : UTF ;
+  parts : SLICE OF UTF ;
+  ix : Chars.Index ;
+  i, bad1, bad2 : I64 ;
+BEGIN
+  s := '' ;
+  parts := NEW (UTF, 250) ;
+  FOR i := 0 TO 249 DO parts[i] := 'aé✓𝄞' END ;
+  s := Text.Join (parts, '') ;
+  Check.EqI64 (t, 'StrLen is len (s)', Chars.StrLen (s), 1000) ;
+  ix := Chars.IndexStr (s) ;
+  bad1 := 0 ;
+  bad2 := 0 ;
+  FOR i := 0 TO 999 DO
+    IF ORD (Chars.Str (s, i)) # Want (i) THEN bad1 := bad1 + 1 END ;
+    IF ORD (Chars.StrI (s, i, ix)) # Want (i) THEN bad2 := bad2 + 1 END
+  END ;
+  Check.EqI64 (t, 'Str agrees with s[x] at all 1000 positions', bad1, 0) ;
+  Check.EqI64 (t, 'StrI agrees at all 1000, across four blocks', bad2, 0) ;
+  other := 'something else' ;
+  BEGIN
+    i := ORD (Chars.StrI (other, 0, ix)) ;
+    Check.That (t, 'an index of another string is refused', FALSE)
+  EXCEPT
+  | Faults.BadArg (w) : Check.That (t, 'an index of another string is refused', TRUE)
+  END ;
+  BEGIN
+    i := ORD (Chars.StrI (s, 1000, ix)) ;
+    Check.That (t, 'past the end is an IndexError', FALSE)
+  EXCEPT
+  | IndexError : Check.That (t, 'past the end is an IndexError', TRUE)
+  END
+EXCEPT
+| Faults.BadArg (w) : Check.That (t, 'no BadArg: ' + w, FALSE)
+| IndexError : Check.That (t, 'no IndexError', FALSE)
+END Run ;
+
+BEGIN
+  Run () ;
+  Io.Halt (Check.Done (t, 'Chars'))
+END CharsTest.

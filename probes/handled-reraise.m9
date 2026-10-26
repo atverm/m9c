@@ -1,0 +1,31 @@
+(* EXPECT: unhandled RAISES Bad from RAISE -- add it to this procedure's RAISES, or handle it: EXCEPT | Bad : ... *)
+(* A handler's own body is outside the block it handles for (since
+   2026-10-21, the compiler review's C6): a re-raise there escapes, and
+   the flat handled set counted it caught.  The legal forms first: a
+   handler that recovers, a re-raise an outer block catches. *)
+MODULE m ;
+EXCEPTION Bad ;
+PROCEDURE Boom (x: I64) RAISES Bad =
+BEGIN
+  IF x > 0 THEN RAISE Bad END
+END Boom ;
+PROCEDURE Recovers () =
+BEGIN
+  BEGIN Boom (1) EXCEPT | Bad : Boom (0) END
+EXCEPT
+| Bad :
+END Recovers ;
+PROCEDURE Caught () =
+BEGIN
+  BEGIN
+    BEGIN Boom (1) EXCEPT | Bad : RAISE Bad END
+  EXCEPT
+  | Bad :
+  END
+END Caught ;
+PROCEDURE Escapes () =
+BEGIN
+  BEGIN Boom (1) EXCEPT | Bad : RAISE Bad END
+END Escapes ;
+BEGIN
+END m.

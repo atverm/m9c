@@ -11,6 +11,7 @@ void Csv_m9init (m9_state *err);
 typedef struct Csv_Table Csv_Table;
 typedef struct Csv_Kind Csv_Kind;
 typedef struct Csv_Options Csv_Options;
+typedef struct Csv_Held Csv_Held;
 typedef struct Csv_Table Csv_Table;
 
 typedef struct Csv_Kind Csv_Kind;
@@ -108,5 +109,8 @@ m9_sl_F64 Csv_ColF64 (Csv_Table * t, int64_t c, m9_state *err);
 m9_sl_I64 Csv_ColI64 (Csv_Table * t, int64_t c, m9_state *err);
 m9_sl_Time_Instant Csv_ColStamp (Csv_Table * t, int64_t c, m9_state *err);
 m9_sl_CHAR Csv_TextAt (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, m9_state *err);
+m9_sl_UTF8 Csv_NameUtf (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err);
+m9_sl_UTF8 Csv_TextAtUtf (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, m9_state *err);
+int64_t Csv_FindUtf (Csv_Table * t, m9_sl_UTF8 name, m9_state *err);
 
 #endif

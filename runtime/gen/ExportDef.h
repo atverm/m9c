@@ -36,10 +36,12 @@ struct ExportDef_Cell {
 
 extern int64_t * const ExportDef_count;
 extern m9_sl_F64 * const ExportDef_xs;
+extern m9_pool * const ExportDef_xs_pool;
 extern ExportDef_Box * * const ExportDef_box;
 extern m9_pool * const ExportDef_box_pool;
 extern int64_t * const ExportDef_version;
 extern m9_sl_F64 * const ExportDef_limits;
+extern m9_pool * const ExportDef_limits_pool;
 void ExportDef_Show (m9_state *err);
 
 #endif

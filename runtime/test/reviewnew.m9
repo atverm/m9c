@@ -10,7 +10,7 @@ MODULE reviewnew ;
    rows with reviewnew.want.
 
      NEW (OWN, T)            1
-     NEW in the frame        6
+     NEW in the frame        7
      NEW in a named pool     5                                        *)
 
 IMPORT Check ;
@@ -29,6 +29,7 @@ VAR
   ts : SLICE OF Check.T ;
   g : GRID 2 OF F64 ;
   ss : SLICE OF STR ;
+  us : SLICE OF UTF ;
   q : PTR Cell IN pool ;
   ys : SLICE OF I64 ;
   st : PTR Store IN pool ;
@@ -42,6 +43,8 @@ BEGIN
   ts := NEW (Check.T, 2) ;     (* frame 4: a type of an imported module *)
   g := NEW (F64, 2, 3) ;       (* frame 5: a grid *)
   ss := NEW (STR, 2) ;         (* frame 6: STR is a name, not a keyword *)
+  us := NEW (UTF, 2) ;         (* frame 7: so is UTF (the page read a pool
+                                  until 2026-10-23, found porting Review) *)
   q := NEW (pool, Cell) ;      (* pool 1 *)
   ys := NEW (pool, I64, 4) ;   (* pool 2: a pool and an extent *)
   st := NEW (pool, Store) ;    (* pool 3 *)

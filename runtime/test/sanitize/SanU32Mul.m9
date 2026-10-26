@@ -1,0 +1,31 @@
+MODULE SanU32Mul ;
+
+(* WANT: u32 mul: Overflow 4294967295 *)
+
+(* The compiler review's G2 sibling (2026-10-21): the narrow products
+   were computed as `int64_t r = a * b', and U32's (2^32-1)^2 is past
+   int64_t -- signed overflow in C, which raised Overflow by luck
+   (UBSan: m9rt.h, "signed integer overflow").  Now through
+   __builtin_mul_overflow; the largest in-range product converts. *)
+
+IMPORT Io, Fmt ;
+
+VAR
+  a, b, c : U32 ;
+  out : STR ;
+
+BEGIN
+  out := 'u32 mul:' ;
+  a := 4294967295 ;
+  b := 4294967295 ;
+  BEGIN
+    c := a * b ;
+    out := out + ' answered'
+  EXCEPT
+  | Overflow : out := out + ' Overflow'
+  END ;
+  a := 65535 ;
+  b := 65537 ;
+  c := a * b ;
+  Io.WriteLine (out + ' ' + Fmt.I64Str (I64 (c)))
+END SanU32Mul.

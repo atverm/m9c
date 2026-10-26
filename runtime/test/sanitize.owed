@@ -1,0 +1,3 @@
+# sanitize.sh: programs that fail under ASan+UBSan and the M9_ASAN arenas
+# today, each with its reason.  Held both ways: an owed program must
+# still fail, any other must pass.  NAME  why

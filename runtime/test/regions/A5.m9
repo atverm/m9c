@@ -1,0 +1,29 @@
+(* the compiler review of 2026-10-21, checker repro A5 (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE A5 ;
+IMPORT Io, Fmt ;
+TYPE Node = RECORD s : STR ; n : I64 END ;
+VAR kpool : POOL ;
+VAR root : PTR Node IN kpool ;
+VAR tab : SLICE OF STR ;
+PROCEDURE Label (n: I64) =
+VAR q : PTR Node ; t : SLICE OF STR ;
+BEGIN
+  q := root ;
+  q.s := 'number ' + Fmt.I64Str (n) ;
+  t := tab ;
+  t[1] := 'tab ' + Fmt.I64Str (n)
+END Label ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  root := NEW (kpool, Node) ;
+  tab := NEW (kpool, STR, 3) ;
+  Label (7) ;
+  Churn () ;
+  Io.WriteLine (root.s) ;
+  Io.WriteLine (tab[1])
+END A5.

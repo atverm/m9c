@@ -1,0 +1,11 @@
+(* EXPECT: cannot assign SLICE OF CHAR to UTF *)
+MODULE m ;
+(* a literal adapts to a UTF; a STR variable does not *)
+VAR
+  u : UTF ;
+  s : STR ;
+BEGIN
+  u := 'abc' ;
+  s := 'abc' ;
+  u := s
+END m.

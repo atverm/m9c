@@ -1,0 +1,8 @@
+MODULE HexPast64Bits ;
+(* a hex literal is a 64-bit pattern at most: sixteen significant
+   digits, leading zeros aside (2026-10-21, the compiler review's F1) *)
+VAR u : U64 ;
+BEGIN
+  u := 0x0000FFFFFFFFFFFFFFFF ;
+  u := 0x10000000000000000
+END HexPast64Bits.

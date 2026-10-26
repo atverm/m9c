@@ -171,9 +171,91 @@ begin
   { a first line beginning #! names the program that runs this file
     as a script and is not M9 (report par 2); skipped to its line
     end, so the newline is counted and every line keeps its number }
-  if (Length (FSrc) >= 2) and (FSrc[1] = '#') and (FSrc[2] = '!') then
+  { a byte order mark (U+FEFF, EF BB BF) is skipped, the column
+    stays 1 (mirrors Lex.Init) }
+  if (Length (FSrc) >= 3) and (FSrc[1] = #$EF) and (FSrc[2] = #$BB) and
+     (FSrc[3] = #$BF) then
+    FPos := 4;
+  if (Length (FSrc) >= FPos + 1) and (FSrc[FPos] = '#') and (FSrc[FPos + 1] = '!') then
     while (FPos <= Length (FSrc)) and (FSrc[FPos] <> #10) do
       Inc (FPos);
+end;
+
+{ ---- literals beyond 64 bits (mirrors Lex.m9's IntPast64, RealTooBig
+  and the hex rule; the compiler review's F1, 2026-10-21): an integer
+  literal is at most 64 bits, decimal or hex; a real does not round
+  to infinity as an F64 -- held exactly against 2^1024 - 2^970 ---- }
+const
+  U64Top = '18446744073709551615';
+  F64Top = '179769313486231580793728971405303415079934132710037826936173778980444968292764750946649017977587207096330286416692887910946555547851940402630657488671505820681908902000708383676273854845817711531764475730270069855571366959622842914819860834936475292719074168444365510704342711559699508093042880177904174497792';
+
+function Significant (const run: string; from: Integer): Integer;
+var i : Integer;
+begin
+  i := from;
+  while (i < Length (run)) and (run[i] = '0') do Inc (i);
+  Result := i;
+end;
+
+function IntPast64 (const run: string): Boolean;
+var i, n, k : Integer;
+begin
+  i := Significant (run, 1);
+  n := Length (run) - i + 1;
+  if n <> Length (U64Top) then Exit (n > Length (U64Top));
+  for k := 0 to n - 1 do
+    if run[i + k] <> U64Top[k + 1] then Exit (run[i + k] > U64Top[k + 1]);
+  Result := False;
+end;
+
+function RealTooBig (const run: string): Boolean;
+var i, m, e, nInt, lead, n, j : Integer; neg : Boolean;
+begin
+  m := 1;
+  while (m <= Length (run)) and not (run[m] in ['e', 'E']) do Inc (m);
+  nInt := 0;
+  while (nInt + 1 < m) and (run[nInt + 1] <> '.') do Inc (nInt);
+  e := 0;
+  if m <= Length (run) then
+  begin
+    i := m + 1;
+    neg := False;
+    if run[i] = '+' then Inc (i)
+    else if run[i] = '-' then begin neg := True; Inc (i) end;
+    while i <= Length (run) do
+    begin
+      if e < 100000 then e := e * 10 + (Ord (run[i]) - 48);
+      Inc (i);
+    end;
+    if neg then e := -e;
+  end;
+  lead := 0;
+  i := 1;
+  while (i < m) and (run[i] in ['0', '.']) do
+  begin
+    if run[i] = '0' then Inc (lead);
+    Inc (i);
+  end;
+  if i = m then Exit (False);
+  n := nInt - lead + e;
+  if n <> Length (F64Top) then Exit (n > Length (F64Top));
+  j := 1;
+  while i < m do
+  begin
+    if run[i] <> '.' then
+    begin
+      if j > Length (F64Top) then Exit (True);
+      if run[i] <> F64Top[j] then Exit (run[i] > F64Top[j]);
+      Inc (j);
+    end;
+    Inc (i);
+  end;
+  while j <= Length (F64Top) do
+  begin
+    if F64Top[j] <> '0' then Exit (False);
+    Inc (j);
+  end;
+  Result := True;
 end;
 
 function TLexer.Peek (ahead: Integer): Char;
@@ -186,7 +268,8 @@ end;
 
 procedure TLexer.Advance;
 begin
-  if Peek = #10 then
+  { a line ends at LF, and at a CR no LF follows (mirrors Lex.Advance) }
+  if (Peek = #10) or ((Peek = #13) and (Peek (1) <> #10)) then
   begin
     Inc (FLine);
     FCol := 1;
@@ -300,7 +383,14 @@ begin
 
   case Peek of
     #0 :
-      Exit (MakeTok (tkEOF, '', ln, cl));
+      { Peek answers #0 past the end; a NUL before it is a character }
+      if FPos <= Length (FSrc) then
+      begin
+        Advance;
+        Exit (MakeTok (tkError, 'unexpected character 0x00', ln, cl));
+      end
+      else
+        Exit (MakeTok (tkEOF, '', ln, cl));
 
     'A'..'Z', 'a'..'z' :
       begin
@@ -327,6 +417,9 @@ begin
             Exit (MakeTok (tkError,
               'letter may not immediately follow a numeric literal',
               ln, cl));
+          run := Copy (FSrc, start + 2, FPos - start - 2);
+          if Length (run) - Significant (run, 1) + 1 > 16 then
+            Exit (MakeTok (tkError, 'hex literal beyond 64 bits', ln, cl));
           Exit (MakeTok (tkIntLit, Copy (FSrc, start, FPos - start), ln, cl));
         end;
         { gather digits and uppercase hex letters, classify by shape:
@@ -386,10 +479,20 @@ begin
             'letter may not immediately follow a numeric literal ' +
             '(char literal ends in C: 0AC; exponent needs a decimal ' +
             'point: 1.0e5)', ln, cl));
+        run := Copy (FSrc, start, FPos - start);
         if isReal then
-          Exit (MakeTok (tkRealLit, Copy (FSrc, start, FPos - start), ln, cl))
-        else
-          Exit (MakeTok (tkIntLit, Copy (FSrc, start, FPos - start), ln, cl));
+        begin
+          if RealTooBig (run) then
+            Exit (MakeTok (tkError,
+              'real literal beyond F64 (it would be an infinity)', ln, cl));
+          Exit (MakeTok (tkRealLit, run, ln, cl));
+        end;
+        if IntPast64 (run) then
+          Exit (MakeTok (tkError,
+            'integer literal beyond 64 bits (the largest is 18446744073709551615, ' +
+            'a U64; above MAX (I64) a literal is a U64)',
+            ln, cl));
+        Exit (MakeTok (tkIntLit, run, ln, cl));
       end;
 
     '''', '"' :
@@ -461,9 +564,26 @@ begin
   else
     begin
       Advance;
-      Exit (MakeTok (tkError,
-        Format ('unexpected character 0x%2.2x', [Ord (FSrc[start])]),
-        ln, cl));
+      if Ord (FSrc[start]) < $80 then
+        Exit (MakeTok (tkError,
+          Format ('unexpected character 0x%2.2x', [Ord (FSrc[start])]),
+          ln, cl));
+      { past ASCII the scalar the UTF-8 sequence spells, U+XXXX
+        (mirrors Lex.Next, which reads the source decoded) }
+      cv := Ord (FSrc[start]);
+      if cv >= $F0 then cv := cv and $07
+      else if cv >= $E0 then cv := cv and $0F
+      else cv := cv and $1F;
+      while (FPos <= Length (FSrc)) and ((Ord (FSrc[FPos]) and $C0) = $80) do
+      begin
+        cv := (cv shl 6) or (Ord (FSrc[FPos]) and $3F);
+        Advance;
+      end;
+      if cv >= $100000 then
+        Exit (MakeTok (tkError, 'unexpected character U+' + IntToHex (cv, 6), ln, cl))
+      else if cv >= $10000 then
+        Exit (MakeTok (tkError, 'unexpected character U+' + IntToHex (cv, 5), ln, cl));
+      Exit (MakeTok (tkError, 'unexpected character U+' + IntToHex (cv, 4), ln, cl));
     end;
   end;
 end;

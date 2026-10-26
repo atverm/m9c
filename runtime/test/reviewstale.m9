@@ -1,0 +1,28 @@
+MODULE reviewstale ;
+
+(* the review page's stale-call row (docs/utf8-plan.md, the transition's
+   COUNTED row): a call of a STR procedure whose module declares a UTF
+   twin is listed with the twin it owes; the same call with a UTF
+   argument, which already reaches the twin, is not.  Three stale calls
+   -- Text.Eq on two STR, Io.WriteLine of a STR, Csv.Find by a STR name
+   is not here (no Csv) -- and three UTF calls that must not appear.
+   Held by reviewdiff.sh, which must find exactly the three. *)
+
+IMPORT Io, Text ;
+
+VAR
+  s : STR ;
+  u : UTF ;
+  b : BOOL ;
+  n : I64 ;
+
+BEGIN
+  s := 'x' ;
+  u := 'x' ;
+  b := Text.Eq (s, 'y') ;
+  b := Text.Eq (u, 'y') ;
+  n := Text.Find (s, 'x') ;
+  n := Text.Find (u, 'x') ;
+  Io.WriteLine (s) ;
+  Io.WriteLine (u)
+END reviewstale.

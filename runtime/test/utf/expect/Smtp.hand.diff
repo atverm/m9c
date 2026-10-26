@@ -1,0 +1,65 @@
+--- Smtp.m9
++++ Smtp.m9
+@@ -223,13 +223,8 @@
+ 
+ PROCEDURE Keep (VAR m: PTR Message ; RO s: STR) : STR =
+   (* a copy of s in the message's pool, rule 2's spelling *)
+-VAR
+-  c : STR ;
+-  i : I64 ;
+ BEGIN
+-  c := NEW (m, CHAR, Text.BLen (s)) ;
+-  FOR i := 0 TO Text.BLen (s) - 1 DO c[i] := Text.BChar (s, i) END ;
+-  RETURN c
++  RETURN UTF (m, s)
+ END Keep ;
+ 
+ PROCEDURE Grow (VAR m: PTR Message ; VAR list: SLICE OF STR ; VAR n: I64 ; RO addr: STR) =
+@@ -403,8 +398,8 @@
+     ELSIF QpSafe (b[i]) THEN DynStr.AppendChar (d, CHR (v))
+     ELSE
+       DynStr.AppendChar (d, '=') ;
+-      DynStr.AppendChar (d, hex[v DIV 16]) ;
+-      DynStr.AppendChar (d, hex[v MOD 16])
++      DynStr.AppendChar (d, Text.BChar (hex, v DIV 16)) ;   (* ASCII digits *)
++      DynStr.AppendChar (d, Text.BChar (hex, v MOD 16))
+     END
+   END ;
+   RETURN DynStr.View (d)
+@@ -434,7 +429,8 @@
+   d : PTR DynStr.DString IN scratch ;
+   all, b : SLICE OF BYTE ;
+   useB : BOOL ;
+-  i, start, cost, more, nb, room : I64 ;
++  i, nx, start, cost, more, nb, room : I64 ;
++  c : CHAR ;
+ BEGIN
+   room := 63 - Text.BLen ('Subject: ') + 1 ;   (* the payload the first line takes *)
+   all := OCTETS (s) ;
+@@ -443,8 +439,14 @@
+   start := 0 ;
+   cost := 0 ;                  (* bytes (B) or Q characters so far *)
+   nb := 0 ;
+-  FOR i := 0 TO Text.BLen (s) - 1 DO
+-    b := OCTETS (SLICE (s, i, 1)) ;
++  (* one CHARACTER a step, its octets all[i .. nx): the words are cut
++     over whole code points, and a SLICE of one byte inside a
++     character would raise *)
++  i := 0 ;
++  WHILE i < LEN (all) DO
++    nx := i ;
++    c := Text.NextCp (s, nx) ;
++    b := SLICE (all, i, nx - i) ;
+     IF useB THEN more := LEN (b) ELSE more := QpLen (b) END ;
+     IF i > start AND ((useB AND B64Len (cost + more) > room) OR (NOT useB AND cost + more > room)) THEN
+       IF start > 0 THEN DynStr.Append (d, '' + 0DC + 0AC + ' ') END ;
+@@ -454,7 +456,8 @@
+       start := i ;
+       room := 63
+     END ;
+-    cost := cost + more
++    cost := cost + more ;
++    i := nx
+   END ;
+   IF start > 0 THEN DynStr.Append (d, '' + 0DC + 0AC + ' ') END ;
+   DynStr.Append (d, OneWord (SLICE (all, nb, LEN (all) - nb), useB)) ;

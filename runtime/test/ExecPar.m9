@@ -1,0 +1,92 @@
+MODULE ExecPar ;
+
+(* One child's pipes are not another's (2026-10-21, the compiler
+   review's G9).  A THREAD starts `sleep 3' while the main thread runs
+   `echo', six rounds a millisecond or two apart.  With plain pipe ()
+   the slow child, spawned while the fast one's pipe ends were open,
+   inherited them and held echo's output open for its three seconds:
+   the review's C repro took 3.0 s in 2 of 5 rounds.  Each echo must
+   come back at once; the slow ones are waited for at the end, so the
+   run takes about three seconds either way. *)
+
+IMPORT Io, Fmt, System, Time ;
+
+TYPE
+  Gate = MONITOR RECORD
+    n : I64 ;
+  END ;
+  Job = RECORD
+    k : I64 ;
+  END [SHARABLE] ;
+
+CONST
+  Rounds = 6 ;
+
+VAR
+  g : Gate ;
+  pool : POOL ;
+  j : PTR Job ;
+  hi, none : SLICE OF STR ;
+  r : System.Result ;
+  t0 : Time.Instant ;
+  dt, worst : F64 ;
+  i : I64 ;
+
+PROCEDURE Finish (VAR gg: Gate) =
+BEGIN
+  gg.n := gg.n + 1 ;
+  SIGNAL (gg)
+END Finish ;
+
+PROCEDURE AwaitAll (VAR gg: Gate ; n: I64) =
+BEGIN
+  WHILE gg.n < n DO WAIT (gg) END
+END AwaitAll ;
+
+(* the slow child, outside the monitor: a bound procedure would hold
+   the lock through the whole sleep *)
+PROCEDURE Slow (OWN job: PTR Job) =
+VAR
+  p : POOL ;
+  args, env : SLICE OF STR ;
+  res : System.Result ;
+BEGIN
+  args := NEW (p, STR, 1) ;
+  args[0] := '3' ;
+  env := NEW (p, STR, 0) ;
+  BEGIN
+    res := System.Exec (p, 'sleep', args, '', env)
+  EXCEPT
+  | ValueRange :
+  | Io.IOError (m) :
+  END ;
+  DISPOSE (job) ;
+  Finish (g)
+END Slow ;
+
+BEGIN
+  hi := NEW (pool, STR, 1) ;
+  hi[0] := 'hi' ;
+  none := NEW (pool, STR, 0) ;
+  worst := 0.0 ;
+  BEGIN
+    FOR i := 0 TO Rounds - 1 DO
+      j := NEW (OWN, Job) ;
+      THREAD (Slow, j) ;
+      Time.Sleep (i MOD 3) ;
+      t0 := Time.Now () ;
+      r := System.Exec (pool, 'echo', hi, '', none) ;
+      dt := Time.Elapsed (t0, Time.Now ()) ;
+      IF dt > worst THEN worst := dt END
+    END ;
+    AwaitAll (g, Rounds) ;
+    IF worst < 1.0 THEN
+      Io.WriteLine ('exec par: every echo beside a sleep came back at once')
+    ELSE
+      Io.WriteLine ('exec par: an echo beside a sleep took ' + Fmt.Fixed (worst, 2) + ' s')
+    END
+  EXCEPT
+  | ValueRange : Io.WriteLine ('exec par: ValueRange')
+  | Io.IOError (m) : Io.WriteLine ('exec par: cannot run ' + m)
+  END
+END ExecPar.

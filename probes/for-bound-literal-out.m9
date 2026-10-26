@@ -1,0 +1,16 @@
+(* EXPECT: integer literal 300 does not fit I8 *)
+(* A FOR bound that is a literal is held to the variable's width as an
+   assignment's literal is (since 2026-10-21, the compiler review's
+   G5): 300 cannot be an I8, and C truncated it to 44.  The legal forms
+   first: the type's own first and last values, a negative bound for a
+   signed variable. *)
+MODULE m ;
+VAR
+  b : I8 ;
+  n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR b := -128 TO 127 DO n := n + 1 END ;
+  FOR b := 127 TO -128 BY -1 DO n := n + 1 END ;
+  FOR b := 0 TO 300 DO n := n + 1 END
+END m.

@@ -1,0 +1,23 @@
+(* EXPECT-ERROR: it cannot be assigned inside the loop *)
+(* A first-match search ended by moving its FOR variable past the end --
+   `j := LEN (vars)' -- in zarrm9's Croissant.Build.  Up to 0.24 the
+   loop stepped and then tested, so the next test failed and the loop
+   ended.  0.25's overflow-safe exit test (decision 55) holds only while
+   the variable is at or below the bound, so the loop went on and read
+   vars[4] of three: three of the zarrm9 gate's 53 guide documents
+   failed, and the shape below ran forever.  Observed 2026-10-25 by
+   zarrm9's port to 0.25.0.  The meaning of the program had moved with
+   the generator; the rule that the loop alone writes its variable
+   (par 2.1) does not move.  A found flag, or a WHILE, says the same
+   thing honestly. *)
+MODULE m ;
+IMPORT Io, Fmt ;
+VAR j, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR j := 0 TO 2 DO
+    n := n + 1 ;
+    IF j = 0 THEN j := 3 END
+  END ;
+  Io.WriteLine (Fmt.I64Str (n))
+END m.

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
 /* m9session -- the long-lived process behind the M9 Jupyter kernel's
    in-memory state (docs/notebook-state-plan.md, phase 1).
 

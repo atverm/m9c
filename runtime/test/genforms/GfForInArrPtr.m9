@@ -1,0 +1,46 @@
+MODULE GfForInArrPtr ;
+
+(* WANT: array IndexError *)
+
+(* FOR IN over an ARRAY OF PTR tests each element as over a slice (M2:
+  SIGSEGV) *)
+IMPORT Io, Fmt ;
+TYPE R = RECORD n : I64 END ;
+     P = PTR R ;
+     Ps = SLICE OF P ;
+     Arr = ARRAY 3 OF P ;
+VAR a : Arr ; mp : POOL ;
+PROCEDURE SumS (RO s : Ps) : I64 =
+VAR p : P ; t : I64 ;
+BEGIN
+  t := 0 ;
+  FOR p IN s DO t := t + p.n END ;
+  RETURN t
+END SumS ;
+PROCEDURE SumA () : I64 =
+VAR p : P ; t : I64 ;
+BEGIN
+  t := 0 ;
+  FOR p IN a DO t := t + p.n END ;
+  RETURN t
+END SumA ;
+PROCEDURE Run () =
+VAR s : Ps ; b : P ;
+BEGIN
+  b := NEW (R) ; b.n := 7 ;
+  s := NEW (P, 2) ; s[0] := b ;
+  Io.WriteLine ('alias: ' + Fmt.I64Str (SumS (s)))
+EXCEPT
+| IndexError (i, n) : Io.WriteLine ('alias IndexError')
+END Run ;
+PROCEDURE RunA () =
+VAR b : P ;
+BEGIN
+  b := NEW (mp, R) ; b.n := 7 ; a[0] := b ;
+  Io.WriteLine ('array: ' + Fmt.I64Str (SumA ()))
+EXCEPT
+| IndexError (i, n) : Io.WriteLine ('array IndexError')
+END RunA ;
+BEGIN
+  RunA ()
+END GfForInArrPtr.

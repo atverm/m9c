@@ -1,0 +1,42 @@
+MODULE GfOwnerPassBack ;
+
+(* WANT: 41 *)
+
+(* q := Pass (o), Pass answering its OWN parameter back: a move, not a
+  kill (F3) *)
+(* FALSE REFUSAL? an owner handed through OWN and answered back; the view read while the object lives *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[3]))
+END Churn ;
+PROCEDURE Mk () : PTR Store =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  RETURN o
+END Mk ;
+PROCEDURE Pass (OWN p : PTR Store) : PTR Store =
+BEGIN
+  RETURN p
+END Pass ;
+PROCEDURE Go () RAISES IndexError =
+VAR o, q : PTR Store ; s : SLICE OF I64 ;
+BEGIN
+  o := Mk () ;
+  s := o.data ;
+  q := Pass (o) ;
+  Io.WriteLine (Fmt.I64Str (s[0])) ;
+  DISPOSE (q)
+END Go ;
+BEGIN
+  Go ()
+EXCEPT
+| IndexError (i, n) : Io.WriteLine ('IndexError')
+END GfOwnerPassBack.

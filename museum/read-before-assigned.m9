@@ -1,0 +1,17 @@
+(* EXPECT-ERROR: p is read before it is assigned *)
+(* "OPT, not NIL" held for the type and not for the value: a local of a
+   pointer type that is not OPT starts zeroed, and nothing said so.
+   Observed 2026-10-21 by the compiler review (C8): this compiled and
+   died with SIGSEGV, and cp-kernel's Jv.NewInt returns such a pointer
+   from its ValueRange handler. *)
+MODULE m ;
+IMPORT Io, Fmt ;
+TYPE Node = RECORD n : I64 END ;
+PROCEDURE ReadUnset () =
+VAR p : PTR Node ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (p.n))
+END ReadUnset ;
+BEGIN
+  ReadUnset ()
+END m.

@@ -1,0 +1,21 @@
+(* EXPECT-ERROR: argument 1 of Run: cannot pass PROCEDURE (RO SLICE OF CHAR) : PTR Json.Node RAISES Json.ParseError where PROCEDURE (RO SLICE OF CHAR) : PTR Json.Node RAISES Csv.ParseError is expected *)
+(* A procedure fitted a procedure type by the BARE names of its RAISES:
+   one raising one module's Error was taken for a type raising
+   another's, the caller's handler for the type's exception did not
+   catch what the procedure raised, and the program died "unhandled
+   Error".  Observed 2026-10-21 by the compiler review (its C5 repro,
+   EA.Boom into a type raising EB.Error).  Json and Csv both declare a
+   ParseError, which is the shape in the library. *)
+MODULE m ;
+IMPORT Json, Csv ;
+TYPE Reader = PROCEDURE (RO src: STR) : PTR Json.Node RAISES Csv.ParseError ;
+PROCEDURE Run (f: Reader) =
+VAR n : PTR Json.Node ;
+BEGIN
+  n := f ('[1, 2')
+EXCEPT
+| Csv.ParseError (what, l, c) :
+END Run ;
+BEGIN
+  Run (Json.Parse)
+END m.

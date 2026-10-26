@@ -31,7 +31,10 @@ than zlib, measured on a 92 MB table that deflate takes to a
 fifth: a member read as a stream at 235 MB/s where zlib gave 500
 (0.46), a gzip file with its CRC at 215 MB/s where zlib gave 305
 (0.7).  What is left is the price of an index checked at every
-byte copied; zlib copies a run with one memcpy.
+byte copied; zlib copies a run with one memcpy.  The CRC-32 is the
+RUNTIME's since 2026-10-25 (m9_crc_raw: the architecture's
+instructions or slicing-by-eight; the first fast path of the
+ledger's list): a gzip file's sum was 15% of its read.
 
 `Close` frees nothing any more -- the decoder's window is in the
 pool the member lives in and goes with it -- and is kept because
@@ -142,9 +145,11 @@ a gzip file's bytes (RFC 1952): one member, no name, no time --
 so the same bytes in give the same bytes out -- with its CRC-32
 and length.  GunzipBytes undoes it.
 
-### Crc32 (RO b: SLICE OF BYTE) : I64 RAISES ValueRange
+### Crc32 (RO b: SLICE OF BYTE) : I64
 
-the CRC-32 of gzip, zip and PNG (zlib.crc32), 0 .. 4294967295
+the CRC-32 of gzip, zip and PNG (zlib.crc32), 0 .. 4294967295;
+the runtime's fast path (m9_crc_raw) since 2026-10-25, and no
+longer RAISES: nothing in it can
 
 ### Crc32Update (crc: I64 ; RO b: SLICE OF BYTE) : I64 RAISES ValueRange
 
@@ -190,3 +195,13 @@ Finish lays out what there is then
 ### WriteTo (VAR w: PTR Writer ; RO path: STR) RAISES Error, Io.IOError, ValueRange
 
 Finish, written to path
+
+runtime/m9rt.c: the CRC-32 raw state carried over n octets, the
+architecture's instructions or slicing-by-eight (m9rt.h).  No LINK:
+it is in the runtime every program links.  REENTRANT: a pure
+function of its arguments once the tables are built, and they are
+built under the platform's once.
+
+### CCrc (c: C.SSizeT ; p: C.ConstPtr ; n: C.SSizeT) : C.SSizeT [REENTRANT]
+
+_(undocumented)_

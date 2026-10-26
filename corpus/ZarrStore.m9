@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE ZarrStore ;
 
 (* The day's zarr reader, restated as an M9 contract.  Each comment
@@ -579,13 +580,35 @@ EXCEPT
 | ValueRange : RAISE StoreError ('a chunk larger than blosc takes (a C int)')
 END Decompress ;
 
-PROCEDURE FillChunk (VAR a: PTR Array) : PTR ChunkBuf IN a.cache =
-VAR
-  p : PTR ChunkBuf IN a.cache ;
-  n, i, k, w : I64 ;
+(* The ONE chunk buffer an Array holds (2026-10-24, Alex: "reuse memory
+   on a miss"): made on the first read and REUSED after -- a hit answers
+   it, a miss refills it in place, a missing chunk is filled with
+   fill_value in place.  Its coords say which chunk it holds; while it
+   is being refilled they are -1, which no chunk has, so a fetch that
+   fails leaves nothing that reads as a chunk.  Until then every miss
+   allocated a new ChunkBuf and buffer in the cache pool and abandoned
+   the old one until CloseArray, and a MISSING chunk was filled afresh
+   for every element read from it and never became `last': a scan over
+   co2.zarr's deleted chunk cost 4,800 bytes an element.  ReadChunk's
+   contract -- the answer is not retained past the next call -- has
+   always allowed this. *)
+PROCEDURE Slot (VAR a: PTR Array) : PTR ChunkBuf IN a.cache =
+VAR p : PTR ChunkBuf IN a.cache ;
 BEGIN
+  IF a.last IS SOME q THEN RETURN q END ;
   p := NEW (a.cache, ChunkBuf) ;
   p.buf := NEW (a.cache, BYTE, ChunkBytes (a)) ;
+  p.coords[0] := -1 ;
+  a.last := SOME (p) ;
+  RETURN p
+END Slot ;
+
+PROCEDURE FillChunk (VAR a: PTR Array ; VAR p: PTR ChunkBuf) =
+  (* p.buf filled with fill_value, every byte: the buffer is reused,
+     so a zero fill is written too (it was left to the pool's
+     defined-zero storage when every fill got a fresh buffer) *)
+VAR n, i, k, w : I64 ;
+BEGIN
   CASE a.meta.dt OF
   | Float (w2) :
       w := w2 ;
@@ -599,19 +622,13 @@ BEGIN
       END
   | Int (w2, signed) :
       w := w2 ;
-      (* zero needs no writing -- pool storage is defined-zero
-         (par 4.3) -- and zero is the common case, so it is worth the
-         test rather than the loop *)
-      IF a.meta.fillI # 0 THEN
-        n := LEN (p.buf) DIV w ;
-        FOR i := 0 TO n - 1 DO
-          FOR k := 0 TO w - 1 DO
-            p.buf[i * w + k] := a.meta.fillB[k]
-          END
+      n := LEN (p.buf) DIV w ;
+      FOR i := 0 TO n - 1 DO
+        FOR k := 0 TO w - 1 DO
+          p.buf[i * w + k] := a.meta.fillB[k]
         END
       END
-  END ;
-  RETURN p
+  END
 END FillChunk ;
 
 PROCEDURE GetChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
@@ -628,33 +645,28 @@ BEGIN
     IF SameCoords (a, q, coords) THEN RETURN q END
   END ;
   (* OPT must be guarded: no nil dereference exists to write.        *)
-
-  d := DynStr.New (scratch) ;
-  DynStr.Append (d, a.path) ;
-  DynStr.AppendChar (d, '/') ;
-  FOR i := 0 TO a.meta.rank - 1 DO
-    IF i > 0 THEN DynStr.AppendChar (d, a.meta.sep) END ;
-    DynStr.AppendI64 (d, coords[i])
-  END ;
-  raw := Fetch (a.st, scratch, DynStr.View (d), ChunkBytes (a) + 1024) ;
-
-  p := NEW (a.cache, ChunkBuf) ;
-  FOR i := 0 TO a.meta.rank - 1 DO p.coords[i] := coords[i] END ;
-  p.buf := NEW (a.cache, BYTE, ChunkBytes (a)) ;
-  Decompress (a, raw, p.buf) ;
-  a.last := SOME (p) ;
-  RETURN p
-  (* single-chunk cache: sequential scans hit `last`; every miss
-     allocates in the cache pool and the old buffer is abandoned
-     there until CloseArray.  Arena cost, measured before fancier
-     caching is earned.                                              *)
-EXCEPT
-| HttpStatus (404) :
-    RETURN FillChunk (a)             (* missing chunk is legitimate:
+  p := Slot (a) ;
+  p.coords[0] := -1 ;              (* nobody's until it is filled *)
+  BEGIN
+    d := DynStr.New (scratch) ;
+    DynStr.Append (d, a.path) ;
+    DynStr.AppendChar (d, '/') ;
+    FOR i := 0 TO a.meta.rank - 1 DO
+      IF i > 0 THEN DynStr.AppendChar (d, a.meta.sep) END ;
+      DynStr.AppendI64 (d, coords[i])
+    END ;
+    raw := Fetch (a.st, scratch, DynStr.View (d), ChunkBytes (a) + 1024) ;
+    Decompress (a, raw, p.buf)
+  EXCEPT
+  | HttpStatus (404) :
+      FillChunk (a, p)               (* missing chunk is legitimate:
                                         it means "entirely fill_value";
                                         fill pre-validated at open    *)
-| HttpStatus (code) :
-    RAISE StoreError ('chunk fetch failed')
+  | HttpStatus (code) :
+      RAISE StoreError ('chunk fetch failed')
+  END ;
+  FOR i := 0 TO a.meta.rank - 1 DO p.coords[i] := coords[i] END ;
+  RETURN p
 END GetChunk ;
 
 PROCEDURE ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)

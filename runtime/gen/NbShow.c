@@ -9,6 +9,7 @@
 
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
+extern void m9_put_bytes_err (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -24,10 +25,16 @@ extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
+extern int64_t m9_utf_adopt_p (const void *, int64_t, void *);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
+extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_short (double, void *, int64_t);
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 extern double m9_now (void);
 extern void m9_sleep_ms (int64_t);
 
@@ -394,7 +401,7 @@ m9_sl_CHAR NbShow_StrText (m9_sl_CHAR s, m9_state *err)
   body = s;
   more = (m9_sl_CHAR){ NULL, 0 };
   if (((s).len > NbShow_MaxChars)) {
-    { __typeof__(body) m9v = ({ __typeof__(s) m9t1 = s; int64_t m9t1a = INT64_C(0), m9t1n = NbShow_MaxChars; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    { __typeof__(body) m9v = ({ __auto_type m9t1 = s; int64_t m9t1a = INT64_C(0), m9t1n = NbShow_MaxChars; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
       if (err->exc) goto L_ret;
       body = m9v;
     }
@@ -438,11 +445,11 @@ m9_sl_CHAR NbShow_IntsText (m9_sl_I64 v, m9_state *err)
   n = (v).len;
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     bool m9t2 = NbShow_Shown (i, n, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -457,6 +464,8 @@ m9_sl_CHAR NbShow_IntsText (m9_sl_I64 v, m9_state *err)
       }
       }
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   NbShow_CloseList (&(d), &(scratch), n, err);
   if (err->exc) goto L_ret;
@@ -491,11 +500,11 @@ m9_sl_CHAR NbShow_RealsText (m9_sl_F64 v, m9_state *err)
   n = (v).len;
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     bool m9t2 = NbShow_Shown (i, n, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -510,6 +519,8 @@ m9_sl_CHAR NbShow_RealsText (m9_sl_F64 v, m9_state *err)
       }
       }
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   NbShow_CloseList (&(d), &(scratch), n, err);
   if (err->exc) goto L_ret;
@@ -544,11 +555,11 @@ m9_sl_CHAR NbShow_BoolsText (m9_sl_BOOL v, m9_state *err)
   n = (v).len;
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     bool m9t2 = NbShow_Shown (i, n, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -563,6 +574,8 @@ m9_sl_CHAR NbShow_BoolsText (m9_sl_BOOL v, m9_state *err)
       }
       }
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   NbShow_CloseList (&(d), &(scratch), n, err);
   if (err->exc) goto L_ret;
@@ -597,11 +610,11 @@ m9_sl_CHAR NbShow_StrsText (m9_sl_m9_sl_CHAR v, m9_state *err)
   n = (v).len;
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     bool m9t2 = NbShow_Shown (i, n, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -616,6 +629,8 @@ m9_sl_CHAR NbShow_StrsText (m9_sl_m9_sl_CHAR v, m9_state *err)
       }
       }
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   NbShow_CloseList (&(d), &(scratch), n, err);
   if (err->exc) goto L_ret;
@@ -653,11 +668,11 @@ m9_sl_CHAR NbShow_GridText (m9_gd2_double g, m9_state *err)
   nc = (g).n[INT64_C(1)];
   DynStr_AppendChar (&(d), &(scratch), 91u, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (nr, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     bool m9t2 = NbShow_Shown (i, nr, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -682,11 +697,11 @@ m9_sl_CHAR NbShow_GridText (m9_gd2_double g, m9_state *err)
       }
       DynStr_AppendChar (&(d), &(scratch), 91u, err);
       if (err->exc) goto L_ret;
-      { int64_t m9t4to;
+      { __typeof__(j) m9t4to;
       j = INT64_C(0);
       m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; j <= m9t4to; j += 1) {
+      if (j <= m9t4to) for (;;) {
         bool m9t5 = NbShow_Shown (j, nc, err);
         if (err->exc) goto L_ret;
         if (m9t5) {
@@ -715,10 +730,14 @@ m9_sl_CHAR NbShow_GridText (m9_gd2_double g, m9_state *err)
           }
           }
         }
+        if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
+        j += 1;
       } }
       DynStr_AppendChar (&(d), &(scratch), 93u, err);
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   DynStr_AppendChar (&(d), &(scratch), 93u, err);
   if (err->exc) goto L_ret;
@@ -761,11 +780,11 @@ m9_sl_CHAR NbShow_GridHtml (m9_gd2_double g, m9_state *err)
   nc = (g).n[INT64_C(1)];
   DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s16, 42 }), err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(j) m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t1to; j += 1) {
+  if (j <= m9t1to) for (;;) {
     bool m9t2 = NbShow_Shown (j, nc, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -781,14 +800,16 @@ m9_sl_CHAR NbShow_GridHtml (m9_gd2_double g, m9_state *err)
       if (err->exc) goto L_ret;
       }
     }
+    if ((uint64_t) m9t1to - (uint64_t) j < (uint64_t) 1) break;
+    j += 1;
   } }
   DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s20, 20 }), err);
   if (err->exc) goto L_ret;
-  { int64_t m9t4to;
+  { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = m9_sub_i64 (nr, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t4to; i += 1) {
+  if (i <= m9t4to) for (;;) {
     bool m9t5 = NbShow_Shown (i, nr, err);
     if (err->exc) goto L_ret;
     if (m9t5) {
@@ -803,11 +824,11 @@ m9_sl_CHAR NbShow_GridHtml (m9_gd2_double g, m9_state *err)
       DynStr_Append (&(d), &(scratch), m9a35, err);
       if (err->exc) goto L_ret;
       }
-      { int64_t m9t7to;
+      { __typeof__(j) m9t7to;
       j = INT64_C(0);
       m9t7to = m9_sub_i64 (nc, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; j <= m9t7to; j += 1) {
+      if (j <= m9t7to) for (;;) {
         bool m9t8 = NbShow_Shown (j, nc, err);
         if (err->exc) goto L_ret;
         if (m9t8) {
@@ -826,10 +847,14 @@ m9_sl_CHAR NbShow_GridHtml (m9_gd2_double g, m9_state *err)
           }
           }
         }
+        if ((uint64_t) m9t7to - (uint64_t) j < (uint64_t) 1) break;
+        j += 1;
       } }
       DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s27, 5 }), err);
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s28, 19 }), Fmt_I64Str (nr, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s29, 3 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s30, 4 }), err)) m9a38 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s28, 19 }), Fmt_I64Str (nr, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s29, 3 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s30, 4 }), err);
     if (err->exc) goto L_ret;
@@ -1240,27 +1265,29 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
     if (err->exc) goto L_ret;
     k = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((rows).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, ((m9_sl_CHAR){ (uint32_t *) m9s56, 4 }), err);
       if (err->exc) goto L_ret;
       (*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   if ((k == Frame_KindF64)) {
     { __typeof__(rf) m9v = Frame_ColF64 (f, name, err);
       if (err->exc) goto L_ret;
       rf = m9v;
     }
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((rows).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
+    if (i <= m9t2to) for (;;) {
       { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
         r = m9v;
@@ -1280,6 +1307,8 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
         }
         }
       }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
   } else {
     if ((k == Frame_KindF32)) {
@@ -1287,11 +1316,11 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
         if (err->exc) goto L_ret;
         rs = m9v;
       }
-      { int64_t m9t4to;
+      { __typeof__(i) m9t4to;
       i = INT64_C(0);
       m9t4to = m9_sub_i64 ((rows).len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t4to; i += 1) {
+      if (i <= m9t4to) for (;;) {
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
           if (err->exc) goto L_ret;
           r = m9v;
@@ -1311,6 +1340,8 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
           }
           }
         }
+        if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
   } else {
     if ((k == Frame_KindI64)) {
@@ -1318,11 +1349,11 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
         if (err->exc) goto L_ret;
         ri = m9v;
       }
-      { int64_t m9t6to;
+      { __typeof__(i) m9t6to;
       i = INT64_C(0);
       m9t6to = m9_sub_i64 ((rows).len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t6to; i += 1) {
+      if (i <= m9t6to) for (;;) {
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
           if (err->exc) goto L_ret;
           r = m9v;
@@ -1342,6 +1373,8 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
           }
           }
         }
+        if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
   } else {
     if ((k == Frame_KindI32)) {
@@ -1349,11 +1382,11 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
         if (err->exc) goto L_ret;
         ri32 = m9v;
       }
-      { int64_t m9t8to;
+      { __typeof__(i) m9t8to;
       i = INT64_C(0);
       m9t8to = m9_sub_i64 ((rows).len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t8to; i += 1) {
+      if (i <= m9t8to) for (;;) {
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
           if (err->exc) goto L_ret;
           r = m9v;
@@ -1373,6 +1406,8 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
           }
           }
         }
+        if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
   } else {
     if ((k == Frame_KindI16)) {
@@ -1380,11 +1415,11 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
         if (err->exc) goto L_ret;
         ri16 = m9v;
       }
-      { int64_t m9t10to;
+      { __typeof__(i) m9t10to;
       i = INT64_C(0);
       m9t10to = m9_sub_i64 ((rows).len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t10to; i += 1) {
+      if (i <= m9t10to) for (;;) {
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
           if (err->exc) goto L_ret;
           r = m9v;
@@ -1404,6 +1439,8 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
           }
           }
         }
+        if ((uint64_t) m9t10to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
   } else {
     if ((k == Frame_KindByte)) {
@@ -1411,11 +1448,11 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
         if (err->exc) goto L_ret;
         rb = m9v;
       }
-      { int64_t m9t12to;
+      { __typeof__(i) m9t12to;
       i = INT64_C(0);
       m9t12to = m9_sub_i64 ((rows).len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t12to; i += 1) {
+      if (i <= m9t12to) for (;;) {
         { __typeof__(r) m9v = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
           if (err->exc) goto L_ret;
           r = m9v;
@@ -1435,6 +1472,8 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
           }
           }
         }
+        if ((uint64_t) m9t12to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
   } else {
     if ((k == Frame_KindStr)) {
@@ -1442,11 +1481,11 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
         if (err->exc) goto L_ret;
         rstr = m9v;
       }
-      { int64_t m9t14to;
+      { __typeof__(i) m9t14to;
       i = INT64_C(0);
       m9t14to = m9_sub_i64 ((rows).len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t14to; i += 1) {
+      if (i <= m9t14to) for (;;) {
         { __typeof__((*(m9_sl_CHAR *) m9_at (rstr.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), rstr.len, sizeof (m9_sl_CHAR), err))) m9a61 = (*(m9_sl_CHAR *) m9_at (rstr.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), rstr.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
         { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a61, err);
@@ -1455,17 +1494,19 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
           if (err->exc) goto L_ret;
         }
         }
+        if ((uint64_t) m9t14to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
   } else {
     { __typeof__(rbool) m9v = Frame_ColBools (f, name, err);
       if (err->exc) goto L_ret;
       rbool = m9v;
     }
-    { int64_t m9t15to;
+    { __typeof__(i) m9t15to;
     i = INT64_C(0);
     m9t15to = m9_sub_i64 ((rows).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t15to; i += 1) {
+    if (i <= m9t15to) for (;;) {
       { __typeof__((*(bool *) m9_at (rbool.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), rbool.len, sizeof (bool), err))) m9a62 = (*(bool *) m9_at (rbool.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), rbool.len, sizeof (bool), err));
         if (err->exc) goto L_ret;
       { __typeof__(NbShow_BoolWord (m9a62, err)) m9a63 = NbShow_BoolWord (m9a62, err);
@@ -1477,6 +1518,8 @@ static m9_sl_m9_sl_CHAR NbShow_Cells (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR na
       }
       }
       }
+      if ((uint64_t) m9t15to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
   } } } } } } }
   err->res = m9res;
@@ -1500,11 +1543,11 @@ static m9_sl_I64 NbShow_RowsShown (m9_pool *pool, int64_t n, m9_state *err)
   int64_t r = 0; (void) r;
   int64_t k = 0; (void) k;
   k = INT64_C(0);
-  { int64_t m9t1to;
+  { __typeof__(r) m9t1to;
   r = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t1to; r += 1) {
+  if (r <= m9t1to) for (;;) {
     bool m9t2 = NbShow_RowShown (r, n, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -1513,17 +1556,19 @@ static m9_sl_I64 NbShow_RowsShown (m9_pool *pool, int64_t n, m9_state *err)
         k = m9v;
       }
     }
+    if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   { __typeof__(rows) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), k, err);
     if (err->exc) goto L_ret;
     rows = m9v;
   }
   k = INT64_C(0);
-  { int64_t m9t3to;
+  { __typeof__(r) m9t3to;
   r = INT64_C(0);
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t3to; r += 1) {
+  if (r <= m9t3to) for (;;) {
     bool m9t4 = NbShow_RowShown (r, n, err);
     if (err->exc) goto L_ret;
     if (m9t4) {
@@ -1534,6 +1579,8 @@ static m9_sl_I64 NbShow_RowsShown (m9_pool *pool, int64_t n, m9_state *err)
         k = m9v;
       }
     }
+    if ((uint64_t) m9t3to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   err->res = m9res;
   m9ret = rows;
@@ -1617,30 +1664,32 @@ static m9_sl_CHAR NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
       (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err)) = m9v;
       if (err->exc) goto L_hdl_m9t1;
     }
-    { int64_t m9t3to;
+    { __typeof__(i) m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 ((rows).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; i <= m9t3to; i += 1) {
+    if (i <= m9t3to) for (;;) {
       { __typeof__(tm.t) m9v = (double)((*(int64_t *) m9_at (times.p, (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), times.len, sizeof (int64_t), err)));
         if (err->exc) goto L_hdl_m9t1;
         tm.t = m9v;
       }
       { __typeof__(Time_Iso (tm, INT64_C(0), err)) m9a64 = Time_Iso (tm, INT64_C(0), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__((*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (&(scratch), m9a64, err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (&(scratch), m9a64, err);
         if (err->exc) goto L_hdl_m9t1;
-        (*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, INT64_C(0), cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err)) = m9v;
         if (err->exc) goto L_hdl_m9t1;
       }
       }
+      if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
   }
-  { int64_t m9t4to;
+  { __typeof__(c) m9t4to;
   c = c0;
   m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; c <= m9t4to; c += 1) {
+  if (c <= m9t4to) for (;;) {
     { __typeof__(m9_sub_i64 (c, c0, err)) m9a65 = m9_sub_i64 (c, c0, err);
       if (err->exc) goto L_hdl_m9t1;
     { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9v = Frame_NameAt (f, m9a65, err);
@@ -1676,15 +1725,17 @@ static m9_sl_CHAR NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
       if (err->exc) goto L_hdl_m9t1;
     }
     }
+    if ((uint64_t) m9t4to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
   if (html) {
     DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s59, 43 }), err);
     if (err->exc) goto L_hdl_m9t1;
-    { int64_t m9t5to;
+    { __typeof__(c) m9t5to;
     c = INT64_C(0);
     m9t5to = m9_sub_i64 (nc, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; c <= m9t5to; c += 1) {
+    if (c <= m9t5to) for (;;) {
       { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a70 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
       { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 }), NbShow_Esc (m9a70, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s61, 5 }), err)) m9a71 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 }), NbShow_Esc (m9a70, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s61, 5 }), err);
@@ -1693,71 +1744,83 @@ static m9_sl_CHAR NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
       if (err->exc) goto L_hdl_m9t1;
       }
       }
+      if ((uint64_t) m9t5to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
     DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s62, 18 }), err);
     if (err->exc) goto L_hdl_m9t1;
-    { int64_t m9t6to;
+    { __typeof__(c) m9t6to;
     c = INT64_C(0);
     m9t6to = m9_sub_i64 (nc, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; c <= m9t6to; c += 1) {
+    if (c <= m9t6to) for (;;) {
       { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s63, 7 }), (*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s64, 9 }), err)) m9a72 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s63, 7 }), (*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s64, 9 }), err);
         if (err->exc) goto L_hdl_m9t1;
       DynStr_Append (&(d), &(scratch), m9a72, err);
       if (err->exc) goto L_hdl_m9t1;
       }
+      if ((uint64_t) m9t6to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
     DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s65, 20 }), err);
     if (err->exc) goto L_hdl_m9t1;
-    { int64_t m9t7to;
+    { __typeof__(i) m9t7to;
     i = INT64_C(0);
     m9t7to = m9_sub_i64 ((rows).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; i <= m9t7to; i += 1) {
-      bool m9t8 = NbShow_RowGap ((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), n, err);
+    if (i <= m9t7to) for (;;) {
+      { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a73 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
+        if (err->exc) goto L_hdl_m9t1;
+      bool m9t8 = NbShow_RowGap (m9a73, n, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t8) {
         DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s66, 16 }), err);
         if (err->exc) goto L_hdl_m9t1;
-        { int64_t m9t9to;
+        { __typeof__(c) m9t9to;
         c = INT64_C(0);
         m9t9to = m9_sub_i64 (nc, INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
-        for (; c <= m9t9to; c += 1) {
+        if (c <= m9t9to) for (;;) {
           DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s67, 12 }), err);
           if (err->exc) goto L_hdl_m9t1;
+          if ((uint64_t) m9t9to - (uint64_t) c < (uint64_t) 1) break;
+          c += 1;
         } }
         DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s68, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      }
-      { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a73 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
+      } }
+      { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a74 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s69, 8 }), Fmt_I64Str (m9a73, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s70, 5 }), err)) m9a74 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s69, 8 }), Fmt_I64Str (m9a73, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s70, 5 }), err);
+      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s69, 8 }), Fmt_I64Str (m9a74, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s70, 5 }), err)) m9a75 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s69, 8 }), Fmt_I64Str (m9a74, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s70, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      DynStr_Append (&(d), &(scratch), m9a74, err);
+      DynStr_Append (&(d), &(scratch), m9a75, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
-      { int64_t m9t10to;
+      { __typeof__(c) m9t10to;
       c = INT64_C(0);
       m9t10to = m9_sub_i64 (nc, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; c <= m9t10to; c += 1) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err))) m9a75 = (*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err));
+      if (c <= m9t10to) for (;;) {
+        { __typeof__((*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err))) m9a76 = (*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s71, 4 }), NbShow_Esc (m9a75, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s72, 5 }), err)) m9a76 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s71, 4 }), NbShow_Esc (m9a75, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s72, 5 }), err);
+        { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s71, 4 }), NbShow_Esc (m9a76, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s72, 5 }), err)) m9a77 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s71, 4 }), NbShow_Esc (m9a76, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s72, 5 }), err);
           if (err->exc) goto L_hdl_m9t1;
-        DynStr_Append (&(d), &(scratch), m9a76, err);
+        DynStr_Append (&(d), &(scratch), m9a77, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
+        if ((uint64_t) m9t10to - (uint64_t) c < (uint64_t) 1) break;
+        c += 1;
       } }
       DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s73, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
+      if ((uint64_t) m9t7to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s74, 19 }), Fmt_I64Str (n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s75, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s76, 12 }), err)) m9a77 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s74, 19 }), Fmt_I64Str (n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s75, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s76, 12 }), err);
+    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s74, 19 }), Fmt_I64Str (n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s75, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s76, 12 }), err)) m9a78 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s74, 19 }), Fmt_I64Str (n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s75, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s76, 12 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    DynStr_Append (&(d), &(scratch), m9a77, err);
+    DynStr_Append (&(d), &(scratch), m9a78, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     err->res = m9res;
@@ -1765,9 +1828,9 @@ static m9_sl_CHAR NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  { __typeof__(m9_sub_i64 (n, INT64_C(1), err)) m9a78 = m9_sub_i64 (n, INT64_C(1), err);
+  { __typeof__(m9_sub_i64 (n, INT64_C(1), err)) m9a79 = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(iw) m9v = (Fmt_I64Str (m9a78, err)).len;
+  { __typeof__(iw) m9v = (Fmt_I64Str (m9a79, err)).len;
     if (err->exc) goto L_hdl_m9t1;
     iw = m9v;
   }
@@ -1775,11 +1838,11 @@ static m9_sl_CHAR NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
   if ((iw < INT64_C(3))) {
     iw = INT64_C(3);
   }
-  { int64_t m9t11to;
+  { __typeof__(c) m9t11to;
   c = INT64_C(0);
   m9t11to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; c <= m9t11to; c += 1) {
+  if (c <= m9t11to) for (;;) {
     { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9v = ((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))).len;
       if (err->exc) goto L_hdl_m9t1;
       (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)) = m9v;
@@ -1794,168 +1857,182 @@ static m9_sl_CHAR NbShow_Render (Frame_Fr * f, m9_sl_I64 times, bool html, m9_st
         if (err->exc) goto L_hdl_m9t1;
       }
     }
-    { int64_t m9t13to;
+    { __typeof__(i) m9t13to;
     i = INT64_C(0);
     m9t13to = m9_sub_i64 ((rows).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; i <= m9t13to; i += 1) {
-      bool m9t14 = (((*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err))).len > (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)));
+    if (i <= m9t13to) for (;;) {
+      bool m9t14 = (((*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err))).len > (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t14) {
-        { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9v = ((*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err))).len;
+        { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9v = ((*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err))).len;
           if (err->exc) goto L_hdl_m9t1;
           (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err)) = m9v;
           if (err->exc) goto L_hdl_m9t1;
         }
       }
+      if ((uint64_t) m9t13to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
+    if ((uint64_t) m9t11to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
-  { __typeof__(NbShow_PadLeft ((m9_sl_CHAR){ NULL, 0 }, iw, err)) m9a79 = NbShow_PadLeft ((m9_sl_CHAR){ NULL, 0 }, iw, err);
+  { __typeof__(NbShow_PadLeft ((m9_sl_CHAR){ NULL, 0 }, iw, err)) m9a80 = NbShow_PadLeft ((m9_sl_CHAR){ NULL, 0 }, iw, err);
     if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(d), &(scratch), m9a79, err);
+  DynStr_Append (&(d), &(scratch), m9a80, err);
   if (err->exc) goto L_hdl_m9t1;
   }
-  { int64_t m9t15to;
+  { __typeof__(c) m9t15to;
   c = INT64_C(0);
   m9t15to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; c <= m9t15to; c += 1) {
+  if (c <= m9t15to) for (;;) {
     bool m9t16 = (*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t16) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a80 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a81 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a81 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a82 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s77, 2 }), NbShow_PadRight (m9a80, m9a81, err), err)) m9a82 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s77, 2 }), NbShow_PadRight (m9a80, m9a81, err), err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s77, 2 }), NbShow_PadRight (m9a81, m9a82, err), err)) m9a83 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s77, 2 }), NbShow_PadRight (m9a81, m9a82, err), err);
         if (err->exc) goto L_hdl_m9t1;
-      DynStr_Append (&(d), &(scratch), m9a82, err);
+      DynStr_Append (&(d), &(scratch), m9a83, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
       }
     } else {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a83 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a84 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a84 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a85 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s78, 2 }), NbShow_PadLeft (m9a83, m9a84, err), err)) m9a85 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s78, 2 }), NbShow_PadLeft (m9a83, m9a84, err), err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s78, 2 }), NbShow_PadLeft (m9a84, m9a85, err), err)) m9a86 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s78, 2 }), NbShow_PadLeft (m9a84, m9a85, err), err);
         if (err->exc) goto L_hdl_m9t1;
-      DynStr_Append (&(d), &(scratch), m9a85, err);
+      DynStr_Append (&(d), &(scratch), m9a86, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
       }
     }
+    if ((uint64_t) m9t15to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
   DynStr_AppendChar (&(d), &(scratch), 10u, err);
   if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(NbShow_PadLeft ((m9_sl_CHAR){ NULL, 0 }, iw, err)) m9a86 = NbShow_PadLeft ((m9_sl_CHAR){ NULL, 0 }, iw, err);
+  { __typeof__(NbShow_PadLeft ((m9_sl_CHAR){ NULL, 0 }, iw, err)) m9a87 = NbShow_PadLeft ((m9_sl_CHAR){ NULL, 0 }, iw, err);
     if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(d), &(scratch), m9a86, err);
+  DynStr_Append (&(d), &(scratch), m9a87, err);
   if (err->exc) goto L_hdl_m9t1;
   }
-  { int64_t m9t17to;
+  { __typeof__(c) m9t17to;
   c = INT64_C(0);
   m9t17to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; c <= m9t17to; c += 1) {
+  if (c <= m9t17to) for (;;) {
     bool m9t18 = (*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t18) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err))) m9a87 = (*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err))) m9a88 = (*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a88 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a89 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s79, 2 }), NbShow_PadRight (m9a87, m9a88, err), err)) m9a89 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s79, 2 }), NbShow_PadRight (m9a87, m9a88, err), err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s79, 2 }), NbShow_PadRight (m9a88, m9a89, err), err)) m9a90 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s79, 2 }), NbShow_PadRight (m9a88, m9a89, err), err);
         if (err->exc) goto L_hdl_m9t1;
-      DynStr_Append (&(d), &(scratch), m9a89, err);
+      DynStr_Append (&(d), &(scratch), m9a90, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
       }
     } else {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err))) m9a90 = (*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err))) m9a91 = (*(m9_sl_CHAR *) m9_at (kinds.p, c, kinds.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a91 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a92 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), NbShow_PadLeft (m9a90, m9a91, err), err)) m9a92 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), NbShow_PadLeft (m9a90, m9a91, err), err);
-        if (err->exc) goto L_hdl_m9t1;
-      DynStr_Append (&(d), &(scratch), m9a92, err);
-      if (err->exc) goto L_hdl_m9t1;
-      }
-      }
-      }
-    }
-  } }
-  DynStr_AppendChar (&(d), &(scratch), 10u, err);
-  if (err->exc) goto L_hdl_m9t1;
-  { int64_t m9t19to;
-  i = INT64_C(0);
-  m9t19to = m9_sub_i64 ((rows).len, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
-  for (; i <= m9t19to; i += 1) {
-    bool m9t20 = NbShow_RowGap ((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)), n, err);
-    if (err->exc) goto L_hdl_m9t1;
-    if (m9t20) {
-      { __typeof__(NbShow_PadLeft (((m9_sl_CHAR){ (uint32_t *) m9s81, 3 }), iw, err)) m9a93 = NbShow_PadLeft (((m9_sl_CHAR){ (uint32_t *) m9s81, 3 }), iw, err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), NbShow_PadLeft (m9a91, m9a92, err), err)) m9a93 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), NbShow_PadLeft (m9a91, m9a92, err), err);
         if (err->exc) goto L_hdl_m9t1;
       DynStr_Append (&(d), &(scratch), m9a93, err);
       if (err->exc) goto L_hdl_m9t1;
       }
-      DynStr_AppendChar (&(d), &(scratch), 10u, err);
-      if (err->exc) goto L_hdl_m9t1;
+      }
+      }
     }
+    if ((uint64_t) m9t17to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
+  } }
+  DynStr_AppendChar (&(d), &(scratch), 10u, err);
+  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(i) m9t19to;
+  i = INT64_C(0);
+  m9t19to = m9_sub_i64 ((rows).len, INT64_C(1), err);
+  if (err->exc) goto L_hdl_m9t1;
+  if (i <= m9t19to) for (;;) {
     { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a94 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Fmt_I64Str (m9a94, err)) m9a95 = Fmt_I64Str (m9a94, err);
+    bool m9t20 = NbShow_RowGap (m9a94, n, err);
+    if (err->exc) goto L_hdl_m9t1;
+    if (m9t20) {
+      { __typeof__(NbShow_PadLeft (((m9_sl_CHAR){ (uint32_t *) m9s81, 3 }), iw, err)) m9a95 = NbShow_PadLeft (((m9_sl_CHAR){ (uint32_t *) m9s81, 3 }), iw, err);
+        if (err->exc) goto L_hdl_m9t1;
+      DynStr_Append (&(d), &(scratch), m9a95, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(NbShow_PadLeft (m9a95, iw, err)) m9a96 = NbShow_PadLeft (m9a95, iw, err);
+      }
+      DynStr_AppendChar (&(d), &(scratch), 10u, err);
       if (err->exc) goto L_hdl_m9t1;
-    DynStr_Append (&(d), &(scratch), m9a96, err);
+    } }
+    { __typeof__((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err))) m9a96 = (*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err));
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(Fmt_I64Str (m9a96, err)) m9a97 = Fmt_I64Str (m9a96, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(NbShow_PadLeft (m9a97, iw, err)) m9a98 = NbShow_PadLeft (m9a97, iw, err);
+      if (err->exc) goto L_hdl_m9t1;
+    DynStr_Append (&(d), &(scratch), m9a98, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     }
     }
-    { int64_t m9t21to;
+    { __typeof__(c) m9t21to;
     c = INT64_C(0);
     m9t21to = m9_sub_i64 (nc, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; c <= m9t21to; c += 1) {
+    if (c <= m9t21to) for (;;) {
       bool m9t22 = (*(bool *) m9_at (left.p, c, left.len, sizeof (bool), err));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t22) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err))) m9a97 = (*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err))) m9a99 = (*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a98 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
+        { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a100 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 2 }), NbShow_PadRight (m9a97, m9a98, err), err)) m9a99 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 2 }), NbShow_PadRight (m9a97, m9a98, err), err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 2 }), NbShow_PadRight (m9a99, m9a100, err), err)) m9a101 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 2 }), NbShow_PadRight (m9a99, m9a100, err), err);
           if (err->exc) goto L_hdl_m9t1;
-        DynStr_Append (&(d), &(scratch), m9a99, err);
+        DynStr_Append (&(d), &(scratch), m9a101, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
         }
       } else {
-        { __typeof__((*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err))) m9a100 = (*(m9_sl_CHAR *) m9_at ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).p, i, (*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err)).len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err))) m9a102 = (*(m9_sl_CHAR *) m9_at (({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).p, i, ({ m9_sl_m9_sl_CHAR m9g = ((*(m9_sl_m9_sl_CHAR *) m9_at (cells.p, c, cells.len, sizeof (m9_sl_m9_sl_CHAR), err))); if (err->exc) goto L_hdl_m9t1; m9g; }).len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a101 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
+        { __typeof__((*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err))) m9a103 = (*(int64_t *) m9_at (width.p, c, width.len, sizeof (int64_t), err));
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s83, 2 }), NbShow_PadLeft (m9a100, m9a101, err), err)) m9a102 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s83, 2 }), NbShow_PadLeft (m9a100, m9a101, err), err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s83, 2 }), NbShow_PadLeft (m9a102, m9a103, err), err)) m9a104 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s83, 2 }), NbShow_PadLeft (m9a102, m9a103, err), err);
           if (err->exc) goto L_hdl_m9t1;
-        DynStr_Append (&(d), &(scratch), m9a102, err);
+        DynStr_Append (&(d), &(scratch), m9a104, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
         }
       }
+      if ((uint64_t) m9t21to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
     DynStr_AppendChar (&(d), &(scratch), 10u, err);
     if (err->exc) goto L_hdl_m9t1;
+    if ((uint64_t) m9t19to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_CHAR){ (uint32_t *) m9s84, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s85, 8 }), err)) m9a103 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_CHAR){ (uint32_t *) m9s84, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s85, 8 }), err);
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_CHAR){ (uint32_t *) m9s84, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s85, 8 }), err)) m9a105 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_CHAR){ (uint32_t *) m9s84, 8 }), err), Fmt_I64Str (nc, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s85, 8 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(d), &(scratch), m9a103, err);
+  DynStr_Append (&(d), &(scratch), m9a105, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   err->res = m9res;
@@ -2005,18 +2082,18 @@ static void NbShow_Rich (m9_sl_CHAR text, m9_sl_CHAR html, m9_state *err)
   Io_WriteLine (text, err);
   if (err->exc) goto L_ret;
   m9_mark m9t1 = m9_pool_mark (err->res);
-  { __typeof__(m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, NbShow_Mark, err), ((m9_sl_CHAR){ (uint32_t *) m9s89, 7 }), err), NbShow_Mark, err)) m9a104 = m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, NbShow_Mark, err), ((m9_sl_CHAR){ (uint32_t *) m9s89, 7 }), err), NbShow_Mark, err);
+  { __typeof__(m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, NbShow_Mark, err), ((m9_sl_CHAR){ (uint32_t *) m9s89, 7 }), err), NbShow_Mark, err)) m9a106 = m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, NbShow_Mark, err), ((m9_sl_CHAR){ (uint32_t *) m9s89, 7 }), err), NbShow_Mark, err);
     if (err->exc) goto L_ret;
-  Io_WriteLine (m9a104, err);
+  Io_WriteLine (m9a106, err);
   if (err->exc) goto L_ret;
   }
   m9_pool_release (err->res, m9t1);
   Io_WriteLine (html, err);
   if (err->exc) goto L_ret;
   m9_mark m9t2 = m9_pool_mark (err->res);
-  { __typeof__(m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, NbShow_Mark, err), ((m9_sl_CHAR){ (uint32_t *) m9s90, 8 }), err), NbShow_Mark, err)) m9a105 = m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, NbShow_Mark, err), ((m9_sl_CHAR){ (uint32_t *) m9s90, 8 }), err), NbShow_Mark, err);
+  { __typeof__(m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, NbShow_Mark, err), ((m9_sl_CHAR){ (uint32_t *) m9s90, 8 }), err), NbShow_Mark, err)) m9a107 = m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, NbShow_Mark, err), ((m9_sl_CHAR){ (uint32_t *) m9s90, 8 }), err), NbShow_Mark, err);
     if (err->exc) goto L_ret;
-  Io_WriteLine (m9a105, err);
+  Io_WriteLine (m9a107, err);
   if (err->exc) goto L_ret;
   }
   m9_pool_release (err->res, m9t2);

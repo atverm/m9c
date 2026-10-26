@@ -8,6 +8,10 @@ DEFINITION MODULE Print ;
 IMPORT Ast ;
 
 PROCEDURE Tree (VAR pool: POOL ; root: PTR Ast.Node) : STR ;
+PROCEDURE TreeUtf (VAR pool: POOL ; root: PTR Ast.Node) : UTF ;
+  (* the UTF form of Tree (docs/utf8-stage3-plan.md, step 5): the
+     printer builds UTF-8 and the STR forms decode it, so a caller
+     moves when it moves; named, as none takes a UTF to dispatch on *)
   (* the whole tree back as CANONICAL M9 source: one spelling per
      construct, chosen by this module rather than recovered from the
      input.
@@ -29,6 +33,9 @@ PROCEDURE Tree (VAR pool: POOL ; root: PTR Ast.Node) : STR ;
 PROCEDURE TypeText (VAR pool: POOL ; k: Ast.Kid) : STR ;
 PROCEDURE ParamsText (k: Ast.Kid) : STR ;
 PROCEDURE ExprText (k: Ast.Kid) : STR ;
+PROCEDURE TypeTextUtf (VAR pool: POOL ; k: Ast.Kid) : UTF ;
+PROCEDURE ParamsTextUtf (k: Ast.Kid) : UTF ;
+PROCEDURE ExprTextUtf (k: Ast.Kid) : UTF ;
 
 END Print.
 
@@ -36,89 +43,83 @@ END Print.
 IMPLEMENTATION MODULE Print ;
 
 IMPORT Ast ;
-IMPORT DynStr ;
+IMPORT DynUtf ;
+IMPORT Text ;
 
-PROCEDURE Sp (VAR d: PTR DynStr.DString ; ind: I64) =
+PROCEDURE Sp (VAR d: PTR DynUtf.DString ; ind: I64) =
 VAR i : I64 ;
 BEGIN
-  FOR i := 1 TO ind * 2 DO DynStr.AppendChar (d, ' ') END
+  FOR i := 1 TO ind * 2 DO DynUtf.AppendChar (d, ' ') END
 END Sp ;
 
-PROCEDURE Quoted (VAR d: PTR DynStr.DString ;
-                  RO s: STR) =
-VAR
-  i : I64 ;
-  hasApo : BOOL ;
-  q : CHAR ;
+PROCEDURE Quoted (VAR d: PTR DynUtf.DString ;
+                  RO s: UTF) =
+VAR q : CHAR ;
 BEGIN
-  hasApo := FALSE ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = "'" THEN hasApo := TRUE END
-  END ;
-  IF hasApo THEN q := '"' ELSE q := "'" END ;
-  DynStr.AppendChar (d, q) ;
-  DynStr.Append (d, s) ;
-  DynStr.AppendChar (d, q)
+  IF Text.FindChar (s, "'") >= 0 THEN q := '"' ELSE q := "'" END ;
+  DynUtf.AppendChar (d, q) ;
+  DynUtf.Append (d, s) ;
+  DynUtf.AppendChar (d, q)
 END Quoted ;
 
-PROCEDURE Qual (VAR d: PTR DynStr.DString ;
+PROCEDURE Qual (VAR d: PTR DynUtf.DString ;
                 n: PTR Ast.Node) =
 BEGIN
-  DynStr.Append (d, n.a) ;
-  IF LEN (n.b) > 0 THEN
-    DynStr.AppendChar (d, '.') ;
-    DynStr.Append (d, n.b)
+  DynUtf.Append (d, n.au) ;
+  IF Text.BLen (n.bu) > 0 THEN
+    DynUtf.AppendChar (d, '.') ;
+    DynUtf.Append (d, n.bu)
   END
 END Qual ;
 
-PROCEDURE Idents (VAR d: PTR DynStr.DString ;
+PROCEDURE Idents (VAR d: PTR DynUtf.DString ;
                   n: PTR Ast.Node) =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO n.nkids - 1 DO
-    IF i > 0 THEN DynStr.Append (d, ', ') END ;
-    IF n.kids[i] IS SOME id THEN DynStr.Append (d, id.a) END
+    IF i > 0 THEN DynUtf.Append (d, ', ') END ;
+    IF n.kids[i] IS SOME id THEN DynUtf.Append (d, id.au) END
   END
 END Idents ;
 
-PROCEDURE E (VAR d: PTR DynStr.DString ;
+PROCEDURE E (VAR d: PTR DynUtf.DString ;
              k: Ast.Kid) ;
 
-PROCEDURE Args (VAR d: PTR DynStr.DString ;
+PROCEDURE Args (VAR d: PTR DynUtf.DString ;
                 k: Ast.Kid) =
 VAR i : I64 ;
 BEGIN
   IF k IS SOME n THEN
     FOR i := 0 TO n.nkids - 1 DO
-      IF i > 0 THEN DynStr.Append (d, ', ') END ;
+      IF i > 0 THEN DynUtf.Append (d, ', ') END ;
       E (d, n.kids[i])
     END
   END
 END Args ;
 
-PROCEDURE Desig (VAR d: PTR DynStr.DString ;
+PROCEDURE Desig (VAR d: PTR DynUtf.DString ;
                  n: PTR Ast.Node) =
 VAR i, j : I64 ;
 BEGIN
-  DynStr.Append (d, n.a) ;
+  DynUtf.Append (d, n.au) ;
   FOR i := 0 TO n.nkids - 1 DO
     IF n.kids[i] IS SOME sel THEN
       IF sel.kind = Ast.NSelField THEN
-        DynStr.AppendChar (d, '.') ;
-        DynStr.Append (d, sel.a)
+        DynUtf.AppendChar (d, '.') ;
+        DynUtf.Append (d, sel.au)
       ELSIF sel.kind = Ast.NSelIndex THEN
-        DynStr.AppendChar (d, '[') ;
+        DynUtf.AppendChar (d, '[') ;
         FOR j := 0 TO sel.nkids - 1 DO
-          IF j > 0 THEN DynStr.Append (d, ', ') END ;
+          IF j > 0 THEN DynUtf.Append (d, ', ') END ;
           E (d, sel.kids[j])
         END ;
-        DynStr.AppendChar (d, ']')
+        DynUtf.AppendChar (d, ']')
       END
     END
   END
 END Desig ;
 
-PROCEDURE E (VAR d: PTR DynStr.DString ;
+PROCEDURE E (VAR d: PTR DynUtf.DString ;
              k: Ast.Kid) =
 VAR j : I64 ;
 BEGIN
@@ -126,58 +127,58 @@ BEGIN
     CASE n.kind OF
     | Ast.NBin :
         E (d, n.kids[0]) ;
-        DynStr.AppendChar (d, ' ') ;
-        DynStr.Append (d, n.a) ;
-        DynStr.AppendChar (d, ' ') ;
+        DynUtf.AppendChar (d, ' ') ;
+        DynUtf.Append (d, n.au) ;
+        DynUtf.AppendChar (d, ' ') ;
         E (d, n.kids[1])
     | Ast.NUn :
-        IF DynStr.Eq (n.a, 'NOT') THEN
-          DynStr.Append (d, 'NOT ')
+        IF Text.Eq (n.au, 'NOT') THEN
+          DynUtf.Append (d, 'NOT ')
         ELSE
-          DynStr.Append (d, n.a)
+          DynUtf.Append (d, n.au)
         END ;
         E (d, n.kids[0])
     | Ast.NIs :
         E (d, n.kids[0]) ;
-        DynStr.Append (d, ' IS ') ;
+        DynUtf.Append (d, ' IS ') ;
         IF n.kids[1] IS SOME t THEN
           IF t.kind = Ast.NIsSome THEN
             IF t.f1 THEN
-              DynStr.Append (d, 'NONE')
-            ELSIF LEN (t.a) = 0 THEN
-              DynStr.Append (d, 'SOME')
+              DynUtf.Append (d, 'NONE')
+            ELSIF Text.BLen (t.au) = 0 THEN
+              DynUtf.Append (d, 'SOME')
             ELSE
-              DynStr.Append (d, 'SOME ') ;
-              DynStr.Append (d, t.a)
+              DynUtf.Append (d, 'SOME ') ;
+              DynUtf.Append (d, t.au)
             END
           ELSE
             Qual (d, t)
           END
         END
     | Ast.NParen :
-        DynStr.AppendChar (d, '(') ;
+        DynUtf.AppendChar (d, '(') ;
         E (d, n.kids[0]) ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
     | Ast.NInt, Ast.NReal, Ast.NChar :
-        DynStr.Append (d, n.a)
+        DynUtf.Append (d, n.au)
     | Ast.NString :
-        Quoted (d, n.a)
-    | Ast.NTrue : DynStr.Append (d, 'TRUE')
-    | Ast.NFalse : DynStr.Append (d, 'FALSE')
-    | Ast.NNoneLit : DynStr.Append (d, 'NONE')
+        Quoted (d, n.au)
+    | Ast.NTrue : DynUtf.Append (d, 'TRUE')
+    | Ast.NFalse : DynUtf.Append (d, 'FALSE')
+    | Ast.NNoneLit : DynUtf.Append (d, 'NONE')
     | Ast.NSomeExpr :
-        DynStr.Append (d, 'SOME (') ;
+        DynUtf.Append (d, 'SOME (') ;
         E (d, n.kids[0]) ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
     | Ast.NSharedExpr :
-        DynStr.Append (d, 'SHARED (') ;
+        DynUtf.Append (d, 'SHARED (') ;
         E (d, n.kids[0]) ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
     | Ast.NNewExpr :
-        DynStr.Append (d, 'NEW (') ;
+        DynUtf.Append (d, 'NEW (') ;
         IF n.kids[0] IS SOME p THEN
           Desig (d, p) ;
-          DynStr.Append (d, ', ')
+          DynUtf.Append (d, ', ')
         END ;
         (* a qualident in the single-argument form, an expression in
            the others (a type name or an extent, resolved downstream) *)
@@ -188,31 +189,31 @@ BEGIN
         (* one extent is a slice; more than one is the shape of a grid *)
         FOR j := 2 TO n.nkids - 1 DO
           IF n.kids[j] IS SOME c THEN
-            DynStr.Append (d, ', ') ;
+            DynUtf.Append (d, ', ') ;
             E (d, n.kids[j])
           END
         END ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
     | Ast.NGridOf :
-        DynStr.Append (d, 'GRID (') ;
+        DynUtf.Append (d, 'GRID (') ;
         FOR j := 0 TO n.nkids - 1 DO
-          IF j > 0 THEN DynStr.Append (d, ', ') END ;
+          IF j > 0 THEN DynUtf.Append (d, ', ') END ;
           E (d, n.kids[j])
         END ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
     | Ast.NSliceOf3 :
-        DynStr.Append (d, 'SLICE (') ;
+        DynUtf.Append (d, 'SLICE (') ;
         E (d, n.kids[0]) ;
-        DynStr.Append (d, ', ') ;
+        DynUtf.Append (d, ', ') ;
         E (d, n.kids[1]) ;
-        DynStr.Append (d, ', ') ;
+        DynUtf.Append (d, ', ') ;
         E (d, n.kids[2]) ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
     | Ast.NCallExpr :
         IF n.kids[0] IS SOME f THEN Desig (d, f) END ;
-        DynStr.Append (d, ' (') ;
+        DynUtf.Append (d, ' (') ;
         Args (d, n.kids[1]) ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
     | Ast.NCallSel :
         (* F (x).f: the call, then the selectors -- Desig skips the
            call kid and prints the node's empty name *)
@@ -223,48 +224,48 @@ BEGIN
     | Ast.NQualident :
         Qual (d, n)
     | Ast.NIdent :
-        DynStr.Append (d, n.a)
+        DynUtf.Append (d, n.au)
     | Ast.NAggregate :
         (* on one line: this is the form a diagnostic quotes.  A
            declaration prints it one element to a line, EDecl *)
-        DynStr.AppendChar (d, '[') ;
+        DynUtf.AppendChar (d, '[') ;
         FOR j := 0 TO n.nkids - 1 DO
-          IF j > 0 THEN DynStr.Append (d, ', ') END ;
+          IF j > 0 THEN DynUtf.Append (d, ', ') END ;
           E (d, n.kids[j])
         END ;
-        DynStr.AppendChar (d, ']')
+        DynUtf.AppendChar (d, ']')
     ELSE
-      DynStr.Append (d, '?expr?')
+      DynUtf.Append (d, '?expr?')
     END
   END
 END E ;
 
-PROCEDURE EType (VAR d: PTR DynStr.DString ;
+PROCEDURE EType (VAR d: PTR DynUtf.DString ;
                  k: Ast.Kid ; ind: I64) ;
 
-PROCEDURE Group (VAR d: PTR DynStr.DString ;
+PROCEDURE Group (VAR d: PTR DynUtf.DString ;
                  g: PTR Ast.Node) =
 BEGIN
-  IF g.f3 THEN DynStr.Append (d, 'RO ') END ;
+  IF g.f3 THEN DynUtf.Append (d, 'RO ') END ;
   IF g.kids[0] IS SOME ids THEN Idents (d, ids) END ;
-  DynStr.Append (d, ': ') ;
+  DynUtf.Append (d, ': ') ;
   EType (d, g.kids[1], 0)
 END Group ;
 
-PROCEDURE FieldsInline (VAR d: PTR DynStr.DString ;
+PROCEDURE FieldsInline (VAR d: PTR DynUtf.DString ;
                         k: Ast.Kid) =
 VAR i : I64 ;
 BEGIN
   IF k IS SOME fs THEN
     FOR i := 0 TO fs.nkids - 1 DO
-      IF i > 0 THEN DynStr.Append (d, ' ; ') END ;
+      IF i > 0 THEN DynUtf.Append (d, ' ; ') END ;
       IF fs.kids[i] IS SOME g THEN Group (d, g) END
     END ;
-    IF fs.f1 THEN DynStr.Append (d, ' ;') END
+    IF fs.f1 THEN DynUtf.Append (d, ' ;') END
   END
 END FieldsInline ;
 
-PROCEDURE FieldsLines (VAR d: PTR DynStr.DString ;
+PROCEDURE FieldsLines (VAR d: PTR DynUtf.DString ;
                        k: Ast.Kid ; ind: I64) =
 VAR i : I64 ;
 BEGIN
@@ -272,20 +273,20 @@ BEGIN
     FOR i := 0 TO fs.nkids - 1 DO
       IF fs.kids[i] IS SOME g THEN
         Sp (d, ind) ;
-        IF g.f3 THEN DynStr.Append (d, 'RO ') END ;
+        IF g.f3 THEN DynUtf.Append (d, 'RO ') END ;
         IF g.kids[0] IS SOME ids THEN Idents (d, ids) END ;
-        DynStr.Append (d, ' : ') ;
+        DynUtf.Append (d, ' : ') ;
         EType (d, g.kids[1], ind) ;
         IF (i < fs.nkids - 1) OR fs.f1 THEN
-          DynStr.Append (d, ' ;')
+          DynUtf.Append (d, ' ;')
         END ;
-        DynStr.AppendChar (d, 0AC)
+        DynUtf.AppendChar (d, 0AC)
       END
     END
   END
 END FieldsLines ;
 
-PROCEDURE EType (VAR d: PTR DynStr.DString ;
+PROCEDURE EType (VAR d: PTR DynUtf.DString ;
                  k: Ast.Kid ; ind: I64) =
 VAR i : I64 ;
 BEGIN
@@ -294,129 +295,129 @@ BEGIN
     | Ast.NQualident :
         Qual (d, n)
     | Ast.NArrayType :
-        DynStr.Append (d, 'ARRAY ') ;
+        DynUtf.Append (d, 'ARRAY ') ;
         E (d, n.kids[0]) ;
-        DynStr.Append (d, ' OF ') ;
+        DynUtf.Append (d, ' OF ') ;
         EType (d, n.kids[1], ind)
     | Ast.NGridType :
-        DynStr.Append (d, 'GRID ') ;
+        DynUtf.Append (d, 'GRID ') ;
         E (d, n.kids[0]) ;
-        DynStr.Append (d, ' OF ') ;
+        DynUtf.Append (d, ' OF ') ;
         EType (d, n.kids[1], ind)
     | Ast.NSliceType :
-        DynStr.Append (d, 'SLICE OF ') ;
+        DynUtf.Append (d, 'SLICE OF ') ;
         EType (d, n.kids[0], ind)
     | Ast.NPtrType :
-        DynStr.Append (d, 'PTR ') ;
+        DynUtf.Append (d, 'PTR ') ;
         EType (d, n.kids[0], ind) ;
         IF n.kids[1] IS SOME pd THEN
-          DynStr.Append (d, ' IN ') ;
+          DynUtf.Append (d, ' IN ') ;
           Desig (d, pd)
         END
     | Ast.NOptType :
-        DynStr.Append (d, 'OPT ') ;
+        DynUtf.Append (d, 'OPT ') ;
         EType (d, n.kids[0], ind)
     | Ast.NSharedType :
-        DynStr.Append (d, 'SHARED PTR ') ;
+        DynUtf.Append (d, 'SHARED PTR ') ;
         EType (d, n.kids[0], ind)
     | Ast.NRecordType :
-        DynStr.Append (d, 'RECORD') ;
+        DynUtf.Append (d, 'RECORD') ;
         IF n.kids[0] IS SOME b THEN
-          DynStr.Append (d, ' (') ;
+          DynUtf.Append (d, ' (') ;
           Qual (d, b) ;
-          DynStr.AppendChar (d, ')')
+          DynUtf.AppendChar (d, ')')
         END ;
-        DynStr.AppendChar (d, 0AC) ;
+        DynUtf.AppendChar (d, 0AC) ;
         FieldsLines (d, n.kids[1], ind + 1) ;
         Sp (d, ind) ;
-        DynStr.Append (d, 'END') ;
+        DynUtf.Append (d, 'END') ;
         IF n.nkids > 2 THEN
           IF n.kids[2] IS SOME at THEN
-            DynStr.Append (d, ' [') ;
-            DynStr.Append (d, at.a) ;
-            DynStr.AppendChar (d, ']')
+            DynUtf.Append (d, ' [') ;
+            DynUtf.Append (d, at.au) ;
+            DynUtf.AppendChar (d, ']')
           END
         END
     | Ast.NCaseRecordType :
-        DynStr.Append (d, 'CASE RECORD') ;
-        DynStr.AppendChar (d, 0AC) ;
+        DynUtf.Append (d, 'CASE RECORD') ;
+        DynUtf.AppendChar (d, 0AC) ;
         FOR i := 0 TO n.nkids - 1 DO
           IF n.kids[i] IS SOME v THEN
             Sp (d, ind) ;
-            DynStr.Append (d, '| ') ;
-            DynStr.Append (d, v.a) ;
+            DynUtf.Append (d, '| ') ;
+            DynUtf.Append (d, v.au) ;
             IF v.kids[0] IS SOME vf THEN
-              DynStr.Append (d, ' : ') ;
+              DynUtf.Append (d, ' : ') ;
               FieldsInline (d, v.kids[0])
             END ;
-            DynStr.AppendChar (d, 0AC)
+            DynUtf.AppendChar (d, 0AC)
           END
         END ;
         Sp (d, ind) ;
-        DynStr.Append (d, 'END')
+        DynUtf.Append (d, 'END')
     | Ast.NMonitorType :
-        DynStr.Append (d, 'MONITOR RECORD') ;
-        DynStr.AppendChar (d, 0AC) ;
+        DynUtf.Append (d, 'MONITOR RECORD') ;
+        DynUtf.AppendChar (d, 0AC) ;
         FieldsLines (d, n.kids[0], ind + 1) ;
         Sp (d, ind) ;
-        DynStr.Append (d, 'END')
+        DynUtf.Append (d, 'END')
     | Ast.NEnumType :
-        DynStr.AppendChar (d, '(') ;
+        DynUtf.AppendChar (d, '(') ;
         FOR i := 0 TO n.nkids - 1 DO
           IF n.kids[i] IS SOME m THEN
-            IF i > 0 THEN DynStr.Append (d, ', ') END ;
-            DynStr.Append (d, m.a)
+            IF i > 0 THEN DynUtf.Append (d, ', ') END ;
+            DynUtf.Append (d, m.au)
           END
         END ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
     | Ast.NProcType :
         (* inline, RAISES on the same line: a type is one line where a
            declaration's heading breaks before its RAISES *)
-        DynStr.Append (d, 'PROCEDURE (') ;
+        DynUtf.Append (d, 'PROCEDURE (') ;
         EParams (d, n.kids[0]) ;
-        DynStr.AppendChar (d, ')') ;
+        DynUtf.AppendChar (d, ')') ;
         IF n.kids[1] IS SOME rt THEN
-          DynStr.Append (d, ' : ') ;
-          IF n.f3 THEN DynStr.Append (d, 'RO ') END ;
+          DynUtf.Append (d, ' : ') ;
+          IF n.f3 THEN DynUtf.Append (d, 'RO ') END ;
           EType (d, n.kids[1], ind)
         END ;
         IF n.kids[2] IS SOME rs THEN
-          DynStr.Append (d, ' RAISES ') ;
+          DynUtf.Append (d, ' RAISES ') ;
           FOR i := 0 TO rs.nkids - 1 DO
-            IF i > 0 THEN DynStr.Append (d, ', ') END ;
+            IF i > 0 THEN DynUtf.Append (d, ', ') END ;
             IF rs.kids[i] IS SOME q THEN Qual (d, q) END
           END
         END
     ELSE
-      DynStr.Append (d, '?type?')
+      DynUtf.Append (d, '?type?')
     END
   END
 END EType ;
 
-PROCEDURE ELabel (VAR d: PTR DynStr.DString ;
+PROCEDURE ELabel (VAR d: PTR DynUtf.DString ;
                   n: PTR Ast.Node) =
 BEGIN
   IF n.kind = Ast.NLabelPattern THEN
-    DynStr.Append (d, n.a) ;
-    DynStr.Append (d, ' (') ;
+    DynUtf.Append (d, n.au) ;
+    DynUtf.Append (d, ' (') ;
     IF n.kids[0] IS SOME ids THEN Idents (d, ids) END ;
-    DynStr.AppendChar (d, ')')
+    DynUtf.AppendChar (d, ')')
   ELSE
     E (d, n.kids[0]) ;
     IF n.kids[1] IS SOME hi THEN
-      DynStr.Append (d, ' .. ') ;
+      DynUtf.Append (d, ' .. ') ;
       E (d, n.kids[1])
     END
   END
 END ELabel ;
 
-PROCEDURE EBlock (VAR d: PTR DynStr.DString ;
+PROCEDURE EBlock (VAR d: PTR DynUtf.DString ;
                   n: PTR Ast.Node ; ind: I64 ; withEnd: BOOL) ;
 
-PROCEDURE ESeq (VAR d: PTR DynStr.DString ;
+PROCEDURE ESeq (VAR d: PTR DynUtf.DString ;
                 k: Ast.Kid ; ind: I64) ;
 
-PROCEDURE EStmt (VAR d: PTR DynStr.DString ;
+PROCEDURE EStmt (VAR d: PTR DynUtf.DString ;
                  n: PTR Ast.Node ; ind: I64) =
 VAR i, j : I64 ;
 BEGIN
@@ -424,177 +425,177 @@ BEGIN
   | Ast.NAssign :
       Sp (d, ind) ;
       IF n.kids[0] IS SOME ds THEN Desig (d, ds) END ;
-      DynStr.Append (d, ' := ') ;
+      DynUtf.Append (d, ' := ') ;
       E (d, n.kids[1])
   | Ast.NCallStmt :
       Sp (d, ind) ;
       IF n.kids[0] IS SOME ds THEN Desig (d, ds) END ;
       IF n.f1 THEN
-        DynStr.Append (d, ' (') ;
+        DynUtf.Append (d, ' (') ;
         Args (d, n.kids[1]) ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
       END
   | Ast.NIf :
       Sp (d, ind) ;
-      DynStr.Append (d, 'IF ') ;
+      DynUtf.Append (d, 'IF ') ;
       E (d, n.kids[0]) ;
-      DynStr.Append (d, ' THEN') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, ' THEN') ;
+      DynUtf.AppendChar (d, 0AC) ;
       ESeq (d, n.kids[1], ind + 1) ;
       FOR i := 2 TO n.nkids - 1 DO
         IF n.kids[i] IS SOME e THEN
           IF e.kind = Ast.NElsif THEN
             Sp (d, ind) ;
-            DynStr.Append (d, 'ELSIF ') ;
+            DynUtf.Append (d, 'ELSIF ') ;
             E (d, e.kids[0]) ;
-            DynStr.Append (d, ' THEN') ;
-            DynStr.AppendChar (d, 0AC) ;
+            DynUtf.Append (d, ' THEN') ;
+            DynUtf.AppendChar (d, 0AC) ;
             ESeq (d, e.kids[1], ind + 1)
           ELSIF e.kind = Ast.NElse THEN
             Sp (d, ind) ;
-            DynStr.Append (d, 'ELSE') ;
-            DynStr.AppendChar (d, 0AC) ;
+            DynUtf.Append (d, 'ELSE') ;
+            DynUtf.AppendChar (d, 0AC) ;
             ESeq (d, e.kids[0], ind + 1)
           END
         END
       END ;
       Sp (d, ind) ;
-      DynStr.Append (d, 'END')
+      DynUtf.Append (d, 'END')
   | Ast.NWhile :
       Sp (d, ind) ;
-      DynStr.Append (d, 'WHILE ') ;
+      DynUtf.Append (d, 'WHILE ') ;
       E (d, n.kids[0]) ;
-      DynStr.Append (d, ' DO') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, ' DO') ;
+      DynUtf.AppendChar (d, 0AC) ;
       ESeq (d, n.kids[1], ind + 1) ;
       Sp (d, ind) ;
-      DynStr.Append (d, 'END')
+      DynUtf.Append (d, 'END')
   | Ast.NFor :
       Sp (d, ind) ;
-      DynStr.Append (d, 'FOR ') ;
-      DynStr.Append (d, n.a) ;
-      DynStr.Append (d, ' := ') ;
+      DynUtf.Append (d, 'FOR ') ;
+      DynUtf.Append (d, n.au) ;
+      DynUtf.Append (d, ' := ') ;
       E (d, n.kids[0]) ;
-      DynStr.Append (d, ' TO ') ;
+      DynUtf.Append (d, ' TO ') ;
       E (d, n.kids[1]) ;
       IF n.kids[2] IS SOME by THEN
-        DynStr.Append (d, ' BY ') ;
+        DynUtf.Append (d, ' BY ') ;
         E (d, n.kids[2])
       END ;
-      DynStr.Append (d, ' DO') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, ' DO') ;
+      DynUtf.AppendChar (d, 0AC) ;
       ESeq (d, n.kids[3], ind + 1) ;
       Sp (d, ind) ;
-      DynStr.Append (d, 'END')
+      DynUtf.Append (d, 'END')
   | Ast.NForIn :
       Sp (d, ind) ;
-      DynStr.Append (d, 'FOR ') ;
-      DynStr.Append (d, n.a) ;
-      DynStr.Append (d, ' IN ') ;
+      DynUtf.Append (d, 'FOR ') ;
+      DynUtf.Append (d, n.au) ;
+      DynUtf.Append (d, ' IN ') ;
       E (d, n.kids[0]) ;
-      DynStr.Append (d, ' DO') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, ' DO') ;
+      DynUtf.AppendChar (d, 0AC) ;
       ESeq (d, n.kids[1], ind + 1) ;
       Sp (d, ind) ;
-      DynStr.Append (d, 'END')
+      DynUtf.Append (d, 'END')
   | Ast.NLoop :
       Sp (d, ind) ;
-      DynStr.Append (d, 'LOOP') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, 'LOOP') ;
+      DynUtf.AppendChar (d, 0AC) ;
       ESeq (d, n.kids[0], ind + 1) ;
       Sp (d, ind) ;
-      DynStr.Append (d, 'END')
+      DynUtf.Append (d, 'END')
   | Ast.NExit :
       Sp (d, ind) ;
-      DynStr.Append (d, 'EXIT')
+      DynUtf.Append (d, 'EXIT')
   | Ast.NCase :
       Sp (d, ind) ;
-      DynStr.Append (d, 'CASE ') ;
+      DynUtf.Append (d, 'CASE ') ;
       E (d, n.kids[0]) ;
-      DynStr.Append (d, ' OF') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, ' OF') ;
+      DynUtf.AppendChar (d, 0AC) ;
       FOR i := 1 TO n.nkids - 1 DO
         IF n.kids[i] IS SOME arm THEN
           IF arm.kind = Ast.NCaseArm THEN
             Sp (d, ind) ;
-            DynStr.Append (d, '| ') ;
+            DynUtf.Append (d, '| ') ;
             IF arm.kids[0] IS SOME lbls THEN
               FOR j := 0 TO lbls.nkids - 1 DO
-                IF j > 0 THEN DynStr.Append (d, ', ') END ;
+                IF j > 0 THEN DynUtf.Append (d, ', ') END ;
                 IF lbls.kids[j] IS SOME lb THEN
                   ELabel (d, lb)
                 END
               END
             END ;
-            DynStr.Append (d, ' :') ;
-            DynStr.AppendChar (d, 0AC) ;
+            DynUtf.Append (d, ' :') ;
+            DynUtf.AppendChar (d, 0AC) ;
             ESeq (d, arm.kids[1], ind + 2)
           ELSIF arm.kind = Ast.NElse THEN
             Sp (d, ind) ;
-            DynStr.Append (d, 'ELSE') ;
-            DynStr.AppendChar (d, 0AC) ;
+            DynUtf.Append (d, 'ELSE') ;
+            DynUtf.AppendChar (d, 0AC) ;
             ESeq (d, arm.kids[0], ind + 2)
           END
         END
       END ;
       Sp (d, ind) ;
-      DynStr.Append (d, 'END')
+      DynUtf.Append (d, 'END')
   | Ast.NReturn :
       Sp (d, ind) ;
-      DynStr.Append (d, 'RETURN') ;
+      DynUtf.Append (d, 'RETURN') ;
       IF n.kids[0] IS SOME e THEN
-        DynStr.AppendChar (d, ' ') ;
+        DynUtf.AppendChar (d, ' ') ;
         E (d, n.kids[0])
       END
   | Ast.NRaiseStmt :
       Sp (d, ind) ;
-      DynStr.Append (d, 'RAISE ') ;
+      DynUtf.Append (d, 'RAISE ') ;
       IF n.kids[0] IS SOME q THEN Qual (d, q) END ;
       IF n.kids[1] IS SOME ar THEN
-        DynStr.Append (d, ' (') ;
+        DynUtf.Append (d, ' (') ;
         Args (d, n.kids[1]) ;
-        DynStr.AppendChar (d, ')')
+        DynUtf.AppendChar (d, ')')
       END
   | Ast.NDispose :
       Sp (d, ind) ;
-      DynStr.Append (d, 'DISPOSE (') ;
+      DynUtf.Append (d, 'DISPOSE (') ;
       IF n.kids[0] IS SOME ds THEN Desig (d, ds) END ;
-      DynStr.AppendChar (d, ')')
+      DynUtf.AppendChar (d, ')')
   | Ast.NThread :
       Sp (d, ind) ;
-      DynStr.Append (d, 'THREAD (') ;
+      DynUtf.Append (d, 'THREAD (') ;
       E (d, n.kids[0]) ;
-      DynStr.Append (d, ', ') ;
+      DynUtf.Append (d, ', ') ;
       E (d, n.kids[1]) ;
-      DynStr.AppendChar (d, ')')
+      DynUtf.AppendChar (d, ')')
   | Ast.NTransfer :
       Sp (d, ind) ;
-      DynStr.Append (d, 'TRANSFER (') ;
+      DynUtf.Append (d, 'TRANSFER (') ;
       E (d, n.kids[0]) ;
-      DynStr.Append (d, ', ') ;
+      DynUtf.Append (d, ', ') ;
       E (d, n.kids[1]) ;
-      DynStr.AppendChar (d, ')')
+      DynUtf.AppendChar (d, ')')
   | Ast.NWait :
       Sp (d, ind) ;
-      DynStr.Append (d, 'WAIT (') ;
+      DynUtf.Append (d, 'WAIT (') ;
       E (d, n.kids[0]) ;
-      DynStr.AppendChar (d, ')')
+      DynUtf.AppendChar (d, ')')
   | Ast.NSignal :
       Sp (d, ind) ;
-      DynStr.Append (d, 'SIGNAL (') ;
+      DynUtf.Append (d, 'SIGNAL (') ;
       E (d, n.kids[0]) ;
-      DynStr.AppendChar (d, ')')
+      DynUtf.AppendChar (d, ')')
   | Ast.NBlock :
       EBlock (d, n, ind, TRUE)
   | Ast.NStmtSeq :
       Sp (d, ind)
   ELSE
     Sp (d, ind) ;
-    DynStr.Append (d, '?stmt?')
+    DynUtf.Append (d, '?stmt?')
   END
 END EStmt ;
 
-PROCEDURE ESeq (VAR d: PTR DynStr.DString ;
+PROCEDURE ESeq (VAR d: PTR DynUtf.DString ;
                 k: Ast.Kid ; ind: I64) =
 VAR i : I64 ;
 BEGIN
@@ -603,23 +604,23 @@ BEGIN
       IF n.kids[i] IS SOME st THEN
         EStmt (d, st, ind) ;
         IF (i < n.nkids - 1) OR n.f1 THEN
-          DynStr.Append (d, ' ;')
+          DynUtf.Append (d, ' ;')
         END ;
-        DynStr.AppendChar (d, 0AC)
+        DynUtf.AppendChar (d, 0AC)
       END
     END
   END
 END ESeq ;
 
-PROCEDURE EBlock (VAR d: PTR DynStr.DString ;
+PROCEDURE EBlock (VAR d: PTR DynUtf.DString ;
                   n: PTR Ast.Node ; ind: I64 ; withEnd: BOOL) =
 VAR
   i, j : I64 ;
   more : BOOL ;
 BEGIN
   Sp (d, ind) ;
-  DynStr.Append (d, 'BEGIN') ;
-  DynStr.AppendChar (d, 0AC) ;
+  DynUtf.Append (d, 'BEGIN') ;
+  DynUtf.AppendChar (d, 0AC) ;
   ESeq (d, n.kids[0], ind + 1) ;
   i := 1 ;
   more := FALSE ;
@@ -630,31 +631,31 @@ BEGIN
   END ;
   IF more THEN
     Sp (d, ind) ;
-    DynStr.Append (d, 'EXCEPT') ;
-    DynStr.AppendChar (d, 0AC) ;
+    DynUtf.Append (d, 'EXCEPT') ;
+    DynUtf.AppendChar (d, 0AC) ;
     LOOP
       IF i >= n.nkids THEN EXIT END ;
       IF n.kids[i] IS SOME h THEN
         IF h.kind # Ast.NHandler THEN EXIT END ;
         Sp (d, ind) ;
-        DynStr.Append (d, '| ') ;
+        DynUtf.Append (d, '| ') ;
         IF h.kids[0] IS SOME q THEN Qual (d, q) END ;
         FOR j := 3 TO h.nkids - 1 DO
           IF h.kids[j] IS SOME qm THEN
-            DynStr.Append (d, ', ') ;
+            DynUtf.Append (d, ', ') ;
             Qual (d, qm)
           END
         END ;
         IF h.kids[1] IS SOME ar THEN
-          DynStr.Append (d, ' (') ;
+          DynUtf.Append (d, ' (') ;
           FOR j := 0 TO ar.nkids - 1 DO
-            IF j > 0 THEN DynStr.Append (d, ', ') END ;
+            IF j > 0 THEN DynUtf.Append (d, ', ') END ;
             E (d, ar.kids[j])
           END ;
-          DynStr.AppendChar (d, ')')
+          DynUtf.AppendChar (d, ')')
         END ;
-        DynStr.Append (d, ' :') ;
-        DynStr.AppendChar (d, 0AC) ;
+        DynUtf.Append (d, ' :') ;
+        DynUtf.AppendChar (d, 0AC) ;
         ESeq (d, h.kids[2], ind + 2) ;
         i := i + 1
       ELSE
@@ -666,8 +667,8 @@ BEGIN
     IF n.kids[i] IS SOME f THEN
       IF f.kind = Ast.NFinally THEN
         Sp (d, ind) ;
-        DynStr.Append (d, 'FINALLY') ;
-        DynStr.AppendChar (d, 0AC) ;
+        DynUtf.Append (d, 'FINALLY') ;
+        DynUtf.AppendChar (d, 0AC) ;
         ESeq (d, f.kids[0], ind + 1) ;
         i := i + 1
       END
@@ -675,82 +676,82 @@ BEGIN
   END ;
   IF withEnd THEN
     Sp (d, ind) ;
-    DynStr.Append (d, 'END')
+    DynUtf.Append (d, 'END')
   END
 END EBlock ;
 
-PROCEDURE EParams (VAR d: PTR DynStr.DString ;
+PROCEDURE EParams (VAR d: PTR DynUtf.DString ;
                    k: Ast.Kid) =
 VAR i : I64 ;
 BEGIN
   IF k IS SOME pl THEN
     FOR i := 0 TO pl.nkids - 1 DO
       IF pl.kids[i] IS SOME p THEN
-        IF i > 0 THEN DynStr.Append (d, ' ; ') END ;
-        IF p.f1 THEN DynStr.Append (d, 'VAR ') END ;
-        IF p.f2 THEN DynStr.Append (d, 'OWN ') END ;
-        IF p.f3 THEN DynStr.Append (d, 'RO ') END ;
-        IF p.f4 THEN DynStr.Append (d, 'KEPT ') END ;
+        IF i > 0 THEN DynUtf.Append (d, ' ; ') END ;
+        IF p.f1 THEN DynUtf.Append (d, 'VAR ') END ;
+        IF p.f2 THEN DynUtf.Append (d, 'OWN ') END ;
+        IF p.f3 THEN DynUtf.Append (d, 'RO ') END ;
+        IF p.f4 THEN DynUtf.Append (d, 'KEPT ') END ;
         IF p.kids[0] IS SOME ids THEN Idents (d, ids) END ;
-        DynStr.Append (d, ': ') ;
+        DynUtf.Append (d, ': ') ;
         EType (d, p.kids[1], 0)
       END
     END
   END
 END EParams ;
 
-PROCEDURE EDecl (VAR d: PTR DynStr.DString ;
+PROCEDURE EDecl (VAR d: PTR DynUtf.DString ;
                  n: PTR Ast.Node ; ind: I64) ;
 
-PROCEDURE EProc (VAR d: PTR DynStr.DString ;
+PROCEDURE EProc (VAR d: PTR DynUtf.DString ;
                  n: PTR Ast.Node ; ind: I64) =
 VAR i : I64 ;
 BEGIN
   Sp (d, ind) ;
-  DynStr.Append (d, 'PROCEDURE ') ;
-  DynStr.Append (d, n.a) ;
-  IF LEN (n.b) > 0 THEN
-    DynStr.Append (d, ' = ') ;
-    Quoted (d, n.b)
+  DynUtf.Append (d, 'PROCEDURE ') ;
+  DynUtf.Append (d, n.au) ;
+  IF Text.BLen (n.bu) > 0 THEN
+    DynUtf.Append (d, ' = ') ;
+    Quoted (d, n.bu)
   END ;
-  DynStr.Append (d, ' (') ;
+  DynUtf.Append (d, ' (') ;
   EParams (d, n.kids[0]) ;
-  DynStr.AppendChar (d, ')') ;
+  DynUtf.AppendChar (d, ')') ;
   IF n.kids[1] IS SOME rt THEN
-    DynStr.Append (d, ' : ') ;
-    IF n.f3 THEN DynStr.Append (d, 'RO ') END ;
+    DynUtf.Append (d, ' : ') ;
+    IF n.f3 THEN DynUtf.Append (d, 'RO ') END ;
     EType (d, n.kids[1], ind)
   END ;
   IF n.kids[2] IS SOME rs THEN
-    DynStr.AppendChar (d, 0AC) ;
+    DynUtf.AppendChar (d, 0AC) ;
     Sp (d, ind + 1) ;
-    DynStr.Append (d, 'RAISES ') ;
+    DynUtf.Append (d, 'RAISES ') ;
     FOR i := 0 TO rs.nkids - 1 DO
-      IF i > 0 THEN DynStr.Append (d, ', ') END ;
+      IF i > 0 THEN DynUtf.Append (d, ', ') END ;
       IF rs.kids[i] IS SOME q THEN Qual (d, q) END
     END
   END ;
   IF n.kids[3] IS SOME at THEN
-    DynStr.Append (d, ' [') ;
-    DynStr.Append (d, at.a) ;
-    DynStr.AppendChar (d, ']')
+    DynUtf.Append (d, ' [') ;
+    DynUtf.Append (d, at.au) ;
+    DynUtf.AppendChar (d, ']')
   END ;
   IF n.kids[4] IS SOME body THEN
-    DynStr.Append (d, ' =') ;
-    DynStr.AppendChar (d, 0AC) ;
+    DynUtf.Append (d, ' =') ;
+    DynUtf.AppendChar (d, 0AC) ;
     FOR i := 0 TO body.nkids - 2 DO
       IF body.kids[i] IS SOME dc THEN EDecl (d, dc, ind) END
     END ;
     IF body.kids[body.nkids - 1] IS SOME blk THEN
       EBlock (d, blk, ind, TRUE)
     END ;
-    DynStr.AppendChar (d, ' ') ;
-    DynStr.Append (d, n.a) ;
-    DynStr.Append (d, ' ;') ;
-    DynStr.AppendChar (d, 0AC)
+    DynUtf.AppendChar (d, ' ') ;
+    DynUtf.Append (d, n.au) ;
+    DynUtf.Append (d, ' ;') ;
+    DynUtf.AppendChar (d, 0AC)
   ELSE
-    DynStr.Append (d, ' ;') ;
-    DynStr.AppendChar (d, 0AC)
+    DynUtf.Append (d, ' ;') ;
+    DynUtf.AppendChar (d, 0AC)
   END
 END EProc ;
 
@@ -768,93 +769,93 @@ END IsAggregate ;
        e1,
        e2
      ] ;                                                            *)
-PROCEDURE EAggregate (VAR d: PTR DynStr.DString ; k: Ast.Kid ;
+PROCEDURE EAggregate (VAR d: PTR DynUtf.DString ; k: Ast.Kid ;
                       ind: I64) =
 VAR i : I64 ;
 BEGIN
   IF k IS SOME n THEN
-    DynStr.AppendChar (d, '[') ;
-    DynStr.AppendChar (d, 0AC) ;
+    DynUtf.AppendChar (d, '[') ;
+    DynUtf.AppendChar (d, 0AC) ;
     FOR i := 0 TO n.nkids - 1 DO
       Sp (d, ind + 1) ;
       E (d, n.kids[i]) ;
-      IF i < n.nkids - 1 THEN DynStr.AppendChar (d, ',') END ;
-      DynStr.AppendChar (d, 0AC)
+      IF i < n.nkids - 1 THEN DynUtf.AppendChar (d, ',') END ;
+      DynUtf.AppendChar (d, 0AC)
     END ;
     Sp (d, ind) ;
-    DynStr.AppendChar (d, ']')
+    DynUtf.AppendChar (d, ']')
   END
 END EAggregate ;
 
-PROCEDURE EDecl (VAR d: PTR DynStr.DString ;
+PROCEDURE EDecl (VAR d: PTR DynUtf.DString ;
                  n: PTR Ast.Node ; ind: I64) =
 VAR i : I64 ;
 BEGIN
   CASE n.kind OF
   | Ast.NConstSection :
       Sp (d, ind) ;
-      DynStr.Append (d, 'CONST') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, 'CONST') ;
+      DynUtf.AppendChar (d, 0AC) ;
       FOR i := 0 TO n.nkids - 1 DO
         IF n.kids[i] IS SOME c THEN
           Sp (d, ind + 1) ;
-          DynStr.Append (d, c.a) ;
-          DynStr.Append (d, ' = ') ;
+          DynUtf.Append (d, c.au) ;
+          DynUtf.Append (d, ' = ') ;
           IF IsAggregate (c.kids[0]) THEN
             EAggregate (d, c.kids[0], ind + 1)
           ELSE
             E (d, c.kids[0])
           END ;
-          DynStr.Append (d, ' ;') ;
-          DynStr.AppendChar (d, 0AC)
+          DynUtf.Append (d, ' ;') ;
+          DynUtf.AppendChar (d, 0AC)
         END
       END
   | Ast.NTypeSection :
       Sp (d, ind) ;
-      DynStr.Append (d, 'TYPE') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, 'TYPE') ;
+      DynUtf.AppendChar (d, 0AC) ;
       FOR i := 0 TO n.nkids - 1 DO
         IF n.kids[i] IS SOME td THEN
           Sp (d, ind + 1) ;
-          DynStr.Append (d, td.a) ;
+          DynUtf.Append (d, td.au) ;
           IF td.kids[0] IS SOME ty THEN
-            DynStr.Append (d, ' = ') ;
+            DynUtf.Append (d, ' = ') ;
             EType (d, td.kids[0], ind + 1)
           END ;
-          DynStr.Append (d, ' ;') ;
-          DynStr.AppendChar (d, 0AC)
+          DynUtf.Append (d, ' ;') ;
+          DynUtf.AppendChar (d, 0AC)
         END
       END
   | Ast.NVarSection :
       Sp (d, ind) ;
-      DynStr.Append (d, 'VAR') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, 'VAR') ;
+      DynUtf.AppendChar (d, 0AC) ;
       FOR i := 0 TO n.nkids - 1 DO
         IF n.kids[i] IS SOME vd THEN
           Sp (d, ind + 1) ;
-          IF vd.f3 THEN DynStr.Append (d, 'RO ') END ;
+          IF vd.f3 THEN DynUtf.Append (d, 'RO ') END ;
           IF vd.kids[0] IS SOME ids THEN Idents (d, ids) END ;
-          DynStr.Append (d, ' : ') ;
+          DynUtf.Append (d, ' : ') ;
           EType (d, vd.kids[1], ind + 1) ;
-          DynStr.Append (d, ' ;') ;
-          DynStr.AppendChar (d, 0AC)
+          DynUtf.Append (d, ' ;') ;
+          DynUtf.AppendChar (d, 0AC)
         END
       END
   | Ast.NExcSection :
       Sp (d, ind) ;
-      DynStr.Append (d, 'EXCEPTION') ;
-      DynStr.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, 'EXCEPTION') ;
+      DynUtf.AppendChar (d, 0AC) ;
       FOR i := 0 TO n.nkids - 1 DO
         IF n.kids[i] IS SOME xd THEN
           Sp (d, ind + 1) ;
-          DynStr.Append (d, xd.a) ;
+          DynUtf.Append (d, xd.au) ;
           IF xd.kids[0] IS SOME xf THEN
-            DynStr.Append (d, ' (') ;
+            DynUtf.Append (d, ' (') ;
             FieldsInline (d, xd.kids[0]) ;
-            DynStr.AppendChar (d, ')')
+            DynUtf.AppendChar (d, ')')
           END ;
-          DynStr.Append (d, ' ;') ;
-          DynStr.AppendChar (d, 0AC)
+          DynUtf.Append (d, ' ;') ;
+          DynUtf.AppendChar (d, 0AC)
         END
       END
   | Ast.NProcDecl :
@@ -863,63 +864,63 @@ BEGIN
   END
 END EDecl ;
 
-PROCEDURE EUnit (VAR d: PTR DynStr.DString ;
+PROCEDURE EUnit (VAR d: PTR DynUtf.DString ;
                  u: PTR Ast.Node) =
 VAR i, j : I64 ;
 BEGIN
   IF u.kind = Ast.NDefinition THEN
-    IF u.f1 THEN DynStr.Append (d, 'UNSAFE ') END ;
-    IF u.f2 THEN DynStr.Append (d, 'STATEFUL ') END ;
-    DynStr.Append (d, 'DEFINITION MODULE ') ;
-    IF LEN (u.b) > 0 THEN
-      DynStr.Append (d, 'FOR ') ;
-      Quoted (d, u.b) ;
-      DynStr.AppendChar (d, ' ')
+    IF u.f1 THEN DynUtf.Append (d, 'UNSAFE ') END ;
+    IF u.f2 THEN DynUtf.Append (d, 'STATEFUL ') END ;
+    DynUtf.Append (d, 'DEFINITION MODULE ') ;
+    IF Text.BLen (u.bu) > 0 THEN
+      DynUtf.Append (d, 'FOR ') ;
+      Quoted (d, u.bu) ;
+      DynUtf.AppendChar (d, ' ')
     END ;
-    DynStr.Append (d, u.a) ;
+    DynUtf.Append (d, u.au) ;
     (* the LINK words, kept as the unit's last kid *)
     FOR i := 0 TO u.nkids - 1 DO
       IF u.kids[i] IS SOME lk THEN
         IF lk.kind = Ast.NLinkList THEN
-          DynStr.Append (d, ' LINK ') ;
+          DynUtf.Append (d, ' LINK ') ;
           FOR j := 0 TO lk.nkids - 1 DO
             IF lk.kids[j] IS SOME ws THEN
-              IF j > 0 THEN DynStr.Append (d, ', ') END ;
-              Quoted (d, ws.a)
+              IF j > 0 THEN DynUtf.Append (d, ', ') END ;
+              Quoted (d, ws.au)
             END
           END
         END
       END
     END ;
-    DynStr.Append (d, ' ;')
+    DynUtf.Append (d, ' ;')
   ELSIF u.kind = Ast.NImplementation THEN
-    IF u.f1 THEN DynStr.Append (d, 'UNSAFE ') END ;
-    DynStr.Append (d, 'IMPLEMENTATION MODULE ') ;
-    DynStr.Append (d, u.a) ;
-    DynStr.Append (d, ' ;')
+    IF u.f1 THEN DynUtf.Append (d, 'UNSAFE ') END ;
+    DynUtf.Append (d, 'IMPLEMENTATION MODULE ') ;
+    DynUtf.Append (d, u.au) ;
+    DynUtf.Append (d, ' ;')
   ELSE
-    DynStr.Append (d, 'MODULE ') ;
-    DynStr.Append (d, u.a) ;
-    DynStr.Append (d, ' ;')
+    DynUtf.Append (d, 'MODULE ') ;
+    DynUtf.Append (d, u.au) ;
+    DynUtf.Append (d, ' ;')
   END ;
-  DynStr.AppendChar (d, 0AC) ;
-  DynStr.AppendChar (d, 0AC) ;
+  DynUtf.AppendChar (d, 0AC) ;
+  DynUtf.AppendChar (d, 0AC) ;
   FOR i := 0 TO u.nkids - 1 DO
     IF u.kids[i] IS SOME kd THEN
       IF kd.kind = Ast.NFromImport THEN
-        DynStr.Append (d, 'FROM ') ;
-        DynStr.Append (d, kd.a) ;
-        DynStr.Append (d, ' IMPORT ') ;
+        DynUtf.Append (d, 'FROM ') ;
+        DynUtf.Append (d, kd.au) ;
+        DynUtf.Append (d, ' IMPORT ') ;
         IF kd.kids[0] IS SOME ids THEN Idents (d, ids) END ;
-        DynStr.Append (d, ' ;') ;
-        DynStr.AppendChar (d, 0AC) ;
-        DynStr.AppendChar (d, 0AC)
+        DynUtf.Append (d, ' ;') ;
+        DynUtf.AppendChar (d, 0AC) ;
+        DynUtf.AppendChar (d, 0AC)
       ELSIF kd.kind = Ast.NImportList THEN
-        DynStr.Append (d, 'IMPORT ') ;
+        DynUtf.Append (d, 'IMPORT ') ;
         IF kd.kids[0] IS SOME ids THEN Idents (d, ids) END ;
-        DynStr.Append (d, ' ;') ;
-        DynStr.AppendChar (d, 0AC) ;
-        DynStr.AppendChar (d, 0AC)
+        DynUtf.Append (d, ' ;') ;
+        DynUtf.AppendChar (d, 0AC) ;
+        DynUtf.AppendChar (d, 0AC)
       ELSIF kd.kind = Ast.NModBody THEN
         (* the block's END is the MODULE's END: one keyword, not two *)
         IF kd.kids[0] IS SOME blk2 THEN
@@ -929,56 +930,78 @@ BEGIN
         (* printed in the heading *)
       ELSE
         EDecl (d, kd, 0) ;
-        DynStr.AppendChar (d, 0AC)
+        DynUtf.AppendChar (d, 0AC)
       END
     END
   END ;
-  DynStr.Append (d, 'END ') ;
-  DynStr.Append (d, u.a) ;
-  DynStr.Append (d, '.') ;
-  DynStr.AppendChar (d, 0AC)
+  DynUtf.Append (d, 'END ') ;
+  DynUtf.Append (d, u.au) ;
+  DynUtf.Append (d, '.') ;
+  DynUtf.AppendChar (d, 0AC)
 END EUnit ;
 
-PROCEDURE TypeText (VAR pool: POOL ; k: Ast.Kid) : STR =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE TypeTextUtf (VAR pool: POOL ; k: Ast.Kid) : UTF =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
+  d := DynUtf.New (pool) ;
   EType (d, k, 0) ;
-  RETURN DynStr.View (d)
-END TypeText ;
+  RETURN DynUtf.ViewIn (pool, d)
+END TypeTextUtf ;
 
-PROCEDURE ParamsText (k: Ast.Kid) : STR =
+PROCEDURE ParamsTextUtf (k: Ast.Kid) : UTF =
 VAR pool : POOL ;
-    d : PTR DynStr.DString IN pool ;
+    d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
+  d := DynUtf.New (pool) ;
   EParams (d, k) ;
-  RETURN DynStr.View (d)
-END ParamsText ;
+  RETURN DynUtf.View (d)
+END ParamsTextUtf ;
 
-PROCEDURE ExprText (k: Ast.Kid) : STR =
+PROCEDURE ExprTextUtf (k: Ast.Kid) : UTF =
 VAR pool : POOL ;
-    d : PTR DynStr.DString IN pool ;
+    d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
+  d := DynUtf.New (pool) ;
   E (d, k) ;
-  RETURN DynStr.View (d)
-END ExprText ;
+  RETURN DynUtf.View (d)
+END ExprTextUtf ;
 
-PROCEDURE Tree (VAR pool: POOL ; root: PTR Ast.Node) : STR =
+PROCEDURE TreeUtf (VAR pool: POOL ; root: PTR Ast.Node) : UTF =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
+  d := DynUtf.New (pool) ;
   FOR i := 0 TO root.nkids - 1 DO
     IF i > 0 THEN
-      DynStr.AppendChar (d, 0AC) ;
-      DynStr.AppendChar (d, 0AC)
+      DynUtf.AppendChar (d, 0AC) ;
+      DynUtf.AppendChar (d, 0AC)
     END ;
     IF root.kids[i] IS SOME u THEN EUnit (d, u) END
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynUtf.ViewIn (pool, d)
+END TreeUtf ;
+
+(* the STR forms: the UTF text decoded, in the pool the caller gave
+   where the form took one, as before *)
+PROCEDURE TypeText (VAR pool: POOL ; k: Ast.Kid) : STR =
+BEGIN
+  RETURN Text.Keep (pool, STR (TypeTextUtf (pool, k)))
+END TypeText ;
+
+PROCEDURE ParamsText (k: Ast.Kid) : STR =
+BEGIN
+  RETURN STR (ParamsTextUtf (k))
+END ParamsText ;
+
+PROCEDURE ExprText (k: Ast.Kid) : STR =
+BEGIN
+  RETURN STR (ExprTextUtf (k))
+END ExprText ;
+
+PROCEDURE Tree (VAR pool: POOL ; root: PTR Ast.Node) : STR =
+BEGIN
+  RETURN Text.Keep (pool, STR (TreeUtf (pool, root)))
 END Tree ;
 
 END Print.

@@ -1,0 +1,14 @@
+--- Plot.m9
++++ Plot.m9
+@@ -449,8 +449,9 @@
+ PROCEDURE EmitHexByte (VAR d: PTR DynStr.DString ;
+                        v: I64) =
+ BEGIN
+-  DynStr.AppendChar (d, HexDigits[v DIV 16]) ;
+-  DynStr.AppendChar (d, HexDigits[v MOD 16])
++  (* the digits are ASCII: the octet IS the character *)
++  DynStr.AppendChar (d, Text.BChar (HexDigits, v DIV 16)) ;
++  DynStr.AppendChar (d, Text.BChar (HexDigits, v MOD 16))
+ END EmitHexByte ;
+ 
+ PROCEDURE EmitCmap (VAR d: PTR DynStr.DString ;

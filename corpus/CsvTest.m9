@@ -1,0 +1,60 @@
+MODULE CsvTest ;
+
+(* Csv, tested in M9 (runtime/test/m9test.sh runs every *Test.m9 beside
+   its module).  The reader keeps its C driver (csv_driver.c, against the
+   files the oracles wrote); this file holds what came after it: the UTF
+   twins of docs/utf8-plan.md's stage 2, held to Python's csv.reader on
+   a document with characters past ASCII and a quoted field with doubled
+   quotes ('Grüße' is 5 code points, 7 octets; 'Zürich "Ost"' 12 and
+   13).  And what the twins exist for: the STR TextAt of 'Grüße' widens
+   its 7 octets one CHAR each. *)
+
+IMPORT Check ;
+IMPORT Csv ;
+IMPORT Io ;
+IMPORT Text ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE Utfs () =
+VAR
+  doc, ville : UTF ;
+  tab : PTR Csv.Table IN pool ;
+  opt : Csv.Options ;
+BEGIN
+  doc := 'name,ville,n' ;
+  doc := doc + 0AC + 'Grüße,"Zürich ""Ost""",3' + 0AC + 'x,é,4' + 0AC ;
+  opt := Csv.Defaults () ;
+  opt.quoted := TRUE ;
+  tab := Csv.OpenBytes (pool, OCTETS (doc), opt) ;
+  Csv.SetText (tab, 0) ;
+  Csv.SetText (tab, 1) ;
+  Csv.SetInt (tab, 2) ;
+  Csv.Parse (pool, tab) ;
+  Check.EqI64 (t, 'three columns', Csv.Cols (tab), 3) ;
+  Check.EqI64 (t, 'two rows', Csv.Rows (tab), 2) ;
+  Check.That (t, 'NameUtf', Text.Eq (Csv.NameUtf (pool, tab, 1), 'ville')) ;
+  ville := 'ville' ;
+  Check.EqI64 (t, 'Csv.Find of a UTF is FindUtf', Csv.Find (tab, ville), 1) ;
+  Check.That (t, 'TextAtUtf decodes a field past ASCII',
+    Text.Eq (Csv.TextAtUtf (pool, tab, 0, 0), 'Grüße')) ;
+  Check.EqI64 (t, 'in 5 code points', Text.CpCount (Csv.TextAtUtf (pool, tab, 0, 0)), 5) ;
+  Check.That (t, 'and undoubles a quoted field',
+    Text.Eq (Csv.TextAtUtf (pool, tab, 1, 0), 'Zürich "Ost"')) ;
+  Check.EqI64 (t, 'of 13 octets', Text.BLen (Csv.TextAtUtf (pool, tab, 1, 0)), 13) ;
+  Check.That (t, 'a one-character field', Text.Eq (Csv.TextAtUtf (pool, tab, 1, 1), 'é')) ;
+  Check.EqI64 (t, 'the STR TextAt widens octets: 7 CHARs for Grüße',
+    LEN (Csv.TextAt (pool, tab, 0, 0)), 7)
+EXCEPT
+| Csv.ParseError (w, l, c) : Check.That (t, 'the document parses: ' + w, FALSE)
+| Csv.RangeError (r, c) : Check.That (t, 'no RangeError', FALSE)
+| ValueRange : Check.That (t, 'no ValueRange', FALSE)
+| IndexError : Check.That (t, 'no IndexError', FALSE)
+END Utfs ;
+
+BEGIN
+  Utfs () ;
+  Io.Halt (Check.Done (t, 'Csv'))
+END CsvTest.

@@ -1,0 +1,21 @@
+MODULE R2N21b ;
+(* a literal reached through a call-selection, written through *)
+IMPORT Io ;
+TYPE R = RECORD n : I64 ; s : STR END ;
+PROCEDURE Mk () : R =
+VAR r : R ;
+BEGIN
+  r.n := 1 ;
+  r.s := 'abc' ;
+  RETURN r
+END Mk ;
+PROCEDURE Up () =
+VAR s : STR ; rr : R ;
+BEGIN
+  rr := Mk () ; s := rr.s ;
+  s[0] := 'X' ;
+  Io.WriteLine (s)
+END Up ;
+BEGIN
+  Up ()
+END R2N21b.

@@ -5,6 +5,7 @@
 
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
+extern void m9_put_bytes_err (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -20,10 +21,14 @@ extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
+extern int64_t m9_utf_adopt_p (const void *, int64_t, void *);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
+extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_short (double, void *, int64_t);
 
 static int64_t count;
 static m9_sl_F64 xs;
@@ -35,10 +40,12 @@ static m9_pool m9mframe = {0};
 
 int64_t * const ExportDef_count = &count;
 m9_sl_F64 * const ExportDef_xs = &xs;
+m9_pool * const ExportDef_xs_pool = &m9mframe;
 ExportDef_Box * * const ExportDef_box = &box;
 m9_pool * const ExportDef_box_pool = &m9mframe;
 int64_t * const ExportDef_version = &version;
 m9_sl_F64 * const ExportDef_limits = &limits;
+m9_pool * const ExportDef_limits_pool = &m9mframe;
 
 static const uint32_t m9s0[21] = { 69u, 120u, 112u, 111u, 114u, 116u, 68u, 101u, 102u, 32u, 115u, 101u, 101u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 32u };
 static const uint32_t m9s1[8] = { 44u, 32u, 120u, 115u, 91u, 49u, 93u, 32u };
@@ -56,7 +63,7 @@ void ExportDef_Show (m9_state *err)
   m9_mark m9t3 = m9_pool_mark (err->res);
   { __typeof__((*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err))) m9a1 = (*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err));
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed (m9a1, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (box->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err)) m9a2 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed (m9a1, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (box->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err);
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed (m9a1, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err)) m9a2 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed (m9a1, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err);
     if (err->exc) goto L_hdl_m9t1;
   Io_WriteLine (m9a2, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -93,18 +100,20 @@ void ExportDef_m9init (m9_state *err)
     if (err->exc) goto L_ret;
     xs = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = INT64_C(2);
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) = (double)(i);
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__(box) m9v = (ExportDef_Box *) m9_pool_alloc (err->res, sizeof (ExportDef_Box), 1, err);
     if (err->exc) goto L_ret;
     box = m9v;
   }
-  box->n = INT64_C(1);
+  ({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->n = INT64_C(1);
   version = INT64_C(2);
   { __typeof__(limits) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, INT64_C(2), err);
     if (err->exc) goto L_ret;

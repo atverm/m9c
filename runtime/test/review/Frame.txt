@@ -2,10 +2,10 @@ REVIEW Frame -- 112 procedures with a body, 74 of them functions; 66 headings in
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              74
-  assignments                                   617
+  assignments                                   619
   arguments                                    1193
   RETURN values                                 101
-  operands of a comparison or an operator       418
+  operands of a comparison or an operator       416
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total               37
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                37
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                       24
   NEW in the frame                               20
   NEW in a named pool                           110
+  calls of a STR form with a UTF twin             9   Csv.Name -> Csv.NameUtf, Csv.Name -> Csv.NameUtf, Csv.Name -> Csv.NameUtf, Csv.TextAt -> Csv.TextAtUtf, Csv.Name -> Csv.NameUtf, Csv.Name -> Csv.NameUtf, +3 more
+  STR subscripts, writes and LEN                 36   len s, len s, index s[i], len long, len cf, len unit, +30 more

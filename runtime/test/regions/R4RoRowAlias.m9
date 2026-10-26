@@ -1,0 +1,19 @@
+MODULE R4RoRowAlias ;
+(* read-only storage through an alias the depth scan does not follow:
+   row := rows[0] (a read), a literal stored through row, then written
+   through rows' three subscripts *)
+IMPORT Io ;
+TYPE Strs = SLICE OF STR ;
+PROCEDURE Fill () =
+VAR rows : SLICE OF Strs ; row : Strs ;
+BEGIN
+  rows := NEW (Strs, 1) ;
+  rows[0] := NEW (STR, 2) ;
+  row := rows[0] ;
+  row[0] := 'abc' ;
+  rows[0][0][0] := 'X' ;
+  Io.WriteLine (rows[0][0])
+END Fill ;
+BEGIN
+  Fill ()
+END R4RoRowAlias.

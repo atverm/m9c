@@ -28,7 +28,11 @@ trap 'rc=$?; rm -rf "$work" || :; exit $rc' EXIT
 mkdir -p "$work/src" "$work/bin"
 
 cd "$repo"
-git ls-files -z | xargs -0 tar -cf - | (cd "$work/src" && tar -xf -)
+# ONE tar reading the names: through xargs a long list became several
+# tar runs, concatenated, and the extracting tar stops at the first
+# archive's end -- files past it went missing (CI, 2026-10-26, when the
+# list grew: `runtime/tlsshim.c: No such file')
+git ls-files -z | tar --null -T - -cf - | (cd "$work/src" && tar -xf -)
 
 # a compiler that announces itself rather than one that is merely absent:
 # "command not found" could be mistaken for a build that skipped a step

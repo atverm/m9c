@@ -1,0 +1,23 @@
+(* the compiler review of 2026-10-21, checker repro E4 (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE E4 ;
+IMPORT Io, Text ;
+TYPE Getter = PROCEDURE () : STR ;
+TYPE R = RECORD s : STR ; n : I64 END ;
+TYPE V = CASE RECORD | Txt : s : STR | Num : n : I64 END ;
+VAR gr : R ;
+VAR gs : SLICE OF STR ;
+VAR mp : POOL ;
+PROCEDURE Lit () : STR = BEGIN RETURN 'literal' END Lit ;
+PROCEDURE SetIt (VAR s: STR) = BEGIN s := 'literal' END SetIt ;
+PROCEDURE SetR (VAR r: R) = BEGIN r.s := 'literal' END SetR ;
+PROCEDURE InitG () = BEGIN gr.s := 'literal' END InitG ;
+PROCEDURE Up () =
+VAR r : R ;
+BEGIN r.s := "literal" ; r.s[0] := 0058C
+END Up ;
+BEGIN
+  gs := NEW (mp, STR, 2) ;
+  InitG () ;
+  Up () ;
+  Io.WriteLine ('survived')
+END E4.

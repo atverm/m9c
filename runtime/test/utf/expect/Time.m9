@@ -1,0 +1,621 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE Time ;
+
+(* Instants, civil time, and calendar arithmetic.
+
+   Designed against the failure modes rather than toward a feature
+   list, because this is the module every language gets wrong:
+
+     ONE instant type, always UTC.  Python's original sin is naive
+     versus aware -- two types that look identical, compare wrongly,
+     and silently mean different things -- and its utcnow () returns
+     a naive value that looks like UTC and is not.  There is nothing
+     here to get wrong because there is nothing else to be.
+
+     NO timezone database and NO daylight saving.  Rendering a local
+     wall clock needs tzdata and answers questions that have no
+     answer ("2:30 happened twice last Sunday").  That belongs in a
+     module that ships the data, not in this one.
+
+     NO strftime zoo.  One output format and one input format, RFC
+     3339 with Z.  Anything else is Fmt and a slice.
+
+   The representation is F64 seconds since 1970-01-01T00:00:00Z, as
+   the CF conventions and netCDF use, so arithmetic is subtraction
+   and Mat can hold a column of them.  State the cost plainly: near
+   2025 an F64 second resolves to about a quarter of a microsecond,
+   and coarsens as you travel from the epoch.  Nanosecond
+   timestamping wants I64 nanoseconds, a different type; it is not
+   offered here pretending to be this one.
+
+   DURATION and CALENDAR SPAN are different things and have
+   different procedures.  Seconds between two instants is physics
+   and is exact.  "Three months" is a convention: months have 28 to
+   31 days, and 31 January plus one month has no answer until
+   someone picks one.  This module picks, says so, and tests it. *)
+
+TYPE
+  Instant = RECORD
+    t : F64 ;              (* seconds since the Unix epoch, UTC *)
+  END ;
+
+  Civil = RECORD
+    year, month, day : I64 ;      (* proleptic Gregorian, month 1..12 *)
+    hour, minute : I64 ;
+    second : F64 ;                (* 0 .. 59.999..., fraction included *)
+  END ;
+
+  Span = RECORD
+    (* a CALENDAR span: years and months are symbolic, the rest are
+       exact.  Not a duration -- it cannot be converted to seconds
+       without knowing which instant it is measured from.           *)
+    years, months, days : I64 ;
+    hours, minutes : I64 ;
+    seconds : F64 ;
+  END ;
+
+PROCEDURE Elapsed (a, b: Instant) : F64 ;
+  (* b - a in seconds.  Physics: exact, total, no convention.       *)
+
+PROCEDURE AddSeconds (t: Instant ; s: F64) : Instant ;
+  (* t moved by s seconds; negative moves back.  Physics again, like
+     Elapsed: no calendar, no leap second, no zone, so this is exact
+     and total and has nothing to raise.  Arithmetic on the CIVIL
+     side goes through ToCivil, which can fail.                     *)
+
+PROCEDURE ToCivil (t: Instant) : Civil RAISES ValueRange ;
+  (* an Instant holding NaN, or seconds beyond what a day count can
+     hold, has no civil form and says so rather than inventing one  *)
+PROCEDURE FromCivil (c: Civil) : Instant RAISES ValueRange ;
+  (* FromCivil validates: month 1..12, day within the month for that
+     year, hour 0..23, minute 0..59, second 0..<60.  A date that does
+     not exist raises rather than silently normalising -- 31 February
+     is a bug in the caller, not an input to be guessed at.         *)
+
+PROCEDURE Diff (a, b: Instant) : Span RAISES ValueRange ;
+  (* the calendar difference from a to b, as a person states it:
+     whole years, then whole months, then days, then time of day.
+     Negative when b precedes a.  The property that matters is
+     Add (a, Diff (a, b)) = b, and the driver checks it over a large
+     sample rather than asserting it.                               *)
+
+PROCEDURE Add (t: Instant ; s: Span) : Instant RAISES ValueRange ;
+  (* years and months first, on the civil calendar, CLAMPING the day
+     to the last of the target month: 31 January plus one month is
+     28 or 29 February.  Then days, hours, minutes and seconds as
+     exact durations.  The order is part of the definition, because
+     a different order gives a different answer.                    *)
+
+PROCEDURE Iso (t: Instant ; decimals: I64) : STR
+  RAISES ValueRange ;
+  (* RFC 3339, always Z: 2026-08-22T14:03:09.250Z                   *)
+
+PROCEDURE ParseIso (RO s: STR) : Instant RAISES ValueRange ;
+  (* the same shape, with or without fractional seconds, Z required.
+     Offsets are not accepted: an offset is a local-time claim and
+     this module does not do local time.                            *)
+
+(* ---- Nanos: an instant to the nanosecond, a DIFFERENT type ----
+
+   Instant above is F64 seconds and cannot carry a nanosecond near
+   2026 (sixteen digits, and the stamp wants eighteen).  Nanos is the
+   other type the header promised: whole seconds and a nanosecond, as
+   java.time.Instant holds them, for data that arrives with nine
+   fraction digits and must leave with them (2026-10-10, cp-kernel's
+   proposal: its kernel carried a Num.Instant of its own).  No
+   arithmetic is offered on it; Elapsed and the calendar stay on
+   Instant. *)
+TYPE
+  Nanos = RECORD
+    secs : I64 ;           (* seconds since 1970-01-01T00:00:00Z *)
+    nanos : I64 ;          (* 0 .. 999999999 *)
+  END ;
+
+PROCEDURE ParseNanos (RO s: STR) : Nanos RAISES ValueRange ;
+  (* java.time's ISO_OFFSET_DATE_TIME, held to OffsetDateTime.parse
+     on 434 strings: yyyy-MM-ddTHH:mm[:ss[.f]] and an offset -- Z, or
+     +HH, +HH:MM, +HH:MM:SS up to 18 hours -- the T and the Z in
+     either case, 0 to 9 fraction digits (a point with none is
+     accepted, as Java does), the date and time held to the calendar
+     (no 24:00, no 60th second, no 30 February).  A year has four
+     digits.  Anything else raises ValueRange. *)
+
+PROCEDURE IsoNanos (t: Nanos) : STR RAISES ValueRange ;
+  (* java.time.Instant.toString: always Z, seconds always written, a
+     fraction of 3, 6 or 9 digits only when nanos is not 0.  Years
+     0000 to 9999; outside them, or nanos outside 0 .. 999999999,
+     raises ValueRange. *)
+
+PROCEDURE NanosBefore (a, b: Nanos) : BOOL ;
+  (* a is strictly earlier than b *)
+
+PROCEDURE Now () : Instant ;
+
+PROCEDURE Sleep (ms: I64) ;
+  (* wait, and do nothing else -- no timer, no signal, no
+     cancellation.  It exists for BACKOFF: a retry loop that cannot
+     pause is a retry loop that hammers whatever refused it. *)
+  (* the wall clock, UTC.  The one procedure here that is not a pure
+     function of its arguments, so a test that calls it cannot have
+     a golden: every driver in this repository builds its Instants
+     from FromCivil and keeps Now for programs.                     *)
+
+PROCEDURE CivilFromDays (z: I64 ; VAR y, m, d: I64) ;
+  (* the inverse of DaysFromCivil: the proleptic Gregorian date of
+     day z since 1970-01-01.  Private until 2026-09-27; the ONEFlux
+     port had written its own (M9-REPORT.md item 12). *)
+
+PROCEDURE DaysFromCivil (y, m, d: I64) : I64 ;
+  (* days since 1970-01-01 for a proleptic Gregorian date, Howard
+     Hinnant's algorithm, exact for any year this type can hold.
+
+     EXPORTED because Instant is F64 SECONDS and a nanosecond stamp
+     does not fit one: 1.5e9 seconds with nanosecond resolution wants
+     eighteen significant digits and a double has sixteen.  A caller
+     building `datetime64[ns]` -- which is what a zarr time axis is --
+     must do the arithmetic in I64, and this is the only part of it
+     that is a calendar rather than a multiplication.
+
+     It does NOT validate: FromCivil is where a month of 13 or a
+     second of 60 is refused, and a caller reaching for this one is
+     usually reaching past that refusal on purpose (SOCAT ships
+     `ss == 60`, so the reference builds at midnight and adds the
+     hours, minutes and seconds as a duration). *)
+
+PROCEDURE IsLeap (year: I64) : BOOL ;
+PROCEDURE DaysInMonth (year, month: I64) : I64 RAISES ValueRange ;
+  (* the proleptic Gregorian rule, applied to every year including
+     those before it existed -- which is what "proleptic" means and
+     is the same choice ToCivil makes.
+
+       month -- 1..12.  Anything else RAISES rather than being
+                reduced modulo 12: a month of 13 is a caller's
+                arithmetic that has already gone wrong, and January
+                of the next year is not what it meant.             *)
+
+END Time.
+
+
+UNSAFE DEFINITION MODULE FOR "C" ctime ;
+
+PROCEDURE Realtime = "m9_now" () : C.Double  [REENTRANT] ;
+PROCEDURE SleepMs = "m9_sleep_ms" (ms: C.SSizeT)  [REENTRANT] ;
+  (* clock_gettime (CLOCK_REALTIME) as seconds; REENTRANT because
+     the call is, which is a fact about POSIX and not an assumption *)
+
+END ctime.
+
+
+IMPLEMENTATION MODULE Time ;
+
+IMPORT Text ;
+
+IMPORT DynStr ;
+IMPORT Fmt ;
+FROM ctime IMPORT Realtime, SleepMs ;
+
+CONST
+  SecPerDay = 86400.0 ;
+  SecPerMin = 60 ;
+  MinPerHour = 60 ;
+
+PROCEDURE IsLeap (year: I64) : BOOL =
+BEGIN
+  IF year MOD 4 # 0 THEN RETURN FALSE END ;
+  IF year MOD 100 # 0 THEN RETURN TRUE END ;
+  RETURN year MOD 400 = 0
+END IsLeap ;
+
+PROCEDURE DaysInMonth (year, month: I64) : I64 RAISES ValueRange =
+BEGIN
+  IF month < 1 OR month > 12 THEN RAISE ValueRange END ;
+  IF month = 2 THEN
+    IF IsLeap (year) THEN RETURN 29 END ;
+    RETURN 28
+  END ;
+  IF month = 4 OR month = 6 OR month = 9 OR month = 11 THEN RETURN 30 END ;
+  RETURN 31
+END DaysInMonth ;
+
+(* Howard Hinnant's civil-from-days and days-from-civil: exact for
+   the proleptic Gregorian calendar, no tables, no loops.  The era
+   adjustments are what make them correct for negative years, where
+   C's truncating division would otherwise round the wrong way.     *)
+PROCEDURE DaysFromCivil (y, m, d: I64) : I64 =
+VAR
+  era, yoe, doy, doe, yy : I64 ;
+BEGIN
+  yy := y ;
+  IF m <= 2 THEN yy := yy - 1 END ;
+  IF yy >= 0 THEN era := yy DIV 400 ELSE era := (yy - 399) DIV 400 END ;
+  yoe := yy - era * 400 ;
+  IF m > 2 THEN doy := (153 * (m - 3) + 2) DIV 5 + d - 1
+  ELSE doy := (153 * (m + 9) + 2) DIV 5 + d - 1 END ;
+  doe := yoe * 365 + yoe DIV 4 - yoe DIV 100 + doy ;
+  RETURN era * 146097 + doe - 719468
+END DaysFromCivil ;
+
+PROCEDURE CivilFromDays (z: I64 ; VAR y, m, d: I64) =
+VAR
+  era, doe, yoe, doy, mp, zz : I64 ;
+BEGIN
+  zz := z + 719468 ;
+  IF zz >= 0 THEN era := zz DIV 146097 ELSE era := (zz - 146096) DIV 146097 END ;
+  doe := zz - era * 146097 ;
+  yoe := (doe - doe DIV 1460 + doe DIV 36524 - doe DIV 146096) DIV 365 ;
+  doy := doe - (365 * yoe + yoe DIV 4 - yoe DIV 100) ;
+  mp := (5 * doy + 2) DIV 153 ;
+  d := doy - (153 * mp + 2) DIV 5 + 1 ;
+  IF mp < 10 THEN m := mp + 3 ELSE m := mp - 9 END ;
+  y := yoe + era * 400 ;
+  IF m <= 2 THEN y := y + 1 END
+END CivilFromDays ;
+
+(* floor division of an F64 by a positive F64, as a whole number:
+   truncation would round the wrong way before the epoch          *)
+PROCEDURE FloorDiv (x, by: F64) : F64 RAISES ValueRange =
+VAR q : F64 ;
+BEGIN
+  q := x / by ;
+  IF q < 0.0 THEN
+    IF q # F64 (I64 (q)) THEN RETURN F64 (I64 (q)) - 1.0 END
+  END ;
+  RETURN F64 (I64 (q))
+END FloorDiv ;
+
+PROCEDURE Elapsed (a, b: Instant) : F64 =
+BEGIN
+  RETURN b.t - a.t
+END Elapsed ;
+
+PROCEDURE AddSeconds (t: Instant ; s: F64) : Instant =
+VAR r : Instant ;
+BEGIN
+  r.t := t.t + s ;
+  RETURN r
+END AddSeconds ;
+
+PROCEDURE ToCivil (t: Instant) : Civil RAISES ValueRange =
+VAR
+  c : Civil ;
+  days, sod : F64 ;
+  isod : I64 ;
+BEGIN
+  days := FloorDiv (t.t, SecPerDay) ;
+  sod := t.t - days * SecPerDay ;
+  CivilFromDays (I64 (days), c.year, c.month, c.day) ;
+  isod := I64 (sod) ;
+  c.hour := isod DIV 3600 ;
+  c.minute := (isod MOD 3600) DIV 60 ;
+  c.second := sod - F64 (c.hour * 3600 + c.minute * 60) ;
+  RETURN c
+END ToCivil ;
+
+PROCEDURE FromCivil (c: Civil) : Instant RAISES ValueRange =
+VAR
+  r : Instant ;
+  days : I64 ;
+BEGIN
+  IF c.month < 1 OR c.month > 12 THEN RAISE ValueRange END ;
+  IF c.day < 1 OR c.day > DaysInMonth (c.year, c.month) THEN
+    RAISE ValueRange
+  END ;
+  IF c.hour < 0 OR c.hour > 23 THEN RAISE ValueRange END ;
+  IF c.minute < 0 OR c.minute > 59 THEN RAISE ValueRange END ;
+  IF c.second < 0.0 OR c.second >= 60.0 THEN RAISE ValueRange END ;
+  days := DaysFromCivil (c.year, c.month, c.day) ;
+  r.t := F64 (days) * SecPerDay + F64 (c.hour * 3600 + c.minute * 60)
+         + c.second ;
+  RETURN r
+END FromCivil ;
+
+(* the calendar half of Add, on its own, because Diff needs to call
+   exactly it to compute an exact residual *)
+PROCEDURE AddMonthsOnly (t: Instant ; months: I64) : Instant
+  RAISES ValueRange =
+VAR
+  c : Civil ;
+  total, dim : I64 ;
+BEGIN
+  c := ToCivil (t) ;
+  total := c.year * 12 + (c.month - 1) + months ;
+  c.year := FloorDivI (total, 12) ;
+  c.month := total - c.year * 12 + 1 ;
+  dim := DaysInMonth (c.year, c.month) ;
+  IF c.day > dim THEN c.day := dim END ;
+  RETURN FromCivil (c)
+END AddMonthsOnly ;
+
+PROCEDURE Add (t: Instant ; s: Span) : Instant RAISES ValueRange =
+VAR r : Instant ;
+BEGIN
+  r := AddMonthsOnly (t, s.years * 12 + s.months) ;
+  (* then the exact part, in seconds *)
+  r.t := r.t + F64 (s.days) * SecPerDay
+              + F64 (s.hours * 3600 + s.minutes * 60) + s.seconds ;
+  RETURN r
+END Add ;
+
+PROCEDURE FloorDivI (a, b: I64) : I64 =
+VAR q : I64 ;
+BEGIN
+  q := a DIV b ;
+  IF a MOD b # 0 THEN
+    IF (a < 0) # (b < 0) THEN RETURN q - 1 END
+  END ;
+  RETURN q
+END FloorDivI ;
+
+PROCEDURE Diff (a, b: Instant) : Span RAISES ValueRange =
+VAR
+  s : Span ;
+  ca, cb : Civil ;
+  mid : Instant ;
+  rest : F64 ;
+  tm : I64 ;
+  back : BOOL ;
+BEGIN
+  ca := ToCivil (a) ;
+  cb := ToCivil (b) ;
+
+  (* Whole calendar months first, then the residual measured against
+     the instant those months actually land on.  Subtracting civil
+     fields and borrowing was WRONG twice over: 31 January to 1 March
+     needs two borrows, and negating a forward span is not its
+     inverse once a month-end has been clamped.  The driver caught
+     both, at 14.6% and 13.6% of random pairs.
+
+     Defining the residual as b - AddMonthsOnly (a, months), computed
+     in the DIRECTION ASKED, makes Add (a, Diff (a, b)) = b true by
+     construction: Add performs exactly these steps in this order.   *)
+  back := b.t < a.t ;
+  tm := (cb.year * 12 + cb.month) - (ca.year * 12 + ca.month) ;
+  mid := AddMonthsOnly (a, tm) ;
+  IF back THEN
+    WHILE mid.t < b.t AND tm < 0 DO
+      tm := tm + 1 ;
+      mid := AddMonthsOnly (a, tm)
+    END
+  ELSE
+    WHILE mid.t > b.t AND tm > 0 DO
+      tm := tm - 1 ;
+      mid := AddMonthsOnly (a, tm)
+    END
+  END ;
+
+  rest := b.t - mid.t ;
+  IF rest < 0.0 THEN rest := -rest END ;
+  s.days := I64 (FloorDiv (rest, SecPerDay)) ;
+  rest := rest - F64 (s.days) * SecPerDay ;
+  s.hours := I64 (FloorDiv (rest, 3600.0)) ;
+  rest := rest - F64 (s.hours * 3600) ;
+  s.minutes := I64 (FloorDiv (rest, 60.0)) ;
+  s.seconds := rest - F64 (s.minutes * 60) ;
+
+  s.years := tm DIV 12 ;
+  s.months := tm - s.years * 12 ;
+
+  (* the residual carries the sign of the direction; the months
+     already do, because tm is signed *)
+  IF b.t < mid.t THEN
+    s.days := -s.days ;
+    s.hours := -s.hours ;
+    s.minutes := -s.minutes ;
+    s.seconds := -s.seconds
+  END ;
+  RETURN s
+END Diff ;
+
+PROCEDURE Iso (t: Instant ; decimals: I64) : STR
+  RAISES ValueRange =
+VAR
+  pool : POOL ;
+  c : Civil ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  c := ToCivil (t) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, Fmt.I64Pad (c.year, 4, TRUE)) ;
+  DynStr.AppendChar (d, '-') ;
+  DynStr.Append (d, Fmt.I64Pad (c.month, 2, TRUE)) ;
+  DynStr.AppendChar (d, '-') ;
+  DynStr.Append (d, Fmt.I64Pad (c.day, 2, TRUE)) ;
+  DynStr.AppendChar (d, 'T') ;
+  DynStr.Append (d, Fmt.I64Pad (c.hour, 2, TRUE)) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.Append (d, Fmt.I64Pad (c.minute, 2, TRUE)) ;
+  DynStr.AppendChar (d, ':') ;
+  IF decimals = 0 THEN
+    DynStr.Append (d, Fmt.I64Pad (I64 (c.second), 2, TRUE))
+  ELSE
+    IF c.second < 10.0 THEN DynStr.AppendChar (d, '0') END ;
+    DynStr.Append (d, Fmt.Fixed (c.second, decimals))
+  END ;
+  DynStr.AppendChar (d, 'Z') ;
+  RETURN DynStr.View (d)
+END Iso ;
+
+PROCEDURE Digits2 (RO s: STR ; at: I64) : I64 RAISES ValueRange =
+VAR i, v : I64 ;
+BEGIN
+  v := 0 ;
+  FOR i := at TO at + 1 DO
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RAISE ValueRange END ;
+    v := v * 10 + (I64 (Text.BAt (s, i)) - 48)
+  END ;
+  RETURN v
+END Digits2 ;
+
+PROCEDURE ParseIso (RO s: STR) : Instant RAISES ValueRange =
+VAR
+  c : Civil ;
+  i, v : I64 ;
+BEGIN
+  IF Text.BLen (s) < 20 THEN RAISE ValueRange END ;
+  IF NOT Text.BIs (s, 4, '-') OR NOT Text.BIs (s, 7, '-') OR NOT Text.BIs (s, 10, 'T') THEN RAISE ValueRange END ;
+  IF NOT Text.BIs (s, 13, ':') OR NOT Text.BIs (s, 16, ':') THEN RAISE ValueRange END ;
+  IF NOT Text.BIs (s, Text.BLen (s) - 1, 'Z') THEN RAISE ValueRange END ;
+
+  v := 0 ;
+  FOR i := 0 TO 3 DO
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RAISE ValueRange END ;
+    v := v * 10 + (I64 (Text.BAt (s, i)) - 48)
+  END ;
+  c.year := v ;
+  c.month := Digits2 (s, 5) ;
+  c.day := Digits2 (s, 8) ;
+  c.hour := Digits2 (s, 11) ;
+  c.minute := Digits2 (s, 14) ;
+  (* seconds carry any fraction: 09Z or 09.250Z *)
+  c.second := Fmt.ParseF64 (SLICE (s, 17, Text.BLen (s) - 18)) ;
+  RETURN FromCivil (c)
+END ParseIso ;
+
+(* the n digits of s from `at', or -1 when they are not all there *)
+PROCEDURE DigitsAt (RO s: STR ; at, n: I64) : I64 =
+VAR i, v : I64 ;
+BEGIN
+  IF at < 0 OR at + n > Text.BLen (s) THEN RETURN -1 END ;
+  v := 0 ;
+  FOR i := at TO at + n - 1 DO
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RETURN -1 END ;
+    v := v * 10 + (I64 (Text.BAt (s, i)) - 48)
+  END ;
+  RETURN v
+END DigitsAt ;
+
+PROCEDURE CharAt (RO s: STR ; at: I64 ; c: CHAR) : BOOL =
+BEGIN
+  RETURN at < Text.BLen (s) AND Text.BIs (s, at, c)
+END CharAt ;
+
+PROCEDURE ParseNanos (RO s: STR) : Nanos RAISES ValueRange =
+VAR
+  r : Nanos ;
+  y, mo, d, h, mi, se, frac, fd, p, oh, om, os, sign, off : I64 ;
+BEGIN
+  y := DigitsAt (s, 0, 4) ;
+  mo := DigitsAt (s, 5, 2) ;
+  d := DigitsAt (s, 8, 2) ;
+  h := DigitsAt (s, 11, 2) ;
+  mi := DigitsAt (s, 14, 2) ;
+  IF y < 0 OR mo < 0 OR d < 0 OR h < 0 OR mi < 0 OR
+     NOT CharAt (s, 4, '-') OR NOT CharAt (s, 7, '-') OR
+     NOT (CharAt (s, 10, 'T') OR CharAt (s, 10, 't')) OR
+     NOT CharAt (s, 13, ':') THEN
+    RAISE ValueRange
+  END ;
+  IF mo < 1 OR mo > 12 OR d < 1 OR d > DaysInMonth (y, mo) OR
+     h > 23 OR mi > 59 THEN
+    RAISE ValueRange
+  END ;
+  p := 16 ;
+  se := 0 ;
+  frac := 0 ;
+  IF CharAt (s, p, ':') THEN
+    se := DigitsAt (s, p + 1, 2) ;
+    IF se < 0 OR se > 59 THEN RAISE ValueRange END ;
+    p := p + 3 ;
+    IF CharAt (s, p, '.') THEN
+      p := p + 1 ;
+      fd := 0 ;
+      WHILE p < Text.BLen (s) AND I64 (Text.BAt (s, p)) >= ORD ('0') AND I64 (Text.BAt (s, p)) <= ORD ('9') DO
+        IF fd = 9 THEN RAISE ValueRange END ;
+        frac := frac * 10 + (I64 (Text.BAt (s, p)) - 48) ;
+        fd := fd + 1 ;
+        p := p + 1
+      END ;
+      WHILE fd < 9 DO
+        frac := frac * 10 ;
+        fd := fd + 1
+      END
+    END
+  END ;
+  IF CharAt (s, p, 'Z') OR CharAt (s, p, 'z') THEN
+    off := 0 ;
+    p := p + 1
+  ELSIF CharAt (s, p, '+') OR CharAt (s, p, '-') THEN
+    sign := 1 ;
+    IF Text.BIs (s, p, '-') THEN sign := -1 END ;
+    oh := DigitsAt (s, p + 1, 2) ;
+    IF oh < 0 THEN RAISE ValueRange END ;
+    p := p + 3 ;
+    om := 0 ;
+    os := 0 ;
+    IF CharAt (s, p, ':') THEN
+      om := DigitsAt (s, p + 1, 2) ;
+      IF om < 0 OR om > 59 THEN RAISE ValueRange END ;
+      p := p + 3 ;
+      IF CharAt (s, p, ':') THEN
+        os := DigitsAt (s, p + 1, 2) ;
+        IF os < 0 OR os > 59 THEN RAISE ValueRange END ;
+        p := p + 3
+      END
+    END ;
+    off := oh * 3600 + om * 60 + os ;
+    IF off > 18 * 3600 THEN RAISE ValueRange END ;
+    off := sign * off
+  ELSE
+    RAISE ValueRange
+  END ;
+  IF p # Text.BLen (s) THEN RAISE ValueRange END ;
+  r.secs := DaysFromCivil (y, mo, d) * 86400 + h * 3600 + mi * 60 + se - off ;
+  r.nanos := frac ;
+  RETURN r
+END ParseNanos ;
+
+PROCEDURE Pad (v, width: I64) : STR =
+VAR t : STR ;
+BEGIN
+  t := Fmt.I64Str (v) ;
+  WHILE Text.BLen (t) < width DO t := '0' + t END ;
+  RETURN t
+END Pad ;
+
+PROCEDURE IsoNanos (t: Nanos) : STR RAISES ValueRange =
+VAR
+  days, rem, y, m, d : I64 ;
+  out : STR ;
+BEGIN
+  IF t.nanos < 0 OR t.nanos > 999999999 THEN RAISE ValueRange END ;
+  days := t.secs DIV 86400 ;
+  rem := t.secs MOD 86400 ;
+  IF rem < 0 THEN
+    rem := rem + 86400 ;
+    days := days - 1
+  END ;
+  CivilFromDays (days, y, m, d) ;
+  IF y < 0 OR y > 9999 THEN RAISE ValueRange END ;
+  out := Pad (y, 4) + '-' + Pad (m, 2) + '-' + Pad (d, 2) + 'T' +
+         Pad (rem DIV 3600, 2) + ':' + Pad ((rem MOD 3600) DIV 60, 2) + ':' +
+         Pad (rem MOD 60, 2) ;
+  IF t.nanos # 0 THEN
+    IF t.nanos MOD 1000000 = 0 THEN
+      out := out + '.' + Pad (t.nanos DIV 1000000, 3)
+    ELSIF t.nanos MOD 1000 = 0 THEN
+      out := out + '.' + Pad (t.nanos DIV 1000, 6)
+    ELSE
+      out := out + '.' + Pad (t.nanos, 9)
+    END
+  END ;
+  RETURN out + 'Z'
+END IsoNanos ;
+
+PROCEDURE NanosBefore (a, b: Nanos) : BOOL =
+BEGIN
+  RETURN a.secs < b.secs OR (a.secs = b.secs AND a.nanos < b.nanos)
+END NanosBefore ;
+
+PROCEDURE Now () : Instant =
+VAR r : Instant ;
+BEGIN
+  r.t := F64 (Realtime ()) ;
+  RETURN r
+END Now ;
+
+PROCEDURE Sleep (ms: I64) =
+BEGIN
+  SleepMs (C.SSizeT (ms))
+END Sleep ;
+
+END Time.

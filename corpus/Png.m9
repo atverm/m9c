@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Png ;
 
 (* PNG files, written in M9 (2026-10-02; Alex: "encoder for
@@ -2769,11 +2770,16 @@ END GlyphOrAsk ;
 
 (* the width of a text in font units *)
 PROCEDURE TextWidth (RO s: STR) : I64 RAISES ValueRange =
-VAR i, w : I64 ;
+  (* by FOR ch IN s, over characters: the same both sides of the UTF
+     switch -- a subscript there is an octet, and `µ' would be looked
+     up by the first octet of its two *)
+VAR
+  w : I64 ;
+  ch : CHAR ;
 BEGIN
   w := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    w := w + FontData[GlyphOrAsk (I64 (s[i]))]
+  FOR ch IN s DO
+    w := w + FontData[GlyphOrAsk (I64 (ch))]
   END ;
   RETURN w
 END TextWidth ;
@@ -2785,15 +2791,16 @@ PROCEDURE DrawText (VAR c: Canvas ; RO s: STR ; x, y, size, anchor, deg,
                     rx, ry: F64)
   RAISES Faults.BadArg, ValueRange =
 VAR
-  i, g, nc, k, np, q, at : I64 ;
+  g, nc, k, np, q, at : I64 ;
+  ch : CHAR ;
   scale, pen, gx, gy, lx, ly, ca, sa, ddx, ddy : F64 ;
 BEGIN
   scale := size / F64 (FontEm) ;
   pen := x - anchor * F64 (TextWidth (s)) * scale ;
   ca := Math.Cos (deg * Math.Pi / 180.0) ;
   sa := Math.Sin (deg * Math.Pi / 180.0) ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    g := GlyphOrAsk (I64 (s[i])) ;
+  FOR ch IN s DO
+    g := GlyphOrAsk (I64 (ch)) ;
     nc := FontData[g + 1] ;
     at := g + 2 ;
     FOR k := 0 TO nc - 1 DO

@@ -1,0 +1,23 @@
+(* EXPECT: cannot assign to P -- P is a PROCEDURE, not a variable *)
+(* A procedure is declared and is no variable.  The checker said
+   `unknown name: P' for a bare one and passed `Io.WriteLine := s' to
+   the C compiler (2026-10-22, the review's F4). *)
+MODULE m ;
+TYPE Act = PROCEDURE () ;
+VAR
+  a : OPT Act ;
+  n : I64 ;
+PROCEDURE P () =
+BEGIN
+END P ;
+PROCEDURE Q () =
+VAR P : I64 ;
+BEGIN
+  P := 1
+END Q ;
+BEGIN
+  P () ;
+  a := SOME (P) ;
+  n := 1 ;
+  P := Q
+END m.

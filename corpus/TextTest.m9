@@ -12,6 +12,7 @@ MODULE TextTest ;
 
 IMPORT Check ;
 IMPORT DynStr ;
+IMPORT Fmt ;
 IMPORT Io ;
 IMPORT Text ;
 
@@ -282,6 +283,109 @@ BEGIN
   Check.That (t, 'FromBase64Url refuses padding that does not fill a group', UrlRefused ('-_8=='))
 END Base64Urls ;
 
+PROCEDURE SameDecode (RO s: STR) : BOOL =
+  (* FromBase64Utf and FromBase64 agree on s: both refuse, or the
+     same octets *)
+VAR
+  b, c : SLICE OF BYTE ;
+  rb, rc : BOOL ;
+  i : I64 ;
+BEGIN
+  rb := FALSE ; rc := FALSE ;
+  BEGIN b := Text.FromBase64 (s) EXCEPT | ValueRange : rb := TRUE END ;
+  BEGIN c := Text.FromBase64Utf (UTF (s)) EXCEPT | ValueRange : rc := TRUE END ;
+  IF rb OR rc THEN RETURN rb = rc END ;
+  IF LEN (b) # LEN (c) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    IF I64 (b[i]) # I64 (c[i]) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END SameDecode ;
+
+PROCEDURE UrlRefusedUtf (RO s: UTF) : BOOL =
+VAR b : SLICE OF BYTE ;
+BEGIN
+  b := Text.FromBase64UrlUtf (s) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+END UrlRefusedUtf ;
+
+PROCEDURE UtfTwins () RAISES ValueRange =
+  (* stage 4a's first eleven twins (2026-10-24): each held to its STR
+     form on the goldens, and to fnmatch's str behaviour where a
+     character is more than one octet *)
+VAR
+  gold : STR ;
+  bytes, text, dec, pat, name : SLICE OF STR ;
+  want : SLICE OF BOOL ;
+  i, agree : I64 ;
+  b : SLICE OF BYTE ;
+BEGIN
+  gold := Check.GoldPath ('Text.gold') ;
+  bytes := Check.GoldStrs (t, gold, 'b64.bytes') ;
+  text := Check.GoldStrs (t, gold, 'b64.text') ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (bytes) - 1 DO
+    IF Text.EqUtf (Text.ToBase64Utf (Octets (bytes[i])), UTF (text[i])) THEN agree := agree + 1 END
+  END ;
+  Check.EqI64 (t, 'ToBase64Utf agreeing with Python', agree, LEN (bytes)) ;
+  dec := Check.GoldStrs (t, gold, 'b64.dec') ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (dec) - 1 DO
+    IF SameDecode (Word (dec[i])) THEN agree := agree + 1 END
+  END ;
+  Check.EqI64 (t, 'FromBase64Utf agreeing with FromBase64, refusals included', agree, LEN (dec)) ;
+  b := NEW (BYTE, 3) ;
+  b[0] := 251 ; b[1] := 255 ; b[2] := 191 ;
+  Check.EqStr (t, 'ToBase64UrlUtf uses - and _', STR (Text.ToBase64UrlUtf (b)), '-_-_') ;
+  Check.EqStr (t, 'ToBase64UrlUtf drops two =', STR (Text.ToBase64UrlUtf (SLICE (b, 0, 1))), '-w') ;
+  Check.EqStr (t, 'ToBase64UrlUtf drops one =', STR (Text.ToBase64UrlUtf (SLICE (b, 0, 2))), '-_8') ;
+  Check.EqStr (t, 'ToBase64UrlUtf of nothing', STR (Text.ToBase64UrlUtf (SLICE (b, 0, 0))), '') ;
+  Check.EqI64s (t, 'FromBase64UrlUtf unpadded', Ints (Text.FromBase64UrlUtf ('-_8')), Ints (SLICE (b, 0, 2))) ;
+  Check.EqI64s (t, 'FromBase64UrlUtf padded', Ints (Text.FromBase64UrlUtf ('-_8=')), Ints (SLICE (b, 0, 2))) ;
+  Check.EqI64s (t, 'FromBase64UrlUtf of three octets', Ints (Text.FromBase64UrlUtf ('-_-_')), Ints (b)) ;
+  Check.That (t, 'FromBase64UrlUtf refuses the standard alphabet', UrlRefusedUtf ('+/8')) ;
+  Check.That (t, 'FromBase64UrlUtf refuses a length of 1 mod 4', UrlRefusedUtf ('abcde')) ;
+  Check.That (t, 'FromBase64UrlUtf refuses padding that does not fill a group', UrlRefusedUtf ('-_8==')) ;
+  (* Match: the goldens as UTF give the STR form's answers *)
+  pat := Check.GoldStrs (t, gold, 'match.pattern') ;
+  name := Check.GoldStrs (t, gold, 'match.name') ;
+  want := Check.GoldBools (t, gold, 'match.want') ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (pat) - 1 DO
+    IF Text.MatchUtf (UTF (pat[i]), UTF (name[i])) = want[i] THEN agree := agree + 1 END
+  END ;
+  Check.EqI64 (t, 'MatchUtf agreeing with fnmatch on the goldens', agree, LEN (pat)) ;
+  (* and over characters wider than an octet, fnmatchcase on str *)
+  Check.That (t, 'MatchUtf ? takes a whole character', Text.MatchUtf ('Gr?ße', 'Grüße')) ;
+  Check.That (t, 'MatchUtf ? is not one octet', NOT Text.MatchUtf ('Gr??ße', 'Grüße')) ;
+  Check.That (t, 'MatchUtf a range of code points', Text.MatchUtf ('Gr[ä-ü]ße', 'Grüße')) ;
+  Check.That (t, 'MatchUtf ASCII range excludes the umlaut', NOT Text.MatchUtf ('Gr[a-z]ße', 'Grüße')) ;
+  Check.That (t, 'MatchUtf a negated member', Text.MatchUtf ('Gr[!a-z]ße', 'Grüße')) ;
+  Check.That (t, 'MatchUtf star over a wide tail', Text.MatchUtf ('G*', 'Grüße 𝄞')) ;
+  Check.That (t, 'MatchUtf star then a wide character', Text.MatchUtf ('*𝄞', 'Grüße 𝄞')) ;
+  Check.That (t, 'MatchUtf a wide member', Text.MatchUtf ('*[𝄞x]', 'Grüße 𝄞')) ;
+  Check.That (t, 'MatchUtf no partial', NOT Text.MatchUtf ('Gr?e', 'Grüße')) ;
+  Check.That (t, 'AllInUtf over a range of umlauts', Text.AllInUtf ('üöä', 'ä-ü')) ;
+  Check.That (t, 'AllInUtf negated', NOT Text.AllInUtf ('üöä', '!ä-ü')) ;
+  Check.That (t, 'AllInUtf of nothing is FALSE', NOT Text.AllInUtf ('', 'a-z')) ;
+  Check.That (t, 'AllDigitsUtf 2026', Text.AllDigitsUtf ('2026')) ;
+  Check.That (t, 'AllLowerUtf co2 is FALSE: a digit', NOT Text.AllLowerUtf ('co2')) ;
+  Check.That (t, 'AllUpperUtf ICOS', Text.AllUpperUtf ('ICOS')) ;
+  Check.That (t, 'AllAlnumUtf Ab1', Text.AllAlnumUtf ('Ab1')) ;
+  Check.That (t, 'AllAlnumUtf knows ASCII only', NOT Text.AllAlnumUtf ('é')) ;
+  Check.EqStr (t, 'CatUtf', STR (Text.CatUtf (pool, 'ab', 'üx')), 'abüx') ;
+  Check.That (t, 'BIs: the octet is the ASCII character', Text.BIs ('a/b', 1, '/')) ;
+  Check.That (t, 'BIs: another octet is not', NOT Text.BIs ('a/b', 0, '/')) ;
+  Check.That (t, 'BIs: a character past ASCII is no octet', NOT Text.BIs ('ü', 0, 'ü')) ;
+  Check.That (t, 'BChar: the octet as a character', Text.BChar ('a/b', 1) = '/') ;
+  Check.EqI64 (t, 'BChar: an octet of ü is the character of its value (0xC3)',
+               ORD (Text.BChar ('ü', 0)), 195) ;
+  Check.EqStr (t, 'LowerUtf = Lower', STR (Text.LowerUtf ('Grüße ÀÉ ΣΊ ǅ Ab1')), Text.Lower ('Grüße ÀÉ ΣΊ ǅ Ab1')) ;
+  Check.EqStr (t, 'UpperUtf = Upper', STR (Text.UpperUtf ('Grüße àé σί ß ab1')), Text.Upper ('Grüße àé σί ß ab1'))
+END UtfTwins ;
+
 PROCEDURE Compares () =
   (* Text.Compare: Sort.Strs's order, by code point, the shorter
      first; the values Python's (a > b) - (a < b) gives *)
@@ -297,6 +401,216 @@ BEGIN
   Check.EqI64 (t, 'Compare ISO timestamps as text', Text.Compare ('2026-10-09T10:00:00Z', '2026-10-09T09:59:59Z'), 1) ;
   Check.EqI64 (t, 'Compare uppercase before lowercase', Text.Compare ('Z', 'a'), -1)
 END Compares ;
+
+
+(* UTF (docs/utf8-plan.md, stage 1): the octets, the code points and
+   the validation held to Python's str.encode, len and its strict
+   bytes.decode ('Grüße ✓ 𝄞' is 16 octets and 9 code points; each
+   refused sequence is refused at offset 0 by Python too) *)
+PROCEDURE Bad (VAR o: SLICE OF BYTE ; RO label: STR) =
+VAR u : UTF ;
+BEGIN
+  u := Text.FromUtf8 (o) ;
+  Check.That (t, label, FALSE)
+EXCEPT
+| ValueRange : Check.That (t, label, TRUE)
+END Bad ;
+
+PROCEDURE Octs (a, b, c, d, n: I64) : SLICE OF BYTE =
+VAR o : SLICE OF BYTE ;
+BEGIN
+  o := NEW (BYTE, n) ;
+  IF n > 0 THEN o[0] := BYTE (a) END ;
+  IF n > 1 THEN o[1] := BYTE (b) END ;
+  IF n > 2 THEN o[2] := BYTE (c) END ;
+  IF n > 3 THEN o[3] := BYTE (d) END ;
+  RETURN o
+EXCEPT
+| ValueRange : RETURN NEW (BYTE, 0)
+END Octs ;
+
+PROCEDURE Utfs () =
+VAR
+  u, v, w : UTF ;
+  s : STR ;
+  o : SLICE OF BYTE ;
+  at, n, i : I64 ;
+  c : CHAR ;
+BEGIN
+  u := 'Grüße ✓ 𝄞' ;
+  Check.EqI64 (t, 'BLen of a UTF counts octets', Text.BLen (u), 16) ;
+  Check.EqI64 (t, 'CpCount counts code points', Text.CpCount (u), 9) ;
+  Check.EqI64 (t, 'CpAt 2 is the u with umlaut', ORD (Text.CpAt (u, 2)), 252) ;
+  Check.EqI64 (t, 'CpAt 8 is the G clef', ORD (Text.CpAt (u, 8)), 119070) ;
+  Check.EqI64 (t, 'BAt 2 is the lead octet of u umlaut', I64 (Text.BAt (u, 2)), 195) ;
+  Check.EqI64 (t, 'BAt 12 is the lead octet of the clef', I64 (Text.BAt (u, 12)), 240) ;
+  (* a walk by NextCp visits the code points in order *)
+  at := 0 ; n := 0 ;
+  WHILE at < Text.BLen (u) DO c := Text.NextCp (u, at) ; n := n + 1 END ;
+  Check.EqI64 (t, 'NextCp walks 9 code points', n, 9) ;
+  Check.EqI64 (t, 'and ends at the last octet', at, 16) ;
+  (* the bridge both ways *)
+  s := Text.FromUtf (u) ;
+  Check.EqStr (t, 'FromUtf decodes', s, 'Grüße ✓ 𝄞') ;
+  v := Text.ToUtf (s) ;
+  Check.That (t, 'ToUtf of FromUtf is the same text', Text.EqUtf (u, v)) ;
+  Check.That (t, 'EqUtf of two different texts', NOT Text.EqUtf (u, 'Grüße')) ;
+  (* + joins UTF, a literal and a CHAR *)
+  w := 'Grüße' ;
+  w := w + ' ' + 2713C + ' ' + 'x' ;
+  Check.EqStr (t, 'UTF + literal + CHAR', Text.FromUtf (w), 'Grüße ✓ x') ;
+  Check.EqI64 (t, 'and its octets', Text.BLen (w), 13) ;
+  (* Compare's order, which for UTF-8 is the octets' *)
+  Check.EqI64 (t, 'CompareUtf a < ab', Text.CompareUtf ('a', 'ab'), -1) ;
+  Check.EqI64 (t, 'CompareUtf z < e-acute', Text.CompareUtf ('z', 'é'), -1) ;
+  Check.EqI64 (t, 'CompareUtf G clef > e-acute', Text.CompareUtf ('𝄞', 'é'), 1) ;
+  Check.EqI64 (t, 'CompareUtf equal', Text.CompareUtf ('é', 'é'), 0) ;
+  (* validation, held to Python's strict decoder *)
+  o := Octs (226, 156, 147, 0, 3) ;
+  BEGIN
+    v := Text.FromUtf8 (o) ;
+    Check.EqI64 (t, 'FromUtf8 of a check mark', ORD (Text.CpAt (v, 0)), 10003)
+  EXCEPT
+  | ValueRange : Check.That (t, 'FromUtf8 of a check mark', FALSE)
+  END ;
+  o := Octs (192, 128, 0, 0, 2) ; Bad (o, 'an overlong NUL is refused') ;
+  o := Octs (237, 160, 128, 0, 3) ; Bad (o, 'a surrogate is refused') ;
+  o := Octs (244, 144, 128, 128, 4) ; Bad (o, 'past U+10FFFF is refused') ;
+  o := Octs (226, 156, 0, 0, 2) ; Bad (o, 'a sequence cut short is refused') ;
+  o := Octs (128, 0, 0, 0, 1) ; Bad (o, 'a lone continuation octet is refused') ;
+  (* U3: SLICE takes byte offsets, both ends at a character's start *)
+  v := SLICE (u, 2, 4) ;
+  Check.EqStr (t, 'SLICE of a UTF at byte offsets', Text.FromUtf (v), 'üß') ;
+  BEGIN
+    v := SLICE (u, 3, 2) ;
+    Check.That (t, 'SLICE inside a character raises', FALSE)
+  EXCEPT
+  | IndexError : Check.That (t, 'SLICE inside a character raises', TRUE)
+  END ;
+  BEGIN
+    v := SLICE (u, 2, 1) ;
+    Check.That (t, 'SLICE ending inside a character raises', FALSE)
+  EXCEPT
+  | IndexError : Check.That (t, 'SLICE ending inside a character raises', TRUE)
+  END ;
+  (* FOR c IN u decodes, in order *)
+  n := 0 ; s := '' ;
+  FOR c IN u DO n := n + 1 ; s := s + c END ;
+  Check.EqI64 (t, 'FOR IN over a UTF visits 9 code points', n, 9) ;
+  Check.EqStr (t, 'and they are its characters', s, 'Grüße ✓ 𝄞') ;
+  (* twins by type: Text.Eq and Text.Compare with UTF arguments are
+     EqUtf and CompareUtf *)
+  Check.That (t, 'Text.Eq of two UTF is EqUtf', Text.Eq (u, Text.ToUtf ('Grüße ✓ 𝄞'))) ;
+  Check.That (t, 'Text.Eq of a UTF and a literal', NOT Text.Eq (u, 'Grüße')) ;
+  Check.EqI64 (t, 'Text.Compare of two UTF is CompareUtf', Text.Compare (v, u), 1) ;
+  (* stage 2: the UTF twins, reached by the STR forms' names (twins by
+     type), held to Python's bytes.find/rfind/count, str.split, join,
+     replace, strip and upper *)
+  w := 'Grüße ✓ ✓ x' ;
+  Check.EqI64 (t, 'Find of a UTF answers a byte offset', Text.Find (w, '✓'), 8) ;
+  Check.EqI64 (t, 'Find of what is not there', Text.Find (w, 'zz'), -1) ;
+  Check.EqI64 (t, 'FindChar by its encoding', Text.FindChar (w, 2713C), 8) ;
+  Check.EqI64 (t, 'LastChar', Text.LastChar (w, 2713C), 12) ;
+  Check.EqI64 (t, 'CountChar', Text.CountChar (w, 2713C), 2) ;
+  Check.That (t, 'StartsWith', Text.StartsWith (w, 'Grü')) ;
+  Check.That (t, 'EndsWith', Text.EndsWith (w, '✓ x')) ;
+  Check.That (t, 'Contains', Text.Contains (w, 'ße')) ;
+  v := 'a,ü,,b' ;
+  Check.EqI64 (t, 'Split keeps empties: 4 pieces', LEN (Text.Split (v, ',')), 4) ;
+  Check.That (t, 'and the second is the u-umlaut', Text.Eq (Text.Split (v, ',')[1], 'ü')) ;
+  v := 'a,ü,,b,' ;
+  Check.EqI64 (t, 'Fields drops them: 3', LEN (Text.Fields (v, ',')), 3) ;
+  Check.That (t, 'Join undoes Split', Text.Eq (Text.Join (Text.Split (v, ','), ','), v)) ;
+  v := 'aüaüa' ;
+  Check.EqStr (t, 'Replace', Text.FromUtf (Text.Replace (v, 'ü', 'ss')), 'assassa') ;
+  v := 'aaaa' ;
+  Check.EqStr (t, 'Replace never overlaps', Text.FromUtf (Text.Replace (v, 'aa', 'b')), 'bb') ;
+  v := '  ü x ' ;
+  v := v + 0AC ;
+  Check.EqI64 (t, 'Trim: a view of 4 octets', Text.BLen (Text.Trim (v)), 4) ;
+  v := 'straße' ;
+  Check.EqStr (t, 'Upper through STR', Text.FromUtf (Text.Upper (v)), 'STRASSE') ;
+  v := Text.KeepUtf (pool, w) ;
+  Check.That (t, 'KeepUtf copies into a pool', Text.Eq (v, w)) ;
+  (* + grows its left operand in place at the arena's top, as a STR's
+     does: 100,000 appends to a 1 MB text are linear (a copying + needs
+     some 50 GB and was killed for memory, 2026-10-23) ... *)
+  w := '' ;
+  FOR i := 1 TO 100000 DO w := w + 'abcdefghij' END ;
+  Check.EqI64 (t, 'a 1 MB UTF built by + in a loop', Text.BLen (w), 1000000) ;
+  (* ... and only exactly there: a prefix view of the top string is not
+     extended over the rest of it (the STR form's 2026-10-05 defect) *)
+  v := UTF (Text.FromUtf ('2767')) ;
+  w := SLICE (v, 0, 3) + '.' + SLICE (v, 3, 1) ;
+  Check.That (t, 'a prefix view is not extended over its string', Text.Eq (w, '276.7')) ;
+  (* NextCp inside a character is an IndexError *)
+  at := 3 ;
+  BEGIN
+    c := Text.NextCp (u, at) ;
+    Check.That (t, 'NextCp inside a character raises', FALSE)
+  EXCEPT
+  | IndexError : Check.That (t, 'NextCp inside a character raises', TRUE)
+  END
+END Utfs ;
+
+(* the clusters of every line of Unicode's GraphemeBreakTest-16.0.0.txt
+   (tools/graphemeucd.py writes them into Grapheme.gold): NextGr's
+   breaks, in code points, against the file's; GrCount and the last
+   GrAt of each line against the same *)
+PROCEDURE Graphemes () RAISES ValueRange =
+VAR
+  gold : STR ;
+  ncp, nend, cps, ends, got : SLICE OF I64 ;
+  s : STR ;
+  u, g : UTF ;
+  k, i, cp0, e0, at, n, bad, badCount, badLast, badAt : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Grapheme.gold') ;
+  ncp := Check.GoldI64s (t, gold, 'ncp') ;
+  nend := Check.GoldI64s (t, gold, 'nend') ;
+  cps := Check.GoldI64s (t, gold, 'cps') ;
+  ends := Check.GoldI64s (t, gold, 'ends') ;
+  Check.EqI64 (t, 'the golden holds 1093 test lines', LEN (ncp), 1093) ;
+  cp0 := 0 ;
+  e0 := 0 ;
+  bad := 0 ;
+  badCount := 0 ;
+  badLast := 0 ;
+  badAt := 0 ;
+  FOR k := 0 TO LEN (ncp) - 1 DO
+    s := NEW (CHAR, ncp[k]) ;
+    FOR i := 0 TO ncp[k] - 1 DO s[i] := CHR (cps[cp0 + i]) END ;
+    u := UTF (s) ;
+    got := NEW (I64, nend[k]) ;
+    n := 0 ;
+    at := 0 ;
+    got[0] := 0 ;
+    WHILE at < Text.BLen (u) AND n + 1 < LEN (got) DO
+      g := Text.NextGr (u, at) ;
+      got[n + 1] := got[n] + Text.CpCount (g) ;
+      n := n + 1
+    END ;
+    IF n + 1 # nend[k] OR at # Text.BLen (u) THEN
+      bad := bad + 1
+    ELSE
+      i := 0 ;
+      WHILE i < nend[k] AND got[i] = ends[e0 + i] DO i := i + 1 END ;
+      IF i < nend[k] THEN bad := bad + 1 END
+    END ;
+    IF bad = 1 AND badAt = 0 THEN
+      badAt := k + 1 ;
+      Check.That (t, 'first line broken differently: ' + Fmt.I64Str (k + 1), FALSE)
+    END ;
+    IF Text.GrCount (u) # nend[k] - 1 THEN badCount := badCount + 1 END ;
+    IF NOT Text.EqUtf (Text.GrAt (u, nend[k] - 2), g) THEN badLast := badLast + 1 END ;
+    cp0 := cp0 + ncp[k] ;
+    e0 := e0 + nend[k]
+  END ;
+  Check.EqI64 (t, 'NextGr breaks all 1093 lines as Unicode does', bad, 0) ;
+  Check.EqI64 (t, 'GrCount agrees on all 1093', badCount, 0) ;
+  Check.EqI64 (t, "GrAt answers each line's last cluster", badLast, 0) ;
+  Check.EqI64 (t, 'the gold read whole', cp0, LEN (cps))
+END Graphemes ;
 
 BEGIN
   (* search *)
@@ -368,7 +682,7 @@ BEGIN
   Check.EqI64 (t, 'Lower = str.lower at every code point', CaseSweep (FALSE), 0) ;
   Check.EqStr (t, 'Upper of straße is STRASSE, longer', Text.Upper ('straße'), 'STRASSE') ;
   Check.EqStr (t, 'Upper of Greek and Cyrillic', Text.Upper ('αβγ жар'), 'ΑΒΓ ЖАР') ;
-  Check.EqStr (t, 'Lower of İ is i and a combining dot', Text.Lower ('İ'), 'i' + CHR (775)) ;
+  Check.EqStr (t, 'Lower of İ is i and a combining dot', Text.Lower ('İ'), 'i' + 0307C) ;
   Check.EqStr (t, 'Lower of a final Σ is σ: no context', Text.Lower ('ΟΔΟΣ'), 'οδοσ') ;
 
   (* a copy that outlives what it was copied from *)
@@ -381,9 +695,16 @@ BEGIN
   Replaces () ;
   Matches () ;
   Compares () ;
+  Utfs () ;
+  BEGIN
+    Graphemes ()
+  EXCEPT
+  | ValueRange : Check.That (t, 'Graphemes: no ValueRange', FALSE)
+  END ;
   BEGIN
     Base64 () ;
-    Base64Urls ()
+    Base64Urls () ;
+    UtfTwins ()
   EXCEPT
   | ValueRange :
       Check.That (t, 'base64: no ValueRange escapes', FALSE)

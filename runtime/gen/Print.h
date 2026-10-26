@@ -3,14 +3,19 @@
 #define M9G_Print_H
 #include "m9rt.h"
 #include "Ast.h"
-#include "DynStr.h"
+#include "DynUtf.h"
+#include "Text.h"
 
 void Print_m9init (m9_state *err);
 
 
 m9_sl_CHAR Print_Tree (m9_pool *pool, Ast_Node * root, m9_state *err);
+m9_sl_UTF8 Print_TreeUtf (m9_pool *pool, Ast_Node * root, m9_state *err);
 m9_sl_CHAR Print_TypeText (m9_pool *pool, Ast_Node * k, m9_state *err);
 m9_sl_CHAR Print_ParamsText (Ast_Node * k, m9_state *err);
 m9_sl_CHAR Print_ExprText (Ast_Node * k, m9_state *err);
+m9_sl_UTF8 Print_TypeTextUtf (m9_pool *pool, Ast_Node * k, m9_state *err);
+m9_sl_UTF8 Print_ParamsTextUtf (Ast_Node * k, m9_state *err);
+m9_sl_UTF8 Print_ExprTextUtf (Ast_Node * k, m9_state *err);
 
 #endif

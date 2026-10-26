@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE DynStr ;
 
 (* Growable strings.  The M2 version leaned on libc malloc/realloc
@@ -43,6 +44,10 @@ PROCEDURE Len (d: PTR DString) : I64 ;
 PROCEDURE View (d: PTR DString) : RO STR ;
   (* the whole content, zero-copy; replaces the M2 CharAt-in-a-loop
      and its out-of-range 0C lie -- indexing the view is checked.    *)
+PROCEDURE ViewIn (VAR pool: POOL ; d: PTR DString) : STR ;
+  (* View, the copy made in pool: for text stored into a structure that
+     outlives the builder's pool -- DynUtf's name, so a caller reads the
+     same under the switch (2026-10-24) *)
 
 PROCEDURE Equal (d: PTR DString ; RO s: STR) : BOOL ;
   (* content comparison against a plain slice, without building a
@@ -161,6 +166,16 @@ PROCEDURE View (d: PTR DString) : RO STR =
 BEGIN
   RETURN SLICE (d.buf, 0, d.len)
 END View ;
+
+PROCEDURE ViewIn (VAR pool: POOL ; d: PTR DString) : STR =
+VAR
+  c : STR ;
+  i : I64 ;
+BEGIN
+  c := NEW (pool, CHAR, d.len) ;
+  FOR i := 0 TO d.len - 1 DO c[i] := d.buf[i] END ;
+  RETURN c
+END ViewIn ;
 
 PROCEDURE Equal (d: PTR DString ; RO s: STR) : BOOL =
 VAR i : I64 ;

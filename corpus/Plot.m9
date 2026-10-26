@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 STATEFUL DEFINITION MODULE Plot ;
 
 (* matplotlib-styled SVG plots, restated from the M2 stack's Plot.mod.
@@ -1399,13 +1400,15 @@ END TaylorXY ;
 
 (* text as SVG takes it: the three characters that are markup *)
 PROCEDURE Esc (VAR d: PTR DynStr.DString ; RO t: STR) =
-VAR i : I64 ;
+  (* by FOR c IN t, a loop over characters: the same both sides of
+     the UTF switch *)
+VAR c : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (t) - 1 DO
-    IF t[i] = '&' THEN DynStr.Append (d, '&amp;')
-    ELSIF t[i] = '<' THEN DynStr.Append (d, '&lt;')
-    ELSIF t[i] = '>' THEN DynStr.Append (d, '&gt;')
-    ELSE DynStr.AppendChar (d, t[i])
+  FOR c IN t DO
+    IF c = '&' THEN DynStr.Append (d, '&amp;')
+    ELSIF c = '<' THEN DynStr.Append (d, '&lt;')
+    ELSIF c = '>' THEN DynStr.Append (d, '&gt;')
+    ELSE DynStr.AppendChar (d, c)
     END
   END
 END Esc ;
@@ -1705,16 +1708,16 @@ END Slot ;
 (* text into the document: the five characters XML reserves are
    named, and a control character becomes a space *)
 PROCEDURE EscC (VAR d: PTR DynStr.DString ; RO t: STR) =
-VAR i : I64 ;
+VAR c : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (t) - 1 DO
-    IF t[i] = '&' THEN DynStr.Append (d, '&amp;')
-    ELSIF t[i] = '<' THEN DynStr.Append (d, '&lt;')
-    ELSIF t[i] = '>' THEN DynStr.Append (d, '&gt;')
-    ELSIF t[i] = '"' THEN DynStr.Append (d, '&quot;')
-    ELSIF t[i] = "'" THEN DynStr.Append (d, '&#39;')
-    ELSIF ORD (t[i]) < 32 THEN DynStr.AppendChar (d, ' ')
-    ELSE DynStr.AppendChar (d, t[i])
+  FOR c IN t DO
+    IF c = '&' THEN DynStr.Append (d, '&amp;')
+    ELSIF c = '<' THEN DynStr.Append (d, '&lt;')
+    ELSIF c = '>' THEN DynStr.Append (d, '&gt;')
+    ELSIF c = '"' THEN DynStr.Append (d, '&quot;')
+    ELSIF c = "'" THEN DynStr.Append (d, '&#39;')
+    ELSIF ORD (c) < 32 THEN DynStr.AppendChar (d, ' ')
+    ELSE DynStr.AppendChar (d, c)
     END
   END
 END EscC ;

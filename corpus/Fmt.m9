@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Fmt ;
 
 (* Numbers to text, and back.
@@ -36,7 +37,10 @@ DEFINITION MODULE Fmt ;
    Short is BOTH, since 2026-10-05: the shortest decimal that reads
    back to the same double, exact by construction (Burger and Dybvig's
    free-format digits over integers, no scaling in F64), and held to
-   Python's repr on 9,148 values by FmtTest. *)
+   Python's repr on 9,148 values by FmtTest.  Since 2026-10-25 the
+   digits come from the runtime's Dragonbox (m9rt.h, 30 ns a value
+   where these took 1,000) wherever it answers; the code here is the
+   twin, selected by M9_FMT_PORTABLE, and FmtTest runs on both. *)
 
 CONST
   MaxDecimals = 17 ;
@@ -60,12 +64,17 @@ PROCEDURE Hex (v: I64 ; width: I64) : STR ;
      a wider value overflows the field (cp-kernel's issue 16). *)
 
 PROCEDURE I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR ;
+PROCEDURE I64PadUtf (v: I64 ; width: I64 ; zero: BOOL) : UTF ;
   (* right-aligned in width; zero selects '0' over ' ' as the fill.
      A value too wide is never truncated -- silently losing digits is
      the class of bug this language refuses -- it just overflows the
      field, as printf does.                                          *)
 
 PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
+PROCEDURE FixedUtf (v: F64 ; decimals: I64) : UTF RAISES ValueRange ;
+PROCEDURE FixedPadUtf (v: F64 ; width, decimals: I64) : UTF RAISES ValueRange ;
+  (* the UTF twins (stage 4a, 2026-10-24): the same digits; Fixed is
+     FixedUtf decoded, the digit work done once on octets *)
   (* decimals in 0..MaxDecimals, else ValueRange; printf's %.*f to
      the character -- the double's own decimal expansion rounded half
      to even, every magnitude (1e308 prints its 309 digits).  A value
@@ -73,7 +82,10 @@ PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
      negative ZERO prints without one, the sign bit is not consulted.
      NaN prints 'nan', the infinities 'inf' and '-inf'.  Exact since
      2026-10-10; it scaled in F64 until then and disagreed with printf
-     on 0.71% of values, 1e300 raised.                               *)
+     on 0.71% of values, 1e300 raised.  The digits are the C library's
+     since 2026-10-25 (m9_fmt_fixed, the fast-path ledger) wherever
+     the runtime trusts it, Fmt's own exact code elsewhere: the same
+     characters, 8 to 13 times sooner.                               *)
 
 PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
   RAISES ValueRange ;
@@ -108,7 +120,9 @@ PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
      %.*f's: exact, from the double's integer mantissa and exponent,
      half to even (FmtTest holds both to Python's % formatting).  Until
      2026-10-10 the mantissa was normalised in F64 and measured, not
-     exact.                                                         *)
+     exact.  Since 2026-10-25 the digits are the C library's %.*e with
+     the exponent rewritten (m9_fmt_sci) wherever the runtime trusts
+     it, Fmt's own exact code elsewhere: 19 to 25 times sooner.     *)
 
 PROCEDURE SciPad (v: F64 ; width, decimals: I64) : STR
   RAISES ValueRange ;
@@ -154,10 +168,27 @@ PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange ;
      where the command line is read; a reader looking here is sent
      there (cp-kernel's issue 6, 2026-10-09).                        *)
 
+(* ---- the UTF twins of the parsers (docs/utf8-plan.md, stage 2):
+   Fmt.ParseF64 (u) with a UTF is ParseF64Utf.  The formatters take
+   numbers, so no call could reach a twin of theirs by type: their
+   answers are ASCII and UTF (Fmt.Fixed (x, 2)) converts them, and when
+   STR becomes UTF-8 at the end of the transition they change type with
+   no call to edit. ---- *)
+
+PROCEDURE ParseF64Utf (RO s: UTF) : F64 RAISES ValueRange ;
+PROCEDURE ParseBitsUtf (RO s: UTF) : F64 RAISES ValueRange ;
+
 END Fmt.
 
 
-IMPLEMENTATION MODULE Fmt ;
+UNSAFE IMPLEMENTATION MODULE Fmt ;
+
+(* UNSAFE for ADR: Fixed's and Sci's digits come from the runtime's C
+   library path into a local buffer (cfmt, at the end of this file);
+   the M9 big-integer path below is taken whenever the runtime declines
+   (m9rt.h says when), and is the portable twin of the fast one. *)
+
+FROM cfmt IMPORT CFixed, CSci, CShort ;
 
 CONST
   HexDigits = '0123456789ABCDEF' ;
@@ -191,6 +222,10 @@ END I64Str ;
 
 CONST
   HexLower = '0123456789abcdef' ;   (* Hex's digits; HexDigits above is upper case *)
+  (* the same sixteen as CHARACTERS, for Hex to index: a string CONST
+     is a UTF under the switch and has no subscript (2026-10-24) *)
+  HexChars = [ 030C, 031C, 032C, 033C, 034C, 035C, 036C, 037C,
+               038C, 039C, 061C, 062C, 063C, 064C, 065C, 066C ] ;
 
 PROCEDURE Hex (v: I64 ; width: I64) : STR =
 VAR
@@ -207,7 +242,7 @@ BEGIN
     d := n MOD 16 ;
     IF d < 0 THEN d := d + 16 END ;
     n := (n - d) DIV 16 ;
-    digits[k] := HexLower[d] ;
+    digits[k] := HexChars[d] ;
     k := k + 1 ;
     IF k = 16 OR (n = 0 AND v >= 0) THEN EXIT END
   END ;
@@ -243,6 +278,33 @@ BEGIN
   RETURN s
 END I64Pad ;
 
+PROCEDURE I64PadUtf (v: I64 ; width: I64 ; zero: BOOL) : UTF =
+VAR
+  body, s : UTF ;
+  o : SLICE OF BYTE ;
+  i, n : I64 ;
+  neg : BOOL ;
+BEGIN
+  body := UTF (I64Str (v)) ;
+  o := OCTETS (body) ;
+  n := LEN (o) ;
+  IF n >= width THEN RETURN body END ;
+  neg := FALSE ;
+  IF n > 0 THEN neg := I64 (o[0]) = 45 END ;                 (* - *)
+  IF zero AND neg THEN
+    s := '-' ;
+    FOR i := 1 TO width - n DO s := s + '0' END ;
+    s := s + SLICE (body, 1, n - 1)
+  ELSE
+    s := '' ;
+    FOR i := 1 TO width - n DO
+      IF zero THEN s := s + '0' ELSE s := s + ' ' END
+    END ;
+    s := s + body
+  END ;
+  RETURN s
+END I64PadUtf ;
+
 PROCEDURE Pow10 (n: I64) : F64 =
 VAR
   i : I64 ;
@@ -275,6 +337,18 @@ BEGIN
   FOR i := 1 TO width - LEN (body) DO s := s + ' ' END ;
   RETURN s + body
 END PadLeft ;
+
+PROCEDURE PadLeftUtf (RO body: UTF ; width: I64) : UTF =
+VAR
+  s : UTF ;
+  i, n : I64 ;
+BEGIN
+  n := LEN (OCTETS (body)) ;
+  IF n >= width THEN RETURN body END ;
+  s := '' ;
+  FOR i := 1 TO width - n DO s := s + ' ' END ;
+  RETURN s + body
+END PadLeftUtf ;
 
 PROCEDURE Bits (v: F64) : STR =
 VAR
@@ -332,6 +406,7 @@ END ParseBits ;
 CONST
   Limbs = 128 ;
   Base  = 4294967296 ;          (* 2^32: a limb times 2^31 fits an I64 *)
+  ShortBuf = 64 ;               (* repr's longest is 24; the runtime wants 32 *)
 
 (* The helpers take a Big as VAR even where they only read it: an RO
    record is passed as a COPY today (the owed ledger's "RO on a RECORD
@@ -479,6 +554,23 @@ BEGIN
   RETURN s
 END Zeros ;
 
+(* the runtime's Dragonbox digits in repr's layout (cfmt) into s, or
+   FALSE: then Short's own digits below.  UTF validates the octets
+   and may say ValueRange; the runtime writes ASCII, so it never does,
+   and if it did Short would still answer -- it is total. *)
+PROCEDURE RtShort (v: F64 ; VAR s: STR) : BOOL =
+VAR
+  cb : ARRAY ShortBuf OF BYTE ;
+  cn : I64 ;
+BEGIN
+  cn := I64 (CShort (C.Double (v), ADR (cb), C.SSizeT (ShortBuf))) ;
+  IF cn < 0 THEN RETURN FALSE END ;
+  s := STR (UTF (SLICE (cb, 0, cn))) ;
+  RETURN TRUE
+EXCEPT
+| ValueRange : RETURN FALSE
+END RtShort ;
+
 PROCEDURE Short (v: F64) : STR =
 VAR
   b : SLICE OF BYTE ;
@@ -489,6 +581,7 @@ VAR
   be, fr, f, e, bl, x, k, d, last, nd, c, i : I64 ;
   even, tc1, tc2 : BOOL ;
 BEGIN
+  IF RtShort (v, out) THEN RETURN out END ;
   IF v # v THEN RETURN 'nan' END ;
   IF v > MaxF64 THEN RETURN 'inf' END ;
   IF v < -MaxF64 THEN RETURN '-inf' END ;
@@ -908,16 +1001,20 @@ BEGIN
   RETURN TRUE
 END Parts ;
 
-PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange =
+(* the digits of Fixed, once, as octets: ds the decimal digits with at
+   least decimals + 1 of them, or special one of nan, inf, -inf *)
+PROCEDURE FixedParts (v: F64 ; decimals: I64 ; VAR ds: UTF ; VAR special: UTF)
+  RAISES ValueRange =
 VAR
   n : Big ;
   f, e : I64 ;
-  ds, s : STR ;
   up : BOOL ;
 BEGIN
-  IF v # v THEN RETURN 'nan' END ;
-  IF v > MaxF64 THEN RETURN 'inf' END ;
-  IF v < -MaxF64 THEN RETURN '-inf' END ;
+  special := '' ;
+  ds := '' ;
+  IF v # v THEN special := 'nan' ; RETURN END ;
+  IF v > MaxF64 THEN special := 'inf' ; RETURN END ;
+  IF v < -MaxF64 THEN special := '-inf' ; RETURN END ;
   IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
 
   n.n := 0 ;
@@ -938,13 +1035,37 @@ BEGIN
     END
   END ;
 
-  ds := BigDec (n) ;
-  IF LEN (ds) <= decimals THEN ds := Zeros (decimals + 1 - LEN (ds)) + ds END ;
+  ds := UTF (BigDec (n)) ;
+  IF LEN (OCTETS (ds)) <= decimals THEN
+    ds := UTF (Zeros (decimals + 1 - LEN (OCTETS (ds)))) + ds
+  END
+END FixedParts ;
+
+(* the runtime's digits (snprintf, m9rt.h) into b, or -1: then the M9
+   path.  Fmt.Fixed on the Xeon 3.0 -> 0.2 us a value (2026-10-25). *)
+CONST FmtBuf = 400 ;
+
+PROCEDURE FixedUtf (v: F64 ; decimals: I64) : UTF RAISES ValueRange =
+VAR
+  ds, special, s : UTF ;
+  n : I64 ;
+  b : ARRAY FmtBuf OF BYTE ;
+BEGIN
+  IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
+  n := I64 (CFixed (C.Double (v), C.SSizeT (decimals), ADR (b), C.SSizeT (FmtBuf))) ;
+  IF n >= 0 THEN RETURN UTF (SLICE (b, 0, n)) END ;
+  FixedParts (v, decimals, ds, special) ;
+  IF LEN (OCTETS (special)) > 0 THEN RETURN special END ;
   s := '' ;
   IF v < 0.0 THEN s := '-' END ;
   IF decimals = 0 THEN RETURN s + ds END ;
-  RETURN s + SLICE (ds, 0, LEN (ds) - decimals) + '.'
-           + SLICE (ds, LEN (ds) - decimals, decimals)
+  n := LEN (OCTETS (ds)) ;
+  RETURN s + SLICE (ds, 0, n - decimals) + '.' + SLICE (ds, n - decimals, decimals)
+END FixedUtf ;
+
+PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange =
+BEGIN
+  RETURN STR (FixedUtf (v, decimals))
 END Fixed ;
 
 PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
@@ -952,6 +1073,12 @@ PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
 BEGIN
   RETURN PadLeft (Fixed (v, decimals), width)
 END FixedPad ;
+
+PROCEDURE FixedPadUtf (v: F64 ; width, decimals: I64) : UTF
+  RAISES ValueRange =
+BEGIN
+  RETURN PadLeftUtf (FixedUtf (v, decimals), width)
+END FixedPadUtf ;
 
 (* f * 2^e * 10^p rounded half to even, while that is below 2^62;
    above, the bits of the quotient saturate at 2^62 - 1 (and the
@@ -988,7 +1115,13 @@ PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange =
 VAR
   f, e, x, k, hi, nn, bl : I64 ;
   ds, s : STR ;
+  b : ARRAY FmtBuf OF BYTE ;
 BEGIN
+  IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
+  (* the runtime's digits (snprintf's %.*e, the exponent rewritten
+     short), or -1 and the M9 path: 6.4 -> 0.3 us a value on the Xeon *)
+  nn := I64 (CSci (C.Double (v), C.SSizeT (decimals), ADR (b), C.SSizeT (FmtBuf))) ;
+  IF nn >= 0 THEN RETURN STR (UTF (SLICE (b, 0, nn))) END ;
   IF v # v THEN RETURN 'nan' END ;
   IF v > MaxF64 THEN RETURN 'inf' END ;
   IF v < -MaxF64 THEN RETURN '-inf' END ;
@@ -1176,4 +1309,189 @@ BEGIN
   RETURN Make (neg, be, fr)
 END ParseF64 ;
 
+(* ---- the UTF twins: the same exact parsers, over the decoded text ---- *)
+
+(* octet i of o as a CHAR: an ASCII octet is its character, and any
+   other is a character the parsers below refuse as not a digit *)
+PROCEDURE Cc (RO o: SLICE OF BYTE ; i: I64) : CHAR RAISES ValueRange =
+BEGIN
+  RETURN CHR (I64 (o[i]))
+END Cc ;
+
+(* ParseF64's body over the octets -- the same lines, LEN (o) for LEN (s)
+   and Cc (o, i) for s[i] (2026-10-24: the twin had decoded and called
+   ParseF64, which under the rehearsed switch is itself) *)
+PROCEDURE ParseF64Utf (RO s: UTF) : F64 RAISES ValueRange =
+VAR
+  o : SLICE OF BYTE ;
+  i, n, d, digits, kept, dexp, ex, e, fast, b, q, m, c, be, fr : I64 ;
+  neg, seenDot, nonzero, sticky, eneg : BOOL ;
+  dg, num, den, n2, d2 : Big ;
+  v : F64 ;
+BEGIN
+  o := OCTETS (s) ;
+  n := LEN (o) ;
+  IF n = 0 THEN RAISE ValueRange END ;
+  i := 0 ;
+  neg := FALSE ;
+  IF Cc (o, 0) = '-' OR Cc (o, 0) = '+' THEN
+    neg := Cc (o, 0) = '-' ;
+    i := 1
+  END ;
+
+  (* the mantissa: leading zeros counted, not kept; the first MaxDig
+     significant digits kept, the rest only remembered *)
+  digits := 0 ;
+  kept := 0 ;
+  dexp := 0 ;
+  fast := 0 ;
+  seenDot := FALSE ;
+  nonzero := FALSE ;
+  sticky := FALSE ;
+  BigSmall (dg, 0) ;
+  WHILE i < n DO
+    IF Cc (o, i) = '.' THEN
+      IF seenDot THEN RAISE ValueRange END ;
+      seenDot := TRUE
+    ELSIF Cc (o, i) >= '0' AND Cc (o, i) <= '9' THEN
+      d := ORD (Cc (o, i)) - 48 ;
+      digits := digits + 1 ;
+      IF d # 0 THEN nonzero := TRUE END ;
+      IF NOT nonzero THEN
+        IF seenDot THEN dexp := dexp - 1 END
+      ELSIF kept < MaxDig THEN
+        BigMul (dg, 10) ;
+        BigPlus (dg, d) ;
+        IF kept < 18 THEN fast := fast * 10 + d END ;
+        kept := kept + 1 ;
+        IF seenDot THEN dexp := dexp - 1 END
+      ELSE
+        IF d # 0 THEN sticky := TRUE END ;
+        IF NOT seenDot THEN dexp := dexp + 1 END
+      END
+    ELSE
+      EXIT
+    END ;
+    i := i + 1
+  END ;
+  IF digits = 0 THEN RAISE ValueRange END ;
+
+  (* the exponent; past nine digits it is beyond every double either
+     way, and stops growing *)
+  ex := 0 ;
+  eneg := FALSE ;
+  IF i < n THEN
+    IF Cc (o, i) = 'e' OR Cc (o, i) = 'E' THEN
+      i := i + 1 ;
+      IF i < n THEN
+        IF Cc (o, i) = '-' OR Cc (o, i) = '+' THEN
+          eneg := Cc (o, i) = '-' ;
+          i := i + 1
+        END
+      END ;
+      IF i >= n THEN RAISE ValueRange END ;
+      WHILE i < n DO
+        IF Cc (o, i) < '0' OR Cc (o, i) > '9' THEN RAISE ValueRange END ;
+        IF ex < 100000000 THEN ex := ex * 10 + ORD (Cc (o, i)) - 48 END ;
+        i := i + 1
+      END
+    END
+  END ;
+  IF i # n THEN RAISE ValueRange END ;
+
+  IF NOT nonzero THEN RETURN Make (neg, 0, 0) END ;
+  IF sticky THEN
+    BigMul (dg, 10) ;
+    BigPlus (dg, 1) ;
+    kept := kept + 1 ;
+    dexp := dexp - 1
+  END ;
+  IF eneg THEN e := dexp - ex ELSE e := dexp + ex END ;
+
+  (* dg * 10^e lies in [10^(kept-1+e), 10^(kept+e)): at or past 10^309
+     it is beyond the largest double, below 10^-324 it is under half
+     the smallest subnormal *)
+  IF kept - 1 + e >= 309 THEN RAISE ValueRange END ;
+  IF kept + e <= -324 THEN RETURN Make (neg, 0, 0) END ;
+
+  IF kept <= 15 AND e >= -22 AND e <= 22 THEN
+    v := F64 (fast) ;
+    IF e >= 0 THEN v := v * Pow10 (e) ELSE v := v / Pow10 (-e) END ;
+    IF neg THEN v := -v END ;
+    RETURN v
+  END ;
+
+  num := dg ;
+  BigSmall (den, 1) ;
+  IF e >= 0 THEN BigTen (num, e) ELSE BigTen (den, -e) END ;
+
+  (* num / den lies in (2^b, 2^(b+2)), so its 53 bits start at b or
+     b + 1: the quotient at b is below 2^54, and one step corrects it *)
+  b := BitLen (num) - BitLen (den) - 1 ;
+  LOOP
+    q := b - 52 ;
+    IF q < -1074 THEN q := -1074 END ;
+    n2 := num ;
+    d2 := den ;
+    IF q >= 0 THEN BigShl (d2, q) ELSE BigShl (n2, -q) END ;
+    m := Quot (n2, d2) ;
+    IF m < Two53 THEN EXIT END ;
+    b := b + 1
+  END ;
+
+  (* n2 is the remainder: past half of d2 rounds up, half to even *)
+  BigMul (n2, 2) ;
+  c := BigCmp (n2, d2) ;
+  IF c > 0 OR (c = 0 AND m MOD 2 = 1) THEN m := m + 1 END ;
+  IF m = Two53 THEN
+    m := Two52 ;
+    q := q + 1
+  END ;
+  IF m >= Two52 THEN
+    be := q + 1075 ;
+    fr := m - Two52
+  ELSE
+    be := 0 ;                                  (* subnormal *)
+    fr := m
+  END ;
+  IF be >= 2047 THEN RAISE ValueRange END ;
+  RETURN Make (neg, be, fr)
+END ParseF64Utf ;
+
+PROCEDURE ParseBitsUtf (RO s: UTF) : F64 RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  o, b : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  o := OCTETS (s) ;
+  IF LEN (o) # 16 THEN RAISE ValueRange END ;
+  b := NEW (scratch, BYTE, 8) ;
+  FOR i := 0 TO 7 DO
+    b[i] := BYTE (HexVal (Cc (o, 2 * i)) * 16 + HexVal (Cc (o, 2 * i + 1)))
+  END ;
+  RETURN F64.FromBytesLE (b)
+END ParseBitsUtf ;
+
 END Fmt.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cfmt ;
+
+(* runtime/m9rt.c: printf's %.*f and %.*e in Fmt's layout, and
+   Short's shortest digits by Dragonbox in repr's layout, into the
+   caller's buffer, answering the length -- or -1 when the runtime
+   declines (M9_FMT_PORTABLE, a buffer too small) and Fmt's
+   own exact code does the work (m9rt.h).  REENTRANT: into the
+   caller's buffer, no shared state. *)
+
+PROCEDURE CFixed = "m9_fmt_fixed" (v: C.Double ; decimals: C.SSizeT ;
+                                   buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT
+  [REENTRANT] ;
+PROCEDURE CSci = "m9_fmt_sci" (v: C.Double ; decimals: C.SSizeT ;
+                               buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT
+  [REENTRANT] ;
+PROCEDURE CShort = "m9_fmt_short" (v: C.Double ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT
+  [REENTRANT] ;
+
+END cfmt.

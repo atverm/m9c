@@ -1,0 +1,18 @@
+(* EXPECT: FOR variable b is BYTE, and the elements it goes over are CHAR *)
+MODULE m ;
+(* legal forms first: FOR IN over a UTF gives CHARs; over its octets,
+   BYTEs *)
+VAR
+  u : UTF ;
+  o : SLICE OF BYTE ;
+  c : CHAR ;
+  b : BYTE ;
+  n : I64 ;
+BEGIN
+  u := 'Grüße' ;
+  n := 0 ;
+  FOR c IN u DO n := n + 1 END ;
+  o := OCTETS (u) ;
+  FOR b IN o DO n := n + 1 END ;
+  FOR b IN u DO n := n + 1 END
+END m.

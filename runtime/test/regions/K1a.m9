@@ -1,0 +1,41 @@
+(* the compiler review of 2026-10-21, checker repro K1a (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE K1a ;
+IMPORT Io, Fmt ;
+TYPE Node = RECORD s : STR ; next : OPT PTR Node END ;
+VAR gs : SLICE OF STR ;
+VAR mp : POOL ;
+VAR root : PTR Node IN mp ;
+PROCEDURE Keep (RO s: STR) =
+VAR t : SLICE OF STR ;
+BEGIN
+  t := gs ;
+  t[0] := s
+END Keep ;
+PROCEDURE KeepB (h: PTR Node ; RO s: STR) =
+BEGIN
+
+END KeepB ;
+PROCEDURE Caller () =
+VAR m : STR ;
+BEGIN
+  m := 'frame text ' + Fmt.I64Str (11) ;
+  Keep (m) ;
+  Io.WriteLine (m)
+END Caller ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+VAR k : PTR Node IN mp ;
+BEGIN
+  gs := NEW (mp, STR, 2) ;
+  root := NEW (mp, Node) ;
+  k := NEW (mp, Node) ;
+  root.next := SOME (k) ;
+  Caller () ;
+  Churn () ;
+  Io.WriteLine (gs[0])
+
+END K1a.

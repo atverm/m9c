@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Hash ;
 
 (* SHA-256, fed in pieces; HMAC-SHA-256; PBKDF2-HMAC-SHA256; and a

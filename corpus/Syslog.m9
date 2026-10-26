@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Syslog ;
 
 (* The Unix system log.
@@ -143,8 +144,15 @@ EXCEPT
 | ValueRange :
     (* an ident that is not encodable is not worth failing a program
        over: the log still opens, under the process name libc
-       already knows *)
-    OpenLog (ADR (b), C.Int (0), C.Int (options), C.Int (facility))
+       already knows -- unless options or facility is past a C int,
+       when there is nothing to open with (the handler's own
+       conversions raise too; the flat handled set had counted them
+       as caught, 2026-10-21) *)
+    BEGIN
+      OpenLog (ADR (b), C.Int (0), C.Int (options), C.Int (facility))
+    EXCEPT
+    | ValueRange :
+    END
 END Open ;
 
 PROCEDURE Close () =

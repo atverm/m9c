@@ -48,10 +48,38 @@ static Ast_Node *parse_unit (const char *name, m9_state *err)
   return root;
 }
 
-static void put_slice (m9_sl_CHAR s)
+/* Gen's text: UTF-8 octets since 2026-10-23 (HText, CText answer UTF),
+   a slice of CHARs before.  Both, chosen by the type, because lib/gen.sh
+   builds this helper against the checked-in runtime/gen first -- the
+   previous generator's -- and against the one it writes next */
+static inline void put_chars (m9_sl_CHAR s)
 {
   int64_t i;
   for (i = 0; i < s.len; i++) m9t_putc (s.p[i]);
+}
+
+static inline void put_octets (m9_sl_UTF8 s)
+{
+  fwrite (s.p, 1, (size_t) s.len, stdout);
+}
+
+#define put_text(s) _Generic ((s), m9_sl_CHAR: put_chars, m9_sl_UTF8: put_octets) (s)
+
+static void emit_utf (const char *s, size_t n, m9_state *err)
+{
+  void (* volatile fp) (void) = (void (*) (void)) Gen_Emit;
+  ((void (*) (m9_sl_UTF8, m9_state *)) fp)
+    ((m9_sl_UTF8){ (uint8_t *) s, (int64_t) n }, err);
+}
+
+static void emit_chars (const char *s, size_t n, m9_state *err)
+{
+  size_t i;
+  uint32_t *nm = malloc (sizeof (uint32_t) * (n ? n : 1));
+  for (i = 0; i < n; i++) nm[i] = (uint32_t) (unsigned char) s[i];
+  void (* volatile fp) (void) = (void (*) (void)) Gen_Emit;
+  ((void (*) (m9_sl_CHAR, m9_state *)) fp)
+    ((m9_sl_CHAR){ nm, (int64_t) n }, err);
 }
 
 int main (int argc, char **argv)
@@ -95,17 +123,22 @@ int main (int argc, char **argv)
 
   {
     size_t n = strlen (argv[1]);
-    uint32_t *nm = malloc (sizeof (uint32_t) * (n ? n : 1));
-    for (i = 0; i < (int64_t) n; i++)
-      nm[i] = (uint32_t) (unsigned char) argv[1][i];
-    Gen_Emit ((m9_sl_CHAR){ nm, (int64_t) n }, &err);
+    /* Gen.Emit takes a UTF since 2026-10-24.  gen.sh builds the stage-1
+       generator from the CHECKED-IN C, whose Emit took a STR, and the
+       stage-2 one from what it wrote: the call is chosen by Emit's own
+       type, so one helper serves both passes (the other branch is
+       never called; its call goes through a volatile pointer, so the
+       compiler cannot hold it to Emit's declared type) */
+    _Generic ((Gen_Emit),
+              void (*)(m9_sl_UTF8, m9_state *): emit_utf,
+              default: emit_chars) (argv[1], n, &err);
     if (err.exc) { fprintf (stderr, "Emit raised %s\n", err.exc->name);
                    return 3; }
   }
 
-  put_slice (Gen_HText (&err));
+  put_text (Gen_HText (&err));
   printf ("==== M9GEN SPLIT ====\n");
-  put_slice (Gen_CText (&err));
+  put_text (Gen_CText (&err));
   if (Gen_Errs (&err) > 0)
     {
       fprintf (stderr, "%lld gen errors\n", (long long) Gen_Errs (&err));

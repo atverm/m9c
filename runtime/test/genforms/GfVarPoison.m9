@@ -1,0 +1,70 @@
+MODULE GfVarPoison ;
+
+(* WANT: caught 2, live.n 1, ids 1 2 *)
+
+(* A failed subscript answers the runtime's one poison cell with the
+   error set.  A VALUE argument was tested before the call; a VAR or a
+   THREAD argument was not, so the callee ran on the cell -- and the cell
+   held what an earlier failed store had left there: `Poke (s[k])' wrote
+   77 into live, which nothing indexes in bounds, and `THREAD (Worker,
+   jobs[k])' ran Worker on jobs[1] (the second review's gen N1 and N2,
+   2026-10-26).  Both are tested before the callee or the worker runs. *)
+
+IMPORT Io, Fmt, Time ;
+
+TYPE L = RECORD n : I64 END ;
+     R = RECORD q : PTR L END ;
+     Job = RECORD id : I64 END [SHARABLE] ;
+     JP = PTR Job ;
+
+PROCEDURE Poke (VAR r : R) =
+BEGIN
+  r.q.n := 77
+END Poke ;
+
+PROCEDURE Worker (VAR j : Job) =
+BEGIN
+  j.id := 99
+END Worker ;
+
+VAR
+  mp : POOL ;
+  live : PTR L IN mp ;
+  good : R ;
+  s : SLICE OF R ;
+  jobs : SLICE OF JP ;
+  k, caught : I64 ;
+
+BEGIN
+  live := NEW (mp, L) ; live.n := 1 ;
+  good.q := live ;
+  s := NEW (mp, R, 3) ;
+  jobs := NEW (mp, JP, 2) ;
+  jobs[0] := NEW (mp, Job) ; jobs[0].id := 1 ;
+  jobs[1] := NEW (mp, Job) ; jobs[1].id := 2 ;
+  k := 9 ;
+  caught := 0 ;
+  BEGIN
+    s[k] := good
+  EXCEPT
+  | IndexError : caught := 0
+  END ;
+  BEGIN
+    Poke (s[k])
+  EXCEPT
+  | IndexError : caught := caught + 1
+  END ;
+  BEGIN
+    jobs[k] := jobs[1]
+  EXCEPT
+  | IndexError : caught := caught + 0
+  END ;
+  BEGIN
+    THREAD (Worker, jobs[k])
+  EXCEPT
+  | IndexError : caught := caught + 1
+  END ;
+  Time.Sleep (200) ;
+  Io.WriteLine ('caught ' + Fmt.I64Str (caught) + ', live.n ' + Fmt.I64Str (live.n) +
+    ', ids ' + Fmt.I64Str (jobs[0].id) + ' ' + Fmt.I64Str (jobs[1].id))
+END GfVarPoison.

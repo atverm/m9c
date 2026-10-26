@@ -34,7 +34,7 @@ static int64_t m9t_decode (const unsigned char *b, int64_t len, uint32_t *out)
   return n;
 }
 
-static void m9t_putc (uint32_t c)
+static inline void m9t_putc (uint32_t c)   /* inline: a dump that writes octets uses none */
 {
   if (c < 0x80) putchar ((int) c);
   else if (c < 0x800) { putchar (0xC0 | (int) (c >> 6)); putchar (0x80 | (int) (c & 0x3F)); }
@@ -46,4 +46,43 @@ static void m9t_putc (uint32_t c)
     putchar (0x80 | (int) ((c >> 6) & 0x3F)); putchar (0x80 | (int) (c & 0x3F));
   }
 }
+
+/* a text the M9 side answers, written as UTF-8: a slice of CHARs
+   encoded, a UTF's octets as they are.  Chosen by the slice's type
+   (2026-10-23, Lex's texts became UTF): lib/gen.sh builds the dumps
+   against the checked-in runtime/gen first, the previous generator's,
+   so a helper must take both.  The escaped form is comdump's (newline,
+   CR and backslash shown, so a comment stays one line) -- the three
+   are ASCII, so a byte-wise escape of the octets is the same text */
+static inline void m9t_put_chars (m9_sl_CHAR s)
+{
+  int64_t i;
+  for (i = 0; i < s.len; i++) m9t_putc (s.p[i]);
+}
+static inline void m9t_put_octets (m9_sl_UTF8 s)
+{
+  fwrite (s.p, 1, (size_t) s.len, stdout);
+}
+#define m9t_put_text(s) _Generic ((s), m9_sl_CHAR: m9t_put_chars, m9_sl_UTF8: m9t_put_octets) (s)
+
+static inline void m9t_esc (uint32_t ch)
+{
+  if (ch == 10) { putchar ('\\'); putchar ('n'); }
+  else if (ch == 13) { putchar ('\\'); putchar ('r'); }
+  else if (ch == '\\') { putchar ('\\'); putchar ('\\'); }
+  else m9t_putc (ch);
+}
+static inline void m9t_put_esc_chars (m9_sl_CHAR s)
+{
+  int64_t i;
+  for (i = 0; i < s.len; i++) m9t_esc (s.p[i]);
+}
+static inline void m9t_put_esc_octets (m9_sl_UTF8 s)
+{
+  int64_t i;
+  for (i = 0; i < s.len; i++) {
+    if (s.p[i] < 0x80) m9t_esc (s.p[i]); else putchar (s.p[i]);
+  }
+}
+#define m9t_put_esc_text(s) _Generic ((s), m9_sl_CHAR: m9t_put_esc_chars, m9_sl_UTF8: m9t_put_esc_octets) (s)
 #endif

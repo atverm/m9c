@@ -3,6 +3,7 @@
 #define M9G_Lex_H
 #include "m9rt.h"
 #include "DynStr.h"
+#include "Text.h"
 
 void Lex_m9init (m9_state *err);
 
@@ -47,14 +48,20 @@ typedef struct Lex_Comment Lex_Comment;
 #define Lex_KCaret INT64_C(224)
 static const uint32_t Lex_HexMsg_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 97u, 98u, 99u, 100u, 101u, 102u };
 #define Lex_HexMsg ((m9_sl_CHAR){ (uint32_t *) Lex_HexMsg_d, 16 })
+static const uint32_t Lex_HexUp_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 65u, 66u, 67u, 68u, 69u, 70u };
+#define Lex_HexUp ((m9_sl_CHAR){ (uint32_t *) Lex_HexUp_d, 16 })
+static const uint32_t Lex_U64Top_d[20] = { 49u, 56u, 52u, 52u, 54u, 55u, 52u, 52u, 48u, 55u, 51u, 55u, 48u, 57u, 53u, 53u, 49u, 54u, 49u, 53u };
+#define Lex_U64Top ((m9_sl_CHAR){ (uint32_t *) Lex_U64Top_d, 20 })
+static const uint32_t Lex_F64Top_d[309] = { 49u, 55u, 57u, 55u, 54u, 57u, 51u, 49u, 51u, 52u, 56u, 54u, 50u, 51u, 49u, 53u, 56u, 48u, 55u, 57u, 51u, 55u, 50u, 56u, 57u, 55u, 49u, 52u, 48u, 53u, 51u, 48u, 51u, 52u, 49u, 53u, 48u, 55u, 57u, 57u, 51u, 52u, 49u, 51u, 50u, 55u, 49u, 48u, 48u, 51u, 55u, 56u, 50u, 54u, 57u, 51u, 54u, 49u, 55u, 51u, 55u, 55u, 56u, 57u, 56u, 48u, 52u, 52u, 52u, 57u, 54u, 56u, 50u, 57u, 50u, 55u, 54u, 52u, 55u, 53u, 48u, 57u, 52u, 54u, 54u, 52u, 57u, 48u, 49u, 55u, 57u, 55u, 55u, 53u, 56u, 55u, 50u, 48u, 55u, 48u, 57u, 54u, 51u, 51u, 48u, 50u, 56u, 54u, 52u, 49u, 54u, 54u, 57u, 50u, 56u, 56u, 55u, 57u, 49u, 48u, 57u, 52u, 54u, 53u, 53u, 53u, 53u, 52u, 55u, 56u, 53u, 49u, 57u, 52u, 48u, 52u, 48u, 50u, 54u, 51u, 48u, 54u, 53u, 55u, 52u, 56u, 56u, 54u, 55u, 49u, 53u, 48u, 53u, 56u, 50u, 48u, 54u, 56u, 49u, 57u, 48u, 56u, 57u, 48u, 50u, 48u, 48u, 48u, 55u, 48u, 56u, 51u, 56u, 51u, 54u, 55u, 54u, 50u, 55u, 51u, 56u, 53u, 52u, 56u, 52u, 53u, 56u, 49u, 55u, 55u, 49u, 49u, 53u, 51u, 49u, 55u, 54u, 52u, 52u, 55u, 53u, 55u, 51u, 48u, 50u, 55u, 48u, 48u, 54u, 57u, 56u, 53u, 53u, 53u, 55u, 49u, 51u, 54u, 54u, 57u, 53u, 57u, 54u, 50u, 50u, 56u, 52u, 50u, 57u, 49u, 52u, 56u, 49u, 57u, 56u, 54u, 48u, 56u, 51u, 52u, 57u, 51u, 54u, 52u, 55u, 53u, 50u, 57u, 50u, 55u, 49u, 57u, 48u, 55u, 52u, 49u, 54u, 56u, 52u, 52u, 52u, 51u, 54u, 53u, 53u, 49u, 48u, 55u, 48u, 52u, 51u, 52u, 50u, 55u, 49u, 49u, 53u, 53u, 57u, 54u, 57u, 57u, 53u, 48u, 56u, 48u, 57u, 51u, 48u, 52u, 50u, 56u, 56u, 48u, 49u, 55u, 55u, 57u, 48u, 52u, 49u, 55u, 52u, 52u, 57u, 55u, 55u, 57u, 50u };
+#define Lex_F64Top ((m9_sl_CHAR){ (uint32_t *) Lex_F64Top_d, 309 })
 
-#ifndef M9SL_m9_arr_32_uint32_t
-#define M9SL_m9_arr_32_uint32_t
-typedef struct { uint32_t v[32]; } m9_arr_32_uint32_t;
-#endif
 #ifndef M9SL_m9_sl_Lex_Comment
 #define M9SL_m9_sl_Lex_Comment
 typedef struct { Lex_Comment *p; int64_t len; } m9_sl_Lex_Comment;
+#endif
+#ifndef M9SL_m9_arr_128_uint32_t
+#define M9SL_m9_arr_128_uint32_t
+typedef struct { uint32_t v[128]; } m9_arr_128_uint32_t;
 #endif
 
 typedef struct Lex_Token Lex_Token;
@@ -62,12 +69,12 @@ struct Lex_Token {
   int64_t kind;
   int64_t line;
   int64_t col;
-  m9_sl_CHAR text;
+  m9_sl_UTF8 text;
 };
 
 typedef struct Lex_Lexer Lex_Lexer;
 struct Lex_Lexer {
-  m9_sl_CHAR src;
+  m9_sl_UTF8 src;
   int64_t pos;
   int64_t line;
   int64_t col;
@@ -78,10 +85,11 @@ struct Lex_Comment {
   int64_t line;
   int64_t col;
   int64_t endLine;
-  m9_sl_CHAR text;
+  m9_sl_UTF8 text;
 };
 
 void Lex_Init (Lex_Lexer *lx, m9_pool *lx_pool, m9_sl_CHAR src, m9_state *err);
+void Lex_InitUtf (Lex_Lexer *lx, m9_pool *lx_pool, m9_sl_UTF8 src, m9_state *err);
 void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m9_state *err);
 m9_sl_CHAR Lex_KindName (int64_t k, m9_state *err);
 void Lex_Collect (bool on, m9_state *err);

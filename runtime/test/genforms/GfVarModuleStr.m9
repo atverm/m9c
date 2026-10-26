@@ -1,0 +1,73 @@
+MODULE GfVarModuleStr ;
+
+(* WANT: last: set by SetIt 5, xs[0] 4242, grid 7, p.n 6 *)
+
+(* A STR, a slice or a grid takes no pool, so a callee hands a new value
+   to the arena it was called from.  When the argument is a MODULE
+   variable that arena is the caller's frame, freed when the caller
+   returns: `SetIt (last, 5)' read back garbage, `SetXs (gxs)' 2 for
+   4242 (2026-10-21, the compiler review's C5).  The call is now made
+   from the module's frame.  Churn reuses the freed storage, so a value
+   left in the caller's frame is overwritten before it is read.  The
+   pointer, which carries its pool (rule 2), was always right. *)
+
+IMPORT Io, Fmt ;
+
+TYPE Node = RECORD n : I64 END ;
+
+VAR
+  last : STR ;
+  gp : PTR Node ;
+  gxs : SLICE OF I64 ;
+  gg : GRID 2 OF I64 ;
+  out : STR ;
+
+PROCEDURE SetIt (VAR s: STR ; n: I64) =
+BEGIN
+  s := 'set by SetIt ' + Fmt.I64Str (n)
+END SetIt ;
+
+PROCEDURE SetP (VAR p: PTR Node ; n: I64) =
+BEGIN
+  p := NEW (Node) ;
+  p.n := n
+END SetP ;
+
+PROCEDURE SetXs (VAR xs: SLICE OF I64) =
+BEGIN
+  xs := NEW (I64, 3) ;
+  xs[0] := 4242
+END SetXs ;
+
+PROCEDURE SetG (VAR g: GRID 2 OF I64) : I64 =
+BEGIN
+  g := NEW (I64, 2, 2) ;
+  g[1, 1] := 7 ;
+  RETURN 1
+END SetG ;
+
+PROCEDURE Caller () =
+VAR k : I64 ;
+BEGIN
+  SetIt (last, 5) ;
+  SetP (gp, 6) ;
+  SetXs (gxs) ;
+  k := SetG (gg)
+END Caller ;
+
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  t := '' ;
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END
+END Churn ;
+
+BEGIN
+  Caller () ;
+  Churn () ;
+  out := 'last: ' + last + ', xs[0] ' + Fmt.I64Str (gxs[0]) + ', grid ' +
+    Fmt.I64Str (gg[1, 1]) + ', p.n ' + Fmt.I64Str (gp.n) ;
+  Io.WriteLine (out)
+END GfVarModuleStr.

@@ -1,0 +1,42 @@
+(* EXPECT: unhandled RAISES Bad from call to Boom -- add it to this procedure's RAISES, or handle it: EXCEPT | Bad : ... *)
+(* A block's handlers catch for its guarded sequence ONLY (since
+   2026-10-21, the compiler review's C6): the checker's handled set was
+   flat over the procedure, so a call after the block was counted as
+   caught by it, in both checkers.  The legal forms first: the call
+   inside the block, a raise inside a nested block handled by the outer
+   one, the same exception declared where it can escape. *)
+MODULE m ;
+EXCEPTION Bad ;
+PROCEDURE Boom (x: I64) : I64 RAISES Bad =
+BEGIN
+  IF x > 0 THEN RAISE Bad END ;
+  RETURN x
+END Boom ;
+PROCEDURE Inside () : I64 =
+VAR r : I64 ;
+BEGIN
+  r := 0 ;
+  BEGIN
+    r := Boom (1) ;
+    BEGIN r := Boom (2) FINALLY r := r + 1 END
+  EXCEPT
+  | Bad : r := -1
+  END ;
+  RETURN r
+END Inside ;
+PROCEDURE Declared () : I64 RAISES Bad =
+VAR r : I64 ;
+BEGIN
+  BEGIN r := Boom (0) EXCEPT | Bad : r := -1 END ;
+  r := Boom (5) ;
+  RETURN r
+END Declared ;
+PROCEDURE After () : I64 =
+VAR r : I64 ;
+BEGIN
+  BEGIN r := Boom (0) EXCEPT | Bad : r := -1 END ;
+  r := Boom (5) ;
+  RETURN r
+END After ;
+BEGIN
+END m.

@@ -1,4 +1,4 @@
-(* EXPECT: argument 1 of At: cannot pass PROCEDURE (F64) : F64 RAISES Odd, ValueRange where PROCEDURE (F64) : F64 RAISES ValueRange is expected *)
+(* EXPECT: argument 1 of At: cannot pass PROCEDURE (F64) : F64 RAISES ValueRange, m.Odd where PROCEDURE (F64) : F64 RAISES ValueRange is expected *)
 (* the one refusal here is the last call; everything before it is what
    the rule must NOT refuse since 2026-10-02: a procedure that raises
    nothing, handed where the type allows ValueRange -- bare, and into

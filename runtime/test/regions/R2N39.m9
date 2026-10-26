@@ -1,0 +1,17 @@
+MODULE R2N39 ;
+(* a name holding a literal handed to a VAR STR parameter that writes through it *)
+IMPORT Io ;
+PROCEDURE Up (VAR s: STR) =
+BEGIN
+  s[0] := 'X'
+END Up ;
+PROCEDURE Go () =
+VAR s : STR ;
+BEGIN
+  s := 'abc' ;
+  Up (s) ;
+  Io.WriteLine (s)
+END Go ;
+BEGIN
+  Go ()
+END R2N39.

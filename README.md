@@ -260,3 +260,11 @@ repository is stated — with, for each, the observed failure that
 made it a rule. It also lists what the language specifies and the
 compiler does not yet check, which is the part a specification is
 usually least willing to write down.
+
+## License
+
+The compiler and tools are free software under the GNU GPL, version 3.
+The runtime and standard library carry a runtime exception
+([`RUNTIME-EXCEPTION`](RUNTIME-EXCEPTION)): programs you build with M9
+can be distributed under any license you choose, open or proprietary.
+Changes to the compiler itself remain under the GPL.

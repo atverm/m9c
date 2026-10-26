@@ -1,0 +1,11 @@
+(* EXPECT-ERROR: type H refers to itself other than through a pointer to a record *)
+(* A type that refers to itself through nothing a value can end at.
+   Observed 2026-10-21 by the compiler review's fuzzer (F2): `m9c --check'
+   on this died with SIGSEGV, its resolution of H following H for ever;
+   with `n := h.n' in the body it hung instead, and `RECORD a : R END'
+   passed the checker and reached cc as an incomplete type. *)
+MODULE m ;
+TYPE H = SHARED PTR H ;
+VAR h : H ;
+BEGIN
+END m.

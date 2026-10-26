@@ -1,0 +1,19 @@
+MODULE R3DepthAlias ;
+(* by depth, through the alias (2026-10-26): `rows[0] := row' and then a
+   literal stored through row lies in rows' storage two levels down --
+   the write through rows' three subscripts writes its octets *)
+IMPORT Io ;
+TYPE Strs = SLICE OF STR ;
+PROCEDURE Fill () =
+VAR rows : SLICE OF Strs ; row : Strs ;
+BEGIN
+  rows := NEW (Strs, 1) ;
+  row := NEW (STR, 2) ;
+  rows[0] := row ;
+  row[0] := 'abc' ;
+  rows[0][0][0] := 'X' ;
+  Io.WriteLine (rows[0][0])
+END Fill ;
+BEGIN
+  Fill ()
+END R3DepthAlias.

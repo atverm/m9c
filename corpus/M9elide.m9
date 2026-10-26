@@ -39,7 +39,7 @@ MODULE M9elide ;
    goes to standard error either way.                                *)
 
 IMPORT Io ;
-IMPORT DynStr ;
+IMPORT DynUtf ;
 IMPORT Text ;
 IMPORT Lex ;
 IMPORT Ast ;
@@ -56,7 +56,7 @@ TYPE
 
   (* ---- the modules loaded: the named files and their imports ---- *)
   Mod = RECORD
-    name, path, dir, src : STR ;
+    name, path, dir, src : UTF ;
     root : Ast.Kid ;               (* the NFile *)
     named : BOOL ;                 (* on the command line: rewritten *)
   END ;
@@ -64,49 +64,49 @@ TYPE
   (* ---- every procedure of every loaded module ---- *)
   Proc = RECORD
     mod : I64 ;
-    name : STR ;
+    name : UTF ;
     def, impl : Ast.Kid ;          (* the heading in the definition, and
                                       the declaration carrying the body *)
     poolIx : I64 ;                 (* flattened index of `VAR p: POOL`,
                                       -1 when there is none, -2 when
                                       there are two *)
-    poolName : STR ;
+    poolName : UTF ;
     state : I64 ;                  (* 0 no candidate; 1 loses its pool;
                                       2 keeps it, why says why *)
-    why : STR ;
+    why : UTF ;
     form : I64 ;                   (* 1 the frame form; 2 grows dName *)
-    dName : STR ;
+    dName : UTF ;
   END ;
 
   (* ---- one file's tokens, with their offsets into the text ---- *)
   Toks = RECORD
     kind, line, col, off, end : SLICE OF I64 ;
-    text : SLICE OF STR ;
+    text : SLICE OF UTF ;
     n : I64 ;
   END ;
 
   (* ---- the edits of one file: replace [s, e) by t ---- *)
   Edits = RECORD
     s, e : SLICE OF I64 ;
-    t : SLICE OF STR ;
+    t : SLICE OF UTF ;
     n : I64 ;
   END ;
 
 VAR
   mods : SLICE OF Mod ;
   nmods : I64 ;
-  dirs : SLICE OF STR ;
+  dirs : SLICE OF UTF ;
   ndirs : I64 ;
   procs : SLICE OF Proc ;
   nprocs : I64 ;
   (* the type declarations of every loaded module, for the result
      and parameter predicates *)
   tyMod : SLICE OF I64 ;
-  tyName : SLICE OF STR ;
+  tyName : SLICE OF UTF ;
   tyNode : SLICE OF AKid ;
   nty : I64 ;
   (* --keep entries *)
-  keeps : SLICE OF STR ;
+  keeps : SLICE OF UTF ;
   nkeeps : I64 ;
   (* the current file's tokens and edits, while rewriting *)
   tk : Toks ;
@@ -116,68 +116,76 @@ VAR
   (* the IN clauses a pool-less local gains: the procedure, the first
      name of its declaration group, the pool every assignment names *)
   aiProc : SLICE OF I64 ;
-  aiName, aiPool : SLICE OF STR ;
+  aiName, aiPool : SLICE OF UTF ;
   nAddIn : I64 ;
 
 (* ---- small things ------------------------------------------------ *)
 
-PROCEDURE Fail (RO s: STR) =
+PROCEDURE Fail (RO s: UTF) =
 BEGIN
   Io.ErrLine (s) ;
   failed := TRUE
 END Fail ;
 
-PROCEDURE ItoA (v: I64) : STR =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE ItoA (v: I64) : UTF =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.AppendI64 (d, v) ;
-  RETURN DynStr.View (d)
+  d := DynUtf.New (pool) ;
+  DynUtf.AppendI64 (d, v) ;
+  RETURN DynUtf.ViewIn (pool, d)
 END ItoA ;
 
-PROCEDURE IsSep (c: CHAR) : BOOL =
+(* the byte at offset i of u, as a number: the path and line scans
+   below look for `/`, `\` and the LF, bytes that are their own
+   characters *)
+PROCEDURE B (RO u: UTF ; i: I64) : I64 =
 BEGIN
-  RETURN c = '/' OR c = 05CC
+  RETURN I64 (Text.BAt (u, i))
+END B ;
+
+PROCEDURE IsSep (c: I64) : BOOL =
+BEGIN
+  RETURN c = 47 OR c = 92
 END IsSep ;
 
-PROCEDURE DirOf (RO path: STR) : STR =
+PROCEDURE DirOf (RO path: UTF) : UTF =
 VAR i : I64 ;
 BEGIN
-  i := LEN (path) - 1 ;
+  i := Text.BLen (path) - 1 ;
   WHILE i >= 0 DO
-    IF IsSep (path[i]) THEN RETURN Text.Keep (pool, SLICE (path, 0, i)) END ;
+    IF IsSep (B (path, i)) THEN RETURN Text.Keep (pool, SLICE (path, 0, i)) END ;
     i := i - 1
   END ;
   RETURN '.'
 END DirOf ;
 
-PROCEDURE BaseName (RO path: STR) : STR =
+PROCEDURE BaseName (RO path: UTF) : UTF =
 VAR i, j : I64 ;
 BEGIN
-  i := LEN (path) - 1 ;
+  i := Text.BLen (path) - 1 ;
   WHILE i >= 0 DO
-    IF IsSep (path[i]) THEN EXIT END ;
+    IF IsSep (B (path, i)) THEN EXIT END ;
     i := i - 1
   END ;
-  j := LEN (path) ;
+  j := Text.BLen (path) ;
   IF Text.EndsWith (path, '.m9') THEN j := j - 3 END ;
   RETURN Text.Keep (pool, SLICE (path, i + 1, j - i - 1))
 END BaseName ;
 
-PROCEDURE Join (RO d: STR ; RO f: STR) : STR =
+PROCEDURE Join (RO d: UTF ; RO f: UTF) : UTF =
 BEGIN
-  IF LEN (d) = 0 THEN RETURN Text.Keep (pool, f) END ;
-  RETURN Text.Cat (pool, Text.Cat (pool, d, '/'), f)
+  IF Text.BLen (d) = 0 THEN RETURN Text.Keep (pool, f) END ;
+  RETURN Text.KeepUtf (pool, d + '/' + f)
 END Join ;
 
-PROCEDURE DirAdd (RO s: STR) =
+PROCEDURE DirAdd (RO s: UTF) =
 VAR
-  nb : SLICE OF STR ;
+  nb : SLICE OF UTF ;
   i : I64 ;
 BEGIN
-  IF LEN (s) = 0 THEN RETURN END ;
+  IF Text.BLen (s) = 0 THEN RETURN END ;
   IF ndirs = LEN (dirs) THEN
-    nb := NEW (pool, STR, 2 * LEN (dirs) + 4) ;
+    nb := NEW (pool, UTF, 2 * LEN (dirs) + 4) ;
     FOR i := 0 TO ndirs - 1 DO nb[i] := dirs[i] END ;
     dirs := nb
   END ;
@@ -185,10 +193,10 @@ BEGIN
   ndirs := ndirs + 1
 END DirAdd ;
 
-PROCEDURE TryRead (RO path: STR ; VAR ok: BOOL) : STR =
+PROCEDURE TryRead (RO path: UTF ; VAR ok: BOOL) : UTF =
 BEGIN
   ok := TRUE ;
-  RETURN Io.ReadFile (pool, path)
+  RETURN UTF (pool, Io.ReadFileUtf (path))
 EXCEPT
 | Io.IOError (p) :
     ok := FALSE ;
@@ -200,7 +208,7 @@ END TryRead ;
 
 (* ---- loading ----------------------------------------------------- *)
 
-PROCEDURE ModIndex (RO name: STR) : I64 =
+PROCEDURE ModIndex (RO name: UTF) : I64 =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO nmods - 1 DO
@@ -209,7 +217,7 @@ BEGIN
   RETURN -1
 END ModIndex ;
 
-PROCEDURE ProcIndex (m: I64 ; RO name: STR) : I64 =
+PROCEDURE ProcIndex (m: I64 ; RO name: UTF) : I64 =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO nprocs - 1 DO
@@ -218,7 +226,7 @@ BEGIN
   RETURN -1
 END ProcIndex ;
 
-PROCEDURE ProcAdd (m: I64 ; RO KEPT name: STR) : I64 =
+PROCEDURE ProcAdd (m: I64 ; RO KEPT name: UTF) : I64 =
 VAR
   nb : SLICE OF Proc ;
   i : I64 ;
@@ -242,16 +250,16 @@ BEGIN
   RETURN nprocs - 1
 END ProcAdd ;
 
-PROCEDURE TypeAdd (m: I64 ; RO KEPT name: STR ; KEPT t: Ast.Kid) =
+PROCEDURE TypeAdd (m: I64 ; RO KEPT name: UTF ; KEPT t: Ast.Kid) =
 VAR
   nm : SLICE OF I64 ;
-  nn : SLICE OF STR ;
+  nn : SLICE OF UTF ;
   nt : SLICE OF AKid ;
   i : I64 ;
 BEGIN
   IF nty = LEN (tyMod) THEN
     nm := NEW (pool, I64, 2 * LEN (tyMod) + 8) ;
-    nn := NEW (pool, STR, 2 * LEN (tyMod) + 8) ;
+    nn := NEW (pool, UTF, 2 * LEN (tyMod) + 8) ;
     nt := NEW (pool, AKid, 2 * LEN (tyMod) + 8) ;
     FOR i := 0 TO nty - 1 DO
       nm[i] := tyMod[i] ;
@@ -268,7 +276,7 @@ BEGIN
   nty := nty + 1
 END TypeAdd ;
 
-PROCEDURE TypeOf (m: I64 ; RO name: STR) : Ast.Kid =
+PROCEDURE TypeOf (m: I64 ; RO name: UTF) : Ast.Kid =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO nty - 1 DO
@@ -287,12 +295,12 @@ BEGIN
       IF kd.kind = Ast.NTypeSection THEN
         FOR j := 0 TO kd.nkids - 1 DO
           IF kd.kids[j] IS SOME td THEN
-            IF td.kids[0] IS SOME tn THEN TypeAdd (m, td.a, td.kids[0]) END
+            IF td.kids[0] IS SOME tn THEN TypeAdd (m, td.au, td.kids[0]) END
           END
         END
       ELSIF kd.kind = Ast.NProcDecl THEN
-        pi := ProcIndex (m, kd.a) ;
-        IF pi < 0 THEN pi := ProcAdd (m, kd.a) END ;
+        pi := ProcIndex (m, kd.au) ;
+        IF pi < 0 THEN pi := ProcAdd (m, kd.au) END ;
         IF kd.kids[4] IS SOME body THEN
           procs[pi].impl := SOME (kd)
         ELSE
@@ -303,9 +311,9 @@ BEGIN
   END
 END Register ;
 
-PROCEDURE LoadFile (RO path: STR ; named: BOOL) : I64 =
+PROCEDURE LoadFile (RO path: UTF ; named: BOOL) : I64 =
 VAR
-  src : STR ;
+  src : UTF ;
   ok : BOOL ;
   p : Parse.Parser ;
   root : PTR Ast.Node IN pool ;
@@ -317,7 +325,7 @@ BEGIN
     Fail ('m9elide: cannot read ' + path) ;
     RETURN -1
   END ;
-  Parse.Init (p, src) ;
+  Parse.InitUtf (p, src) ;
   root := Parse.File (pool, p) ;
   IF p.nerr > 0 THEN
     FOR i := 0 TO p.nkept - 1 DO
@@ -348,10 +356,10 @@ END LoadFile ;
 
 (* the first NAME.m9 on the search path: -I directories, $M9LIBRARY,
    then the importing file's own directory -- m9c's rule *)
-PROCEDURE LoadImport (RO name: STR ; RO fromDir: STR) =
+PROCEDURE LoadImport (RO name: UTF ; RO fromDir: UTF) =
 VAR
   i, m : I64 ;
-  cand, src : STR ;
+  cand, src : UTF ;
   ok : BOOL ;
 BEGIN
   IF ModIndex (name) >= 0 THEN RETURN END ;
@@ -383,7 +391,7 @@ BEGIN
               IF kd.kids[0] IS SOME ids THEN
                 FOR k := 0 TO ids.nkids - 1 DO
                   IF ids.kids[k] IS SOME id THEN
-                    LoadImport (id.a, mods[m].dir)
+                    LoadImport (id.au, mods[m].dir)
                   END
                 END
               END
@@ -403,13 +411,13 @@ BEGIN
   IF depth > 8 THEN RETURN NONE END ;
   IF t IS SOME n THEN
     IF n.kind = Ast.NQualident THEN
-      IF LEN (n.b) = 0 THEN
-        IF Text.Eq (n.a, 'STR') THEN RETURN t END ;
-        RETURN ResolveTy (m, TypeOf (m, n.a), depth + 1)
+      IF Text.BLen (n.bu) = 0 THEN
+        IF Text.Eq (n.au, 'STR') THEN RETURN t END ;
+        RETURN ResolveTy (m, TypeOf (m, n.au), depth + 1)
       END ;
-      om := ModIndex (n.a) ;
+      om := ModIndex (n.au) ;
       IF om < 0 THEN RETURN NONE END ;
-      RETURN ResolveTy (om, TypeOf (om, n.b), depth + 1)
+      RETURN ResolveTy (om, TypeOf (om, n.bu), depth + 1)
     END ;
     RETURN t
   END ;
@@ -426,7 +434,7 @@ BEGIN
   IF ResolveTy (m, t, 0) IS SOME r THEN
     CASE r.kind OF
     | Ast.NPtrType, Ast.NSliceType, Ast.NGridType, Ast.NSharedType : RETURN TRUE
-    | Ast.NQualident : RETURN Text.Eq (r.a, 'STR') AND LEN (r.b) = 0
+    | Ast.NQualident : RETURN Text.Eq (r.au, 'STR') AND Text.BLen (r.bu) = 0
     | Ast.NOptType : RETURN Bearing (m, r.kids[0], depth + 1)
     | Ast.NArrayType : RETURN Bearing (m, r.kids[1], depth + 1)
     | Ast.NRecordType, Ast.NMonitorType :
@@ -492,14 +500,14 @@ END ObjTy ;
 PROCEDURE IsPoolTy (t: Ast.Kid) : BOOL =
 BEGIN
   IF t IS SOME n THEN
-    RETURN n.kind = Ast.NQualident AND Text.Eq (n.a, 'POOL') AND LEN (n.b) = 0
+    RETURN n.kind = Ast.NQualident AND Text.Eq (n.au, 'POOL') AND Text.BLen (n.bu) = 0
   END ;
   RETURN FALSE
 END IsPoolTy ;
 
 (* the flattened index of the one `VAR p: POOL` parameter of a heading,
    its name in pname; -1 when none, -2 when more than one *)
-PROCEDURE PoolParam (head: PTR Ast.Node ; VAR pname: STR) : I64 =
+PROCEDURE PoolParam (head: PTR Ast.Node ; VAR pname: UTF) : I64 =
 VAR
   i, j, ix, found : I64 ;
 BEGIN
@@ -514,7 +522,7 @@ BEGIN
             IF p.f1 AND IsPoolTy (p.kids[1]) THEN
               IF found >= 0 THEN RETURN -2 END ;
               found := ix ;
-              IF ids.kids[j] IS SOME id THEN pname := id.a END
+              IF ids.kids[j] IS SOME id THEN pname := id.au END
             END ;
             ix := ix + 1
           END
@@ -525,10 +533,10 @@ BEGIN
   RETURN found
 END PoolParam ;
 
-PROCEDURE Kept (m: I64 ; RO name: STR) : BOOL =
+PROCEDURE Kept (m: I64 ; RO name: UTF) : BOOL =
 VAR
   i : I64 ;
-  q : STR ;
+  q : UTF ;
 BEGIN
   FOR i := 0 TO nkeeps - 1 DO
     q := keeps[i] ;
@@ -538,7 +546,7 @@ BEGIN
   RETURN FALSE
 END Kept ;
 
-PROCEDURE Keep (pi: I64 ; RO why: STR) =
+PROCEDURE Keep (pi: I64 ; RO why: UTF) =
 BEGIN
   procs[pi].state := 2 ;
   procs[pi].why := Text.Keep (pool, why)
@@ -550,13 +558,13 @@ VAR om : I64 ;
 BEGIN
   IF k IS SOME d THEN
     IF d.kind # Ast.NDesignator THEN RETURN -1 END ;
-    IF d.nkids = 0 THEN RETURN ProcIndex (m, d.a) END ;
+    IF d.nkids = 0 THEN RETURN ProcIndex (m, d.au) END ;
     IF d.nkids = 1 THEN
       IF d.kids[0] IS SOME sel THEN
         IF sel.kind = Ast.NSelField THEN
-          om := ModIndex (d.a) ;
+          om := ModIndex (d.au) ;
           IF om < 0 THEN RETURN -1 END ;
-          RETURN ProcIndex (om, sel.a)
+          RETURN ProcIndex (om, sel.au)
         END
       END
     END
@@ -564,21 +572,21 @@ BEGIN
   RETURN -1
 END CalleeOf ;
 
-PROCEDURE CallName (k: Ast.Kid) : STR =
+PROCEDURE CallName (k: Ast.Kid) : UTF =
 BEGIN
   IF k IS SOME d THEN
     IF d.nkids = 1 THEN
-      IF d.kids[0] IS SOME sel THEN RETURN d.a + '.' + sel.a END
+      IF d.kids[0] IS SOME sel THEN RETURN d.au + '.' + sel.au END
     END ;
-    RETURN d.a
+    RETURN d.au
   END ;
   RETURN '?'
 END CallName ;
 
-PROCEDURE IsName (k: Ast.Kid ; RO name: STR) : BOOL =
+PROCEDURE IsName (k: Ast.Kid ; RO name: UTF) : BOOL =
 BEGIN
   IF k IS SOME d THEN
-    RETURN d.kind = Ast.NDesignator AND d.nkids = 0 AND Text.Eq (d.a, name)
+    RETURN d.kind = Ast.NDesignator AND d.nkids = 0 AND Text.Eq (d.au, name)
   END ;
   RETURN FALSE
 END IsName ;
@@ -616,22 +624,22 @@ BEGIN
   RETURN FALSE
 END StaleArg ;
 
-PROCEDURE UseOf (pi: I64 ; k: Ast.Kid) : STR =
+PROCEDURE UseOf (pi: I64 ; k: Ast.Kid) : UTF =
 VAR
   i, ci : I64 ;
-  r : STR ;
+  r : UTF ;
 BEGIN
   IF k IS SOME n THEN
     IF n.kind = Ast.NNewExpr THEN
       FOR i := 1 TO n.nkids - 1 DO
         r := UseOf (pi, n.kids[i]) ;
-        IF LEN (r) > 0 THEN RETURN r END
+        IF Text.BLen (r) > 0 THEN RETURN r END
       END ;
       RETURN ''
     ELSIF n.kind = Ast.NCallExpr OR n.kind = Ast.NCallStmt THEN
       ci := CalleeOf (procs[pi].mod, n.kids[0]) ;
       r := UseOf (pi, n.kids[0]) ;
-      IF LEN (r) > 0 THEN RETURN r END ;
+      IF Text.BLen (r) > 0 THEN RETURN r END ;
       IF n.kids[1] IS SOME al THEN
         FOR i := 0 TO al.nkids - 1 DO
           IF IsName (al.kids[i], procs[pi].poolName) THEN
@@ -639,7 +647,7 @@ BEGIN
               RETURN 'its pool is handed to ' + CallName (n.kids[0]) +
                      ', which is not a procedure known here'
             ELSIF StaleArg (ci, al) THEN
-              i := i
+              (* a stale call: the argument goes by arity *)
             ELSIF procs[ci].poolIx # i THEN
               RETURN 'its pool is handed to ' + CallName (n.kids[0]) +
                      ' at a parameter that is not a pool'
@@ -652,7 +660,7 @@ BEGIN
             END
           ELSE
             r := UseOf (pi, al.kids[i]) ;
-            IF LEN (r) > 0 THEN RETURN r END
+            IF Text.BLen (r) > 0 THEN RETURN r END
           END
         END
       END ;
@@ -665,13 +673,13 @@ BEGIN
       END ;
       FOR i := 0 TO n.nkids - 1 DO
         r := UseOf (pi, n.kids[i]) ;
-        IF LEN (r) > 0 THEN RETURN r END
+        IF Text.BLen (r) > 0 THEN RETURN r END
       END ;
       RETURN ''
     ELSE
       FOR i := 0 TO n.nkids - 1 DO
         r := UseOf (pi, n.kids[i]) ;
-        IF LEN (r) > 0 THEN RETURN r END
+        IF Text.BLen (r) > 0 THEN RETURN r END
       END ;
       RETURN ''
     END
@@ -680,16 +688,16 @@ BEGIN
 END UseOf ;
 
 (* the string-builder variant: p becomes a LOCAL pool of the same
-   name when its only uses are `DynStr.New (p)`, locals declared IN
+   name when its only uses are `DynUtf.New (p)`, locals declared IN
    p, and arguments to callees that lose their pool -- the head of a
    DynStr and its buffer die with the frame, and a string answer is
    re-homed out of a local pool at exit (stage 2).  An allocation
    from p, or p handed to any other callee that keeps its pool, is
    not that shape. *)
-PROCEDURE UseOfScratch (pi: I64 ; k: Ast.Kid) : STR =
+PROCEDURE UseOfScratch (pi: I64 ; k: Ast.Kid) : UTF =
 VAR
   i, ci : I64 ;
-  r : STR ;
+  r : UTF ;
 BEGIN
   IF k IS SOME n THEN
     IF n.kind = Ast.NNewExpr THEN
@@ -698,34 +706,34 @@ BEGIN
       END ;
       FOR i := 1 TO n.nkids - 1 DO
         r := UseOfScratch (pi, n.kids[i]) ;
-        IF LEN (r) > 0 THEN RETURN r END
+        IF Text.BLen (r) > 0 THEN RETURN r END
       END ;
       RETURN ''
     ELSIF n.kind = Ast.NCallExpr OR n.kind = Ast.NCallStmt THEN
       ci := CalleeOf (procs[pi].mod, n.kids[0]) ;
       r := UseOfScratch (pi, n.kids[0]) ;
-      IF LEN (r) > 0 THEN RETURN r END ;
+      IF Text.BLen (r) > 0 THEN RETURN r END ;
       IF n.kids[1] IS SOME al THEN
         FOR i := 0 TO al.nkids - 1 DO
           IF IsName (al.kids[i], procs[pi].poolName) THEN
             IF ci < 0 THEN
               RETURN 'its pool is handed to ' + CallName (n.kids[0])
             ELSIF StaleArg (ci, al) THEN
-              i := i
+              (* a stale call: the argument goes by arity *)
             ELSIF procs[ci].poolIx # i THEN
               RETURN 'its pool is handed to ' + CallName (n.kids[0]) +
                      ' at a parameter that is not a pool'
             ELSIF procs[ci].state = 1 THEN
-              i := i
+              (* the callee keeps its pool: nothing to say *)
             ELSIF Text.Eq (mods[procs[ci].mod].name, 'DynStr') AND
                   Text.Eq (procs[ci].name, 'New') THEN
-              i := i
+              (* DynStr.New takes the scratch pool by design *)
             ELSE
               RETURN 'its pool is handed to ' + CallName (n.kids[0])
             END
           ELSE
             r := UseOfScratch (pi, al.kids[i]) ;
-            IF LEN (r) > 0 THEN RETURN r END
+            IF Text.BLen (r) > 0 THEN RETURN r END
           END
         END
       END ;
@@ -738,13 +746,13 @@ BEGIN
       END ;
       FOR i := 0 TO n.nkids - 1 DO
         r := UseOfScratch (pi, n.kids[i]) ;
-        IF LEN (r) > 0 THEN RETURN r END
+        IF Text.BLen (r) > 0 THEN RETURN r END
       END ;
       RETURN ''
     ELSE
       FOR i := 0 TO n.nkids - 1 DO
         r := UseOfScratch (pi, n.kids[i]) ;
-        IF LEN (r) > 0 THEN RETURN r END
+        IF Text.BLen (r) > 0 THEN RETURN r END
       END ;
       RETURN ''
     END
@@ -752,8 +760,8 @@ BEGIN
   RETURN ''
 END UseOfScratch ;
 
-PROCEDURE Among0 (RO name: STR ; ids: PTR Ast.Node) : BOOL ;
-PROCEDURE LocalDecl (head: PTR Ast.Node ; RO name: STR ; VAR ids: Ast.Kid) : Ast.Kid ;
+PROCEDURE Among0 (RO name: UTF ; ids: PTR Ast.Node) : BOOL ;
+PROCEDURE LocalDecl (head: PTR Ast.Node ; RO name: UTF ; VAR ids: Ast.Kid) : Ast.Kid ;
 
 (* the expression under parens and SOME *)
 PROCEDURE Core (k: Ast.Kid) : Ast.Kid =
@@ -767,7 +775,7 @@ BEGIN
 END Core ;
 
 (* is NAME a parameter of the procedure under HEAD? *)
-PROCEDURE IsParamOf (head: PTR Ast.Node ; RO name: STR) : BOOL =
+PROCEDURE IsParamOf (head: PTR Ast.Node ; RO name: UTF) : BOOL =
 VAR i : I64 ;
 BEGIN
   IF head.kids[0] IS SOME pl THEN
@@ -795,7 +803,7 @@ BEGIN
 END HasIndex ;
 
 (* the scratch form is unsound when a VIEW of the scratch string
-   leaves the frame: `v.id := DynStr.View (d)` through a VAR
+   leaves the frame: `v.id := DynUtf.View (d)` through a VAR
    parameter, `s[i] := ...` into an element of a slice that is not
    the frame's, or the DString itself stored so.  A view's pool is
    not part of a STR's type, so the checker of the day accepted it
@@ -804,10 +812,10 @@ END HasIndex ;
    local pool (2026-10-01; the checker now refuses the store by
    name, par 4.3, and the tool keeps the parameter first).  Answers
    why, or '' *)
-PROCEDURE ScratchEscape (pi: I64 ; head: PTR Ast.Node ; k: Ast.Kid) : STR =
+PROCEDURE ScratchEscape (pi: I64 ; head: PTR Ast.Node ; k: Ast.Kid) : UTF =
 VAR
   i : I64 ;
-  r : STR ;
+  r : UTF ;
   ids, decl : Ast.Kid ;
   viewed : BOOL ;
 BEGIN
@@ -819,7 +827,7 @@ BEGIN
           IF rhs.kind = Ast.NCallExpr THEN
             viewed := Text.Eq (CallName (rhs.kids[0]), 'DynStr.View')
           ELSIF rhs.kind = Ast.NDesignator AND rhs.nkids = 0 THEN
-            decl := LocalDecl (head, rhs.a, ids) ;
+            decl := LocalDecl (head, rhs.au, ids) ;
             IF decl IS SOME dt THEN
               IF dt.kind = Ast.NPtrType THEN
                 viewed := IsName (dt.kids[1], procs[pi].poolName)
@@ -828,36 +836,36 @@ BEGIN
           END
         END ;
         IF viewed THEN
-          IF IsParamOf (head, lhs.a) THEN
-            RETURN 'a view of its scratch string is stored through ' + lhs.a
+          IF IsParamOf (head, lhs.au) THEN
+            RETURN 'a view of its scratch string is stored through ' + lhs.au
           END ;
-          IF LocalDecl (head, lhs.a, ids) IS SOME lt THEN
+          IF LocalDecl (head, lhs.au, ids) IS SOME lt THEN
             IF HasIndex (lhs) THEN
-              RETURN 'a view of its scratch string is stored in an element of ' + lhs.a
+              RETURN 'a view of its scratch string is stored in an element of ' + lhs.au
             END
           ELSE
-            RETURN 'a view of its scratch string is stored in ' + lhs.a
+            RETURN 'a view of its scratch string is stored in ' + lhs.au
           END
         END
       END
     END ;
     FOR i := 0 TO n.nkids - 1 DO
       r := ScratchEscape (pi, head, n.kids[i]) ;
-      IF LEN (r) > 0 THEN RETURN r END
+      IF Text.BLen (r) > 0 THEN RETURN r END
     END
   END ;
   RETURN ''
 END ScratchEscape ;
 
 (* a candidate's uses, by the form it takes *)
-PROCEDURE Uses (pi: I64 ; k: Ast.Kid) : STR =
+PROCEDURE Uses (pi: I64 ; k: Ast.Kid) : UTF =
 BEGIN
   IF procs[pi].form = 3 THEN RETURN UseOfScratch (pi, k) END ;
   RETURN UseOf (pi, k)
 END Uses ;
 
 (* does the heading answer `... IN p`?  Then p cannot be a local pool *)
-PROCEDURE AnswersIn (head: PTR Ast.Node ; RO pname: STR) : BOOL =
+PROCEDURE AnswersIn (head: PTR Ast.Node ; RO pname: UTF) : BOOL =
 BEGIN
   IF head.kids[1] IS SOME rt THEN
     IF rt.kind = Ast.NPtrType THEN RETURN IsName (rt.kids[1], pname) END
@@ -866,7 +874,7 @@ BEGIN
 END AnswersIn ;
 
 (* does the body allocate from p, or declare a local IN p? *)
-PROCEDURE Allocates (RO pname: STR ; k: Ast.Kid) : BOOL =
+PROCEDURE Allocates (RO pname: UTF ; k: Ast.Kid) : BOOL =
 VAR i : I64 ;
 BEGIN
   IF k IS SOME n THEN
@@ -898,7 +906,7 @@ END HasShared ;
 PROCEDURE Decide (pi: I64) =
 VAR
   i, j, nobj : I64 ;
-  first, second : STR ;
+  first, second : UTF ;
 BEGIN
   IF procs[pi].impl IS SOME head THEN
     nobj := 0 ;
@@ -912,8 +920,8 @@ BEGIN
               FOR j := 0 TO ids.nkids - 1 DO
                 IF ids.kids[j] IS SOME id THEN
                   nobj := nobj + 1 ;
-                  IF nobj = 1 THEN first := id.a
-                  ELSIF nobj = 2 THEN second := id.a END
+                  IF nobj = 1 THEN first := id.au
+                  ELSIF nobj = 2 THEN second := id.au END
                 END
               END
             END
@@ -962,20 +970,20 @@ BEGIN
     ELSIF e.kind = Ast.NCallExpr THEN
       RETURN CalleeOf (m, e.kids[0])
     ELSIF e.kind = Ast.NDesignator AND e.nkids = 0 AND depth < 4 THEN
-      RETURN AssignedCall (m, body, e.a, body, depth + 1)
+      RETURN AssignedCall (m, body, e.au, body, depth + 1)
     END
   END ;
   RETURN -1
 END CallOfAnswer ;
 
-PROCEDURE AssignedCall (m: I64 ; k: Ast.Kid ; RO name: STR ; body: Ast.Kid ;
+PROCEDURE AssignedCall (m: I64 ; k: Ast.Kid ; RO name: UTF ; body: Ast.Kid ;
                         depth: I64) : I64 =
 VAR i, ci : I64 ;
 BEGIN
   IF k IS SOME n THEN
     IF n.kind = Ast.NAssign THEN
       IF n.kids[0] IS SOME lhs THEN
-        IF lhs.nkids = 0 AND Text.Eq (lhs.a, name) THEN
+        IF lhs.nkids = 0 AND Text.Eq (lhs.au, name) THEN
           ci := CallOfAnswer (m, n.kids[1], body, depth) ;
           IF ci >= 0 THEN RETURN ci END
         END
@@ -1018,7 +1026,7 @@ BEGIN
 END ReturnsElided ;
 
 (* the flattened index of the object parameter NAME, or -1 *)
-PROCEDURE ObjParamIx (head: PTR Ast.Node ; RO name: STR) : I64 =
+PROCEDURE ObjParamIx (head: PTR Ast.Node ; RO name: UTF) : I64 =
 VAR i, j, ix : I64 ;
 BEGIN
   ix := 0 ;
@@ -1028,7 +1036,7 @@ BEGIN
         IF p.kids[0] IS SOME ids THEN
           FOR j := 0 TO ids.nkids - 1 DO
             IF ids.kids[j] IS SOME id THEN
-              IF Text.Eq (id.a, name) THEN RETURN ix END
+              IF Text.Eq (id.au, name) THEN RETURN ix END
             END ;
             ix := ix + 1
           END
@@ -1039,7 +1047,7 @@ BEGIN
   RETURN -1
 END ObjParamIx ;
 
-PROCEDURE IsModVar (m: I64 ; RO name: STR) : BOOL =
+PROCEDURE IsModVar (m: I64 ; RO name: UTF) : BOOL =
 VAR i, j, k2 : I64 ;
 BEGIN
   IF mods[m].root IS SOME f THEN
@@ -1064,12 +1072,12 @@ BEGIN
   RETURN FALSE
 END IsModVar ;
 
-PROCEDURE Among0 (RO name: STR ; ids: PTR Ast.Node) : BOOL =
+PROCEDURE Among0 (RO name: UTF ; ids: PTR Ast.Node) : BOOL =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO ids.nkids - 1 DO
     IF ids.kids[i] IS SOME id THEN
-      IF Text.Eq (id.a, name) THEN RETURN TRUE END
+      IF Text.Eq (id.au, name) THEN RETURN TRUE END
     END
   END ;
   RETURN FALSE
@@ -1077,7 +1085,7 @@ END Among0 ;
 
 (* the type a local NAME is declared with in the body under HEAD, and
    the identifier list of its group; NONE when it is not a local *)
-PROCEDURE LocalDecl (head: PTR Ast.Node ; RO name: STR ; VAR ids: Ast.Kid) : Ast.Kid =
+PROCEDURE LocalDecl (head: PTR Ast.Node ; RO name: UTF ; VAR ids: Ast.Kid) : Ast.Kid =
 VAR i, j : I64 ;
 BEGIN
   ids := NONE ;
@@ -1102,7 +1110,7 @@ BEGIN
   RETURN NONE
 END LocalDecl ;
 
-PROCEDURE ModVarTy (m: I64 ; RO name: STR) : Ast.Kid =
+PROCEDURE ModVarTy (m: I64 ; RO name: UTF) : Ast.Kid =
 VAR i, j, k2 : I64 ;
 BEGIN
   IF mods[m].root IS SOME f THEN
@@ -1129,7 +1137,7 @@ END ModVarTy ;
 
 (* is NAME a pool where the procedure PI (heading HEAD) stands: its
    pool parameter, HEAP, a local POOL or a module POOL? *)
-PROCEDURE PoolNameHere (pi: I64 ; head: PTR Ast.Node ; RO name: STR) : BOOL =
+PROCEDURE PoolNameHere (pi: I64 ; head: PTR Ast.Node ; RO name: UTF) : BOOL =
 VAR
   ids : Ast.Kid ;
   i : I64 ;
@@ -1156,17 +1164,17 @@ END PoolNameHere ;
    or the answer of a candidate that allocates from the pool it
    loses), the name of a pool (a NEW from it, or the answer of a
    procedure that keeps its pool and is handed it), '' unknown *)
-PROCEDURE SourceOf (pi: I64 ; head: PTR Ast.Node ; k: Ast.Kid) : STR =
+PROCEDURE SourceOf (pi: I64 ; head: PTR Ast.Node ; k: Ast.Kid) : UTF =
 VAR ci, px : I64 ;
 BEGIN
   IF k IS SOME e THEN
     IF e.kind = Ast.NNewExpr THEN
       IF e.kids[0] IS SOME first THEN
         IF first.kind = Ast.NDesignator AND first.nkids = 0 THEN
-          IF Text.Eq (first.a, 'OWN') THEN RETURN '' END ;
-          IF PoolNameHere (pi, head, first.a) THEN RETURN first.a END ;
-          IF TypeOf (procs[pi].mod, first.a) IS SOME t0 THEN RETURN 'F' END ;
-          IF IsPredeclaredTy (first.a) THEN RETURN 'F' END
+          IF Text.Eq (first.au, 'OWN') THEN RETURN '' END ;
+          IF PoolNameHere (pi, head, first.au) THEN RETURN first.au END ;
+          IF TypeOf (procs[pi].mod, first.au) IS SOME t0 THEN RETURN 'F' END ;
+          IF IsPredeclaredTy (first.au) THEN RETURN 'F' END
         ELSIF first.kind = Ast.NDesignator THEN
           (* Mod.T: a qualified type, never a pool *)
           RETURN 'F'
@@ -1189,7 +1197,7 @@ BEGIN
         IF px < al.nkids THEN
           IF al.kids[px] IS SOME an THEN
             IF an.kind = Ast.NDesignator AND an.nkids = 0 THEN
-              IF PoolNameHere (pi, head, an.a) THEN RETURN an.a END
+              IF PoolNameHere (pi, head, an.au) THEN RETURN an.au END
             END
           END
         END
@@ -1205,26 +1213,26 @@ CONST
     'CHAR', 'BOOL', 'BYTE', 'STR'
   ] ;
 
-PROCEDURE IsPredeclaredTy (RO name: STR) : BOOL =
+PROCEDURE IsPredeclaredTy (RO name: UTF) : BOOL =
 BEGIN
-  RETURN Text.OneOf (name, PredeclaredTys)
+  RETURN Text.OneOf (STR (name), PredeclaredTys)
 END IsPredeclaredTy ;
 
 (* every assignment to local NAME in K, folded: src is the one source
    they agree on, n counts them, bad says they disagree or one is
    unknown *)
-PROCEDURE Sources (pi: I64 ; head: PTR Ast.Node ; RO name: STR ; k: Ast.Kid ;
-                   VAR src: STR ; VAR n: I64 ; VAR bad: BOOL) =
+PROCEDURE Sources (pi: I64 ; head: PTR Ast.Node ; RO name: UTF ; k: Ast.Kid ;
+                   VAR src: UTF ; VAR n: I64 ; VAR bad: BOOL) =
 VAR
   i : I64 ;
-  s : STR ;
+  s : UTF ;
 BEGIN
   IF k IS SOME e THEN
     IF e.kind = Ast.NAssign THEN
       IF e.kids[0] IS SOME lhs THEN
-        IF lhs.nkids = 0 AND Text.Eq (lhs.a, name) THEN
+        IF lhs.nkids = 0 AND Text.Eq (lhs.au, name) THEN
           s := SourceOf (pi, head, e.kids[1]) ;
-          IF LEN (s) = 0 THEN
+          IF Text.BLen (s) = 0 THEN
             bad := TRUE
           ELSIF n = 0 THEN
             src := s
@@ -1241,19 +1249,19 @@ BEGIN
   END
 END Sources ;
 
-PROCEDURE AddIn (pi: I64 ; RO name: STR ; RO pname: STR) =
+PROCEDURE AddIn (pi: I64 ; RO name: UTF ; RO pname: UTF) =
 VAR
   i : I64 ;
   np : SLICE OF I64 ;
-  nn, npo : SLICE OF STR ;
+  nn, npo : SLICE OF UTF ;
 BEGIN
   FOR i := 0 TO nAddIn - 1 DO
     IF aiProc[i] = pi AND Text.Eq (aiName[i], name) THEN RETURN END
   END ;
   IF nAddIn = LEN (aiProc) THEN
     np := NEW (pool, I64, 2 * nAddIn) ;
-    nn := NEW (pool, STR, 2 * nAddIn) ;
-    npo := NEW (pool, STR, 2 * nAddIn) ;
+    nn := NEW (pool, UTF, 2 * nAddIn) ;
+    npo := NEW (pool, UTF, 2 * nAddIn) ;
     FOR i := 0 TO nAddIn - 1 DO
       np[i] := aiProc[i] ;
       nn[i] := aiName[i] ;
@@ -1281,11 +1289,11 @@ END AddIn ;
    pool P, the declaration gains the `IN P` it had omitted (every name
    of its group must agree); anything else, the callee keeps its
    pool.  A binder's origin is not followed. *)
-PROCEDURE RootPooled (pi: I64 ; head: PTR Ast.Node ; RO name: STR) : BOOL =
+PROCEDURE RootPooled (pi: I64 ; head: PTR Ast.Node ; RO name: UTF) : BOOL =
 VAR
   i, j, n : I64 ;
   ty, ids : Ast.Kid ;
-  src, first, gsrc : STR ;
+  src, first, gsrc : UTF ;
   bad : BOOL ;
 BEGIN
   IF head.kids[0] IS SOME pl THEN
@@ -1310,11 +1318,11 @@ BEGIN
         first := '' ;
         FOR j := 0 TO gids.nkids - 1 DO
           IF gids.kids[j] IS SOME gid THEN
-            IF j = 0 THEN first := gid.a END ;
+            IF j = 0 THEN first := gid.au END ;
             src := '' ;
             n := 0 ;
             bad := FALSE ;
-            Sources (pi, head, gid.a, head.kids[4], src, n, bad) ;
+            Sources (pi, head, gid.au, head.kids[4], src, n, bad) ;
             IF bad OR n = 0 THEN RETURN FALSE END ;
             IF j = 0 THEN
               gsrc := src
@@ -1341,7 +1349,7 @@ PROCEDURE GrowsUnpooled (pi: I64 ; head: PTR Ast.Node ; k: Ast.Kid) : BOOL =
 VAR
   i, ci, ox : I64 ;
   hit, okRoot : BOOL ;
-  rn : STR ;
+  rn : UTF ;
 BEGIN
   hit := FALSE ;
   IF k IS SOME n THEN
@@ -1357,8 +1365,8 @@ BEGIN
               IF ox >= 0 AND ox < al.nkids THEN
                 IF al.kids[ox] IS SOME an THEN
                   IF an.kind = Ast.NDesignator THEN
-                    rn := an.a ;
-                    okRoot := RootPooled (pi, head, an.a)
+                    rn := an.au ;
+                    okRoot := RootPooled (pi, head, an.au)
                   END
                 END
               END
@@ -1384,7 +1392,7 @@ PROCEDURE Classify () =
 VAR
   i, was : I64 ;
   changed, hasBody, found : BOOL ;
-  r : STR ;
+  r : UTF ;
 BEGIN
   FOR i := 0 TO nprocs - 1 DO
     (* every procedure's pool parameter, so a caller can tell a pool
@@ -1394,7 +1402,7 @@ BEGIN
     IF procs[i].impl IS SOME head THEN
       hasBody := TRUE ;
       procs[i].poolIx := PoolParam (head, procs[i].poolName) ;
-      IF mods[procs[i].mod].named AND LEN (head.b) = 0 THEN
+      IF mods[procs[i].mod].named AND Text.BLen (head.bu) = 0 THEN
         IF procs[i].poolIx = -2 THEN
           procs[i].state := 2 ;
           procs[i].why := 'two pool parameters'
@@ -1434,7 +1442,7 @@ BEGIN
         IF procs[i].state = 1 THEN
           IF procs[i].impl IS SOME head THEN
             r := Uses (i, head.kids[4]) ;
-            IF LEN (r) > 0 THEN
+            IF Text.BLen (r) > 0 THEN
               Keep (i, r) ;
               changed := TRUE
             END
@@ -1467,11 +1475,11 @@ BEGIN
               was := procs[i].form ;
               procs[i].form := 3 ;
               r := UseOfScratch (i, head2.kids[4]) ;
-              IF LEN (r) = 0 THEN
+              IF Text.BLen (r) = 0 THEN
                 r := ScratchEscape (i, head2, head2.kids[4]) ;
-                IF LEN (r) > 0 THEN Keep (i, r) END
+                IF Text.BLen (r) > 0 THEN Keep (i, r) END
               END ;
-              IF LEN (r) = 0 THEN
+              IF Text.BLen (r) = 0 THEN
                 found := TRUE
               ELSE
                 procs[i].form := was
@@ -1490,22 +1498,22 @@ END Classify ;
 
 (* ---- tokens and offsets -------------------------------------------- *)
 
-PROCEDURE LexAll (RO KEPT src: STR) =
+PROCEDURE LexAll (RO KEPT src: UTF) =
 VAR
   lx : Lex.Lexer ;
   t : Lex.Token ;
   ls : SLICE OF I64 ;
   nls, i, cap : I64 ;
   nb : SLICE OF I64 ;
-  nt : SLICE OF STR ;
+  nt : SLICE OF UTF ;
 BEGIN
   (* line starts, so a token's line:col becomes an offset *)
   ls := NEW (pool, I64, 1024) ;
   nls := 0 ;
   ls[0] := 0 ;
   nls := 1 ;
-  FOR i := 0 TO LEN (src) - 1 DO
-    IF src[i] = 0AC THEN
+  FOR i := 0 TO Text.BLen (src) - 1 DO
+    IF B (src, i) = 10 THEN
       IF nls = LEN (ls) THEN
         nb := NEW (pool, I64, 2 * LEN (ls)) ;
         FOR cap := 0 TO nls - 1 DO nb[cap] := ls[cap] END ;
@@ -1521,7 +1529,7 @@ BEGIN
   tk.col := NEW (pool, I64, cap) ;
   tk.off := NEW (pool, I64, cap) ;
   tk.end := NEW (pool, I64, cap) ;
-  tk.text := NEW (pool, STR, cap) ;
+  tk.text := NEW (pool, UTF, cap) ;
   tk.n := 0 ;
   Lex.Init (lx, src) ;
   LOOP
@@ -1544,7 +1552,7 @@ BEGIN
       nb := NEW (pool, I64, cap) ;
       FOR i := 0 TO tk.n - 1 DO nb[i] := tk.end[i] END ;
       tk.end := nb ;
-      nt := NEW (pool, STR, cap) ;
+      nt := NEW (pool, UTF, cap) ;
       FOR i := 0 TO tk.n - 1 DO nt[i] := tk.text[i] END ;
       tk.text := nt
     END ;
@@ -1556,8 +1564,8 @@ BEGIN
     ELSE
       tk.off[tk.n] := 0
     END ;
-    tk.end[tk.n] := tk.off[tk.n] + LEN (t.text) ;
-    tk.text[tk.n] := t.text ;
+    tk.end[tk.n] := tk.off[tk.n] + Text.CpCount (t.text) ;   (* characters of src *)
+    tk.text[tk.n] := Text.KeepUtf (pool, t.text) ;
     tk.n := tk.n + 1
   END
 END LexAll ;
@@ -1581,22 +1589,22 @@ BEGIN
   RETURN -1
 END TokAt ;
 
-PROCEDURE TokIs (i: I64 ; RO s: STR) : BOOL =
+PROCEDURE TokIs (i: I64 ; RO s: UTF) : BOOL =
 BEGIN
   IF i < 0 OR i >= tk.n THEN RETURN FALSE END ;
   RETURN Text.Eq (tk.text[i], s)
 END TokIs ;
 
-PROCEDURE EditAdd (s, e: I64 ; RO KEPT t: STR) =
+PROCEDURE EditAdd (s, e: I64 ; RO KEPT t: UTF) =
 VAR
   ns, ne : SLICE OF I64 ;
-  nt : SLICE OF STR ;
+  nt : SLICE OF UTF ;
   i : I64 ;
 BEGIN
   IF ed.n = LEN (ed.s) THEN
     ns := NEW (pool, I64, 2 * LEN (ed.s) + 16) ;
     ne := NEW (pool, I64, 2 * LEN (ed.s) + 16) ;
-    nt := NEW (pool, STR, 2 * LEN (ed.s) + 16) ;
+    nt := NEW (pool, UTF, 2 * LEN (ed.s) + 16) ;
     FOR i := 0 TO ed.n - 1 DO
       ns[i] := ed.s[i] ;
       ne[i] := ed.e[i] ;
@@ -1717,6 +1725,7 @@ END EditHeading ;
 PROCEDURE EditBody (pi: I64 ; k: Ast.Kid ; VAR ok: BOOL) =
 VAR
   i, t, e : I64 ;
+  q : PTR Ast.Node IN pool ;
 BEGIN
   IF k IS SOME n THEN
     IF n.kind = Ast.NNewExpr THEN
@@ -1726,7 +1735,13 @@ BEGIN
           IF t < 0 THEN ok := FALSE ; RETURN END ;
           IF procs[pi].form = 2 THEN
             EditAdd (tk.off[t], tk.end[t], procs[pi].dName) ;
-            pd.a := procs[pi].dName
+            (* the tree says so too: a fresh designator in the tree's
+               pool -- pd is reached by value and its pool is not known
+               here, which a name a node owns needs (Ast.SetA) *)
+            q := Ast.NewNode (pool, Ast.NDesignator, pd.line, pd.col) ;
+            Ast.SetA (pool, q, procs[pi].dName) ;
+            Ast.SetB (pool, q, pd.bu) ;
+            n.kids[0] := SOME (q)
           ELSE
             e := ArgEnd (t) ;
             IF NOT TokIs (e + 1, ',') THEN ok := FALSE ; RETURN END ;
@@ -1759,28 +1774,28 @@ PROCEDURE EditScratch (pi: I64 ; VAR head: PTR Ast.Node ; VAR ok: BOOL) =
 VAR
   i, t, j : I64 ;
   sec, decl, ids, id, ty, nsec : PTR Ast.Node ;
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   have : Ast.Kid ;
 BEGIN
   IF head.kids[4] IS SOME body THEN
     decl := Ast.NewNode (pool, Ast.NVarDecl, 0, 0) ;
     ids := Ast.NewNode (pool, Ast.NIdentList, 0, 0) ;
     id := Ast.NewNode (pool, Ast.NIdent, 0, 0) ;
-    id.a := procs[pi].poolName ;
+    Ast.SetA (pool, id, procs[pi].poolName) ;
     Ast.Add (pool, ids, SOME (id)) ;
     ty := Ast.NewNode (pool, Ast.NQualident, 0, 0) ;
-    ty.a := 'POOL' ;
+    Ast.SetA (pool, ty, 'POOL') ;
     Ast.Add (pool, decl, SOME (ids)) ;
     Ast.Add (pool, decl, SOME (ty)) ;
     have := NONE ;
     FOR i := 0 TO body.nkids - 2 DO
       IF body.kids[i] IS SOME s THEN
         IF s.kind = Ast.NVarSection THEN
-          IF have IS SOME h0 THEN i := i ELSE have := body.kids[i] END
+          IF have IS NONE THEN have := body.kids[i] END
         END
       END
     END ;
-    d := DynStr.New (pool) ;
+    d := DynUtf.New (pool) ;
     IF have IS SOME s2 THEN
       (* before the section's first declaration, at its column *)
       sec := s2 ;
@@ -1791,11 +1806,11 @@ BEGIN
         END
       END ;
       IF t < 0 THEN ok := FALSE ; RETURN END ;
-      DynStr.Append (d, procs[pi].poolName) ;
-      DynStr.Append (d, ' : POOL ;') ;
-      DynStr.AppendChar (d, 0AC) ;
-      FOR j := 1 TO tk.col[t] - 1 DO DynStr.AppendChar (d, ' ') END ;
-      EditAdd (tk.off[t], tk.off[t], Text.Keep (pool, DynStr.View (d))) ;
+      DynUtf.Append (d, procs[pi].poolName) ;
+      DynUtf.Append (d, ' : POOL ;') ;
+      DynUtf.AppendChar (d, 0AC) ;
+      FOR j := 1 TO tk.col[t] - 1 DO DynUtf.AppendChar (d, ' ') END ;
+      EditAdd (tk.off[t], tk.off[t], Text.Keep (pool, DynUtf.ViewIn (pool, d))) ;
       Ast.Add (pool, sec, NONE) ;
       j := sec.nkids - 1 ;
       WHILE j > 0 DO
@@ -1810,13 +1825,13 @@ BEGIN
         t := TokAt (blk.line, blk.col)
       END ;
       IF t < 0 OR NOT TokIs (t, 'BEGIN') THEN ok := FALSE ; RETURN END ;
-      DynStr.Append (d, 'VAR') ;
-      DynStr.AppendChar (d, 0AC) ;
-      DynStr.Append (d, '  ') ;
-      DynStr.Append (d, procs[pi].poolName) ;
-      DynStr.Append (d, ' : POOL ;') ;
-      DynStr.AppendChar (d, 0AC) ;
-      EditAdd (tk.off[t], tk.off[t], Text.Keep (pool, DynStr.View (d))) ;
+      DynUtf.Append (d, 'VAR') ;
+      DynUtf.AppendChar (d, 0AC) ;
+      DynUtf.Append (d, '  ') ;
+      DynUtf.Append (d, procs[pi].poolName) ;
+      DynUtf.Append (d, ' : POOL ;') ;
+      DynUtf.AppendChar (d, 0AC) ;
+      EditAdd (tk.off[t], tk.off[t], Text.Keep (pool, DynUtf.ViewIn (pool, d))) ;
       nsec := Ast.NewNode (pool, Ast.NVarSection, 0, 0) ;
       Ast.Add (pool, nsec, SOME (decl)) ;
       Ast.Add (pool, body, NONE) ;
@@ -1850,7 +1865,7 @@ BEGIN
           IF e >= tk.n THEN ok := FALSE ; RETURN END ;
           EditAdd (tk.end[e], tk.end[e], Text.Keep (pool, ' IN ' + aiPool[i])) ;
           pn := Ast.NewNode (pool, Ast.NDesignator, 0, 0) ;
-          pn.a := aiPool[i] ;
+          Ast.SetA (pool, pn, aiPool[i]) ;
           pt.kids[1] := SOME (pn) ;
           nAdded := nAdded + 1
         ELSE
@@ -1869,7 +1884,7 @@ END EditAddIn ;
    loses the argument *)
 (* is NAME a pool where this call stands: in procedure PI (its
    heading HEAD) when there is one, else at module level *)
-PROCEDURE IsPoolArg (m: I64 ; pi: I64 ; head: Ast.Kid ; RO name: STR) : BOOL =
+PROCEDURE IsPoolArg (m: I64 ; pi: I64 ; head: Ast.Kid ; RO name: UTF) : BOOL =
 BEGIN
   IF Text.Eq (name, 'HEAP') THEN RETURN TRUE END ;
   IF pi >= 0 THEN
@@ -1886,7 +1901,7 @@ BEGIN
     IF n.kind = Ast.NProcDecl THEN
       (* the enclosing procedure, for the pool names its calls use *)
       FOR i := 0 TO n.nkids - 1 DO
-        EditCalls (m, ProcIndex (m, n.a), k, n.kids[i], ok)
+        EditCalls (m, ProcIndex (m, n.au), k, n.kids[i], ok)
       END ;
       RETURN
     END ;
@@ -1900,7 +1915,7 @@ BEGIN
             WHILE j < sal.nkids DO
               IF sal.kids[j] IS SOME sa THEN
                 IF sa.kind = Ast.NDesignator AND sa.nkids = 0 THEN
-                  IF IsPoolArg (m, pi, head, sa.a) THEN
+                  IF IsPoolArg (m, pi, head, sa.au) THEN
                     t := TokAt (sa.line, sa.col) ;
                     IF t < 0 THEN ok := FALSE ; RETURN END ;
                     DropArg (t, ok) ;
@@ -1953,11 +1968,11 @@ END EditCalls ;
    the answer is.  Only a local assigned such a call DIRECTLY, and
    only a single-name declaration; anything else is left for the
    checker to name. *)
-PROCEDURE FrameHeld (m: I64 ; KEPT k: Ast.Kid ; VAR names: SLICE OF STR ;
+PROCEDURE FrameHeld (m: I64 ; KEPT k: Ast.Kid ; VAR names: SLICE OF UTF ;
                      VAR nn: I64) =
 VAR
   i, ci : I64 ;
-  nb : SLICE OF STR ;
+  nb : SLICE OF UTF ;
 BEGIN
   IF k IS SOME n THEN
     IF n.kind = Ast.NAssign THEN
@@ -1968,11 +1983,11 @@ BEGIN
             IF ci >= 0 THEN
               IF procs[ci].state = 1 AND (procs[ci].form = 1 OR procs[ci].form = 3) THEN
                 IF nn = LEN (names) THEN
-                  nb := NEW (pool, STR, 2 * LEN (names) + 8) ;
+                  nb := NEW (pool, UTF, 2 * LEN (names) + 8) ;
                   FOR i := 0 TO nn - 1 DO nb[i] := names[i] END ;
                   names := nb
                 END ;
-                names[nn] := lhs.a ;
+                names[nn] := lhs.au ;
                 nn := nn + 1
               END
             END
@@ -1986,13 +2001,13 @@ END FrameHeld ;
 
 PROCEDURE EditDropIn (m: I64 ; KEPT proc: PTR Ast.Node ; VAR ok: BOOL) =
 VAR
-  names : SLICE OF STR ;
+  names : SLICE OF UTF ;
   nn, i, j, k2, t : I64 ;
   ty : Ast.Kid ;
   all : BOOL ;
 BEGIN
   IF proc.kids[4] IS SOME body THEN
-    names := NEW (pool, STR, 8) ;
+    names := NEW (pool, UTF, 8) ;
     nn := 0 ;
     FrameHeld (m, proc.kids[4], names, nn) ;
     IF nn = 0 THEN RETURN END ;
@@ -2008,12 +2023,12 @@ BEGIN
                 all := ids.nkids > 0 ;
                 FOR k2 := 0 TO ids.nkids - 1 DO
                   IF ids.kids[k2] IS SOME idk THEN
-                    IF NOT Among (idk.a, names, nn) THEN all := FALSE END
+                    IF NOT Among (idk.au, names, nn) THEN all := FALSE END
                   END
                 END ;
                 IF all THEN
                   IF ids.kids[0] IS SOME id THEN
-                    IF Among (id.a, names, nn) THEN
+                    IF Among (id.au, names, nn) THEN
                       ty := vd.kids[1] ;
                       IF ty IS SOME tn THEN
                         IF tn.kind = Ast.NOptType THEN ty := tn.kids[0] END
@@ -2044,7 +2059,7 @@ BEGIN
   END
 END EditDropIn ;
 
-PROCEDURE Among (RO s: STR ; RO names: SLICE OF STR ; nn: I64) : BOOL =
+PROCEDURE Among (RO s: UTF ; RO names: SLICE OF UTF ; nn: I64) : BOOL =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO nn - 1 DO
@@ -2073,7 +2088,7 @@ BEGIN
             IF vd.kids[0] IS SOME ids THEN
               IF ids.kids[0] IS SOME id THEN
                 Io.ErrLine ('elide: ' + mods[m].name + ': module pool ' +
-                            id.a + ' stays') ;
+                            id.au + ' stays') ;
                 nModPools := nModPools + 1
               END
             END
@@ -2087,11 +2102,11 @@ BEGIN
   END
 END CountLeft ;
 
-PROCEDURE Apply (RO src: STR) : STR =
+PROCEDURE Apply (RO src: UTF) : UTF =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i, j, at, ts, te : I64 ;
-  ss : STR ;
+  ss : UTF ;
 BEGIN
   (* insertion sort by start; the edits never overlap *)
   FOR i := 1 TO ed.n - 1 DO
@@ -2103,29 +2118,29 @@ BEGIN
       j := j - 1
     END
   END ;
-  d := DynStr.New (pool) ;
+  d := DynUtf.New (pool) ;
   at := 0 ;
   FOR i := 0 TO ed.n - 1 DO
     IF ed.s[i] < at THEN
       Fail ('m9elide: two edits overlap; nothing written') ;
       RETURN src
     END ;
-    DynStr.Append (d, SLICE (src, at, ed.s[i] - at)) ;
-    DynStr.Append (d, ed.t[i]) ;
+    DynUtf.Append (d, SLICE (src, at, ed.s[i] - at)) ;
+    DynUtf.Append (d, ed.t[i]) ;
     at := ed.e[i]
   END ;
-  DynStr.Append (d, SLICE (src, at, LEN (src) - at)) ;
-  RETURN DynStr.View (d)
+  DynUtf.Append (d, SLICE (src, at, Text.BLen (src) - at)) ;
+  RETURN DynUtf.ViewIn (pool, d)
 END Apply ;
 
 (* one named file: the edits, the proof, the text *)
-PROCEDURE Rewrite (m: I64 ; VAR out: STR) : BOOL =
+PROCEDURE Rewrite (m: I64 ; VAR out: UTF) : BOOL =
 VAR
   i, j : I64 ;
   ok : BOOL ;
   p : Parse.Parser ;
   again : PTR Ast.Node IN pool ;
-  a, b, txt : STR ;
+  a, b, txt : UTF ;
 BEGIN
   ok := TRUE ;
   ed.n := 0 ;
@@ -2161,7 +2176,7 @@ BEGIN
     txt := Text.Keep (pool, Apply (mods[m].src)) ;
     IF failed THEN RETURN FALSE END ;
     (* the proof: the edited text parses to the edited tree *)
-    Parse.Init (p, txt) ;
+    Parse.InitUtf (p, txt) ;
     again := Parse.File (pool, p) ;
     IF p.nerr > 0 THEN
       FOR j := 0 TO p.nkept - 1 DO
@@ -2171,9 +2186,9 @@ BEGIN
       Fail ('m9elide: ' + mods[m].path + ': the edited text does not parse; nothing written') ;
       RETURN FALSE
     END ;
-    a := Print.Tree (pool, root) ;
-    b := Print.Tree (pool, again) ;
-    IF NOT DynStr.Eq (a, b) THEN
+    a := Print.TreeUtf (pool, root) ;
+    b := Print.TreeUtf (pool, again) ;
+    IF NOT Text.Eq (a, b) THEN
       Fail ('m9elide: ' + mods[m].path + ': the edited text and the edited tree disagree; nothing written') ;
       RETURN FALSE
     END ;
@@ -2222,36 +2237,36 @@ END Usage ;
 
 VAR
   i, j, m, nnamed : I64 ;
-  a, env, out : STR ;
-  named : SLICE OF STR ;
-  outs : SLICE OF STR ;
-  parts : SLICE OF STR ;
-  nb : SLICE OF STR ;
+  a, env, out : UTF ;
+  named : SLICE OF UTF ;
+  outs : SLICE OF UTF ;
+  parts : SLICE OF UTF ;
+  nb : SLICE OF UTF ;
 
 BEGIN
   failed := FALSE ;
   write := FALSE ;
-  dirs := NEW (pool, STR, 8) ;
+  dirs := NEW (pool, UTF, 8) ;
   ndirs := 0 ;
-  keeps := NEW (pool, STR, 8) ;
+  keeps := NEW (pool, UTF, 8) ;
   nkeeps := 0 ;
   aiProc := NEW (pool, I64, 64) ;
-  aiName := NEW (pool, STR, 64) ;
-  aiPool := NEW (pool, STR, 64) ;
+  aiName := NEW (pool, UTF, 64) ;
+  aiPool := NEW (pool, UTF, 64) ;
   nAddIn := 0 ;
-  named := NEW (pool, STR, 8) ;
+  named := NEW (pool, UTF, 8) ;
   nnamed := 0 ;
   mods := NEW (pool, Mod, 8) ;
   nmods := 0 ;
   procs := NEW (pool, Proc, 64) ;
   nprocs := 0 ;
   tyMod := NEW (pool, I64, 64) ;
-  tyName := NEW (pool, STR, 64) ;
+  tyName := NEW (pool, UTF, 64) ;
   tyNode := NEW (pool, AKid, 64) ;
   nty := 0 ;
   ed.s := NEW (pool, I64, 64) ;
   ed.e := NEW (pool, I64, 64) ;
-  ed.t := NEW (pool, STR, 64) ;
+  ed.t := NEW (pool, UTF, 64) ;
   ed.n := 0 ;
   nLost := 0 ; nGrow := 0 ; nKept := 0 ; nCalls := 0 ; nHeap := 0 ; nModPools := 0 ;
   nDropped := 0 ;
@@ -2260,28 +2275,28 @@ BEGIN
   nScratch := 0 ;
   i := 1 ;
   WHILE i < Io.ArgCount () DO
-    a := Io.Arg (pool, i) ;
-    IF DynStr.Eq (a, '-w') THEN write := TRUE
-    ELSIF DynStr.Eq (a, '-h') OR DynStr.Eq (a, '--help') THEN
+    a := Io.ArgUtf (pool, i) ;
+    IF Text.Eq (a, '-w') THEN write := TRUE
+    ELSIF Text.Eq (a, '-h') OR Text.Eq (a, '--help') THEN
       Usage () ;
       Io.Halt (0)
-    ELSIF DynStr.Eq (a, '-I') THEN
+    ELSIF Text.Eq (a, '-I') THEN
       IF i + 1 >= Io.ArgCount () THEN Usage () ; Io.Halt (2) END ;
-      DirAdd (Io.Arg (pool, i + 1)) ;
+      DirAdd (Io.ArgUtf (pool, i + 1)) ;
       i := i + 1
-    ELSIF DynStr.Eq (a, '--keep') THEN
+    ELSIF Text.Eq (a, '--keep') THEN
       IF i + 1 >= Io.ArgCount () THEN Usage () ; Io.Halt (2) END ;
       IF nkeeps = LEN (keeps) THEN
-        nb := NEW (pool, STR, 2 * LEN (keeps)) ;
+        nb := NEW (pool, UTF, 2 * LEN (keeps)) ;
         FOR j := 0 TO nkeeps - 1 DO nb[j] := keeps[j] END ;
         keeps := nb
       END ;
-      keeps[nkeeps] := Io.Arg (pool, i + 1) ;
+      keeps[nkeeps] := Io.ArgUtf (pool, i + 1) ;
       nkeeps := nkeeps + 1 ;
       i := i + 1
     ELSE
       IF nnamed = LEN (named) THEN
-        nb := NEW (pool, STR, 2 * LEN (named)) ;
+        nb := NEW (pool, UTF, 2 * LEN (named)) ;
         FOR j := 0 TO nnamed - 1 DO nb[j] := named[j] END ;
         named := nb
       END ;
@@ -2295,8 +2310,8 @@ BEGIN
     Io.Halt (2)
   END ;
   (* $M9LIBRARY after -I, as m9c searches *)
-  env := Io.Env (pool, 'M9LIBRARY') ;
-  IF LEN (env) > 0 THEN
+  env := Io.EnvUtf (pool, 'M9LIBRARY') ;
+  IF Text.BLen (env) > 0 THEN
     parts := Text.Split (env, ':') ;
     FOR i := 0 TO LEN (parts) - 1 DO DirAdd (parts[i]) END
   END ;
@@ -2307,7 +2322,7 @@ BEGIN
   IF failed THEN Io.Halt (1) END ;
   Classify () ;
   Ledger () ;
-  outs := NEW (pool, STR, nmods + 1) ;
+  outs := NEW (pool, UTF, nmods + 1) ;
   FOR i := 0 TO nmods - 1 DO
     IF mods[i].named THEN
       out := '' ;
@@ -2330,7 +2345,7 @@ BEGIN
   FOR i := 0 TO nmods - 1 DO
     IF mods[i].named THEN
       IF write THEN
-        IF NOT DynStr.Eq (outs[i], mods[i].src) THEN
+        IF NOT Text.Eq (outs[i], mods[i].src) THEN
           Io.WriteFile (mods[i].path, outs[i])
         END
       ELSE

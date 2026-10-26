@@ -1,0 +1,37 @@
+(* EXPECT: THREAD (Grow): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock *)
+MODULE m ;
+(* a record handed to several threads is shared, its pool too: what the
+   target allocates through its parameter -- a NEW on it, a callee
+   growing a builder in it -- is carved from that pool by both threads at
+   once, and the pool takes no lock (the reviews' G8: AdoptRace,
+   AdoptAppend).  Legal forms first: a target that allocates in a POOL
+   field of its own, and one that allocates nothing. *)
+TYPE
+  Cell = RECORD n : I64 END ;
+  Job = RECORD wp : POOL ; c : PTR Cell ; n : I64 END [SHARABLE] ;
+  JobP = PTR Job ;
+VAR
+  mp : POOL ;
+  a, b : JobP ;
+PROCEDURE Own (VAR j: Job) =
+VAR c : PTR Cell IN j.wp ;
+BEGIN
+  c := NEW (j.wp, Cell) ;
+  c.n := 1 ;
+  j.n := c.n
+END Own ;
+PROCEDURE Count (VAR j: Job) =
+BEGIN
+  j.n := j.n + 1
+END Count ;
+PROCEDURE Grow (VAR j: Job) =
+BEGIN
+  j.c := NEW (j, Cell)
+END Grow ;
+BEGIN
+  a := NEW (mp, Job) ;
+  b := NEW (mp, Job) ;
+  THREAD (Own, a) ;
+  THREAD (Count, a) ;
+  THREAD (Grow, b)
+END m.

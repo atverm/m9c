@@ -15,10 +15,12 @@ static const uint32_t Fmt_HexLower_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 
 #define Fmt_HexLower ((m9_sl_CHAR){ (uint32_t *) Fmt_HexLower_d, 16 })
 #define Fmt_Limbs INT64_C(128)
 #define Fmt_Base INT64_C(4294967296)
+#define Fmt_ShortBuf INT64_C(64)
 #define Fmt_MaxDig INT64_C(768)
 #define Fmt_Two52 INT64_C(4503599627370496)
 #define Fmt_Two53 INT64_C(9007199254740992)
 #define Fmt_Two54 INT64_C(18014398509481984)
+#define Fmt_FmtBuf INT64_C(400)
 
 #ifndef M9SL_m9_arr_128_int64_t
 #define M9SL_m9_arr_128_int64_t
@@ -28,9 +30,17 @@ typedef struct { int64_t v[128]; } m9_arr_128_int64_t;
 #define M9SL_m9_arr_16_uint32_t
 typedef struct { uint32_t v[16]; } m9_arr_16_uint32_t;
 #endif
+#ifndef M9SL_m9_arr_400_uint8_t
+#define M9SL_m9_arr_400_uint8_t
+typedef struct { uint8_t v[400]; } m9_arr_400_uint8_t;
+#endif
 #ifndef M9SL_m9_arr_20_int64_t
 #define M9SL_m9_arr_20_int64_t
 typedef struct { int64_t v[20]; } m9_arr_20_int64_t;
+#endif
+#ifndef M9SL_m9_arr_64_uint8_t
+#define M9SL_m9_arr_64_uint8_t
+typedef struct { uint8_t v[64]; } m9_arr_64_uint8_t;
 #endif
 #ifndef M9SL_m9_arr_160_int64_t
 #define M9SL_m9_arr_160_int64_t
@@ -40,7 +50,10 @@ typedef struct { int64_t v[160]; } m9_arr_160_int64_t;
 m9_sl_CHAR Fmt_I64Str (int64_t v, m9_state *err);
 m9_sl_CHAR Fmt_Hex (int64_t v, int64_t width, m9_state *err);
 m9_sl_CHAR Fmt_I64Pad (int64_t v, int64_t width, bool zero, m9_state *err);
+m9_sl_UTF8 Fmt_I64PadUtf (int64_t v, int64_t width, bool zero, m9_state *err);
 m9_sl_CHAR Fmt_Fixed (double v, int64_t decimals, m9_state *err);
+m9_sl_UTF8 Fmt_FixedUtf (double v, int64_t decimals, m9_state *err);
+m9_sl_UTF8 Fmt_FixedPadUtf (double v, int64_t width, int64_t decimals, m9_state *err);
 m9_sl_CHAR Fmt_FixedPad (double v, int64_t width, int64_t decimals, m9_state *err);
 m9_sl_CHAR Fmt_Sci (double v, int64_t decimals, m9_state *err);
 m9_sl_CHAR Fmt_SciPad (double v, int64_t width, int64_t decimals, m9_state *err);
@@ -48,5 +61,7 @@ m9_sl_CHAR Fmt_Short (double v, m9_state *err);
 m9_sl_CHAR Fmt_Bits (double v, m9_state *err);
 double Fmt_ParseBits (m9_sl_CHAR s, m9_state *err);
 double Fmt_ParseF64 (m9_sl_CHAR s, m9_state *err);
+double Fmt_ParseF64Utf (m9_sl_UTF8 s, m9_state *err);
+double Fmt_ParseBitsUtf (m9_sl_UTF8 s, m9_state *err);
 
 #endif

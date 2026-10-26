@@ -1,0 +1,38 @@
+MODULE R4OwnProcValOwn ;
+(* an owner handed to the OWN parameter of a PROCEDURE VALUE, which disposes it *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[3]))
+END Churn ;
+PROCEDURE Mk () : PTR Store =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  RETURN o
+END Mk ;
+TYPE Eater = PROCEDURE (OWN p : PTR Store) ;
+PROCEDURE Eat (OWN p : PTR Store) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Go (f : Eater) RAISES IndexError =
+VAR o : PTR Store ; s : SLICE OF I64 ;
+BEGIN
+  o := Mk () ;
+  s := o.data ;
+  f (o) ;
+  Churn () ;
+  Io.WriteLine (Fmt.I64Str (s[0]))
+END Go ;
+BEGIN
+  Go (Eat)
+EXCEPT
+| IndexError (i, n) : Io.WriteLine ('IndexError')
+END R4OwnProcValOwn.

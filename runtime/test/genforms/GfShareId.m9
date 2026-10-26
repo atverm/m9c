@@ -1,0 +1,32 @@
+MODULE GfShareId ;
+
+(* WANT: id 41 *)
+
+(* a SHARED handle answered back by a function (`x := Id (h) ; DISPOSE
+  (x)') counts: h lives (the fourth review's B1; 0.24.0 printed 41, the
+  tree before the fix read freed storage) *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 END ;
+PROCEDURE Id (p : SHARED PTR Store) : SHARED PTR Store =
+BEGIN
+  RETURN p
+END Id ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END
+END Churn ;
+PROCEDURE Go () =
+VAR o : PTR Store ; h, x : SHARED PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ; o.n := 41 ; h := SHARED (o) ;
+  x := Id (h) ;
+  DISPOSE (x) ;
+  Churn () ;
+  Io.WriteLine ('id ' + Fmt.I64Str (h.n)) ;
+  DISPOSE (h)
+END Go ;
+BEGIN
+  Go ()
+END GfShareId.

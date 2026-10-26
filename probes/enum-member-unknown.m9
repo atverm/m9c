@@ -1,0 +1,21 @@
+(* EXPECT: unknown member: Hue.Nope -- Hue declares no such member *)
+(* A member is named by its type: Hue.Warm.  A name the enumeration
+   or case record does not declare was accepted by the checker and
+   left to the C compiler (2026-10-22, the review's F4). *)
+MODULE m ;
+TYPE
+  Hue = ( Warm, Cold ) ;
+  Shape = CASE RECORD | Dot | Box : w : I64 END ;
+  Pair = RECORD Hue : I64 END ;
+VAR
+  h : Hue ;
+  s : Shape ;
+  p : Pair ;
+  n : I64 ;
+BEGIN
+  h := Hue.Warm ;
+  IF h = Hue.Cold THEN n := 1 END ;
+  s := Shape.Dot ;
+  n := p.Hue ;
+  h := Hue.Nope
+END m.

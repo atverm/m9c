@@ -2,10 +2,10 @@ REVIEW Smtp -- 41 procedures with a body, 20 of them functions; 13 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              20
-  assignments                                   144
+  assignments                                   147
   arguments                                     418
   RETURN values                                  43
-  operands of a comparison or an operator       173
+  operands of a comparison or an operator       170
   CASE labels                                    17
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              1
     of them [REENTRANT]                           8
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     7   reads in WrAll, reads in WrAll, writes or reads in Reply, writes or reads in Reply, writes or reads in Dialogue, writes or reads in Dialogue, +1 more
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 2
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        3
   NEW in the frame                                0
   NEW in a named pool                            13
+  calls of a STR form with a UTF twin            20   Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.FindChar -> Text.FindCharUtf, Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.ToBase64 -> Text.ToBase64Utf, +14 more
+  STR subscripts, writes and LEN                 19   len from, len s, len s, index c[i], write c[i], index s[i], +13 more

@@ -1,0 +1,29 @@
+MODULE GfUtfPayload ;
+
+(* WANT: payload Grüße 7 *)
+
+(* An exception field of type UTF travels in a slice slot of m9_state
+   (2026-10-24, found by the rehearsed switch's STR payload): both
+   generators' RAISE classed the value by its tag, and a UTF's tag is
+   not SLICE, so it went to an integer slot -- `err->i[0] = what' --
+   which gcc refused; and the handler's bind counted it as an integer
+   too.  The pair below built with neither until then. *)
+
+IMPORT Io ;
+
+EXCEPTION
+  Said (what: UTF ; k: I64) ;
+
+PROCEDURE Shout (RO w: UTF) RAISES Said =
+BEGIN
+  RAISE Said (w, 7)
+END Shout ;
+
+BEGIN
+  BEGIN
+    Shout ('Grüße')
+  EXCEPT
+  | Said (w, k) :
+      IF k = 7 THEN Io.WriteLine ('payload ' + w + ' 7') END
+  END
+END GfUtfPayload.

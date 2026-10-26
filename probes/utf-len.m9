@@ -1,0 +1,12 @@
+(* EXPECT: LEN of a UTF -- Text.BLen (u) for its bytes, Text.CpCount (u) for its characters *)
+MODULE m ;
+VAR
+  u : UTF ;
+  s : STR ;
+  n : I64 ;
+BEGIN
+  s := 'abc' ;
+  n := LEN (s) ;
+  u := 'abc' ;
+  n := LEN (u)
+END m.

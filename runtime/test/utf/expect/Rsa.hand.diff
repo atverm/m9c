@@ -1,0 +1,60 @@
+--- Rsa.m9
++++ Rsa.m9
+@@ -240,7 +240,7 @@
+   RAISES Error, ValueRange =
+ VAR
+   b, e, i, n : I64 ;
+-  body : STR ;
++  body : SLICE OF BYTE ;      (* the base64's octets, the blanks out *)
+ BEGIN
+   b := Text.Find (pem, '-----BEGIN ') ;
+   IF b < 0 THEN RAISE Error ('no PEM BEGIN line') END ;
+@@ -253,16 +253,18 @@
+     RAISE Error ('the PEM block is not a PUBLIC KEY: ' + SLICE (pem, b + 11, i - b - 11))
+   END ;
+   (* the base64, line breaks and blanks out *)
+-  body := NEW (CHAR, e - b - i) ;
++  body := NEW (BYTE, e - b - i) ;
+   n := 0 ;
+   FOR i := b + i + 1 TO e - 1 DO
+     IF NOT Text.BIs (pem, i, 0AC) AND NOT Text.BIs (pem, i, 0DC) AND NOT Text.BIs (pem, i, ' ') AND NOT Text.BIs (pem, i, 09C) THEN
+-      body[n] := Text.BChar (pem, i) ;
++      body[n] := Text.BAt (pem, i) ;
+       n := n + 1
+     END
+   END ;
+   BEGIN
+-    RETURN PublicKeyDer (pool, Text.FromBase64 (SLICE (body, 0, n)))
++    (* UTF (b) validates the octets: base64 is ASCII, anything else
++       is refused as the body not being base64 *)
++    RETURN PublicKeyDer (pool, Text.FromBase64 (UTF (SLICE (body, 0, n))))
+   EXCEPT
+   | ValueRange : RAISE Error ('the PEM body is not base64')
+   END
+@@ -274,19 +276,21 @@
+ END Bits ;
+ 
+ PROCEDURE HexOf (RO b: SLICE OF BYTE) : STR RAISES ValueRange =
++  (* the ASCII digits into an octet buffer, then the text of it *)
+ VAR
+-  digits, s : STR ;
++  digits : STR ;
++  o : SLICE OF BYTE ;
+   i, n, v : I64 ;
+ BEGIN
+   digits := '0123456789abcdef' ;
+-  s := NEW (CHAR, 2 * LEN (b)) ;
++  o := NEW (BYTE, 2 * LEN (b)) ;
+   n := 0 ;
+   FOR i := 0 TO LEN (b) - 1 DO
+     v := I64 (b[i]) ;
+-    IF n > 0 OR v >= 16 THEN s[n] := Text.BChar (digits, v DIV 16) ; n := n + 1 END ;
+-    IF n > 0 OR v > 0 OR i = LEN (b) - 1 THEN s[n] := Text.BChar (digits, v MOD 16) ; n := n + 1 END
++    IF n > 0 OR v >= 16 THEN o[n] := Text.BAt (digits, v DIV 16) ; n := n + 1 END ;
++    IF n > 0 OR v > 0 OR i = LEN (b) - 1 THEN o[n] := Text.BAt (digits, v MOD 16) ; n := n + 1 END
+   END ;
+-  RETURN SLICE (s, 0, n)
++  RETURN UTF (SLICE (o, 0, n))
+ END HexOf ;
+ 
+ PROCEDURE ModulusHex (k: PTR Key) : STR RAISES ValueRange =

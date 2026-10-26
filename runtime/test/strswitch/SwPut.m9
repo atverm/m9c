@@ -1,0 +1,34 @@
+DEFINITION MODULE SwPut ;
+
+(* the fixtures' printer: the runtime's byte writer behind a STR, so a
+   program written for the switched language prints without Io, whose
+   closure (DynStr) does not yet compile under --utf-str *)
+
+PROCEDURE Put (RO x: STR) ;
+PROCEDURE Line (RO x: STR) ;
+
+END SwPut.
+
+UNSAFE DEFINITION MODULE FOR "C" swio ;
+
+PROCEDURE PutBytes = "m9_put_bytes" (buf: C.ConstPtr ; n: C.SizeT) [REENTRANT] ;
+
+END swio.
+
+UNSAFE IMPLEMENTATION MODULE SwPut ;
+
+FROM swio IMPORT PutBytes ;
+
+PROCEDURE Put (RO x: STR) =
+VAR b : SLICE OF BYTE ;
+BEGIN
+  b := OCTETS (x) ;
+  PutBytes (ADR (b), C.SizeT (LEN (b)))
+END Put ;
+
+PROCEDURE Line (RO x: STR) =
+BEGIN
+  Put (x + 0AC)
+END Line ;
+
+END SwPut.

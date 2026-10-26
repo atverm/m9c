@@ -1,0 +1,35 @@
+MODULE R2G19 ;
+
+IMPORT Io ;
+
+PROCEDURE Fill (VAR x : STR) =
+BEGIN
+  x := x + 'abcdefghijklmnop'
+END Fill ;
+
+PROCEDURE Run (names : SLICE OF STR) =
+BEGIN
+  Fill (names[0])
+END Run ;
+
+PROCEDURE Churn () : I64 =
+VAR t : STR ; i : I64 ;
+BEGIN
+  t := '' ;
+  FOR i := 1 TO 100 DO t := t + 'ZZZZZZZZZZZZZZZZZZZZ' END ;
+  RETURN LEN (t)
+END Churn ;
+
+PROCEDURE Main () =
+VAR a : SLICE OF STR ; n : I64 ;
+BEGIN
+  a := NEW (STR, 2) ;
+  a[0] := 'a:' ;
+  Run (a) ;
+  n := Churn () ;
+  Io.WriteLine (a[0])
+END Main ;
+
+BEGIN
+  Main ()
+END R2G19.

@@ -1,0 +1,28 @@
+(* EXPECT: the octets of a UTF (OCTETS) *)
+MODULE m ;
+(* legal forms first: the octets are read, and lent to an RO
+   parameter *)
+VAR
+  u : UTF ;
+  o : SLICE OF BYTE ;
+  b : BYTE ;
+PROCEDURE Sum (RO x: SLICE OF BYTE) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (x) - 1 DO n := n + I64 (x[i]) END ;
+  RETURN n
+END Sum ;
+PROCEDURE Zero (x: SLICE OF BYTE) =
+BEGIN
+  x[0] := BYTE (0)
+EXCEPT
+| ValueRange : RETURN
+END Zero ;
+BEGIN
+  u := 'abc' ;
+  o := OCTETS (u) ;
+  b := o[0] ;
+  IF Sum (OCTETS (u)) > 0 THEN b := o[1] END ;
+  Zero (OCTETS (u))
+END m.

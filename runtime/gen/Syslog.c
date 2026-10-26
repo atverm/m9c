@@ -27,14 +27,22 @@ void Syslog_Open (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_state 
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  ({ m9_mon_enter (m9_gate (&m9_gate_csyslog, "csyslog")); m9_openlog (((void *)(b).p), ((int) m9_i32 ((b).len, err)), ((int) m9_i32 (options, err)), ((int) m9_i32 (facility, err))); m9_mon_leave (m9_gate_csyslog); });
+  ({ __auto_type m9_fam9t3 = (((void *)(b).p)); __auto_type m9_fam9t4 = (((int) m9_i32 ((b).len, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t5 = (((int) m9_i32 (options, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t6 = (((int) m9_i32 (facility, err))); if (err->exc) goto L_hdl_m9t1; m9_mon *m9_gm = m9_gate (&m9_gate_csyslog, "csyslog"); m9_mon_enter (m9_gm); m9_openlog (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); });
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    ({ m9_mon_enter (m9_gate (&m9_gate_csyslog, "csyslog")); m9_openlog (((void *)(b).p), ((int)(INT64_C(0))), ((int) m9_i32 (options, err)), ((int) m9_i32 (facility, err))); m9_mon_leave (m9_gate_csyslog); });
-    if (err->exc) goto L_ret;
+    ({ __auto_type m9_fam9t9 = (((void *)(b).p)); __auto_type m9_fam9t10 = (((int)(INT64_C(0)))); __auto_type m9_fam9t11 = (((int) m9_i32 (options, err))); if (err->exc) goto L_hdl_m9t7; __auto_type m9_fam9t12 = (((int) m9_i32 (facility, err))); if (err->exc) goto L_hdl_m9t7; m9_mon *m9_gm = m9_gate (&m9_gate_csyslog, "csyslog"); m9_mon_enter (m9_gm); m9_openlog (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12); m9_mon_leave (m9_gm); });
+    if (err->exc) goto L_hdl_m9t7;
+    goto L_dn_m9t8;
+L_hdl_m9t7: ;
+    if (err->exc == &m9_exc_ValueRange) {
+      err->exc = NULL;
+      goto L_dn_m9t8;
+    }
+    goto L_ret;
+L_dn_m9t8: ;
     goto L_dn_m9t2;
   }
   goto L_ret;
@@ -52,7 +60,7 @@ void Syslog_Close (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  ({ m9_mon_enter (m9_gate (&m9_gate_csyslog, "csyslog")); m9_closelog (); m9_mon_leave (m9_gate_csyslog); });
+  ({ m9_mon *m9_gm = m9_gate (&m9_gate_csyslog, "csyslog"); m9_mon_enter (m9_gm); m9_closelog (); m9_mon_leave (m9_gm); });
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -93,7 +101,7 @@ void Syslog_Send (int64_t priority, m9_sl_CHAR text, m9_state *err)
   if ((n > Syslog_MaxMsg)) {
     n = Syslog_MaxMsg;
   }
-  m9_syslog (((int) m9_i32 (priority, err)), ((void *)(b).p), ((int) m9_i32 (n, err)));
+  ({ __auto_type m9_fam9t3 = (((int) m9_i32 (priority, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t4 = (((void *)(b).p)); __auto_type m9_fam9t5 = (((int) m9_i32 (n, err))); if (err->exc) goto L_hdl_m9t1; m9_syslog (m9_fam9t3, m9_fam9t4, m9_fam9t5); });
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -169,7 +177,7 @@ static void Syslog_SendAscii (int64_t priority, m9_sl_CHAR text, m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  m9_syslog (((int) m9_i32 (priority, err)), ((void *)(b).p), ((int) m9_i32 ((b).len, err)));
+  ({ __auto_type m9_fam9t3 = (((int) m9_i32 (priority, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t4 = (((void *)(b).p)); __auto_type m9_fam9t5 = (((int) m9_i32 ((b).len, err))); if (err->exc) goto L_hdl_m9t1; m9_syslog (m9_fam9t3, m9_fam9t4, m9_fam9t5); });
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;

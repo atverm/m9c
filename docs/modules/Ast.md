@@ -398,15 +398,14 @@ Node resolves lazily below
 
 ### TYPE Node
 
-f3: the RO mode on a binding;
-f4: KEPT, which composes with any
-of the modes rather than replacing
-one -- a kept parameter is usually
-also RO
+the node's names, UTF-8 since
+docs/utf8-stage3-plan.md step 7
+(2026-10-23): written by SetA/SetB
+below, which copy
 
 ### NewNode (VAR pool: POOL ; kind, line, col: I64) : PTR Node IN pool
 
-a node with no children and empty a/b, ready for Add.
+a node with no children and empty au/bu, ready for Add.
 
 kind      -- one of the N* constants above.  They are
              EXPORTED CONSTS with fixed values, not an
@@ -422,7 +421,35 @@ line, col -- where the construct STARTS.  There is no end
 
 ### Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid)
 
-_(undocumented)_
+_(documented with the group below)_
+
+### SetA (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR)
+
+**Deprecated** (the UTF transition): SetAUtf is its UTF form.
+
+_(documented with the group below)_
+
+### SetB (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR)
+
+**Deprecated** (the UTF transition): SetBUtf is its UTF form.
+
+_(documented with the group below)_
+
+### SetAUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF)
+
+_(documented with the group below)_
+
+### SetBUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF)
+
+a node's name, given as either text and COPIED into pool: a node
+owns its names.  Ast.SetA (pool, n, t) reaches the UTF form by t's
+type.  The one way to write au or bu since 2026-10-23.
+  pool -- the node's, as Add takes it: NOT the object-pool form
+          NEW (n, ...), which for a local declared without IN
+          lends the caller's FRAME as the node's pool (decision
+          18's known gap) -- the first cut did, the checker
+          accepted it, and every name in the tree read as freed
+          storage
 
 ### ScalarConst (k: Kid ; VAR v: I64 ; VAR ch: BOOL) : BOOL
 
@@ -440,11 +467,11 @@ _(undocumented)_
 
 _(undocumented)_
 
-### SetTyStr (id: I64 ; RO t: STR)
+### SetTyStr (id: I64 ; RO t: UTF)
 
 _(documented with the group below)_
 
-### TyStrAt (id: I64) : STR
+### TyStrAt (id: I64) : UTF
 
 NONE is a legal child: absence with a position
 

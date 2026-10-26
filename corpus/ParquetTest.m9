@@ -88,13 +88,25 @@ BEGIN
   RETURN w
 END IntsB ;
 
+(* the CHARACTERS of s, counted by FOR c IN s, which counts the same
+   before and after the UTF switch (a LEN there is octets) *)
+PROCEDURE Chars (RO s: STR) : I64 =
+VAR
+  c : CHAR ;
+  n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR c IN s DO n := n + 1 END ;
+  RETURN n
+END Chars ;
+
 PROCEDURE Lens (RO v: SLICE OF STR) : SLICE OF I64 =
 VAR
   w : SLICE OF I64 ;
   i : I64 ;
 BEGIN
   w := NEW (pool, I64, LEN (v)) ;
-  FOR i := 0 TO LEN (v) - 1 DO w[i] := LEN (v[i]) END ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := Chars (v[i]) END ;
   RETURN w
 END Lens ;
 
@@ -102,15 +114,16 @@ PROCEDURE Codes (RO v: SLICE OF STR) : SLICE OF I64 RAISES ValueRange =
   (* every character of every string, one after another *)
 VAR
   w : SLICE OF I64 ;
-  i, j, k : I64 ;
+  i, k : I64 ;
+  c : CHAR ;
 BEGIN
   k := 0 ;
-  FOR i := 0 TO LEN (v) - 1 DO k := k + LEN (v[i]) END ;
+  FOR i := 0 TO LEN (v) - 1 DO k := k + Chars (v[i]) END ;
   w := NEW (pool, I64, k) ;
   k := 0 ;
   FOR i := 0 TO LEN (v) - 1 DO
-    FOR j := 0 TO LEN (v[i]) - 1 DO
-      w[k] := I64 (ORD (v[i][j])) ;
+    FOR c IN v[i] DO
+      w[k] := ORD (c) ;
       k := k + 1
     END
   END ;

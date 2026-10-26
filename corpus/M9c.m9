@@ -31,6 +31,7 @@ MODULE M9c ;
    the first time imports were resolved automatically.              *)
 
 IMPORT Io ;
+IMPORT Text ;
 IMPORT Ast ;
 IMPORT Parse ;
 IMPORT Gen ;
@@ -38,7 +39,7 @@ IMPORT Sem ;
 IMPORT Doc ;
 IMPORT Review ;
 IMPORT Lex ;
-IMPORT DynStr ;
+IMPORT DynUtf ;
 IMPORT System ;
 
 VAR
@@ -54,16 +55,17 @@ VAR
      the shell is a different program with different rules.  What -v
      prints is these words joined by spaces, which is a display and
      not what runs. *)
-  words  : SLICE OF STR ;
+  words  : SLICE OF UTF ;
   nwords : I64 ;
 
   (* what the command line asked for *)
   doCompile : BOOL ;      (* -c : hand the C to a C compiler   *)
-  exe       : STR ;       (* -o : link, and call the result this *)
+  exe       : UTF ;       (* -o : link, and call the result this *)
   doLink    : BOOL ;
   keepC     : BOOL ;      (* --keep-c : leave the C behind      *)
   verbose   : BOOL ;      (* -v : show the command handed to cc  *)
   doVersion : BOOL ;      (* --version, or a bare -v with no file *)
+  utfStr    : BOOL ;      (* --utf-str : STR is the UTF type, the switch rehearsed *)
   noUnsafe  : BOOL ;      (* --no-unsafe : refuse UNSAFE and
                              FOR "C" units outside the trusted
                              library directories *)
@@ -86,7 +88,7 @@ VAR
        can not be used when making a shared object; recompile with -fPIC
      Both halves are checked in m9c.sh, because the working case is
      the one an assumption would have got wrong. *)
-  lib       : STR ;       (* --ar / --so : the library to build  *)
+  lib       : UTF ;       (* --ar / --so : the library to build  *)
   doAr      : BOOL ;
   doSo      : BOOL ;
   doPic     : BOOL ;      (* --pic : compile position-independent *)
@@ -110,14 +112,14 @@ VAR
                              cache, then BECOME the program *)
   runAt     : I64 ;       (* argv index of FILE.m9 after --run; its
                              arguments are everything after it *)
-  outDir    : STR ;       (* --out-dir : where NAME.h and NAME.c go *)
+  outDir    : UTF ;       (* --out-dir : where NAME.h and NAME.c go *)
   doCell    : BOOL ;      (* --cell FILE.m9 : build for the notebook
                              session (runtime/m9session.c) and print
                              what to load; docs/notebook-state-plan.md *)
   cellProgram : BOOL ;    (* the cell is a MODULE (a program), not a
                              library module (a state cell) *)
-  cellPath  : STR ;       (* the cell's own shared object *)
-  pfxSpec   : SLICE OF STR ;  (* --prefix MOD=NAME: a state cell's
+  cellPath  : UTF ;       (* the cell's own shared object *)
+  pfxSpec   : SLICE OF UTF ;  (* --prefix MOD=NAME: a state cell's
                                  generation (Gen.SetPrefix) *)
   npfxSpec  : I64 ;
   doShow    : BOOL ;      (* --show: FILE holds an EXPRESSION, shown by
@@ -127,22 +129,22 @@ VAR
                              the expression's type, on stdout *)
   lineShift : I64 ;       (* lines the wrapper puts before the
                              expression; taken off every diagnostic *)
-  shiftPath : STR ;       (* the file whose parse errors it applies to *)
+  shiftPath : UTF ;       (* the file whose parse errors it applies to *)
 
   (* --run's cache.  Every module's source is hashed as it is parsed,
      so the key of an object is what it was compiled FROM -- its own
      text and the text of everything it imports, however far down --
      and never a modification time.  See RunKeys. *)
-  srcNames, srcHashes : SLICE OF STR ;
+  srcNames, srcHashes : SLICE OF UTF ;
   nsrc      : I64 ;
-  keys      : SLICE OF STR ;  (* parallel to order[]: each module's key *)
-  ident     : STR ;       (* this compiler, its C compiler and runtime *)
-  cacheRoot : STR ;
-  work      : STR ;       (* cacheRoot/tmp/PID: this run's scratch *)
-  binPath   : STR ;       (* cacheRoot/bin/NAME-KEY *)
+  keys      : SLICE OF UTF ;  (* parallel to order[]: each module's key *)
+  ident     : UTF ;       (* this compiler, its C compiler and runtime *)
+  cacheRoot : UTF ;
+  work      : UTF ;       (* cacheRoot/tmp/PID: this run's scratch *)
+  binPath   : UTF ;       (* cacheRoot/bin/NAME-KEY *)
 
   (* where to look for an imported module's source *)
-  dirs   : SLICE OF STR ;
+  dirs   : SLICE OF UTF ;
   trusts : SLICE OF BOOL ;  (* dirs[i] came from $M9LIBRARY or the
                                installed library: its units may be
                                UNSAFE / FOR "C" under --no-unsafe *)
@@ -152,7 +154,7 @@ VAR
      source tree for out/m9c -- which is what the installed places
      are RELATIVE to (see Locate).  Empty when the platform cannot
      say, and then the constants below are all there is. *)
-  prefix  : STR ;
+  prefix  : UTF ;
   windows : BOOL ;   (* System.Os: ';' separates $M9LIBRARY, and the
                         C compiler is gcc, bundled or on PATH *)
   macos   : BOOL ;   (* System.Os: cc is Apple clang and the linker
@@ -161,7 +163,7 @@ VAR
                         (see OsslDir) *)
   (* module names already loaded, so a diamond is loaded once and a
      cycle terminates rather than recurring *)
-  loaded  : SLICE OF STR ;
+  loaded  : SLICE OF UTF ;
   nloaded : I64 ;
   (* THE BUILD ORDER, WHICH IS NOT THE LOAD ORDER.  loaded[] is
      filled PRE-order -- a name is marked before its own imports are
@@ -175,22 +177,26 @@ VAR
      run again (measured 2026-08-25).  order[] is appended POST-order
      instead -- a module is added once everything it imports is in --
      and MakeAll walks it forward. *)
-  order  : SLICE OF STR ;
+  order  : SLICE OF UTF ;
   norder : I64 ;
   (* the import graph, recorded as it is walked: edgeFrom[i] imports
      edgeTo[i].  The ORDER is computed from this afterwards, by a
      post-order walk, because the order things are LOADED in cannot
      answer it -- see BuildOrder. *)
-  edgeFrom, edgeTo : SLICE OF STR ;
+  edgeFrom, edgeTo : SLICE OF UTF ;
   nedge : I64 ;
-  visiting : SLICE OF STR ;
+  visiting : SLICE OF UTF ;
+  (* the import graph has a cycle -- two definitions importing each
+     other, allowed (Alex, 2026-10-22): every header of the build is
+     then written before any module of it is compiled *)
+  importCycle : BOOL ;
   nvisit : I64 ;
   (* roots of the deps that WERE named, so the gaps they leave can be
      filled once the named ones are all in, in the order given *)
   depRoots : SLICE OF Ast.Kid ;
   mainRoot : Ast.Kid ;        (* the file on the command line: its own FOR "C"
                                  units name what they link too (2026-10-10) *)
-  depNames : SLICE OF STR ;   (* parallel: whose root that is, so
+  depNames : SLICE OF UTF ;   (* parallel: whose root that is, so
                                  FillGaps can order it once its own
                                  subtree has been walked *)
   depFar   : SLICE OF BOOL ;  (* parallel: reached only through another
@@ -201,7 +207,7 @@ VAR
   nmissing : I64 ;
   readNotText : BOOL ;        (* TryRead's last file was there, and not UTF-8 *)
   (* the module being compiled: its own object is not a dependency *)
-  modName  : STR ;
+  modName  : UTF ;
 
 CONST
   (* Where a package puts the standard modules, the last resort when
@@ -215,7 +221,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.24.0' ;
+  Version = '0.25.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -226,18 +232,26 @@ CONST
 (* the module name a path denotes: last segment, minus the suffix.
    Neither separator is assumed absent -- this compiler is built on
    Windows and run under WSL in the same afternoon.                 *)
-PROCEDURE BaseName (RO path: STR) : STR =
+(* the byte at offset i of u, as a number: the scanners below read ASCII
+   structure -- separators, digits, `:`, `=`, `.so` -- where a byte IS
+   the character *)
+PROCEDURE B (RO u: UTF ; i: I64) : I64 =
+BEGIN
+  RETURN I64 (Text.BAt (u, i))
+END B ;
+
+PROCEDURE BaseName (RO path: UTF) : UTF =
 VAR
   i, start, stop : I64 ;
 BEGIN
   start := 0 ;
-  stop := LEN (path) ;
-  FOR i := 0 TO LEN (path) - 1 DO
-    IF path[i] = '/' THEN start := i + 1 END ;
-    IF path[i] = 05CC THEN start := i + 1 END      (* backslash *)
+  stop := Text.BLen (path) ;
+  FOR i := 0 TO Text.BLen (path) - 1 DO
+    IF B (path, i) = ORD ('/') THEN start := i + 1 END ;
+    IF B (path, i) = 92 THEN start := i + 1 END      (* backslash *)
   END ;
   IF stop - start > 3 THEN
-    IF DynStr.Eq (SLICE (path, stop - 3, 3), '.m9') THEN
+    IF Text.Eq (SLICE (path, stop - 3, 3), '.m9') THEN
       stop := stop - 3
     END
   END ;
@@ -249,50 +263,50 @@ END BaseName ;
    message landed on stdout beside the generated text, so a harness
    capturing errors saw nothing and a harness capturing output saw
    both.  One composer, so there is one place for it to be true. *)
-PROCEDURE Diag (RO a: STR ; RO b: STR ; RO c: STR) =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE Diag (RO a: UTF ; RO b: UTF ; RO c: UTF) =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, a) ;
-  DynStr.Append (d, b) ;
-  DynStr.Append (d, c) ;
-  Io.ErrLine (DynStr.View (d))
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, a) ;
+  DynUtf.Append (d, b) ;
+  DynUtf.Append (d, c) ;
+  Io.ErrLine (DynUtf.ViewIn (pool, d))
 END Diag ;
 
-PROCEDURE DiagN (RO a: STR ; n: I64 ; RO b: STR ; RO c: STR) =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE DiagN (RO a: UTF ; n: I64 ; RO b: UTF ; RO c: UTF) =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, a) ;
-  DynStr.AppendI64 (d, n) ;
-  DynStr.Append (d, b) ;
-  DynStr.Append (d, c) ;
-  Io.ErrLine (DynStr.View (d))
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, a) ;
+  DynUtf.AppendI64 (d, n) ;
+  DynUtf.Append (d, b) ;
+  DynUtf.Append (d, c) ;
+  Io.ErrLine (DynUtf.ViewIn (pool, d))
 END DiagN ;
 
 (* FILE:LINE:COL: what: message -- the parser's errors carry a column
    where the generator's carry only a line, because a parser knows
    which token it was looking at *)
-PROCEDURE Diag2 (RO a: STR ; ln: I64 ; cl: I64 ; RO b: STR ; RO c: STR) =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE Diag2 (RO a: UTF ; ln: I64 ; cl: I64 ; RO b: UTF ; RO c: UTF) =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, a) ;
-  DynStr.AppendI64 (d, ln) ;
-  DynStr.AppendChar (d, ':') ;
-  DynStr.AppendI64 (d, cl) ;
-  DynStr.Append (d, b) ;
-  DynStr.Append (d, c) ;
-  Io.ErrLine (DynStr.View (d))
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, a) ;
+  DynUtf.AppendI64 (d, ln) ;
+  DynUtf.AppendChar (d, ':') ;
+  DynUtf.AppendI64 (d, cl) ;
+  DynUtf.Append (d, b) ;
+  DynUtf.Append (d, c) ;
+  Io.ErrLine (DynUtf.ViewIn (pool, d))
 END Diag2 ;
 
-PROCEDURE Suffix (RO name: STR ; RO ext: STR) : STR =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE Suffix (RO name: UTF ; RO ext: UTF) : UTF =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, name) ;
-  DynStr.Append (d, ext) ;
-  RETURN DynStr.View (d)
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, name) ;
+  DynUtf.Append (d, ext) ;
+  RETURN DynUtf.ViewIn (pool, d)
 END Suffix ;
 
 (* ---- finding a module's source ----
@@ -314,15 +328,15 @@ END Suffix ;
    backed by C, so there is no u.m9 to find and guessing there would
    invent files.                                                    *)
 
-PROCEDURE DirAdd (RO KEPT d: STR ; trusted: BOOL) =
+PROCEDURE DirAdd (RO KEPT d: UTF ; trusted: BOOL) =
 VAR
-  nb : SLICE OF STR ;
+  nb : SLICE OF UTF ;
   tb : SLICE OF BOOL ;
   i : I64 ;
 BEGIN
-  IF LEN (d) = 0 THEN RETURN END ;
+  IF Text.BLen (d) = 0 THEN RETURN END ;
   IF ndirs = LEN (dirs) THEN
-    nb := NEW (pool, STR, 2 * LEN (dirs) + 8) ;
+    nb := NEW (pool, UTF, 2 * LEN (dirs) + 8) ;
     tb := NEW (pool, BOOL, 2 * LEN (dirs) + 8) ;
     FOR i := 0 TO ndirs - 1 DO nb[i] := dirs[i] ; tb[i] := trusts[i] END ;
     dirs := nb ;
@@ -337,27 +351,27 @@ END DirAdd ;
    convention the shell already taught everyone: ':' here, and ';'
    on Windows, where a path of its own carries a ':' two characters
    in (C:\m9\lib\m9) *)
-PROCEDURE DirAddPath (RO KEPT s: STR ; trusted: BOOL) =
+PROCEDURE DirAddPath (RO KEPT s: UTF ; trusted: BOOL) =
 VAR
   i, start : I64 ;
   sep : CHAR ;
 BEGIN
   IF windows THEN sep := ';' ELSE sep := ':' END ;
   start := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = sep THEN
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF B (s, i) = ORD (sep) THEN
       DirAdd (SLICE (s, start, i - start), trusted) ;
       start := i + 1
     END
   END ;
-  DirAdd (SLICE (s, start, LEN (s) - start), trusted)
+  DirAdd (SLICE (s, start, Text.BLen (s) - start), trusted)
 END DirAddPath ;
 
 (* the directory a path came from, empty when it names no directory *)
 (* the text of a file, or '' when it cannot be read as text *)
-PROCEDURE TextOf (RO path: STR) : STR =
+PROCEDURE TextOf (RO path: UTF) : UTF =
 BEGIN
-  RETURN Io.ReadFile (pool, path)
+  RETURN UTF (pool, Io.ReadFileUtf (path))
 EXCEPT
 | Io.IOError (m) : RETURN ''
 | ValueRange : RETURN ''
@@ -369,27 +383,27 @@ END TextOf ;
    so it reads the stale one (2026-09-15: `implicit declaration of
    Mod_m9init'; the owed ledger since).  Said, not refused -- the file
    is not m9c's to delete. *)
-PROCEDURE StaleBeside (RO main, outDir, name, fresh: STR) RAISES ValueRange =
-VAR src, there : STR ;
+PROCEDURE StaleBeside (RO main, outDir, name: UTF ; RO fresh: UTF) RAISES ValueRange =
+VAR src, there : UTF ;
 BEGIN
   src := DirOf (main) ;
-  IF LEN (src) = 0 THEN src := '.' END ;
-  IF DynStr.Eq (src, outDir) THEN RETURN END ;
+  IF Text.BLen (src) = 0 THEN src := '.' END ;
+  IF Text.Eq (src, outDir) THEN RETURN END ;
   there := Join (src, Suffix (name, '.h')) ;
   IF NOT Io.Exists (there) THEN RETURN END ;
-  IF DynStr.Eq (TextOf (there), fresh) THEN RETURN END ;
+  IF Text.Eq (TextOf (there), fresh) THEN RETURN END ;
   Diag ('m9c: ', there, Cat (' is not the header just written to ',
         Cat (Join (outDir, Suffix (name, '.h')),
              '; a C file beside it that includes it reads the old one -- delete it')))
 END StaleBeside ;
 
-PROCEDURE DirOf (RO path: STR) : STR =
+PROCEDURE DirOf (RO path: UTF) : UTF =
 VAR i, cut : I64 ;
 BEGIN
   cut := 0 ;
-  FOR i := 0 TO LEN (path) - 1 DO
-    IF path[i] = '/' THEN cut := i + 1 END ;
-    IF path[i] = 05CC THEN cut := i + 1 END        (* backslash *)
+  FOR i := 0 TO Text.BLen (path) - 1 DO
+    IF B (path, i) = ORD ('/') THEN cut := i + 1 END ;
+    IF B (path, i) = 92 THEN cut := i + 1 END        (* backslash *)
   END ;
   IF cut = 0 THEN RETURN '' END ;
   RETURN SLICE (path, 0, cut - 1)
@@ -417,29 +431,29 @@ END DirOf ;
    and by gcc alike, and one spelling beats two. *)
 PROCEDURE Locate () RAISES ValueRange =
 BEGIN
-  windows := DynStr.Eq (System.Os (), 'windows') ;
-  macos := DynStr.Eq (System.Os (), 'macos') ;
-  prefix := DirOf (DirOf (System.Executable (pool)))
+  windows := Text.Eq (System.Os (), 'windows') ;
+  macos := Text.Eq (System.Os (), 'macos') ;
+  prefix := DirOf (DirOf (System.ExecutableUtf (pool)))
 END Locate ;
 
 (* this compiler's own library directory, or the package's *)
-PROCEDURE LibDir () : STR =
+PROCEDURE LibDir () : UTF =
 BEGIN
-  IF LEN (prefix) = 0 THEN RETURN StdLib END ;
+  IF Text.BLen (prefix) = 0 THEN RETURN StdLib END ;
   RETURN Cat (prefix, '/lib/m9')
 END LibDir ;
 
 (* its own installed headers, or the package's *)
-PROCEDURE IncDir () : STR =
+PROCEDURE IncDir () : UTF =
 BEGIN
-  IF LEN (prefix) = 0 THEN RETURN StdInclude END ;
+  IF Text.BLen (prefix) = 0 THEN RETURN StdInclude END ;
   RETURN Cat (prefix, '/include/m9')
 END IncDir ;
 
 (* its own runtime archive, or the package's *)
-PROCEDURE RtArchive () : STR =
+PROCEDURE RtArchive () : UTF =
 BEGIN
-  IF LEN (prefix) = 0 THEN RETURN StdArchive END ;
+  IF Text.BLen (prefix) = 0 THEN RETURN StdArchive END ;
   RETURN Cat (prefix, '/lib/libm9rt.a')
 END RtArchive ;
 
@@ -449,7 +463,7 @@ END RtArchive ;
    /usr/lib/m9 when its own library lacks one.  For /usr/bin/m9c the
    two are the same string; for out/m9c, whose tree has no lib/m9,
    it is the package's, as it always was. *)
-PROCEDURE LibPlace () : STR RAISES ValueRange =
+PROCEDURE LibPlace () : UTF RAISES ValueRange =
 BEGIN
   IF Io.Exists (LibDir ()) THEN RETURN LibDir () END ;
   RETURN StdLib
@@ -457,11 +471,11 @@ END LibPlace ;
 
 (* where THIS m9c would take its headers from, for --help; the
    package's place when it would find none *)
-PROCEDURE IncPlace () : STR RAISES ValueRange =
-VAR r : STR ;
+PROCEDURE IncPlace () : UTF RAISES ValueRange =
+VAR r : UTF ;
 BEGIN
   r := RtDir () ;
-  IF LEN (r) = 0 THEN RETURN StdInclude END ;
+  IF Text.BLen (r) = 0 THEN RETURN StdInclude END ;
   RETURN r
 END IncPlace ;
 
@@ -472,15 +486,15 @@ END IncPlace ;
    wants gcc's code carries gcc -- <prefix>/gcc/bin, a directory of
    its own because nothing about that gcc's layout depends on the
    name, as ucrt64's does. *)
-PROCEDURE Bundled (RO tool: STR ; RO fallback: STR) : STR
+PROCEDURE Bundled (RO tool: UTF ; RO fallback: UTF) : UTF
   RAISES ValueRange =
-VAR p : STR ;
+VAR p : UTF ;
 BEGIN
-  IF windows AND LEN (prefix) > 0 THEN
+  IF windows AND Text.BLen (prefix) > 0 THEN
     p := Cat (prefix, Cat ('/ucrt64/bin/', tool)) ;
     IF Io.Exists (p) THEN RETURN p END
   END ;
-  IF macos AND LEN (prefix) > 0 THEN
+  IF macos AND Text.BLen (prefix) > 0 THEN
     p := Cat (prefix, Cat ('/gcc/bin/', tool)) ;
     IF Io.Exists (p) THEN RETURN p END
   END ;
@@ -497,10 +511,10 @@ END Bundled ;
    nonexistent directory /ucrt64/include") string.h is not found and
    nothing compiles.  The library paths are relative and do not care;
    the headers do. *)
-PROCEDURE GccBin () : STR RAISES ValueRange =
-VAR p : STR ;
+PROCEDURE GccBin () : UTF RAISES ValueRange =
+VAR p : UTF ;
 BEGIN
-  IF windows AND LEN (prefix) > 0 THEN
+  IF windows AND Text.BLen (prefix) > 0 THEN
     p := Cat (prefix, '/ucrt64/bin') ;
     IF Io.Exists (p) THEN RETURN p END
   END ;
@@ -512,32 +526,24 @@ END GccBin ;
    composed here from the same prefix, so a spelling of the user's
    own ($CC with backslashes) is simply not under it, which is the
    answer wanted: that gcc runs with the PATH it was given. *)
-PROCEDURE Under (RO path: STR ; RO dir: STR) : BOOL =
+PROCEDURE Under (RO path: UTF ; RO dir: UTF) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (path) <= LEN (dir) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (dir) - 1 DO
-    IF path[i] # dir[i] THEN RETURN FALSE END
+  IF Text.BLen (path) <= Text.BLen (dir) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (dir) - 1 DO
+    IF B (path, i) # B (dir, i) THEN RETURN FALSE END
   END ;
-  RETURN path[LEN (dir)] = '/' OR path[LEN (dir)] = 05CC
+  RETURN B (path, Text.BLen (dir)) = ORD ('/') OR B (path, Text.BLen (dir)) = 92
 END Under ;
 
 (* '/' to the platform's separator, for a value handed to the SYSTEM
    rather than to gcc: prefix arrives with backslashes from
    GetModuleFileName and gains '/ucrt64/bin' here, and a PATH entry is
    the one place the mixed spelling would be seen by a user. *)
-PROCEDURE Native (RO s: STR) : STR =
-VAR
-  d : PTR DynStr.DString IN pool ;
-  i : I64 ;
+PROCEDURE Native (RO s: UTF) : UTF =
 BEGIN
   IF NOT windows THEN RETURN s END ;
-  d := DynStr.New (pool) ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '/' THEN DynStr.AppendChar (d, 05CC)
-    ELSE DynStr.AppendChar (d, s[i]) END
-  END ;
-  RETURN DynStr.View (d)
+  RETURN Text.Replace (s, '/', '\')
 END Native ;
 
 (* THE BUNDLED gcc NEEDS ITS OWN bin ON PATH, and m9c puts it there
@@ -554,40 +560,40 @@ END Native ;
    of the user's own runs with the PATH it was given.  Exec merges
    the override over the inherited environment (case-insensitively
    on Windows, where it is Path as often as PATH). *)
-PROCEDURE ChildEnv (RO prog: STR) : SLICE OF STR RAISES ValueRange =
+PROCEDURE ChildEnv (RO prog: UTF) : SLICE OF UTF RAISES ValueRange =
 VAR
-  bin : STR ;
-  env : SLICE OF STR ;
+  bin : UTF ;
+  env : SLICE OF UTF ;
 BEGIN
   bin := GccBin () ;
-  IF LEN (bin) > 0 AND Under (prog, bin) THEN
-    env := NEW (pool, STR, 1) ;
+  IF Text.BLen (bin) > 0 AND Under (prog, bin) THEN
+    env := NEW (pool, UTF, 1) ;
     env[0] := Cat ('PATH=', Cat (Native (bin),
-                                 Cat (';', Io.Env (pool, 'PATH')))) ;
+                                 Cat (';', Io.EnvUtf (pool, 'PATH')))) ;
     RETURN env
   END ;
-  RETURN NEW (pool, STR, 0)
+  RETURN NEW (pool, UTF, 0)
 END ChildEnv ;
 
-PROCEDURE Join (RO d: STR ; RO f: STR) : STR =
-VAR s : PTR DynStr.DString IN pool ;
+PROCEDURE Join (RO d: UTF ; RO f: UTF) : UTF =
+VAR s : PTR DynUtf.DString IN pool ;
 BEGIN
-  IF LEN (d) = 0 THEN RETURN f END ;
-  s := DynStr.New (pool) ;
-  DynStr.Append (s, d) ;
-  DynStr.AppendChar (s, '/') ;
-  DynStr.Append (s, f) ;
-  RETURN DynStr.View (s)
+  IF Text.BLen (d) = 0 THEN RETURN f END ;
+  s := DynUtf.New (pool) ;
+  DynUtf.Append (s, d) ;
+  DynUtf.AppendChar (s, '/') ;
+  DynUtf.Append (s, f) ;
+  RETURN DynUtf.ViewIn (pool, s)
 END Join ;
 
 (* a candidate that does not read is not an error, it is the next
    candidate -- so the handler answers "no" rather than propagating,
    and only the exhausted search is diagnosed *)
-PROCEDURE TryRead (RO path: STR ; VAR ok: BOOL) : STR =
+PROCEDURE TryRead (RO path: UTF ; VAR ok: BOOL) : UTF =
 BEGIN
   ok := TRUE ;
   readNotText := FALSE ;
-  RETURN Io.ReadFile (pool, path)
+  RETURN UTF (pool, Io.ReadFileUtf (path))
 EXCEPT
 | Io.IOError (p) :
     ok := FALSE ;
@@ -604,19 +610,51 @@ END TryRead ;
 (* the first NAME.m9 on the search path, with its source already
    read -- searching and reading are the same act, so doing them
    twice would be two answers about one file *)
-PROCEDURE FindModule (RO name: STR ; VAR path: STR ; VAR ok: BOOL ;
-                      VAR trusted: BOOL) : STR =
+(* the rehearsed switch (--utf-str) serves DynStr from DynUtf.m9 --
+   decision 4 of docs/utf8-stage4-plan.md: at the switch DynStr keeps
+   its name with DynUtf's body.  The unit's name is rewritten in the
+   text (DynUtf.m9 names itself nowhere else) and the result written
+   under the cache as DynStr.m9, so a dependency build by path and a
+   diagnostic's file name both see a DynStr.m9 whose lines are
+   DynUtf.m9's. *)
+PROCEDURE Aliased (RO src: UTF ; RO from: UTF ; RO to: UTF ;
+                   VAR path: UTF ; VAR ok: BOOL) : UTF =
+VAR dir, text : UTF ;
+BEGIN
+  text := Text.Replace (src, from, to) ;
+  dir := Join (CacheRoot (), 'utfstr') ;
+  MkDirs (dir) ;
+  path := Join (dir, Suffix (to, '.m9')) ;
+  Io.WriteFile (path, text) ;
+  RETURN text
+EXCEPT
+| Io.IOError (p) :
+    Diag ('m9c: cannot write the aliased ', to, ' under the cache') ;
+    ok := FALSE ;
+    RETURN ''
+| ValueRange :
+    ok := FALSE ;
+    RETURN ''
+END Aliased ;
+
+PROCEDURE FindModule (RO name: UTF ; VAR path: UTF ; VAR ok: BOOL ;
+                      VAR trusted: BOOL) : UTF =
 VAR
   i : I64 ;
-  cand, src : STR ;
+  cand, src, want : UTF ;
 BEGIN
   trusted := FALSE ;
+  want := name ;
+  IF utfStr AND Text.Eq (name, 'DynStr') THEN want := 'DynUtf' END ;
   FOR i := 0 TO ndirs - 1 DO
-    cand := Join (dirs[i], Suffix (name, '.m9')) ;
+    cand := Join (dirs[i], Suffix (want, '.m9')) ;
     src := TryRead (cand, ok) ;
     IF ok THEN
       path := cand ;
       trusted := trusts[i] ;
+      IF NOT Text.Eq (want, name) THEN
+        RETURN Aliased (src, want, name, path, ok)
+      END ;
       RETURN src
     END
   END ;
@@ -625,22 +663,22 @@ BEGIN
   RETURN ''
 END FindModule ;
 
-PROCEDURE IsLoaded (RO name: STR) : BOOL =
+PROCEDURE IsLoaded (RO name: UTF) : BOOL =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO nloaded - 1 DO
-    IF DynStr.Eq (loaded[i], name) THEN RETURN TRUE END
+    IF Text.Eq (loaded[i], name) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END IsLoaded ;
 
-PROCEDURE MarkLoaded (RO KEPT name: STR) =
+PROCEDURE MarkLoaded (RO KEPT name: UTF) =
 VAR
-  nb : SLICE OF STR ;
+  nb : SLICE OF UTF ;
   i : I64 ;
 BEGIN
   IF nloaded = LEN (loaded) THEN
-    nb := NEW (pool, STR, 2 * LEN (loaded) + 8) ;
+    nb := NEW (pool, UTF, 2 * LEN (loaded) + 8) ;
     FOR i := 0 TO nloaded - 1 DO nb[i] := loaded[i] END ;
     loaded := nb
   END ;
@@ -655,14 +693,14 @@ END MarkLoaded ;
    be a mistake in the caller rather than something to absorb
    quietly; it is refused by not appending it twice, and the FIRST
    position is the one that is right. *)
-PROCEDURE AddEdge (RO KEPT a: STR ; RO KEPT b: STR) =
+PROCEDURE AddEdge (RO KEPT a: UTF ; RO KEPT b: UTF) =
 VAR
-  nf, nt : SLICE OF STR ;
+  nf, nt : SLICE OF UTF ;
   i : I64 ;
 BEGIN
   IF nedge = LEN (edgeFrom) THEN
-    nf := NEW (pool, STR, 2 * LEN (edgeFrom) + 16) ;
-    nt := NEW (pool, STR, 2 * LEN (edgeFrom) + 16) ;
+    nf := NEW (pool, UTF, 2 * LEN (edgeFrom) + 16) ;
+    nt := NEW (pool, UTF, 2 * LEN (edgeFrom) + 16) ;
     FOR i := 0 TO nedge - 1 DO nf[i] := edgeFrom[i] ; nt[i] := edgeTo[i] END ;
     edgeFrom := nf ;
     edgeTo := nt
@@ -672,16 +710,16 @@ BEGIN
   nedge := nedge + 1
 END AddEdge ;
 
-PROCEDURE Ordered (RO KEPT name: STR) =
+PROCEDURE Ordered (RO KEPT name: UTF) =
 VAR
-  nb : SLICE OF STR ;
+  nb : SLICE OF UTF ;
   i : I64 ;
 BEGIN
   FOR i := 0 TO norder - 1 DO
-    IF DynStr.Eq (order[i], name) THEN RETURN END
+    IF Text.Eq (order[i], name) THEN RETURN END
   END ;
   IF norder = LEN (order) THEN
-    nb := NEW (pool, STR, 2 * LEN (order) + 8) ;
+    nb := NEW (pool, UTF, 2 * LEN (order) + 8) ;
     FOR i := 0 TO norder - 1 DO nb[i] := order[i] END ;
     order := nb
   END ;
@@ -689,20 +727,20 @@ BEGIN
   norder := norder + 1
 END Ordered ;
 
-PROCEDURE IsVisiting (RO name: STR) : BOOL =
+PROCEDURE IsVisiting (RO name: UTF) : BOOL =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO nvisit - 1 DO
-    IF DynStr.Eq (visiting[i], name) THEN RETURN TRUE END
+    IF Text.Eq (visiting[i], name) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END IsVisiting ;
 
-PROCEDURE PushVisit (RO KEPT name: STR) =
-VAR nb : SLICE OF STR ; i : I64 ;
+PROCEDURE PushVisit (RO KEPT name: UTF) =
+VAR nb : SLICE OF UTF ; i : I64 ;
 BEGIN
   IF nvisit = LEN (visiting) THEN
-    nb := NEW (pool, STR, 2 * LEN (visiting) + 8) ;
+    nb := NEW (pool, UTF, 2 * LEN (visiting) + 8) ;
     FOR i := 0 TO nvisit - 1 DO nb[i] := visiting[i] END ;
     visiting := nb
   END ;
@@ -710,11 +748,11 @@ BEGIN
   nvisit := nvisit + 1
 END PushVisit ;
 
-PROCEDURE IsOrdered (RO name: STR) : BOOL =
+PROCEDURE IsOrdered (RO name: UTF) : BOOL =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO norder - 1 DO
-    IF DynStr.Eq (order[i], name) THEN RETURN TRUE END
+    IF Text.Eq (order[i], name) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END IsOrdered ;
@@ -728,14 +766,14 @@ END IsOrdered ;
    after Mid and the build failed on the first run.  A cycle stops at
    the visiting mark: M9 does not forbid mutual imports, and a
    compiler should not acquire the rule by recursing for ever. *)
-PROCEDURE OrderDfs (RO KEPT name: STR) =
+PROCEDURE OrderDfs (RO KEPT name: UTF) =
 VAR i : I64 ;
 BEGIN
   IF IsOrdered (name) THEN RETURN END ;
-  IF IsVisiting (name) THEN RETURN END ;
+  IF IsVisiting (name) THEN importCycle := TRUE ; RETURN END ;
   PushVisit (name) ;
   FOR i := 0 TO nedge - 1 DO
-    IF DynStr.Eq (edgeFrom[i], name) THEN OrderDfs (edgeTo[i]) END
+    IF Text.Eq (edgeFrom[i], name) THEN OrderDfs (edgeTo[i]) END
   END ;
   Ordered (name)
 END OrderDfs ;
@@ -780,17 +818,17 @@ END BuildOrder ;
    from top to bottom and read once by Run.                        *)
 PROCEDURE NewCommand () =
 BEGIN
-  IF LEN (words) = 0 THEN words := NEW (pool, STR, 32) END ;
+  IF LEN (words) = 0 THEN words := NEW (pool, UTF, 32) END ;
   nwords := 0
 END NewCommand ;
 
-PROCEDURE Word (RO KEPT s: STR) =
+PROCEDURE Word (RO KEPT s: UTF) =
 VAR
-  nb : SLICE OF STR ;
+  nb : SLICE OF UTF ;
   i : I64 ;
 BEGIN
   IF nwords = LEN (words) THEN
-    nb := NEW (pool, STR, 2 * LEN (words) + 8) ;
+    nb := NEW (pool, UTF, 2 * LEN (words) + 8) ;
     FOR i := 0 TO nwords - 1 DO nb[i] := words[i] END ;
     words := nb
   END ;
@@ -801,18 +839,18 @@ END Word ;
 (* the command as -v shows it: the words joined by single spaces.  A
    display only -- it is not what runs, so a word holding a space
    prints ambiguously and runs correctly. *)
-PROCEDURE Line (RO prog: STR) : STR =
+PROCEDURE Line (RO prog: UTF) : UTF =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, prog) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, prog) ;
   FOR i := 0 TO nwords - 1 DO
-    DynStr.AppendChar (d, ' ') ;
-    DynStr.Append (d, words[i])
+    DynUtf.AppendChar (d, ' ') ;
+    DynUtf.Append (d, words[i])
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynUtf.ViewIn (pool, d)
 END Line ;
 
 (* run prog with the words, forward what it wrote to the streams it
@@ -824,19 +862,19 @@ END Line ;
    The environment is the caller's, plus PATH for the bundled gcc
    (ChildEnv); -v prints the command and not the environment, since
    the command line is what the relocation gate anchors on. *)
-PROCEDURE Run (RO prog: STR) : I64 RAISES ValueRange =
+PROCEDURE Run (RO prog: UTF) : I64 RAISES ValueRange =
 VAR
-  r : System.Result ;
+  r : System.ResultUtf ;
 BEGIN
   IF verbose THEN Diag ('m9c: ', Line (prog), '') END ;
-  r := System.Exec (pool, prog, SLICE (words, 0, nwords), '',
-                    ChildEnv (prog)) ;
-  IF LEN (r.out) > 0 THEN Io.Write (r.out) END ;
-  IF LEN (r.err) > 0 THEN Io.Err (r.err) END ;
+  r := System.ExecUtf (pool, prog, SLICE (words, 0, nwords), '',
+                       ChildEnv (prog)) ;
+  IF Text.BLen (r.out) > 0 THEN Io.Write (r.out) END ;
+  IF Text.BLen (r.err) > 0 THEN Io.Err (r.err) END ;
   RETURN r.status
 EXCEPT
 | Io.IOError (p) :
-    Diag ('m9c: cannot run ', p, '') ;
+    Diag ('m9c: cannot run ', UTF (p), '') ;
     RETURN -1
 END Run ;
 
@@ -846,11 +884,11 @@ END Run ;
    PATH or given as a path -- and not a command line: with no shell
    to split it, CC='gcc -m32' would be looked up as one program
    called "gcc -m32".  Flags go after --, where they always went. *)
-PROCEDURE CcName () : STR RAISES ValueRange =
-VAR v : STR ;
+PROCEDURE CcName () : UTF RAISES ValueRange =
+VAR v : UTF ;
 BEGIN
-  v := Io.Env (pool, 'CC') ;
-  IF LEN (v) > 0 THEN RETURN v END ;
+  v := Io.EnvUtf (pool, 'CC') ;
+  IF Text.BLen (v) > 0 THEN RETURN v END ;
   IF windows THEN RETURN Bundled ('gcc.exe', 'gcc') END ;
   IF macos THEN RETURN Bundled ('gcc', 'cc') END ;
   RETURN 'cc'
@@ -859,7 +897,7 @@ END CcName ;
 (* the archiver beside that gcc, or ar on PATH; no $AR, because the
    archiver that matches the compiler is the one to use and nobody
    has asked for another *)
-PROCEDURE ArName () : STR RAISES ValueRange =
+PROCEDURE ArName () : UTF RAISES ValueRange =
 BEGIN
   IF windows THEN RETURN Bundled ('ar.exe', 'ar') END ;
   (* gcc-ar, not ar: the objects are -flto's, and the system's ar
@@ -889,11 +927,11 @@ END ArName ;
    place by its constant, else a source tree from the working
    directory.  Probed rather than assumed, because this compiler runs
    from /usr/bin and from a build directory on the same afternoon. *)
-PROCEDURE RtBase () : STR RAISES ValueRange =
-VAR v : STR ;
+PROCEDURE RtBase () : UTF RAISES ValueRange =
+VAR v : UTF ;
 BEGIN
-  v := Io.Env (pool, 'M9RUNTIME') ;
-  IF LEN (v) > 0 THEN
+  v := Io.EnvUtf (pool, 'M9RUNTIME') ;
+  IF Text.BLen (v) > 0 THEN
     (* set is not the same as right.  A variable naming a directory
        with no m9rt.h in it is answered by the compiler that read the
        variable, not by cc failing over an include three steps later
@@ -902,7 +940,7 @@ BEGIN
     IF Io.Exists (Cat (v, '/m9rt.h')) THEN RETURN v END ;
     Diag ('m9c: $M9RUNTIME names ', v, ', which has no m9rt.h in it')
   END ;
-  IF LEN (prefix) > 0 THEN
+  IF Text.BLen (prefix) > 0 THEN
     v := Cat (prefix, '/runtime') ;
     IF Io.Exists (Cat (v, '/m9rt.h')) THEN RETURN v END ;
     v := IncDir () ;
@@ -927,11 +965,11 @@ END RtBase ;
    2026-10-05 an installed m9c answered every --cell with `needs the
    runtime sources beside m9rt.h' -- the notebook session did not work
    from a package. *)
-PROCEDURE RtDir () : STR RAISES ValueRange =
-VAR base, v : STR ;
+PROCEDURE RtDir () : UTF RAISES ValueRange =
+VAR base, v : UTF ;
 BEGIN
   base := RtBase () ;
-  IF doCell AND NOT Io.Exists (Cat (base, '/m9rt.c')) AND LEN (prefix) > 0 THEN
+  IF doCell AND NOT Io.Exists (Cat (base, '/m9rt.c')) AND Text.BLen (prefix) > 0 THEN
     v := Cat (prefix, '/share/m9/runtime') ;
     IF Io.Exists (Cat (v, '/m9rt.h')) AND Io.Exists (Cat (v, '/m9rt.c')) THEN RETURN v END
   END ;
@@ -940,13 +978,13 @@ END RtDir ;
 
 (* two strings, joined -- the one composition this module needs often
    enough to name *)
-PROCEDURE Cat (RO a: STR ; RO b: STR) : STR =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE Cat (RO a: UTF ; RO b: UTF) : UTF =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, a) ;
-  DynStr.Append (d, b) ;
-  RETURN DynStr.View (d)
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, a) ;
+  DynUtf.Append (d, b) ;
+  RETURN DynUtf.ViewIn (pool, d)
 END Cat ;
 
 (* The runtime itself, to link.  What is linked must be the runtime
@@ -959,8 +997,8 @@ END Cat ;
    Both translation units go in, because that is what the archive
    contains and a program should not behave differently depending on
    which of the two m9c happened to find. *)
-PROCEDURE AddRuntime (RO rt: STR) : BOOL RAISES ValueRange =
-VAR a : STR ;
+PROCEDURE AddRuntime (RO rt: UTF) : BOOL RAISES ValueRange =
+VAR a : UTF ;
 BEGIN
   IF Io.Exists (Cat (rt, '/m9rt.c')) THEN
     Word (Cat (rt, '/m9rt.c')) ;
@@ -993,7 +1031,7 @@ BEGIN
      package's otherwise, which the linker finds by itself *)
   a := RtArchive () ;
   IF Io.Exists (a) THEN
-    IF NOT DynStr.Eq (a, StdArchive) THEN
+    IF NOT Text.Eq (a, StdArchive) THEN
       Word (Cat ('-L', Cat (prefix, '/lib')))
     END ;
     Word ('-lm9rt') ;
@@ -1015,9 +1053,9 @@ END AddRuntime ;
    beside its runtime, as the Windows zip carries its gcc), then
    Homebrew's two prefixes.  Empty when none of them has ssl.h, and
    then the line names no directory and cc says what is missing. *)
-PROCEDURE OsslDir () : STR RAISES ValueRange =
+PROCEDURE OsslDir () : UTF RAISES ValueRange =
 BEGIN
-  IF LEN (prefix) > 0
+  IF Text.BLen (prefix) > 0
      AND Io.Exists (Cat (prefix, '/include/openssl/ssl.h')) THEN
     RETURN prefix
   END ;
@@ -1037,13 +1075,13 @@ END OsslDir ;
    macOS is unharmed); and the directory OpenSSL's headers are in,
    for the tlsshim.c that travels as a source. *)
 PROCEDURE MacFlags () RAISES ValueRange =
-VAR o : STR ;
+VAR o : UTF ;
 BEGIN
   IF NOT macos THEN RETURN END ;
   Word ('-Wno-parentheses-equality') ;
   Word ('-Wno-self-assign') ;
   o := OsslDir () ;
-  IF LEN (o) > 0 THEN Word (Cat ('-I', Cat (o, '/include'))) END
+  IF Text.BLen (o) > 0 THEN Word (Cat ('-I', Cat (o, '/include'))) END
 END MacFlags ;
 
 (* -ffp-contract=off: a * b + c is two roundings, as the source says,
@@ -1080,21 +1118,21 @@ END FpWords ;
    development package is not installed (Debian's libblosc1 without
    libblosc-dev) -- is `-lNAME' where ld64 and mingw's ld are the
    linker; any other word is a library name, `-lNAME'. *)
-PROCEDURE LinkWord (RO rt: STR ; RO KEPT w: STR ; VAR seen: SLICE OF STR ;
+PROCEDURE LinkWord (RO rt: UTF ; RO KEPT w: UTF ; VAR seen: SLICE OF UTF ;
                     VAR nseen: I64) RAISES ValueRange =
 VAR
   i, n, at : I64 ;
-  v : STR ;
+  v : UTF ;
 BEGIN
-  FOR i := 0 TO nseen - 1 DO IF DynStr.Eq (seen[i], w) THEN RETURN END END ;
+  FOR i := 0 TO nseen - 1 DO IF Text.Eq (seen[i], w) THEN RETURN END END ;
   IF nseen = LEN (seen) THEN RETURN END ;
   seen[nseen] := w ;
   nseen := nseen + 1 ;
-  n := LEN (w) ;
+  n := Text.BLen (w) ;
   IF n = 0 THEN RETURN END ;
-  IF n > 2 AND w[n - 2] = '.' AND w[n - 1] = 'c' THEN
+  IF n > 2 AND B (w, n - 2) = ORD ('.') AND B (w, n - 1) = ORD ('c') THEN
     v := Cat (rt, Cat ('/', w)) ;
-    IF NOT Io.Exists (v) AND LEN (prefix) > 0 THEN
+    IF NOT Io.Exists (v) AND Text.BLen (prefix) > 0 THEN
       v := Cat (prefix, Cat ('/share/m9/runtime/', w))
     END ;
     IF NOT Io.Exists (v) THEN
@@ -1103,12 +1141,12 @@ BEGIN
     Word (v) ;
     RETURN
   END ;
-  IF w[0] = '-' THEN
-    IF (macos OR windows) AND n > 6 AND w[1] = 'l' AND w[2] = ':' AND
-       w[3] = 'l' AND w[4] = 'i' AND w[5] = 'b' THEN
+  IF B (w, 0) = ORD ('-') THEN
+    IF (macos OR windows) AND n > 6 AND B (w, 1) = ORD ('l') AND B (w, 2) = ORD (':') AND
+       B (w, 3) = ORD ('l') AND B (w, 4) = ORD ('i') AND B (w, 5) = ORD ('b') THEN
       at := -1 ;
       FOR i := 6 TO n - 3 DO
-        IF at < 0 AND w[i] = '.' AND w[i + 1] = 's' AND w[i + 2] = 'o' THEN at := i END
+        IF at < 0 AND B (w, i) = ORD ('.') AND B (w, i + 1) = ORD ('s') AND B (w, i + 2) = ORD ('o') THEN at := i END
       END ;
       IF at > 6 THEN
         Word (Cat ('-l', SLICE (w, 6, at - 6))) ;
@@ -1141,63 +1179,94 @@ END LinkWord ;
    library does not START without the DLL beside it (measured
    2026-10-10: a Frame program that never calls NetCDF, given
    -lnetcdf, exits 53 under wine where 0.20.0's ran). *)
-PROCEDURE LibFound (RO w: STR) : BOOL RAISES ValueRange =
+PROCEDURE LibFound (RO w: UTF) : BOOL RAISES ValueRange =
 VAR
   n, i, at : I64 ;
-  name, file : STR ;
+  name, file : UTF ;
 BEGIN
-  n := LEN (w) ;
+  n := Text.BLen (w) ;
   IF n = 0 THEN RETURN TRUE END ;
-  IF n > 2 AND w[n - 2] = '.' AND w[n - 1] = 'c' THEN RETURN TRUE END ;
+  IF n > 2 AND B (w, n - 2) = ORD ('.') AND B (w, n - 1) = ORD ('c') THEN RETURN TRUE END ;
   name := '' ;
   file := '' ;
-  IF n > 3 AND w[0] = '-' AND w[1] = 'l' AND w[2] = ':' THEN
+  IF n > 3 AND B (w, 0) = ORD ('-') AND B (w, 1) = ORD ('l') AND B (w, 2) = ORD (':') THEN
     file := SLICE (w, 3, n - 3) ;
     (* -l:libNAME.so.N: the NAME, for the platforms that spell it -lNAME *)
-    IF LEN (file) > 6 AND file[0] = 'l' AND file[1] = 'i' AND file[2] = 'b' THEN
+    IF Text.BLen (file) > 6 AND B (file, 0) = ORD ('l') AND B (file, 1) = ORD ('i') AND B (file, 2) = ORD ('b') THEN
       at := -1 ;
-      FOR i := 3 TO LEN (file) - 3 DO
-        IF at < 0 AND file[i] = '.' AND file[i + 1] = 's' AND file[i + 2] = 'o' THEN at := i END
+      FOR i := 3 TO Text.BLen (file) - 3 DO
+        IF at < 0 AND B (file, i) = ORD ('.') AND B (file, i + 1) = ORD ('s') AND B (file, i + 2) = ORD ('o') THEN at := i END
       END ;
       IF at > 3 THEN name := SLICE (file, 3, at - 3) END
     END
-  ELSIF n > 2 AND w[0] = '-' AND w[1] = 'l' THEN
+  ELSIF n > 2 AND B (w, 0) = ORD ('-') AND B (w, 1) = ORD ('l') THEN
     name := SLICE (w, 2, n - 2)
-  ELSIF w[0] = '-' THEN
+  ELSIF B (w, 0) = ORD ('-') THEN
     RETURN TRUE
   ELSE
     name := w
   END ;
   IF windows THEN
-    RETURN LEN (name) > 0 AND CcFinds (Cat ('lib', Cat (name, '.a')))
+    RETURN Text.BLen (name) > 0 AND CcFinds (Cat ('lib', Cat (name, '.a')))
   END ;
   IF macos THEN
-    IF LEN (name) = 0 THEN RETURN FALSE END ;
+    IF Text.BLen (name) = 0 THEN RETURN FALSE END ;
     IF Io.Exists (Cat ('/opt/homebrew/lib/lib', Cat (name, '.dylib'))) THEN RETURN TRUE END ;
+    IF InLibraryPath (name) THEN RETURN TRUE END ;
     RETURN CcFinds (Cat ('lib', Cat (name, '.dylib'))) OR CcFinds (Cat ('lib', Cat (name, '.a')))
   END ;
-  IF LEN (file) > 0 THEN RETURN CcFinds (file) END ;
+  IF Text.BLen (file) > 0 THEN RETURN CcFinds (file) END ;
   RETURN CcFinds (Cat ('lib', Cat (name, '.so'))) OR CcFinds (Cat ('lib', Cat (name, '.a')))
 END LibFound ;
 
-PROCEDURE CcFinds (RO file: STR) : BOOL RAISES ValueRange =
+(* is libNAME.dylib or libNAME.a in a directory of $LIBRARY_PATH?  The
+   linker searches them, but Apple clang's -print-file-name does not:
+   under `cc' a keg-only Homebrew library (libpq in
+   /opt/homebrew/opt/libpq/lib) read as absent and an indirectly reached
+   unit's LINK words were dropped -- the heatpump server lost pgshim.c
+   and -lpq while a program importing Pg directly linked (2026-10-25;
+   the installed m9c runs its prefix's gcc, whose -print-file-name does
+   search it, and linked) *)
+PROCEDURE InLibraryPath (RO name: UTF) : BOOL RAISES ValueRange =
 VAR
-  r : System.Result ;
-  args : SLICE OF STR ;
-  cc, got : STR ;
+  lp, dir : UTF ;
+  i, from : I64 ;
+BEGIN
+  lp := Io.EnvUtf (pool, 'LIBRARY_PATH') ;
+  from := 0 ;
+  FOR i := 0 TO Text.BLen (lp) DO
+    IF i = Text.BLen (lp) OR B (lp, i) = ORD (':') THEN
+      IF i > from THEN
+        dir := SLICE (lp, from, i - from) ;
+        IF Io.ExistsUtf (Cat (dir, Cat ('/lib', Cat (name, '.dylib')))) OR
+           Io.ExistsUtf (Cat (dir, Cat ('/lib', Cat (name, '.a')))) THEN
+          RETURN TRUE
+        END
+      END ;
+      from := i + 1
+    END
+  END ;
+  RETURN FALSE
+END InLibraryPath ;
+
+PROCEDURE CcFinds (RO file: UTF) : BOOL RAISES ValueRange =
+VAR
+  r : System.ResultUtf ;
+  args : SLICE OF UTF ;
+  cc, got : UTF ;
   n : I64 ;
 BEGIN
   cc := CcName () ;
-  args := NEW (pool, STR, 1) ;
+  args := NEW (pool, UTF, 1) ;
   args[0] := Cat ('-print-file-name=', file) ;
-  r := System.Exec (pool, cc, args, '', ChildEnv (cc)) ;
+  r := System.ExecUtf (pool, cc, args, '', ChildEnv (cc)) ;
   IF r.status # 0 THEN RETURN FALSE END ;
-  n := LEN (r.out) ;
-  WHILE n > 0 AND (r.out[n - 1] = 0AC OR r.out[n - 1] = 0DC OR r.out[n - 1] = ' ') DO
+  n := Text.BLen (r.out) ;
+  WHILE n > 0 AND (B (r.out, n - 1) = 10 OR B (r.out, n - 1) = 13 OR B (r.out, n - 1) = 32) DO
     n := n - 1
   END ;
   got := SLICE (r.out, 0, n) ;
-  RETURN NOT DynStr.Eq (got, file) AND Io.Exists (got)
+  RETURN NOT Text.Eq (got, file) AND Io.Exists (got)
 EXCEPT
 | Io.IOError (p) : RETURN FALSE
 END CcFinds ;
@@ -1208,7 +1277,7 @@ VAR m : I64 ;
 BEGIN
   FOR m := 0 TO l.nkids - 1 DO
     IF l.kids[m] IS SOME ws THEN
-      IF NOT LibFound (ws.a) THEN RETURN FALSE END
+      IF NOT LibFound (ws.au) THEN RETURN FALSE END
     END
   END ;
   RETURN TRUE
@@ -1217,13 +1286,13 @@ END UnitFound ;
 PROCEDURE LinkWords () RAISES ValueRange =
 VAR
   i, j, k, m, nseen : I64 ;
-  rt : STR ;
-  seen : SLICE OF STR ;
+  rt : UTF ;
+  seen : SLICE OF UTF ;
   any, far : BOOL ;
   rk : Ast.Kid ;
 BEGIN
   rt := RtDir () ;
-  seen := NEW (pool, STR, 64) ;    (* module pool: LinkWord keeps the words in it *)
+  seen := NEW (pool, UTF, 64) ;    (* module pool: LinkWord keeps the words in it *)
   nseen := 0 ;
   any := FALSE ;
   (* -1 is the program itself: a LINK on its own FOR "C" unit was
@@ -1240,7 +1309,7 @@ BEGIN
     IF rk IS SOME r THEN
       FOR j := 0 TO r.nkids - 1 DO
         IF r.kids[j] IS SOME u THEN
-          IF u.kind = Ast.NDefinition AND LEN (u.b) > 0 THEN
+          IF u.kind = Ast.NDefinition AND Text.BLen (u.bu) > 0 THEN
             FOR k := 0 TO u.nkids - 1 DO
               IF u.kids[k] IS SOME l THEN
                 (* a unit reached only through another module's
@@ -1251,7 +1320,7 @@ BEGIN
                    reaches Parquet's zstd needs -lzstd on the line *)
                 IF l.kind = Ast.NLinkList AND far AND NOT UnitFound (l) THEN
                   IF verbose THEN
-                    Diag ('m9c: not linking what ', u.a,
+                    Diag ('m9c: not linking what ', u.au,
                           ' names: reached through another module, and not on this machine')
                   END
                 ELSIF l.kind = Ast.NLinkList THEN
@@ -1261,7 +1330,7 @@ BEGIN
                         any := TRUE ;
                         IF Io.Exists ('/opt/homebrew/lib') THEN Word ('-L/opt/homebrew/lib') END
                       END ;
-                      LinkWord (rt, ws.a, seen, nseen)
+                      LinkWord (rt, ws.au, seen, nseen)
                     END
                   END
                 END
@@ -1275,14 +1344,14 @@ BEGIN
 END LinkWords ;
 
 PROCEDURE SystemLibs () RAISES ValueRange =
-VAR o : STR ;
+VAR o : UTF ;
 BEGIN
   LinkWords () ;
   IF macos THEN
     (* ld64 has no --as-needed; -dead_strip_dylibs is its word for
        the same thing, and against static archives neither is needed *)
     o := OsslDir () ;
-    IF LEN (o) > 0 THEN Word (Cat ('-L', Cat (o, '/lib'))) END ;
+    IF Text.BLen (o) > 0 THEN Word (Cat ('-L', Cat (o, '/lib'))) END ;
     Word ('-Wl,-dead_strip_dylibs') ;
     (* AND THE CODE NOTHING REACHES, which on Linux -flto removes by
        itself: the linker plugin tells gcc what the program uses, and
@@ -1313,7 +1382,7 @@ END SystemLibs ;
    not catch is a source untouched while its dependency's INTERFACE
    moved; the pass below handles that by rebuilding in order and
    letting each rebuilt header push the next comparison over. *)
-PROCEDURE Older (RO obj: STR ; RO src: STR) : BOOL
+PROCEDURE Older (RO obj: UTF ; RO src: UTF) : BOOL
   RAISES ValueRange =
 VAR to, ts : I64 ;
 BEGIN
@@ -1324,12 +1393,30 @@ BEGIN
      from before it kept a stale .h/.o and failed on `implicit
      declaration of Mod_m9init' (2026-09-15) until 2026-10-08.  The
      binary's mtime is what --run's key uses too. *)
-  IF selfTime = 0 THEN selfTime := Io.ModTime (System.Executable (pool)) END ;
+  IF selfTime = 0 THEN selfTime := Io.ModTime (System.ExecutableUtf (pool)) END ;
   IF to < selfTime THEN RETURN TRUE END ;
   ts := Io.ModTime (src) ;
   IF ts < 0 THEN RETURN FALSE END ;       (* no source to be older than *)
   RETURN to < ts
 END Older ;
+
+(* whether the header at h was generated in this run's mode: Gen's
+   first line says `with --utf-str' under the switch and nothing
+   without it.  A header generated the other way is stale whatever the
+   mtimes say -- maillists' cplists built with --utf-str in a directory
+   a plain build had left took the plain Fmt.h as current, and cc
+   refused the importers (2026-10-25).  A header that cannot be read is
+   left to the tests beside this one. *)
+PROCEDURE SameMode (RO h: UTF) : BOOL =
+VAR first : UTF ; nl : I64 ;
+BEGIN
+  first := Io.ReadFileUtf (h) ;
+  nl := Text.FindChar (first, 0AC) ;
+  IF nl >= 0 THEN first := SLICE (first, 0, nl) END ;
+  RETURN Text.Contains (first, ' with --utf-str ') = utfStr
+EXCEPT
+| Io.IOError, ValueRange : RETURN TRUE
+END SameMode ;
 
 (* Rebuild one dependency by RE-INVOKING THIS COMPILER.
 
@@ -1349,23 +1436,49 @@ END Older ;
    bare `m9c`, a name to be looked up on a PATH the child may not
    share.  Where the platform cannot answer, argv[0] is the fallback
    it always was. *)
-PROCEDURE MakeDep (RO name: STR ; RO KEPT path: STR) : BOOL
+(* a module's header and C only, where -c would put them (MakeAll,
+   for an import cycle) *)
+PROCEDURE MakeHeader (RO name: UTF ; RO KEPT path: UTF) : BOOL
   RAISES ValueRange, IndexError =
 VAR
-  self : STR ;
+  self : UTF ;
   i, rc : I64 ;
 BEGIN
-  self := System.Executable (pool) ;
-  IF LEN (self) = 0 THEN self := Io.Arg (pool, 0) END ;
+  self := System.ExecutableUtf (pool) ;
+  IF Text.BLen (self) = 0 THEN self := Io.ArgUtf (pool, 0) END ;
+  NewCommand () ;
+  Word ('--out-dir') ;
+  IF Text.BLen (outDir) > 0 THEN Word (outDir) ELSE Word ('.') END ;
+  IF utfStr THEN Word ('--utf-str') END ;
+  FOR i := 0 TO ndirs - 1 DO Word (Cat ('-I', dirs[i])) END ;
+  Word (path) ;
+  IF verbose THEN Diag ('m9c: header ', name, '') END ;
+  rc := Run (self) ;
+  IF rc # 0 THEN
+    Diag ('m9c: could not generate ', name, '') ;
+    RETURN FALSE
+  END ;
+  RETURN TRUE
+END MakeHeader ;
+
+PROCEDURE MakeDep (RO name: UTF ; RO KEPT path: UTF) : BOOL
+  RAISES ValueRange, IndexError =
+VAR
+  self : UTF ;
+  i, rc : I64 ;
+BEGIN
+  self := System.ExecutableUtf (pool) ;
+  IF Text.BLen (self) = 0 THEN self := Io.ArgUtf (pool, 0) END ;
   NewCommand () ;
   Word ('-c') ;
   IF debug THEN Word ('-g') END ;
   IF doPic THEN Word ('--pic') END ;
+  IF utfStr THEN Word ('--utf-str') END ;   (* the dependency is compiled the same way *)
   FOR i := 0 TO ndirs - 1 DO Word (Cat ('-I', dirs[i])) END ;
   Word (path) ;
   IF ccFrom > 0 THEN
     Word ('--') ;
-    FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.Arg (pool, i)) END
+    FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.ArgUtf (pool, i)) END
   END ;
   IF verbose THEN Diag ('m9c: make ', name, '') END ;
   rc := Run (self) ;
@@ -1395,7 +1508,7 @@ PROCEDURE MakeAll () : BOOL
 VAR
   trustDummy : BOOL ;
   i : I64 ;
-  nm, path, src, o : STR ;
+  nm, path, src, o : UTF ;
   found, ok, dirty : BOOL ;
 BEGIN
   ok := TRUE ;
@@ -1418,9 +1531,25 @@ BEGIN
      wrong here is a stale object, while the cost of being
      over-eager is a second of cc. *)
   dirty := FALSE ;
+  (* an import cycle: every module's header first (MakeHeader), so the
+     compile of one member finds its partner's -- a clean build failed
+     on the partner's missing header, a second one passed on the first
+     one's leftovers (2026-10-22) *)
+  IF importCycle THEN
+    FOR i := 0 TO norder - 1 DO
+      nm := order[i] ;
+      IF NOT Text.Eq (nm, modName) THEN
+        src := FindModule (nm, path, found, trustDummy) ;
+        IF found AND Text.BLen (src) >= 0 THEN
+          IF NOT MakeHeader (nm, path) THEN ok := FALSE END
+        END
+      END
+    END ;
+    IF NOT ok THEN RETURN FALSE END
+  END ;
   FOR i := 0 TO norder - 1 DO
     nm := order[i] ;
-    IF NOT DynStr.Eq (nm, modName) THEN
+    IF NOT Text.Eq (nm, modName) THEN
       (* FindModule ANSWERS THE SOURCE and sets the path through a
          VAR parameter.  Assigning its result to `path` type-checks
          perfectly and stats the file's contents, which is never a
@@ -1434,8 +1563,9 @@ BEGIN
            generated headers were deleted but whose objects stayed
            regenerated only the stale module and failed on a fresh
            one's missing DynStr.h (2026-10-09) *)
-        IF LEN (src) >= 0 AND (dirty OR Older (o, path) OR
-                               NOT Io.Exists (Join (outDir, Cat (nm, '.h')))) THEN
+        IF Text.BLen (src) >= 0 AND (dirty OR Older (o, path) OR
+                               NOT Io.Exists (Join (outDir, Cat (nm, '.h'))) OR
+                               NOT SameMode (Join (outDir, Cat (nm, '.h')))) THEN
           dirty := TRUE ;
           IF NOT MakeDep (nm, path) THEN ok := FALSE END
         END
@@ -1455,11 +1585,11 @@ END MakeAll ;
 PROCEDURE AddObjects () : BOOL RAISES ValueRange =
 VAR
   i, nmiss : I64 ;
-  o : STR ;
+  o : UTF ;
 BEGIN
   nmiss := 0 ;
   FOR i := 0 TO nloaded - 1 DO
-    IF NOT DynStr.Eq (loaded[i], modName) THEN
+    IF NOT Text.Eq (loaded[i], modName) THEN
       o := Cat (loaded[i], '.o') ;
       IF Io.Exists (o) THEN
         Word (o)
@@ -1473,10 +1603,10 @@ BEGIN
   RETURN nmiss = 0
 END AddObjects ;
 
-PROCEDURE Compile (RO name: STR) : BOOL
+PROCEDURE Compile (RO name: UTF) : BOOL
   RAISES ValueRange, IndexError =
 VAR
-  cfile, out, rt : STR ;
+  cfile, out, rt : UTF ;
   i, rc : I64 ;
 BEGIN
   cfile := Suffix (name, '.c') ;
@@ -1490,12 +1620,12 @@ BEGIN
   IF ccFrom > 0 THEN
     (* the caller has taken the command line over; nothing is added
        underneath a flag someone chose *)
-    FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.Arg (pool, i)) END
+    FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.ArgUtf (pool, i)) END
   ELSE
-    IF LEN (rt) = 0 THEN
+    IF Text.BLen (rt) = 0 THEN
       Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
       Io.ErrLine ('  looked for m9rt.h in $M9RUNTIME, ' ) ;
-      IF LEN (prefix) > 0 THEN
+      IF Text.BLen (prefix) > 0 THEN
         Diag ('  ', Cat (prefix, '/runtime'), ',') ;
         Diag ('  ', IncDir (), ',')
       END ;
@@ -1591,7 +1721,7 @@ BEGIN
        and there is no shell now. *)
     (* not to the system's cc on macOS, which is clang and says so
        on every build; the bundled gcc, and a $CC, get it as ever *)
-    IF NOT (macos AND DynStr.Eq (CcName (), 'cc')) THEN
+    IF NOT (macos AND Text.Eq (CcName (), 'cc')) THEN
       Word ('--param') ;
       Word ('max-inline-insns-auto=200')
     END ;
@@ -1659,10 +1789,10 @@ END Compile ;
    leaves M9c.h beside it, and the -c runs that built the closure
    left theirs.  That pair -- the archive and the headers -- is what
    "distribute the compiler without sources" means. *)
-PROCEDURE Archive (RO name: STR) : BOOL
+PROCEDURE Archive (RO name: UTF) : BOOL
   RAISES ValueRange, IndexError =
 VAR
-  prog, rt : STR ;
+  prog, rt : UTF ;
   i, rc : I64 ;
 BEGIN
   NewCommand () ;
@@ -1680,7 +1810,7 @@ BEGIN
       (* the caller took the line over at the compile step and keeps
          it here: adding underneath a chosen flag is worse than
          adding nothing *)
-      FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.Arg (pool, i)) END
+      FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.ArgUtf (pool, i)) END
     ELSE
       (* -fPIC AGAIN, and this is the one that is easy to miss: the
          runtime arrives as SOURCES, so this command compiles m9rt.c
@@ -1708,7 +1838,7 @@ BEGIN
   IF NOT AddObjects () THEN RETURN FALSE END ;
   IF doSo AND ccFrom = 0 THEN
     rt := RtDir () ;
-    IF LEN (rt) = 0 THEN
+    IF Text.BLen (rt) = 0 THEN
       Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
       RETURN FALSE
     END ;
@@ -1738,7 +1868,7 @@ END Archive ;
 
 (* a by-product that will not delete is worth a word, not a raise:
    the object it came from was still built *)
-PROCEDURE Drop (RO path: STR) RAISES ValueRange =
+PROCEDURE Drop (RO path: UTF) RAISES ValueRange =
 BEGIN
   IF NOT Io.Remove (path) THEN
     Io.ErrLine ('m9c: could not remove the generated C') ;
@@ -1868,6 +1998,8 @@ BEGIN
   Io.WriteLine ('                   it names, and changes nothing') ;
   Io.WriteLine ('                   else -- still -O2, still -flto') ;
   Io.WriteLine ('  --check          check only, the generator included; write nothing') ;
+  Io.WriteLine ('  --utf-str        STR is the UTF-8 text type: the switch of') ;
+  Io.WriteLine ('                   docs/utf8-stage4-plan.md, rehearsed') ;
   Io.WriteLine ('  --review         --check, then print the review page:') ;
   Io.WriteLine ('                   what was proved, what a person') ;
   Io.WriteLine ('                   decided, what is trusted') ;
@@ -2021,31 +2153,31 @@ END Help ;
 (* -Idir joined.  Guarded here rather than at each call site: a
    predicate that raises on the empty string is one every caller has
    to remember, and the reminder is a bug waiting. *)
-PROCEDURE IsDashI (RO a: STR) : BOOL =
+PROCEDURE IsDashI (RO a: UTF) : BOOL =
 BEGIN
-  IF LEN (a) < 3 THEN RETURN FALSE END ;
-  RETURN a[0] = '-' AND a[1] = 'I'
+  IF Text.BLen (a) < 3 THEN RETURN FALSE END ;
+  RETURN Text.StartsWith (a, '-I')
 END IsDashI ;
 
 (* where `=' is in s, or -1 *)
-PROCEDURE EqAt (RO s: STR) : I64 =
+PROCEDURE EqAt (RO s: UTF) : I64 =
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '=' THEN RETURN i END
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF B (s, i) = ORD ('=') THEN RETURN i END
   END ;
   RETURN -1
 END EqAt ;
 
 (* --prefix MOD=NAME, kept as written: it goes to the generator, to
    every child build, and into the keys *)
-PROCEDURE AddPrefix (RO KEPT spec: STR) =
+PROCEDURE AddPrefix (RO KEPT spec: UTF) =
 VAR
-  nb : SLICE OF STR ;
+  nb : SLICE OF UTF ;
   i : I64 ;
 BEGIN
   IF npfxSpec = LEN (pfxSpec) THEN
-    nb := NEW (pool, STR, 2 * npfxSpec + 4) ;
+    nb := NEW (pool, UTF, 2 * npfxSpec + 4) ;
     FOR i := 0 TO npfxSpec - 1 DO nb[i] := pfxSpec[i] END ;
     pfxSpec := nb
   END ;
@@ -2054,13 +2186,13 @@ BEGIN
 END AddPrefix ;
 
 (* the C prefix --prefix gave module m, or empty *)
-PROCEDURE PrefixOf (RO m: STR) : STR =
+PROCEDURE PrefixOf (RO m: UTF) : UTF =
 VAR i, e : I64 ;
 BEGIN
   FOR i := 0 TO npfxSpec - 1 DO
     e := EqAt (pfxSpec[i]) ;
-    IF DynStr.Eq (SLICE (pfxSpec[i], 0, e), m) THEN
-      RETURN SLICE (pfxSpec[i], e + 1, LEN (pfxSpec[i]) - e - 1)
+    IF Text.Eq (SLICE (pfxSpec[i], 0, e), m) THEN
+      RETURN SLICE (pfxSpec[i], e + 1, Text.BLen (pfxSpec[i]) - e - 1)
     END
   END ;
   RETURN ''
@@ -2069,58 +2201,65 @@ END PrefixOf ;
 PROCEDURE ScanArgs () RAISES ValueRange, IndexError =
 VAR
   i : I64 ;
-  a : STR ;
+  a : UTF ;
 BEGIN
   i := 1 ;
   WHILE i < Io.ArgCount () DO
-    a := Io.Arg (pool, i) ;
-    IF DynStr.Eq (a, '--') THEN
+    a := Io.ArgUtf (pool, i) ;
+    IF Text.Eq (a, '--') THEN
       ccFrom := i + 1 ;
       RETURN
-    ELSIF DynStr.Eq (a, '-c') THEN
+    ELSIF Text.Eq (a, '-c') THEN
       doCompile := TRUE
-    ELSIF DynStr.Eq (a, '-k') OR DynStr.Eq (a, '--keep-c') THEN
+    ELSIF Text.Eq (a, '-k') OR Text.Eq (a, '--keep-c') THEN
       keepC := TRUE
-    ELSIF DynStr.Eq (a, '--no-unsafe') THEN
+    ELSIF Text.Eq (a, '--no-unsafe') THEN
       noUnsafe := TRUE
-    ELSIF DynStr.Eq (a, '-v') OR DynStr.Eq (a, '--verbose') THEN
+    ELSIF Text.Eq (a, '--utf-str') THEN
+      (* set the moment it is read: --run and --cell leave the option
+         loop before the validation below, and compile the closure
+         in-process *)
+      utfStr := TRUE ;
+      Sem.SetStrUtf (TRUE) ;
+      Gen.SetStrUtf (TRUE)
+    ELSIF Text.Eq (a, '-v') OR Text.Eq (a, '--verbose') THEN
       verbose := TRUE
-    ELSIF DynStr.Eq (a, '--version') THEN
+    ELSIF Text.Eq (a, '--version') THEN
       doVersion := TRUE
-    ELSIF DynStr.Eq (a, '-o') THEN
+    ELSIF Text.Eq (a, '-o') THEN
       IF i + 1 >= Io.ArgCount () THEN
         Io.ErrLine ('m9c: -o wants a name') ;
         failed := TRUE ;
         RETURN
       END ;
-      exe := Io.Arg (pool, i + 1) ;
+      exe := Io.ArgUtf (pool, i + 1) ;
       doLink := TRUE ;
       doCompile := TRUE ;
       i := i + 1
-    ELSIF DynStr.Eq (a, '--pic') THEN
+    ELSIF Text.Eq (a, '--pic') THEN
       doPic := TRUE
-    ELSIF DynStr.Eq (a, '--check') THEN
+    ELSIF Text.Eq (a, '--check') THEN
       doCheck := TRUE
-    ELSIF DynStr.Eq (a, '--review') THEN
+    ELSIF Text.Eq (a, '--review') THEN
       (* implies --check: the page is printed for a program that
          exists, and nothing is written beside it *)
       doReview := TRUE ;
       doCheck := TRUE
-    ELSIF DynStr.Eq (a, '--doc') THEN
+    ELSIF Text.Eq (a, '--doc') THEN
       doDoc := TRUE
-    ELSIF DynStr.Eq (a, '--json') THEN
+    ELSIF Text.Eq (a, '--json') THEN
       (* implies --doc: the JSON is the same gather rendered twice,
          and a run that wrote the data without the page would be a
          run whose two documents could not be compared *)
       doJson := TRUE ;
       doDoc := TRUE
-    ELSIF DynStr.Eq (a, '--make') THEN
+    ELSIF Text.Eq (a, '--make') THEN
       doMake := TRUE
-    ELSIF DynStr.Eq (a, '--show') THEN
+    ELSIF Text.Eq (a, '--show') THEN
       doShow := TRUE
-    ELSIF DynStr.Eq (a, '--type-of') THEN
+    ELSIF Text.Eq (a, '--type-of') THEN
       doTypeOf := TRUE
-    ELSIF DynStr.Eq (a, '--cell') THEN
+    ELSIF Text.Eq (a, '--cell') THEN
       (* --run's twin for the notebook session: the file follows *)
       IF i + 1 >= Io.ArgCount () THEN
         Io.ErrLine ('m9c: --cell wants a file') ;
@@ -2130,7 +2269,7 @@ BEGIN
       doCell := TRUE ;
       runAt := i + 1 ;
       RETURN
-    ELSIF DynStr.Eq (a, '--run') THEN
+    ELSIF Text.Eq (a, '--run') THEN
       (* the LAST option: the file follows, and every word after the
          file is the program's, whatever it looks like -- a script's
          `-v` is not this compiler's *)
@@ -2142,23 +2281,23 @@ BEGIN
       doRun := TRUE ;
       runAt := i + 1 ;
       RETURN
-    ELSIF DynStr.Eq (a, '--prefix') THEN
-      IF i + 1 >= Io.ArgCount () OR EqAt (Io.Arg (pool, i + 1)) < 1 THEN
+    ELSIF Text.Eq (a, '--prefix') THEN
+      IF i + 1 >= Io.ArgCount () OR EqAt (Io.ArgUtf (pool, i + 1)) < 1 THEN
         Io.ErrLine ('m9c: --prefix wants MODULE=NAME') ;
         failed := TRUE ;
         RETURN
       END ;
-      AddPrefix (Io.Arg (pool, i + 1)) ;
+      AddPrefix (Io.ArgUtf (pool, i + 1)) ;
       i := i + 1
-    ELSIF DynStr.Eq (a, '--out-dir') THEN
+    ELSIF Text.Eq (a, '--out-dir') THEN
       IF i + 1 >= Io.ArgCount () THEN
         Io.ErrLine ('m9c: --out-dir wants a directory') ;
         failed := TRUE ;
         RETURN
       END ;
-      outDir := Io.Arg (pool, i + 1) ;
+      outDir := Io.ArgUtf (pool, i + 1) ;
       i := i + 1
-    ELSIF DynStr.Eq (a, '-g') THEN
+    ELSIF Text.Eq (a, '-g') THEN
       (* -g IMPLIES --keep-c, and it has to.  The debug information
          names NAME.c, so dropping NAME.c leaves a debugger pointing
          at a file that is not there -- which is what -g meant before
@@ -2166,20 +2305,20 @@ BEGIN
          whole cc line over with --. *)
       debug := TRUE ;
       keepC := TRUE
-    ELSIF DynStr.Eq (a, '--ar') OR DynStr.Eq (a, '--so') THEN
+    ELSIF Text.Eq (a, '--ar') OR Text.Eq (a, '--so') THEN
       IF i + 1 >= Io.ArgCount () THEN
         Diag ('m9c: ', a, ' wants a library name') ;
         failed := TRUE ;
         RETURN
       END ;
-      IF LEN (lib) > 0 THEN
+      IF Text.BLen (lib) > 0 THEN
         Io.ErrLine ('m9c: one library per run, and two were named') ;
         failed := TRUE ;
         RETURN
       END ;
-      lib := Io.Arg (pool, i + 1) ;
+      lib := Io.ArgUtf (pool, i + 1) ;
       doCompile := TRUE ;
-      IF DynStr.Eq (a, '--ar') THEN
+      IF Text.Eq (a, '--ar') THEN
         doAr := TRUE
       ELSE
         doSo := TRUE ;
@@ -2188,18 +2327,24 @@ BEGIN
         doPic := TRUE
       END ;
       i := i + 1
-    ELSIF DynStr.Eq (a, '-I') THEN
+    ELSIF Text.Eq (a, '-I') THEN
       IF i + 1 >= Io.ArgCount () THEN
         Io.ErrLine ('m9c: -I wants a directory') ;
         failed := TRUE ;
         RETURN
       END ;
-      DirAdd (Io.Arg (pool, i + 1), FALSE) ;
+      DirAdd (Io.ArgUtf (pool, i + 1), FALSE) ;
       i := i + 1
-    ELSIF LEN (a) > 2 AND IsDashI (a) THEN
+    ELSIF Text.BLen (a) > 2 AND IsDashI (a) THEN
       (* -Idir joined, as cc spells it: the habit is older than this
          compiler and arguing with it costs more than honouring it *)
-      DirAdd (SLICE (a, 2, LEN (a) - 2), FALSE)
+      DirAdd (SLICE (a, 2, Text.BLen (a) - 2), FALSE)
+    ELSIF Text.BLen (a) > 1 AND B (a, 0) = ORD ('-') THEN
+      (* an option nobody declared was taken for a source file and
+         said `cannot find: --frobnicate' (the review's F6) *)
+      Io.ErrLine (Cat ('m9c: unknown option ', Cat (a, " -- 'm9c --help' lists them"))) ;
+      failed := TRUE ;
+      RETURN
     END ;
     i := i + 1
   END
@@ -2209,36 +2354,36 @@ END ScanArgs ;
    no i'th one.  Options are skipped here rather than compacted into
    a list, because the language has no growable STR array in this
    module and an index walk needs neither.                          *)
-PROCEDURE SourceAt (n: I64) : STR RAISES ValueRange, IndexError =
+PROCEDURE SourceAt (n: I64) : UTF RAISES ValueRange, IndexError =
 VAR
   i, seen : I64 ;
-  a : STR ;
+  a : UTF ;
 BEGIN
   seen := 0 ;
   i := 1 ;
   WHILE i < Io.ArgCount () DO
-    a := Io.Arg (pool, i) ;
-    IF DynStr.Eq (a, '--') THEN RETURN '' END ;
-    IF DynStr.Eq (a, '--run') OR DynStr.Eq (a, '--cell') THEN
+    a := Io.ArgUtf (pool, i) ;
+    IF Text.Eq (a, '--') THEN RETURN '' END ;
+    IF Text.Eq (a, '--run') OR Text.Eq (a, '--cell') THEN
       (* the one source, and nothing after it is another *)
       IF n = seen AND i + 1 < Io.ArgCount () THEN
-        RETURN Io.Arg (pool, i + 1)
+        RETURN Io.ArgUtf (pool, i + 1)
       END ;
       RETURN ''
     END ;
-    IF DynStr.Eq (a, '-o') OR DynStr.Eq (a, '-I') OR
-       DynStr.Eq (a, '--ar') OR DynStr.Eq (a, '--so') OR
-       DynStr.Eq (a, '--out-dir') OR DynStr.Eq (a, '--prefix') THEN
+    IF Text.Eq (a, '-o') OR Text.Eq (a, '-I') OR
+       Text.Eq (a, '--ar') OR Text.Eq (a, '--so') OR
+       Text.Eq (a, '--out-dir') OR Text.Eq (a, '--prefix') THEN
       i := i + 1
-    ELSIF DynStr.Eq (a, '-c') OR DynStr.Eq (a, '-k') OR
-          DynStr.Eq (a, '--keep-c') OR DynStr.Eq (a, '-v') OR
-          DynStr.Eq (a, '--verbose') OR DynStr.Eq (a, '--pic') OR
-          DynStr.Eq (a, '--doc') OR DynStr.Eq (a, '-g') OR
-          DynStr.Eq (a, '--json') OR DynStr.Eq (a, '--check') OR
-          DynStr.Eq (a, '--review') OR
-          DynStr.Eq (a, '--make') OR
-          DynStr.Eq (a, '--show') OR DynStr.Eq (a, '--type-of') OR
-          DynStr.Eq (a, '--no-unsafe') OR
+    ELSIF Text.Eq (a, '-c') OR Text.Eq (a, '-k') OR
+          Text.Eq (a, '--keep-c') OR Text.Eq (a, '-v') OR
+          Text.Eq (a, '--verbose') OR Text.Eq (a, '--pic') OR
+          Text.Eq (a, '--doc') OR Text.Eq (a, '-g') OR
+          Text.Eq (a, '--json') OR Text.Eq (a, '--check') OR
+          Text.Eq (a, '--review') OR
+          Text.Eq (a, '--make') OR
+          Text.Eq (a, '--show') OR Text.Eq (a, '--type-of') OR
+          Text.Eq (a, '--no-unsafe') OR Text.Eq (a, '--utf-str') OR
           IsDashI (a) THEN
       i := i
     ELSE
@@ -2250,19 +2395,19 @@ BEGIN
   RETURN ''
 END SourceAt ;
 
-PROCEDURE IsHelp (RO a: STR) : BOOL =
+PROCEDURE IsHelp (RO a: UTF) : BOOL =
 BEGIN
-  RETURN DynStr.Eq (a, '--help') OR DynStr.Eq (a, '-h') OR
-         DynStr.Eq (a, '-?') OR DynStr.Eq (a, '--usage')
+  RETURN Text.Eq (a, '--help') OR Text.Eq (a, '-h') OR
+         Text.Eq (a, '-?') OR Text.Eq (a, '--usage')
 END IsHelp ;
 
-PROCEDURE Complain (RO what: STR ; RO path: STR) =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE Complain (RO what: UTF ; RO path: UTF) =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, what) ;
-  DynStr.Append (d, ': ') ;
-  Diag ('m9c: ', DynStr.View (d), path) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, what) ;
+  DynUtf.Append (d, ': ') ;
+  Diag ('m9c: ', DynUtf.ViewIn (pool, d), path) ;
   failed := TRUE
 END Complain ;
 
@@ -2304,36 +2449,36 @@ END Complain ;
    from the original, not resist an attacker who can already write
    the source.  The moduli keep every product inside I64: 131 times
    2^55 and 257 times 2^54 are both under 2^63. *)
-PROCEDURE Hash (RO s: STR) : STR =
+PROCEDURE Hash (RO s: UTF) : UTF =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i, a, b : I64 ;
 BEGIN
   a := 7 ;
   b := 11 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    a := (a * 131 + ORD (s[i])) MOD 36028797018963913 ;
-    b := (b * 257 + ORD (s[i])) MOD 18014398509481951
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    a := (a * 131 + B (s, i)) MOD 36028797018963913 ;
+    b := (b * 257 + B (s, i)) MOD 18014398509481951
   END ;
-  d := DynStr.New (pool) ;
-  DynStr.AppendI64 (d, a) ;
-  DynStr.AppendChar (d, 'x') ;
-  DynStr.AppendI64 (d, b) ;
-  DynStr.AppendChar (d, 'n') ;
-  DynStr.AppendI64 (d, LEN (s)) ;
-  RETURN DynStr.View (d)
+  d := DynUtf.New (pool) ;
+  DynUtf.AppendI64 (d, a) ;
+  DynUtf.AppendChar (d, 'x') ;
+  DynUtf.AppendI64 (d, b) ;
+  DynUtf.AppendChar (d, 'n') ;
+  DynUtf.AppendI64 (d, Text.BLen (s)) ;
+  RETURN DynUtf.ViewIn (pool, d)
 END Hash ;
 
 (* a module's source, hashed as it is parsed: ParseText calls this for
    every file the closure reads, the main one included *)
-PROCEDURE Remember (RO name: STR ; RO src: STR) =
+PROCEDURE Remember (RO name: UTF ; RO src: UTF) =
 VAR
-  nn, nh : SLICE OF STR ;
+  nn, nh : SLICE OF UTF ;
   i : I64 ;
 BEGIN
   IF nsrc = LEN (srcNames) THEN
-    nn := NEW (pool, STR, 2 * LEN (srcNames) + 16) ;
-    nh := NEW (pool, STR, 2 * LEN (srcNames) + 16) ;
+    nn := NEW (pool, UTF, 2 * LEN (srcNames) + 16) ;
+    nh := NEW (pool, UTF, 2 * LEN (srcNames) + 16) ;
     FOR i := 0 TO nsrc - 1 DO nn[i] := srcNames[i] ; nh[i] := srcHashes[i] END ;
     srcNames := nn ;
     srcHashes := nh
@@ -2343,11 +2488,11 @@ BEGIN
   nsrc := nsrc + 1
 END Remember ;
 
-PROCEDURE SrcHash (RO name: STR) : STR =
+PROCEDURE SrcHash (RO name: UTF) : UTF =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO nsrc - 1 DO
-    IF DynStr.Eq (srcNames[i], name) THEN RETURN srcHashes[i] END
+    IF Text.Eq (srcNames[i], name) THEN RETURN srcHashes[i] END
   END ;
   RETURN '?'
 END SrcHash ;
@@ -2356,18 +2501,18 @@ END SrcHash ;
    import, each with its source's hash, in the order a depth-first
    walk meets them -- which the import lists fix, so the same sources
    give the same string *)
-PROCEDURE ClosureKey (RO top: STR) : STR =
+PROCEDURE ClosureKey (RO top: UTF) : UTF =
 VAR
-  seen, stack : SLICE OF STR ;
+  seen, stack : SLICE OF UTF ;
   nseen, nstack, i, j : I64 ;
-  cur : STR ;
+  cur : UTF ;
   dup : BOOL ;
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
 BEGIN
-  seen := NEW (pool, STR, nedge + 2) ;
-  stack := NEW (pool, STR, nedge + 2) ;
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, ident) ;
+  seen := NEW (pool, UTF, nedge + 2) ;
+  stack := NEW (pool, UTF, nedge + 2) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, ident) ;
   seen[0] := Suffix (top, '') ;
   stack[0] := seen[0] ;
   nseen := 1 ;
@@ -2375,19 +2520,19 @@ BEGIN
   WHILE nstack > 0 DO
     nstack := nstack - 1 ;
     cur := stack[nstack] ;
-    DynStr.AppendChar (d, ';') ;
-    DynStr.Append (d, cur) ;
-    DynStr.AppendChar (d, '=') ;
-    DynStr.Append (d, SrcHash (cur)) ;
-    IF LEN (PrefixOf (cur)) > 0 THEN
-      DynStr.AppendChar (d, '@') ;
-      DynStr.Append (d, PrefixOf (cur))
+    DynUtf.AppendChar (d, ';') ;
+    DynUtf.Append (d, cur) ;
+    DynUtf.AppendChar (d, '=') ;
+    DynUtf.Append (d, SrcHash (cur)) ;
+    IF Text.BLen (PrefixOf (cur)) > 0 THEN
+      DynUtf.AppendChar (d, '@') ;
+      DynUtf.Append (d, PrefixOf (cur))
     END ;
     FOR i := 0 TO nedge - 1 DO
-      IF DynStr.Eq (edgeFrom[i], cur) THEN
+      IF Text.Eq (edgeFrom[i], cur) THEN
         dup := FALSE ;
         FOR j := 0 TO nseen - 1 DO
-          IF DynStr.Eq (seen[j], edgeTo[i]) THEN dup := TRUE END
+          IF Text.Eq (seen[j], edgeTo[i]) THEN dup := TRUE END
         END ;
         IF NOT dup THEN
           seen[nseen] := edgeTo[i] ;
@@ -2398,32 +2543,32 @@ BEGIN
       END
     END
   END ;
-  RETURN Hash (DynStr.View (d))
+  RETURN Hash (DynUtf.ViewIn (pool, d))
 END ClosureKey ;
 
 (* where the cache is: $M9CACHE, else the platform's cache directory
    -- %LOCALAPPDATA% on Windows, $XDG_CACHE_HOME, ~/.cache -- each
    with m9 under it; empty when none of them is set *)
-PROCEDURE CacheRoot () : STR RAISES ValueRange =
-VAR v : STR ;
+PROCEDURE CacheRoot () : UTF RAISES ValueRange =
+VAR v : UTF ;
 BEGIN
-  v := Io.Env (pool, 'M9CACHE') ;
-  IF LEN (v) > 0 THEN RETURN v END ;
+  v := Io.EnvUtf (pool, 'M9CACHE') ;
+  IF Text.BLen (v) > 0 THEN RETURN v END ;
   IF windows THEN
-    v := Io.Env (pool, 'LOCALAPPDATA') ;
-    IF LEN (v) > 0 THEN RETURN Join (v, 'm9') END
+    v := Io.EnvUtf (pool, 'LOCALAPPDATA') ;
+    IF Text.BLen (v) > 0 THEN RETURN Join (v, 'm9') END
   END ;
-  v := Io.Env (pool, 'XDG_CACHE_HOME') ;
-  IF LEN (v) > 0 THEN RETURN Join (v, 'm9') END ;
-  v := Io.Env (pool, 'HOME') ;
-  IF LEN (v) > 0 THEN RETURN Join (v, '.cache/m9') END ;
+  v := Io.EnvUtf (pool, 'XDG_CACHE_HOME') ;
+  IF Text.BLen (v) > 0 THEN RETURN Join (v, 'm9') END ;
+  v := Io.EnvUtf (pool, 'HOME') ;
+  IF Text.BLen (v) > 0 THEN RETURN Join (v, '.cache/m9') END ;
   RETURN ''
 END CacheRoot ;
 
 (* a directory and every directory above it that is missing.  The
    levels above may refuse (a drive letter, a root this user cannot
    write and that exists anyway); only the last one has to succeed. *)
-PROCEDURE TryMkDir (RO path: STR) =
+PROCEDURE TryMkDir (RO path: UTF) =
 BEGIN
   Io.MkDir (path)
 EXCEPT
@@ -2433,11 +2578,11 @@ EXCEPT
     RETURN
 END TryMkDir ;
 
-PROCEDURE MkDirs (RO path: STR) RAISES ValueRange, Io.IOError =
+PROCEDURE MkDirs (RO path: UTF) RAISES ValueRange, Io.IOError =
 VAR i : I64 ;
 BEGIN
-  FOR i := 1 TO LEN (path) - 1 DO
-    IF path[i] = '/' OR path[i] = 05CC THEN TryMkDir (SLICE (path, 0, i)) END
+  FOR i := 1 TO Text.BLen (path) - 1 DO
+    IF B (path, i) = ORD ('/') OR B (path, i) = 92 THEN TryMkDir (SLICE (path, 0, i)) END
   END ;
   Io.MkDir (path)
 END MkDirs ;
@@ -2445,28 +2590,30 @@ END MkDirs ;
 (* this compiler as a cache key: its version and its binary's time,
    so a rebuilt m9c in a source tree is a new key without a version
    bump, and the C compiler and runtime it would use *)
-PROCEDURE Ident () : STR RAISES ValueRange =
+PROCEDURE Ident () : UTF RAISES ValueRange =
 VAR
-  d : PTR DynStr.DString IN pool ;
-  self : STR ;
+  d : PTR DynUtf.DString IN pool ;
+  self : UTF ;
 BEGIN
-  self := System.Executable (pool) ;
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, Version) ;
-  DynStr.AppendChar (d, ' ') ;
-  DynStr.AppendI64 (d, Io.ModTime (self)) ;
-  DynStr.AppendChar (d, ' ') ;
-  DynStr.Append (d, CcName ()) ;
-  DynStr.AppendChar (d, ' ') ;
-  DynStr.Append (d, RtDir ()) ;
+  self := System.ExecutableUtf (pool) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, Version) ;
+  DynUtf.AppendChar (d, ' ') ;
+  DynUtf.AppendI64 (d, Io.ModTime (self)) ;
+  DynUtf.AppendChar (d, ' ') ;
+  DynUtf.Append (d, CcName ()) ;
+  DynUtf.AppendChar (d, ' ') ;
+  DynUtf.Append (d, RtDir ()) ;
   (* and the shape of what RunFlags makes, so an object compiled
      without its own sections is never linked by --gc-sections *)
-  DynStr.Append (d, ' sections') ;
-  RETURN DynStr.View (d)
+  DynUtf.Append (d, ' sections') ;
+  (* the rehearsed switch compiles every module another way *)
+  IF utfStr THEN DynUtf.Append (d, ' utf-str') END ;
+  RETURN DynUtf.ViewIn (pool, d)
 END Ident ;
 
 (* where module order[i] is cached *)
-PROCEDURE ModDir (i: I64) : STR RAISES IndexError =
+PROCEDURE ModDir (i: I64) : UTF RAISES IndexError =
 BEGIN
   (* --cell's objects are position independent and live apart *)
   IF doCell THEN
@@ -2481,7 +2628,7 @@ PROCEDURE RunFlags () RAISES ValueRange =
 BEGIN
   Word ('-O2') ;
   FpWords () ;
-  IF NOT (macos AND DynStr.Eq (CcName (), 'cc')) THEN
+  IF NOT (macos AND Text.Eq (CcName (), 'cc')) THEN
     Word ('--param') ;
     Word ('max-inline-insns-auto=200')
   END ;
@@ -2522,13 +2669,13 @@ END RunGcWords ;
 
 (* every cached module's directory on the include path, then the
    scratch directory, where this run's fresh headers are *)
-PROCEDURE RunIncludes (RO KEPT rt: STR) RAISES IndexError =
+PROCEDURE RunIncludes (RO KEPT rt: UTF) RAISES IndexError =
 VAR i : I64 ;
 BEGIN
   Word ('-iquote') ;
   Word (rt) ;
   FOR i := 0 TO norder - 1 DO
-    IF NOT DynStr.Eq (order[i], modName) THEN
+    IF NOT Text.Eq (order[i], modName) THEN
       Word ('-iquote') ;
       Word (ModDir (i))
     END
@@ -2542,19 +2689,19 @@ END RunIncludes ;
    after it on this command line *)
 PROCEDURE Launch () RAISES ValueRange, IndexError =
 VAR
-  args : SLICE OF STR ;
+  args : SLICE OF UTF ;
   i, n : I64 ;
 BEGIN
   n := Io.ArgCount () - runAt - 1 ;
-  args := NEW (pool, STR, n) ;
-  FOR i := 0 TO n - 1 DO args[i] := Io.Arg (pool, runAt + 1 + i) END ;
-  System.Become (binPath, Io.Arg (pool, runAt), args) ;
+  args := NEW (pool, UTF, n) ;
+  FOR i := 0 TO n - 1 DO args[i] := Io.ArgUtf (pool, runAt + 1 + i) END ;
+  System.BecomeUtf (binPath, Io.ArgUtf (pool, runAt), args) ;
   Diag ('m9c: could not start ', binPath, '') ;
   failed := TRUE ;
   Io.Halt (1)
 EXCEPT
 | Io.IOError (p) :
-    Diag ('m9c: could not start ', p, '') ;
+    Diag ('m9c: could not start ', UTF (p), '') ;
     failed := TRUE ;
     Io.Halt (1)
 END Launch ;
@@ -2565,38 +2712,38 @@ END Launch ;
 PROCEDURE RunKeys () RAISES ValueRange, IndexError, Io.IOError =
 VAR
   i : I64 ;
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
 BEGIN
   cacheRoot := CacheRoot () ;
-  IF LEN (cacheRoot) = 0 THEN
+  IF Text.BLen (cacheRoot) = 0 THEN
     Io.ErrLine ('m9c: --run has no cache directory: set $M9CACHE') ;
     failed := TRUE ;
     Io.Halt (1)
   END ;
   ident := Ident () ;
-  keys := NEW (pool, STR, norder + 1) ;
+  keys := NEW (pool, UTF, norder + 1) ;
   FOR i := 0 TO norder - 1 DO keys[i] := ClosureKey (order[i]) END ;
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, 'tmp/') ;
-  DynStr.AppendI64 (d, System.ProcessId ()) ;
-  work := Join (cacheRoot, DynStr.View (d)) ;
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, 'bin/') ;
-  DynStr.Append (d, modName) ;
-  DynStr.AppendChar (d, '-') ;
-  DynStr.Append (d, ClosureKey (modName)) ;
-  IF windows THEN DynStr.Append (d, '.exe') END ;
-  binPath := Join (cacheRoot, DynStr.View (d)) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, 'tmp/') ;
+  DynUtf.AppendI64 (d, System.ProcessId ()) ;
+  work := Join (cacheRoot, DynUtf.ViewIn (pool, d)) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, 'bin/') ;
+  DynUtf.Append (d, modName) ;
+  DynUtf.AppendChar (d, '-') ;
+  DynUtf.Append (d, ClosureKey (modName)) ;
+  IF windows THEN DynUtf.Append (d, '.exe') END ;
+  binPath := Join (cacheRoot, DynUtf.ViewIn (pool, d)) ;
   IF doCell THEN
-    d := DynStr.New (pool) ;
-    IF cellProgram THEN DynStr.Append (d, 'cells/') ELSE DynStr.Append (d, 'modpic/') END ;
-    DynStr.Append (d, modName) ;
-    DynStr.AppendChar (d, '-') ;
-    DynStr.Append (d, ClosureKey (modName)) ;
-    DynStr.Append (d, '/lib') ;
-    DynStr.Append (d, modName) ;
-    DynStr.Append (d, '.so') ;
-    cellPath := Join (cacheRoot, DynStr.View (d)) ;
+    d := DynUtf.New (pool) ;
+    IF cellProgram THEN DynUtf.Append (d, 'cells/') ELSE DynUtf.Append (d, 'modpic/') END ;
+    DynUtf.Append (d, modName) ;
+    DynUtf.AppendChar (d, '-') ;
+    DynUtf.Append (d, ClosureKey (modName)) ;
+    DynUtf.Append (d, '/lib') ;
+    DynUtf.Append (d, modName) ;
+    DynUtf.Append (d, '.so') ;
+    cellPath := Join (cacheRoot, DynUtf.ViewIn (pool, d)) ;
     (* warm only when the runtime and the host of THIS key are there
        too: a changed m9session.c is a new runtime key, and a cell
        built before it named a host nobody had built (2026-10-04) *)
@@ -2616,31 +2763,37 @@ END RunKeys ;
    scratch directory; compiled there; and then its header and its
    object renamed into its own directory, the object last, because
    the object's presence is what says the directory is complete *)
-PROCEDURE CacheModule (i: I64 ; RO KEPT rt: STR) : BOOL
-  RAISES ValueRange, IndexError, Io.IOError =
+(* is module i of the order built in the cache already? *)
+PROCEDURE CacheHas (i: I64) : BOOL RAISES ValueRange, IndexError =
+BEGIN
+  IF doCell THEN
+    RETURN Io.Exists (Join (ModDir (i), Cat ('lib', Suffix (order[i], '.so'))))
+  END ;
+  RETURN Io.Exists (Join (ModDir (i), Suffix (order[i], '.o')))
+END CacheHas ;
+
+(* module i's C and header into work: the first half of CacheModule,
+   run for every module ahead of the compiles when the import graph
+   has a cycle, so that a member finds its partner's header *)
+PROCEDURE CacheGen (i: I64) : BOOL RAISES ValueRange, IndexError, Io.IOError =
 VAR
-  self, path, src, dir, nm : STR ;
+  self, path, src, nm : UTF ;
   found, trusted : BOOL ;
   j, rc : I64 ;
 BEGIN
   nm := order[i] ;
-  dir := ModDir (i) ;
-  IF doCell THEN
-    IF Io.Exists (Join (dir, Cat ('lib', Suffix (nm, '.so')))) THEN RETURN TRUE END
-  ELSIF Io.Exists (Join (dir, Suffix (nm, '.o'))) THEN
-    RETURN TRUE
-  END ;
   src := FindModule (nm, path, found, trusted) ;
-  IF NOT found OR LEN (src) < 0 THEN
+  IF NOT found OR Text.BLen (src) < 0 THEN
     Diag ('m9c: cannot find ', nm, ' again') ;
     RETURN FALSE
   END ;
-  self := System.Executable (pool) ;
-  IF LEN (self) = 0 THEN self := Io.Arg (pool, 0) END ;
+  self := System.ExecutableUtf (pool) ;
+  IF Text.BLen (self) = 0 THEN self := Io.ArgUtf (pool, 0) END ;
   NewCommand () ;
   Word ('--out-dir') ;
   Word (work) ;
   IF noUnsafe THEN Word ('--no-unsafe') END ;
+  IF utfStr THEN Word ('--utf-str') END ;   (* the module is generated the same way *)
   FOR j := 0 TO npfxSpec - 1 DO
     Word ('--prefix') ;
     Word (pfxSpec[j])
@@ -2651,6 +2804,37 @@ BEGIN
   IF rc # 0 THEN
     Diag ('m9c: could not generate ', nm, '') ;
     RETURN FALSE
+  END ;
+  RETURN TRUE
+END CacheGen ;
+
+(* an import cycle: every uncached module's header first (CacheGen) --
+   a clean build failed on a partner's missing header, a second one
+   passed on the first one's leftovers (2026-10-22) *)
+PROCEDURE CacheGenAll () : BOOL RAISES ValueRange, IndexError, Io.IOError =
+VAR i : I64 ;
+BEGIN
+  IF NOT importCycle THEN RETURN TRUE END ;
+  FOR i := 0 TO norder - 1 DO
+    IF NOT Text.Eq (order[i], modName) AND NOT CacheHas (i) THEN
+      IF NOT CacheGen (i) THEN RETURN FALSE END
+    END
+  END ;
+  RETURN TRUE
+END CacheGenAll ;
+
+PROCEDURE CacheModule (i: I64 ; RO KEPT rt: UTF) : BOOL
+  RAISES ValueRange, IndexError, Io.IOError =
+VAR
+  dir, nm : UTF ;
+  rc : I64 ;
+BEGIN
+  nm := order[i] ;
+  dir := ModDir (i) ;
+  IF CacheHas (i) THEN RETURN TRUE END ;
+  (* generated already when the graph has a cycle (CacheGenAll) *)
+  IF NOT importCycle THEN
+    IF NOT CacheGen (i) THEN RETURN FALSE END
   END ;
   NewCommand () ;
   RunFlags () ;
@@ -2693,7 +2877,7 @@ END CacheModule ;
    Windows, as there.  Answers the directory, or empty when there are
    no runtime sources to compile -- an installed compiler, whose
    archive the link names as the flagless link does. *)
-PROCEDURE RtSource (i: I64) : STR =
+PROCEDURE RtSource (i: I64) : UTF =
 BEGIN
   CASE i OF
   | 0 : RETURN 'm9rt'
@@ -2703,7 +2887,7 @@ BEGIN
   END
 END RtSource ;
 
-PROCEDURE RtWanted (RO rt: STR ; i: I64) : BOOL RAISES ValueRange =
+PROCEDURE RtWanted (RO rt: UTF ; i: I64) : BOOL RAISES ValueRange =
 BEGIN
   IF windows AND i = 3 THEN RETURN FALSE END ;
   RETURN Io.Exists (Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))))
@@ -2711,31 +2895,31 @@ END RtWanted ;
 
 (* where the runtime of this key is cached: rt-KEY, or rtpic-KEY for
    --cell, whose key also covers the session host's source *)
-PROCEDURE RtCacheDir (RO rt: STR) : STR RAISES ValueRange =
+PROCEDURE RtCacheDir (RO rt: UTF) : UTF RAISES ValueRange =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   found : BOOL ;
   i : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, ident) ;
-  DynStr.Append (d, TryRead (Cat (rt, '/m9rt.h'), found)) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, ident) ;
+  DynUtf.Append (d, TryRead (Cat (rt, '/m9rt.h'), found)) ;
   FOR i := 0 TO 3 DO
     IF RtWanted (rt, i) THEN
-      DynStr.Append (d, TryRead (Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))), found))
+      DynUtf.Append (d, TryRead (Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))), found))
     END
   END ;
   IF doCell THEN
-    DynStr.Append (d, TryRead (Cat (rt, '/m9session.c'), found)) ;
-    RETURN Join (cacheRoot, Cat ('rtpic-', Hash (DynStr.View (d))))
+    DynUtf.Append (d, TryRead (Cat (rt, '/m9session.c'), found)) ;
+    RETURN Join (cacheRoot, Cat ('rtpic-', Hash (DynUtf.ViewIn (pool, d))))
   END ;
-  RETURN Join (cacheRoot, Cat ('rt-', Hash (DynStr.View (d))))
+  RETURN Join (cacheRoot, Cat ('rt-', Hash (DynUtf.ViewIn (pool, d))))
 END RtCacheDir ;
 
-PROCEDURE CacheRuntime (RO KEPT rt: STR ; VAR ok: BOOL) : STR
+PROCEDURE CacheRuntime (RO KEPT rt: UTF ; VAR ok: BOOL) : UTF
   RAISES ValueRange, Io.IOError =
 VAR
-  dir, c, o, tmp : STR ;
+  dir, c, o, tmp : UTF ;
   i, rc : I64 ;
 BEGIN
   ok := TRUE ;
@@ -2775,11 +2959,11 @@ END CacheRuntime ;
 (* --cell's runtime: one shared object of the runtime's objects and the
    system libraries they need, loaded first; and the session host, a
    plain C program that loads the rest (runtime/m9session.c) *)
-PROCEDURE CacheSession (RO KEPT rt: STR ; RO dir: STR) : BOOL
+PROCEDURE CacheSession (RO KEPT rt: UTF ; RO dir: UTF) : BOOL
   RAISES ValueRange, Io.IOError =
 VAR
   i, rc : I64 ;
-  tmp : STR ;
+  tmp : UTF ;
 BEGIN
   IF NOT Io.Exists (Join (dir, 'libm9rt.so')) THEN
     tmp := Join (work, 'libm9rt.so') ;
@@ -2834,23 +3018,23 @@ END CacheSession ;
    runtime; every module of the closure in dependency order; and the
    cell -- STATE with its init symbol, or PROGRAM with the renamed main.
    The kernel sends LOAD for what is not loaded yet, then INIT or RUN. *)
-PROCEDURE CellLine (RO a, b, c: STR) =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE CellLine (RO a, b, c: UTF) =
+VAR d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, a) ;
-  DynStr.AppendChar (d, 09C) ;
-  DynStr.Append (d, b) ;
-  IF LEN (c) > 0 THEN
-    DynStr.AppendChar (d, 09C) ;
-    DynStr.Append (d, c)
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, a) ;
+  DynUtf.AppendChar (d, 09C) ;
+  DynUtf.Append (d, b) ;
+  IF Text.BLen (c) > 0 THEN
+    DynUtf.AppendChar (d, 09C) ;
+    DynUtf.Append (d, c)
   END ;
-  Io.WriteLine (DynStr.View (d))
+  Io.WriteLine (DynUtf.ViewIn (pool, d))
 END CellLine ;
 
 PROCEDURE CellReport () RAISES ValueRange, IndexError =
 VAR
-  rt, rdir : STR ;
+  rt, rdir : UTF ;
   i : I64 ;
 BEGIN
   rt := RtDir () ;
@@ -2858,7 +3042,7 @@ BEGIN
   CellLine ('HOST', Join (rdir, 'm9session'), '') ;
   CellLine ('LIB', Join (rdir, 'libm9rt.so'), '') ;
   FOR i := 0 TO norder - 1 DO
-    IF NOT DynStr.Eq (order[i], modName) THEN
+    IF NOT Text.Eq (order[i], modName) THEN
       CellLine ('LIB', Join (ModDir (i), Cat ('lib', Suffix (order[i], '.so'))), '')
     END
   END ;
@@ -2866,7 +3050,7 @@ BEGIN
     CellLine ('PROGRAM', cellPath, 'm9_cell_main')
   ELSE
     (* the initialiser under the generation's prefix, when it has one *)
-    IF LEN (PrefixOf (modName)) > 0 THEN
+    IF Text.BLen (PrefixOf (modName)) > 0 THEN
       CellLine ('STATE', cellPath, Suffix (PrefixOf (modName), '_m9init'))
     ELSE
       CellLine ('STATE', cellPath, Suffix (modName, '_m9init'))
@@ -2879,25 +3063,26 @@ END CellReport ;
    its key would be (modpic/NAME-KEY/, header beside it), so that a later
    cell importing it loads THIS object and not a second copy; a program
    cell into cells/NAME-KEY/, its main renamed m9_cell_main *)
-PROCEDURE CellBuild (RO name: STR) : BOOL
+PROCEDURE CellBuild (RO name: UTF) : BOOL
   RAISES ValueRange, IndexError, Io.IOError =
 VAR
-  rt, rtObjs, so : STR ;
+  rt, rtObjs, so : UTF ;
   ok : BOOL ;
   i, rc : I64 ;
 BEGIN
   rt := RtDir () ;
-  IF LEN (rt) = 0 THEN
+  IF Text.BLen (rt) = 0 THEN
     Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
     RETURN FALSE
   END ;
+  IF NOT CacheGenAll () THEN RETURN FALSE END ;
   FOR i := 0 TO norder - 1 DO
-    IF NOT DynStr.Eq (order[i], modName) THEN
+    IF NOT Text.Eq (order[i], modName) THEN
       IF NOT CacheModule (i, rt) THEN RETURN FALSE END
     END
   END ;
   rtObjs := CacheRuntime (rt, ok) ;
-  IF NOT ok OR LEN (rtObjs) = 0 THEN
+  IF NOT ok OR Text.BLen (rtObjs) = 0 THEN
     Io.ErrLine ('m9c: --cell needs the runtime sources beside m9rt.h') ;
     RETURN FALSE
   END ;
@@ -2942,20 +3127,21 @@ END CellBuild ;
    program's own C -- which the caller has just written into the
    scratch directory -- compiled and linked against them, and renamed
    to its key *)
-PROCEDURE RunBuild (RO name: STR) : BOOL
+PROCEDURE RunBuild (RO name: UTF) : BOOL
   RAISES ValueRange, IndexError, Io.IOError =
 VAR
-  rt, rtObjs, tmp : STR ;
+  rt, rtObjs, tmp : UTF ;
   ok : BOOL ;
   i, rc : I64 ;
 BEGIN
   rt := RtDir () ;
-  IF LEN (rt) = 0 THEN
+  IF Text.BLen (rt) = 0 THEN
     Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
     RETURN FALSE
   END ;
+  IF NOT CacheGenAll () THEN RETURN FALSE END ;
   FOR i := 0 TO norder - 1 DO
-    IF NOT DynStr.Eq (order[i], modName) THEN
+    IF NOT Text.Eq (order[i], modName) THEN
       IF NOT CacheModule (i, rt) THEN RETURN FALSE END
     END
   END ;
@@ -2968,11 +3154,11 @@ BEGIN
   RunIncludes (rt) ;
   Word (Join (work, Suffix (name, '.c'))) ;
   FOR i := 0 TO norder - 1 DO
-    IF NOT DynStr.Eq (order[i], modName) THEN
+    IF NOT Text.Eq (order[i], modName) THEN
       Word (Join (ModDir (i), Suffix (order[i], '.o')))
     END
   END ;
-  IF LEN (rtObjs) = 0 THEN
+  IF Text.BLen (rtObjs) = 0 THEN
     IF NOT AddRuntime (rt) THEN RETURN FALSE END
   ELSE
     FOR i := 0 TO 3 DO
@@ -3009,34 +3195,34 @@ END RunBuild ;
    something that is not a parameter -- because that is the doc and
    the signature disagreeing rather than a gap, and it is said in the
    document as well as counted. *)
-PROCEDURE DocText (root: PTR Ast.Node ; RO name: STR) : STR
+PROCEDURE DocText (root: PTR Ast.Node ; RO name: UTF) : UTF
   RAISES IndexError =
 VAR
   st : Doc.Stats ;
-  txt : STR ;
-  d : PTR DynStr.DString IN pool ;
+  txt : UTF ;
+  d : PTR DynUtf.DString IN pool ;
 BEGIN
   txt := Doc.Text (pool, root, name, st) ;
   IF verbose THEN
     (* ONE LINE, and shaped so a gate can add it up: docdiff sums
        these across the library rather than recomputing what the
        tool already measured. *)
-    d := DynStr.New (pool) ;
-    DynStr.Append (d, 'doc ') ;
-    DynStr.Append (d, name) ;
-    DynStr.Append (d, ' procs ') ;
-    DynStr.AppendI64 (d, st.procsDoc) ;
-    DynStr.AppendChar (d, '/') ;
-    DynStr.AppendI64 (d, st.procs) ;
-    DynStr.Append (d, ' others ') ;
-    DynStr.AppendI64 (d, st.othersDoc) ;
-    DynStr.AppendChar (d, '/') ;
-    DynStr.AppendI64 (d, st.others) ;
-    DynStr.Append (d, ' paramlines ') ;
-    DynStr.AppendI64 (d, st.paramsDoc) ;
-    DynStr.Append (d, ' drift ') ;
-    DynStr.AppendI64 (d, st.unknownParam) ;
-    Io.ErrLine (DynStr.View (d))
+    d := DynUtf.New (pool) ;
+    DynUtf.Append (d, 'doc ') ;
+    DynUtf.Append (d, name) ;
+    DynUtf.Append (d, ' procs ') ;
+    DynUtf.AppendI64 (d, st.procsDoc) ;
+    DynUtf.AppendChar (d, '/') ;
+    DynUtf.AppendI64 (d, st.procs) ;
+    DynUtf.Append (d, ' others ') ;
+    DynUtf.AppendI64 (d, st.othersDoc) ;
+    DynUtf.AppendChar (d, '/') ;
+    DynUtf.AppendI64 (d, st.others) ;
+    DynUtf.Append (d, ' paramlines ') ;
+    DynUtf.AppendI64 (d, st.paramsDoc) ;
+    DynUtf.Append (d, ' drift ') ;
+    DynUtf.AppendI64 (d, st.unknownParam) ;
+    Io.ErrLine (DynUtf.ViewIn (pool, d))
   END ;
   IF st.unknownParam > 0 THEN
     DiagN ('m9c: ', st.unknownParam,
@@ -3049,7 +3235,7 @@ END DocText ;
 
 (* the same declarations as data.  A fresh Stats, so that the counts
    -v reports come from the page once and not twice. *)
-PROCEDURE JsonText (root: PTR Ast.Node ; RO name: STR) : STR
+PROCEDURE JsonText (root: PTR Ast.Node ; RO name: UTF) : UTF
   RAISES IndexError =
 VAR st : Doc.Stats ;
 BEGIN
@@ -3062,11 +3248,11 @@ END JsonText ;
 (* the review page, with the checker's own counts handed to it.  The
    page module is a client of the tree and does not import Sem; this
    is where the two meet, as a driver is where Delim meets Zip. *)
-PROCEDURE ReviewText (root: PTR Ast.Node ; RO name: STR) : STR =
+PROCEDURE ReviewText (root: PTR Ast.Node ; RO name: UTF) : UTF =
 VAR
   st : SLICE OF Review.Stat ;
-  tw : SLICE OF STR ;
-  d : PTR DynStr.DString IN pool ;
+  tw, sc, ss, ad : SLICE OF UTF ;
+  d : PTR DynUtf.DString IN pool ;
   i, j, n : I64 ;
 BEGIN
   n := Sem.StatKinds ;
@@ -3077,22 +3263,28 @@ BEGIN
     st[i].skipped := Sem.StatSkipped (i) ;
     (* the lines of the first sites passed over, as the page prints
        them; `...' when the checker met more than it kept *)
-    d := DynStr.New (pool) ;
+    d := DynUtf.New (pool) ;
     FOR j := 0 TO Sem.StatLines (i) - 1 DO
-      IF j > 0 THEN DynStr.Append (d, ', ') END ;
-      DynStr.AppendI64 (d, Sem.StatLine (i, j))
+      IF j > 0 THEN DynUtf.Append (d, ', ') END ;
+      DynUtf.AppendI64 (d, Sem.StatLine (i, j))
     END ;
     IF Sem.StatSkipped (i) > Sem.StatLines (i) THEN
-      DynStr.Append (d, ', ...')
+      DynUtf.Append (d, ', ...')
     END ;
-    st[i].lines := DynStr.View (d)
+    st[i].lines := DynUtf.ViewIn (pool, d)
   END ;
-  tw := NEW (pool, STR, Sem.ThreadWrites ()) ;
+  tw := NEW (pool, UTF, Sem.ThreadWrites ()) ;
   FOR i := 0 TO LEN (tw) - 1 DO tw[i] := Sem.ThreadWrite (i) END ;
-  RETURN Review.Page (root, name, TRUE, st, tw)
+  sc := NEW (pool, UTF, Sem.StaleCalls ()) ;
+  FOR i := 0 TO LEN (sc) - 1 DO sc[i] := Sem.StaleCall (i) END ;
+  ss := NEW (pool, UTF, Sem.StrSites ()) ;
+  FOR i := 0 TO LEN (ss) - 1 DO ss[i] := Sem.StrSite (i) END ;
+  ad := NEW (pool, UTF, Sem.AdrSites ()) ;
+  FOR i := 0 TO LEN (ad) - 1 DO ad[i] := Sem.AdrSite (i) END ;
+  RETURN Review.Page (root, name, TRUE, st, tw, sc, ss, ad)
 END ReviewText ;
 
-PROCEDURE ParseText (RO src: STR ; RO path: STR) : Ast.Kid
+PROCEDURE ParseText (RO src: UTF ; RO path: UTF) : Ast.Kid
   RAISES ValueRange =
 VAR
   p : Parse.Parser ;
@@ -3113,7 +3305,7 @@ BEGIN
        one `<>` in a file gave `981 parse errors` and no line. *)
     i := 0 ;
     WHILE i < p.nkept AND i < 8 DO
-      IF lineShift > 0 AND DynStr.Eq (path, shiftPath) AND p.errs[i].line > lineShift THEN
+      IF lineShift > 0 AND Text.Eq (path, shiftPath) AND p.errs[i].line > lineShift THEN
         Diag2 (Cat (path, ':'), p.errs[i].line - lineShift, p.errs[i].col,
                ': parse: ', p.errs[i].msg)
       ELSE
@@ -3130,10 +3322,10 @@ BEGIN
   RETURN SOME (root)
 END ParseText ;
 
-PROCEDURE ParseFile (RO path: STR) : Ast.Kid
+PROCEDURE ParseFile (RO path: UTF) : Ast.Kid
   RAISES Io.IOError, ValueRange =
 BEGIN
-  RETURN ParseText (Io.ReadFile (pool, path), path)
+  RETURN ParseText (UTF (pool, Io.ReadFileUtf (path)), path)
 END ParseFile ;
 
 (* The two consumers want different closures, and conflating them is
@@ -3175,16 +3367,16 @@ BEGIN
 END Absorb ;
 
 (* remember a root so its own imports can be walked later *)
-PROCEDURE Keep (KEPT root: PTR Ast.Node ; RO KEPT name: STR ; far: BOOL) =
+PROCEDURE Keep (KEPT root: PTR Ast.Node ; RO KEPT name: UTF ; far: BOOL) =
 VAR
   nb : SLICE OF Ast.Kid ;
-  nn : SLICE OF STR ;
+  nn : SLICE OF UTF ;
   nf : SLICE OF BOOL ;
   i : I64 ;
 BEGIN
   IF ndeps = LEN (depRoots) THEN
     nb := NEW (pool, Ast.Kid, 2 * LEN (depRoots) + 8) ;
-    nn := NEW (pool, STR, 2 * LEN (depRoots) + 8) ;
+    nn := NEW (pool, UTF, 2 * LEN (depRoots) + 8) ;
     nf := NEW (pool, BOOL, 2 * LEN (depRoots) + 8) ;
     FOR i := 0 TO ndeps - 1 DO
       nb[i] := depRoots[i] ;
@@ -3216,7 +3408,7 @@ END Keep ;
    (m9lsp, m9edit) accept only positioned lines, so a cell with a
    foreign unit came back rejected with ZERO findings.  Diag.Parse
    reads this line now, and a pointer at the unit beats a name.     *)
-PROCEDURE ScanUnsafe (root: PTR Ast.Node ; RO path: STR ;
+PROCEDURE ScanUnsafe (root: PTR Ast.Node ; RO path: UTF ;
                       trusted: BOOL) RAISES ValueRange =
 VAR i : I64 ;
 BEGIN
@@ -3224,14 +3416,14 @@ BEGIN
   IF trusted THEN RETURN END ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN
-      IF LEN (u.b) > 0 THEN
+      IF Text.BLen (u.bu) > 0 THEN
         Diag2 (Cat (path, ':'), u.line, u.col,
-               ': no-unsafe: foreign unit ', u.a) ;
+               ': no-unsafe: foreign unit ', u.au) ;
         nunsafe := nunsafe + 1 ;
         failed := TRUE
       ELSIF u.f1 THEN
         Diag2 (Cat (path, ':'), u.line, u.col,
-               ': no-unsafe: UNSAFE unit ', u.a) ;
+               ': no-unsafe: UNSAFE unit ', u.au) ;
         nunsafe := nunsafe + 1 ;
         failed := TRUE
       END
@@ -3240,13 +3432,13 @@ BEGIN
 END ScanUnsafe ;
 
 (* the source of a module named by an IMPORT, or a diagnosis *)
-PROCEDURE Fetch (RO name: STR ; VAR path: STR ; VAR ok: BOOL ;
-                 VAR trusted: BOOL) : STR =
+PROCEDURE Fetch (RO name: UTF ; VAR path: UTF ; VAR ok: BOOL ;
+                 VAR trusted: BOOL) : UTF =
 BEGIN
   RETURN FindModule (name, path, ok, trusted)
 END Fetch ;
 
-PROCEDURE Missing (RO name: STR) =
+PROCEDURE Missing (RO name: UTF) =
 BEGIN
   Diag ('m9c: cannot find module ', name,
         ' on the search path (-I, $M9LIBRARY)') ;
@@ -3260,9 +3452,9 @@ END Missing ;
    through a dependency would be marked loaded and then skipped when
    the main module asks for it by name, and its #include would go
    missing.  Two passes cost one walk and remove that whole class. *)
-PROCEDURE LoadDirect (RO KEPT name: STR) RAISES ValueRange =
+PROCEDURE LoadDirect (RO KEPT name: UTF) RAISES ValueRange =
 VAR
-  path, src : STR ;
+  path, src : UTF ;
   ok, trusted : BOOL ;
 BEGIN
   IF IsLoaded (name) THEN RETURN END ;
@@ -3279,13 +3471,13 @@ BEGIN
   END
 END LoadDirect ;
 
-PROCEDURE LoadIndirect (RO KEPT name: STR) RAISES ValueRange ;
+PROCEDURE LoadIndirect (RO KEPT name: UTF) RAISES ValueRange ;
 
 (* every module an import walk reaches.  The name is marked BEFORE the
    recursion, which is what makes a cycle terminate instead of
    recurring: M9 has no rule against mutual imports and the compiler
    should not acquire one by crashing. *)
-PROCEDURE WalkImports (root: PTR Ast.Node ; direct: BOOL ; RO KEPT owner: STR)
+PROCEDURE WalkImports (root: PTR Ast.Node ; direct: BOOL ; RO KEPT owner: UTF)
   RAISES ValueRange =
 VAR i, j, k : I64 ;
 BEGIN
@@ -3304,11 +3496,11 @@ BEGIN
                      module already loaded is still imported, and the
                      order is computed from the graph, not from who
                      got here first *)
-                  IF LEN (owner) > 0 THEN AddEdge (owner, id.a) END ;
+                  IF Text.BLen (owner) > 0 THEN AddEdge (owner, id.au) END ;
                   IF direct THEN
-                    LoadDirect (id.a)
+                    LoadDirect (id.au)
                   ELSE
-                    LoadIndirect (id.a)
+                    LoadIndirect (id.au)
                   END
                 END
               END
@@ -3323,9 +3515,9 @@ END WalkImports ;
 (* reached only through another module: the checker needs it, the
    generated header does not name it.  Post-order, so its own
    dependencies are registered before it is. *)
-PROCEDURE LoadIndirect (RO KEPT name: STR) RAISES ValueRange =
+PROCEDURE LoadIndirect (RO KEPT name: UTF) RAISES ValueRange =
 VAR
-  path, src : STR ;
+  path, src : UTF ;
   ok, trusted : BOOL ;
 BEGIN
   IF IsLoaded (name) THEN RETURN END ;
@@ -3352,7 +3544,7 @@ END LoadIndirect ;
    the generated includes; a fully-named command line must still
    produce the same bytes it always did.  Its root is kept so that
    the gaps it leaves can be filled afterwards. *)
-PROCEDURE LoadDep (RO KEPT path: STR) RAISES Io.IOError, ValueRange =
+PROCEDURE LoadDep (RO KEPT path: UTF) RAISES Io.IOError, ValueRange =
 BEGIN
   IF IsLoaded (BaseName (path)) THEN RETURN END ;
   MarkLoaded (BaseName (path)) ;
@@ -3392,52 +3584,77 @@ END FillGaps ;
    two, and until now m9c was on the wrong side of it. *)
 (* a checker message, `LINE:COL ctx: msg`, with lineShift taken off
    its line: an expression cell's wrapper is not the reader's text *)
-PROCEDURE Unshift (RO m: STR) : STR =
+PROCEDURE Unshift (RO m: UTF) : UTF =
 VAR
   i, n : I64 ;
   scratch : POOL ;
-  d : PTR DynStr.DString IN scratch ;
+  d : PTR DynUtf.DString IN scratch ;
 BEGIN
   IF lineShift = 0 THEN RETURN m END ;
   i := 0 ;
   n := 0 ;
-  WHILE i < LEN (m) AND m[i] >= '0' AND m[i] <= '9' DO
-    n := n * 10 + (ORD (m[i]) - 48) ;
+  WHILE i < Text.BLen (m) AND B (m, i) >= ORD ('0') AND B (m, i) <= ORD ('9') DO
+    n := n * 10 + (B (m, i) - 48) ;
     i := i + 1
   END ;
-  IF i = 0 OR i >= LEN (m) OR m[i] # ':' THEN RETURN m END ;
-  d := DynStr.New (scratch) ;
+  IF i = 0 OR i >= Text.BLen (m) OR B (m, i) # ORD (':') THEN RETURN m END ;
+  d := DynUtf.New (scratch) ;
   IF n > lineShift THEN
-    DynStr.AppendI64 (d, n - lineShift) ;
-    DynStr.Append (d, SLICE (m, i, LEN (m) - i))
+    DynUtf.AppendI64 (d, n - lineShift) ;
+    DynUtf.Append (d, SLICE (m, i, Text.BLen (m) - i))
   ELSE
     (* on the wrapper's own line: a message about the statement as a
        whole, which is the cell's expression from its start *)
     i := i + 1 ;
-    WHILE i < LEN (m) AND m[i] >= '0' AND m[i] <= '9' DO i := i + 1 END ;
-    DynStr.Append (d, '1:1') ;
-    DynStr.Append (d, SLICE (m, i, LEN (m) - i))
+    WHILE i < Text.BLen (m) AND B (m, i) >= ORD ('0') AND B (m, i) <= ORD ('9') DO i := i + 1 END ;
+    DynUtf.Append (d, '1:1') ;
+    DynUtf.Append (d, SLICE (m, i, Text.BLen (m) - i))
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynUtf.View (d)
 END Unshift ;
 
 (* does hay hold needle?  Small strings, a naive scan *)
-PROCEDURE Holds (RO hay, needle: STR) : BOOL =
+PROCEDURE Holds (RO hay, needle: UTF) : BOOL =
 VAR i, j : I64 ;
 BEGIN
-  FOR i := 0 TO LEN (hay) - LEN (needle) DO
+  FOR i := 0 TO Text.BLen (hay) - Text.BLen (needle) DO
     j := 0 ;
-    WHILE j < LEN (needle) AND hay[i + j] = needle[j] DO j := j + 1 END ;
-    IF j = LEN (needle) THEN RETURN TRUE END
+    WHILE j < Text.BLen (needle) AND B (hay, i + j) = B (needle, j) DO j := j + 1 END ;
+    IF j = Text.BLen (needle) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END Holds ;
+
+(* a checker diagnostic, `LINE:COL CTX: MSG', in the FILE:LINE:COL:
+   shape the parser's and every tool's: `X.m9:12:14: X.F: MSG'.  The
+   checker's own text stays as it is -- the twins compare it (semdiff,
+   probediff) -- and only what m9c prints carries the file (Alex,
+   2026-10-22, the review's tier 3: checker messages had no file) *)
+PROCEDURE Located (RO path: UTF ; RO m: UTF) : UTF =
+VAR i, j : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < Text.BLen (m) AND B (m, i) >= ORD ('0') AND B (m, i) <= ORD ('9') DO i := i + 1 END ;
+  IF i > 0 AND i < Text.BLen (m) AND B (m, i) = ORD (':') THEN
+    j := i + 1 ;
+    WHILE j < Text.BLen (m) AND B (m, j) >= ORD ('0') AND B (m, j) <= ORD ('9') DO j := j + 1 END ;
+    IF j > i + 1 AND j < Text.BLen (m) AND B (m, j) = ORD (' ') THEN
+      RETURN path + ':' + SLICE (m, 0, j) + ': ' + SLICE (m, j + 1, Text.BLen (m) - j - 1)
+    END
+  END ;
+  RETURN path + ': ' + m
+END Located ;
 
 PROCEDURE Report () : BOOL RAISES IndexError =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO Sem.ErrCount () - 1 DO
-    Io.ErrLine (Unshift (Sem.ErrAt (i)))
+    Io.ErrLine (Located (main, Unshift (Sem.ErrAt (i))))
+  END ;
+  (* the region judgement's shadow findings, under M9_REGIONS=1
+     (docs/region-plan.md): listed, never a refusal *)
+  FOR i := 0 TO Sem.RegionCount () - 1 DO
+    Io.ErrLine (Unshift (Sem.RegionAt (i)))
   END ;
   RETURN Sem.ErrCount () > 0
 END Report ;
@@ -3450,77 +3667,77 @@ END Report ;
    finds -- read from TOKENS, so nothing in a string or a comment
    counts -- because decision 24 wants every module named imported
    and a cell of one expression has nowhere to say so. *)
-PROCEDURE ShowImports (RO expr: STR ; withShow: BOOL) : STR RAISES ValueRange =
+PROCEDURE ShowImports (RO expr: UTF ; withShow: BOOL) : UTF RAISES ValueRange =
 VAR
   lx : Lex.Lexer ;
   tk, prev, cur : Lex.Token ;
-  out, path, k : STR ;
+  out, path, k : UTF ;
   ok, trusted, afterDot : BOOL ;
-  seen : PTR DynStr.DString IN pool ;
+  seen : PTR DynUtf.DString IN pool ;
 BEGIN
   out := '' ;
-  seen := DynStr.New (pool) ;
-  DynStr.Append (seen, ' ') ;
+  seen := DynUtf.New (pool) ;
+  DynUtf.Append (seen, ' ') ;
   IF withShow THEN
     out := 'IMPORT NbShow ; ' ;
-    DynStr.Append (seen, 'NbShow ')
+    DynUtf.Append (seen, 'NbShow ')
   END ;
   Lex.Init (lx, expr) ;
   afterDot := FALSE ;
   Lex.Next (lx, cur) ;
   LOOP
-    k := Lex.KindName (cur.kind) ;
-    IF DynStr.Eq (k, 'EOF') OR DynStr.Eq (k, 'Error') THEN EXIT END ;
+    k := UTF (Lex.KindName (cur.kind)) ;
+    IF Text.Eq (k, 'EOF') OR Text.Eq (k, 'Error') THEN EXIT END ;
     prev := cur ;
     Lex.Next (lx, cur) ;
-    IF DynStr.Eq (Lex.KindName (prev.kind), 'Ident') AND NOT afterDot AND
-       DynStr.Eq (Lex.KindName (cur.kind), 'Dot') THEN
-      IF NOT Holds (DynStr.View (seen), ' ' + prev.text + ' ') THEN
-        DynStr.Append (seen, prev.text + ' ') ;
+    IF Text.Eq (Lex.KindName (prev.kind), 'Ident') AND NOT afterDot AND
+       Text.Eq (Lex.KindName (cur.kind), 'Dot') THEN
+      IF NOT Holds (DynUtf.ViewIn (pool, seen), ' ' + prev.text + ' ') THEN
+        DynUtf.Append (seen, prev.text + ' ') ;
         tk := prev ;
         k := FindModule (tk.text, path, ok, trusted) ;
         IF ok THEN out := out + 'IMPORT ' + tk.text + ' ; ' END
       END
     END ;
-    afterDot := DynStr.Eq (Lex.KindName (prev.kind), 'Dot')
+    afterDot := Text.Eq (Lex.KindName (prev.kind), 'Dot')
   END ;
   RETURN out
 END ShowImports ;
 
 (* the NbShow call for a type, as the text before and after the
    expression; FALSE for a type nothing shows *)
-PROCEDURE ShowCall (RO ty: STR ; VAR pre, post: STR) : BOOL =
+PROCEDURE ShowCall (RO ty: UTF ; VAR pre, post: UTF) : BOOL =
 BEGIN
   post := ')' ;
-  IF DynStr.Eq (ty, 'I64') OR DynStr.Eq (ty, 'an integer literal') THEN
+  IF Text.Eq (ty, 'I64') OR Text.Eq (ty, 'an integer literal') THEN
     pre := 'NbShow.Int ('
-  ELSIF DynStr.Eq (ty, 'I32') OR DynStr.Eq (ty, 'I16') OR DynStr.Eq (ty, 'BYTE') THEN
+  ELSIF Text.Eq (ty, 'I32') OR Text.Eq (ty, 'I16') OR Text.Eq (ty, 'BYTE') THEN
     pre := 'NbShow.Int (I64 (' ;
     post := '))'
-  ELSIF DynStr.Eq (ty, 'F64') OR DynStr.Eq (ty, 'a real literal') THEN
+  ELSIF Text.Eq (ty, 'F64') OR Text.Eq (ty, 'a real literal') THEN
     pre := 'NbShow.Real ('
-  ELSIF DynStr.Eq (ty, 'F32') THEN
+  ELSIF Text.Eq (ty, 'F32') THEN
     pre := 'NbShow.Real (F64 (' ;
     post := '))'
-  ELSIF DynStr.Eq (ty, 'BOOL') THEN
+  ELSIF Text.Eq (ty, 'BOOL') THEN
     pre := 'NbShow.Bool ('
-  ELSIF DynStr.Eq (ty, 'CHAR') THEN
+  ELSIF Text.Eq (ty, 'CHAR') THEN
     pre := 'NbShow.Char ('
-  ELSIF DynStr.Eq (ty, 'SLICE OF CHAR') OR DynStr.Eq (ty, 'STR') THEN
+  ELSIF Text.Eq (ty, 'SLICE OF CHAR') OR Text.Eq (ty, 'STR') THEN
     pre := 'NbShow.Str ('
-  ELSIF DynStr.Eq (ty, 'SLICE OF I64') THEN
+  ELSIF Text.Eq (ty, 'SLICE OF I64') THEN
     pre := 'NbShow.Ints ('
-  ELSIF DynStr.Eq (ty, 'SLICE OF F64') THEN
+  ELSIF Text.Eq (ty, 'SLICE OF F64') THEN
     pre := 'NbShow.Reals ('
-  ELSIF DynStr.Eq (ty, 'SLICE OF BOOL') THEN
+  ELSIF Text.Eq (ty, 'SLICE OF BOOL') THEN
     pre := 'NbShow.Bools ('
-  ELSIF DynStr.Eq (ty, 'SLICE OF SLICE OF CHAR') OR DynStr.Eq (ty, 'SLICE OF STR') THEN
+  ELSIF Text.Eq (ty, 'SLICE OF SLICE OF CHAR') OR Text.Eq (ty, 'SLICE OF STR') THEN
     pre := 'NbShow.Strs ('
-  ELSIF DynStr.Eq (ty, 'GRID 2 OF F64') THEN
+  ELSIF Text.Eq (ty, 'GRID 2 OF F64') THEN
     pre := 'NbShow.Grid ('
-  ELSIF DynStr.Eq (ty, 'PTR Frame.Fr') THEN
+  ELSIF Text.Eq (ty, 'PTR Frame.Fr') THEN
     pre := 'NbShow.Table ('
-  ELSIF DynStr.Eq (ty, 'PTR Frame.Ts') THEN
+  ELSIF Text.Eq (ty, 'PTR Frame.Ts') THEN
     pre := 'NbShow.Series ('
   ELSE
     RETURN FALSE
@@ -3532,24 +3749,24 @@ END ShowCall ;
    for each exception the expression raises, each saying so.  A
    program body must handle what it raises, and M9 has no catch-all
    (report par 5), so the checker's list is the only honest one. *)
-PROCEDURE ShowHandlers (RO raises: STR ; VAR imports: STR) : STR =
+PROCEDURE ShowHandlers (RO raises: UTF ; VAR imports: UTF) : UTF =
 VAR
-  out, nm, q : STR ;
+  out, nm, q : UTF ;
   i, j, k : I64 ;
 BEGIN
   out := '' ;
   i := 0 ;
-  WHILE i < LEN (raises) DO
-    WHILE i < LEN (raises) AND raises[i] = ' ' DO i := i + 1 END ;
+  WHILE i < Text.BLen (raises) DO
+    WHILE i < Text.BLen (raises) AND B (raises, i) = ORD (' ') DO i := i + 1 END ;
     j := i ;
-    WHILE j < LEN (raises) AND raises[j] # ' ' DO j := j + 1 END ;
+    WHILE j < Text.BLen (raises) AND B (raises, j) # ORD (' ') DO j := j + 1 END ;
     IF j > i THEN
       nm := SLICE (raises, i, j - i) ;
-      IF LEN (out) = 0 THEN out := ' EXCEPT' END ;
+      IF Text.BLen (out) = 0 THEN out := ' EXCEPT' END ;
       out := out + ' | ' + nm + " : NbShow.Raised ('" + nm + "')" ;
       k := 0 ;
-      WHILE k < LEN (nm) AND nm[k] # '.' DO k := k + 1 END ;
-      IF k < LEN (nm) THEN
+      WHILE k < Text.BLen (nm) AND B (nm, k) # ORD ('.') DO k := k + 1 END ;
+      IF k < Text.BLen (nm) THEN
         q := SLICE (nm, 0, k) ;
         IF NOT Holds (imports, 'IMPORT ' + q + ' ;') THEN
           imports := imports + 'IMPORT ' + q + ' ; '
@@ -3564,49 +3781,49 @@ END ShowHandlers ;
 (* the expression's type, from a child m9c run with this command
    line and --type-of in place of --show ... --run/--cell: the checker
    keeps module state and checks one file a process *)
-PROCEDURE ShowProbe (VAR raises: STR) : STR RAISES ValueRange =
+PROCEDURE ShowProbe (VAR raises: UTF) : UTF RAISES ValueRange =
 VAR
-  self, a, ty : STR ;
+  self, a, ty : UTF ;
   i, nl : I64 ;
-  r : System.Result ;
+  r : System.ResultUtf ;
 BEGIN
-  self := System.Executable (pool) ;
-  IF LEN (self) = 0 THEN self := Io.Arg (pool, 0) END ;
+  self := System.ExecutableUtf (pool) ;
+  IF Text.BLen (self) = 0 THEN self := Io.ArgUtf (pool, 0) END ;
   nwords := 0 ;
   i := 1 ;
   WHILE i < Io.ArgCount () DO
-    a := Io.Arg (pool, i) ;
-    IF DynStr.Eq (a, '--run') OR DynStr.Eq (a, '--cell') THEN
+    a := Io.ArgUtf (pool, i) ;
+    IF Text.Eq (a, '--run') OR Text.Eq (a, '--cell') THEN
       Word ('--type-of') ;
-      Word (Io.Arg (pool, i + 1)) ;
+      Word (Io.ArgUtf (pool, i + 1)) ;
       i := Io.ArgCount ()
-    ELSIF NOT DynStr.Eq (a, '--show') THEN
+    ELSIF NOT Text.Eq (a, '--show') THEN
       Word (a)
     END ;
     i := i + 1
   END ;
-  r := System.Exec (pool, self, SLICE (words, 0, nwords), '', ChildEnv (self)) ;
-  IF LEN (r.err) > 0 THEN Io.Err (r.err) END ;
+  r := System.ExecUtf (pool, self, SLICE (words, 0, nwords), '', ChildEnv (self)) ;
+  IF Text.BLen (r.err) > 0 THEN Io.Err (r.err) END ;
   IF r.status # 0 THEN
     failed := TRUE ;
     Io.Halt (1)
   END ;
   (* two lines: the type, then the exceptions it raises *)
   ty := r.out ;
-  WHILE LEN (ty) > 0 AND (ty[LEN (ty) - 1] = 0AC OR ty[LEN (ty) - 1] = 0DC) DO
-    ty := SLICE (ty, 0, LEN (ty) - 1)
+  WHILE Text.BLen (ty) > 0 AND (B (ty, Text.BLen (ty) - 1) = 10 OR B (ty, Text.BLen (ty) - 1) = 13) DO
+    ty := SLICE (ty, 0, Text.BLen (ty) - 1)
   END ;
   raises := '' ;
   nl := 0 ;
-  WHILE nl < LEN (ty) AND ty[nl] # 0AC DO nl := nl + 1 END ;
-  IF nl < LEN (ty) THEN
-    raises := SLICE (ty, nl + 1, LEN (ty) - nl - 1) ;
+  WHILE nl < Text.BLen (ty) AND B (ty, nl) # 10 DO nl := nl + 1 END ;
+  IF nl < Text.BLen (ty) THEN
+    raises := SLICE (ty, nl + 1, Text.BLen (ty) - nl - 1) ;
     ty := SLICE (ty, 0, nl)
   END ;
   RETURN ty
 EXCEPT
 | Io.IOError (p) :
-    Diag ('m9c: cannot run ', p, '') ;
+    Diag ('m9c: cannot run ', UTF (p), '') ;
     failed := TRUE ;
     Io.Halt (1) ;
     RETURN ''
@@ -3614,9 +3831,11 @@ END ShowProbe ;
 
 VAR
   i : I64 ;
-  main, name, mainSrc : STR ;
+  main, name, mainSrc : UTF ;
+  rgEnv : UTF ;              (* M9_REGIONS: the region judgement's shadow *)
+  irEnv : UTF ;              (* M9_IRCHECK: the IR lowering's first step *)
   found, mainTrust, built : BOOL ;
-  showExpr, showType, showPre, showPost, showRaises, showImps, showArms : STR ;
+  showExpr, showType, showPre, showPost, showRaises, showImps, showArms : UTF ;
 
 BEGIN
   (* first, because --help and every default below ask where this
@@ -3629,27 +3848,29 @@ BEGIN
     Io.WriteLine ('usage: m9c FILE.m9 [DEP.m9 ...]') ;
     Io.WriteLine ("try 'm9c --help'") ;
     failed := TRUE
-  ELSIF IsHelp (Io.Arg (pool, 1)) THEN
+  ELSIF IsHelp (Io.ArgUtf (pool, 1)) THEN
     Help ()
   ELSE
     ScanArgs () ;
+    (* a refused argument has been said; nothing after it is meant *)
+    IF failed THEN Io.Halt (1) END ;
     (* --doc writes documentation and nothing else.  Combining it
        with a flag that produces an object or a program is not a
        thing to guess at -- one of the two was meant -- so it is
        refused rather than silently favoured. *)
-    IF doDoc AND (doCompile OR doLink OR LEN (lib) > 0) THEN
+    IF doDoc AND (doCompile OR doLink OR Text.BLen (lib) > 0) THEN
       Io.ErrLine ('m9c: --doc writes documentation, not objects;') ;
       Io.ErrLine ('  it cannot be combined with -c, -o, --ar or --so') ;
       failed := TRUE ;
       Io.Halt (1)
     END ;
-    IF doReview AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc) THEN
+    IF doReview AND (doCompile OR doLink OR Text.BLen (lib) > 0 OR doDoc) THEN
       Io.ErrLine ('m9c: --review checks and prints a page, and writes nothing;') ;
       Io.ErrLine ('  it cannot be combined with -c, -o, --ar, --so or --doc') ;
       failed := TRUE ;
       Io.Halt (1)
     END ;
-    IF doCheck AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc) THEN
+    IF doCheck AND (doCompile OR doLink OR Text.BLen (lib) > 0 OR doDoc) THEN
       Io.ErrLine ('m9c: --check writes nothing at all;') ;
       Io.ErrLine ('  it cannot be combined with -c, -o, --ar, --so or --doc') ;
       failed := TRUE ;
@@ -3658,15 +3879,15 @@ BEGIN
     (* --run builds where its cache says and runs what it built: an
        object, a library, a document or a kept C file named on the
        same line would be a second answer to "what is the output" *)
-    IF (doRun OR doCell) AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc OR
+    IF (doRun OR doCell) AND (doCompile OR doLink OR Text.BLen (lib) > 0 OR doDoc OR
                   doCheck OR doMake OR debug OR keepC OR ccFrom > 0 OR
-                  LEN (outDir) > 0) THEN
+                  Text.BLen (outDir) > 0) THEN
       Io.ErrLine ('m9c: --run builds into its cache and runs the program;') ;
       Io.ErrLine ('  only -I, -v and --no-unsafe may come before it') ;
       failed := TRUE ;
       Io.Halt (1)
     END ;
-    IF LEN (outDir) > 0 AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc) THEN
+    IF Text.BLen (outDir) > 0 AND (doCompile OR doLink OR Text.BLen (lib) > 0 OR doDoc) THEN
       Io.ErrLine ('m9c: --out-dir places the generated C;') ;
       Io.ErrLine ('  it cannot be combined with -c, -o, --ar, --so or --doc') ;
       failed := TRUE ;
@@ -3677,11 +3898,11 @@ BEGIN
        test depended on its output -- but a bare `m9c -v` has nothing
        to be verbose ABOUT, so it answers the version, which is what
        everyone typing it wants.  --version says so unconditionally. *)
-    IF doVersion OR (verbose AND LEN (main) = 0) THEN
+    IF doVersion OR (verbose AND Text.BLen (main) = 0) THEN
       Io.WriteLine ('m9c ' + Version) ;
       Io.Halt (0)
     END ;
-    IF LEN (main) = 0 THEN
+    IF Text.BLen (main) = 0 THEN
       Io.ErrLine ('m9c: no source file') ;
       failed := TRUE ;
       Io.Halt (1)
@@ -3692,7 +3913,7 @@ BEGIN
     (* -I first (leftmost wins), then $M9LIBRARY, then the main
        file's own directory: a module's neighbours are almost always
        its imports, which is why `m9c corpus/M9c.m9` needs no -I *)
-    DirAddPath (Io.Env (pool, 'M9LIBRARY'), TRUE) ;
+    DirAddPath (Io.EnvUtf (pool, 'M9LIBRARY'), TRUE) ;
     (* AND A BARE FILENAME NAMES THIS DIRECTORY.  DirOf answers empty
        for `Top.m9` -- it names no directory -- and DirAdd drops an
        empty string, so `m9c --make -o top Top.m9`, run in the very
@@ -3701,7 +3922,7 @@ BEGIN
        directory FILE.m9 came from", and for a bare name that is the
        current one; saying so here rather than in DirOf keeps
        DirOf's own answer (empty means no directory) true. *)
-    IF LEN (DirOf (main)) = 0 THEN DirAdd ('.', FALSE)
+    IF Text.BLen (DirOf (main)) = 0 THEN DirAdd ('.', FALSE)
     ELSE DirAdd (DirOf (main), FALSE) END ;
     (* Last, and only as a fallback: where the standard modules are
        installed -- beside this compiler when it has a library of its
@@ -3721,6 +3942,14 @@ BEGIN
        for -- the path search read it again and then said `cannot find'
        (2026-10-10) *)
     IF NOT found AND readNotText THEN Io.Halt (1) END ;
+    (* a PATH that is not there is not there: `m9c --check
+       no/such/dir/Text.m9' checked the library's Text and exited 0
+       (the review's F6).  Only a bare module name is searched for. *)
+    IF NOT found AND (Text.BLen (DirOf (main)) > 0 OR
+                      (Text.BLen (main) > 0 AND B (main, 0) = ORD ('/'))) THEN
+      Complain ('cannot read', main) ;
+      Io.Halt (1)
+    END ;
     IF NOT found THEN
       mainSrc := FindModule (name, main, found, mainTrust) ;
       IF NOT found THEN
@@ -3747,13 +3976,13 @@ BEGIN
                    'END ' + name + '.' + 0AC
       ELSE
         showType := ShowProbe (showRaises) ;
-        IF DynStr.Eq (showType, '<void>') THEN
+        IF Text.Eq (showType, '<void>') THEN
           Io.ErrLine ('m9c: this has no value: a call of a procedure that answers') ;
           Io.ErrLine ('  nothing, so it cannot be shown; write it in a program cell') ;
           failed := TRUE ;
           Io.Halt (1)
         END ;
-        IF LEN (showType) = 0 THEN
+        IF Text.BLen (showType) = 0 THEN
           (* the checker's softness: a name it cannot resolve has no
              type and no diagnostic -- `Math.Nosuch` passes --check
              and only the generator refuses it (the owed list) *)
@@ -3781,7 +4010,7 @@ BEGIN
     MarkLoaded (name) ;
 
     i := 1 ;
-    WHILE LEN (SourceAt (i)) > 0 DO
+    WHILE Text.BLen (SourceAt (i)) > 0 DO
       LoadDep (SourceAt (i)) ;
       i := i + 1
     END ;
@@ -3842,6 +4071,8 @@ BEGIN
         END
       END ;
       Sem.LoadFile (root) ;
+      rgEnv := Io.EnvUtf (pool, 'M9_REGIONS') ;
+      Sem.SetRegions (Text.BLen (rgEnv) = 1 AND B (rgEnv, 0) = ORD ('1')) ;
       Sem.CheckFile (root) ;
       IF Report () THEN
         DiagN ('m9c: ', Sem.ErrCount (), ' errors in ', main) ;
@@ -3882,9 +4113,17 @@ BEGIN
       FOR i := 0 TO npfxSpec - 1 DO
         Gen.SetPrefix (SLICE (pfxSpec[i], 0, EqAt (pfxSpec[i])),
                        SLICE (pfxSpec[i], EqAt (pfxSpec[i]) + 1,
-                              LEN (pfxSpec[i]) - EqAt (pfxSpec[i]) - 1))
+                              Text.BLen (pfxSpec[i]) - EqAt (pfxSpec[i]) - 1))
       END ;
+      irEnv := Io.EnvUtf (pool, 'M9_IRCHECK') ;
+      Gen.SetIrCheck (Text.BLen (irEnv) = 1 AND B (irEnv, 0) = ORD ('1')) ;
       Gen.Emit (name) ;
+      (* the IR lowering's first step: where the tree and the emitter
+         disagree on what can raise (docs/ir-plan.md), on stderr *)
+      IF Text.BLen (Gen.IrReport ()) > 0 THEN
+        Io.ErrLine (Cat ('m9c: ircheck ', Cat (name, ':'))) ;
+        Io.ErrLine (Gen.IrReport ())
+      END ;
       IF Gen.Errs () > 0 THEN
         (* each error with its line, the way g1 always did on the
            host side -- a count alone cost a bisect every time, and
@@ -3956,7 +4195,7 @@ BEGIN
               Drop (Suffix (name, '.c')) ;
               IF doLink THEN Drop (Suffix (name, '.h')) END
             END ;
-            IF LEN (lib) > 0 THEN
+            IF Text.BLen (lib) > 0 THEN
               IF NOT Archive (name) THEN failed := TRUE END
             END
           ELSE
@@ -3969,7 +4208,7 @@ BEGIN
   IF failed THEN Io.Halt (1) END
 EXCEPT
 | Io.IOError (path) :
-    Complain ('cannot read or write', path) ;
+    Complain ('cannot read or write', UTF (path)) ;
     Io.Halt (1)
 | ValueRange :
     Complain ('source is not text', main) ;

@@ -1,0 +1,14 @@
+(* a caller in another module that declares PtyDef.Error, as it must:
+   accepted, and the handler catches what the call raises.  0.25.0 before
+   the fix refused it ("unhandled RAISES Error from call to f") *)
+MODULE PtyUse ;
+IMPORT PtyDef, Io ;
+PROCEDURE Run (f: PtyDef.Mk) RAISES PtyDef.Error =
+BEGIN
+  f (-1)
+END Run ;
+BEGIN
+  Run (PtyDef.One)
+EXCEPT
+| PtyDef.Error (m) : Io.WriteLine (m)
+END PtyUse.

@@ -1,0 +1,12 @@
+(* EXPECT: an ARRAY holds at least one element; its count is -3 *)
+(* The count of an ARRAY is a constant of at least 1.  ARRAY -3 OF
+   passed the checker and the generator refused it as `array count form
+   unsupported yet' (2026-10-22, the review's F4). *)
+MODULE m ;
+CONST N = 4 ;
+VAR
+  a : ARRAY 2 * 2 OF I64 ;
+  b : ARRAY N OF I64 ;
+  c : ARRAY -3 OF I64 ;
+BEGIN
+END m.

@@ -1,0 +1,15 @@
+(* a procedure type whose RAISES names this module's own exception, bare:
+   it means PtyDef.Error wherever the type is used (zarrm9's 0.25 report,
+   2026-10-25; run.sh holds PtyUse, PtyAlias and PtyOwn against it) *)
+DEFINITION MODULE PtyDef ;
+EXCEPTION Error (RO msg: STR) ;
+TYPE Mk = PROCEDURE (x: I64) RAISES Error ;
+PROCEDURE One (x: I64) RAISES Error ;
+END PtyDef.
+
+IMPLEMENTATION MODULE PtyDef ;
+PROCEDURE One (x: I64) RAISES Error =
+BEGIN
+  IF x < 0 THEN RAISE Error ('PtyDef.Error raised') END
+END One ;
+END PtyDef.

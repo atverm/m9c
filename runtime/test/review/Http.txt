@@ -2,10 +2,10 @@ REVIEW Http -- 72 procedures with a body, 58 of them functions; 25 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              58
-  assignments                                   490
-  arguments                                     640
+  assignments                                   491
+  arguments                                     641
   RETURN values                                 127
-  operands of a comparison or an operator       525
+  operands of a comparison or an operator       524
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              1
     of them [REENTRANT]                           9
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     6   writes or reads in ConnRead, writes or reads in ConnRead, reads in SendAll, reads in SendAll, writes or reads in OpenConn, writes or reads in OpenConn
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                       13
   NEW in the frame                                0
   NEW in a named pool                            13
+  calls of a STR form with a UTF twin             4   Io.AppendFileBytes -> Io.AppendFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf, Io.AppendFileBytes -> Io.AppendFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf
+  STR subscripts, writes and LEN                156   len line, len name, len name, index line[i], index name[i], len line, +150 more

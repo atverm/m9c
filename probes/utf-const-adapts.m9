@@ -1,0 +1,32 @@
+(* EXPECT: cannot assign SLICE OF CHAR to UTF *)
+MODULE m ;
+(* a CONST naming a string literal adapts to a UTF as the literal does
+   (decision 66): assigned, passed, answered, joined by + on either
+   side; a STR variable still does not *)
+CONST
+  Greeting = 'hello' ;
+  Dot = '.' ;
+VAR
+  u : UTF ;
+  s : STR ;
+
+PROCEDURE Id (x: UTF) : UTF =
+BEGIN
+  RETURN x
+END Id ;
+
+PROCEDURE Ans () : UTF =
+BEGIN
+  RETURN Greeting
+END Ans ;
+
+BEGIN
+  u := Greeting ;
+  u := Dot ;
+  u := Id (Greeting) ;
+  u := Ans () ;
+  u := u + Dot ;
+  u := Greeting + u ;
+  s := 'abc' ;
+  u := s
+END m.

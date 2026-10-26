@@ -68,7 +68,7 @@ want(os.path.isfile(os.path.join(work, "M9Notebook.m9data", "roots.f64s.parquet"
 want(text("use", "stdout") == "5 roots, sum 6.146264\n",
      "a later cell reads what an earlier one stored: %r" % text("use", "stdout"))
 want(not outputs("use", "error"), "the reading cell is no error")
-want("6:8 Narrow body: integer literal 40000000000 does not fit I32"
+want("Narrow.m9:6:8: Narrow body: integer literal 40000000000 does not fit I32"
      in text("narrow", "stderr"),
      "a refusal carries the cell's own line:col: %r" % text("narrow", "stderr"))
 e = outputs("narrow", "error")

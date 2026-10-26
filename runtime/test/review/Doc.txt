@@ -1,11 +1,11 @@
-REVIEW Doc -- 27 procedures with a body, 23 of them functions; 2 headings in a DEFINITION
+REVIEW Doc -- 29 procedures with a body, 25 of them functions; 2 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              23
-  assignments                                   138
-  arguments                                     397
-  RETURN values                                  40
-  operands of a comparison or an operator       191
+  functions answering on every path              25
+  assignments                                   141
+  arguments                                     495
+  RETURN values                                  45
+  operands of a comparison or an operator       206
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -15,7 +15,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   local pools                                     2   Qual.pool, GroupParams.pool
   pool parameters                                11   SigText, ParamNames, FieldsJson, ParamsJson, ResultText, RaisesJson, +5 more
   KEPT parameters                                 2   Collect, Gather
-  HEAP named                                      1   Cat3
+  HEAP named                                      2   Cat3, Cat3
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
@@ -29,10 +29,14 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
   RAISE statements                                0
-  handlers                                        0
+  handlers                                        1
   NEW in the frame                                0
   NEW in a named pool                             2
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

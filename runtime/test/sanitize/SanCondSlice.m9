@@ -1,0 +1,40 @@
+MODULE SanCondSlice ;
+
+(* WANT: cond slice: no Q, IndexError *)
+
+(* The compiler review's G6 (2026-10-21): a raising argument inside an
+   IF condition is not hoisted, and a failed SLICE check answers its
+   offset 0 with the REQUESTED length, so Count was called with
+   {p, 100000} over a 3-character string and read past it (ASan:
+   heap-buffer-overflow).  The SLICE must raise before Count runs. *)
+
+IMPORT Io, Text ;
+
+VAR
+  s, out : STR ;
+
+PROCEDURE Count (RO t : STR) : I64 =
+VAR
+  n : I64 ;
+  c : CHAR ;
+BEGIN
+  n := 0 ;
+  FOR c IN t DO
+    IF c = 'Q' THEN n := n + 1 END
+  END ;
+  RETURN n
+END Count ;
+
+PROCEDURE Probe (RO t : STR ; k : I64) : STR =
+BEGIN
+  IF Count (SLICE (t, 1, k)) > 0 THEN RETURN ' a Q beyond the string' END ;
+  RETURN ' no Q'
+EXCEPT
+| IndexError : RETURN ' IndexError'
+END Probe ;
+
+BEGIN
+  s := Text.Upper ('abc') ;
+  out := 'cond slice:' + Probe (s, 2) + ',' + Probe (s, 100000) ;
+  Io.WriteLine (out)
+END SanCondSlice.

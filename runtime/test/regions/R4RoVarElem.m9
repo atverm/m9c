@@ -1,0 +1,18 @@
+MODULE R4RoVarElem ;
+(* a literal element of a local slice handed to a VAR STR parameter the callee writes through *)
+IMPORT Io ;
+PROCEDURE Up (VAR s : STR) =
+BEGIN
+  s[0] := 'X'
+END Up ;
+PROCEDURE Fill () =
+VAR xs : SLICE OF STR ;
+BEGIN
+  xs := NEW (STR, 2) ;
+  xs[0] := 'abc' ;
+  Up (xs[0]) ;
+  Io.WriteLine (xs[0])
+END Fill ;
+BEGIN
+  Fill ()
+END R4RoVarElem.

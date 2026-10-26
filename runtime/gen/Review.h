@@ -3,7 +3,7 @@
 #define M9G_Review_H
 #include "m9rt.h"
 #include "Ast.h"
-#include "DynStr.h"
+#include "DynUtf.h"
 #include "Text.h"
 
 void Review_m9init (m9_state *err);
@@ -14,13 +14,17 @@ typedef struct Review_Counts Review_Counts;
 #define Review_LabelWidth INT64_C(44)
 #define Review_MaxSites INT64_C(6)
 
-#ifndef M9SL_m9_arr_14_m9_sl_CHAR
-#define M9SL_m9_arr_14_m9_sl_CHAR
-typedef struct { m9_sl_CHAR v[14]; } m9_arr_14_m9_sl_CHAR;
+#ifndef M9SL_m9_arr_15_m9_sl_CHAR
+#define M9SL_m9_arr_15_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[15]; } m9_arr_15_m9_sl_CHAR;
 #endif
 #ifndef M9SL_m9_sl_Review_Stat
 #define M9SL_m9_sl_Review_Stat
 typedef struct { Review_Stat *p; int64_t len; } m9_sl_Review_Stat;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 #endif
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
@@ -29,12 +33,12 @@ typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 
 typedef struct Review_Stat Review_Stat;
 struct Review_Stat {
-  m9_sl_CHAR name;
+  m9_sl_UTF8 name;
   int64_t checked;
   int64_t skipped;
-  m9_sl_CHAR lines;
+  m9_sl_UTF8 lines;
 };
 
-m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl_Review_Stat stats, m9_sl_m9_sl_CHAR writes, m9_state *err);
+m9_sl_UTF8 Review_Page (Ast_Node * root, m9_sl_UTF8 modName, bool checked, m9_sl_Review_Stat stats, m9_sl_m9_sl_UTF8 writes, m9_sl_m9_sl_UTF8 stale, m9_sl_m9_sl_UTF8 strs, m9_sl_m9_sl_UTF8 adrs, m9_state *err);
 
 #endif

@@ -15,7 +15,7 @@ int main (int argc, char **argv)
   char *bytes;
   uint32_t *chars;
   long i;
-  int64_t k, n;
+  int64_t n;
   Lex_Lexer lx = {0};
   Lex_Token t = {0};
   m9_state err = {0};
@@ -47,13 +47,7 @@ int main (int argc, char **argv)
     /* the same escaping comdump.pas does: newlines shown, backslashes
        doubled, so a multi-line comment stays one line and the
        escaping is reversible */
-    for (k = 0; k < c.text.len; k++) {
-      uint32_t ch = c.text.p[k];
-      if (ch == 10) { putchar ('\\'); putchar ('n'); }
-      else if (ch == 13) { putchar ('\\'); putchar ('r'); }
-      else if (ch == '\\') { putchar ('\\'); putchar ('\\'); }
-      else m9t_putc (ch);
-    }
+    m9t_put_esc_text (c.text);
     putchar ('\n');
   }
   printf ("comments=%lld\n", (long long) n);

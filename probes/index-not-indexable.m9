@@ -1,0 +1,18 @@
+(* EXPECT: r[0]: cannot index -- the type R is no array, slice, grid or string *)
+(* A subscript needs an array, a slice, a grid or a string.  On a
+   record or a scalar the checker passed it and the generator refused
+   it as `index into a non-array unsupported yet' (2026-10-22, the
+   review's F4). *)
+MODULE m ;
+TYPE R = RECORD a : ARRAY 3 OF I64 END ;
+VAR
+  r : R ;
+  s : STR ;
+  n : I64 ;
+  c : CHAR ;
+BEGIN
+  n := r.a[0] ;
+  s := 'abc' ;
+  c := s[1] ;
+  n := r[0]
+END m.

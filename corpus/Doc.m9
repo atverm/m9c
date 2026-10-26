@@ -66,8 +66,8 @@ TYPE
     unknownParam : I64 ;           (* a `name --` naming no parameter *)
   END ;
 
-PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
-                VAR st: Stats) : STR
+PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ;
+                VAR st: Stats) : UTF
   RAISES IndexError ;
   (* The same declarations as DATA.  One object: "module", "doc"
      (the module's own comment, or null), and "declarations" -- for
@@ -87,8 +87,8 @@ PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
      guessed one, and a table copied into a prompt drifts in a day
      (docs/skills-plan.md par 1, par 4). *)
 
-PROCEDURE Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
-                VAR st: Stats) : STR
+PROCEDURE Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ;
+                VAR st: Stats) : UTF
   RAISES IndexError ;
   (* the Markdown reference for one file, and its measurements.
 
@@ -111,7 +111,7 @@ END Doc.
 
 IMPLEMENTATION MODULE Doc ;
 
-IMPORT DynStr ;
+IMPORT DynUtf ;
 IMPORT Text ;
 IMPORT Print ;
 IMPORT Lex ;
@@ -124,20 +124,20 @@ TYPE
   Anchor = RECORD
     line : I64 ;
     kind : I64 ;
-    name : STR ;
-    sig : STR ;                    (* rendered; empty for non-procs *)
-    params : STR ;                 (* names, space-separated *)
-    doc : STR ;
+    name : UTF ;
+    sig : UTF ;                    (* rendered; empty for non-procs *)
+    params : UTF ;                 (* names, space-separated *)
+    doc : UTF ;
     hasDoc : BOOL ;                (* a comment of its own *)
     shared : BOOL ;                (* covered by an adjacent group *)
     (* the same signature as DATA, rendered once at Collect so the
        JSON never re-walks the tree: the params array text, the
        result type ('' for a proper procedure), the raises array
        text, the attribute word ('' for none) *)
-    paramsJson : STR ;
-    resultText : STR ;
-    raisesJson : STR ;
-    attribText : STR ;
+    paramsJson : UTF ;
+    resultText : UTF ;
+    raisesJson : UTF ;
+    attribText : UTF ;
   END ;
 
 (* NO MODULE STATE, deliberately.  The anchor table was a module
@@ -151,72 +151,72 @@ TYPE
 
 (* ---- rendering, through Print rather than beside it ---- *)
 
-PROCEDURE Qual (k: Ast.Kid) : STR =
+PROCEDURE Qual (k: Ast.Kid) : UTF =
 VAR pool : POOL ;
-    d : PTR DynStr.DString IN pool ;
+    d : PTR DynUtf.DString IN pool ;
 BEGIN
-  d := DynStr.New (pool) ;
+  d := DynUtf.New (pool) ;
   IF k IS SOME q THEN
-    DynStr.Append (d, q.a) ;
-    IF LEN (q.b) > 0 THEN
-      DynStr.AppendChar (d, '.') ;
-      DynStr.Append (d, q.b)
+    DynUtf.Append (d, q.au) ;
+    IF Text.BLen (q.bu) > 0 THEN
+      DynUtf.AppendChar (d, '.') ;
+      DynUtf.Append (d, q.bu)
     END
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynUtf.View (d)
 END Qual ;
 
 (* name (params) : ret RAISES ... [ATTR] -- the same shape Sem.SigOf
    builds for def/impl conformance, and for the same reason: the
    printer is what decides what a declaration says. *)
-PROCEDURE SigText (VAR pool: POOL ; p: PTR Ast.Node) : STR
+PROCEDURE SigText (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, p.a) ;
-  DynStr.Append (d, ' (') ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, p.au) ;
+  DynUtf.Append (d, ' (') ;
   IF p.nkids > 0 THEN
-    DynStr.Append (d, Print.ParamsText (p.kids[0]))
+    DynUtf.Append (d, Print.ParamsTextUtf (p.kids[0]))
   END ;
-  DynStr.AppendChar (d, ')') ;
+  DynUtf.AppendChar (d, ')') ;
   IF p.nkids > 1 THEN
     IF p.kids[1] IS SOME rt THEN
-      DynStr.Append (d, ' : ') ;
-      DynStr.Append (d, Print.TypeText (pool, p.kids[1]))
+      DynUtf.Append (d, ' : ') ;
+      DynUtf.Append (d, Print.TypeTextUtf (pool, p.kids[1]))
     END
   END ;
   IF p.nkids > 2 THEN
     IF p.kids[2] IS SOME rs THEN
-      DynStr.Append (d, ' RAISES ') ;
+      DynUtf.Append (d, ' RAISES ') ;
       FOR i := 0 TO rs.nkids - 1 DO
-        IF i > 0 THEN DynStr.Append (d, ', ') END ;
-        DynStr.Append (d, Qual (rs.kids[i]))
+        IF i > 0 THEN DynUtf.Append (d, ', ') END ;
+        DynUtf.Append (d, Qual (rs.kids[i]))
       END
     END
   END ;
   IF p.nkids > 3 THEN
     IF p.kids[3] IS SOME at THEN
-      DynStr.Append (d, ' [') ;
-      DynStr.Append (d, at.a) ;
-      DynStr.AppendChar (d, ']')
+      DynUtf.Append (d, ' [') ;
+      DynUtf.Append (d, at.au) ;
+      DynUtf.AppendChar (d, ']')
     END
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynUtf.ViewIn (pool, d)
 END SigText ;
 
 (* every parameter NAME, space-separated and space-delimited, so a
    membership test is a substring search for ' name ' *)
-PROCEDURE ParamNames (VAR pool: POOL ; p: PTR Ast.Node) : STR
+PROCEDURE ParamNames (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i, j : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.AppendChar (d, ' ') ;
+  d := DynUtf.New (pool) ;
+  DynUtf.AppendChar (d, ' ') ;
   IF p.nkids > 0 THEN
     IF p.kids[0] IS SOME pl THEN
       FOR i := 0 TO pl.nkids - 1 DO
@@ -225,8 +225,8 @@ BEGIN
             IF pm.kids[0] IS SOME il THEN
               FOR j := 0 TO il.nkids - 1 DO
                 IF il.kids[j] IS SOME id THEN
-                  DynStr.Append (d, id.a) ;
-                  DynStr.AppendChar (d, ' ')
+                  DynUtf.Append (d, id.au) ;
+                  DynUtf.AppendChar (d, ' ')
                 END
               END
             END
@@ -235,7 +235,7 @@ BEGIN
       END
     END
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynUtf.ViewIn (pool, d)
 END ParamNames ;
 
 (* ---- the signature as data ---- *)
@@ -245,45 +245,49 @@ END ParamNames ;
    path never raises -- the checker said so, which is the point of
    the checker.  Indexing raises only IndexError, already carried. *)
 PROCEDURE HexDigit (v: I64) : CHAR RAISES IndexError =
-VAR hex : STR ;
 BEGIN
-  hex := '0123456789abcdef' ;
-  RETURN hex[v]
+  RETURN Text.CpAt ('0123456789abcdef', v)
 END HexDigit ;
+
+(* the byte at offset i of u, as a number: the scans below read ASCII
+   structure -- the LF, a space, a comma, letters and digits -- where a
+   byte IS the character *)
+PROCEDURE B (RO u: UTF ; i: I64) : I64 =
+BEGIN
+  RETURN I64 (Text.BAt (u, i))
+END B ;
 
 (* a JSON string literal: the quotes, the two characters that must
    be escaped, and the three controls a comment can carry.  Anything
    else below 0x20 cannot come out of the lexer's comment channel,
    but is escaped rather than assumed away. *)
-PROCEDURE JsonStr (VAR d: PTR DynStr.DString ; RO s: STR)
+PROCEDURE JsonStr (VAR d: PTR DynUtf.DString ; RO s: UTF)
   RAISES IndexError =
-VAR
-  i, c : I64 ;
-  ch : CHAR ;
+VAR i, c, start : I64 ;
 BEGIN
-  DynStr.AppendChar (d, '"') ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    ch := s[i] ;
-    IF ch = '"' THEN
-      DynStr.Append (d, '\"')
-    ELSIF ch = '\' THEN
-      DynStr.Append (d, '\\')
-    ELSIF ch = 0AC THEN
-      DynStr.Append (d, '\n')
-    ELSIF ch = 0DC THEN
-      DynStr.Append (d, '\r')
-    ELSIF ch = 09C THEN
-      DynStr.Append (d, '\t')
-    ELSIF ORD (ch) < 32 THEN
-      c := ORD (ch) ;
-      DynStr.Append (d, '\u00') ;
-      DynStr.AppendChar (d, HexDigit (c DIV 16)) ;
-      DynStr.AppendChar (d, HexDigit (c MOD 16))
-    ELSE
-      DynStr.AppendChar (d, ch)
+  DynUtf.AppendChar (d, '"') ;
+  start := 0 ;
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    c := B (s, i) ;
+    IF c = 34 OR c = 92 OR c < 32 THEN
+      (* the run since the last escape, then the escape; a byte past
+         0x7F is part of a character and stays in its run *)
+      DynUtf.Append (d, SLICE (s, start, i - start)) ;
+      IF c = 34 THEN DynUtf.Append (d, '\"')
+      ELSIF c = 92 THEN DynUtf.Append (d, '\\')
+      ELSIF c = 10 THEN DynUtf.Append (d, '\n')
+      ELSIF c = 13 THEN DynUtf.Append (d, '\r')
+      ELSIF c = 9 THEN DynUtf.Append (d, '\t')
+      ELSE
+        DynUtf.Append (d, '\u00') ;
+        DynUtf.AppendChar (d, HexDigit (c DIV 16)) ;
+        DynUtf.AppendChar (d, HexDigit (c MOD 16))
+      END ;
+      start := i + 1
     END
   END ;
-  DynStr.AppendChar (d, '"')
+  DynUtf.Append (d, SLICE (s, start, Text.BLen (s) - start)) ;
+  DynUtf.AppendChar (d, '"')
 END JsonStr ;
 
 (* the parameter list as `[{"names":[..],"mode":"VAR","type":".."}]`,
@@ -292,123 +296,123 @@ END JsonStr ;
 (* an EXCEPTION's fields -- kids[0] a field sequence of groups, each
    an identifier list and a type -- in the shape of ParamsJson's
    entries, the mode "" (a payload is read through a binder) *)
-PROCEDURE FieldsJson (VAR pool: POOL ; x: PTR Ast.Node) : STR
+PROCEDURE FieldsJson (VAR pool: POOL ; x: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i, j : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.AppendChar (d, '[') ;
+  d := DynUtf.New (pool) ;
+  DynUtf.AppendChar (d, '[') ;
   IF x.nkids > 0 THEN
     IF x.kids[0] IS SOME fs THEN
       FOR i := 0 TO fs.nkids - 1 DO
         IF fs.kids[i] IS SOME g THEN
-          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
-          DynStr.Append (d, '{"names":[') ;
+          IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
+          DynUtf.Append (d, '{"names":[') ;
           IF g.kids[0] IS SOME il THEN
             FOR j := 0 TO il.nkids - 1 DO
               IF il.kids[j] IS SOME id THEN
-                IF j > 0 THEN DynStr.AppendChar (d, ',') END ;
-                JsonStr (d, id.a)
+                IF j > 0 THEN DynUtf.AppendChar (d, ',') END ;
+                JsonStr (d, id.au)
               END
             END
           END ;
-          DynStr.Append (d, '],"mode":"","type":') ;
-          JsonStr (d, Print.TypeText (pool, g.kids[1])) ;
-          DynStr.AppendChar (d, '}')
+          DynUtf.Append (d, '],"mode":"","type":') ;
+          JsonStr (d, Print.TypeTextUtf (pool, g.kids[1])) ;
+          DynUtf.AppendChar (d, '}')
         END
       END
     END
   END ;
-  DynStr.AppendChar (d, ']') ;
-  RETURN DynStr.View (d)
+  DynUtf.AppendChar (d, ']') ;
+  RETURN DynUtf.ViewIn (pool, d)
 END FieldsJson ;
 
-PROCEDURE ParamsJson (VAR pool: POOL ; p: PTR Ast.Node) : STR
+PROCEDURE ParamsJson (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i, j : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.AppendChar (d, '[') ;
+  d := DynUtf.New (pool) ;
+  DynUtf.AppendChar (d, '[') ;
   IF p.nkids > 0 THEN
     IF p.kids[0] IS SOME pl THEN
       FOR i := 0 TO pl.nkids - 1 DO
         IF pl.kids[i] IS SOME pm THEN
-          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
-          DynStr.Append (d, '{"names":[') ;
+          IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
+          DynUtf.Append (d, '{"names":[') ;
           IF pm.nkids > 0 THEN
             IF pm.kids[0] IS SOME il THEN
               FOR j := 0 TO il.nkids - 1 DO
                 IF il.kids[j] IS SOME id THEN
-                  IF j > 0 THEN DynStr.AppendChar (d, ',') END ;
-                  JsonStr (d, id.a)
+                  IF j > 0 THEN DynUtf.AppendChar (d, ',') END ;
+                  JsonStr (d, id.au)
                 END
               END
             END
           END ;
-          DynStr.Append (d, '],"mode":') ;
+          DynUtf.Append (d, '],"mode":') ;
           IF pm.f1 THEN
-            DynStr.Append (d, '"VAR"')
+            DynUtf.Append (d, '"VAR"')
           ELSIF pm.f2 THEN
-            DynStr.Append (d, '"OWN"')
+            DynUtf.Append (d, '"OWN"')
           ELSIF pm.f3 THEN
-            DynStr.Append (d, '"RO"')
+            DynUtf.Append (d, '"RO"')
           ELSE
-            DynStr.Append (d, '""')
+            DynUtf.Append (d, '""')
           END ;
-          DynStr.Append (d, ',"type":') ;
+          DynUtf.Append (d, ',"type":') ;
           IF pm.nkids > 1 THEN
-            JsonStr (d, Print.TypeText (pool, pm.kids[1]))
+            JsonStr (d, Print.TypeTextUtf (pool, pm.kids[1]))
           ELSE
-            DynStr.Append (d, '""')
+            DynUtf.Append (d, '""')
           END ;
-          DynStr.AppendChar (d, '}')
+          DynUtf.AppendChar (d, '}')
         END
       END
     END
   END ;
-  DynStr.AppendChar (d, ']') ;
-  RETURN DynStr.View (d)
+  DynUtf.AppendChar (d, ']') ;
+  RETURN DynUtf.ViewIn (pool, d)
 END ParamsJson ;
 
-PROCEDURE ResultText (VAR pool: POOL ; p: PTR Ast.Node) : STR
+PROCEDURE ResultText (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 BEGIN
   IF p.nkids > 1 THEN
     IF p.kids[1] IS SOME rt THEN
-      RETURN Print.TypeText (pool, p.kids[1])
+      RETURN Print.TypeTextUtf (pool, p.kids[1])
     END
   END ;
   RETURN ''
 END ResultText ;
 
-PROCEDURE RaisesJson (VAR pool: POOL ; p: PTR Ast.Node) : STR
+PROCEDURE RaisesJson (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.AppendChar (d, '[') ;
+  d := DynUtf.New (pool) ;
+  DynUtf.AppendChar (d, '[') ;
   IF p.nkids > 2 THEN
     IF p.kids[2] IS SOME rs THEN
       FOR i := 0 TO rs.nkids - 1 DO
-        IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
+        IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
         JsonStr (d, Qual (rs.kids[i]))
       END
     END
   END ;
-  DynStr.AppendChar (d, ']') ;
-  RETURN DynStr.View (d)
+  DynUtf.AppendChar (d, ']') ;
+  RETURN DynUtf.ViewIn (pool, d)
 END RaisesJson ;
 
-PROCEDURE AttribText (p: PTR Ast.Node) : STR RAISES IndexError =
+PROCEDURE AttribText (p: PTR Ast.Node) : UTF RAISES IndexError =
 BEGIN
   IF p.nkids > 3 THEN
-    IF p.kids[3] IS SOME at THEN RETURN at.a END
+    IF p.kids[3] IS SOME at THEN RETURN at.au END
   END ;
   RETURN ''
 END AttribText ;
@@ -429,7 +433,7 @@ BEGIN
   IF n.kind = Ast.NVarDecl THEN
     (* `VAR a, b : T` is ONE declaration of several names, kept in
        its identlist: an anchor for each, its type as resultText.
-       n.a is empty here, and every exported variable read as a
+       n.au is empty here, and every exported variable read as a
        nameless entry until decision 28 made one worth completing *)
     IF n.nkids > 1 THEN
       IF n.kids[0] IS SOME ids THEN
@@ -438,14 +442,14 @@ BEGIN
             IF nanch < LEN (anch) THEN
               anch[nanch].line := n.line ;
               anch[nanch].kind := n.kind ;
-              anch[nanch].name := id.a ;
+              anch[nanch].name := id.au ;
               anch[nanch].sig := '' ;
               anch[nanch].params := ' ' ;
               anch[nanch].doc := '' ;
               anch[nanch].hasDoc := FALSE ;
               anch[nanch].shared := FALSE ;
               anch[nanch].paramsJson := '[]' ;
-              anch[nanch].resultText := Print.TypeText (pool, n.kids[1]) ;
+              anch[nanch].resultText := Print.TypeTextUtf (pool, n.kids[1]) ;
               anch[nanch].raisesJson := '[]' ;
               IF n.f3 THEN                        (* VAR RO *)
                 anch[nanch].attribText := 'RO'
@@ -463,7 +467,7 @@ BEGIN
   IF IsDecl (n.kind) AND nanch < LEN (anch) THEN
     anch[nanch].line := n.line ;
     anch[nanch].kind := n.kind ;
-    anch[nanch].name := n.a ;
+    anch[nanch].name := n.au ;
     anch[nanch].sig := '' ;
     anch[nanch].params := ' ' ;
     anch[nanch].doc := '' ;
@@ -511,13 +515,13 @@ END Owner ;
 
 (* strip the delimiters and the common indent, so the prose can be
    re-flowed into Markdown without carrying M9's column 3 with it *)
-PROCEDURE Body (VAR pool: POOL ; RO t: STR) : STR =
+PROCEDURE Body (VAR pool: POOL ; RO t: UTF) : UTF =
 VAR
-  d : PTR DynStr.DString IN pool ;
-  i, n, ind, run, col : I64 ;
+  d : PTR DynUtf.DString IN pool ;
+  i, n, ind, run, col, start : I64 ;
   atLineStart, counting : BOOL ;
 BEGIN
-  n := LEN (t) ;
+  n := Text.BLen (t) ;
   i := 0 ;
   IF n >= 2 THEN i := 2 END ;                  (* past the opener *)
   IF n >= 4 THEN n := n - 2 END ;              (* before the closer *)
@@ -532,11 +536,11 @@ BEGIN
   run := 0 ;
   counting := FALSE ;
   FOR i := i TO n - 1 DO
-    IF t[i] = 0AC THEN
+    IF B (t, i) = 10 THEN
       counting := TRUE ;
       run := 0
     ELSIF counting THEN
-      IF t[i] = ' ' THEN
+      IF B (t, i) = 32 THEN
         run := run + 1
       ELSE
         IF ind < 0 OR run < ind THEN ind := run END ;
@@ -546,25 +550,28 @@ BEGIN
   END ;
   IF ind < 0 THEN ind := 0 END ;
 
-  d := DynStr.New (pool) ;
+  d := DynUtf.New (pool) ;
   i := 0 ;
-  IF LEN (t) >= 2 THEN i := 2 END ;
+  IF Text.BLen (t) >= 2 THEN i := 2 END ;
   atLineStart := FALSE ;
   col := 0 ;
+  start := i ;                  (* the run not yet appended *)
   WHILE i < n DO
-    IF t[i] = 0AC THEN
-      DynStr.AppendChar (d, t[i]) ;
+    IF B (t, i) = 10 THEN
       atLineStart := TRUE ;
       col := 0
-    ELSIF atLineStart AND t[i] = ' ' AND col < ind THEN
-      col := col + 1                           (* drop the margin *)
+    ELSIF atLineStart AND B (t, i) = 32 AND col < ind THEN
+      (* drop the margin: the run before the space, not the space *)
+      DynUtf.Append (d, SLICE (t, start, i - start)) ;
+      start := i + 1 ;
+      col := col + 1
     ELSE
-      atLineStart := FALSE ;
-      DynStr.AppendChar (d, t[i])
+      atLineStart := FALSE
     END ;
     i := i + 1
   END ;
-  RETURN Text.Trim (DynStr.View (d))
+  DynUtf.Append (d, SLICE (t, start, n - start)) ;
+  RETURN Text.Trim (DynUtf.ViewIn (pool, d))
 END Body ;
 
 (* Is everything before the ' -- ' an identifier, or a comma-list of
@@ -580,30 +587,30 @@ END Body ;
    identifier-shaped `state`, which is why the test runs on the
    block's FIRST line and rejects the whole block rather than
    skipping lines one at a time. *)
-PROCEDURE IsIdentList (RO s: STR) : BOOL =
+PROCEDURE IsIdentList (RO s: UTF) : BOOL =
 VAR
   i, n : I64 ;
   fresh : BOOL ;
 BEGIN
-  n := LEN (s) ;
+  n := Text.BLen (s) ;
   IF n = 0 THEN RETURN FALSE END ;
   fresh := TRUE ;
   FOR i := 0 TO n - 1 DO
     IF fresh THEN
-      IF NOT ((s[i] >= 'A' AND s[i] <= 'Z') OR
-              (s[i] >= 'a' AND s[i] <= 'z')) THEN RETURN FALSE END ;
+      IF NOT ((B (s, i) >= ORD ('A') AND B (s, i) <= ORD ('Z')) OR
+              (B (s, i) >= ORD ('a') AND B (s, i) <= ORD ('z'))) THEN RETURN FALSE END ;
       fresh := FALSE
-    ELSIF s[i] = ',' THEN
+    ELSIF B (s, i) = ORD (',') THEN
       fresh := TRUE
-    ELSIF s[i] = ' ' THEN
+    ELSIF B (s, i) = ORD (' ') THEN
       (* only as the separator after a comma: `a, b` is a list and
          `two words` is a sentence *)
       IF i + 1 < n THEN
-        IF s[i - 1] # ',' THEN RETURN FALSE END
+        IF B (s, i - 1) # ORD (',') THEN RETURN FALSE END
       END
-    ELSIF NOT ((s[i] >= 'A' AND s[i] <= 'Z') OR
-               (s[i] >= 'a' AND s[i] <= 'z') OR
-               (s[i] >= '0' AND s[i] <= '9')) THEN
+    ELSIF NOT ((B (s, i) >= ORD ('A') AND B (s, i) <= ORD ('Z')) OR
+               (B (s, i) >= ORD ('a') AND B (s, i) <= ORD ('z')) OR
+               (B (s, i) >= ORD ('0') AND B (s, i) <= ORD ('9'))) THEN
       RETURN FALSE
     END
   END ;
@@ -614,9 +621,9 @@ END IsIdentList ;
    lines whose first word is followed by ' -- '.  The blank line is
    required, because three comments in the corpus contain that shape
    MID-PARAGRAPH and are prose, not parameter lists. *)
-PROCEDURE IsParamLine (RO ln: STR) : BOOL =
+PROCEDURE IsParamLine (RO ln: UTF) : BOOL =
 VAR
-  t : STR ;
+  t : UTF ;
   dash : I64 ;
 BEGIN
   t := Text.Trim (ln) ;
@@ -625,17 +632,17 @@ BEGIN
   RETURN IsIdentList (Text.Trim (SLICE (t, 0, dash)))
 END IsParamLine ;
 
-PROCEDURE ParamStart (RO b: STR) : I64 =
+PROCEDURE ParamStart (RO b: UTF) : I64 =
 VAR
   i, lineStart, blank : I64 ;
 BEGIN
   blank := -1 ;
   i := 0 ;
   lineStart := 0 ;
-  WHILE i < LEN (b) DO
-    IF b[i] = 0AC THEN
+  WHILE i < Text.BLen (b) DO
+    IF B (b, i) = 10 THEN
       (* an empty or blank line resets the candidate *)
-      IF LEN (Text.Trim (SLICE (b, lineStart, i - lineStart))) = 0 THEN
+      IF Text.BLen (Text.Trim (SLICE (b, lineStart, i - lineStart))) = 0 THEN
         blank := i + 1
       ELSIF blank >= 0 THEN
         (* first non-blank line after a blank: is it `name -- ...`? *)
@@ -648,8 +655,8 @@ BEGIN
     END ;
     i := i + 1
   END ;
-  IF blank >= 0 AND lineStart < LEN (b) THEN
-    IF IsParamLine (SLICE (b, lineStart, LEN (b) - lineStart)) THEN
+  IF blank >= 0 AND lineStart < Text.BLen (b) THEN
+    IF IsParamLine (SLICE (b, lineStart, Text.BLen (b) - lineStart)) THEN
       RETURN blank
     END
   END ;
@@ -670,17 +677,17 @@ END ParamStart ;
    legitimately names `s`, which is a parameter of the first two and
    not of the third.  Checking against the owner alone reported eight
    false drifts across the corpus, all of this shape. *)
-PROCEDURE CheckParams (VAR d: PTR DynStr.DString ;
-                       RO b: STR ; start: I64 ; RO names: STR ;
+PROCEDURE CheckParams (VAR d: PTR DynUtf.DString ;
+                       RO b: UTF ; start: I64 ; RO names: UTF ;
                        VAR st: Stats) =
 VAR
   i, lineStart, dash : I64 ;
-  ln, nm : STR ;
+  ln, nm : UTF ;
 BEGIN
   i := start ;
   lineStart := start ;
-  WHILE i <= LEN (b) DO
-    IF i = LEN (b) OR b[i] = 0AC THEN
+  WHILE i <= Text.BLen (b) DO
+    IF i = Text.BLen (b) OR B (b, i) = 10 THEN
       ln := Text.Trim (SLICE (b, lineStart, i - lineStart)) ;
       dash := Text.Find (ln, ' -- ') ;
       IF dash > 0 AND IsParamLine (ln) THEN
@@ -690,7 +697,7 @@ BEGIN
         IF Text.FindChar (nm, ',') >= 0 THEN
           nm := Text.Trim (SLICE (nm, 0, Text.FindChar (nm, ','))) 
         END ;
-        IF LEN (nm) > 0 THEN
+        IF Text.BLen (nm) > 0 THEN
           st.paramsDoc := st.paramsDoc + 1 ;
           IF NOT Text.Contains (names, Cat3 (' ', nm, ' ')) THEN
             st.unknownParam := st.unknownParam + 1 ;
@@ -698,11 +705,11 @@ BEGIN
                document is what a reader sees, and a name that no
                longer exists in the signature is exactly the drift
                they would otherwise believe. *)
-            DynStr.Append (d, '**drift: `') ;
-            DynStr.Append (d, nm) ;
-            DynStr.Append (d, '` is documented but is not a ') ;
-            DynStr.Append (d, 'parameter here**') ;
-            DynStr.AppendChar (d, 0AC)
+            DynUtf.Append (d, '**drift: `') ;
+            DynUtf.Append (d, nm) ;
+            DynUtf.Append (d, '` is documented but is not a ') ;
+            DynUtf.Append (d, 'parameter here**') ;
+            DynUtf.AppendChar (d, 0AC)
           END
         END
       END ;
@@ -712,30 +719,51 @@ BEGIN
   END
 END CheckParams ;
 
-PROCEDURE Cat3 (RO a: STR ; RO b: STR ; RO c: STR) : STR =
-VAR d : PTR DynStr.DString IN HEAP ;
+PROCEDURE Cat3 (RO a: UTF ; RO b: UTF ; RO c: UTF) : UTF =
+VAR d : PTR DynUtf.DString IN HEAP ;
 BEGIN
-  d := DynStr.New (HEAP) ;
-  DynStr.Append (d, a) ;
-  DynStr.Append (d, b) ;
-  DynStr.Append (d, c) ;
-  RETURN DynStr.View (d)
+  d := DynUtf.New (HEAP) ;
+  DynUtf.Append (d, a) ;
+  DynUtf.Append (d, b) ;
+  DynUtf.Append (d, c) ;
+  RETURN DynUtf.ViewIn (HEAP, d)
 END Cat3 ;
 
-PROCEDURE CountWords (RO s: STR) : I64 =
+PROCEDURE CountWords (RO s: UTF) : I64 =
 VAR i, n : I64 ;
 BEGIN
   n := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] # ' ' THEN
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF B (s, i) # 32 THEN
       IF i = 0 THEN n := n + 1
-      ELSIF s[i - 1] = ' ' THEN n := n + 1 END
+      ELSIF B (s, i - 1) = 32 THEN n := n + 1 END
     END
   END ;
   RETURN n
 END CountWords ;
 
-PROCEDURE KindWord (k: I64) : STR =
+(* does the module declare name + Utf, a UTF twin? *)
+PROCEDURE HasUtfTwin (RO anch: SLICE OF Anchor ; nanch: I64 ; RO name: UTF) : BOOL =
+VAR i, n : I64 ;
+BEGIN
+  n := Text.BLen (name) ;
+  IF n > 3 THEN
+    IF Text.Eq (SLICE (name, n - 3, 3), 'Utf') THEN RETURN FALSE END
+  END ;
+  FOR i := 0 TO nanch - 1 DO
+    IF anch[i].kind = Ast.NProcDecl AND Text.BLen (anch[i].name) = n + 3 THEN
+      IF Text.Eq (SLICE (anch[i].name, 0, n), name) AND
+         Text.Eq (SLICE (anch[i].name, n, 3), 'Utf') THEN
+        RETURN TRUE
+      END
+    END
+  END ;
+  RETURN FALSE
+EXCEPT
+| IndexError : RETURN FALSE
+END HasUtfTwin ;
+
+PROCEDURE KindWord (k: I64) : UTF =
 BEGIN
   IF k = Ast.NProcDecl THEN RETURN 'PROCEDURE' END ;
   IF k = Ast.NTypeDecl THEN RETURN 'TYPE' END ;
@@ -747,25 +775,25 @@ END KindWord ;
 (* the parameters of every declaration this comment documents: the
    owner, plus the run of `shared` declarations immediately above it *)
 PROCEDURE GroupParams (RO anch: SLICE OF Anchor ;
-                       nanch, owner: I64) : STR
+                       nanch, owner: I64) : UTF
   RAISES IndexError =
 VAR
   pool : POOL ;
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, anch[owner].params) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, anch[owner].params) ;
   i := owner - 1 ;
   WHILE i >= 0 DO
     IF anch[i].shared THEN
-      DynStr.Append (d, anch[i].params) ;
+      DynUtf.Append (d, anch[i].params) ;
       i := i - 1
     ELSE
       i := -1
     END
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynUtf.View (d)
 END GroupParams ;
 
 (* ---- the gather, shared by both renderers ---- *)
@@ -792,7 +820,7 @@ END UpTo ;
    between them is the rendering. *)
 PROCEDURE Gather (VAR pool: POOL ; KEPT unit: PTR Ast.Node ; upTo: I64 ;
                   VAR anch: SLICE OF Anchor ; VAR nanch: I64 ;
-                  VAR modDoc: STR ; VAR haveMod: BOOL ; VAR st: Stats)
+                  VAR modDoc: UTF ; VAR haveMod: BOOL ; VAR st: Stats)
   RAISES IndexError =
 VAR
   i, o : I64 ;
@@ -851,7 +879,7 @@ BEGIN
   END
 END Gather ;
 
-PROCEDURE KindJson (k: I64) : STR =
+PROCEDURE KindJson (k: I64) : UTF =
 BEGIN
   IF k = Ast.NProcDecl THEN RETURN 'procedure' END ;
   IF k = Ast.NTypeDecl THEN RETURN 'type' END ;
@@ -860,21 +888,21 @@ BEGIN
   RETURN 'exception'
 END KindJson ;
 
-PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
-                VAR st: Stats) : STR
+PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ;
+                VAR st: Stats) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i, u, nanch : I64 ;
   anch : SLICE OF Anchor ;
-  modDoc : STR ;
+  modDoc : UTF ;
   haveMod, first : BOOL ;
 BEGIN
   anch := NEW (pool, Anchor, MaxAnchor) ;
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, '{"module":') ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, '{"module":') ;
   JsonStr (d, modName) ;
-  DynStr.Append (d, ',"doc":') ;
+  DynUtf.Append (d, ',"doc":') ;
 
   (* the first DEFINITION unit is the module; a file holds one *)
   first := TRUE ;
@@ -889,11 +917,11 @@ BEGIN
           st.modsDoc := st.modsDoc + 1 ;
           JsonStr (d, modDoc)
         ELSE
-          DynStr.Append (d, 'null')
+          DynUtf.Append (d, 'null')
         END ;
-        DynStr.Append (d, ',"declarations":[') ;
+        DynUtf.Append (d, ',"declarations":[') ;
         FOR i := 0 TO nanch - 1 DO
-          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
+          IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
           IF anch[i].kind = Ast.NProcDecl THEN
             st.procs := st.procs + 1 ;
             IF anch[i].hasDoc THEN st.procsDoc := st.procsDoc + 1 END
@@ -901,89 +929,89 @@ BEGIN
             st.others := st.others + 1 ;
             IF anch[i].hasDoc THEN st.othersDoc := st.othersDoc + 1 END
           END ;
-          DynStr.Append (d, '{"kind":') ;
+          DynUtf.Append (d, '{"kind":') ;
           JsonStr (d, KindJson (anch[i].kind)) ;
-          DynStr.Append (d, ',"name":') ;
+          DynUtf.Append (d, ',"name":') ;
           JsonStr (d, anch[i].name) ;
-          DynStr.Append (d, ',"line":') ;
-          DynStr.AppendI64 (d, anch[i].line) ;
+          DynUtf.Append (d, ',"line":') ;
+          DynUtf.AppendI64 (d, anch[i].line) ;
           IF anch[i].kind = Ast.NProcDecl THEN
-            DynStr.Append (d, ',"signature":') ;
+            DynUtf.Append (d, ',"signature":') ;
             JsonStr (d, anch[i].sig) ;
-            DynStr.Append (d, ',"params":') ;
-            DynStr.Append (d, anch[i].paramsJson) ;
-            DynStr.Append (d, ',"result":') ;
-            IF LEN (anch[i].resultText) > 0 THEN
+            DynUtf.Append (d, ',"params":') ;
+            DynUtf.Append (d, anch[i].paramsJson) ;
+            DynUtf.Append (d, ',"result":') ;
+            IF Text.BLen (anch[i].resultText) > 0 THEN
               JsonStr (d, anch[i].resultText)
             ELSE
-              DynStr.Append (d, 'null')
+              DynUtf.Append (d, 'null')
             END ;
-            DynStr.Append (d, ',"raises":') ;
-            DynStr.Append (d, anch[i].raisesJson) ;
-            DynStr.Append (d, ',"attrib":') ;
-            IF LEN (anch[i].attribText) > 0 THEN
+            DynUtf.Append (d, ',"raises":') ;
+            DynUtf.Append (d, anch[i].raisesJson) ;
+            DynUtf.Append (d, ',"attrib":') ;
+            IF Text.BLen (anch[i].attribText) > 0 THEN
               JsonStr (d, anch[i].attribText)
             ELSE
-              DynStr.Append (d, 'null')
+              DynUtf.Append (d, 'null')
             END
           END ;
           IF anch[i].kind = Ast.NExcDecl THEN
-            DynStr.Append (d, ',"params":') ;
-            DynStr.Append (d, anch[i].paramsJson)
+            DynUtf.Append (d, ',"params":') ;
+            DynUtf.Append (d, anch[i].paramsJson)
           END ;
           IF anch[i].kind = Ast.NVarDecl THEN
-            DynStr.Append (d, ',"type":') ;
+            DynUtf.Append (d, ',"type":') ;
             JsonStr (d, anch[i].resultText) ;
-            DynStr.Append (d, ',"ro":') ;
-            IF LEN (anch[i].attribText) > 0 THEN
-              DynStr.Append (d, 'true')
+            DynUtf.Append (d, ',"ro":') ;
+            IF Text.BLen (anch[i].attribText) > 0 THEN
+              DynUtf.Append (d, 'true')
             ELSE
-              DynStr.Append (d, 'false')
+              DynUtf.Append (d, 'false')
             END
           END ;
-          DynStr.Append (d, ',"doc":') ;
+          DynUtf.Append (d, ',"doc":') ;
           IF anch[i].hasDoc THEN
             JsonStr (d, anch[i].doc)
           ELSE
-            DynStr.Append (d, 'null')
+            DynUtf.Append (d, 'null')
           END ;
-          DynStr.Append (d, ',"shared":') ;
+          DynUtf.Append (d, ',"shared":') ;
           IF anch[i].shared THEN
-            DynStr.Append (d, 'true')
+            DynUtf.Append (d, 'true')
           ELSE
-            DynStr.Append (d, 'false')
+            DynUtf.Append (d, 'false')
           END ;
-          DynStr.AppendChar (d, '}')
+          DynUtf.AppendChar (d, '}')
         END ;
-        DynStr.AppendChar (d, ']')
+        DynUtf.AppendChar (d, ']')
       END
     END
   END ;
   IF first THEN
     (* no definition unit at all: still a document, and an honest one *)
-    DynStr.Append (d, 'null,"declarations":[]')
+    DynUtf.Append (d, 'null,"declarations":[]')
   END ;
-  DynStr.AppendChar (d, '}') ;
-  DynStr.AppendChar (d, 0AC) ;
-  RETURN DynStr.View (d)
+  DynUtf.AppendChar (d, '}') ;
+  DynUtf.AppendChar (d, 0AC) ;
+  RETURN DynUtf.ViewIn (pool, d)
 END Json ;
 
-PROCEDURE Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
-                VAR st: Stats) : STR
+PROCEDURE Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ;
+                VAR st: Stats) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  d : PTR DynUtf.DString IN pool ;
   i, u, ps, nanch : I64 ;
   anch : SLICE OF Anchor ;
-  modDoc : STR ;
+  modDoc : UTF ;
   haveMod : BOOL ;
-  b : STR ;
+  b : UTF ;
 BEGIN
   anch := NEW (pool, Anchor, MaxAnchor) ;
-  d := DynStr.New (pool) ;
-  DynStr.Append (d, '# ') ;
-  DynStr.Append (d, modName) ;
-  DynStr.AppendChar (d, 0AC) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, '# ') ;
+  DynUtf.Append (d, modName) ;
+  DynUtf.AppendChar (d, 0AC) ;
 
   (* a PROGRAM exports nothing: its page said only its name until
      2026-10-08, and a reader took the bare heading for a page that
@@ -991,11 +1019,11 @@ BEGIN
   FOR u := 0 TO root.nkids - 1 DO
     IF root.kids[u] IS SOME unit THEN
       IF unit.kind = Ast.NProgram THEN
-        DynStr.AppendChar (d, 0AC) ;
-        DynStr.Append (d, 'A program (`MODULE ') ;
-        DynStr.Append (d, modName) ;
-        DynStr.Append (d, '`): nothing to import, run it.') ;
-        DynStr.AppendChar (d, 0AC)
+        DynUtf.AppendChar (d, 0AC) ;
+        DynUtf.Append (d, 'A program (`MODULE ') ;
+        DynUtf.Append (d, modName) ;
+        DynUtf.Append (d, '`): nothing to import, run it.') ;
+        DynUtf.AppendChar (d, 0AC)
       END
     END
   END ;
@@ -1008,10 +1036,10 @@ BEGIN
 
         st.mods := st.mods + 1 ;
         IF haveMod THEN st.modsDoc := st.modsDoc + 1 END ;
-        IF LEN (modDoc) > 0 THEN
-          DynStr.AppendChar (d, 0AC) ;
-          DynStr.Append (d, modDoc) ;
-          DynStr.AppendChar (d, 0AC)
+        IF Text.BLen (modDoc) > 0 THEN
+          DynUtf.AppendChar (d, 0AC) ;
+          DynUtf.Append (d, modDoc) ;
+          DynUtf.AppendChar (d, 0AC)
         END ;
 
         FOR i := 0 TO nanch - 1 DO
@@ -1024,17 +1052,27 @@ BEGIN
             IF anch[i].hasDoc THEN st.othersDoc := st.othersDoc + 1 END
           END ;
 
-          DynStr.AppendChar (d, 0AC) ;
-          DynStr.Append (d, '### ') ;
+          DynUtf.AppendChar (d, 0AC) ;
+          DynUtf.Append (d, '### ') ;
           IF anch[i].kind = Ast.NProcDecl THEN
-            DynStr.Append (d, anch[i].sig)
+            DynUtf.Append (d, anch[i].sig)
           ELSE
-            DynStr.Append (d, KindWord (anch[i].kind)) ;
-            DynStr.AppendChar (d, ' ') ;
-            DynStr.Append (d, anch[i].name)
+            DynUtf.Append (d, KindWord (anch[i].kind)) ;
+            DynUtf.AppendChar (d, ' ') ;
+            DynUtf.Append (d, anch[i].name)
           END ;
-          DynStr.AppendChar (d, 0AC) ;
-          DynStr.AppendChar (d, 0AC) ;
+          DynUtf.AppendChar (d, 0AC) ;
+          DynUtf.AppendChar (d, 0AC) ;
+          (* a STR form whose UTF twin the module declares is DEPRECATED
+             for the transition (docs/utf8-plan.md, (C)): said from the
+             declarations, so no comment has to remember it *)
+          IF anch[i].kind = Ast.NProcDecl AND HasUtfTwin (anch, nanch, anch[i].name) THEN
+            DynUtf.Append (d, '**Deprecated** (the UTF transition): ') ;
+            DynUtf.Append (d, anch[i].name) ;
+            DynUtf.Append (d, 'Utf is its UTF form.') ;
+            DynUtf.AppendChar (d, 0AC) ;
+            DynUtf.AppendChar (d, 0AC)
+          END ;
 
           IF anch[i].hasDoc THEN
             b := anch[i].doc ;
@@ -1043,20 +1081,20 @@ BEGIN
               CheckParams (d, b, ps,
                            GroupParams (anch, nanch, i), st)
             END ;
-            DynStr.Append (d, b) ;
-            DynStr.AppendChar (d, 0AC)
+            DynUtf.Append (d, b) ;
+            DynUtf.AppendChar (d, 0AC)
           ELSIF anch[i].shared THEN
-            DynStr.Append (d, '_(documented with the group below)_') ;
-            DynStr.AppendChar (d, 0AC)
+            DynUtf.Append (d, '_(documented with the group below)_') ;
+            DynUtf.AppendChar (d, 0AC)
           ELSE
-            DynStr.Append (d, '_(undocumented)_') ;
-            DynStr.AppendChar (d, 0AC)
+            DynUtf.Append (d, '_(undocumented)_') ;
+            DynUtf.AppendChar (d, 0AC)
           END
         END
       END
     END
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynUtf.ViewIn (pool, d)
 END Text ;
 
 END Doc.

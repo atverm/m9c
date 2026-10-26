@@ -1,0 +1,26 @@
+(* EXPECT: v.E: v is a variable, not a module *)
+(* A handler names an exception as declared, qualified only by the
+   module that declares it.  Qualified by a variable the checker said
+   only that the exception was unhandled (2026-10-22, the review's F4). *)
+MODULE m ;
+EXCEPTION E ;
+VAR v : I64 ;
+PROCEDURE F () RAISES E =
+BEGIN
+  RAISE E
+END F ;
+PROCEDURE G () =
+BEGIN
+  F ()
+EXCEPT
+| E : v := 1
+END G ;
+PROCEDURE H () RAISES E =
+BEGIN
+  F ()
+EXCEPT
+| v.E : v := 2
+END H ;
+BEGIN
+  G ()
+END m.

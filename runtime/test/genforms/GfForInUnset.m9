@@ -1,0 +1,42 @@
+MODULE GfForInUnset ;
+
+(* WANT: set 12, unset IndexError -1 0 *)
+
+(* FOR p IN s over a slice of pointers copies each element into p, and
+   the body follows it.  The indexed loop's `s[i].n' tests the element
+   first (decision 58); the FOR IN copy did not, so an element never set
+   was a SIGSEGV in the body, no handler run (the second review's gen N6,
+   2026-10-26).  The copy is tested now as `q := s[i]' is. *)
+
+IMPORT Io, Fmt ;
+
+TYPE R = RECORD n : I64 END ;
+     P = PTR R ;
+
+PROCEDURE Sum (RO s : SLICE OF P) : I64 =
+VAR p : P ; t : I64 ;
+BEGIN
+  t := 0 ;
+  FOR p IN s DO t := t + p.n END ;
+  RETURN t
+END Sum ;
+
+PROCEDURE Run () =
+VAR s : SLICE OF P ; a, b : P ; got : STR ;
+BEGIN
+  a := NEW (R) ; a.n := 5 ;
+  b := NEW (R) ; b.n := 7 ;
+  s := NEW (P, 2) ;
+  s[0] := a ; s[1] := b ;
+  got := 'set ' + Fmt.I64Str (Sum (s)) ;
+  s := NEW (P, 3) ;
+  s[0] := a ;
+  Io.WriteLine (got + ', unset ' + Fmt.I64Str (Sum (s)))
+EXCEPT
+| IndexError (i, n) :
+    Io.WriteLine (got + ', unset IndexError ' + Fmt.I64Str (i) + ' ' + Fmt.I64Str (n))
+END Run ;
+
+BEGIN
+  Run ()
+END GfForInUnset.

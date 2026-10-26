@@ -36,7 +36,7 @@ int main (int argc, char **argv)
     printf ("%lld:%lld ", (long long) t.line, (long long) t.col);
     for (j = 0; j < nm.len; j++) m9t_putc (nm.p[j]);
     putchar (' ');
-    for (j = 0; j < t.text.len; j++) m9t_putc (t.text.p[j]);
+    m9t_put_text (t.text);
     putchar ('\n');
     if (t.kind == 0) break;
   }

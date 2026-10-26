@@ -1,0 +1,19 @@
+MODULE R3DepthBack ;
+(* by depth, the other way (2026-10-26): a literal stored through rows'
+   two subscripts lies in row's storage one level down, and a write
+   through row's two subscripts writes its octets *)
+IMPORT Io ;
+TYPE Strs = SLICE OF STR ;
+PROCEDURE Fill () =
+VAR rows : SLICE OF Strs ; row : Strs ;
+BEGIN
+  rows := NEW (Strs, 1) ;
+  row := NEW (STR, 2) ;
+  rows[0] := row ;
+  rows[0][0] := 'abc' ;
+  row[0][0] := 'X' ;
+  Io.WriteLine (row[0])
+END Fill ;
+BEGIN
+  Fill ()
+END R3DepthBack.

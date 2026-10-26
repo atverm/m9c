@@ -1,0 +1,35 @@
+MODULE R4OwnOpt ;
+(* an OPT PTR owner disposed inside its own IS SOME arm; the binder read after *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[3]))
+END Churn ;
+PROCEDURE Mk () : PTR Store =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  RETURN o
+END Mk ;
+PROCEDURE Go () RAISES IndexError =
+VAR o : OPT PTR Store ;
+BEGIN
+  o := SOME (Mk ()) ;
+  IF o IS SOME p THEN
+    p.n := 5 ;
+    DISPOSE (o) ;
+    Churn () ;
+    Io.WriteLine (Fmt.I64Str (p.n))
+  END
+END Go ;
+BEGIN
+  Go ()
+EXCEPT
+| IndexError (i, n) : Io.WriteLine ('IndexError')
+END R4OwnOpt.

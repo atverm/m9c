@@ -1,0 +1,40 @@
+--- Png.m9
++++ Png.m9
+@@ -3120,16 +3120,20 @@
+    the five named ones and the numbered form *)
+ PROCEDURE Content (VAR pool: POOL ; RO s: STR ; from: I64 ; VAR after: I64) : STR
+   RAISES Faults.BadArg, ValueRange =
++  (* the text between entities goes over as RUNS, SLICE (s, run, i -
++     run): an octet appended as a character would encode `µ' twice *)
+ VAR
+   d : PTR DynStr.DString IN pool ;
+-  i, n, j, k, code : I64 ;
++  i, n, j, k, code, run : I64 ;
+   ent : STR ;
+ BEGIN
+   d := DynStr.New (pool) ;
+   n := Text.BLen (s) ;
+   i := from ;
++  run := from ;
+   WHILE i < n AND NOT Text.BIs (s, i, '<') DO
+     IF Text.BIs (s, i, '&') THEN
++      DynStr.Append (d, SLICE (s, run, i - run)) ;
+       j := i + 1 ;
+       WHILE j < n AND NOT Text.BIs (s, j, ';') AND j < i + 12 DO j := j + 1 END ;
+       IF j >= n OR NOT Text.BIs (s, j, ';') THEN RAISE Faults.BadArg ('Png.FromSvg: an & that is not an entity') END ;
+@@ -3153,12 +3157,13 @@
+       ELSE
+         RAISE Faults.BadArg ('Png.FromSvg: an entity this does not know: &' + ent + ';')
+       END ;
+-      i := j + 1
++      i := j + 1 ;
++      run := i
+     ELSE
+-      DynStr.AppendChar (d, s[i]) ;
+       i := i + 1
+     END
+   END ;
++  DynStr.Append (d, SLICE (s, run, i - run)) ;
+   after := i ;
+   RETURN DynStr.View (d)
+ END Content ;

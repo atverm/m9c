@@ -1,0 +1,36 @@
+MODULE GfUtfConst ;
+
+(* WANT: utf const: Grüße.Grüße *)
+
+(* A CONST naming a string literal where a UTF is wanted (decision 66,
+   2026-10-23): assigned, passed, answered and joined by +, the
+   generator emits the literal's UTF-8 octets as it does for the
+   literal itself -- Sem's own mode constants met the rule in its
+   port.  Printed through Io.WriteLine's UTF form. *)
+
+IMPORT Io ;
+
+CONST
+  Greeting = 'Grüße' ;
+  Dot = '.' ;
+
+VAR
+  u, v : UTF ;
+
+PROCEDURE Id (x: UTF) : UTF =
+BEGIN
+  RETURN x
+END Id ;
+
+PROCEDURE Ans () : UTF =
+BEGIN
+  RETURN Greeting
+END Ans ;
+
+BEGIN
+  u := Greeting ;
+  v := Id (Dot) ;
+  v := Ans () + Dot + u ;
+  u := 'utf const: ' + v ;
+  Io.WriteLine (u)
+END GfUtfConst.

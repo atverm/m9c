@@ -1,0 +1,61 @@
+MODULE GfRegionInline ;
+
+(* WANT: title rdwbu scale rdwbu kept rdwbu *)
+
+(* A field of a field of a LOCAL record, through records held by value,
+   is the local's own storage (2026-10-25, cp-kernel's DapPreview.MapSvg
+   under 0.25.0).  The region judgement tracks one field level; after
+   `spec := Default ()' it read `spec.scale.cmap := o.cmap' as a store
+   into what the call's answer reached and refused it as a retention
+   without KEPT, while `spec.title := o.cmap' passed.  All three shapes
+   below must be accepted and build; the retention that IS one -- the
+   record stored in a module variable -- stays refused (probe
+   region-inline-field). *)
+
+IMPORT Io, Text ;
+
+TYPE
+  Scale = RECORD cmap : STR ; lo : F64 END ;
+  Spec = RECORD title : STR ; scale : Scale END ;
+  Opts = RECORD cmap : STR END ;
+
+PROCEDURE Default () : Spec =
+VAR s : Spec ;
+BEGIN
+  s.title := 'map' ;
+  s.scale.cmap := 'viridis' ;
+  RETURN s
+END Default ;
+
+PROCEDURE Title (RO o: Opts) : STR =
+VAR spec : Spec ;
+BEGIN
+  spec := Default () ;
+  spec.title := o.cmap ;
+  RETURN 'title ' + spec.title
+END Title ;
+
+PROCEDURE ScaleMap (RO o: Opts) : STR =
+VAR spec : Spec ;
+BEGIN
+  spec := Default () ;
+  spec.scale.cmap := o.cmap ;
+  RETURN 'scale ' + spec.scale.cmap
+END ScaleMap ;
+
+PROCEDURE Kept (RO o: Opts) : STR =
+VAR
+  scratch : POOL ;
+  spec : Spec ;
+BEGIN
+  spec := Default () ;
+  spec.scale.cmap := Text.Keep (scratch, o.cmap) ;
+  RETURN 'kept ' + spec.scale.cmap
+END Kept ;
+
+VAR o : Opts ;
+
+BEGIN
+  o.cmap := 'rdwbu' ;
+  Io.WriteLine (Title (o) + ' ' + ScaleMap (o) + ' ' + Kept (o))
+END GfRegionInline .

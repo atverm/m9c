@@ -3,7 +3,7 @@
 #define M9G_Doc_H
 #include "m9rt.h"
 #include "Ast.h"
-#include "DynStr.h"
+#include "DynUtf.h"
 #include "Text.h"
 #include "Print.h"
 #include "Lex.h"
@@ -35,7 +35,7 @@ struct Doc_Stats {
   int64_t unknownParam;
 };
 
-m9_sl_CHAR Doc_Json (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_state *err);
-m9_sl_CHAR Doc_Text (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_state *err);
+m9_sl_UTF8 Doc_Json (m9_pool *pool, Ast_Node * root, m9_sl_UTF8 modName, Doc_Stats *st, m9_state *err);
+m9_sl_UTF8 Doc_Text (m9_pool *pool, Ast_Node * root, m9_sl_UTF8 modName, Doc_Stats *st, m9_state *err);
 
 #endif

@@ -1,0 +1,15 @@
+MODULE R2N23 ;
+(* a GRID over a literal, stored in a record field and written through *)
+IMPORT Io ;
+TYPE Box = RECORD g : GRID 2 OF CHAR END ;
+PROCEDURE Up () =
+VAR s : STR ; b : Box ;
+BEGIN
+  s := 'abcdef' ;
+  b.g := GRID (s, 2, 3) ;
+  b.g[0, 0] := 'X' ;
+  Io.WriteLine ('done')
+END Up ;
+BEGIN
+  Up ()
+END R2N23.

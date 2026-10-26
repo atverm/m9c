@@ -47,7 +47,7 @@ shape and are not parameter blocks.
 
 definition units, and documented
 
-### Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ; VAR st: Stats) : STR RAISES IndexError
+### Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ; VAR st: Stats) : UTF RAISES IndexError
 
 The same declarations as DATA.  One object: "module", "doc"
 (the module's own comment, or null), and "declarations" -- for
@@ -67,7 +67,7 @@ generator makes most is a real name it did not look up, or a
 guessed one, and a table copied into a prompt drifts in a day
 (docs/skills-plan.md par 1, par 4).
 
-### Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ; VAR st: Stats) : STR RAISES IndexError
+### Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ; VAR st: Stats) : UTF RAISES IndexError
 
 the Markdown reference for one file, and its measurements.
 

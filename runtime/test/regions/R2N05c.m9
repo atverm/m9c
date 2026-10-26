@@ -1,0 +1,27 @@
+MODULE R2N05c ;
+(* a chain of copies longer than the loop fixpoint's pass bound *)
+IMPORT Io, Fmt ;
+VAR last : STR ;
+PROCEDURE Fill () =
+VAR a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 : STR ; i : I64 ;
+BEGIN
+  a0 := 'lit' ; a1 := 'lit' ; a2 := 'lit' ; a3 := 'lit' ; a4 := 'lit' ; a5 := 'lit' ;
+  a6 := 'lit' ; a7 := 'lit' ; a8 := 'lit' ; a9 := 'lit' ; a10 := 'lit' ; a11 := 'lit' ;
+  FOR i := 1 TO 12 DO
+    a11 := a10 ; a10 := a9 ; a9 := a8 ; a8 := a7 ; a7 := a6 ; a6 := a5 ;
+    a5 := a4 ; a4 := a3 ; a3 := a2 ; a2 := a1 ; a1 := a0 ;
+    a0 := 'frame ' + Fmt.I64Str (i)
+  END ;
+  last := a9
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (last)
+END R2N05c.

@@ -3,7 +3,7 @@
 #define M9G_Gen_H
 #include "m9rt.h"
 #include "Ast.h"
-#include "DynStr.h"
+#include "DynUtf.h"
 #include "Text.h"
 
 void Gen_m9init (m9_state *err);
@@ -35,9 +35,9 @@ typedef struct Gen_XC Gen_XC;
 #define M9SL_m9_sl_Gen_MEnt
 typedef struct { Gen_MEnt *p; int64_t len; } m9_sl_Gen_MEnt;
 #endif
-#ifndef M9SL_m9_sl_m9_sl_CHAR
-#define M9SL_m9_sl_m9_sl_CHAR
-typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 #endif
 #ifndef M9SL_m9_sl_Gen_GP
 #define M9SL_m9_sl_Gen_GP
@@ -59,17 +59,13 @@ typedef struct { Ast_Node * *p; int64_t len; } m9_sl_Ast_Nodep;
 #define M9SL_m9_arr_8_int64_t
 typedef struct { int64_t v[8]; } m9_arr_8_int64_t;
 #endif
-#ifndef M9SL_m9_arr_8_m9_sl_CHAR
-#define M9SL_m9_arr_8_m9_sl_CHAR
-typedef struct { m9_sl_CHAR v[8]; } m9_arr_8_m9_sl_CHAR;
+#ifndef M9SL_m9_arr_8_m9_sl_UTF8
+#define M9SL_m9_arr_8_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 v[8]; } m9_arr_8_m9_sl_UTF8;
 #endif
 #ifndef M9SL_m9_arr_13_m9_sl_CHAR
 #define M9SL_m9_arr_13_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[13]; } m9_arr_13_m9_sl_CHAR;
-#endif
-#ifndef M9SL_m9_arr_9_m9_sl_CHAR
-#define M9SL_m9_arr_9_m9_sl_CHAR
-typedef struct { m9_sl_CHAR v[9]; } m9_arr_9_m9_sl_CHAR;
 #endif
 #ifndef M9SL_m9_arr_7_m9_sl_CHAR
 #define M9SL_m9_arr_7_m9_sl_CHAR
@@ -82,6 +78,10 @@ typedef struct { m9_sl_CHAR v[3]; } m9_arr_3_m9_sl_CHAR;
 #ifndef M9SL_m9_arr_4_m9_sl_CHAR
 #define M9SL_m9_arr_4_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[4]; } m9_arr_4_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_8_m9_sl_CHAR
+#define M9SL_m9_arr_8_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[8]; } m9_arr_8_m9_sl_CHAR;
 #endif
 #ifndef M9SL_m9_arr_10_m9_sl_CHAR
 #define M9SL_m9_arr_10_m9_sl_CHAR
@@ -99,17 +99,24 @@ typedef struct { m9_sl_CHAR v[39]; } m9_arr_39_m9_sl_CHAR;
 #define M9SL_m9_arr_24_uint32_t
 typedef struct { uint32_t v[24]; } m9_arr_24_uint32_t;
 #endif
+#ifndef M9SL_m9_sl_m9_sl_CHAR
+#define M9SL_m9_sl_m9_sl_CHAR
+typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
 
 void Gen_LoadUnit (Ast_Node * *u, m9_pool *u_pool, m9_state *err);
 void Gen_LoadExtern (Ast_Node * u, m9_state *err);
 void Gen_LoadExternDeep (Ast_Node * u, m9_state *err);
-void Gen_SetPrefix (m9_sl_CHAR module, m9_sl_CHAR prefix, m9_state *err);
-void Gen_SetDebugSource (m9_sl_CHAR file, m9_state *err);
-void Gen_Emit (m9_sl_CHAR forModule, m9_state *err);
-m9_sl_CHAR Gen_HText (m9_state *err);
-m9_sl_CHAR Gen_CText (m9_state *err);
+void Gen_SetPrefix (m9_sl_UTF8 module, m9_sl_UTF8 prefix, m9_state *err);
+void Gen_SetDebugSource (m9_sl_UTF8 file, m9_state *err);
+void Gen_Emit (m9_sl_UTF8 forModule, m9_state *err);
+m9_sl_UTF8 Gen_HText (m9_state *err);
+m9_sl_UTF8 Gen_CText (m9_state *err);
 int64_t Gen_Errs (m9_state *err);
 int64_t Gen_ErrLineAt (int64_t i, m9_state *err);
-m9_sl_CHAR Gen_ErrMsgAt (int64_t i, m9_state *err);
+m9_sl_UTF8 Gen_ErrMsgAt (int64_t i, m9_state *err);
+void Gen_SetIrCheck (bool on, m9_state *err);
+void Gen_SetStrUtf (bool on, m9_state *err);
+m9_sl_UTF8 Gen_IrReport (m9_state *err);
 
 #endif

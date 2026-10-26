@@ -1,0 +1,20 @@
+#!/bin/sh
+# The C compiler sanitize.sh hands m9c as $CC: the real one with
+# AddressSanitizer, UBSan (float-cast-overflow included: an F64 out of
+# an integer's range is the museum's founding bug) and the runtime's
+# -DM9_ASAN arenas (m9rt.h), on every compile AND the link.  A wrapper
+# rather than a restated link line: m9c supplies its own flags and
+# objects, and `--run`'s cache key holds CC, so this build never meets
+# an unsanitized object.  SANCC_REAL names the compiler (default gcc).
+# Measured limit of gcc 16 (2026-10-21, runtime/test/sanitize/
+# arena_control.c): a load is NOT checked when a checked store to the
+# same address dominates it, even across an out-of-line call that
+# poisons the storage -- store, statement release, load in one
+# procedure reads 0xA5 unreported.  clang reports it; SANCC_REAL=clang
+# is the stricter run where clang is installed.
+# -g on a compile only: on macOS a link with -g runs dsymutil, whose
+# .dSYM directory m9c's cache then cannot remove.
+G=
+for a in "$@"; do [ "$a" = -c ] && G=-g; done
+exec "${SANCC_REAL:-gcc}" -fsanitize=address,undefined,float-cast-overflow \
+  -fno-sanitize-recover=all -fno-omit-frame-pointer $G -DM9_ASAN "$@"

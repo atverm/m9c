@@ -1,0 +1,47 @@
+MODULE R4SumProv4 ;
+IMPORT Io, Fmt ;
+VAR last : STR ;
+PROCEDURE A (n: I64) : STR ;
+PROCEDURE B (n: I64) : STR ;
+PROCEDURE C (n: I64) : STR ;
+PROCEDURE D (n: I64) : STR ;
+PROCEDURE Warm () =
+VAR t : STR ;
+BEGIN
+  t := A (1) ;
+  Io.WriteLine (t)
+END Warm ;
+PROCEDURE Fill () =
+BEGIN
+  last := C (0)
+END Fill ;
+PROCEDURE A (n: I64) : STR =
+BEGIN
+  IF n > 5 THEN RETURN B (n - 1) END ;
+  IF n > 3 THEN RETURN C (n - 1) END ;
+  RETURN 'frame string number ' + Fmt.I64Str (n)
+END A ;
+PROCEDURE B (n: I64) : STR =
+BEGIN
+  RETURN A (n)
+END B ;
+PROCEDURE C (n: I64) : STR =
+BEGIN
+  RETURN D (n)
+END C ;
+PROCEDURE D (n: I64) : STR =
+BEGIN
+  RETURN B (n)
+END D ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Warm () ;
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (last)
+END R4SumProv4.

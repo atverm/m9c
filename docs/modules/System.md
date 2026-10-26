@@ -22,6 +22,10 @@ bytes carved, bytes held, blocks
 the exit status; minus the signal number
 when the program was killed by one
 
+### TYPE ResultUtf
+
+the streams as the UTF-8 they are
+
 ### EXCEPTION NoPool
 
 _(documented with the group below)_
@@ -36,6 +40,8 @@ asks at run time and both branches stay in the text where a
 reviewer can read them.
 
 ### Executable (VAR pool: POOL) : STR RAISES ValueRange
+
+**Deprecated** (the UTF transition): ExecutableUtf is its UTF form.
 
 the running executable's resolved path, as the kernel knows it,
 or empty when the system will not say.  NOT Program, which is
@@ -70,6 +76,8 @@ capacity held by every live pool together
 
 ### Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ; RO input: STR ; RO env: SLICE OF STR) : Result RAISES ValueRange, Io.IOError
 
+**Deprecated** (the UTF transition): ExecUtf is its UTF form.
+
 run prog with args -- directly, no shell, so an argument is an
 argument and not a command -- feed it `input` on stdin (the
 empty string is an immediate end-of-file, never this program's
@@ -84,6 +92,8 @@ a large input and a large output do not deadlock.  It waits as
 long as the program takes: ExecWithin is the one that does not.
 
 ### ExecWithin (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ; RO input: STR ; RO env: SLICE OF STR ; seconds: F64) : Result RAISES ValueRange, Io.IOError
+
+**Deprecated** (the UTF transition): ExecWithinUtf is its UTF form.
 
 Exec, with a deadline over the whole run -- starting it, both
 streams, and its exit.  When the time is up the program AND
@@ -104,6 +114,8 @@ receives the terminal's Ctrl-C: that is the price of the bound,
 and it is why an unbounded run is not given one.
 
 ### Become (RO prog: STR ; RO name: STR ; RO args: SLICE OF STR) RAISES ValueRange, Io.IOError
+
+**Deprecated** (the UTF transition): BecomeUtf is its UTF form.
 
 THIS PROCESS BECOMES prog, told `name` as its argv[0] and args
 after it.  It keeps this process's stdin, stdout, stderr,
@@ -143,19 +155,31 @@ every argument that is not an option, in order
 
 ### Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange
 
-the paths that exist and fit the pattern, SORTED by code point:
-Python's glob.glob, which answers them in the order the
-filesystem happens to hold, sorted.  The pattern is cut at its
-slashes and each piece is a Text.Match pattern for one name:
-`data/*/L2_[0-9][0-9].nc'.  A piece with no star, question mark
-or bracket is just a name.
+**Deprecated** (the UTF transition): GlobUtf is its UTF form.
 
-As in every shell, a name that begins with a dot is found only
-by a piece that begins with one.  A pattern that matches nothing
-answers an empty slice, and so does one that looks in a
-directory that is not there: nothing found is not a failure.
-A pattern that ENDS in a slash asks for directories only; they
-are answered without it.  There is no `**'.
+see GlobUtf below for the UTF form
+
+### ExecUtf (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ; RO input: UTF ; RO env: SLICE OF UTF) : ResultUtf RAISES ValueRange, Io.IOError
+
+_(undocumented)_
+
+### ExecWithinUtf (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ; RO input: UTF ; RO env: SLICE OF UTF ; seconds: F64) : ResultUtf RAISES ValueRange, Io.IOError
+
+_(undocumented)_
+
+### BecomeUtf (RO prog: UTF ; RO name: UTF ; RO args: SLICE OF UTF) RAISES ValueRange, Io.IOError
+
+_(documented with the group below)_
+
+### ExecutableUtf (VAR pool: POOL) : UTF RAISES ValueRange
+
+the path's bytes validated as UTF-8 -- Executable answers them one
+CHAR a byte, so `UTF (System.Executable (pool))` would encode a
+name past ASCII twice
+
+### GlobUtf (RO pattern: UTF) : SLICE OF UTF RAISES ValueRange
+
+_(undocumented)_
 
 ### NCpu () : C.Int [REENTRANT]
 

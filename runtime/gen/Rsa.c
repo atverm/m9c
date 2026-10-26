@@ -8,6 +8,8 @@ const m9_exc Rsa_Error = { "Error" };
 extern void m9_sha256_init (void *);
 extern void m9_sha256_update (void *, const void *, int64_t);
 extern void m9_sha256_final (void *, void *);
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 extern int m9_rsa_verify (const void *, size_t, int, const void *, size_t, const void *, size_t, int);
 
 struct Rsa_Key {
@@ -91,7 +93,7 @@ Rsa_Key * Rsa_PublicKey (m9_pool *pool, m9_sl_CHAR pem, m9_state *err)
     m9_raise (err, &Rsa_Error);
     goto L_ret;
   }
-  { __typeof__(({ __typeof__(pem) m9t2 = pem; int64_t m9t2a = b, m9t2n = m9_sub_i64 ((pem).len, b, err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a1 = ({ __typeof__(pem) m9t2 = pem; int64_t m9t2a = b, m9t2n = m9_sub_i64 ((pem).len, b, err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+  { __typeof__(({ __auto_type m9t2 = pem; int64_t m9t2a = b, m9t2n = m9_sub_i64 ((pem).len, b, err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })) m9a1 = ({ __auto_type m9t2 = pem; int64_t m9t2a = b, m9t2n = m9_sub_i64 ((pem).len, b, err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; });
     if (err->exc) goto L_ret;
   { __typeof__(e) m9v = Text_Find (m9a1, ((m9_sl_CHAR){ (uint32_t *) m9s2, 9 }), err);
     if (err->exc) goto L_ret;
@@ -107,7 +109,7 @@ Rsa_Key * Rsa_PublicKey (m9_pool *pool, m9_sl_CHAR pem, m9_state *err)
     if (err->exc) goto L_ret;
     e = m9v;
   }
-  { __typeof__(({ __typeof__(pem) m9t4 = pem; int64_t m9t4a = b, m9t4n = m9_sub_i64 (e, b, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a2 = ({ __typeof__(pem) m9t4 = pem; int64_t m9t4a = b, m9t4n = m9_sub_i64 (e, b, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+  { __typeof__(({ __auto_type m9t4 = pem; int64_t m9t4a = b, m9t4n = m9_sub_i64 (e, b, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a2 = ({ __auto_type m9t4 = pem; int64_t m9t4a = b, m9t4n = m9_sub_i64 (e, b, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
     if (err->exc) goto L_ret;
   { __typeof__(i) m9v = Text_FindChar (m9a2, 10u, err);
     if (err->exc) goto L_ret;
@@ -119,23 +121,25 @@ Rsa_Key * Rsa_PublicKey (m9_pool *pool, m9_sl_CHAR pem, m9_state *err)
     m9_raise (err, &Rsa_Error);
     goto L_ret;
   }
-  bool m9t7 = (!Text_Contains (({ __typeof__(pem) m9t6 = pem; int64_t m9t6a = b, m9t6n = i; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s5, 10 }), err));
+  { __typeof__(({ __auto_type m9t6 = pem; int64_t m9t6a = b, m9t6n = i; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a3 = ({ __auto_type m9t6 = pem; int64_t m9t6a = b, m9t6n = i; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+    if (err->exc) goto L_ret;
+  bool m9t7 = (!Text_Contains (m9a3, ((m9_sl_CHAR){ (uint32_t *) m9s5, 10 }), err));
   if (err->exc) goto L_ret;
   if (m9t7) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 35 }), ({ __typeof__(pem) m9t8 = pem; int64_t m9t8a = m9_add_i64 (b, INT64_C(11), err), m9t8n = m9_sub_i64 (m9_sub_i64 (i, b, err), INT64_C(11), err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; }), err)) m9t9 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 35 }), ({ __typeof__(pem) m9t8 = pem; int64_t m9t8a = m9_add_i64 (b, INT64_C(11), err), m9t8n = m9_sub_i64 (m9_sub_i64 (i, b, err), INT64_C(11), err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; }), err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 35 }), ({ __auto_type m9t8 = pem; int64_t m9t8a = m9_add_i64 (b, INT64_C(11), err), m9t8n = m9_sub_i64 (m9_sub_i64 (i, b, err), INT64_C(11), err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; }), err)) m9t9 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 35 }), ({ __auto_type m9t8 = pem; int64_t m9t8a = m9_add_i64 (b, INT64_C(11), err), m9t8n = m9_sub_i64 (m9_sub_i64 (i, b, err), INT64_C(11), err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; }), err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
     m9_raise (err, &Rsa_Error);
     goto L_ret;
-  }
+  } }
   { __typeof__(body) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, err->res, m9_sub_i64 (m9_sub_i64 (e, b, err), i, err), err);
     if (err->exc) goto L_ret;
     body = m9v;
   }
   n = INT64_C(0);
-  { int64_t m9t10to;
+  { __typeof__(i) m9t10to;
   i = m9_add_i64 (m9_add_i64 (b, i, err), INT64_C(1), err);
   m9t10to = m9_sub_i64 (e, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t10to; i += 1) {
+  if (i <= m9t10to) for (;;) {
     bool m9t11 = (((((*(uint32_t *) m9_at (pem.p, i, pem.len, sizeof (uint32_t), err)) != 10u) && ((*(uint32_t *) m9_at (pem.p, i, pem.len, sizeof (uint32_t), err)) != 13u)) && ((*(uint32_t *) m9_at (pem.p, i, pem.len, sizeof (uint32_t), err)) != 32u)) && ((*(uint32_t *) m9_at (pem.p, i, pem.len, sizeof (uint32_t), err)) != 9u));
     if (err->exc) goto L_ret;
     if (m9t11) {
@@ -149,13 +153,15 @@ Rsa_Key * Rsa_PublicKey (m9_pool *pool, m9_sl_CHAR pem, m9_state *err)
         n = m9v;
       }
     }
+    if ((uint64_t) m9t10to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
-  { __typeof__(({ __typeof__(body) m9t14 = body; int64_t m9t14a = INT64_C(0), m9t14n = n; (__typeof__(m9t14)){ m9t14.p + m9_chk_slice (m9t14a, m9t14n, m9t14.len, err), m9t14n }; })) m9a3 = ({ __typeof__(body) m9t14 = body; int64_t m9t14a = INT64_C(0), m9t14n = n; (__typeof__(m9t14)){ m9t14.p + m9_chk_slice (m9t14a, m9t14n, m9t14.len, err), m9t14n }; });
+  { __typeof__(({ __auto_type m9t14 = body; int64_t m9t14a = INT64_C(0), m9t14n = n; int64_t m9t14o = m9_chk_slice (m9t14a, m9t14n, m9t14.len, err); (__typeof__(m9t14)){ m9t14.p + m9t14o, err->exc ? 0 : m9t14n }; })) m9a4 = ({ __auto_type m9t14 = body; int64_t m9t14a = INT64_C(0), m9t14n = n; int64_t m9t14o = m9_chk_slice (m9t14a, m9t14n, m9t14.len, err); (__typeof__(m9t14)){ m9t14.p + m9t14o, err->exc ? 0 : m9t14n }; });
     if (err->exc) goto L_hdl_m9t12;
-  { __typeof__(Text_FromBase64 (m9a3, err)) m9a4 = Text_FromBase64 (m9a3, err);
+  { __typeof__(Text_FromBase64 (m9a4, err)) m9a5 = Text_FromBase64 (m9a4, err);
     if (err->exc) goto L_hdl_m9t12;
-  m9ret = Rsa_PublicKeyDer (pool, m9a4, err);
+  m9ret = Rsa_PublicKeyDer (pool, m9a5, err);
   if (err->exc) goto L_hdl_m9t12;
   }
   }
@@ -259,9 +265,9 @@ Rsa_Key * Rsa_PublicKeyDer (m9_pool *pool, m9_sl_BYTE der, m9_state *err)
     e = m9v;
   }
   err->res = m9res;
-  { __typeof__(({ __typeof__(der) m9t10 = der; int64_t m9t10a = INT64_C(0), m9t10n = outerEnd; (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; })) m9a5 = ({ __typeof__(der) m9t10 = der; int64_t m9t10a = INT64_C(0), m9t10n = outerEnd; (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; });
+  { __typeof__(({ __auto_type m9t10 = der; int64_t m9t10a = INT64_C(0), m9t10n = outerEnd; int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; })) m9a6 = ({ __auto_type m9t10 = der; int64_t m9t10a = INT64_C(0), m9t10n = outerEnd; int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; });
     if (err->exc) goto L_hdl_m9t1;
-  m9ret = Rsa_Build (pool, m9a5, pkcs1, n, e, err);
+  m9ret = Rsa_Build (pool, m9a6, pkcs1, n, e, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   goto L_ret;
@@ -370,12 +376,12 @@ bool Rsa_Verify (Rsa_Key * k, m9_sl_BYTE digest, m9_sl_BYTE signature, int64_t s
   } else {
     pss = INT64_C(0);
   }
-  { __typeof__(rc) m9v = (int64_t)(m9_rsa_verify (((void *)(k->der).p), ((size_t) m9_u64 ((k->der).len, err)), ((int) m9_i32 (pk, err)), ((void *)(digest).p), ((size_t) m9_u64 ((digest).len, err)), ((void *)(signature).p), ((size_t) m9_u64 ((signature).len, err)), ((int) m9_i32 (pss, err))));
+  { __typeof__(rc) m9v = (int64_t)(({ __auto_type m9_fam9t3 = (((void *)(k->der).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((k->der).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int) m9_i32 (pk, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((void *)(digest).p)); __auto_type m9_fam9t7 = (((size_t) m9_u64 ((digest).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t8 = (((void *)(signature).p)); __auto_type m9_fam9t9 = (((size_t) m9_u64 ((signature).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t10 = (((int) m9_i32 (pss, err))); if (err->exc) goto L_ret; m9_rsa_verify (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9, m9_fam9t10); }));
     if (err->exc) goto L_ret;
     rc = m9v;
   }
   if ((rc < INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 44 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 44 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 44 })) m9t11 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 44 }); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
     m9_raise (err, &Rsa_Error);
     goto L_ret;
   }
@@ -396,9 +402,9 @@ bool Rsa_VerifyMessage (Rsa_Key * k, m9_sl_BYTE message, m9_sl_BYTE signature, i
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  { __typeof__(Hash_Sha256Of (message, err)) m9a6 = Hash_Sha256Of (message, err);
+  { __typeof__(Hash_Sha256Of (message, err)) m9a7 = Hash_Sha256Of (message, err);
     if (err->exc) goto L_ret;
-  m9ret = Rsa_Verify (k, m9a6, signature, scheme, err);
+  m9ret = Rsa_Verify (k, m9a7, signature, scheme, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -448,15 +454,17 @@ static void Rsa_Tlv (m9_sl_BYTE d, int64_t at, int64_t *tag, int64_t *len, int64
       goto L_hdl_m9t1;
     }
     (*len) = INT64_C(0);
-    { int64_t m9t7to;
+    { __typeof__(i) m9t7to;
     i = INT64_C(0);
     m9t7to = m9_sub_i64 (nlen, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; i <= m9t7to; i += 1) {
+    if (i <= m9t7to) for (;;) {
       { __typeof__((*len)) m9v = m9_add_i64 (m9_mul_i64 ((*len), INT64_C(256), err), (int64_t)((*(uint8_t *) m9_at (d.p, m9_add_i64 ((*start), i, err), d.len, sizeof (uint8_t), err))), err);
         if (err->exc) goto L_hdl_m9t1;
         (*len) = m9v;
       }
+      if ((uint64_t) m9t7to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     { __typeof__((*start)) m9v = m9_add_i64 ((*start), nlen, err);
       if (err->exc) goto L_hdl_m9t1;
@@ -532,7 +540,7 @@ static m9_sl_BYTE Rsa_Integer (m9_sl_BYTE d, int64_t at, int64_t *next, m9_state
     }
   }
   err->res = m9res;
-  m9ret = ({ __typeof__(d) m9t8 = d; int64_t m9t8a = m9_add_i64 (start, i, err), m9t8n = m9_sub_i64 (len, i, err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; });
+  m9ret = ({ __auto_type m9t8 = d; int64_t m9t8a = m9_add_i64 (start, i, err), m9t8n = m9_sub_i64 (len, i, err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
   if (err->exc) goto L_hdl_m9t1;
   goto L_ret;
   goto L_dn_m9t2;
@@ -578,11 +586,11 @@ static bool Rsa_RsaOid (m9_sl_BYTE d, int64_t at, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 (len, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; i <= m9t3to; i += 1) {
+  if (i <= m9t3to) for (;;) {
     bool m9t4 = ((int64_t)((*(uint8_t *) m9_at (d.p, m9_add_i64 (start, i, err), d.len, sizeof (uint8_t), err))) != (*(int64_t *) m9_at ((*Oid).v, i, INT64_C(9), sizeof (int64_t), err)));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
@@ -590,6 +598,8 @@ static bool Rsa_RsaOid (m9_sl_BYTE d, int64_t at, m9_state *err)
       m9ret = false;
       goto L_ret;
     }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = true;
@@ -648,47 +658,53 @@ static Rsa_Key * Rsa_Build (m9_pool *pool, m9_sl_BYTE der, bool pkcs1, m9_sl_BYT
     if (err->exc) goto L_ret;
     k->der = m9v;
   }
-  { int64_t m9t6to;
+  { __typeof__(i) m9t6to;
   i = INT64_C(0);
   m9t6to = m9_sub_i64 ((der).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t6to; i += 1) {
+  if (i <= m9t6to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (k->der.p, i, k->der.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (der.p, i, der.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (k->der.p, i, k->der.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   k->pkcs1 = pkcs1;
   { __typeof__(k->n) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), (n).len, err);
     if (err->exc) goto L_ret;
     k->n = m9v;
   }
-  { int64_t m9t7to;
+  { __typeof__(i) m9t7to;
   i = INT64_C(0);
   m9t7to = m9_sub_i64 ((n).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t7to; i += 1) {
+  if (i <= m9t7to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (k->n.p, i, k->n.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (n.p, i, n.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (k->n.p, i, k->n.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t7to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__(k->e) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), (e).len, err);
     if (err->exc) goto L_ret;
     k->e = m9v;
   }
-  { int64_t m9t8to;
+  { __typeof__(i) m9t8to;
   i = INT64_C(0);
   m9t8to = m9_sub_i64 ((e).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t8to; i += 1) {
+  if (i <= m9t8to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (k->e.p, i, k->e.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (e.p, i, e.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (k->e.p, i, k->e.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__(top) m9v = (int64_t)((*(uint8_t *) m9_at (n.p, INT64_C(0), n.len, sizeof (uint8_t), err)));
     if (err->exc) goto L_ret;
@@ -742,11 +758,11 @@ static m9_sl_CHAR Rsa_HexOf (m9_sl_BYTE b, m9_state *err)
     s = m9v;
   }
   n = INT64_C(0);
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     { __typeof__(v) m9v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
       v = m9v;
@@ -775,9 +791,11 @@ static m9_sl_CHAR Rsa_HexOf (m9_sl_BYTE b, m9_state *err)
         n = m9v;
       }
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
-  m9ret = ({ __typeof__(s) m9t3 = s; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+  m9ret = ({ __auto_type m9t3 = s; int64_t m9t3a = INT64_C(0), m9t3n = n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;

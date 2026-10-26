@@ -1,0 +1,36 @@
+(* EXPECT: a concatenation dies with this frame; it cannot be stored through fs, which outlives it (par 2.3) *)
+MODULE m ;
+(* a string built in the frame and stored into a FIELD of an ELEMENT of a
+   VAR slice: the slice's storage is the caller's, here a module list, and
+   nothing adopts an element.  Owed since Sem's UTF port (2026-10-23,
+   Diag's findings read back blank) and found refused when re-measured on
+   2026-10-25, in this shape, through a builder's view and as a bare
+   element; held here so it stays so.  Legal forms first: a scalar
+   field, a literal, a copy into the caller's pool *)
+TYPE Finding = RECORD line : I64 ; msg : STR END ;
+VAR
+  mp : POOL ;
+  list : SLICE OF Finding ;
+PROCEDURE Legal (VAR pool: POOL ; VAR fs: SLICE OF Finding ; RO s: STR) RAISES IndexError =
+BEGIN
+  fs[0].line := 1 ;
+  fs[0].msg := 'fixed' ;
+  fs[0].msg := Text (pool, 'copied ' + s)
+END Legal ;
+PROCEDURE Text (VAR pool: POOL ; RO s: STR) : STR =
+VAR t : STR ;
+BEGIN
+  t := NEW (pool, CHAR, LEN (s)) ;
+  RETURN t
+END Text ;
+PROCEDURE Fill (VAR fs: SLICE OF Finding ; RO s: STR) RAISES IndexError =
+BEGIN
+  fs[0].msg := 'message ' + s
+END Fill ;
+BEGIN
+  list := NEW (mp, Finding, 1) ;
+  Legal (mp, list, 'a') ;
+  Fill (list, 'b')
+EXCEPT
+| IndexError :
+END m.

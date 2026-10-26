@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
 /* hashshim: SHA-256 for the zarr proxy's data passports.
  *
  * Self-contained (FIPS 180-4), no library dependency -- OpenSSL is

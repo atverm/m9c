@@ -2,10 +2,10 @@ REVIEW Png -- 51 procedures with a body, 28 of them functions; 4 headings in a D
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              28
-  assignments                                   726
+  assignments                                   728
   arguments                                     801
   RETURN values                                  49
-  operands of a comparison or an operator      1211
+  operands of a comparison or an operator      1209
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        0
   NEW in the frame                                0
   NEW in a named pool                            32
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                 99   index kind[k], index kind[k], index s[0], index s[0], len a, len b, +93 more

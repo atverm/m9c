@@ -7,29 +7,42 @@ module's output against the FPC printer over the whole corpus.
 
 ### Tree (VAR pool: POOL ; root: PTR Ast.Node) : STR
 
-the whole tree back as CANONICAL M9 source: one spelling per
-construct, chosen by this module rather than recovered from the
-input.
+**Deprecated** (the UTF transition): TreeUtf is its UTF form.
 
-COMMENTS AND LAYOUT DO NOT SURVIVE, and cannot: comments are
-never tokens, so the parser has not seen them.  What is
-promised instead is checked by parsetest -- printing is a
-fixpoint, and re-lexing the output yields the source's own
-token sequence.  So Tree round-trips the PROGRAM, not the
-file.
+_(documented with the group below)_
 
-  root -- the NFile node from Parse.File.  A tree with parse
-          errors in it prints whatever was recovered, which is
-          why the caller checks p.nerr first.
+### TreeUtf (VAR pool: POOL ; root: PTR Ast.Node) : UTF
+
+the UTF form of Tree (docs/utf8-stage3-plan.md, step 5): the
+printer builds UTF-8 and the STR forms decode it, so a caller
+moves when it moves; named, as none takes a UTF to dispatch on
 
 ### TypeText (VAR pool: POOL ; k: Ast.Kid) : STR
+
+**Deprecated** (the UTF transition): TypeTextUtf is its UTF form.
 
 _(undocumented)_
 
 ### ParamsText (k: Ast.Kid) : STR
 
+**Deprecated** (the UTF transition): ParamsTextUtf is its UTF form.
+
 _(undocumented)_
 
 ### ExprText (k: Ast.Kid) : STR
+
+**Deprecated** (the UTF transition): ExprTextUtf is its UTF form.
+
+_(undocumented)_
+
+### TypeTextUtf (VAR pool: POOL ; k: Ast.Kid) : UTF
+
+_(undocumented)_
+
+### ParamsTextUtf (k: Ast.Kid) : UTF
+
+_(undocumented)_
+
+### ExprTextUtf (k: Ast.Kid) : UTF
 
 _(undocumented)_

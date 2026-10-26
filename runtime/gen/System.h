@@ -11,6 +11,7 @@ void System_m9init (m9_state *err);
 typedef struct System_Memory System_Memory;
 typedef struct System_PoolInfo System_PoolInfo;
 typedef struct System_Result System_Result;
+typedef struct System_ResultUtf System_ResultUtf;
 
 extern const m9_exc System_NoPool;
 
@@ -29,6 +30,10 @@ typedef struct { int64_t v[3]; } m9_arr_3_int64_t;
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 #endif
 
 typedef struct System_Memory System_Memory;
@@ -54,6 +59,14 @@ struct System_Result {
   bool stopped;
 };
 
+typedef struct System_ResultUtf System_ResultUtf;
+struct System_ResultUtf {
+  int64_t status;
+  m9_sl_UTF8 out;
+  m9_sl_UTF8 err_;
+  bool stopped;
+};
+
 m9_sl_CHAR System_Os (m9_state *err);
 m9_sl_CHAR System_Executable (m9_pool *pool, m9_state *err);
 int64_t System_Cores (m9_state *err);
@@ -71,5 +84,10 @@ bool System_Flag (m9_sl_CHAR name, m9_state *err);
 m9_sl_CHAR System_Value (m9_sl_CHAR name, m9_sl_CHAR dflt, m9_state *err);
 m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err);
 m9_sl_m9_sl_CHAR System_Glob (m9_sl_CHAR pattern, m9_state *err);
+System_ResultUtf System_ExecUtf (m9_pool *pool, m9_sl_UTF8 prog, m9_sl_m9_sl_UTF8 args, m9_sl_UTF8 input, m9_sl_m9_sl_UTF8 env, m9_state *err);
+System_ResultUtf System_ExecWithinUtf (m9_pool *pool, m9_sl_UTF8 prog, m9_sl_m9_sl_UTF8 args, m9_sl_UTF8 input, m9_sl_m9_sl_UTF8 env, double seconds, m9_state *err);
+void System_BecomeUtf (m9_sl_UTF8 prog, m9_sl_UTF8 name, m9_sl_m9_sl_UTF8 args, m9_state *err);
+m9_sl_UTF8 System_ExecutableUtf (m9_pool *pool, m9_state *err);
+m9_sl_m9_sl_UTF8 System_GlobUtf (m9_sl_UTF8 pattern, m9_state *err);
 
 #endif

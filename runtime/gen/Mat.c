@@ -233,7 +233,7 @@ void Mat_Set (Mat_Matrix * *m, m9_pool *m_pool, int64_t r, int64_t c, double v, 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  (*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], r, c, err)) = v;
+  (*(double *) m9_gat2 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], r, c, err)) = v;
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -259,18 +259,18 @@ void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_state *er
     m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
-  { int64_t m9t1to;
+  { __typeof__(c) m9t1to;
   c = INT64_C(0);
   m9t1to = m9_sub_i64 ((m->d).n[INT64_C(1)], INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t1to; c += 1) {
+  if (c <= m9t1to) for (;;) {
     n = INT64_C(0);
     acc = 0.0;
-    { int64_t m9t2to;
+    { __typeof__(r) m9t2to;
     r = INT64_C(0);
     m9t2to = m9_sub_i64 ((m->d).n[INT64_C(0)], INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; r <= m9t2to; r += 1) {
+    if (r <= m9t2to) for (;;) {
       { __typeof__(v) m9v = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err));
         if (err->exc) goto L_ret;
         v = m9v;
@@ -314,6 +314,8 @@ void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_state *er
           n = m9v;
         }
       }
+      if ((uint64_t) m9t2to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
     if ((n == INT64_C(0))) {
       (*(double *) m9_at (out.p, c, out.len, sizeof (double), err)) = NAN;
@@ -349,6 +351,8 @@ void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_state *er
       default: m9_trap_tag ();
       } }
     }
+    if ((uint64_t) m9t1to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -376,22 +380,26 @@ Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_st
     if (err->exc) goto L_ret;
     res = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(r) m9t1to;
   r = INT64_C(0);
   m9t1to = m9_sub_i64 ((m->d).n[INT64_C(0)], INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t1to; r += 1) {
-    { int64_t m9t2to;
+  if (r <= m9t1to) for (;;) {
+    { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 ((m->d).n[INT64_C(1)], INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; c <= m9t2to; c += 1) {
+    if (c <= m9t2to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (res->d.p, sizeof (double), res->d.n[0], res->d.n[1], res->d.s[0], res->d.s[1], r, c, err))) m9v = ((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err)) - (*(double *) m9_at (v.p, c, v.len, sizeof (double), err)));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (res->d.p, sizeof (double), res->d.n[0], res->d.n[1], res->d.s[0], res->d.s[1], r, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t2to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   err->res = m9res;
   m9ret = res;
@@ -416,16 +424,16 @@ void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_state *err)
   (*mn) = NAN;
   (*mx) = NAN;
   seen = false;
-  { int64_t m9t1to;
+  { __typeof__(r) m9t1to;
   r = INT64_C(0);
   m9t1to = m9_sub_i64 ((m->d).n[INT64_C(0)], INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t1to; r += 1) {
-    { int64_t m9t2to;
+  if (r <= m9t1to) for (;;) {
+    { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 ((m->d).n[INT64_C(1)], INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; c <= m9t2to; c += 1) {
+    if (c <= m9t2to) for (;;) {
       { __typeof__(v) m9v = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err));
         if (err->exc) goto L_ret;
         v = m9v;
@@ -446,7 +454,11 @@ void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_state *err)
           }
         }
       }
+      if ((uint64_t) m9t2to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -484,30 +496,36 @@ Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   }
   }
   }
-  { int64_t m9t2to;
+  { __typeof__(r) m9t2to;
   r = INT64_C(0);
   m9t2to = m9_sub_i64 (Mat_Rows (a, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t2to; r += 1) {
-    { int64_t m9t3to;
+  if (r <= m9t2to) for (;;) {
+    { __typeof__(c) m9t3to;
     c = INT64_C(0);
     m9t3to = m9_sub_i64 (Mat_Cols (b, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; c <= m9t3to; c += 1) {
+    if (c <= m9t3to) for (;;) {
       acc = 0.0;
-      { int64_t m9t4to;
+      { __typeof__(k) m9t4to;
       k = INT64_C(0);
       m9t4to = m9_sub_i64 (Mat_Cols (a, err), INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t4to; k += 1) {
+      if (k <= m9t4to) for (;;) {
         { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (a->d.p, sizeof (double), a->d.n[0], a->d.n[1], a->d.s[0], a->d.s[1], r, k, err)) * (*(double *) m9_gat2 (b->d.p, sizeof (double), b->d.n[0], b->d.n[1], b->d.s[0], b->d.s[1], k, c, err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
+        if ((uint64_t) m9t4to - (uint64_t) k < (uint64_t) 1) break;
+        k += 1;
       } }
       (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err)) = acc;
       if (err->exc) goto L_ret;
+      if ((uint64_t) m9t3to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    if ((uint64_t) m9t2to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   err->res = m9res;
   m9ret = m;
@@ -545,24 +563,28 @@ Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_state *err
     m = m9v;
   }
   }
-  { int64_t m9t2to;
+  { __typeof__(r) m9t2to;
   r = INT64_C(0);
   m9t2to = m9_sub_i64 (Mat_Rows (a, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t2to; r += 1) {
+  if (r <= m9t2to) for (;;) {
     acc = 0.0;
-    { int64_t m9t3to;
+    { __typeof__(k) m9t3to;
     k = INT64_C(0);
     m9t3to = m9_sub_i64 (Mat_Cols (a, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; k <= m9t3to; k += 1) {
+    if (k <= m9t3to) for (;;) {
       { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (a->d.p, sizeof (double), a->d.n[0], a->d.n[1], a->d.s[0], a->d.s[1], r, k, err)) * (*(double *) m9_at (x.p, k, x.len, sizeof (double), err))));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
+      if ((uint64_t) m9t3to - (uint64_t) k < (uint64_t) 1) break;
+      k += 1;
     } }
     (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, INT64_C(0), err)) = acc;
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t2to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   err->res = m9res;
   m9ret = m;
@@ -594,22 +616,26 @@ Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   }
   }
   }
-  { int64_t m9t1to;
+  { __typeof__(r) m9t1to;
   r = INT64_C(0);
   m9t1to = m9_sub_i64 (Mat_Rows (m, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t1to; r += 1) {
-    { int64_t m9t2to;
+  if (r <= m9t1to) for (;;) {
+    { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 (Mat_Cols (m, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; c <= m9t2to; c += 1) {
+    if (c <= m9t2to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (t->d.p, sizeof (double), t->d.n[0], t->d.n[1], t->d.s[0], t->d.s[1], c, r, err))) m9v = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (t->d.p, sizeof (double), t->d.n[0], t->d.n[1], t->d.s[0], t->d.s[1], c, r, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t2to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   err->res = m9res;
   m9ret = t;
@@ -643,22 +669,26 @@ Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   }
   }
   }
-  { int64_t m9t1to;
+  { __typeof__(r) m9t1to;
   r = INT64_C(0);
   m9t1to = m9_sub_i64 (Mat_Rows (a, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t1to; r += 1) {
-    { int64_t m9t2to;
+  if (r <= m9t1to) for (;;) {
+    { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 (Mat_Cols (a, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; c <= m9t2to; c += 1) {
+    if (c <= m9t2to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err))) m9v = ((*(double *) m9_gat2 (a->d.p, sizeof (double), a->d.n[0], a->d.n[1], a->d.s[0], a->d.s[1], r, c, err)) + (*(double *) m9_gat2 (b->d.p, sizeof (double), b->d.n[0], b->d.n[1], b->d.s[0], b->d.s[1], r, c, err)));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t2to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   err->res = m9res;
   m9ret = m;
@@ -692,22 +722,26 @@ Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   }
   }
   }
-  { int64_t m9t1to;
+  { __typeof__(r) m9t1to;
   r = INT64_C(0);
   m9t1to = m9_sub_i64 (Mat_Rows (a, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t1to; r += 1) {
-    { int64_t m9t2to;
+  if (r <= m9t1to) for (;;) {
+    { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 (Mat_Cols (a, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; c <= m9t2to; c += 1) {
+    if (c <= m9t2to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err))) m9v = ((*(double *) m9_gat2 (a->d.p, sizeof (double), a->d.n[0], a->d.n[1], a->d.s[0], a->d.s[1], r, c, err)) - (*(double *) m9_gat2 (b->d.p, sizeof (double), b->d.n[0], b->d.n[1], b->d.s[0], b->d.s[1], r, c, err)));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t2to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   err->res = m9res;
   m9ret = m;
@@ -727,23 +761,33 @@ void Mat_Scale (Mat_Matrix * *m, m9_pool *m_pool, double s, m9_state *err)
   err->res = &m9frame;
   int64_t r = 0; (void) r;
   int64_t c = 0; (void) c;
-  { int64_t m9t1to;
+  { __typeof__(r) m9t1to;
   r = INT64_C(0);
-  m9t1to = m9_sub_i64 (Mat_Rows ((*m), err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  for (; r <= m9t1to; r += 1) {
-    { int64_t m9t2to;
-    c = INT64_C(0);
-    m9t2to = m9_sub_i64 (Mat_Cols ((*m), err), INT64_C(1), err);
+  { __typeof__(({ __auto_type m9n = ((*m)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a10 = ({ __auto_type m9n = ((*m)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
     if (err->exc) goto L_ret;
-    for (; c <= m9t2to; c += 1) {
-      { __typeof__((*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], r, c, err))) m9v = ((*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], r, c, err)) * s);
+  m9t1to = m9_sub_i64 (Mat_Rows (m9a10, err), INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  if (r <= m9t1to) for (;;) {
+    { __typeof__(c) m9t2to;
+    c = INT64_C(0);
+    { __typeof__(({ __auto_type m9n = ((*m)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a11 = ({ __auto_type m9n = ((*m)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      if (err->exc) goto L_ret;
+    m9t2to = m9_sub_i64 (Mat_Cols (m9a11, err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    if (c <= m9t2to) for (;;) {
+      { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], r, c, err))) m9v = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], r, c, err)) * s);
         if (err->exc) goto L_ret;
-        (*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], r, c, err)) = m9v;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], r, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t2to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    }
+    if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, m_pool, (*m));
@@ -764,13 +808,15 @@ Mat_Matrix * Mat_Identity (m9_pool *pool, int64_t n, m9_state *err)
     if (err->exc) goto L_ret;
     m = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], i, i, err)) = 1.0;
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = m;
@@ -792,32 +838,36 @@ Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   Mat_Matrix * t = NULL; (void) t;
   int64_t r = 0; (void) r;
   int64_t c = 0; (void) c;
-  { __typeof__(Mat_Rows (m, err)) m9a10 = Mat_Rows (m, err);
+  { __typeof__(Mat_Rows (m, err)) m9a12 = Mat_Rows (m, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Mat_Cols (m, err)) m9a11 = Mat_Cols (m, err);
+  { __typeof__(Mat_Cols (m, err)) m9a13 = Mat_Cols (m, err);
     if (err->exc) goto L_ret;
-  { __typeof__(t) m9v = Mat_New (pool, m9a10, m9a11, err);
+  { __typeof__(t) m9v = Mat_New (pool, m9a12, m9a13, err);
     if (err->exc) goto L_ret;
     t = m9v;
   }
   }
   }
-  { int64_t m9t1to;
+  { __typeof__(r) m9t1to;
   r = INT64_C(0);
   m9t1to = m9_sub_i64 (Mat_Rows (m, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; r <= m9t1to; r += 1) {
-    { int64_t m9t2to;
+  if (r <= m9t1to) for (;;) {
+    { __typeof__(c) m9t2to;
     c = INT64_C(0);
     m9t2to = m9_sub_i64 (Mat_Cols (m, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; c <= m9t2to; c += 1) {
+    if (c <= m9t2to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (t->d.p, sizeof (double), t->d.n[0], t->d.n[1], t->d.s[0], t->d.s[1], r, c, err))) m9v = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (t->d.p, sizeof (double), t->d.n[0], t->d.n[1], t->d.s[0], t->d.s[1], r, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t2to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
   } }
   err->res = m9res;
   m9ret = t;
@@ -858,28 +908,30 @@ Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err)
     if (err->exc) goto L_ret;
     l = m9v;
   }
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
-    { int64_t m9t3to;
+  if (i <= m9t2to) for (;;) {
+    { __typeof__(j) m9t3to;
     j = INT64_C(0);
     m9t3to = i;
-    for (; j <= m9t3to; j += 1) {
+    if (j <= m9t3to) for (;;) {
       { __typeof__(acc) m9v = (*(double *) m9_gat2 (a->d.p, sizeof (double), a->d.n[0], a->d.n[1], a->d.s[0], a->d.s[1], i, j, err));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
-      { int64_t m9t4to;
+      { __typeof__(k) m9t4to;
       k = INT64_C(0);
       m9t4to = m9_sub_i64 (j, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t4to; k += 1) {
+      if (k <= m9t4to) for (;;) {
         { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], i, k, err)) * (*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], j, k, err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
+        if ((uint64_t) m9t4to - (uint64_t) k < (uint64_t) 1) break;
+        k += 1;
       } }
       if ((i == j)) {
         if ((acc <= 0.0)) {
@@ -899,7 +951,11 @@ Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err)
           if (err->exc) goto L_ret;
         }
       }
+      if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
+      j += 1;
     } }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = l;
@@ -948,61 +1004,71 @@ Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_st
     if (err->exc) goto L_ret;
     x = m9v;
   }
-  { int64_t m9t3to;
+  { __typeof__(c) m9t3to;
   c = INT64_C(0);
   m9t3to = m9_sub_i64 (Mat_Cols (b, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t3to; c += 1) {
-    { int64_t m9t4to;
+  if (c <= m9t3to) for (;;) {
+    { __typeof__(i) m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t4to; i += 1) {
+    if (i <= m9t4to) for (;;) {
       { __typeof__(acc) m9v = (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
-      { int64_t m9t5to;
+      { __typeof__(k) m9t5to;
       k = INT64_C(0);
       m9t5to = m9_sub_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t5to; k += 1) {
+      if (k <= m9t5to) for (;;) {
         { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], i, k, err)) * (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], k, c, err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
+        if ((uint64_t) m9t5to - (uint64_t) k < (uint64_t) 1) break;
+        k += 1;
       } }
       { __typeof__((*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err))) m9v = (acc / (*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], i, i, err)));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
-    { int64_t m9t6to;
+    { __typeof__(i) m9t6to;
     i = m9_sub_i64 (n, INT64_C(1), err);
     m9t6to = INT64_C(0);
     if (err->exc) goto L_ret;
-    for (; i >= m9t6to; i += -1) {
+    if (i >= m9t6to) for (;;) {
       { __typeof__(acc) m9v = (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
-      { int64_t m9t7to;
+      { __typeof__(k) m9t7to;
       k = m9_add_i64 (i, INT64_C(1), err);
       m9t7to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t7to; k += 1) {
+      if (k <= m9t7to) for (;;) {
         { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], k, i, err)) * (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], k, c, err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
+        if ((uint64_t) m9t7to - (uint64_t) k < (uint64_t) 1) break;
+        k += 1;
       } }
       { __typeof__((*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err))) m9v = (acc / (*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], i, i, err)));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) i - (uint64_t) m9t6to < (uint64_t) 1) break;
+      i += -1;
     } }
+    if ((uint64_t) m9t3to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
   err->res = m9res;
   m9ret = x;
@@ -1027,11 +1093,11 @@ Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err)
     l = m9v;
   }
   err->res = m9res;
-  { __typeof__(Mat_Rows (a, err)) m9a12 = Mat_Rows (a, err);
+  { __typeof__(Mat_Rows (a, err)) m9a14 = Mat_Rows (a, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Mat_Identity (pool, m9a12, err)) m9a13 = Mat_Identity (pool, m9a12, err);
+  { __typeof__(Mat_Identity (pool, m9a14, err)) m9a15 = Mat_Identity (pool, m9a14, err);
     if (err->exc) goto L_ret;
-  m9ret = Mat_CholSolve (pool, l, m9a13, err);
+  m9ret = Mat_CholSolve (pool, l, m9a15, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -1077,21 +1143,25 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
     if (err->exc) goto L_ret;
     l = m9v;
   }
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
-    { int64_t m9t3to;
+  if (i <= m9t2to) for (;;) {
+    { __typeof__(jj) m9t3to;
     jj = INT64_C(0);
     m9t3to = i;
-    for (; jj <= m9t3to; jj += 1) {
+    if (jj <= m9t3to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], i, jj, err))) m9v = (*(double *) m9_gat2 (a->d.p, sizeof (double), a->d.n[0], a->d.n[1], a->d.s[0], a->d.s[1], i, jj, err));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], i, jj, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t3to - (uint64_t) jj < (uint64_t) 1) break;
+      jj += 1;
     } }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   nb = INT64_C(128);
   if ((n < INT64_C(512))) {
@@ -1113,28 +1183,30 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
     if ((k1 > n)) {
       k1 = n;
     }
-    { int64_t m9t4to;
+    { __typeof__(i) m9t4to;
     i = k0;
     m9t4to = m9_sub_i64 (k1, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t4to; i += 1) {
-      { int64_t m9t5to;
+    if (i <= m9t4to) for (;;) {
+      { __typeof__(jj) m9t5to;
       jj = k0;
       m9t5to = i;
-      for (; jj <= m9t5to; jj += 1) {
+      if (jj <= m9t5to) for (;;) {
         { __typeof__(acc) m9v = (*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], i, jj, err));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
-        { int64_t m9t6to;
+        { __typeof__(k) m9t6to;
         k = k0;
         m9t6to = m9_sub_i64 (jj, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; k <= m9t6to; k += 1) {
+        if (k <= m9t6to) for (;;) {
           { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], i, k, err)) * (*(double *) m9_gat2 (l->d.p, sizeof (double), l->d.n[0], l->d.n[1], l->d.s[0], l->d.s[1], jj, k, err))));
             if (err->exc) goto L_ret;
             acc = m9v;
           }
+          if ((uint64_t) m9t6to - (uint64_t) k < (uint64_t) 1) break;
+          k += 1;
         } }
         if ((i == jj)) {
           if ((acc <= 0.0)) {
@@ -1154,7 +1226,11 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
             if (err->exc) goto L_ret;
           }
         }
+        if ((uint64_t) m9t5to - (uint64_t) jj < (uint64_t) 1) break;
+        jj += 1;
       } }
+      if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     if ((k1 < n)) {
       j->l = l;
@@ -1170,7 +1246,10 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
       j->pass = INT64_C(2);
       Mat_RunChol (&(j), &(scratch), threads, err);
       if (err->exc) goto L_ret;
-      l = j->l;
+      { __typeof__(l) m9v = ({ __auto_type m9n = (j->l); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+        if (err->exc) goto L_ret;
+        l = m9v;
+      }
     }
     k0 = k1;
   }
@@ -1236,7 +1315,8 @@ Mat_Matrix * Mat_CholInverse (m9_pool *pool, Mat_Matrix * l, int64_t threads, m9
   Mat_RunInv (&(j), &(scratch), threads, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = j->p;
+  m9ret = ({ __auto_type m9n = (j->p); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1257,17 +1337,19 @@ void Mat_AddNormal (Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, m9_pool *k_poo
   int64_t t = 0; (void) t;
   int64_t c = 0; (void) c;
   int64_t cc = 0; (void) cc;
-  bool m9t1 = ((Mat_Rows ((*k), err) != Mat_Cols (h, err)) || (Mat_Cols ((*k), err) != Mat_Cols (h, err)));
+  { __typeof__(({ __auto_type m9n = ((*k)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a16 = ({ __auto_type m9n = ((*k)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+  bool m9t2 = ({ bool m9t1 = (Mat_Rows (m9a16, err) != Mat_Cols (h, err)); if (!m9t1) { { __typeof__(({ __auto_type m9n = ((*k)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a17 = ({ __auto_type m9n = ((*k)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });   if (err->exc) goto L_ret; m9t1 = ((Mat_Cols (m9a17, err) != Mat_Cols (h, err))); } } m9t1; });
   if (err->exc) goto L_ret;
-  if (m9t1) {
-    err->i[0] = Mat_Rows ((*k), err);
+  if (m9t2) {
+    err->i[0] = Mat_Rows (({ __auto_type m9n = ((*k)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); }), err);
     err->i[1] = Mat_Cols (h, err);
     m9_raise (err, &Faults_SizeError);
     goto L_ret;
-  }
-  bool m9t2 = ((w).len != Mat_Rows (h, err));
+  } }
+  bool m9t3 = ((w).len != Mat_Rows (h, err));
   if (err->exc) goto L_ret;
-  if (m9t2) {
+  if (m9t3) {
     err->i[0] = (w).len;
     err->i[1] = Mat_Rows (h, err);
     m9_raise (err, &Faults_SizeError);
@@ -1278,7 +1360,10 @@ void Mat_AddNormal (Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, m9_pool *k_poo
     j = m9v;
   }
   j->h = h;
-  j->k = (*k);
+  { __typeof__(j->k) m9v = ({ __auto_type m9n = ((*k)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+    j->k = m9v;
+  }
   j->wt = w;
   { __typeof__(j->n) m9v = Mat_Cols (h, err);
     if (err->exc) goto L_ret;
@@ -1298,31 +1383,37 @@ void Mat_AddNormal (Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, m9_pool *k_poo
   if ((threads < INT64_C(1))) {
     threads = INT64_C(1);
   }
-  { int64_t m9t3to;
+  { __typeof__(t) m9t4to;
   t = INT64_C(1);
-  m9t3to = threads;
-  for (; t <= m9t3to; t += 1) {
+  m9t4to = threads;
+  if (t <= m9t4to) for (;;) {
     m9_thread_start2 (m9_thr_Mat_NormalWorker, (void *) j, &(scratch), err);
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t4to - (uint64_t) t < (uint64_t) 1) break;
+    t += 1;
   } }
   Mat_AwaitAll (&(j->w), threads, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t4to;
+  { __typeof__(c) m9t5to;
   c = INT64_C(1);
-  m9t4to = m9_sub_i64 (j->n, INT64_C(1), err);
+  m9t5to = m9_sub_i64 (j->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t4to; c += 1) {
-    { int64_t m9t5to;
+  if (c <= m9t5to) for (;;) {
+    { __typeof__(cc) m9t6to;
     cc = INT64_C(0);
-    m9t5to = m9_sub_i64 (c, INT64_C(1), err);
+    m9t6to = m9_sub_i64 (c, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; cc <= m9t5to; cc += 1) {
-      { __typeof__((*(double *) m9_gat2 ((*k)->d.p, sizeof (double), (*k)->d.n[0], (*k)->d.n[1], (*k)->d.s[0], (*k)->d.s[1], c, cc, err))) m9v = (*(double *) m9_gat2 ((*k)->d.p, sizeof (double), (*k)->d.n[0], (*k)->d.n[1], (*k)->d.s[0], (*k)->d.s[1], cc, c, err));
+    if (cc <= m9t6to) for (;;) {
+      { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], c, cc, err))) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], cc, c, err));
         if (err->exc) goto L_ret;
-        (*(double *) m9_gat2 ((*k)->d.p, sizeof (double), (*k)->d.n[0], (*k)->d.n[1], (*k)->d.s[0], (*k)->d.s[1], c, cc, err)) = m9v;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*k)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], c, cc, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t6to - (uint64_t) cc < (uint64_t) 1) break;
+      cc += 1;
     } }
+    if ((uint64_t) m9t5to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -1387,65 +1478,75 @@ Mat_Matrix * Mat_Solve (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state 
     m9_raise (err, &Mat_Singular);
     goto L_ret;
   }
-  { __typeof__(Mat_Cols (b, err)) m9a14 = Mat_Cols (b, err);
+  { __typeof__(Mat_Cols (b, err)) m9a18 = Mat_Cols (b, err);
     if (err->exc) goto L_ret;
-  { __typeof__(x) m9v = Mat_New (pool, n, m9a14, err);
+  { __typeof__(x) m9v = Mat_New (pool, n, m9a18, err);
     if (err->exc) goto L_ret;
     x = m9v;
   }
   }
-  { int64_t m9t3to;
+  { __typeof__(c) m9t3to;
   c = INT64_C(0);
   m9t3to = m9_sub_i64 (Mat_Cols (b, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t3to; c += 1) {
-    { int64_t m9t4to;
+  if (c <= m9t3to) for (;;) {
+    { __typeof__(i) m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t4to; i += 1) {
+    if (i <= m9t4to) for (;;) {
       { __typeof__(acc) m9v = (*(double *) m9_gat2 (b->d.p, sizeof (double), b->d.n[0], b->d.n[1], b->d.s[0], b->d.s[1], (*(int64_t *) m9_at (perm.p, i, perm.len, sizeof (int64_t), err)), c, err));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
-      { int64_t m9t5to;
+      { __typeof__(k) m9t5to;
       k = INT64_C(0);
       m9t5to = m9_sub_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t5to; k += 1) {
+      if (k <= m9t5to) for (;;) {
         { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (lu->d.p, sizeof (double), lu->d.n[0], lu->d.n[1], lu->d.s[0], lu->d.s[1], i, k, err)) * (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], k, c, err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
+        if ((uint64_t) m9t5to - (uint64_t) k < (uint64_t) 1) break;
+        k += 1;
       } }
       (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err)) = acc;
       if (err->exc) goto L_ret;
+      if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
-    { int64_t m9t6to;
+    { __typeof__(i) m9t6to;
     i = m9_sub_i64 (n, INT64_C(1), err);
     m9t6to = INT64_C(0);
     if (err->exc) goto L_ret;
-    for (; i >= m9t6to; i += -1) {
+    if (i >= m9t6to) for (;;) {
       { __typeof__(acc) m9v = (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
-      { int64_t m9t7to;
+      { __typeof__(k) m9t7to;
       k = m9_add_i64 (i, INT64_C(1), err);
       m9t7to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t7to; k += 1) {
+      if (k <= m9t7to) for (;;) {
         { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (lu->d.p, sizeof (double), lu->d.n[0], lu->d.n[1], lu->d.s[0], lu->d.s[1], i, k, err)) * (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], k, c, err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
+        if ((uint64_t) m9t7to - (uint64_t) k < (uint64_t) 1) break;
+        k += 1;
       } }
       { __typeof__((*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err))) m9v = (acc / (*(double *) m9_gat2 (lu->d.p, sizeof (double), lu->d.n[0], lu->d.n[1], lu->d.s[0], lu->d.s[1], i, i, err)));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) i - (uint64_t) m9t6to < (uint64_t) 1) break;
+      i += -1;
     } }
+    if ((uint64_t) m9t3to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
   err->res = m9res;
   m9ret = x;
@@ -1498,15 +1599,17 @@ double Mat_Det (Mat_Matrix * a, m9_state *err)
     m9ret = 0.0;
     goto L_ret;
   }
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t3to; i += 1) {
+  if (i <= m9t3to) for (;;) {
     { __typeof__(d) m9v = (d * (*(double *) m9_gat2 (lu->d.p, sizeof (double), lu->d.n[0], lu->d.n[1], lu->d.s[0], lu->d.s[1], i, i, err)));
       if (err->exc) goto L_ret;
       d = m9v;
     }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = d;
@@ -1535,9 +1638,9 @@ Mat_Matrix * Mat_Inverse (m9_pool *pool, Mat_Matrix * a, m9_state *err)
     m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
-  { __typeof__(Mat_Rows (a, err)) m9a15 = Mat_Rows (a, err);
+  { __typeof__(Mat_Rows (a, err)) m9a19 = Mat_Rows (a, err);
     if (err->exc) goto L_ret;
-  { __typeof__(eye) m9v = Mat_Identity (&(scratch), m9a15, err);
+  { __typeof__(eye) m9v = Mat_Identity (&(scratch), m9a19, err);
     if (err->exc) goto L_ret;
     eye = m9v;
   }
@@ -1593,97 +1696,113 @@ void Mat_Qr (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *q, m9_pool *q_pool, Ma
     if (err->exc) goto L_ret;
     vv = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(j) m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t1to; j += 1) {
+  if (j <= m9t1to) for (;;) {
     { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9v = Mat_Reflector (&(w), &(scratch), &(h), &(scratch), j, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9a16 = (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9a20 = (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err));
       if (err->exc) goto L_ret;
-    Mat_Reflect (&(w), &(scratch), h, j, m9a16, j, err);
+    Mat_Reflect (&(w), &(scratch), h, j, m9a20, j, err);
     if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) j < (uint64_t) 1) break;
+    j += 1;
   } }
   { __typeof__((*r)) m9v = Mat_New (pool, k, n, err);
     if (err->exc) goto L_ret;
     (*r) = m9v;
   }
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
-    { int64_t m9t3to;
+  if (i <= m9t2to) for (;;) {
+    { __typeof__(j) m9t3to;
     j = i;
     m9t3to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j <= m9t3to; j += 1) {
-      { __typeof__((*(double *) m9_gat2 ((*r)->d.p, sizeof (double), (*r)->d.n[0], (*r)->d.n[1], (*r)->d.s[0], (*r)->d.s[1], i, j, err))) m9v = (*(double *) m9_gat2 (w->d.p, sizeof (double), w->d.n[0], w->d.n[1], w->d.s[0], w->d.s[1], i, j, err));
+    if (j <= m9t3to) for (;;) {
+      { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err))) m9v = (*(double *) m9_gat2 (w->d.p, sizeof (double), w->d.n[0], w->d.n[1], w->d.s[0], w->d.s[1], i, j, err));
         if (err->exc) goto L_ret;
-        (*(double *) m9_gat2 ((*r)->d.p, sizeof (double), (*r)->d.n[0], (*r)->d.n[1], (*r)->d.s[0], (*r)->d.s[1], i, j, err)) = m9v;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
+      j += 1;
     } }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__((*q)) m9v = Mat_New (pool, m, k, err);
     if (err->exc) goto L_ret;
     (*q) = m9v;
   }
-  { int64_t m9t4to;
+  { __typeof__(j) m9t4to;
   j = INT64_C(0);
   m9t4to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t4to; j += 1) {
-    (*(double *) m9_gat2 ((*q)->d.p, sizeof (double), (*q)->d.n[0], (*q)->d.n[1], (*q)->d.s[0], (*q)->d.s[1], j, j, err)) = 1.0;
+  if (j <= m9t4to) for (;;) {
+    (*(double *) m9_gat2 (({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, j, err)) = 1.0;
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
+    j += 1;
   } }
-  { int64_t m9t5to;
+  { __typeof__(j) m9t5to;
   j = m9_sub_i64 (k, INT64_C(1), err);
   m9t5to = INT64_C(0);
   if (err->exc) goto L_ret;
-  for (; j >= m9t5to; j += -1) {
-    { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9a17 = (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err));
+  if (j >= m9t5to) for (;;) {
+    { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9a21 = (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err));
       if (err->exc) goto L_ret;
-    Mat_Reflect (q, q_pool, h, j, m9a17, INT64_C(0), err);
+    Mat_Reflect (q, q_pool, h, j, m9a21, INT64_C(0), err);
     if (err->exc) goto L_ret;
     }
+    if ((uint64_t) j - (uint64_t) m9t5to < (uint64_t) 1) break;
+    j += -1;
   } }
-  { int64_t m9t6to;
+  { __typeof__(i) m9t6to;
   i = INT64_C(0);
   m9t6to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t6to; i += 1) {
-    bool m9t7 = ((*(double *) m9_gat2 ((*r)->d.p, sizeof (double), (*r)->d.n[0], (*r)->d.n[1], (*r)->d.s[0], (*r)->d.s[1], i, i, err)) < 0.0);
+  if (i <= m9t6to) for (;;) {
+    bool m9t7 = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, i, err)) < 0.0);
     if (err->exc) goto L_ret;
     if (m9t7) {
-      { int64_t m9t8to;
+      { __typeof__(j) m9t8to;
       j = i;
       m9t8to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; j <= m9t8to; j += 1) {
-        { __typeof__((*(double *) m9_gat2 ((*r)->d.p, sizeof (double), (*r)->d.n[0], (*r)->d.n[1], (*r)->d.s[0], (*r)->d.s[1], i, j, err))) m9v = (- (*(double *) m9_gat2 ((*r)->d.p, sizeof (double), (*r)->d.n[0], (*r)->d.n[1], (*r)->d.s[0], (*r)->d.s[1], i, j, err)));
+      if (j <= m9t8to) for (;;) {
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err))) m9v = (- (*(double *) m9_gat2 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err)));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*r)->d.p, sizeof (double), (*r)->d.n[0], (*r)->d.n[1], (*r)->d.s[0], (*r)->d.s[1], i, j, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t8to - (uint64_t) j < (uint64_t) 1) break;
+        j += 1;
       } }
-      { int64_t m9t9to;
+      { __typeof__(j) m9t9to;
       j = INT64_C(0);
       m9t9to = m9_sub_i64 (m, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; j <= m9t9to; j += 1) {
-        { __typeof__((*(double *) m9_gat2 ((*q)->d.p, sizeof (double), (*q)->d.n[0], (*q)->d.n[1], (*q)->d.s[0], (*q)->d.s[1], j, i, err))) m9v = (- (*(double *) m9_gat2 ((*q)->d.p, sizeof (double), (*q)->d.n[0], (*q)->d.n[1], (*q)->d.s[0], (*q)->d.s[1], j, i, err)));
+      if (j <= m9t9to) for (;;) {
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, i, err))) m9v = (- (*(double *) m9_gat2 (({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, i, err)));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*q)->d.p, sizeof (double), (*q)->d.n[0], (*q)->d.n[1], (*q)->d.s[0], (*q)->d.s[1], j, i, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*q)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, i, err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t9to - (uint64_t) j < (uint64_t) 1) break;
+        j += 1;
       } }
     }
+    if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -1737,11 +1856,11 @@ Mat_Matrix * Mat_LstSq (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state 
   Mat_Qr (&(scratch), a, &(q), &(scratch), &(r), &(scratch), err);
   if (err->exc) goto L_ret;
   big = 0.0;
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
+  if (i <= m9t2to) for (;;) {
     bool m9t3 = ((*(double *) m9_gat2 (r->d.p, sizeof (double), r->d.n[0], r->d.n[1], r->d.s[0], r->d.s[1], i, i, err)) > big);
     if (err->exc) goto L_ret;
     if (m9t3) {
@@ -1750,12 +1869,14 @@ Mat_Matrix * Mat_LstSq (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state 
         big = m9v;
       }
     }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
-  { int64_t m9t4to;
+  { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t4to; i += 1) {
+  if (i <= m9t4to) for (;;) {
     bool m9t5 = ((*(double *) m9_gat2 (r->d.p, sizeof (double), r->d.n[0], r->d.n[1], r->d.s[0], r->d.s[1], i, i, err)) <= ((Mat_Eps * (double)(m)) * big));
     if (err->exc) goto L_ret;
     if (m9t5) {
@@ -1763,63 +1884,75 @@ Mat_Matrix * Mat_LstSq (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state 
       m9_raise (err, &Mat_Singular);
       goto L_ret;
     }
+    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
-  { __typeof__(Mat_Cols (b, err)) m9a18 = Mat_Cols (b, err);
+  { __typeof__(Mat_Cols (b, err)) m9a22 = Mat_Cols (b, err);
     if (err->exc) goto L_ret;
-  { __typeof__(x) m9v = Mat_New (pool, n, m9a18, err);
+  { __typeof__(x) m9v = Mat_New (pool, n, m9a22, err);
     if (err->exc) goto L_ret;
     x = m9v;
   }
   }
-  { int64_t m9t6to;
+  { __typeof__(c) m9t6to;
   c = INT64_C(0);
   m9t6to = m9_sub_i64 (Mat_Cols (b, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t6to; c += 1) {
-    { int64_t m9t7to;
+  if (c <= m9t6to) for (;;) {
+    { __typeof__(i) m9t7to;
     i = INT64_C(0);
     m9t7to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t7to; i += 1) {
+    if (i <= m9t7to) for (;;) {
       acc = 0.0;
-      { int64_t m9t8to;
+      { __typeof__(k) m9t8to;
       k = INT64_C(0);
       m9t8to = m9_sub_i64 (m, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t8to; k += 1) {
+      if (k <= m9t8to) for (;;) {
         { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (q->d.p, sizeof (double), q->d.n[0], q->d.n[1], q->d.s[0], q->d.s[1], k, i, err)) * (*(double *) m9_gat2 (b->d.p, sizeof (double), b->d.n[0], b->d.n[1], b->d.s[0], b->d.s[1], k, c, err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
+        if ((uint64_t) m9t8to - (uint64_t) k < (uint64_t) 1) break;
+        k += 1;
       } }
       (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err)) = acc;
       if (err->exc) goto L_ret;
+      if ((uint64_t) m9t7to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
-    { int64_t m9t9to;
+    { __typeof__(i) m9t9to;
     i = m9_sub_i64 (n, INT64_C(1), err);
     m9t9to = INT64_C(0);
     if (err->exc) goto L_ret;
-    for (; i >= m9t9to; i += -1) {
+    if (i >= m9t9to) for (;;) {
       { __typeof__(acc) m9v = (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
-      { int64_t m9t10to;
+      { __typeof__(k) m9t10to;
       k = m9_add_i64 (i, INT64_C(1), err);
       m9t10to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; k <= m9t10to; k += 1) {
+      if (k <= m9t10to) for (;;) {
         { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (r->d.p, sizeof (double), r->d.n[0], r->d.n[1], r->d.s[0], r->d.s[1], i, k, err)) * (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], k, c, err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
+        if ((uint64_t) m9t10to - (uint64_t) k < (uint64_t) 1) break;
+        k += 1;
       } }
       { __typeof__((*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err))) m9v = (acc / (*(double *) m9_gat2 (r->d.p, sizeof (double), r->d.n[0], r->d.n[1], r->d.s[0], r->d.s[1], i, i, err)));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (x->d.p, sizeof (double), x->d.n[0], x->d.n[1], x->d.s[0], x->d.s[1], i, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) i - (uint64_t) m9t9to < (uint64_t) 1) break;
+      i += -1;
     } }
+    if ((uint64_t) m9t6to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
   err->res = m9res;
   m9ret = x;
@@ -1886,39 +2019,48 @@ void Mat_Svd (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool *u_pool, m
     if (err->exc) goto L_ret;
     (*vt) = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(k) m9t1to;
   k = INT64_C(0);
   m9t1to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; k <= m9t1to; k += 1) {
-    { __typeof__(f) m9v = Mat_RowSign ((*vt), k, err);
+  if (k <= m9t1to) for (;;) {
+    { __typeof__(({ __auto_type m9n = ((*vt)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a23 = ({ __auto_type m9n = ((*vt)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      if (err->exc) goto L_ret;
+    { __typeof__(f) m9v = Mat_RowSign (m9a23, k, err);
       if (err->exc) goto L_ret;
       f = m9v;
     }
+    }
     if ((f < 0.0)) {
-      { int64_t m9t2to;
+      { __typeof__(i) m9t2to;
       i = INT64_C(0);
       m9t2to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t2to; i += 1) {
-        { __typeof__((*(double *) m9_gat2 ((*vt)->d.p, sizeof (double), (*vt)->d.n[0], (*vt)->d.n[1], (*vt)->d.s[0], (*vt)->d.s[1], k, i, err))) m9v = (- (*(double *) m9_gat2 ((*vt)->d.p, sizeof (double), (*vt)->d.n[0], (*vt)->d.n[1], (*vt)->d.s[0], (*vt)->d.s[1], k, i, err)));
+      if (i <= m9t2to) for (;;) {
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, i, err))) m9v = (- (*(double *) m9_gat2 (({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, i, err)));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*vt)->d.p, sizeof (double), (*vt)->d.n[0], (*vt)->d.n[1], (*vt)->d.s[0], (*vt)->d.s[1], k, i, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, i, err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
-      { int64_t m9t3to;
+      { __typeof__(i) m9t3to;
       i = INT64_C(0);
       m9t3to = m9_sub_i64 (m, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t3to; i += 1) {
-        { __typeof__((*(double *) m9_gat2 ((*u)->d.p, sizeof (double), (*u)->d.n[0], (*u)->d.n[1], (*u)->d.s[0], (*u)->d.s[1], i, k, err))) m9v = (- (*(double *) m9_gat2 ((*u)->d.p, sizeof (double), (*u)->d.n[0], (*u)->d.n[1], (*u)->d.s[0], (*u)->d.s[1], i, k, err)));
+      if (i <= m9t3to) for (;;) {
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err))) m9v = (- (*(double *) m9_gat2 (({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err)));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*u)->d.p, sizeof (double), (*u)->d.n[0], (*u)->d.n[1], (*u)->d.s[0], (*u)->d.s[1], i, k, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
     }
+    if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
+    k += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -1981,15 +2123,15 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
-    { int64_t m9t3to;
+  if (i <= m9t2to) for (;;) {
+    { __typeof__(j) m9t3to;
     j = INT64_C(0);
     m9t3to = i;
-    for (; j <= m9t3to; j += 1) {
+    if (j <= m9t3to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], i, j, err))) m9v = (*(double *) m9_gat2 (a->d.p, sizeof (double), a->d.n[0], a->d.n[1], a->d.s[0], a->d.s[1], i, j, err));
         if (err->exc) goto L_ret;
         (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], i, j, err)) = m9v;
@@ -2000,7 +2142,11 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
         (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], j, i, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
+      j += 1;
     } }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__(e) m9v = Mat_Identity (&(scratch), n, err);
     if (err->exc) goto L_ret;
@@ -2020,25 +2166,25 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
       goto L_ret;
     }
     turned = INT64_C(0);
-    { int64_t m9t4to;
+    { __typeof__(p) m9t4to;
     p = INT64_C(0);
     m9t4to = m9_sub_i64 (n, INT64_C(2), err);
     if (err->exc) goto L_ret;
-    for (; p <= m9t4to; p += 1) {
-      { int64_t m9t5to;
+    if (p <= m9t4to) for (;;) {
+      { __typeof__(q) m9t5to;
       q = m9_add_i64 (p, INT64_C(1), err);
       m9t5to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; q <= m9t5to; q += 1) {
+      if (q <= m9t5to) for (;;) {
         { __typeof__(apq) m9v = (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, q, err));
           if (err->exc) goto L_ret;
           apq = m9v;
         }
-        { __typeof__(((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)) * (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)))) m9a19 = ((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)) * (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)));
+        { __typeof__(((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)) * (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)))) m9a24 = ((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)) * (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)));
           if (err->exc) goto L_ret;
-        { __typeof__(Math_Fabs (m9a19, err)) m9a20 = Math_Fabs (m9a19, err);
+        { __typeof__(Math_Fabs (m9a24, err)) m9a25 = Math_Fabs (m9a24, err);
           if (err->exc) goto L_ret;
-        { __typeof__(limit) m9v = Math_Sqrt (m9a20, err);
+        { __typeof__(limit) m9v = Math_Sqrt (m9a25, err);
           if (err->exc) goto L_ret;
           limit = m9v;
         }
@@ -2047,18 +2193,18 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
         bool m9t6 = (Math_Fabs (apq, err) > (Mat_Eps * limit));
         if (err->exc) goto L_ret;
         if (m9t6) {
-          { __typeof__(((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)) - (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)))) m9a21 = ((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)) - (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)));
+          { __typeof__(((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)) - (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)))) m9a26 = ((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)) - (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)));
             if (err->exc) goto L_ret;
-          Mat_Rotation (m9a21, apq, &(c), &(s), err);
+          Mat_Rotation (m9a26, apq, &(c), &(s), err);
           if (err->exc) goto L_ret;
           }
           Mat_Turn (&(d), &(scratch), p, q, c, s, err);
           if (err->exc) goto L_ret;
-          { int64_t m9t7to;
+          { __typeof__(k) m9t7to;
           k = INT64_C(0);
           m9t7to = m9_sub_i64 (n, INT64_C(1), err);
           if (err->exc) goto L_ret;
-          for (; k <= m9t7to; k += 1) {
+          if (k <= m9t7to) for (;;) {
             { __typeof__(x) m9v = (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, k, err));
               if (err->exc) goto L_ret;
               x = m9v;
@@ -2071,6 +2217,8 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
             if (err->exc) goto L_ret;
             (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, k, err)) = ((s * x) + (c * y));
             if (err->exc) goto L_ret;
+            if ((uint64_t) m9t7to - (uint64_t) k < (uint64_t) 1) break;
+            k += 1;
           } }
           (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, q, err)) = 0.0;
           if (err->exc) goto L_ret;
@@ -2083,7 +2231,11 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
             turned = m9v;
           }
         }
+        if ((uint64_t) m9t5to - (uint64_t) q < (uint64_t) 1) break;
+        q += 1;
       } }
+      if ((uint64_t) m9t4to - (uint64_t) p < (uint64_t) 1) break;
+      p += 1;
     } }
     settled = (turned == INT64_C(0));
   }
@@ -2091,48 +2243,56 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
     if (err->exc) goto L_ret;
     order = m9v;
   }
-  { int64_t m9t8to;
+  { __typeof__(j) m9t8to;
   j = INT64_C(0);
   m9t8to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t8to; j += 1) {
+  if (j <= m9t8to) for (;;) {
     (*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err)) = j;
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t8to - (uint64_t) j < (uint64_t) 1) break;
+    j += 1;
   } }
-  { int64_t m9t9to;
+  { __typeof__(k) m9t9to;
   k = INT64_C(0);
   m9t9to = m9_sub_i64 (n, INT64_C(2), err);
   if (err->exc) goto L_ret;
-  for (; k <= m9t9to; k += 1) {
+  if (k <= m9t9to) for (;;) {
     best = k;
-    { int64_t m9t10to;
+    { __typeof__(j) m9t10to;
     j = m9_add_i64 (k, INT64_C(1), err);
     m9t10to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j <= m9t10to; j += 1) {
+    if (j <= m9t10to) for (;;) {
       bool m9t11 = ((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], (*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err)), err)) < (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], (*(int64_t *) m9_at (order.p, best, order.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (order.p, best, order.len, sizeof (int64_t), err)), err)));
       if (err->exc) goto L_ret;
       if (m9t11) {
         best = j;
       }
+      if ((uint64_t) m9t10to - (uint64_t) j < (uint64_t) 1) break;
+      j += 1;
     } }
     { __typeof__(held) m9v = (*(int64_t *) m9_at (order.p, best, order.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       held = m9v;
     }
-    { int64_t m9t12to;
+    { __typeof__(j) m9t12to;
     j = best;
     m9t12to = m9_add_i64 (k, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j >= m9t12to; j += -1) {
+    if (j >= m9t12to) for (;;) {
       { __typeof__((*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (order.p, m9_sub_i64 (j, INT64_C(1), err), order.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
         (*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) j - (uint64_t) m9t12to < (uint64_t) 1) break;
+      j += -1;
     } }
     (*(int64_t *) m9_at (order.p, k, order.len, sizeof (int64_t), err)) = held;
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t9to - (uint64_t) k < (uint64_t) 1) break;
+    k += 1;
   } }
   { __typeof__(et) m9v = Mat_Transpose (&(scratch), e, err);
     if (err->exc) goto L_ret;
@@ -2142,11 +2302,11 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
     if (err->exc) goto L_ret;
     (*v) = m9v;
   }
-  { int64_t m9t13to;
+  { __typeof__(k) m9t13to;
   k = INT64_C(0);
   m9t13to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; k <= m9t13to; k += 1) {
+  if (k <= m9t13to) for (;;) {
     { __typeof__(j) m9v = (*(int64_t *) m9_at (order.p, k, order.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       j = m9v;
@@ -2160,17 +2320,21 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
       if (err->exc) goto L_ret;
       f = m9v;
     }
-    { int64_t m9t14to;
+    { __typeof__(i) m9t14to;
     i = INT64_C(0);
     m9t14to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t14to; i += 1) {
-      { __typeof__((*(double *) m9_gat2 ((*v)->d.p, sizeof (double), (*v)->d.n[0], (*v)->d.n[1], (*v)->d.s[0], (*v)->d.s[1], i, k, err))) m9v = (f * (*(double *) m9_gat2 (e->d.p, sizeof (double), e->d.n[0], e->d.n[1], e->d.s[0], e->d.s[1], i, j, err)));
+    if (i <= m9t14to) for (;;) {
+      { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err))) m9v = (f * (*(double *) m9_gat2 (e->d.p, sizeof (double), e->d.n[0], e->d.n[1], e->d.s[0], e->d.s[1], i, j, err)));
         if (err->exc) goto L_ret;
-        (*(double *) m9_gat2 ((*v)->d.p, sizeof (double), (*v)->d.n[0], (*v)->d.n[1], (*v)->d.s[0], (*v)->d.s[1], i, k, err)) = m9v;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*v)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t14to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
+    if ((uint64_t) m9t13to - (uint64_t) k < (uint64_t) 1) break;
+    k += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -2321,84 +2485,100 @@ static void Mat_InvBand (Mat_InvJob *j, m9_pool *j_pool, int64_t b, m9_state *er
       if (err->exc) goto L_ret;
       x = m9v;
     }
-    { int64_t m9t1to;
+    { __typeof__(col) m9t1to;
     col = c0;
     m9t1to = m9_sub_i64 (c1, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; col <= m9t1to; col += 1) {
-      { int64_t m9t2to;
+    if (col <= m9t1to) for (;;) {
+      { __typeof__(i) m9t2to;
       i = col;
       m9t2to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t2to; i += 1) {
+      if (i <= m9t2to) for (;;) {
         if ((i == col)) {
           acc = 1.0;
         } else {
           acc = 0.0;
         }
-        { int64_t m9t3to;
+        { __typeof__(m) m9t3to;
         m = col;
         m9t3to = m9_sub_i64 (i, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; m <= m9t3to; m += 1) {
-          { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, m, err)) * (*(double *) m9_at (x.p, m, x.len, sizeof (double), err))));
+        if (m <= m9t3to) for (;;) {
+          { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, m, err)) * (*(double *) m9_at (x.p, m, x.len, sizeof (double), err))));
             if (err->exc) goto L_ret;
             acc = m9v;
           }
+          if ((uint64_t) m9t3to - (uint64_t) m < (uint64_t) 1) break;
+          m += 1;
         } }
-        { __typeof__((*(double *) m9_at (x.p, i, x.len, sizeof (double), err))) m9v = (acc / (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, i, err)));
+        { __typeof__((*(double *) m9_at (x.p, i, x.len, sizeof (double), err))) m9v = (acc / (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, i, err)));
           if (err->exc) goto L_ret;
           (*(double *) m9_at (x.p, i, x.len, sizeof (double), err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
-      { int64_t m9t4to;
+      { __typeof__(i) m9t4to;
       i = INT64_C(0);
       m9t4to = m9_sub_i64 (col, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t4to; i += 1) {
-        (*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], col, i, err)) = 0.0;
+      if (i <= m9t4to) for (;;) {
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], col, i, err)) = 0.0;
         if (err->exc) goto L_ret;
+        if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
-      { int64_t m9t5to;
+      { __typeof__(i) m9t5to;
       i = col;
       m9t5to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t5to; i += 1) {
-        { __typeof__((*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], col, i, err))) m9v = (*(double *) m9_at (x.p, i, x.len, sizeof (double), err));
+      if (i <= m9t5to) for (;;) {
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], col, i, err))) m9v = (*(double *) m9_at (x.p, i, x.len, sizeof (double), err));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], col, i, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], col, i, err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
+      if ((uint64_t) m9t1to - (uint64_t) col < (uint64_t) 1) break;
+      col += 1;
     } }
   } else {
-    { int64_t m9t6to;
+    { __typeof__(a) m9t6to;
     a = c0;
     m9t6to = m9_sub_i64 (c1, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; a <= m9t6to; a += 1) {
-      { int64_t m9t7to;
+    if (a <= m9t6to) for (;;) {
+      { __typeof__(bb) m9t7to;
       bb = a;
       m9t7to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; bb <= m9t7to; bb += 1) {
+      if (bb <= m9t7to) for (;;) {
         acc = 0.0;
-        { int64_t m9t8to;
+        { __typeof__(kk) m9t8to;
         kk = bb;
         m9t8to = m9_sub_i64 (n, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; kk <= m9t8to; kk += 1) {
-          { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], a, kk, err)) * (*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], bb, kk, err))));
+        if (kk <= m9t8to) for (;;) {
+          { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], a, kk, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).t); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], bb, kk, err))));
             if (err->exc) goto L_ret;
             acc = m9v;
           }
+          if ((uint64_t) m9t8to - (uint64_t) kk < (uint64_t) 1) break;
+          kk += 1;
         } }
-        (*(double *) m9_gat2 ((*j).p->d.p, sizeof (double), (*j).p->d.n[0], (*j).p->d.n[1], (*j).p->d.s[0], (*j).p->d.s[1], a, bb, err)) = acc;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], a, bb, err)) = acc;
         if (err->exc) goto L_ret;
-        (*(double *) m9_gat2 ((*j).p->d.p, sizeof (double), (*j).p->d.n[0], (*j).p->d.n[1], (*j).p->d.s[0], (*j).p->d.s[1], bb, a, err)) = acc;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).p); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], bb, a, err)) = acc;
         if (err->exc) goto L_ret;
+        if ((uint64_t) m9t7to - (uint64_t) bb < (uint64_t) 1) break;
+        bb += 1;
       } }
+      if ((uint64_t) m9t6to - (uint64_t) a < (uint64_t) 1) break;
+      a += 1;
     } }
   }
 L_ret: ;
@@ -2449,19 +2629,24 @@ static void Mat_RunInv (Mat_InvJob * *j, m9_pool *j_pool, int64_t threads, m9_st
   (void) m9res;
   err->res = &m9frame;
   int64_t t = 0; (void) t;
-  Mat_ResetWork (&((*j)->w), err);
+  Mat_ResetWork (&(({ __auto_type m9g = ((*j)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->w), err);
   if (err->exc) goto L_ret;
   if ((threads < INT64_C(1))) {
     threads = INT64_C(1);
   }
-  { int64_t m9t1to;
+  { __typeof__(t) m9t1to;
   t = INT64_C(1);
   m9t1to = threads;
-  for (; t <= m9t1to; t += 1) {
-    m9_thread_start2 (m9_thr_Mat_InvWorker, (void *) (*j), j_pool, err);
+  if (t <= m9t1to) for (;;) {
+    { void *m9tv = (void *) (*j);
+      if (err->exc) goto L_ret;
+    m9_thread_start2 (m9_thr_Mat_InvWorker, (void *) m9tv, j_pool, err);
     if (err->exc) goto L_ret;
+    }
+    if ((uint64_t) m9t1to - (uint64_t) t < (uint64_t) 1) break;
+    t += 1;
   } }
-  Mat_AwaitAll (&((*j)->w), threads, err);
+  Mat_AwaitAll (&(({ __auto_type m9g = ((*j)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->w), threads, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -2494,64 +2679,76 @@ static void Mat_CholBand (Mat_CholJob *j, m9_pool *j_pool, int64_t b, m9_state *
     r1 = (*j).n;
   }
   if (((*j).pass == INT64_C(1))) {
-    { int64_t m9t1to;
+    { __typeof__(i) m9t1to;
     i = r0;
     m9t1to = m9_sub_i64 (r1, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t1to; i += 1) {
-      { int64_t m9t2to;
+    if (i <= m9t1to) for (;;) {
+      { __typeof__(jj) m9t2to;
       jj = (*j).k0;
       m9t2to = m9_sub_i64 ((*j).k1, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; jj <= m9t2to; jj += 1) {
-        { __typeof__(acc) m9v = (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, jj, err));
+      if (jj <= m9t2to) for (;;) {
+        { __typeof__(acc) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, jj, err));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
-        { int64_t m9t3to;
+        { __typeof__(k) m9t3to;
         k = (*j).k0;
         m9t3to = m9_sub_i64 (jj, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; k <= m9t3to; k += 1) {
-          { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, k, err)) * (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], jj, k, err))));
+        if (k <= m9t3to) for (;;) {
+          { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], jj, k, err))));
             if (err->exc) goto L_ret;
             acc = m9v;
           }
+          if ((uint64_t) m9t3to - (uint64_t) k < (uint64_t) 1) break;
+          k += 1;
         } }
-        { __typeof__((*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, jj, err))) m9v = (acc / (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], jj, jj, err)));
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, jj, err))) m9v = (acc / (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], jj, jj, err)));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, jj, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, jj, err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t2to - (uint64_t) jj < (uint64_t) 1) break;
+        jj += 1;
       } }
+      if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
   } else {
-    { int64_t m9t4to;
+    { __typeof__(i) m9t4to;
     i = r0;
     m9t4to = m9_sub_i64 (r1, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t4to; i += 1) {
-      { int64_t m9t5to;
+    if (i <= m9t4to) for (;;) {
+      { __typeof__(jj) m9t5to;
       jj = (*j).k1;
       m9t5to = i;
-      for (; jj <= m9t5to; jj += 1) {
-        { __typeof__(acc) m9v = (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, jj, err));
+      if (jj <= m9t5to) for (;;) {
+        { __typeof__(acc) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, jj, err));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
-        { int64_t m9t6to;
+        { __typeof__(k) m9t6to;
         k = (*j).k0;
         m9t6to = m9_sub_i64 ((*j).k1, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; k <= m9t6to; k += 1) {
-          { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, k, err)) * (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], jj, k, err))));
+        if (k <= m9t6to) for (;;) {
+          { __typeof__(acc) m9v = (acc - ((*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], jj, k, err))));
             if (err->exc) goto L_ret;
             acc = m9v;
           }
+          if ((uint64_t) m9t6to - (uint64_t) k < (uint64_t) 1) break;
+          k += 1;
         } }
-        (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, jj, err)) = acc;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).l); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, jj, err)) = acc;
         if (err->exc) goto L_ret;
+        if ((uint64_t) m9t5to - (uint64_t) jj < (uint64_t) 1) break;
+        jj += 1;
       } }
+      if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
   }
 L_ret: ;
@@ -2597,19 +2794,24 @@ static void Mat_RunChol (Mat_CholJob * *j, m9_pool *j_pool, int64_t threads, m9_
   (void) m9res;
   err->res = &m9frame;
   int64_t t = 0; (void) t;
-  Mat_ResetWork (&((*j)->w), err);
+  Mat_ResetWork (&(({ __auto_type m9g = ((*j)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->w), err);
   if (err->exc) goto L_ret;
   if ((threads < INT64_C(1))) {
     threads = INT64_C(1);
   }
-  { int64_t m9t1to;
+  { __typeof__(t) m9t1to;
   t = INT64_C(1);
   m9t1to = threads;
-  for (; t <= m9t1to; t += 1) {
-    m9_thread_start2 (m9_thr_Mat_CholWorker, (void *) (*j), j_pool, err);
+  if (t <= m9t1to) for (;;) {
+    { void *m9tv = (void *) (*j);
+      if (err->exc) goto L_ret;
+    m9_thread_start2 (m9_thr_Mat_CholWorker, (void *) m9tv, j_pool, err);
     if (err->exc) goto L_ret;
+    }
+    if ((uint64_t) m9t1to - (uint64_t) t < (uint64_t) 1) break;
+    t += 1;
   } }
-  Mat_AwaitAll (&((*j)->w), threads, err);
+  Mat_AwaitAll (&(({ __auto_type m9g = ((*j)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->w), threads, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -2642,17 +2844,17 @@ static void Mat_NormalBand (Mat_NormalJob *j, m9_pool *j_pool, int64_t b, m9_sta
   if ((r1 > (*j).n)) {
     r1 = (*j).n;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((*j).m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    { int64_t m9t2to;
+  if (i <= m9t1to) for (;;) {
+    { __typeof__(c) m9t2to;
     c = r0;
     m9t2to = m9_sub_i64 (r1, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; c <= m9t2to; c += 1) {
-      { __typeof__(hic) m9v = (*(double *) m9_gat2 ((*j).h->d.p, sizeof (double), (*j).h->d.n[0], (*j).h->d.n[1], (*j).h->d.s[0], (*j).h->d.s[1], i, c, err));
+    if (c <= m9t2to) for (;;) {
+      { __typeof__(hic) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, c, err));
         if (err->exc) goto L_ret;
         hic = m9v;
       }
@@ -2661,25 +2863,31 @@ static void Mat_NormalBand (Mat_NormalJob *j, m9_pool *j_pool, int64_t b, m9_sta
           if (err->exc) goto L_ret;
           hic = m9v;
         }
-        { int64_t m9t3to;
+        { __typeof__(cc) m9t3to;
         cc = c;
         m9t3to = m9_sub_i64 ((*j).n, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; cc <= m9t3to; cc += 1) {
-          { __typeof__(hv) m9v = (*(double *) m9_gat2 ((*j).h->d.p, sizeof (double), (*j).h->d.n[0], (*j).h->d.n[1], (*j).h->d.s[0], (*j).h->d.s[1], i, cc, err));
+        if (cc <= m9t3to) for (;;) {
+          { __typeof__(hv) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).h); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, cc, err));
             if (err->exc) goto L_ret;
             hv = m9v;
           }
           if ((hv != 0.0)) {
-            { __typeof__((*(double *) m9_gat2 ((*j).k->d.p, sizeof (double), (*j).k->d.n[0], (*j).k->d.n[1], (*j).k->d.s[0], (*j).k->d.s[1], c, cc, err))) m9v = ((*(double *) m9_gat2 ((*j).k->d.p, sizeof (double), (*j).k->d.n[0], (*j).k->d.n[1], (*j).k->d.s[0], (*j).k->d.s[1], c, cc, err)) + (hic * hv));
+            { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], c, cc, err))) m9v = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], c, cc, err)) + (hic * hv));
               if (err->exc) goto L_ret;
-              (*(double *) m9_gat2 ((*j).k->d.p, sizeof (double), (*j).k->d.n[0], (*j).k->d.n[1], (*j).k->d.s[0], (*j).k->d.s[1], c, cc, err)) = m9v;
+              (*(double *) m9_gat2 (({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*j).k); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], c, cc, err)) = m9v;
               if (err->exc) goto L_ret;
             }
           }
+          if ((uint64_t) m9t3to - (uint64_t) cc < (uint64_t) 1) break;
+          cc += 1;
         } }
       }
+      if ((uint64_t) m9t2to - (uint64_t) c < (uint64_t) 1) break;
+      c += 1;
     } }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -2738,40 +2946,45 @@ static int64_t Mat_Factor (Mat_Matrix * *lu, m9_pool *lu_pool, m9_sl_I64 *perm, 
   double v = 0; (void) v;
   double t = 0; (void) t;
   double f = 0; (void) f;
-  { __typeof__(n) m9v = Mat_Rows ((*lu), err);
+  { __typeof__(({ __auto_type m9n = ((*lu)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a27 = ({ __auto_type m9n = ((*lu)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = Mat_Rows (m9a27, err);
     if (err->exc) goto L_ret;
     n = m9v;
   }
+  }
   (*sign) = 1.0;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     (*(int64_t *) m9_at ((*perm).p, i, (*perm).len, sizeof (int64_t), err)) = i;
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
-  { int64_t m9t2to;
+  { __typeof__(k) m9t2to;
   k = INT64_C(0);
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; k <= m9t2to; k += 1) {
+  if (k <= m9t2to) for (;;) {
     p = k;
-    { __typeof__((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, k, err))) m9a22 = (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, k, err));
+    { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, k, err))) m9a28 = (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, k, err));
       if (err->exc) goto L_ret;
-    { __typeof__(big) m9v = Math_Fabs (m9a22, err);
+    { __typeof__(big) m9v = Math_Fabs (m9a28, err);
       if (err->exc) goto L_ret;
       big = m9v;
     }
     }
-    { int64_t m9t3to;
+    { __typeof__(i) m9t3to;
     i = m9_add_i64 (k, INT64_C(1), err);
     m9t3to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t3to; i += 1) {
-      { __typeof__((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, k, err))) m9a23 = (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, k, err));
+    if (i <= m9t3to) for (;;) {
+      { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err))) m9a29 = (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err));
         if (err->exc) goto L_ret;
-      { __typeof__(v) m9v = Math_Fabs (m9a23, err);
+      { __typeof__(v) m9v = Math_Fabs (m9a29, err);
         if (err->exc) goto L_ret;
         v = m9v;
       }
@@ -2780,6 +2993,8 @@ static int64_t Mat_Factor (Mat_Matrix * *lu, m9_pool *lu_pool, m9_sl_I64 *perm, 
         big = v;
         p = i;
       }
+      if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     if ((big == 0.0)) {
       err->res = m9res;
@@ -2787,22 +3002,24 @@ static int64_t Mat_Factor (Mat_Matrix * *lu, m9_pool *lu_pool, m9_sl_I64 *perm, 
       goto L_ret;
     }
     if ((p != k)) {
-      { int64_t m9t4to;
+      { __typeof__(j) m9t4to;
       j = INT64_C(0);
       m9t4to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; j <= m9t4to; j += 1) {
-        { __typeof__(t) m9v = (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, j, err));
+      if (j <= m9t4to) for (;;) {
+        { __typeof__(t) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, j, err));
           if (err->exc) goto L_ret;
           t = m9v;
         }
-        { __typeof__((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, j, err))) m9v = (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], p, j, err));
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, j, err))) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], p, j, err));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, j, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, j, err)) = m9v;
           if (err->exc) goto L_ret;
         }
-        (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], p, j, err)) = t;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], p, j, err)) = t;
         if (err->exc) goto L_ret;
+        if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
+        j += 1;
       } }
       { __typeof__(held) m9v = (*(int64_t *) m9_at ((*perm).p, k, (*perm).len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
@@ -2817,29 +3034,35 @@ static int64_t Mat_Factor (Mat_Matrix * *lu, m9_pool *lu_pool, m9_sl_I64 *perm, 
       if (err->exc) goto L_ret;
       (*sign) = (- (*sign));
     }
-    { int64_t m9t5to;
+    { __typeof__(i) m9t5to;
     i = m9_add_i64 (k, INT64_C(1), err);
     m9t5to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t5to; i += 1) {
-      { __typeof__(f) m9v = ((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, k, err)) / (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, k, err)));
+    if (i <= m9t5to) for (;;) {
+      { __typeof__(f) m9v = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err)) / (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, k, err)));
         if (err->exc) goto L_ret;
         f = m9v;
       }
-      (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, k, err)) = f;
+      (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err)) = f;
       if (err->exc) goto L_ret;
-      { int64_t m9t6to;
+      { __typeof__(j) m9t6to;
       j = m9_add_i64 (k, INT64_C(1), err);
       m9t6to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; j <= m9t6to; j += 1) {
-        { __typeof__((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, j, err))) m9v = ((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, j, err)) - (f * (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, j, err))));
+      if (j <= m9t6to) for (;;) {
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err))) m9v = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err)) - (f * (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, j, err))));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, j, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*lu)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t6to - (uint64_t) j < (uint64_t) 1) break;
+        j += 1;
       } }
+      if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
+    if ((uint64_t) m9t2to - (uint64_t) k < (uint64_t) 1) break;
+    k += 1;
   } }
   err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
@@ -2864,20 +3087,25 @@ static double Mat_Reflector (Mat_Matrix * *w, m9_pool *w_pool, Mat_Matrix * *h, 
   int64_t i = 0; (void) i;
   double acc = 0; (void) acc;
   double norm = 0; (void) norm;
-  { __typeof__(m) m9v = Mat_Rows ((*w), err);
+  { __typeof__(({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a30 = ({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Mat_Rows (m9a30, err);
     if (err->exc) goto L_ret;
     m = m9v;
   }
+  }
   acc = 0.0;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = j;
   m9t1to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, j, err)) * (*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, j, err))));
+  if (i <= m9t1to) for (;;) {
+    { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err))));
       if (err->exc) goto L_ret;
       acc = m9v;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   if ((acc == 0.0)) {
     err->res = m9res;
@@ -2888,42 +3116,46 @@ static double Mat_Reflector (Mat_Matrix * *w, m9_pool *w_pool, Mat_Matrix * *h, 
     if (err->exc) goto L_ret;
     norm = m9v;
   }
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = j;
   m9t2to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
-    { __typeof__((*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], i, j, err))) m9v = (*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, j, err));
+  if (i <= m9t2to) for (;;) {
+    { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err))) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err));
       if (err->exc) goto L_ret;
-      (*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], i, j, err)) = m9v;
+      (*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
-  bool m9t3 = ((*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], j, j, err)) < 0.0);
+  bool m9t3 = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, j, err)) < 0.0);
   if (err->exc) goto L_ret;
   if (m9t3) {
-    { __typeof__((*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], j, j, err))) m9v = ((*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], j, j, err)) - norm);
+    { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, j, err))) m9v = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, j, err)) - norm);
       if (err->exc) goto L_ret;
-      (*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], j, j, err)) = m9v;
+      (*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, j, err)) = m9v;
       if (err->exc) goto L_ret;
     }
   } else {
-    { __typeof__((*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], j, j, err))) m9v = ((*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], j, j, err)) + norm);
+    { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, j, err))) m9v = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, j, err)) + norm);
       if (err->exc) goto L_ret;
-      (*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], j, j, err)) = m9v;
+      (*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], j, j, err)) = m9v;
       if (err->exc) goto L_ret;
     }
   }
   acc = 0.0;
-  { int64_t m9t4to;
+  { __typeof__(i) m9t4to;
   i = j;
   m9t4to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t4to; i += 1) {
-    { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], i, j, err)) * (*(double *) m9_gat2 ((*h)->d.p, sizeof (double), (*h)->d.n[0], (*h)->d.n[1], (*h)->d.s[0], (*h)->d.s[1], i, j, err))));
+  if (i <= m9t4to) for (;;) {
+    { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*h)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, j, err))));
       if (err->exc) goto L_ret;
       acc = m9v;
     }
+    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = acc;
@@ -2950,39 +3182,51 @@ static void Mat_Reflect (Mat_Matrix * *t, m9_pool *t_pool, Mat_Matrix * h, int64
   if ((vv == 0.0)) {
     goto L_ret;
   }
-  { __typeof__(m) m9v = Mat_Rows ((*t), err);
+  { __typeof__(({ __auto_type m9n = ((*t)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a31 = ({ __auto_type m9n = ((*t)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Mat_Rows (m9a31, err);
     if (err->exc) goto L_ret;
     m = m9v;
   }
-  { int64_t m9t1to;
+  }
+  { __typeof__(c) m9t1to;
   c = from;
-  m9t1to = m9_sub_i64 (Mat_Cols ((*t), err), INT64_C(1), err);
+  { __typeof__(({ __auto_type m9n = ((*t)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a32 = ({ __auto_type m9n = ((*t)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+  m9t1to = m9_sub_i64 (Mat_Cols (m9a32, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t1to; c += 1) {
+  if (c <= m9t1to) for (;;) {
     acc = 0.0;
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = j;
     m9t2to = m9_sub_i64 (m, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
-      { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (h->d.p, sizeof (double), h->d.n[0], h->d.n[1], h->d.s[0], h->d.s[1], i, j, err)) * (*(double *) m9_gat2 ((*t)->d.p, sizeof (double), (*t)->d.n[0], (*t)->d.n[1], (*t)->d.s[0], (*t)->d.s[1], i, c, err))));
+    if (i <= m9t2to) for (;;) {
+      { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (h->d.p, sizeof (double), h->d.n[0], h->d.n[1], h->d.s[0], h->d.s[1], i, j, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, c, err))));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     f = ((2.0 * acc) / vv);
-    { int64_t m9t3to;
+    { __typeof__(i) m9t3to;
     i = j;
     m9t3to = m9_sub_i64 (m, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t3to; i += 1) {
-      { __typeof__((*(double *) m9_gat2 ((*t)->d.p, sizeof (double), (*t)->d.n[0], (*t)->d.n[1], (*t)->d.s[0], (*t)->d.s[1], i, c, err))) m9v = ((*(double *) m9_gat2 ((*t)->d.p, sizeof (double), (*t)->d.n[0], (*t)->d.n[1], (*t)->d.s[0], (*t)->d.s[1], i, c, err)) - (f * (*(double *) m9_gat2 (h->d.p, sizeof (double), h->d.n[0], h->d.n[1], h->d.s[0], h->d.s[1], i, j, err))));
+    if (i <= m9t3to) for (;;) {
+      { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, c, err))) m9v = ((*(double *) m9_gat2 (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, c, err)) - (f * (*(double *) m9_gat2 (h->d.p, sizeof (double), h->d.n[0], h->d.n[1], h->d.s[0], h->d.s[1], i, j, err))));
         if (err->exc) goto L_ret;
-        (*(double *) m9_gat2 ((*t)->d.p, sizeof (double), (*t)->d.n[0], (*t)->d.n[1], (*t)->d.s[0], (*t)->d.s[1], i, c, err)) = m9v;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, c, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
+    if ((uint64_t) m9t1to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, t_pool, (*t));
@@ -3030,24 +3274,29 @@ static void Mat_Turn (Mat_Matrix * *m, m9_pool *m_pool, int64_t p, int64_t q, do
   int64_t i = 0; (void) i;
   double a = 0; (void) a;
   double b = 0; (void) b;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 (Mat_Rows ((*m), err), INT64_C(1), err);
+  { __typeof__(({ __auto_type m9n = ((*m)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a33 = ({ __auto_type m9n = ((*m)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+  m9t1to = m9_sub_i64 (Mat_Rows (m9a33, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    { __typeof__(a) m9v = (*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], i, p, err));
+  if (i <= m9t1to) for (;;) {
+    { __typeof__(a) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, p, err));
       if (err->exc) goto L_ret;
       a = m9v;
     }
-    { __typeof__(b) m9v = (*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], i, q, err));
+    { __typeof__(b) m9v = (*(double *) m9_gat2 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, q, err));
       if (err->exc) goto L_ret;
       b = m9v;
     }
-    (*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], i, p, err)) = ((c * a) - (s * b));
+    (*(double *) m9_gat2 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, p, err)) = ((c * a) - (s * b));
     if (err->exc) goto L_ret;
-    (*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], i, q, err)) = ((s * a) + (c * b));
+    (*(double *) m9_gat2 (({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, q, err)) = ((s * a) + (c * b));
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, m_pool, (*m));
@@ -3073,46 +3322,54 @@ static void Mat_Orthogonalise (Mat_Matrix * *w, m9_pool *w_pool, Mat_Matrix * *v
   double limit = 0; (void) limit;
   double c = 0; (void) c;
   double s = 0; (void) s;
-  { __typeof__(n) m9v = Mat_Cols ((*w), err);
+  { __typeof__(({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a34 = ({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = Mat_Cols (m9a34, err);
     if (err->exc) goto L_ret;
     n = m9v;
   }
-  { int64_t m9t1to;
+  }
+  { __typeof__(sweep) m9t1to;
   sweep = INT64_C(1);
   m9t1to = Mat_MaxSweeps;
-  for (; sweep <= m9t1to; sweep += 1) {
+  if (sweep <= m9t1to) for (;;) {
     turned = INT64_C(0);
-    { int64_t m9t2to;
+    { __typeof__(p) m9t2to;
     p = INT64_C(0);
     m9t2to = m9_sub_i64 (n, INT64_C(2), err);
     if (err->exc) goto L_ret;
-    for (; p <= m9t2to; p += 1) {
-      { int64_t m9t3to;
+    if (p <= m9t2to) for (;;) {
+      { __typeof__(q) m9t3to;
       q = m9_add_i64 (p, INT64_C(1), err);
       m9t3to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; q <= m9t3to; q += 1) {
+      if (q <= m9t3to) for (;;) {
         alpha = 0.0;
         beta = 0.0;
         gamma = 0.0;
-        { int64_t m9t4to;
+        { __typeof__(i) m9t4to;
         i = INT64_C(0);
-        m9t4to = m9_sub_i64 (Mat_Rows ((*w), err), INT64_C(1), err);
+        { __typeof__(({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a35 = ({ __auto_type m9n = ((*w)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+          if (err->exc) goto L_ret;
+        m9t4to = m9_sub_i64 (Mat_Rows (m9a35, err), INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; i <= m9t4to; i += 1) {
-          { __typeof__(alpha) m9v = (alpha + ((*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, p, err)) * (*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, p, err))));
+        if (i <= m9t4to) for (;;) {
+          { __typeof__(alpha) m9v = (alpha + ((*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, p, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, p, err))));
             if (err->exc) goto L_ret;
             alpha = m9v;
           }
-          { __typeof__(beta) m9v = (beta + ((*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, q, err)) * (*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, q, err))));
+          { __typeof__(beta) m9v = (beta + ((*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, q, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, q, err))));
             if (err->exc) goto L_ret;
             beta = m9v;
           }
-          { __typeof__(gamma) m9v = (gamma + ((*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, p, err)) * (*(double *) m9_gat2 ((*w)->d.p, sizeof (double), (*w)->d.n[0], (*w)->d.n[1], (*w)->d.s[0], (*w)->d.s[1], i, q, err))));
+          { __typeof__(gamma) m9v = (gamma + ((*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, p, err)) * (*(double *) m9_gat2 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, q, err))));
             if (err->exc) goto L_ret;
             gamma = m9v;
           }
+          if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+          i += 1;
         } }
+        }
         { __typeof__(limit) m9v = Math_Sqrt ((alpha * beta), err);
           if (err->exc) goto L_ret;
           limit = m9v;
@@ -3131,11 +3388,17 @@ static void Mat_Orthogonalise (Mat_Matrix * *w, m9_pool *w_pool, Mat_Matrix * *v
             turned = m9v;
           }
         }
+        if ((uint64_t) m9t3to - (uint64_t) q < (uint64_t) 1) break;
+        q += 1;
       } }
+      if ((uint64_t) m9t2to - (uint64_t) p < (uint64_t) 1) break;
+      p += 1;
     } }
     if ((turned == INT64_C(0))) {
       goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) sweep < (uint64_t) 1) break;
+    sweep += 1;
   } }
   err->i[0] = Mat_MaxSweeps;
   m9_raise (err, &Mat_NoConverge);
@@ -3160,17 +3423,19 @@ static double Mat_RowSign (Mat_Matrix * m, int64_t r, m9_state *err)
   double pick = 0; (void) pick;
   big = (- 1.0);
   pick = 1.0;
-  { int64_t m9t1to;
+  { __typeof__(j) m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (Mat_Cols (m, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t1to; j += 1) {
-    bool m9t2 = (Math_Fabs ((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err)), err) > big);
+  if (j <= m9t1to) for (;;) {
+    { __typeof__((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err))) m9a36 = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err));
+      if (err->exc) goto L_ret;
+    bool m9t2 = (Math_Fabs (m9a36, err) > big);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err))) m9a24 = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err));
+      { __typeof__((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err))) m9a37 = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err));
         if (err->exc) goto L_ret;
-      { __typeof__(big) m9v = Math_Fabs (m9a24, err);
+      { __typeof__(big) m9v = Math_Fabs (m9a37, err);
         if (err->exc) goto L_ret;
         big = m9v;
       }
@@ -3182,7 +3447,9 @@ static double Mat_RowSign (Mat_Matrix * m, int64_t r, m9_state *err)
       } else {
         pick = 1.0;
       }
-    }
+    } }
+    if ((uint64_t) m9t1to - (uint64_t) j < (uint64_t) 1) break;
+    j += 1;
   } }
   err->res = m9res;
   m9ret = pick;
@@ -3239,21 +3506,23 @@ static void Mat_SvdTall (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool
     if (err->exc) goto L_ret;
     order = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(j) m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t1to; j += 1) {
+  if (j <= m9t1to) for (;;) {
     acc = 0.0;
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (m, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
+    if (i <= m9t2to) for (;;) {
       { __typeof__(acc) m9v = (acc + ((*(double *) m9_gat2 (w->d.p, sizeof (double), w->d.n[0], w->d.n[1], w->d.s[0], w->d.s[1], i, j, err)) * (*(double *) m9_gat2 (w->d.p, sizeof (double), w->d.n[0], w->d.n[1], w->d.s[0], w->d.s[1], i, j, err))));
         if (err->exc) goto L_ret;
         acc = m9v;
       }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     { __typeof__((*(double *) m9_at (norm.p, j, norm.len, sizeof (double), err))) m9v = Math_Sqrt (acc, err);
       if (err->exc) goto L_ret;
@@ -3262,41 +3531,49 @@ static void Mat_SvdTall (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool
     }
     (*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err)) = j;
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t1to - (uint64_t) j < (uint64_t) 1) break;
+    j += 1;
   } }
-  { int64_t m9t3to;
+  { __typeof__(k) m9t3to;
   k = INT64_C(0);
   m9t3to = m9_sub_i64 (n, INT64_C(2), err);
   if (err->exc) goto L_ret;
-  for (; k <= m9t3to; k += 1) {
+  if (k <= m9t3to) for (;;) {
     best = k;
-    { int64_t m9t4to;
+    { __typeof__(j) m9t4to;
     j = m9_add_i64 (k, INT64_C(1), err);
     m9t4to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j <= m9t4to; j += 1) {
+    if (j <= m9t4to) for (;;) {
       bool m9t5 = ((*(double *) m9_at (norm.p, (*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err)), norm.len, sizeof (double), err)) > (*(double *) m9_at (norm.p, (*(int64_t *) m9_at (order.p, best, order.len, sizeof (int64_t), err)), norm.len, sizeof (double), err)));
       if (err->exc) goto L_ret;
       if (m9t5) {
         best = j;
       }
+      if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
+      j += 1;
     } }
     { __typeof__(held) m9v = (*(int64_t *) m9_at (order.p, best, order.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       held = m9v;
     }
-    { int64_t m9t6to;
+    { __typeof__(j) m9t6to;
     j = best;
     m9t6to = m9_add_i64 (k, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j >= m9t6to; j += -1) {
+    if (j >= m9t6to) for (;;) {
       { __typeof__((*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (order.p, m9_sub_i64 (j, INT64_C(1), err), order.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
         (*(int64_t *) m9_at (order.p, j, order.len, sizeof (int64_t), err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) j - (uint64_t) m9t6to < (uint64_t) 1) break;
+      j += -1;
     } }
     (*(int64_t *) m9_at (order.p, k, order.len, sizeof (int64_t), err)) = held;
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t3to - (uint64_t) k < (uint64_t) 1) break;
+    k += 1;
   } }
   { __typeof__((*u)) m9v = Mat_New (pool, m, n, err);
     if (err->exc) goto L_ret;
@@ -3306,11 +3583,11 @@ static void Mat_SvdTall (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool
     if (err->exc) goto L_ret;
     (*vt) = m9v;
   }
-  { int64_t m9t7to;
+  { __typeof__(k) m9t7to;
   k = INT64_C(0);
   m9t7to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; k <= m9t7to; k += 1) {
+  if (k <= m9t7to) for (;;) {
     { __typeof__(j) m9v = (*(int64_t *) m9_at (order.p, k, order.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       j = m9v;
@@ -3320,47 +3597,58 @@ static void Mat_SvdTall (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool
       (*(double *) m9_at ((*s).p, k, (*s).len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    { int64_t m9t8to;
+    { __typeof__(i) m9t8to;
     i = INT64_C(0);
     m9t8to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t8to; i += 1) {
-      { __typeof__((*(double *) m9_gat2 ((*vt)->d.p, sizeof (double), (*vt)->d.n[0], (*vt)->d.n[1], (*vt)->d.s[0], (*vt)->d.s[1], k, i, err))) m9v = (*(double *) m9_gat2 (v->d.p, sizeof (double), v->d.n[0], v->d.n[1], v->d.s[0], v->d.s[1], i, j, err));
+    if (i <= m9t8to) for (;;) {
+      { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, i, err))) m9v = (*(double *) m9_gat2 (v->d.p, sizeof (double), v->d.n[0], v->d.n[1], v->d.s[0], v->d.s[1], i, j, err));
         if (err->exc) goto L_ret;
-        (*(double *) m9_gat2 ((*vt)->d.p, sizeof (double), (*vt)->d.n[0], (*vt)->d.n[1], (*vt)->d.s[0], (*vt)->d.s[1], k, i, err)) = m9v;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, i, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
-    { __typeof__(f) m9v = Mat_RowSign ((*vt), k, err);
+    { __typeof__(({ __auto_type m9n = ((*vt)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a38 = ({ __auto_type m9n = ((*vt)); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      if (err->exc) goto L_ret;
+    { __typeof__(f) m9v = Mat_RowSign (m9a38, k, err);
       if (err->exc) goto L_ret;
       f = m9v;
     }
-    { int64_t m9t9to;
+    }
+    { __typeof__(i) m9t9to;
     i = INT64_C(0);
     m9t9to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t9to; i += 1) {
-      { __typeof__((*(double *) m9_gat2 ((*vt)->d.p, sizeof (double), (*vt)->d.n[0], (*vt)->d.n[1], (*vt)->d.s[0], (*vt)->d.s[1], k, i, err))) m9v = (f * (*(double *) m9_gat2 ((*vt)->d.p, sizeof (double), (*vt)->d.n[0], (*vt)->d.n[1], (*vt)->d.s[0], (*vt)->d.s[1], k, i, err)));
+    if (i <= m9t9to) for (;;) {
+      { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, i, err))) m9v = (f * (*(double *) m9_gat2 (({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, i, err)));
         if (err->exc) goto L_ret;
-        (*(double *) m9_gat2 ((*vt)->d.p, sizeof (double), (*vt)->d.n[0], (*vt)->d.n[1], (*vt)->d.s[0], (*vt)->d.s[1], k, i, err)) = m9v;
+        (*(double *) m9_gat2 (({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*vt)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], k, i, err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t9to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     bool m9t10 = ((*(double *) m9_at (norm.p, j, norm.len, sizeof (double), err)) > 0.0);
     if (err->exc) goto L_ret;
     if (m9t10) {
-      { int64_t m9t11to;
+      { __typeof__(i) m9t11to;
       i = INT64_C(0);
       m9t11to = m9_sub_i64 (m, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t11to; i += 1) {
-        { __typeof__((*(double *) m9_gat2 ((*u)->d.p, sizeof (double), (*u)->d.n[0], (*u)->d.n[1], (*u)->d.s[0], (*u)->d.s[1], i, k, err))) m9v = ((f * (*(double *) m9_gat2 (w->d.p, sizeof (double), w->d.n[0], w->d.n[1], w->d.s[0], w->d.s[1], i, j, err))) / (*(double *) m9_at (norm.p, j, norm.len, sizeof (double), err)));
+      if (i <= m9t11to) for (;;) {
+        { __typeof__((*(double *) m9_gat2 (({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err))) m9v = ((f * (*(double *) m9_gat2 (w->d.p, sizeof (double), w->d.n[0], w->d.n[1], w->d.s[0], w->d.s[1], i, j, err))) / (*(double *) m9_at (norm.p, j, norm.len, sizeof (double), err)));
           if (err->exc) goto L_ret;
-          (*(double *) m9_gat2 ((*u)->d.p, sizeof (double), (*u)->d.n[0], (*u)->d.n[1], (*u)->d.s[0], (*u)->d.s[1], i, k, err)) = m9v;
+          (*(double *) m9_gat2 (({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.p, sizeof (double), ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.n[1], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[0], ({ __auto_type m9g = ((*u)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d.s[1], i, k, err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t11to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
     }
+    if ((uint64_t) m9t7to - (uint64_t) k < (uint64_t) 1) break;
+    k += 1;
   } }
 L_ret: ;
   err->res = m9res;

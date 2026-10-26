@@ -1,0 +1,157 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE Chars ;
+
+(* Characters of a UTF by position: the convenience the UTF-8 plan keeps
+   for code that wants the old shape, `s[x]' and `LEN (s)' (Alex,
+   2026-10-22: "a convenience module that emulates strings ... and a
+   function with indexing to make multiple access more efficient").
+   The names say they are an emulation: a UTF has no O(1) i-th
+   character, and each procedure here says what it costs.  A walk is
+   FOR c IN u, not Str in a loop; a scanner keeps a byte offset and
+   steps with Text.NextCp.
+
+     c := Chars.Str (s, x)        (* c = s[x], O(x) *)
+     n := Chars.StrLen (s)        (* n = LEN (s) in code points, O(n) *)
+     ix := Chars.IndexStr (s)     (* built once, O(n) *)
+     c := Chars.StrI (s, x, ix)   (* s[x] through it, O(1) *)
+
+   The index is a 2-BIT WIDTH TAG per code point (its octets less one),
+   32 to a word, and the byte offset of every 256th code point: StrI
+   reads that offset and adds the widths of the code points before x in
+   its block by popcount -- a word's octets are 32 + Count (low bits) +
+   2 Count (high bits) -- so a lookup is a few word operations, whatever
+   its position in the block.  A quarter of an octet a character and an
+   I64 every 256 (0.28 octets a character in all).  Alex's design,
+   chosen over a sparse offset every 32 code points after measuring both
+   on 1M code points and 2M random lookups (2026-10-23): 23-33 ns a
+   lookup against 43-51, at 2.25 times the size of a U32 sparse index
+   (docs/utf8-plan.md). *)
+
+IMPORT Faults ;
+
+TYPE
+  Index = RECORD
+    tags : SLICE OF I64 ;   (* 32 width tags a word, tag = octets - 1 *)
+    blk : SLICE OF I64 ;    (* byte offset of code point 256 k *)
+    count : I64 ;           (* the code points *)
+    octets : I64 ;          (* the string's length, for StrI's check *)
+    first, last : I64 ;     (* its first and last octets, -1 if empty *)
+  END ;
+
+PROCEDURE Str (RO s: UTF ; x: I64) : CHAR ;
+  (* the x-th code point, counted from 0 -- Text.CpAt, O(x).
+     IndexError outside 0 .. StrLen (s) - 1 *)
+
+PROCEDURE StrLen (RO s: UTF) : I64 ;
+  (* the code points -- Text.CpCount, O(n) *)
+
+PROCEDURE IndexStr (RO s: UTF) : Index ;
+  (* the width tags of s, O(n), for StrI *)
+
+PROCEDURE StrI (RO s: UTF ; x: I64 ; RO ix: Index) : CHAR
+  RAISES Faults.BadArg ;
+  (* the x-th code point through ix, O(1): an offset and at most eight
+     words' popcounts.  IndexError outside 0 .. ix.count - 1; Faults.BadArg when
+     ix was not made from s (its length, first or last octet differ) *)
+
+END Chars.
+
+
+IMPLEMENTATION MODULE Chars ;
+
+IMPORT Bits ;
+IMPORT Faults ;
+IMPORT Text ;
+
+CONST
+  Block = 256 ;                       (* code points between two offsets *)
+  Low = 6148914691236517205 ;         (* 0x5555555555555555: each tag's low bit *)
+  High = -6148914691236517206 ;       (* 0xAAAAAAAAAAAAAAAA: its high bit *)
+
+PROCEDURE Str (RO s: UTF ; x: I64) : CHAR =
+BEGIN
+  RETURN Text.CpAt (s, x)
+END Str ;
+
+PROCEDURE StrLen (RO s: UTF) : I64 =
+BEGIN
+  RETURN Text.CpCount (s)
+END StrLen ;
+
+(* the octets less one of the code points whose tags are in t *)
+PROCEDURE Widths (t: I64) : I64 =
+BEGIN
+  RETURN Bits.Count (Bits.And (t, Low)) + 2 * Bits.Count (Bits.And (t, High))
+END Widths ;
+
+(* the tags of the first r code points of a word, r in 1 .. 31: a shift
+   by 2 .. 62, inside Bits's range, so the handler is the checker's due *)
+PROCEDURE FirstTags (t: I64 ; r: I64) : I64 =
+BEGIN
+  RETURN Bits.And (t, Bits.Shl (1, 2 * r) - 1)
+EXCEPT
+| ValueRange : RETURN t
+END FirstTags ;
+
+(* tag v of code point k into its word: a shift by 0 .. 62 *)
+PROCEDURE PutTag (VAR w: I64 ; k, v: I64) =
+BEGIN
+  w := Bits.Or (w, Bits.Shl (v, 2 * (k MOD 32)))
+EXCEPT
+| ValueRange : RETURN
+END PutTag ;
+
+PROCEDURE IndexStr (RO s: UTF) : Index =
+VAR
+  ix : Index ;
+  at, prev, n, k : I64 ;
+  c : CHAR ;
+BEGIN
+  n := Text.CpCount (s) ;
+  ix.tags := NEW (I64, (n + 31) DIV 32) ;
+  ix.blk := NEW (I64, (n + Block - 1) DIV Block) ;
+  ix.count := n ;
+  ix.octets := Text.BLen (s) ;
+  ix.first := -1 ;
+  ix.last := -1 ;
+  IF ix.octets > 0 THEN
+    ix.first := I64 (Text.BAt (s, 0)) ;
+    ix.last := I64 (Text.BAt (s, ix.octets - 1))
+  END ;
+  at := 0 ;
+  k := 0 ;
+  WHILE at < ix.octets DO
+    IF k MOD Block = 0 THEN ix.blk[k DIV Block] := at END ;
+    prev := at ;
+    c := Text.NextCp (s, at) ;
+    PutTag (ix.tags[k DIV 32], k, at - prev - 1) ;
+    k := k + 1
+  END ;
+  RETURN ix
+END IndexStr ;
+
+PROCEDURE StrI (RO s: UTF ; x: I64 ; RO ix: Index) : CHAR
+  RAISES Faults.BadArg =
+VAR
+  at, w, r, f, l : I64 ;
+BEGIN
+  f := -1 ;
+  l := -1 ;
+  IF Text.BLen (s) > 0 THEN
+    f := I64 (Text.BAt (s, 0)) ;
+    l := I64 (Text.BAt (s, Text.BLen (s) - 1))
+  END ;
+  IF ix.octets # Text.BLen (s) OR ix.first # f OR ix.last # l THEN
+    RAISE Faults.BadArg ('Chars.StrI: the index was made from another string')
+  END ;
+  IF x < 0 OR x >= ix.count THEN RAISE IndexError (x, ix.count) END ;
+  at := ix.blk[x DIV Block] ;
+  FOR w := (x DIV Block) * (Block DIV 32) TO x DIV 32 - 1 DO
+    at := at + 32 + Widths (ix.tags[w])
+  END ;
+  r := x MOD 32 ;
+  IF r > 0 THEN at := at + r + Widths (FirstTags (ix.tags[x DIV 32], r)) END ;
+  RETURN Text.NextCp (s, at)
+END StrI ;
+
+END Chars.

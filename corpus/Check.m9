@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Check ;
 
 (* A test written in M9: checks that count, say what they found, and
@@ -180,7 +181,10 @@ CONST Known = ['IndexError', 'Overflow', 'ValueRange'] ;
 PROCEDURE Bad (VAR t: T ; RO label: STR ; RO detail: STR) =
 BEGIN
   t.failed := t.failed + 1 ;
-  IF LEN (detail) = 0 THEN
+  (* emptiness by Text.Eq, not LEN: the test harness is the first module
+     that must read the same under the switch (docs/utf8-stage4-plan.md,
+     4d step 4), and a UTF has no LEN *)
+  IF Text.Eq (detail, '') THEN
     Io.WriteLine ('FAIL ' + label)
   ELSE
     Io.WriteLine ('FAIL ' + label + ': ' + detail)
@@ -416,7 +420,7 @@ END Outcome ;
 PROCEDURE Raised (VAR t: T ; RO label: STR ; RO did: STR ; RO want: STR) =
 BEGIN
   IF NOT Text.Eq (did, want) THEN
-    IF LEN (did) = 0 THEN
+    IF Text.Eq (did, '') THEN
       Bad (t, label, 'raised nothing, want ' + want)
     ELSE
       Bad (t, label, 'raised ' + did + ', want ' + want)
@@ -492,7 +496,9 @@ VAR
   i, n : I64 ;
   ok : BOOL ;
 BEGIN
-  text := Io.ReadFile (scratch, path) ;
+  (* read as UTF-8 and decoded: ReadFile's UTF twin takes no pool, and
+     under the switch STR (u) is u *)
+  text := STR (Io.ReadFileUtf (UTF (path))) ;
   lines := Text.Split (text, 0AC) ;
   FOR i := 0 TO LEN (lines) - 1 DO
     IF Text.StartsWith (lines[i], name) THEN

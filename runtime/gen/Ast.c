@@ -3,20 +3,20 @@
 
 static int64_t nextId;
 static m9_sl_Ast_Nodep tys;
-static m9_sl_m9_sl_CHAR tstr;
+static m9_sl_m9_sl_UTF8 tstr;
 static m9_pool typool;
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[1] = { 45u };
-static const uint32_t m9s1[1] = { 43u };
-static const uint32_t m9s2[1] = { 45u };
-static const uint32_t m9s3[1] = { 42u };
-static const uint32_t m9s4[3] = { 68u, 73u, 86u };
-static const uint32_t m9s5[3] = { 77u, 79u, 68u };
-static const uint32_t m9s6[3] = { 68u, 73u, 86u };
+static const uint8_t m9s0[1] = { 45 };
+static const uint8_t m9s1[1] = { 43 };
+static const uint8_t m9s2[1] = { 45 };
+static const uint8_t m9s3[1] = { 42 };
+static const uint8_t m9s4[3] = { 68, 73, 86 };
+static const uint8_t m9s5[3] = { 77, 79, 68 };
+static const uint8_t m9s6[3] = { 68, 73, 86 };
 
-static bool Ast_Is (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
-static bool Ast_LitInt (m9_sl_CHAR s, int64_t *v, m9_state *err);
+static bool Ast_Is (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err);
+static bool Ast_LitInt (m9_sl_UTF8 s, int64_t *v, m9_state *err);
 
 
 Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, m9_state *err)
@@ -62,29 +62,99 @@ void Ast_Add (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, Ast_Node * kid, m9_
   err->res = &m9frame;
   m9_sl_Ast_Nodep nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
-  if (((*n)->nkids == ((*n)->kids).len)) {
-    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &((*pool)), m9_mul_i64 (INT64_C(2), ((*n)->kids).len, err), err);
+  if ((({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nkids == (({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids).len)) {
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &((*pool)), m9_mul_i64 (INT64_C(2), (({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids).len, err), err);
       if (err->exc) goto L_ret;
       nb = m9v;
     }
-    { int64_t m9t1to;
+    { __typeof__(i) m9t1to;
     i = INT64_C(0);
-    m9t1to = m9_sub_i64 ((*n)->nkids, INT64_C(1), err);
+    m9t1to = m9_sub_i64 (({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t1to; i += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (nb.p, i, nb.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at ((*n)->kids.p, i, (*n)->kids.len, sizeof (Ast_Node *), err));
+    if (i <= m9t1to) for (;;) {
+      { __typeof__((*(Ast_Node * *) m9_at (nb.p, i, nb.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at (({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids.p, i, ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         (*(Ast_Node * *) m9_at (nb.p, i, nb.len, sizeof (Ast_Node *), err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
-    (*n)->kids = nb;
+    ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids = nb;
   }
-  (*(Ast_Node * *) m9_at ((*n)->kids.p, (*n)->nkids, (*n)->kids.len, sizeof (Ast_Node *), err)) = kid;
+  (*(Ast_Node * *) m9_at (({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids.p, ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nkids, ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->kids.len, sizeof (Ast_Node *), err)) = kid;
   if (err->exc) goto L_ret;
-  { __typeof__((*n)->nkids) m9v = m9_add_i64 ((*n)->nkids, INT64_C(1), err);
+  { __typeof__(({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nkids) m9v = m9_add_i64 (({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    (*n)->nkids = m9v;
+    ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nkids = m9v;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, n_pool, (*n));
+  m9_pool_free (&m9frame);
+  return;
+}
+
+void Ast_SetA (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_CHAR s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  { __typeof__(({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->au) m9v = m9_utf_from_chars (&((*pool)), s, err);
+    if (err->exc) goto L_ret;
+    ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->au = m9v;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, n_pool, (*n));
+  m9_pool_free (&m9frame);
+  return;
+}
+
+void Ast_SetB (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_CHAR s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  { __typeof__(({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->bu) m9v = m9_utf_from_chars (&((*pool)), s, err);
+    if (err->exc) goto L_ret;
+    ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->bu = m9v;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, n_pool, (*n));
+  m9_pool_free (&m9frame);
+  return;
+}
+
+void Ast_SetAUtf (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_UTF8 u, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  { __typeof__(({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->au) m9v = m9_utf_from_bytes (&((*pool)), m9_utf_octets (u), err);
+    if (err->exc) goto L_ret;
+    ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->au = m9v;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, n_pool, (*n));
+  m9_pool_free (&m9frame);
+  return;
+}
+
+void Ast_SetBUtf (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_UTF8 u, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  { __typeof__(({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->bu) m9v = m9_utf_from_bytes (&((*pool)), m9_utf_octets (u), err);
+    if (err->exc) goto L_ret;
+    ({ __auto_type m9g = ((*n)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->bu = m9v;
   }
 L_ret: ;
   err->res = m9res;
@@ -100,13 +170,17 @@ bool Ast_ScalarConst (Ast_Node * k, int64_t *v, bool *ch, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
+  m9_sl_CHAR t = {0}; (void) t;
   (*ch) = false;
   { Ast_Node * e = k;
   if (e != NULL) {
     if ((e->kind == Ast_NChar)) {
-      { __typeof__((*v)) m9v = Ast_CharCode (e->a, err);
+      { __typeof__(m9_utf_to_chars (err->res, e->au, err)) m9a1 = m9_utf_to_chars (err->res, e->au, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__((*v)) m9v = Ast_CharCode (m9a1, err);
         if (err->exc) goto L_hdl_m9t1;
         (*v) = m9v;
+      }
       }
       (*ch) = true;
       err->res = m9res;
@@ -114,12 +188,16 @@ bool Ast_ScalarConst (Ast_Node * k, int64_t *v, bool *ch, m9_state *err)
       goto L_ret;
     }
     if ((e->kind == Ast_NString)) {
-      if (((e->a).len != INT64_C(1))) {
+      { __typeof__(t) m9v = m9_utf_to_chars (err->res, e->au, err);
+        if (err->exc) goto L_hdl_m9t1;
+        t = m9v;
+      }
+      if (((t).len != INT64_C(1))) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
       }
-      { __typeof__((*v)) m9v = (int64_t)((*(uint32_t *) m9_at (e->a.p, INT64_C(0), e->a.len, sizeof (uint32_t), err)));
+      { __typeof__((*v)) m9v = (int64_t)((*(uint32_t *) m9_at (t.p, INT64_C(0), t.len, sizeof (uint32_t), err)));
         if (err->exc) goto L_hdl_m9t1;
         (*v) = m9v;
       }
@@ -130,9 +208,9 @@ bool Ast_ScalarConst (Ast_Node * k, int64_t *v, bool *ch, m9_state *err)
     }
     if (((e->kind == Ast_NParen) && (e->nkids == INT64_C(1)))) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a1 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a2 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Ast_ScalarConst (m9a1, v, ch, err);
+      m9ret = Ast_ScalarConst (m9a2, v, ch, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
@@ -171,11 +249,11 @@ int64_t Ast_CharCode (m9_sl_CHAR lit, m9_state *err)
   int64_t dg = 0; (void) dg;
   uint32_t c = 0; (void) c;
   v = INT64_C(0);
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 ((lit).len, INT64_C(2), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; i <= m9t3to; i += 1) {
+  if (i <= m9t3to) for (;;) {
     { __typeof__(c) m9v = (*(uint32_t *) m9_at (lit.p, i, lit.len, sizeof (uint32_t), err));
       if (err->exc) goto L_hdl_m9t1;
       c = m9v;
@@ -195,6 +273,8 @@ int64_t Ast_CharCode (m9_sl_CHAR lit, m9_state *err)
       if (err->exc) goto L_hdl_m9t1;
       v = m9v;
     }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = v;
@@ -254,16 +334,18 @@ void Ast_SetType (int64_t id, Ast_Node * t, m9_state *err)
       if (err->exc) goto L_ret;
       grown = m9v;
     }
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((tys).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
+    if (i <= m9t2to) for (;;) {
       { __typeof__((*(Ast_Node * *) m9_at (grown.p, i, grown.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at (tys.p, i, tys.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         (*(Ast_Node * *) m9_at (grown.p, i, grown.len, sizeof (Ast_Node *), err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     tys = grown;
   }
@@ -298,14 +380,15 @@ L_ret: ;
   return m9ret;
 }
 
-void Ast_SetTyStr (int64_t id, m9_sl_CHAR t, m9_state *err)
+void Ast_SetTyStr (int64_t id, m9_sl_UTF8 t, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_m9_sl_CHAR grown = {0}; (void) grown;
-  m9_sl_CHAR c = {0}; (void) c;
+  m9_sl_m9_sl_UTF8 grown = {0}; (void) grown;
+  m9_sl_BYTE o = {0}; (void) o;
+  m9_sl_BYTE q = {0}; (void) q;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   if ((id < INT64_C(0))) {
@@ -324,85 +407,78 @@ void Ast_SetTyStr (int64_t id, m9_sl_CHAR t, m9_state *err)
         n = m9v;
       }
     }
-    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(typool), n, err);
+    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(typool), n, err);
       if (err->exc) goto L_ret;
       grown = m9v;
     }
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((tstr).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (grown.p, i, grown.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (tstr.p, i, tstr.len, sizeof (m9_sl_CHAR), err));
+    if (i <= m9t2to) for (;;) {
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (grown.p, i, grown.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (tstr.p, i, tstr.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (grown.p, i, grown.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (grown.p, i, grown.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     tstr = grown;
   }
-  bool m9t3 = ((t).len == ((*(m9_sl_CHAR *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_CHAR), err))).len);
-  if (err->exc) goto L_ret;
-  if (m9t3) {
-    if (((t).len == INT64_C(0))) {
+  o = m9_utf_octets (t);
+  { __typeof__(q) m9v = m9_utf_octets ((*(m9_sl_UTF8 *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_UTF8), err)));
+    if (err->exc) goto L_ret;
+    q = m9v;
+  }
+  if (((o).len == (q).len)) {
+    if (((o).len == INT64_C(0))) {
       goto L_ret;
     }
     i = INT64_C(0);
     for (;;) {
-      bool m9t4 = ((i < (t).len) && ((*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err)) == (*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_CHAR), err)).p, i, (*(m9_sl_CHAR *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err))));
+      bool m9t3 = ((i < (o).len) && ((*(uint8_t *) m9_at (o.p, i, o.len, sizeof (uint8_t), err)) == (*(uint8_t *) m9_at (q.p, i, q.len, sizeof (uint8_t), err))));
       if (err->exc) goto L_ret;
-      if (!(m9t4)) break;
+      if (!(m9t3)) break;
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
         if (err->exc) goto L_ret;
         i = m9v;
       }
     }
-    if ((i == (t).len)) {
+    if ((i == (o).len)) {
       goto L_ret;
     }
   }
-  { __typeof__(c) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, &(typool), (t).len, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_from_bytes (&(typool), m9_utf_octets (t), err);
     if (err->exc) goto L_ret;
-    c = m9v;
+    (*(m9_sl_UTF8 *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_UTF8), err)) = m9v;
+    if (err->exc) goto L_ret;
   }
-  { int64_t m9t5to;
-  i = INT64_C(0);
-  m9t5to = m9_sub_i64 ((t).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  for (; i <= m9t5to; i += 1) {
-    { __typeof__((*(uint32_t *) m9_at (c.p, i, c.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err));
-      if (err->exc) goto L_ret;
-      (*(uint32_t *) m9_at (c.p, i, c.len, sizeof (uint32_t), err)) = m9v;
-      if (err->exc) goto L_ret;
-    }
-  } }
-  (*(m9_sl_CHAR *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_CHAR), err)) = c;
-  if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
 }
 
-m9_sl_CHAR Ast_TyStrAt (int64_t id, m9_state *err)
+m9_sl_UTF8 Ast_TyStrAt (int64_t id, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  err->res = m9res;
+  m9_sl_UTF8 m9ret = {0};
   if (((id >= INT64_C(0)) && (id < (tstr).len))) {
     err->res = m9res;
-    m9ret = (*(m9_sl_CHAR *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_CHAR), err));
+    m9ret = (*(m9_sl_UTF8 *) m9_at (tstr.p, id, tstr.len, sizeof (m9_sl_UTF8), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (m9_sl_CHAR){ NULL, 0 };
+  m9ret = ((m9_sl_UTF8){ NULL, 0 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -420,7 +496,7 @@ bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err)
   if (e != NULL) {
     if ((e->kind == Ast_NInt)) {
       err->res = m9res;
-      m9ret = Ast_LitInt (e->a, v, err);
+      m9ret = Ast_LitInt (e->au, v, err);
       if (err->exc) goto L_hdl_m9t1;
       goto L_ret;
     }
@@ -431,23 +507,25 @@ bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err)
     }
     if ((e->kind == Ast_NParen)) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a2 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a3 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Ast_FoldInt (m9a2, v, err);
+      m9ret = Ast_FoldInt (m9a3, v, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
     }
-    bool m9t3 = ((e->kind == Ast_NUn) && Ast_Is (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s0, 1 }), err));
+    bool m9t3 = ((e->kind == Ast_NUn) && Ast_Is (e->au, ((m9_sl_UTF8){ (uint8_t *) m9s0, 1 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t3) {
-      bool m9t4 = (!Ast_FoldInt ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), &(a), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a4 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_hdl_m9t1;
+      bool m9t4 = (!Ast_FoldInt (m9a4, &(a), err));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t4) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
-      }
+      } }
       { __typeof__((*v)) m9v = m9_sub_i64 (INT64_C(0), a, err);
         if (err->exc) goto L_hdl_m9t1;
         (*v) = m9v;
@@ -457,21 +535,25 @@ bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err)
       goto L_ret;
     }
     if (((e->kind == Ast_NBin) && (e->nkids == INT64_C(2)))) {
-      bool m9t5 = (!Ast_FoldInt ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), &(a), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a5 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_hdl_m9t1;
+      bool m9t5 = (!Ast_FoldInt (m9a5, &(a), err));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t5) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
-      }
-      bool m9t6 = (!Ast_FoldInt ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), &(b), err));
+      } }
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a6 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_hdl_m9t1;
+      bool m9t6 = (!Ast_FoldInt (m9a6, &(b), err));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t6) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
-      }
-      bool m9t7 = Ast_Is (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1, 1 }), err);
+      } }
+      bool m9t7 = Ast_Is (e->au, ((m9_sl_UTF8){ (uint8_t *) m9s1, 1 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t7) {
         { __typeof__((*v)) m9v = m9_add_i64 (a, b, err);
@@ -482,7 +564,7 @@ bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err)
         m9ret = true;
         goto L_ret;
       }
-      bool m9t8 = Ast_Is (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s2, 1 }), err);
+      bool m9t8 = Ast_Is (e->au, ((m9_sl_UTF8){ (uint8_t *) m9s2, 1 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t8) {
         { __typeof__((*v)) m9v = m9_sub_i64 (a, b, err);
@@ -493,7 +575,7 @@ bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err)
         m9ret = true;
         goto L_ret;
       }
-      bool m9t9 = Ast_Is (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s3, 1 }), err);
+      bool m9t9 = Ast_Is (e->au, ((m9_sl_UTF8){ (uint8_t *) m9s3, 1 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t9) {
         { __typeof__((*v)) m9v = m9_mul_i64 (a, b, err);
@@ -504,7 +586,7 @@ bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err)
         m9ret = true;
         goto L_ret;
       }
-      bool m9t10 = (Ast_Is (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s4, 3 }), err) || Ast_Is (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s5, 3 }), err));
+      bool m9t10 = (Ast_Is (e->au, ((m9_sl_UTF8){ (uint8_t *) m9s4, 3 }), err) || Ast_Is (e->au, ((m9_sl_UTF8){ (uint8_t *) m9s5, 3 }), err));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t10) {
         if ((b == INT64_C(0))) {
@@ -519,7 +601,7 @@ bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err)
           m9ret = false;
           goto L_ret;
         }
-        bool m9t12 = Ast_Is (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s6, 3 }), err);
+        bool m9t12 = Ast_Is (e->au, ((m9_sl_UTF8){ (uint8_t *) m9s6, 3 }), err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t12) {
           { __typeof__((*v)) m9v = m9_div_i64 (a, b, err);
@@ -600,16 +682,18 @@ int64_t Ast_IntText (int64_t v, m9_arr_24_uint32_t *buf, m9_state *err)
       break;
     }
   }
-  { int64_t m9t4to;
+  { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; i <= m9t4to; i += 1) {
+  if (i <= m9t4to) for (;;) {
     { __typeof__((*(uint32_t *) m9_at ((*buf).v, i, INT64_C(24), sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (tmp.v, m9_sub_i64 (m9_sub_i64 (n, INT64_C(1), err), i, err), INT64_C(24), sizeof (uint32_t), err));
       if (err->exc) goto L_hdl_m9t1;
       (*(uint32_t *) m9_at ((*buf).v, i, INT64_C(24), sizeof (uint32_t), err)) = m9v;
       if (err->exc) goto L_hdl_m9t1;
     }
+    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = n;
@@ -638,31 +722,37 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Ast_Is (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
+static bool Ast_Is (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
+  m9_sl_BYTE x = {0}; (void) x;
+  m9_sl_BYTE y = {0}; (void) y;
   int64_t i = 0; (void) i;
-  if (((a).len != (b).len)) {
+  x = m9_utf_octets (a);
+  y = m9_utf_octets (b);
+  if (((x).len != (y).len)) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 ((x).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    bool m9t2 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) != (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
+  if (i <= m9t1to) for (;;) {
+    bool m9t2 = ((*(uint8_t *) m9_at (x.p, i, x.len, sizeof (uint8_t), err)) != (*(uint8_t *) m9_at (y.p, i, y.len, sizeof (uint8_t), err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = true;
@@ -673,56 +763,57 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Ast_LitInt (m9_sl_CHAR s, int64_t *v, m9_state *err)
+static bool Ast_LitInt (m9_sl_UTF8 s, int64_t *v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
+  m9_sl_BYTE o = {0}; (void) o;
   int64_t i = 0; (void) i;
+  int64_t c = 0; (void) c;
   int64_t d = 0; (void) d;
   int64_t base = 0; (void) base;
   int64_t from = 0; (void) from;
+  o = m9_utf_octets (s);
   base = INT64_C(10);
   from = INT64_C(0);
-  bool m9t1 = ((((s).len > INT64_C(2)) && ((*(uint32_t *) m9_at (s.p, INT64_C(0), s.len, sizeof (uint32_t), err)) == 48u)) && ((((*(uint32_t *) m9_at (s.p, INT64_C(1), s.len, sizeof (uint32_t), err)) == 120u) || ((*(uint32_t *) m9_at (s.p, INT64_C(1), s.len, sizeof (uint32_t), err)) == 88u))));
+  bool m9t1 = ((((o).len > INT64_C(2)) && ((int64_t)((*(uint8_t *) m9_at (o.p, INT64_C(0), o.len, sizeof (uint8_t), err))) == INT64_C(48))) && ((((int64_t)((*(uint8_t *) m9_at (o.p, INT64_C(1), o.len, sizeof (uint8_t), err))) == INT64_C(120)) || ((int64_t)((*(uint8_t *) m9_at (o.p, INT64_C(1), o.len, sizeof (uint8_t), err))) == INT64_C(88)))));
   if (err->exc) goto L_ret;
   if (m9t1) {
     base = INT64_C(16);
     from = INT64_C(2);
   }
-  if (((s).len <= from)) {
+  if (((o).len <= from)) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   (*v) = INT64_C(0);
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = from;
-  m9t2to = m9_sub_i64 ((s).len, INT64_C(1), err);
+  m9t2to = m9_sub_i64 ((o).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
-    bool m9t3 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 48u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 57u));
-    if (err->exc) goto L_ret;
-    if (m9t3) {
-      { __typeof__(d) m9v = m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err);
+  if (i <= m9t2to) for (;;) {
+    { __typeof__(c) m9v = (int64_t)((*(uint8_t *) m9_at (o.p, i, o.len, sizeof (uint8_t), err)));
+      if (err->exc) goto L_ret;
+      c = m9v;
+    }
+    if (((c >= INT64_C(48)) && (c <= INT64_C(57)))) {
+      { __typeof__(d) m9v = m9_sub_i64 (c, INT64_C(48), err);
         if (err->exc) goto L_ret;
         d = m9v;
       }
     } else {
-      bool m9t4 = (((base == INT64_C(16)) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 97u)) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 102u));
-      if (err->exc) goto L_ret;
-      if (m9t4) {
-        { __typeof__(d) m9v = m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(87), err);
+      if ((((base == INT64_C(16)) && (c >= INT64_C(97))) && (c <= INT64_C(102)))) {
+        { __typeof__(d) m9v = m9_sub_i64 (c, INT64_C(87), err);
           if (err->exc) goto L_ret;
           d = m9v;
         }
     } else {
-      bool m9t5 = (((base == INT64_C(16)) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 65u)) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 70u));
-      if (err->exc) goto L_ret;
-      if (m9t5) {
-        { __typeof__(d) m9v = m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(55), err);
+      if ((((base == INT64_C(16)) && (c >= INT64_C(65))) && (c <= INT64_C(70)))) {
+        { __typeof__(d) m9v = m9_sub_i64 (c, INT64_C(55), err);
           if (err->exc) goto L_ret;
           d = m9v;
         }
@@ -735,6 +826,8 @@ static bool Ast_LitInt (m9_sl_CHAR s, int64_t *v, m9_state *err)
       if (err->exc) goto L_ret;
       (*v) = m9v;
     }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = true;

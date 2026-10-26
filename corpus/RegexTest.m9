@@ -423,13 +423,16 @@ VAR
   re : PTR Regex.Re IN p ;
   r : OPT PTR Regex.Found ;
   s : STR ;
+  d : PTR DynStr.DString IN p ;
   i : I64 ;
   t0 : Time.Instant ;
   secs : F64 ;
 BEGIN
-  s := NEW (p, CHAR, n + 1) ;
-  FOR i := 0 TO n - 1 DO s[i] := 'a' END ;
-  s[n] := tail ;
+  (* built with DynStr, the same both sides of the UTF switch *)
+  d := DynStr.New (p) ;
+  FOR i := 0 TO n - 1 DO DynStr.AppendChar (d, 'a') END ;
+  DynStr.AppendChar (d, tail) ;
+  s := DynStr.View (d) ;
   BEGIN
     re := Regex.Compile (p, pat, '') ;
     t0 := Time.Now () ;

@@ -669,3 +669,25 @@ written, compiled by m9c.
 This is the kind of defect that only writing a program in the
 language can surface. A library exercised solely by drivers in
 another language will keep an API that its own language cannot call.
+
+## Whole-project rebuild (measured 2026-10-25)
+
+The compiler from `corpus/` -- `m9c --make -o prog M9c.m9`, the corpus
+copied to a fresh directory, gcc 16 with m9c's supplied flags
+(`-O2 -flto`), the MacBook (sysctl: Apple M5 Pro), load about 1.5;
+two runs, milliseconds:
+
+| step | run 1 | run 2 |
+|---|---|---|
+| cold | 26,277 | 27,430 |
+| nothing changed | 5,211 | 5,581 |
+| a line added to Text.m9 | 26,578 | 26,939 |
+| a line added to M9c.m9 | 5,276 | 5,329 |
+
+Staleness is transitive, so an edit to Text -- which every module
+imports -- rebuilds the closure; an edit to the top module rebuilds
+one object. The FLOOR is the link: with nothing changed `--make` still
+runs the LTO link of the whole closure, 5.2 s of a rebuild that does
+no work. Skipping a link no object moved is the cheap win, not taken.
+The FLEXPART port at f55ed30 does not build under 0.25 (definite
+assignment, owed by the port), so the application half waits for it.

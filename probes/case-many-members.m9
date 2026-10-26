@@ -1,0 +1,58 @@
+(* EXPECT: CASE over CASE RECORD is not total (missing e19) *)
+MODULE m ;
+(* CASE totality kept 16 labels: a CASE naming every one of 17 or more
+   members was refused as missing the 17th on (the second review's fuzz
+   N5, a false refusal; the Pascal twin's list never had the cap).
+   Legal form first: all twenty members named; then one missing. *)
+TYPE E = (e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19) ;
+PROCEDURE All (x: E) : I64 =
+BEGIN
+  CASE x OF
+  | E.e0 : RETURN 0
+  | E.e1 : RETURN 1
+  | E.e2 : RETURN 2
+  | E.e3 : RETURN 3
+  | E.e4 : RETURN 4
+  | E.e5 : RETURN 5
+  | E.e6 : RETURN 6
+  | E.e7 : RETURN 7
+  | E.e8 : RETURN 8
+  | E.e9 : RETURN 9
+  | E.e10 : RETURN 10
+  | E.e11 : RETURN 11
+  | E.e12 : RETURN 12
+  | E.e13 : RETURN 13
+  | E.e14 : RETURN 14
+  | E.e15 : RETURN 15
+  | E.e16 : RETURN 16
+  | E.e17 : RETURN 17
+  | E.e18 : RETURN 18
+  | E.e19 : RETURN 19
+  END
+END All ;
+PROCEDURE Short (x: E) : I64 =
+BEGIN
+  CASE x OF
+  | E.e0 : RETURN 0
+  | E.e1 : RETURN 1
+  | E.e2 : RETURN 2
+  | E.e3 : RETURN 3
+  | E.e4 : RETURN 4
+  | E.e5 : RETURN 5
+  | E.e6 : RETURN 6
+  | E.e7 : RETURN 7
+  | E.e8 : RETURN 8
+  | E.e9 : RETURN 9
+  | E.e10 : RETURN 10
+  | E.e11 : RETURN 11
+  | E.e12 : RETURN 12
+  | E.e13 : RETURN 13
+  | E.e14 : RETURN 14
+  | E.e15 : RETURN 15
+  | E.e16 : RETURN 16
+  | E.e17 : RETURN 17
+  | E.e18 : RETURN 18
+  END ;
+  RETURN -1
+END Short ;
+END m.

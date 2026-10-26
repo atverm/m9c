@@ -1,0 +1,41 @@
+MODULE GfShareOptKept ;
+
+(* WANT: kept 41 *)
+
+(* an OPT SHARED parameter stored into an OPT SHARED variable counts
+  (B1) *)
+
+IMPORT Io, Fmt ;
+
+TYPE Store = RECORD n : I64 END ;
+TYPE Box = RECORD g : OPT SHARED PTR Store END ;
+
+VAR g : OPT SHARED PTR Store ;
+
+PROCEDURE Keep (KEPT q: OPT SHARED PTR Store) =
+BEGIN
+  g := q
+END Keep ;
+
+PROCEDURE Go () =
+VAR o : PTR Store ; h : SHARED PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.n := 41 ;
+  h := SHARED (o) ;
+  Keep (SOME (h)) ;
+  DISPOSE (h)
+END Go ;
+
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END
+END Churn ;
+
+BEGIN
+  Go () ;
+  Churn () ;
+  IF g IS SOME r THEN Io.WriteLine ('kept ' + Fmt.I64Str (r.n)) END
+END GfShareOptKept.

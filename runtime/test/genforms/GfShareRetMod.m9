@@ -1,0 +1,31 @@
+MODULE GfShareRetMod ;
+
+(* WANT: ret 41 *)
+
+(* a function answering a module variable's SHARED handle hands out a
+  count of its own (B1) *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 END ;
+VAR gh : SHARED PTR Store ;
+PROCEDURE Get () : SHARED PTR Store =
+BEGIN
+  RETURN gh
+END Get ;
+PROCEDURE Go () =
+VAR x : SHARED PTR Store ;
+BEGIN
+  x := Get () ;
+  DISPOSE (x)
+END Go ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END
+END Churn ;
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ; o.n := 41 ; gh := SHARED (o) ;
+  Go () ; Churn () ;
+  Io.WriteLine ('ret ' + Fmt.I64Str (gh.n))
+END GfShareRetMod.

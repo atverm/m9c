@@ -1,0 +1,30 @@
+(* the compiler review of 2026-10-21, checker repro E1 (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE E1 ;
+IMPORT Io ;
+PROCEDURE G (n: I64) : STR ;
+PROCEDURE F (n: I64) : STR =
+BEGIN
+  IF n > 0 THEN RETURN G (n - 1) END ;
+  RETURN 'OK literal'
+END F ;
+PROCEDURE G (n: I64) : STR =
+BEGIN
+  RETURN F (n)
+END G ;
+PROCEDURE Warm () =
+VAR t : STR ;
+BEGIN
+  t := F (1) ;
+  Io.WriteLine (t)
+END Warm ;
+PROCEDURE Up () =
+VAR s : STR ;
+BEGIN
+  s := G (1) ;
+  s[0] := 'X' ;
+  Io.WriteLine (s)
+END Up ;
+BEGIN
+  Warm () ;
+  Up ()
+END E1.

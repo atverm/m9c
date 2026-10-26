@@ -2,10 +2,10 @@ REVIEW Zarr -- 63 procedures with a body, 24 of them functions; 31 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              24
-  assignments                                   229
+  assignments                                   230
   arguments                                    1020
   RETURN values                                  38
-  operands of a comparison or an operator       306
+  operands of a comparison or an operator       305
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           1
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     3   reads in PutChunk, writes or reads in PutChunk, writes or reads in PutChunk
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                       37
   NEW in the frame                                0
   NEW in a named pool                            25
+  calls of a STR form with a UTF twin            16   Io.WriteFileBytes -> Io.WriteFileBytesUtf, Io.ReadFileBytes -> Io.ReadFileBytesUtf, Io.MkDir -> Io.MkDirUtf, Io.MkDir -> Io.MkDirUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf, +10 more
+  STR subscripts, writes and LEN                 27   index path[0], index Alphabet[v DIV 262144], index Alphabet[(v DIV 4096) MOD 64], index Alphabet[(v DIV 64) MOD 64], index Alphabet[v MOD 64], index Alphabet[v DIV 262144], +21 more

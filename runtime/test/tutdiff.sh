@@ -8,10 +8,12 @@ set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh
 
+M9CNEW=$(mktemp -d)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Lex.c \
-    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
-    ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o m9c
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
+# replaced only when it differs: a gate in another lane running m9c keeps
+# its file, and --run's cache, whose key holds m9c's mtime, its entries
+if cmp -s "$M9CNEW/m9c" m9c; then rm -r "$M9CNEW"; else mv -f "$M9CNEW/m9c" m9c; rmdir "$M9CNEW"; fi
 
 M9C=$(pwd)/m9c
 # the public m9c repository carries docs/tutorial-plan.md and not the
@@ -23,8 +25,8 @@ M9C=$(pwd)/m9c
 EXA=$(cd ../../docs/tutorial/examples && pwd)
 RT=$(cd .. && pwd)
 LIB=$(cd ../../corpus && pwd)
-W=/tmp/m9tut-gate
-rm -rf "$W"; mkdir -p "$W"
+W=$(mktemp -d "${TMPDIR:-/tmp}/m9tut.XXXXXX")   # a fixed /tmp name collided between runs (tier 3)
+trap 'rm -rf "$W"' EXIT
 . ./lib/tutcommon.sh
 
 # the zarr chapter needs libblosc and a generatable store; CI has
@@ -37,14 +39,14 @@ ldconfig -p 2>/dev/null | grep -q 'libblosc\.so\.1' || ZARR_OK=0
 # shims too, so the LINK needs libssl whatever the program does.
 # Asked by linking, not by guessing at a package name.
 TLS_OK=1
-printf 'int main(void){return 0;}' > /tmp/m9tls.c
-gcc /tmp/m9tls.c -lssl -lcrypto -o /tmp/m9tls 2>/dev/null || TLS_OK=0
+printf 'int main(void){return 0;}' > "$W"/m9tls.c
+gcc "$W"/m9tls.c -lssl -lcrypto -o "$W"/m9tls 2>/dev/null || TLS_OK=0
 # chapter 14 WRITES a NetCDF file, so its link needs libnetcdf -- the
 # only example that reaches a NetCDF procedure (C7Series links Frame
 # without it because -flto drops the ones nothing calls).  CI has no
 # libnetcdf; asked the same way, by linking.
 NETCDF_OK=1
-gcc /tmp/m9tls.c -lnetcdf -o /tmp/m9nc 2>/dev/null || NETCDF_OK=0
+gcc "$W"/m9tls.c -lnetcdf -o "$W"/m9nc 2>/dev/null || NETCDF_OK=0
 
 
 ran=0
@@ -88,8 +90,12 @@ for f in "$EXA"/X*.m9; do
   m=$(basename "$f" .m9)
   want=$(sed -n 's/^(\* EXPECT-ERROR: \(.*\) \*)$/\1/p' "$f")
   [ -n "$want" ] || { echo "FAIL: $m has no EXPECT-ERROR line"; exit 1; }
-  if ( cd "$W" && M9RUNTIME="$RT" M9LIBRARY="$LIB" \
-       "$M9C" -c "$f" -I "$EXA" > "$W/$m.err" 2>&1 ); then
+  # from the examples' directory and by the file's own name, as a
+  # reader runs it: the refusal names the file (2026-10-22) and the
+  # chapters quote it.  --check writes nothing there and refuses what
+  # -c refuses (it runs the generator too).
+  if ( cd "$EXA" && M9RUNTIME="$RT" M9LIBRARY="$LIB" \
+       "$M9C" --check "$m.m9" -I . > "$W/$m.err" 2>&1 ); then
     echo "FAIL: $m compiled -- it must be refused"; exit 1
   fi
   grep -qF "$want" "$W/$m.err" \

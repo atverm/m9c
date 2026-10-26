@@ -1,0 +1,33 @@
+MODULE R3DisposeModVar ;
+
+(* WANT: owner still reads 7 *)
+
+(* Found 2026-10-25, building decision 61's open half: in a procedure
+   `c := Id (b) ; DISPOSE (c)' is refused -- Id answers what it was lent
+   -- but in the MODULE BODY, with b and c module variables, neither the
+   direct call nor the one through a further callee is: DISPOSE's owner
+   rule follows locals, and a module variable is not tracked there.  The
+   read through b after the DISPOSE is a heap-use-after-free under the
+   gate's sanitizers; the correct behaviour is a refusal at the DISPOSE,
+   which would make this program owed no longer.  Held by sanitize.owed
+   until then. *)
+
+IMPORT Io, Fmt ;
+
+TYPE Box = RECORD n : I64 END ;
+
+PROCEDURE Id (a: PTR Box) : PTR Box =
+BEGIN
+  RETURN a
+END Id ;
+
+VAR
+  b, c : PTR Box ;
+
+BEGIN
+  b := NEW (OWN, Box) ;
+  b.n := 7 ;
+  c := Id (b) ;
+  DISPOSE (c) ;
+  Io.WriteLine ('owner still reads ' + Fmt.I64Str (b.n))
+END R3DisposeModVar.

@@ -1,0 +1,96 @@
+MODULE SanShared ;
+
+(* WANT: shared: copy holds 55, made holds 66, peak under 1 GB *)
+
+(* The compiler review's G7 (2026-10-21): `s := SHARED (o)' and `s :=
+   Make ()' for a function answering SHARED were share-COPIED, so the
+   count started at 2, the DISPOSE left it at 1 and nothing was ever
+   freed -- 2000 rounds of a 100,000-element store peaked at 1.62 GB.
+   Only a copy of a BINDING counts now.  Both directions are held: a
+   copy keeps the store alive past the first DISPOSE (under the gate's
+   arenas an early free traps), and 3000 rounds stay far below what a
+   leak takes (2.4 GB; the bound leaves room for ASan's quarantine). *)
+
+IMPORT Io, Fmt, System ;
+
+TYPE
+  Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;
+
+VAR
+  out : STR ;
+  i : I64 ;
+  m : System.Memory ;
+
+PROCEDURE Make (v: I64) : SHARED PTR Store =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 100000) ;
+  o.data[0] := v ;
+  RETURN SHARED (o)
+END Make ;
+
+PROCEDURE Fresh () =
+VAR
+  s : SHARED PTR Store ;
+  o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 100000) ;
+  s := SHARED (o) ;
+  s.data[1] := 1 ;
+  DISPOSE (s)
+END Fresh ;
+
+PROCEDURE Made () =
+VAR s : SHARED PTR Store ;
+BEGIN
+  s := Make (1) ;
+  DISPOSE (s)
+END Made ;
+
+PROCEDURE Copied () : I64 =
+VAR
+  s, t : SHARED PTR Store ;
+  o : PTR Store ;
+  v : I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 100000) ;
+  o.data[0] := 55 ;
+  s := SHARED (o) ;
+  t := s ;
+  DISPOSE (s) ;
+  v := t.data[0] ;
+  DISPOSE (t) ;
+  RETURN v
+END Copied ;
+
+PROCEDURE MadeHeld () : I64 =
+VAR
+  s, t : SHARED PTR Store ;
+  v : I64 ;
+BEGIN
+  s := Make (66) ;
+  t := s ;
+  DISPOSE (s) ;
+  v := t.data[0] ;
+  DISPOSE (t) ;
+  RETURN v
+END MadeHeld ;
+
+BEGIN
+  out := 'shared: copy holds ' + Fmt.I64Str (Copied ()) ;
+  out := out + ', made holds ' + Fmt.I64Str (MadeHeld ()) ;
+  FOR i := 1 TO 3000 DO
+    Fresh () ;
+    Made ()
+  END ;
+  m := System.Mem () ;
+  IF m.peak < 1073741824 THEN
+    out := out + ', peak under 1 GB'
+  ELSE
+    out := out + ', peak ' + Fmt.I64Str (m.peak DIV 1048576) + ' MB'
+  END ;
+  Io.WriteLine (out)
+END SanShared.

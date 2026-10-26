@@ -1,0 +1,38 @@
+MODULE SanSizeWrap ;
+
+(* WANT: size wrap: OutOfMemory OutOfMemory *)
+
+(* The compiler review's G4 (2026-10-21): m9_pool_alloc's guard
+   `n > SIZE_MAX / elem' passes and the 16-byte alignment then wraps,
+   so NEW (p, I16, MAX (I64)) answered a slice of 2^63-1 elements over
+   a 0-byte carve and an index check of 100000 passed into nothing.
+   It must raise OutOfMemory, for every element size. *)
+
+IMPORT Io ;
+
+VAR
+  p : POOL ;
+  a : SLICE OF I16 ;
+  b : SLICE OF F64 ;
+  out : STR ;
+
+BEGIN
+  out := 'size wrap:' ;
+  BEGIN
+    a := NEW (p, I16, MAX (I64)) ;
+    a[100000] := 7 ;
+    out := out + ' answered'
+  EXCEPT
+  | OutOfMemory : out := out + ' OutOfMemory'
+  | IndexError : out := out + ' IndexError'
+  END ;
+  BEGIN
+    b := NEW (p, F64, 2305843009213693951) ;
+    b[200000] := 42.0 ;
+    out := out + ' answered'
+  EXCEPT
+  | OutOfMemory : out := out + ' OutOfMemory'
+  | IndexError : out := out + ' IndexError'
+  END ;
+  Io.WriteLine (out)
+END SanSizeWrap.

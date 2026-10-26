@@ -1,0 +1,25 @@
+MODULE GfForeignRaiseArg ;
+
+(* WANT: caught *)
+
+(* a raising argument of a foreign call is tested before C sees the zero
+  it answered (concurrency 4c: strlen got a NULL) *)
+(* the foreign call runs with what a RAISING argument answered: strlen of NULL *)
+IMPORT Io ;
+FROM cs IMPORT StrLen ;
+EXCEPTION Bad ;
+VAR n : C.SSizeT ;
+PROCEDURE P () : C.ConstPtr RAISES Bad =
+VAR z : C.ConstPtr ;
+BEGIN RAISE Bad END P ;
+BEGIN
+  BEGIN
+    n := StrLen (P ())
+  EXCEPT
+  | Bad : Io.WriteLine ('caught')
+  END
+END GfForeignRaiseArg.
+
+UNSAFE DEFINITION MODULE FOR "C" cs ;
+PROCEDURE StrLen = "m9_cstrlen" (s: C.ConstPtr) : C.SSizeT [SERIAL] ;
+END cs.

@@ -10,14 +10,11 @@
 # ($M9_CACHE, else ~/.cache/m9), holds it to its SHA-256, unpacks it in
 # runtime/test/xmlconf (gitignored) and runs XmlTest there.  Without
 # the network it SKIPS out loud on a workstation and FAILS on CI.  Uses
-# the m9c that m9c.sh builds, or $M9C, or out/m9c.
+# an m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
 set -e
 cd "$(dirname "$0")"
 
-M9C=${M9C:-}
-[ -n "$M9C" ] || { [ -x ./m9c ] && M9C=$(pwd)/m9c; }
-[ -n "$M9C" ] || { [ -x ../../out/m9c ] && M9C=$(cd ../../out && pwd)/m9c; }
-[ -n "$M9C" ] || { echo "xml: no m9c (run m9c.sh or build.sh)"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 
 URL=https://www.w3.org/XML/Test/xmlts20130923.tar.gz
 SHA=9b61db9f5dbffa545f4b8d78422167083a8568c59bd1129f94138f936cf6fc1f

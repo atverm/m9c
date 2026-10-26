@@ -7,25 +7,26 @@
 #include "Parse.h"
 #include "Gen.h"
 #include "Sem.h"
-#include "DynStr.h"
+#include "DynUtf.h"
 #include "Doc.h"
 #include "Review.h"
 #include "Lex.h"
 #include "System.h"
+#include "Text.h"
 
 
 static const uint32_t M9c_StdLib_d[11] = { 47u, 117u, 115u, 114u, 47u, 108u, 105u, 98u, 47u, 109u, 57u };
 #define M9c_StdLib ((m9_sl_CHAR){ (uint32_t *) M9c_StdLib_d, 11 })
-static const uint32_t M9c_Version_d[6] = { 48u, 46u, 50u, 52u, 46u, 48u };
+static const uint32_t M9c_Version_d[6] = { 48u, 46u, 50u, 53u, 46u, 48u };
 #define M9c_Version ((m9_sl_CHAR){ (uint32_t *) M9c_Version_d, 6 })
 static const uint32_t M9c_StdInclude_d[15] = { 47u, 117u, 115u, 114u, 47u, 105u, 110u, 99u, 108u, 117u, 100u, 101u, 47u, 109u, 57u };
 #define M9c_StdInclude ((m9_sl_CHAR){ (uint32_t *) M9c_StdInclude_d, 15 })
 static const uint32_t M9c_StdArchive_d[18] = { 47u, 117u, 115u, 114u, 47u, 108u, 105u, 98u, 47u, 108u, 105u, 98u, 109u, 57u, 114u, 116u, 46u, 97u };
 #define M9c_StdArchive ((m9_sl_CHAR){ (uint32_t *) M9c_StdArchive_d, 18 })
 
-#ifndef M9SL_m9_sl_m9_sl_CHAR
-#define M9SL_m9_sl_m9_sl_CHAR
-typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 #endif
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep

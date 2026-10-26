@@ -1,0 +1,19 @@
+MODULE R3Depth3 ;
+(* by depth (2026-10-26): a literal two levels down is read-only at depth
+   2, and a write through THREE subscripts writes its octets -- refused,
+   where the write through two (an element replaced) is not *)
+IMPORT Io ;
+TYPE Strs = SLICE OF STR ;
+PROCEDURE Fill () =
+VAR vut : SLICE OF Strs ; y : I64 ;
+BEGIN
+  vut := NEW (Strs, 2) ;
+  FOR y := 0 TO 1 DO vut[y] := NEW (STR, 2) END ;
+  vut[0][0] := 'abc' ;
+  vut[0][1] := 'def' ;
+  vut[0][0][0] := 'X' ;
+  Io.WriteLine (vut[0][0])
+END Fill ;
+BEGIN
+  Fill ()
+END R3Depth3.

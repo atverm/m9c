@@ -1,0 +1,25 @@
+MODULE R3OwnN17 ;
+(* an allocation in an owned object's POOL field kept in a module variable, then the object disposed *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 ; pool : POOL END ;
+VAR gs : SLICE OF I64 ;
+PROCEDURE Fill () =
+VAR o : PTR Store ; i : I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  gs := NEW (o.pool, I64, 4) ;
+  FOR i := 0 TO 3 DO gs[i] := 41 END ;
+  DISPOSE (o)
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[3]))
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (Fmt.I64Str (gs[0]))
+END R3OwnN17.

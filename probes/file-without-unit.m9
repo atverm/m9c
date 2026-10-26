@@ -1,0 +1,4 @@
+(* EXPECT: the file holds no unit: a MODULE, DEFINITION MODULE or IMPLEMENTATION MODULE (par 3) *)
+(* A file with no unit -- empty, or only comments, as this one -- was
+   checked clean and failed at the link (since 2026-10-22, the compiler
+   review's F4). *)

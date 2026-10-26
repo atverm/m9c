@@ -11,15 +11,11 @@
 # a form that builds now, or one the checker has started to refuse,
 # is a stale line and red.  A line naming no fixture is red too.
 #
-# Uses the m9c that m9c.sh builds (run after it, as ci.yml does), or
-# $M9C, or out/m9c.
+# Uses an m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
 set -e
 cd "$(dirname "$0")"
 
-M9C=${M9C:-}
-[ -n "$M9C" ] || { [ -x ./m9c ] && M9C=$(pwd)/m9c; }
-[ -n "$M9C" ] || { [ -x ../../out/m9c ] && M9C=$(cd ../../out && pwd)/m9c; }
-[ -n "$M9C" ] || { echo "genforms: no m9c (run m9c.sh or build.sh)"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 
 export M9RUNTIME=$(cd .. && pwd)
 export M9LIBRARY=$(cd ../../corpus && pwd)

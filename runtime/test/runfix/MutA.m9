@@ -1,0 +1,24 @@
+DEFINITION MODULE MutA ;
+
+(* run.sh: MutA and MutB import each other, each taking the other's
+   record in a signature (allowed; 2026-10-22) *)
+
+IMPORT MutB ;
+TYPE A = RECORD n : I64 END ;
+PROCEDURE F (b : MutB.B) : I64 ;
+PROCEDURE Mk (n : I64) : A ;
+END MutA.
+
+IMPLEMENTATION MODULE MutA ;
+IMPORT MutB ;
+PROCEDURE F (b : MutB.B) : I64 =
+BEGIN
+  RETURN b.m + 1
+END F ;
+PROCEDURE Mk (n : I64) : A =
+VAR a : A ;
+BEGIN
+  a.n := n ;
+  RETURN a
+END Mk ;
+END MutA.

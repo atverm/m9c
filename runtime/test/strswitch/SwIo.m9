@@ -1,0 +1,21 @@
+MODULE SwIo ;
+
+(* WANT: via Io: Grüße 5 *)
+
+(* Io under the rehearsed switch: its STR forms collapse into the UTF
+   ones and its DynStr is DynUtf.m9 served under that name (M9c.Aliased,
+   decision 4), so a program prints through Io.WriteLine as always. *)
+
+IMPORT Io, Fmt ;
+
+VAR
+  s : STR ;
+  n : I64 ;
+  c : CHAR ;
+
+BEGIN
+  s := 'Grüße' ;
+  n := 0 ;
+  FOR c IN s DO n := n + 1 END ;
+  Io.WriteLine ('via Io: ' + s + ' ' + Fmt.I64Str (n))
+END SwIo.

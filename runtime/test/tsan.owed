@@ -1,0 +1,3 @@
+# tsan.sh: threaded programs that report a data race under ThreadSanitizer
+# today, each with its reason.  Held both ways: an owed program must still
+# report, any other must report nothing.  NAME  why

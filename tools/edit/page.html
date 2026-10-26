@@ -4,50 +4,63 @@
 <meta charset="utf-8">
 <title>m9edit</title>
 <style>
-  :root { --bg:#fdfdfc; --ink:#1a1a2e; --dim:#8a8a97; --kw:#0b5ea8;
-          --str:#1a7f37; --num:#953800; --com:#6e7781; --err:#cf222e; }
+  /* every colour a token; the dark surface redefines them (the
+     tutorial's page.css has the same values) */
+  :root { color-scheme: light dark;
+          --bg:#fdfdfc; --ink:#1a1a2e; --dim:#8a8a97; --kw:#0b5ea8;
+          --str:#1a7f37; --num:#953800; --com:#6e7781; --err:#cf222e;
+          --rule:#ddd; --gutter:#f4f4f2; --diaghover:#fee; --tip:#fffdf5;
+          --tipedge:#c9c2a6; --shadow:#0002; --dline:#dcebfa;
+          --dcell:#f7b3b3; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14171f; --ink:#e3e6ee; --dim:#8b93a5; --kw:#79b8ff;
+            --str:#7ee787; --num:#ffa657; --com:#8b949e; --err:#ff7b72;
+            --rule:#2c3240; --gutter:#1d212c; --diaghover:#3a1e22;
+            --tip:#1f2330; --tipedge:#4a5163; --shadow:#0008;
+            --dline:#1f3550; --dcell:#6e2a2a; }
+  }
   * { box-sizing: border-box; }
   body { margin:0; font-family: system-ui, sans-serif; background:var(--bg);
          color:var(--ink); display:flex; flex-direction:column; height:100vh; }
   header { display:flex; gap:.6em; align-items:center; padding:.45em .8em;
-           border-bottom:1px solid #ddd; }
+           border-bottom:1px solid var(--rule); }
   header b { margin-right:.6em; }
   button { font: inherit; padding:.25em 1em; cursor:pointer; }
   #status { color:var(--dim); font-size:.9em; margin-left:auto; }
   main { flex:1; display:flex; min-height:0; }
   #edcol { flex:3; display:flex; flex-direction:column; min-width:0;
-           border-right:1px solid #ddd; }
+           border-right:1px solid var(--rule); }
   #edwrap { flex:1; display:flex; min-height:0; }
   #gutter { margin:0; padding:8px 6px; text-align:right; color:var(--dim);
-            background:#f4f4f2; user-select:none; overflow:hidden;
+            background:var(--gutter); user-select:none; overflow:hidden;
             white-space:pre; font:13px/1.45 ui-monospace, Consolas, monospace; }
   #stack { position:relative; flex:1; overflow:hidden; }
   #hl, #src {
     position:absolute; inset:0; margin:0; padding:8px; border:0;
     font:13px/1.45 ui-monospace, Consolas, monospace;
     white-space:pre; overflow:auto; tab-size:2; }
-  #hl { pointer-events:none; }
+  #hl { pointer-events:none; color:var(--ink); }
   #src { background:transparent; color:transparent; caret-color:var(--ink);
          resize:none; outline:none; }
   #side { flex:2; display:flex; flex-direction:column; min-width:0; }
-  #diags { max-height:9em; overflow:auto; border-top:1px solid #ddd;
+  #diags { max-height:9em; overflow:auto; border-top:1px solid var(--rule);
            font:12px/1.5 ui-monospace, monospace; }
   #diags div { padding:.1em .8em; color:var(--err); cursor:pointer; }
-  #diags div:hover { background:#fee; }
+  #diags div:hover { background:var(--diaghover); }
   #out { flex:1; overflow:auto; padding: .5em .8em;
          font:13px/1.45 ui-monospace, monospace; white-space:pre-wrap; }
-  #figs img { max-width:100%; border:1px solid #ddd; margin:.5em 0;
+  #figs img { max-width:100%; border:1px solid var(--rule); margin:.5em 0;
               background:#fff; }
   .kw{color:var(--kw);font-weight:600} .str{color:var(--str)}
   .num{color:var(--num)} .com{color:var(--com);font-style:italic}
   .err{color:var(--err);text-decoration:underline wavy}
-  .m9tip { position:fixed; max-width:44em; background:#fffdf5;
-         border:1px solid #c9c2a6; box-shadow:0 2px 8px #0002;
+  .m9tip { position:fixed; max-width:44em; background:var(--tip); color:var(--ink);
+         border:1px solid var(--tipedge); box-shadow:0 2px 8px var(--shadow);
          padding:.5em .7em; font:12px/1.5 ui-monospace, monospace;
          white-space:pre-wrap; display:none; z-index:9; }
   .m9tip .sig { color:var(--kw); font-weight:600; }
-  .dline{background:#dcebfa;display:inline-block;width:100%}
-  .dcell{background:#f7b3b3;border-radius:2px}
+  .dline{background:var(--dline);display:inline-block;width:100%}
+  .dcell{background:var(--dcell);border-radius:2px}
 </style>
 </head>
 <body>

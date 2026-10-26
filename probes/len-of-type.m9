@@ -1,0 +1,15 @@
+(* EXPECT: LEN takes a value, not the type I64 *)
+(* LEN measures an array, a slice, a grid or a string.  Of a type name
+   or a scalar the checker passed it and the generator refused it as an
+   unknown name (2026-10-22, the review's F4). *)
+MODULE m ;
+VAR
+  a : ARRAY 4 OF I64 ;
+  s : STR ;
+  n : I64 ;
+BEGIN
+  s := 'abc' ;
+  n := LEN (a) + LEN (s) ;
+  n := LEN (I64) ;
+  n := LEN (n)
+END m.

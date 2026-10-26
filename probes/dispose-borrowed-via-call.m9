@@ -1,0 +1,44 @@
+(* EXPECT: cannot DISPOSE c: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2) *)
+(* A callee that answers what a FURTHER callee answers of its argument
+   -- `RETURN Id (a)' -- answers a borrow too (decision 61's open half,
+   2026-10-25): `c := Via (b) ; DISPOSE (c)' freed what b owned, and the
+   next read of b was a heap-use-after-free under ASan.  Legal forms
+   first: the borrowed answer only read, and a callee whose further
+   callee makes what it answers. *)
+MODULE m ;
+TYPE Box = RECORD n : I64 END ;
+PROCEDURE Id (a: PTR Box) : PTR Box =
+BEGIN
+  RETURN a
+END Id ;
+PROCEDURE Via (a: PTR Box) : PTR Box =
+BEGIN
+  RETURN Id (a)
+END Via ;
+PROCEDURE Make (n: I64) : PTR Box =
+VAR q : PTR Box ;
+BEGIN
+  q := NEW (OWN, Box) ;
+  q.n := n ;
+  RETURN q
+END Make ;
+PROCEDURE ViaMake (n: I64) : PTR Box =
+BEGIN
+  RETURN Make (n)
+END ViaMake ;
+PROCEDURE Go () : I64 =
+VAR b, c, d : PTR Box ;
+  k : I64 ;
+BEGIN
+  b := NEW (OWN, Box) ;
+  b.n := 7 ;
+  c := Via (b) ;
+  k := c.n ;
+  d := ViaMake (2) ;
+  DISPOSE (d) ;
+  DISPOSE (c) ;
+  DISPOSE (b) ;
+  RETURN k
+END Go ;
+BEGIN
+END m.

@@ -1,0 +1,97 @@
+MODULE SwBasic ;
+
+(* WANT: Grüße ✓ 3 x|ab|Red|Tue 7 ok sc fl *)
+
+(* The rehearsed switch (--utf-str): STR is the UTF-8 text type.  A
+   literal and a CONST are octets, + joins, FOR c IN s decodes, SLICE
+   cuts at character boundaries, UTF (s) and STR (u) are identities,
+   a record field and an exception payload carry one, NAME of an
+   enumeration member answers one, a function answers one. *)
+
+IMPORT SwPut ;
+
+CONST
+  Greeting = 'Grüße' ;
+
+TYPE
+  Colour = (Red, Green) ;
+  Row = RECORD
+    label : STR ;
+    n : I64 ;
+  END ;
+
+EXCEPTION
+  Said (what: STR ; k: I64) ;
+
+VAR
+  s, t : STR ;
+  u : UTF ;
+  r : Row ;
+  o : SLICE OF BYTE ;
+  c : CHAR ;
+  n : I64 ;
+
+PROCEDURE Day (i: I64) : STR =
+BEGIN
+  IF i = 2 THEN RETURN 'Tue' END ;
+  RETURN 'Mon' + ' ' + 'day'
+END Day ;
+
+PROCEDURE Scratchy () : STR =
+  (* a string built in a local pool and answered: re-homed at exit,
+     as a STR always was (par 2.3) -- under the flag through
+     m9_rehome_utf *)
+VAR
+  scratch : POOL ;
+  s : STR ;
+BEGIN
+  s := UTF (scratch, 'sc') ;
+  RETURN s
+END Scratchy ;
+
+PROCEDURE Fill (VAR o: STR) =
+VAR scratch : POOL ;
+BEGIN
+  o := UTF (scratch, 'fl')
+END Fill ;
+
+PROCEDURE Shout (RO what: STR) RAISES Said =
+BEGIN
+  RAISE Said (what, 7)
+END Shout ;
+
+BEGIN
+  s := Greeting ;
+  s := s + ' ✓' ;
+  n := 0 ;
+  t := 'abc' ;
+  FOR c IN t DO n := n + 1 END ;
+  u := UTF (s) ;                   (* identity *)
+  t := STR (u) ;                   (* identity *)
+  r.label := 'x|' + SLICE ('abc', 0, 2) ;
+  r.n := n ;
+  SwPut.Put (t) ;
+  SwPut.Put (' ') ;
+  IF n = 3 THEN SwPut.Put ('3') ELSE SwPut.Put ('?') END ;
+  SwPut.Put (' ') ;
+  SwPut.Put (r.label) ;
+  SwPut.Put ('|') ;
+  SwPut.Put (NAME (Colour.Red)) ;
+  SwPut.Put ('|') ;
+  SwPut.Put (Day (2)) ;
+  BEGIN
+    Shout ('ok')
+  EXCEPT
+  | Said (w, k) :
+      SwPut.Put (' ') ;
+      IF k = 7 THEN SwPut.Put ('7') END ;
+      SwPut.Put (' ') ;
+      SwPut.Put (w)
+  END ;
+  SwPut.Put (' ') ;
+  SwPut.Put (Scratchy ()) ;
+  Fill (t) ;
+  SwPut.Put (' ') ;
+  SwPut.Put (t) ;
+  SwPut.Put ('' + 0AC)
+END SwBasic.

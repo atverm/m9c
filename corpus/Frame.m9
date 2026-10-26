@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Frame ;
 
 (* Dataframes for scientific computing: typed columns that carry
@@ -879,22 +880,24 @@ END PutF32 ;
 
 PROCEDURE PutStr (VAR d: PTR DynStr.DString ;
                   RO s: STR) =
+  (* by FOR c IN s, over characters: the same both sides of the UTF
+     switch *)
 VAR
-  i : I64 ;
+  c : CHAR ;
   needs : BOOL ;
 BEGIN
   needs := FALSE ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = ',' OR s[i] = '"' OR s[i] = 00AC THEN needs := TRUE END
+  FOR c IN s DO
+    IF c = ',' OR c = '"' OR c = 00AC THEN needs := TRUE END
   END ;
   IF NOT needs THEN
     DynStr.Append (d, s) ;
     RETURN
   END ;
   DynStr.AppendChar (d, '"') ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '"' THEN DynStr.AppendChar (d, '"') END ;
-    DynStr.AppendChar (d, s[i])
+  FOR c IN s DO
+    IF c = '"' THEN DynStr.AppendChar (d, '"') END ;
+    DynStr.AppendChar (d, c)
   END ;
   DynStr.AppendChar (d, '"')
 END PutStr ;

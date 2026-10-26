@@ -1,0 +1,42 @@
+REVIEW Chars -- 7 procedures with a body, 6 of them functions; 4 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path               6
+  assignments                                    24
+  arguments                                      41
+  RETURN values                                   7
+  operands of a comparison or an operator        43
+  CASE labels                                     0
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                     0
+  pool parameters                                 0
+  KEPT parameters                                 0
+  HEAP named                                      0
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  [SHARABLE] records                              0
+  module variables                                0
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+  THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
+
+COUNTED -- how much there was to check
+  CASE statements                                 0
+  RAISE statements                                2
+  handlers                                        2
+  NEW in the frame                                2
+  NEW in a named pool                             0
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

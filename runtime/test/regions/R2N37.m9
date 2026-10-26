@@ -1,0 +1,28 @@
+MODULE R2N37 ;
+(* a WHILE IS SOME binder of a frame OPT pointer kept in a module variable *)
+IMPORT Io, Fmt ;
+TYPE Node = RECORD n : I64 END ;
+VAR gp : OPT PTR Node ;
+PROCEDURE Fill () =
+VAR fo : OPT PTR Node ; q : PTR Node ;
+BEGIN
+  q := NEW (Node) ;
+  q.n := 41 ;
+  fo := SOME (q) ;
+  WHILE fo IS SOME p DO
+    gp := SOME (p) ;
+    fo := NONE
+  END
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[5]))
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  IF gp IS SOME r THEN Io.WriteLine (Fmt.I64Str (r.n)) END
+END R2N37.

@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Pg ;
 
 (* PostgreSQL over libpq: connect, run parameterised statements, read
@@ -549,16 +550,18 @@ PROCEDURE ArrayLiteral (RO items: SLICE OF STR) : STR =
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
-  i, j : I64 ;
+  i : I64 ;
+  c : CHAR ;
 BEGIN
   d := DynStr.New (scratch) ;
   DynStr.AppendChar (d, '{') ;
   FOR i := 0 TO LEN (items) - 1 DO
     IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
     DynStr.AppendChar (d, '"') ;
-    FOR j := 0 TO LEN (items[i]) - 1 DO
-      IF items[i][j] = '"' OR items[i][j] = 5CC THEN DynStr.AppendChar (d, 5CC) END ;
-      DynStr.AppendChar (d, items[i][j])
+    (* FOR c IN: over characters, the same both sides of the UTF switch *)
+    FOR c IN items[i] DO
+      IF c = '"' OR c = 5CC THEN DynStr.AppendChar (d, 5CC) END ;
+      DynStr.AppendChar (d, c)
     END ;
     DynStr.AppendChar (d, '"')
   END ;

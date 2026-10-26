@@ -27,6 +27,14 @@ MODULE MkLogo ;
      tools/vscode-m9/images/m9.svg        the icon of a .m9 file
      tools/tutor/favicon.svg              every tutorial page's tab icon,
                                           inlined by MkTutor.m9
+     tools/tutor/deploy/www/favicon.svg   www.modula9.net's tab icon, and
+       .../www/favicon-32.png             its fallbacks for a browser
+       .../www/apple-touch-icon.png       without SVG icons and for a
+                                          phone's home screen (180 px)
+     tools/tutor/deploy/tutorial-static/  the same two PNGs for the
+       favicon-32.png                     tutorial, served by its nginx
+       apple-touch-icon.png               beside the inlined SVG
+                                          (2026-10-20)
 
    The SVGs keep the tile's rounded corners and their transparency.
    The PNGs fill the square: Png writes RGB without transparency, so a
@@ -57,8 +65,13 @@ CONST
            'tools/jupyter/logo/logo-64x64.png',
            'tools/vscode-m9/images/m9-icon.png',
            'tools/vscode-m9/images/m9.svg',
-           'tools/tutor/favicon.svg'] ;
-  Sizes = [0, 32, 64, 128, 0, 0] ;
+           'tools/tutor/favicon.svg',
+           'tools/tutor/deploy/www/favicon.svg',
+           'tools/tutor/deploy/www/favicon-32.png',
+           'tools/tutor/deploy/www/apple-touch-icon.png',
+           'tools/tutor/deploy/tutorial-static/favicon-32.png',
+           'tools/tutor/deploy/tutorial-static/apple-touch-icon.png'] ;
+  Sizes = [0, 32, 64, 128, 0, 0, 0, 32, 180, 32, 180] ;
 
 VAR
   pool : POOL ;

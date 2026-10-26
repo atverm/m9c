@@ -1,0 +1,20 @@
+DEFINITION MODULE MutB ;
+IMPORT MutA ;
+TYPE B = RECORD m : I64 END ;
+PROCEDURE G (a : MutA.A) : I64 ;
+PROCEDURE Mk (m : I64) : B ;
+END MutB.
+
+IMPLEMENTATION MODULE MutB ;
+IMPORT MutA ;
+PROCEDURE G (a : MutA.A) : I64 =
+BEGIN
+  RETURN a.n * 10
+END G ;
+PROCEDURE Mk (m : I64) : B =
+VAR b : B ;
+BEGIN
+  b.m := m ;
+  RETURN b
+END Mk ;
+END MutB.

@@ -1,0 +1,34 @@
+MODULE GfDepthRow ;
+
+(* WANT: 6 *)
+
+(* rows filled with a literal and stored, then an element of a stored row replaced through the outer slice (oneflux 0.25 item 27).  Refused as "a write through ..., which holds read-only
+   storage" until the region judgement kept read-only storage by depth
+   for names whose every store it sees (2026-10-26, the third review). *)
+(* FxQcv's shape: each row filled with a literal and stored, then an
+   element of a stored row overwritten through the outer slice *)
+IMPORT Io, Fmt ;
+TYPE
+  Strs = SLICE OF STR ;
+PROCEDURE Fill (VAR pool: POOL ; n, m: I64) : I64 RAISES IndexError =
+VAR
+  rows : SLICE OF Strs ;
+  row : Strs ;
+  r, i : I64 ;
+BEGIN
+  rows := NEW (pool, Strs, n) ;
+  FOR r := 0 TO n - 1 DO
+    row := NEW (pool, STR, m) ;
+    FOR i := 0 TO m - 1 DO row[i] := '-9999' END ;
+    rows[r] := row
+  END ;
+  rows[n - 1][m - 1] := Fmt.I64Str (n) ;
+  RETURN LEN (rows[n - 1][m - 1]) + LEN (rows[0][0])
+END Fill ;
+VAR
+  pool : POOL ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (Fill (pool, 2, 3)))
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END GfDepthRow.

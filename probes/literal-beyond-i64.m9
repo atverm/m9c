@@ -1,0 +1,18 @@
+(* EXPECT: cannot assign U64 to I64 (no implicit conversions, par 2.1) *)
+(* A decimal literal past MAX (I64) is a U64 literal (since 2026-10-21,
+   the compiler review's F1): until then it was an <int> like any other
+   and reached C as INT64_C of a value past 2^63, so `x :=
+   9223372036854775808' printed -9223372036854775808.  The legal forms
+   first: the largest I64, the largest U64 into a U64 and compared with
+   one. *)
+MODULE m ;
+VAR
+  x : I64 ;
+  u : U64 ;
+  n : I64 ;
+BEGIN
+  x := 9223372036854775807 ;
+  u := 18446744073709551615 ;
+  IF u = 18446744073709551615 THEN n := 1 END ;
+  x := 9223372036854775808
+END m.

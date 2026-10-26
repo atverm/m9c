@@ -1,0 +1,30 @@
+(* the compiler review of 2026-10-21, checker repro B3c (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE B3c ;
+IMPORT Io, Fmt ;
+TYPE V = CASE RECORD
+  | Txt : s : STR
+  | Num : n : I64
+  END ;
+TYPE Row = RECORD s : STR ; n : I64 END ;
+VAR gv : V ;
+VAR gr : Row ;
+PROCEDURE Fill () =
+BEGIN
+  gv := V.Txt ('variant ' + Fmt.I64Str (6)) ;
+  gr := Row ('record ' + Fmt.I64Str (7), 7)
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  CASE gv OF
+  | V.Txt (s) : Io.WriteLine (s)
+  | V.Num (n) : Io.WriteLine ('num')
+  END ;
+  Io.WriteLine (gr.s)
+END B3c.

@@ -1,0 +1,5 @@
+# soundfuzz.sh: FINDING and BUILD mutants the gate expects, one "SEED: mutation" a line
+# THREAD (W, p) with W taking its record BY VALUE, p a pointer: accepted,
+# cc refuses (the second review's fuzz N7, ThreadByValue; owed in both
+# checkers).  Reached by GfVarPoison's Worker with its VAR dropped.
+genforms/GfVarPoison.m9: VAR dropped at 797

@@ -6,6 +6,7 @@
 
 void Io_m9init (m9_state *err);
 
+typedef struct Io_Adopted Io_Adopted;
 
 extern const m9_exc Io_IOError;
 
@@ -15,6 +16,10 @@ extern const m9_exc Io_IOError;
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 #endif
 
 void Io_WriteLine (m9_sl_CHAR s, m9_state *err);
@@ -47,5 +52,27 @@ void Io_MkDirs (m9_sl_CHAR path, m9_state *err);
 void Io_Rename (m9_sl_CHAR from, m9_sl_CHAR to, m9_state *err);
 void Io_WriteFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err);
 void Io_AppendFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err);
+void Io_WriteUtf (m9_sl_UTF8 u, m9_state *err);
+void Io_WriteLineUtf (m9_sl_UTF8 u, m9_state *err);
+void Io_ErrLineUtf (m9_sl_UTF8 u, m9_state *err);
+m9_sl_UTF8 Io_ReadFileUtf (m9_sl_UTF8 path, m9_state *err);
+void Io_WriteFileUtf (m9_sl_UTF8 path, m9_sl_UTF8 content, m9_state *err);
+void Io_AppendFileUtf (m9_sl_UTF8 path, m9_sl_UTF8 content, m9_state *err);
+int64_t Io_RunUtf (m9_sl_UTF8 cmd, m9_state *err);
+m9_sl_UTF8 Io_EnvUtf (m9_pool *pool, m9_sl_UTF8 name, m9_state *err);
+m9_sl_UTF8 Io_ArgUtf (m9_pool *pool, int64_t i, m9_state *err);
+bool Io_ExistsUtf (m9_sl_UTF8 path, m9_state *err);
+int64_t Io_ModTimeUtf (m9_sl_UTF8 path, m9_state *err);
+bool Io_RemoveUtf (m9_sl_UTF8 path, m9_state *err);
+int64_t Io_FileSizeUtf (m9_sl_UTF8 path, m9_state *err);
+void Io_MkDirUtf (m9_sl_UTF8 path, m9_state *err);
+void Io_MkDirsUtf (m9_sl_UTF8 path, m9_state *err);
+void Io_RenameUtf (m9_sl_UTF8 from, m9_sl_UTF8 to, m9_state *err);
+m9_sl_m9_sl_UTF8 Io_ListDirUtf (m9_pool *pool, m9_sl_UTF8 path, m9_state *err);
+m9_sl_BYTE Io_ReadFileBytesUtf (m9_pool *pool, m9_sl_UTF8 path, m9_state *err);
+void Io_WriteFileBytesUtf (m9_sl_UTF8 path, m9_sl_BYTE content, m9_state *err);
+void Io_AppendFileBytesUtf (m9_sl_UTF8 path, m9_sl_BYTE content, m9_state *err);
+int64_t Io_ParseI64Utf (m9_sl_UTF8 s, m9_state *err);
+void Io_ErrUtf (m9_sl_UTF8 u, m9_state *err);
 
 #endif

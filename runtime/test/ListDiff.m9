@@ -101,7 +101,9 @@ MODULE ListDiff ;
         first three rules named gentest, gendiff's run line and
         deps_of; the helper both gendiff and bootstrap LINK was left to
         the linker, once in each gate, the second after a ten-minute
-        run.
+        run.  A line naming `$COMPILERC' (lib/mods.sh: build.sh's
+        COMPILER, since 2026-10-23) links those modules besides what it
+        names.
 
     13. corpus/NAMETest.m9 is the test of corpus/NAME.m9 (m9test.sh
         builds and runs it): excused from gentest and from LIBRARY by
@@ -157,7 +159,7 @@ CONST
   NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
                'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
                'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml', 'Hash', 'Smtp', 'Rsa', 'Map',
-               'Parquet', 'Seq'] ;
+               'Parquet', 'Seq', 'JsonUtf', 'Chars', 'DynUtf'] ;
   NoBatteryWhy = ['lexdiff, comdiff and the token-count golden',
                   'parsediff (every node kind printed back)',
                   'parsediff and the parse probes',
@@ -186,7 +188,10 @@ CONST
                   'm9test (RsaTest, against signatures and forgeries from Python cryptography)',
                   'm9test (MapTest, against pyproj, numpy and the Natural Earth file)',
                   "m9test (ParquetTest, pyarrow's files against what pyarrow reads) and columnar.sh (pyarrow reads what the writer wrote)",
-                  'm9test (SeqTest, Distinct against Python dict.fromkeys goldens)'] ;
+                  'm9test (SeqTest, Distinct against Python dict.fromkeys goldens)',
+                  'm9test (JsonUtfTest, against Python json)',
+                  'm9test (CharsTest, against Python str indexing)',
+                  'm9test (DynUtfTest, against Python encode and join)'] ;
   GendiffFixtures = ['LibmGate', 'KindUse', 'EnumUse', 'Palette'] ;
 
 TYPE
@@ -657,7 +662,7 @@ VAR
   t, deps : SLICE OF Entry ;
   nd, i, k, a, b, at : I64 ;
 BEGIN
-  text := Rd ('runtime/test/bootstrap.sh') ;
+  text := Rd ('runtime/test/lib/mods.sh') ;
   mods := ShellList (text, 'MODS') ;
   deps := NEW (pool, Entry, Room) ;
   nd := 0 ;
@@ -907,7 +912,7 @@ BEGIN
 
   (* 1. the three generator lists are one list *)
   FOR pass := 0 TO 1 DO
-    IF pass = 0 THEN orders := gd ; other := 'gendiff.sh' ELSE orders := bs ; other := 'bootstrap.sh' END ;
+    IF pass = 0 THEN orders := gd ; other := 'gendiff.sh' ELSE orders := bs ; other := 'lib/mods.sh' END ;
     all := Fresh () ;
     FOR i := 0 TO LEN (gt) - 1 DO Add (all, gt[i].name) END ;
     FOR i := 0 TO LEN (orders) - 1 DO Add (all, orders[i].name) END ;
@@ -1022,8 +1027,14 @@ BEGIN
     lines := Text.Split (Joined (Rd ('runtime/test/' + ex[i])), 0AC) ;
     FOR j := 0 TO LEN (lines) - 1 DO
       line := lines[j] ;
-      IF LinksM9c (line) AND Text.Contains (line, 'gen/') THEN
+      IF LinksM9c (line)
+         AND (Text.Contains (line, 'gen/') OR Text.Contains (line, '$COMPILERC')) THEN
         linked := GenModules (line) ;
+        (* $COMPILERC is the COMPILER set itself (lib/mods.sh); what the
+           line names beside it is still held *)
+        IF Text.Contains (line, '$COMPILERC') THEN
+          FOR k := 0 TO comp.n - 1 DO Add (linked, comp.v[k]) END
+        END ;
         IF NOT SameSet (linked, comp) THEN
           extra := Minus (linked, comp) ;
           missing := Minus (comp, linked) ;
@@ -1077,19 +1088,26 @@ BEGIN
       lines := Text.Split (Joined (Rd ('runtime/test/' + ex[i])), 0AC) ;
       FOR j := 0 TO LEN (lines) - 1 DO
         line := lines[j] ;
-        IF Text.StartsWith (Text.TrimLeft (line), 'gcc') AND Text.Contains (line, 'gen/') THEN
+        IF Text.StartsWith (Text.TrimLeft (line), 'gcc')
+           AND (Text.Contains (line, 'gen/') OR Text.Contains (line, '$COMPILERC')) THEN
           ngate := ngate + 1 ;
           base := Text.Keep (pool, 'runtime/test/' + ex[i]) ;
-          Closed (GenModules (line), base, OutName (line), 'links', '')
+          (* $COMPILERC is build.sh's COMPILER (lib/mods.sh): the line
+             links those modules and whatever else it names *)
+          mods := GenModules (line) ;
+          IF Text.Contains (line, '$COMPILERC') THEN
+            FOR k := 0 TO comp.n - 1 DO Add (mods, comp.v[k]) END
+          END ;
+          Closed (mods, base, OutName (line), 'links', '')
         END
       END
     END
   END ;
-  text := Rd ('runtime/test/bootstrap.sh') ;
+  text := Rd ('runtime/test/lib/mods.sh') ;
   IF NOT (Text.StartsWith (text, 'TOOLC="') OR Text.Contains (text, '' + 0AC + 'TOOLC="')) THEN
-    Fail ('runtime/test/bootstrap.sh: no TOOLC line to read')
+    Fail ('runtime/test/lib/mods.sh: no TOOLC line to read')
   ELSE
-    Closed (ShellList (text, 'TOOLC'), 'runtime/test/bootstrap.sh', 'TOOLC', 'has', '')
+    Closed (ShellList (text, 'TOOLC'), 'runtime/test/lib/mods.sh', 'TOOLC', 'has', '')
   END ;
 
   (* 11. the tutorial has no hand link line: a `gcc' in tutcommon.sh
@@ -1111,7 +1129,7 @@ BEGIN
     Io.Halt (1)
   END ;
   Io.WriteLine ('listdiff: ' + Fmt.I64Str (corpus.n) + ' corpus modules; gentest.pas, gendiff.sh, '
-                + 'bootstrap.sh (' + Fmt.I64Str (LEN (gt)) + ' entries), build.sh LIBRARY ('
+                + 'lib/mods.sh (' + Fmt.I64Str (LEN (gt)) + ' entries), build.sh LIBRARY ('
                 + Fmt.I64Str (lib.n) + '), COMPILER (' + Fmt.I64Str (comp.n)
                 + ') and the tutor LIB (' + Fmt.I64Str (tut.n) + ') agree; '
                 + Fmt.I64Str (nlines) + ' driver link lines, ' + Fmt.I64Str (ngate)

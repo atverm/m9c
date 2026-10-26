@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Http ;
 
 (* HTTP over TCP and TLS: a one-shot HTTP/1.0 GET, a URL fetcher that
@@ -634,9 +635,11 @@ PROCEDURE Cat1 (VAR pool: POOL ; RO a: STR) : STR
   RAISES ValueRange =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
+  (* a copy in pool, not a view of the builder: the same under the
+     switch, where the builder is DynUtf's (2026-10-24) *)
   d := DynStr.New (pool) ;
   DynStr.Append (d, a) ;
-  RETURN DynStr.View (d)
+  RETURN DynStr.ViewIn (pool, d)
 END Cat1 ;
 
 (* up to `want` bytes out of the connection into `out`, answering how
@@ -2108,14 +2111,14 @@ END Boundary ;
 
 (* a name between double quotes, as HTML forms write it *)
 PROCEDURE Quoted (VAR d: PTR DynStr.DString ; RO s: STR) =
-VAR i : I64 ;
+VAR c : CHAR ;
 BEGIN
   DynStr.AppendChar (d, '"') ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '"' THEN DynStr.Append (d, '%22')
-    ELSIF s[i] = 0DC THEN DynStr.Append (d, '%0D')
-    ELSIF s[i] = 0AC THEN DynStr.Append (d, '%0A')
-    ELSE DynStr.AppendChar (d, s[i])
+  FOR c IN s DO                   (* by character: the same under the switch *)
+    IF c = '"' THEN DynStr.Append (d, '%22')
+    ELSIF c = 0DC THEN DynStr.Append (d, '%0D')
+    ELSIF c = 0AC THEN DynStr.Append (d, '%0A')
+    ELSE DynStr.AppendChar (d, c)
     END
   END ;
   DynStr.AppendChar (d, '"')

@@ -19,6 +19,19 @@ awk '/^  tutor:/{t=1} /^  [a-z]/&&!/^  tutor:/{t=0} t&&/^    init: true/{f=1} EN
     ../../tools/tutor/deploy/docker-compose.yml || \
   { echo "FAIL: tools/tutor/deploy/docker-compose.yml: the tutor service has no 'init: true'"; exit 1; }
 
+# also before any skip: tutorial.modula9.net/llms.txt lists the
+# chapters, and it ships with the site at release (README-deploy.md),
+# so a chapter added or removed without it is red here, not stale on
+# the web.  Numbers both ways; the titles are prose and are read.
+llms=../../tools/tutor/deploy/tutorial-static/llms.txt
+have=$(ls ../../docs/tutorial | sed -n 's/^\([0-9][0-9]\)-.*\.md$/\1/p' | sort)
+said=$(grep -o 'tutorial\.modula9\.net/ch/[0-9][0-9])' "$llms" | sed 's|.*/ch/||; s|)||' | sort)
+[ "$have" = "$said" ] || {
+  echo "FAIL: $llms lists chapters that docs/tutorial does not have, or misses one:"
+  echo "  docs/tutorial: $(echo $have)"
+  echo "  llms.txt:      $(echo $said)"
+  exit 1; }
+
 # the skips come BEFORE gen.sh: a machine that cannot run the gate
 # should say so without first regenerating the toolchain
 command -v bwrap >/dev/null 2>&1 || \
@@ -31,9 +44,7 @@ ldconfig -p 2>/dev/null | grep -q 'libnetcdf\.so' || \
 . ./lib/gen.sh
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Lex.c \
-    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
-    ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o m9c
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o m9c
 
 REPO=$(cd ../.. && pwd)
 RT=$(cd .. && pwd)
@@ -52,7 +63,7 @@ sh "$REPO/tools/tutor/setup.sh" "$REPO" "$W" "$M9C" >/dev/null
   M9RUNTIME="$RT" M9LIBRARY="$REPO/corpus" \
     "$M9C" --make -c "$REPO/tools/tutor/TutorMain.m9" \
     -I "$REPO/tools/tutor" >/dev/null && \
-  gcc -O2 -flto TutorMain.o Tutor.o Diag.o Lex.o Io.o DynStr.o \
+  gcc -O2 -flto TutorMain.o Tutor.o Diag.o Lex.o Io.o DynStr.o DynUtf.o \
       "$RT/m9rt.c" "$RT/tcpshim.c" -iquote "$RT" -lm -o tutorm9 )
 
 "$B/tutorm9" $PORT 64 "$W/site" "$W" \
@@ -66,6 +77,33 @@ ck () { n=$((n + 1)); }
 
 curl -s "http://127.0.0.1:$PORT/" | grep -q 'Scientific programming' \
   || { echo "FAIL: index page"; exit 1; }
+ck
+# the markdown beside every page (llmstxt.org; 2026-10-20): /ch/N.md
+# is the chapter's source with only its relative link targets made
+# absolute -- held by blanking every target on both sides -- and
+# llms-full.txt carries the report to the byte and one Source line per
+# part, the report and each chapter
+blank () { sed -E 's/\]\([^)]*\)/](@)/g'; }
+curl -s "http://127.0.0.1:$PORT/ch/02.md" | blank > "$B/ch2.md"
+blank < ../../docs/tutorial/02-strong-typing.md | cmp -s - "$B/ch2.md" \
+  || { echo "FAIL: /ch/02.md is not chapter 2's markdown"; exit 1; }
+curl -s "http://127.0.0.1:$PORT/ch/02.md" | grep -q '](https://tutorial.modula9.net/ch/03.md)' \
+  || { echo "FAIL: /ch/02.md does not link chapter 3's markdown absolutely"; exit 1; }
+curl -sI "http://127.0.0.1:$PORT/ch/2.md" | grep -qi '^Content-Type: text/markdown' \
+  || { echo "FAIL: /ch/2.md is not served as text/markdown"; exit 1; }
+[ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/ch/02.mdx")" = 404 ] \
+  || { echo "FAIL: /ch/02.mdx is answered"; exit 1; }
+ck
+curl -s "http://127.0.0.1:$PORT/llms-full.txt" > "$B/full.txt"
+python3 -c '
+import sys
+f = open(sys.argv[1], encoding="utf-8").read()
+r = open(sys.argv[2], encoding="utf-8").read()
+sys.exit(0 if "docs/M9-report.md\n\n" + r in f else 1)' "$B/full.txt" ../../docs/M9-report.md \
+  || { echo "FAIL: llms-full.txt does not carry the report"; exit 1; }
+nch=$(ls ../../docs/tutorial | grep -c '^[0-9][0-9]-.*\.md$')
+[ "$(grep -c '^Source: ' "$B/full.txt")" = $((nch + 1)) ] \
+  || { echo "FAIL: llms-full.txt has not the report and $nch chapters"; exit 1; }
 ck
 # HEAD is a GET whose body stays home -- link checkers judge the
 # public URL by it, and it once answered 404
@@ -92,6 +130,10 @@ ck
 curl -s "http://127.0.0.1:$PORT/ch/5" > "$B/ch5.html"
 grep -q 'class="site"' "$B/ch5.html" \
   || { echo "FAIL: chapter page lost the site header"; exit 1; }
+# its dash is U+2014 once, not its octets encoded a second time (every
+# page said "â€" there from the UTF-8 flip, 2026-10-09, to 2026-10-20)
+grep -q 'Modula-9 — first steps' "$B/ch5.html" \
+  || { echo "FAIL: the site header's dash is not U+2014 in UTF-8"; exit 1; }
 grep -q 'Previous: memory, pools and strings' "$B/ch5.html" \
   || { echo "FAIL: chapter page lost its Previous link"; exit 1; }
 grep -q 'Next: simple math and statistics' "$B/ch5.html" \

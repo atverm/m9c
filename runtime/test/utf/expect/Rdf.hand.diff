@@ -1,0 +1,99 @@
+--- Rdf.m9
++++ Rdf.m9
+@@ -254,26 +254,50 @@
+   RETURN r.pos >= Text.BLen (r.src)
+ END AtEnd ;
+ 
++(* The reader is positioned by BYTE and reads by CHARACTER: Peek and
++   PeekAt decode the code point at pos (and k whole characters on),
++   Advance moves pos past one -- the three primitives every step of
++   the Turtle, N-Triples and JSON-LD readers goes through, so a name
++   or a literal with a letter past ASCII is one character to them, as
++   it was when a STR was an array of scalars. *)
+ PROCEDURE Peek (VAR r: Reader) : CHAR RAISES IndexError =
++VAR at : I64 ;
+ BEGIN
+-  RETURN Text.BChar (r.src, r.pos)
++  at := r.pos ;
++  RETURN Text.NextCp (r.src, at)
+ END Peek ;
+ 
+ PROCEDURE PeekAt (VAR r: Reader ; k: I64) : CHAR =
+   (* the character k ahead, or a NUL past the end *)
++VAR
++  at, j : I64 ;
++  c : CHAR ;
+ BEGIN
+-  IF r.pos + k >= Text.BLen (r.src) THEN RETURN 00C END ;
+-  RETURN Text.BChar (r.src, r.pos + k)
++  at := r.pos ;
++  c := 00C ;
++  FOR j := 0 TO k DO
++    IF at >= Text.BLen (r.src) THEN RETURN 00C END ;
++    c := Text.NextCp (r.src, at)
++  END ;
++  RETURN c
++EXCEPT
++| IndexError : RETURN 00C
+ END PeekAt ;
+ 
+ PROCEDURE Advance (VAR r: Reader) =
++  (* past one CHARACTER: one to four octets *)
++VAR
++  at : I64 ;
++  c : CHAR ;
+ BEGIN
+   IF r.pos < Text.BLen (r.src) THEN
+     IF Text.BIs (r.src, r.pos, 0AC) THEN
+       r.line := r.line + 1 ;
+       r.lineStart := r.pos + 1
+     END ;
+-    r.pos := r.pos + 1
++    at := r.pos ;
++    c := Text.NextCp (r.src, at) ;
++    r.pos := at
+   END
+ END Advance ;
+ 
+@@ -1206,8 +1230,8 @@
+ VAR h : STR ;
+ BEGIN
+   h := '0123456789ABCDEF' ;
+-  DynStr.AppendChar (d, h[v DIV 16]) ;
+-  DynStr.AppendChar (d, h[v MOD 16])
++  DynStr.AppendChar (d, Text.BChar (h, v DIV 16)) ;   (* ASCII digits *)
++  DynStr.AppendChar (d, Text.BChar (h, v MOD 16))
+ EXCEPT
+ | IndexError :
+     RETURN
+@@ -3810,13 +3834,24 @@
+ (* where the local name of an IRI starts: the longest NCName tail;
+    LEN (iri) when there is none *)
+ PROCEDURE LocalStart (RO iri: STR) : I64 =
+-VAR i, best : I64 ;
++  (* forward over CODE POINTS (a backward walk cannot step octets):
++     the last run of name characters that reaches the end, and in it
++     the first that may start a name *)
++VAR
++  at, p, best, n : I64 ;
++  c : CHAR ;
+ BEGIN
+-  best := Text.BLen (iri) ;
+-  i := Text.BLen (iri) - 1 ;
+-  WHILE i >= 0 AND NcChar (Text.BChar (iri, i)) DO
+-    IF NcStart (Text.BChar (iri, i)) THEN best := i END ;
+-    i := i - 1
++  n := Text.BLen (iri) ;
++  best := n ;
++  at := 0 ;
++  WHILE at < n DO
++    p := at ;
++    c := Text.NextCp (iri, at) ;
++    IF NcChar (c) THEN
++      IF best = n AND NcStart (c) THEN best := p END
++    ELSE
++      best := n
++    END
+   END ;
+   RETURN best
+ END LocalStart ;

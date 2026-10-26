@@ -1,0 +1,21 @@
+MODULE GfGateName ;
+
+(* WANT: 5 *)
+
+(* a variable named m9gm beside a [SERIAL] call: the generator's
+  temporaries are spelled with an underscore M9 cannot write
+  (concurrency 5) *)
+(* a variable whose M9 name is the generator's new temporary, m9gm *)
+IMPORT Io ;
+FROM ca IMPORT AbsA ;
+VAR v : C.Double ;
+PROCEDURE F (m9gm : C.Double) : C.Double =
+BEGIN RETURN AbsA (m9gm) END F ;
+BEGIN
+  v := F (C.Double (-5.0)) ;
+  IF v = C.Double (5.0) THEN Io.WriteLine ('5') ELSE Io.WriteLine ('WRONG') END
+END GfGateName.
+
+UNSAFE DEFINITION MODULE FOR "C" ca ;
+PROCEDURE AbsA = "fabs" (x: C.Double) : C.Double [SERIAL] ;
+END ca.

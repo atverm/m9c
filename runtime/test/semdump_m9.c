@@ -43,10 +43,23 @@ static Ast_Node *parse_unit (const char *path, m9_state *err)
   return root;
 }
 
-static void put (m9_sl_CHAR s)
+/* the one region judgement (docs/region-plan.md) lives in the M9
+   checker alone (Alex, 2026-10-21): its refusals end "(par N, regions)"
+   and are left out here, so that the twins are compared on what both
+   implement; runtime/test/regions.sh holds them */
+static int regional (m9_sl_UTF8 s)
 {
-  int64_t i;
-  for (i = 0; i < s.len; i++) m9t_putc (s.p[i]);
+  /* a region finding ends in `, regions)' (decision 64): the twins are
+     compared without them; the text is UTF-8 since 2026-10-24 */
+  static const char tail[] = ", regions)";
+  int64_t n = (int64_t) (sizeof tail - 1);
+  if (s.len < n) return 0;
+  return memcmp (s.p + (s.len - n), tail, (size_t) n) == 0;
+}
+
+static void put (m9_sl_UTF8 s)
+{
+  fwrite (s.p, 1, (size_t) s.len, stdout);
   putchar ('\n');
 }
 
@@ -71,7 +84,10 @@ int main (int argc, char **argv)
                  return 3; }
 
   n = Sem_ErrCount (&err);
-  for (i = 0; i < n; i++) put (Sem_ErrAt (i, &err));
+  for (i = 0; i < n; i++) {
+    m9_sl_UTF8 e = Sem_ErrAt (i, &err);
+    if (!regional (e)) put (e);
+  }
   n = Sem_LedgerCount (&err);
   for (i = 0; i < n; i++) { printf ("ledger: "); put (Sem_LedgerAt (i, &err)); }
   return 0;

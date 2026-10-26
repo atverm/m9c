@@ -1,0 +1,34 @@
+(* the compiler review of 2026-10-21, checker repro D1 (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE D1 ;
+IMPORT Io, Fmt, Text ;
+VAR last : STR ;
+VAR last2 : STR ;
+VAR mp : POOL ;
+PROCEDURE Id (RO s: STR) : STR =
+BEGIN
+  RETURN s
+END Id ;
+PROCEDURE Pick (RO a: STR ; RO b: STR) : STR =
+BEGIN
+  IF LEN (a) > LEN (b) THEN RETURN a END ;
+  RETURN b
+END Pick ;
+PROCEDURE Fill () =
+VAR t : STR ;
+BEGIN
+  t := 'frame ' + Fmt.I64Str (5) ;
+  last := Id (t) ;
+  last2 := Pick (t, 'x')
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (last) ;
+  Io.WriteLine (last2)
+END D1.

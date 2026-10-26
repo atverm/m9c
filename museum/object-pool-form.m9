@@ -1,0 +1,38 @@
+(* EXPECT-ERROR: the pool of n is not known here, and the callee may allocate in it *)
+(* The object-pool form through a local that says no IN.  Rule 2 of the
+   pool elision plan hands a callee the pool of the object behind a VAR
+   pointer argument, named from the argument's root; a local without an
+   IN clause names the FRAME.  That is right for a frame allocation and
+   wrong for a pool one: here `n := NEW (pool, Node)` lives in pool,
+   `SetName (n, s)` allocates the name in Build's frame, `root := n`
+   keeps the node, Build returns, and the first read of root.name is a
+   heap-use-after-free (ASan) -- the plain build prints NULs and
+   whatever was allocated over it.  Ast.SetA's first UTF cut did
+   exactly this for every node's name on 2026-10-23, and --check said
+   nothing: the checker's rule-2 refusals named a value parameter and
+   an OWN parameter as roots without a pool, not a bare local holding
+   nobody's object.  Since the same night it does; `n : PTR Node IN
+   pool` is the sound spelling. *)
+MODULE Hold ;
+TYPE
+  Node = RECORD name : STR END ;
+VAR
+  pool : POOL ;
+  root : PTR Node ;
+PROCEDURE SetName (VAR n: PTR Node ; RO s: STR) =
+VAR c : STR ;
+BEGIN
+  c := NEW (n, CHAR, LEN (s)) ;
+  COPY (c, s) ;
+  n.name := c
+END SetName ;
+PROCEDURE Build (RO s: STR) =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (pool, Node) ;
+  SetName (n, s) ;
+  root := n
+END Build ;
+BEGIN
+  Build ('hello')
+END Hold.

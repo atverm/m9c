@@ -2,10 +2,10 @@ REVIEW Zip -- 56 procedures with a body, 34 of them functions; 26 headings in a 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              34
-  assignments                                   495
-  arguments                                     656
-  RETURN values                                  58
-  operands of a comparison or an operator       659
+  assignments                                   488
+  arguments                                     615
+  RETURN values                                  59
+  operands of a comparison or an operator       640
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -24,11 +24,13 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module variables                                0
 
 TRUSTED -- outside what the checker can see
-  UNSAFE units                                    0
-  foreign procedures                              0
+  UNSAFE units                                    2   Zip, czcrc
+  foreign procedures                              1
     of them [SERIAL]                              0
-    of them [REENTRANT]                           0
+    of them [REENTRANT]                           1
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     1   reads in CrcRun
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        1
   NEW in the frame                                0
   NEW in a named pool                            29
+  calls of a STR form with a UTF twin             4   Io.FileSize -> Io.FileSizeUtf, Io.ReadFileBytes -> Io.ReadFileBytesUtf, Io.ReadFileBytes -> Io.ReadFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf
+  STR subscripts, writes and LEN                  1   len name

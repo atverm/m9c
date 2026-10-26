@@ -1,0 +1,28 @@
+(* EXPECT: argument 1 of Use: p is moved into an OWN parameter and lent as argument 2 of the same call (par 4.2) *)
+(* A name moved into an OWN parameter is not also lent in the same call
+   (since 2026-10-21, the compiler review's C7): `Use (p, p)' handed
+   the callee one object to DISPOSE and to read.  The legal forms first:
+   two objects, and a scalar read out of the moved one, which is copied
+   before the call. *)
+MODULE m ;
+TYPE Node = RECORD n : I64 END ;
+PROCEDURE Use (OWN a: PTR Node ; b: PTR Node) =
+BEGIN
+  DISPOSE (a)
+END Use ;
+PROCEDURE Count (OWN a: PTR Node ; n: I64) =
+BEGIN
+  DISPOSE (a)
+END Count ;
+PROCEDURE Go () =
+VAR p, q : PTR Node ;
+BEGIN
+  p := NEW (OWN, Node) ;
+  q := NEW (OWN, Node) ;
+  Use (q, p) ;
+  q := NEW (OWN, Node) ;
+  Count (q, q.n) ;
+  Use (p, p)
+END Go ;
+BEGIN
+END m.

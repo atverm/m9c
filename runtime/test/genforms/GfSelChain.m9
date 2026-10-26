@@ -1,0 +1,31 @@
+MODULE GfSelChain ;
+
+(* WANT: chain 30 steps: 31 *)
+
+(* A designator of thirty pointer steps.  Each step is tested before it
+   is followed (decision 58), and the test was written as `__typeof__ (E)
+   m9g = (E)', E the steps before it -- so the C doubled per step: twenty
+   steps took 1.2 GB to generate and thirty would not have finished (the
+   second review's fuzz N2, 2026-10-26).  __auto_type names the type
+   without repeating E: linear. *)
+
+IMPORT Io, Fmt ;
+
+TYPE R = RECORD p : PTR R ; n : I64 END ;
+
+VAR
+  pool : POOL ;
+  head, q : PTR R IN pool ;
+  i : I64 ;
+
+BEGIN
+  head := NEW (pool, R) ;
+  q := head ;
+  FOR i := 1 TO 30 DO
+    q.n := i ;
+    q.p := NEW (pool, R) ;
+    q := q.p
+  END ;
+  q.n := 31 ;
+  Io.WriteLine ('chain 30 steps: ' + Fmt.I64Str (head.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.p.n))
+END GfSelChain.

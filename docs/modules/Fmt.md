@@ -36,7 +36,10 @@ a person is going to read it.  Saying which is which is the point.
 Short is BOTH, since 2026-10-05: the shortest decimal that reads
 back to the same double, exact by construction (Burger and Dybvig's
 free-format digits over integers, no scaling in F64), and held to
-Python's repr on 9,148 values by FmtTest.
+Python's repr on 9,148 values by FmtTest.  Since 2026-10-25 the
+digits come from the runtime's Dragonbox (m9rt.h, 30 ns a value
+where these took 1,000) wherever it answers; the code here is the
+twin, selected by M9_FMT_PORTABLE, and FmtTest runs on both.
 
 ### CONST MaxDecimals
 
@@ -64,6 +67,12 @@ a wider value overflows the field (cp-kernel's issue 16).
 
 ### I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR
 
+**Deprecated** (the UTF transition): I64PadUtf is its UTF form.
+
+_(documented with the group below)_
+
+### I64PadUtf (v: I64 ; width: I64 ; zero: BOOL) : UTF
+
 right-aligned in width; zero selects '0' over ' ' as the fill.
 A value too wide is never truncated -- silently losing digits is
 the class of bug this language refuses -- it just overflows the
@@ -71,16 +80,22 @@ field, as printf does.
 
 ### Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange
 
-decimals in 0..MaxDecimals, else ValueRange; printf's %.*f to
-the character -- the double's own decimal expansion rounded half
-to even, every magnitude (1e308 prints its 309 digits).  A value
-that rounds to zero keeps its '-' (-0.001 is -0.00, as printf);
-negative ZERO prints without one, the sign bit is not consulted.
-NaN prints 'nan', the infinities 'inf' and '-inf'.  Exact since
-2026-10-10; it scaled in F64 until then and disagreed with printf
-on 0.71% of values, 1e300 raised.
+**Deprecated** (the UTF transition): FixedUtf is its UTF form.
+
+_(documented with the group below)_
+
+### FixedUtf (v: F64 ; decimals: I64) : UTF RAISES ValueRange
+
+_(documented with the group below)_
+
+### FixedPadUtf (v: F64 ; width, decimals: I64) : UTF RAISES ValueRange
+
+the UTF twins (stage 4a, 2026-10-24): the same digits; Fixed is
+FixedUtf decoded, the digit work done once on octets
 
 ### FixedPad (v: F64 ; width, decimals: I64) : STR RAISES ValueRange
+
+**Deprecated** (the UTF transition): FixedPadUtf is its UTF form.
 
 Pascal's `v:width:decimals`, which is where the shape comes
 from: Fixed, then right-aligned in width with BLANKS.  Pascal
@@ -114,7 +129,9 @@ The digits are printf's %.*e to the character, as Fixed's are
 %.*f's: exact, from the double's integer mantissa and exponent,
 half to even (FmtTest holds both to Python's % formatting).  Until
 2026-10-10 the mantissa was normalised in F64 and measured, not
-exact.
+exact.  Since 2026-10-25 the digits are the C library's %.*e with
+the exponent rewritten (m9_fmt_sci) wherever the runtime trusts
+it, Fmt's own exact code elsewhere: 19 to 25 times sooner.
 
 ### SciPad (v: F64 ; width, decimals: I64) : STR RAISES ValueRange
 
@@ -139,6 +156,8 @@ _(documented with the group below)_
 
 ### ParseBits (RO s: STR) : F64 RAISES ValueRange
 
+**Deprecated** (the UTF transition): ParseBitsUtf is its UTF form.
+
 the exact pair: 16 hex digits, low byte first, round-trip total.
 The digits are UPPER case and the bytes LITTLE-ENDIAN -- 1.0 is
 000000000000F03F, not Python's 3ff0000000000000 -- because this is
@@ -147,6 +166,8 @@ order; it is NOT the number's hexadecimal.  For that, Hex of an
 integer.  (cp-kernel lost a measurement to the difference.)
 
 ### ParseF64 (RO s: STR) : F64 RAISES ValueRange
+
+**Deprecated** (the UTF transition): ParseF64Utf is its UTF form.
 
 decimal, with optional sign, fraction and exponent.  Rejects
 anything else, because a command line or a data file that says
@@ -165,3 +186,30 @@ an optional minus and decimal digits, every I64 down to the
 smallest.  It lives in Io because Fmt imports nothing and Io is
 where the command line is read; a reader looking here is sent
 there (cp-kernel's issue 6, 2026-10-09).
+
+### ParseF64Utf (RO s: UTF) : F64 RAISES ValueRange
+
+_(undocumented)_
+
+### ParseBitsUtf (RO s: UTF) : F64 RAISES ValueRange
+
+_(undocumented)_
+
+runtime/m9rt.c: printf's %.*f and %.*e in Fmt's layout, and
+Short's shortest digits by Dragonbox in repr's layout, into the
+caller's buffer, answering the length -- or -1 when the runtime
+declines (M9_FMT_PORTABLE, a buffer too small) and Fmt's
+own exact code does the work (m9rt.h).  REENTRANT: into the
+caller's buffer, no shared state.
+
+### CFixed (v: C.Double ; decimals: C.SSizeT ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [REENTRANT]
+
+_(undocumented)_
+
+### CSci (v: C.Double ; decimals: C.SSizeT ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [REENTRANT]
+
+_(undocumented)_
+
+### CShort (v: C.Double ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [REENTRANT]
+
+_(undocumented)_

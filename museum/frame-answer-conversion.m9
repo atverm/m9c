@@ -1,0 +1,31 @@
+(* EXPECT-ERROR: the answer of View dies with this frame *)
+(* The builder's view that outlived its frame.  DynUtf.View answers a
+   validated COPY of the builder's octets, `RETURN UTF (...)`, where
+   DynStr.View answered a view into the builder's pool; on 2026-10-23
+   three ports of the compiler to UTF kept such an answer in module
+   state -- Sem's message list (a diagnostic read as blank), Gen's
+   typedef dedup key (one typedef emitted twice), and m9c's own output
+   file names (`cannot read or write: <NULs and generated C>`, every
+   genforms build red) -- and `--check` accepted all three: the checker
+   knew `+` and a frame NEW as what a callee's RETURN could build in
+   the caller's frame, and not the UTF builtins.  This is the shape,
+   without the library: a function that answers `UTF (text)`, stored
+   where the frame it was built in will not be. *)
+MODULE Hold ;
+TYPE
+  Buf = RECORD s : STR END ;
+VAR
+  kept : UTF ;
+  box : Buf ;
+PROCEDURE View (RO d: Buf) : UTF =
+BEGIN
+  RETURN UTF (d.s)
+END View ;
+PROCEDURE Keep (RO d: Buf) =
+BEGIN
+  kept := View (d)
+END Keep ;
+BEGIN
+  box.s := 'x' ;
+  Keep (box)
+END Hold.

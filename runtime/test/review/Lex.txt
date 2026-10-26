@@ -1,11 +1,11 @@
-REVIEW Lex -- 19 procedures with a body, 11 of them functions; 6 headings in a DEFINITION
+REVIEW Lex -- 25 procedures with a body, 16 of them functions; 7 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              11
-  assignments                                    60
-  arguments                                     399
-  RETURN values                                 126
-  operands of a comparison or an operator       111
+  functions answering on every path              16
+  assignments                                   103
+  arguments                                     509
+  RETURN values                                 141
+  operands of a comparison or an operator       188
   CASE labels                                    94
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -21,7 +21,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          0
   [SHARABLE] records                              0
-  module variables                                4   errBuf, comOn, coms, ncom
+  module variables                                3   comOn, coms, ncom
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    1   Lex
@@ -29,10 +29,14 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 2
   RAISE statements                                1
   handlers                                        0
   NEW in the frame                                0
-  NEW in a named pool                             3
+  NEW in a named pool                             2
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  3   len s, len s, index s[i]

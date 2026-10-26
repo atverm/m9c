@@ -11,9 +11,7 @@ set -e
 cd "$(dirname "$0")"
 
 REPO=$(cd ../.. && pwd)
-M9C=${M9C:-$REPO/runtime/test/m9c}
-[ -x "$M9C" ] || M9C=$REPO/out/m9c
-[ -x "$M9C" ] || { echo "no m9c: run runtime/test/m9c.sh or ./build.sh"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 command -v python3 >/dev/null 2>&1 || { echo "SKIP: deflate (no python3)"; exit 0; }
 
 OUT=/tmp/m9deflate

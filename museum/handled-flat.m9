@@ -1,0 +1,24 @@
+(* EXPECT-ERROR: unhandled RAISES ValueRange from I32 conversion *)
+(* The checker's handled set was flat over a procedure: an exception
+   caught ANYWHERE in it was counted caught EVERYWHERE.  Observed
+   2026-10-21 by the compiler review (C6): HttpServer.Serve1, a thread
+   root's callee that "raises nothing", converted fd with C.Int in a
+   FINALLY outside its handlers; Syslog.Open's ValueRange handler
+   converted options and facility again; RdfTest read a file whose
+   ValueRange only a LATER block caught.  Each compiled; each could
+   leave its procedure with an exception its heading denied.  Here
+   with I32, the same checked narrowing as C.Int. *)
+MODULE m ;
+PROCEDURE Close (fd: I64) =
+VAR n : I32 ;
+BEGIN
+  BEGIN
+    n := I32 (0)
+  EXCEPT
+  | ValueRange :
+  END ;
+  n := I32 (fd)
+END Close ;
+BEGIN
+  Close (3)
+END m.

@@ -3,9 +3,9 @@ REVIEW Sort -- 30 procedures with a body, 11 of them functions; 17 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
   assignments                                   176
-  arguments                                     150
+  arguments                                     160
   RETURN values                                  17
-  operands of a comparison or an operator       181
+  operands of a comparison or an operator       189
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -24,11 +24,13 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module variables                                0
 
 TRUSTED -- outside what the checker can see
-  UNSAFE units                                    0
-  foreign procedures                              0
+  UNSAFE units                                    2   Sort, csort
+  foreign procedures                              4
     of them [SERIAL]                              0
-    of them [REENTRANT]                           0
+    of them [REENTRANT]                           4
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     6   writes or reads in F64s, writes or reads in I64s, reads in ArgF64, writes or reads in ArgF64, reads in ArgI64, writes or reads in ArgI64
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        0
   NEW in the frame                                5
   NEW in a named pool                            10
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  8   len a, len b, index a[i], index b[i], index a[i], index b[i], +2 more

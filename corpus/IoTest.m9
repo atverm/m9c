@@ -7,6 +7,7 @@ MODULE IoTest ;
    holding U+2082 raised ValueRange. *)
 
 IMPORT Check ;
+IMPORT Text ;
 IMPORT DynStr ;
 IMPORT Io ;
 
@@ -31,6 +32,43 @@ EXCEPT
 | ValueRange : RETURN TRUE
 | IndexError : RETURN FALSE
 END BadUtf8Refuses ;
+
+(* the same file through ReadFileUtf: refused, not decoded *)
+PROCEDURE BadUtfRefuses () : BOOL RAISES Io.IOError =
+VAR
+  b : SLICE OF BYTE ;
+  u : UTF ;
+BEGIN
+  b := NEW (BYTE, 3) ;
+  b[0] := 97 ;
+  b[1] := 233 ;
+  b[2] := 98 ;
+  Io.WriteFileBytes (path, b) ;
+  u := Io.ReadFileUtf (UTF (path)) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+| IndexError : RETURN FALSE
+END BadUtfRefuses ;
+
+(* UTF (docs/utf8-plan.md, stage 2): Io's twins move octets as they are *)
+PROCEDURE Utfs () RAISES ValueRange, Io.IOError =
+VAR
+  pool : POOL ;
+  u, back : UTF ;
+  b : SLICE OF BYTE ;
+BEGIN
+  u := 'Grüße ✓' ;
+  Io.WriteFile (UTF (path), u) ;          (* a twin by type: WriteFileUtf *)
+  b := Io.ReadFileBytes (pool, path) ;
+  Check.EqI64 (t, 'WriteFile of a UTF writes its 11 octets', LEN (b), 11) ;
+  back := Io.ReadFileUtf (UTF (path)) ;
+  Check.That (t, 'ReadFileUtf reads the same text back', Text.EqUtf (back, u)) ;
+  Io.AppendFile (UTF (path), back) ;      (* AppendFileUtf *)
+  back := Io.ReadFileUtf (UTF (path)) ;
+  Check.EqI64 (t, 'AppendFile of a UTF appends its octets', Text.BLen (back), 22) ;
+  Check.That (t, 'ReadFileUtf refuses a file that is not UTF-8', BadUtfRefuses ())
+END Utfs ;
 
 PROCEDURE Files () RAISES ValueRange, Io.IOError, IndexError =
 VAR
@@ -68,9 +106,63 @@ BEGIN
   Check.EqStr (t, 'a file in the made directory', Io.ReadFile (pool, '/tmp/m9iotest.d/a/b/f.txt'), 'x')
 END Files ;
 
+(* the twins by type, under a path with a character past ASCII *)
+PROCEDURE Twins () RAISES ValueRange, Io.IOError, IndexError =
+VAR
+  pool : POOL ;
+  p, q, back, a1, a2, e1, e2 : UTF ;
+  b : SLICE OF BYTE ;
+  names : SLICE OF UTF ;
+  i, size, mt, v, rc : I64 ;
+  seen, ex, ex2 : BOOL ;
+BEGIN
+  Io.MkDirsUtf ('/tmp/m9iotest.d/t') ;
+  p := '/tmp/m9iotest.d/t/ü.txt' ;
+  Io.WriteFileUtf (p, 'héllo') ;
+  ex := Io.ExistsUtf (p) ;
+  Check.That (t, 'ExistsUtf sees the file written under a UTF path', ex) ;
+  size := Io.FileSizeUtf (p) ;
+  Check.EqI64 (t, 'FileSizeUtf counts its octets', size, 6) ;
+  b := Io.ReadFileBytesUtf (pool, p) ;
+  Check.EqI64 (t, 'ReadFileBytesUtf reads them', LEN (b), 6) ;
+  back := Io.ReadFileUtf (p) ;
+  Check.That (t, 'ReadFileUtf through a UTF path', Text.EqUtf (back, 'héllo')) ;
+  mt := Io.ModTimeUtf (p) ;
+  Check.That (t, 'ModTimeUtf answers a time', mt > 0) ;
+  names := Io.ListDirUtf (pool, '/tmp/m9iotest.d/t') ;
+  seen := FALSE ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    IF Text.EqUtf (names[i], 'ü.txt') THEN seen := TRUE END
+  END ;
+  Check.That (t, 'ListDirUtf lists the name as text', seen) ;
+  q := '/tmp/m9iotest.d/t/ü2.txt' ;
+  Io.RenameUtf (p, q) ;
+  ex := Io.ExistsUtf (q) ;
+  ex2 := Io.ExistsUtf (p) ;
+  Check.That (t, 'RenameUtf moved it', ex AND NOT ex2) ;
+  Io.AppendFileUtf (q, '!') ;
+  size := Io.FileSizeUtf (q) ;
+  Check.EqI64 (t, 'AppendFileUtf under a UTF path', size, 7) ;
+  ex := Io.RemoveUtf (q) ;
+  ex2 := Io.ExistsUtf (q) ;
+  Check.That (t, 'RemoveUtf removes it', ex AND NOT ex2) ;
+  v := Io.ParseI64Utf ('-42') ;
+  Check.EqI64 (t, 'ParseI64Utf', v, -42) ;
+  a1 := Io.ArgUtf (pool, 0) ;
+  a2 := UTF (Io.Arg (pool, 0)) ;
+  Check.That (t, 'ArgUtf is Arg decoded', Text.EqUtf (a1, a2)) ;
+  e1 := Io.EnvUtf (pool, 'HOME') ;
+  e2 := UTF (Io.Env (pool, 'HOME')) ;
+  Check.That (t, "EnvUtf is Env's bytes as text (an ASCII value)", Text.EqUtf (e1, e2)) ;
+  rc := Io.RunUtf ('true') ;
+  Check.EqI64 (t, 'RunUtf runs the command', rc, 0)
+END Twins ;
+
 BEGIN
   path := '/tmp/m9iotest.txt' ;
   Files () ;
+  Utfs () ;
+  Twins () ;
   Io.Halt (Check.Done (t, 'Io'))
 EXCEPT
 | ValueRange : Io.ErrLine ('IoTest: ValueRange') ; Io.Halt (1)

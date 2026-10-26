@@ -288,41 +288,50 @@ BEGIN
       Io.WriteLine ('FAIL: the big body') ;
       Io.Halt (1)
   END ;
-  dir := System.Value ('--dir', '') ;
+  (* System.Value raises ValueRange, and the first block's handler
+     covers only that block (2026-10-21; the flat handled set had
+     counted these caught): the rest is a block of its own *)
   BEGIN
-    Setup () ;
-    Io.WriteLine ('FAIL: AddRoute after Freeze did not raise Frozen') ;
-    Io.Halt (1)
+    dir := System.Value ('--dir', '') ;
+    BEGIN
+      Setup () ;
+      Io.WriteLine ('FAIL: AddRoute after Freeze did not raise Frozen') ;
+      Io.Halt (1)
+    EXCEPT
+    | HttpServer.Frozen (p) :
+        late := p ;                  (* a handler binder has no type in
+                                        the checker yet: copied first *)
+        Io.WriteLine ('frozen: ' + late)
+    END ;
+    cfg := HttpServer.Defaults () ;
+    cfg.port := Int (System.Value ('--port', ''), 18300) ;
+    cfg.workers := Int (System.Value ('--workers', ''), 4) ;
+    cfg.queue := Int (System.Value ('--queue', ''), 64) ;
+    cfg.maxConn := Int (System.Value ('--max', ''), 0) ;
+    cfg.perConn := Int (System.Value ('--perconn', ''), 1000) ;
+    cfg.bodyMax := Int (System.Value ('--bodymax', ''), 1048576) ;
+    cfg.idleMs := Int (System.Value ('--idle', ''), 2000) ;
+    cfg.headerMs := Int (System.Value ('--headerms', ''), 3000) ;
+    IF LEN (System.Value ('--bind', '')) > 0 THEN cfg.bind := System.Value ('--bind', '') END ;
+    cfg.trusted := System.Value ('--trusted', '') ;
+    cfg.accessLog := System.Flag ('--log') ;
+    Io.WriteLine ('listening on ' + Fmt.I64Str (cfg.port)) ;
+    Io.Flush () ;
+    why := HttpServer.Run (cfg, r, st) ;
+    Io.Write ('stats') ;
+    Show ('why', why) ;
+    Show ('connections', st.connections) ;
+    Show ('busy', st.busy) ;
+    Show ('requests', st.requests) ;
+    Show ('faults', st.faults) ;
+    Show ('s2xx', st.s2xx) ;
+    Show ('s4xx', st.s4xx) ;
+    Show ('s5xx', st.s5xx) ;
+    Io.WriteLine ('') ;
+    IF why # HttpServer.Drained AND why # HttpServer.Stopped THEN Io.Halt (2) END
   EXCEPT
-  | HttpServer.Frozen (p) :
-      late := p ;                  (* a handler binder has no type in
-                                      the checker yet: copied first *)
-      Io.WriteLine ('frozen: ' + late)
-  END ;
-  cfg := HttpServer.Defaults () ;
-  cfg.port := Int (System.Value ('--port', ''), 18300) ;
-  cfg.workers := Int (System.Value ('--workers', ''), 4) ;
-  cfg.queue := Int (System.Value ('--queue', ''), 64) ;
-  cfg.maxConn := Int (System.Value ('--max', ''), 0) ;
-  cfg.perConn := Int (System.Value ('--perconn', ''), 1000) ;
-  cfg.bodyMax := Int (System.Value ('--bodymax', ''), 1048576) ;
-  cfg.idleMs := Int (System.Value ('--idle', ''), 2000) ;
-  cfg.headerMs := Int (System.Value ('--headerms', ''), 3000) ;
-  IF LEN (System.Value ('--bind', '')) > 0 THEN cfg.bind := System.Value ('--bind', '') END ;
-  cfg.trusted := System.Value ('--trusted', '') ;
-  cfg.accessLog := System.Flag ('--log') ;
-  Io.WriteLine ('listening on ' + Fmt.I64Str (cfg.port)) ;
-  Io.Flush () ;
-  why := HttpServer.Run (cfg, r, st) ;
-  Io.Write ('stats') ;
-  Show ('why', why) ;
-  Show ('connections', st.connections) ;
-  Show ('busy', st.busy) ;
-  Show ('requests', st.requests) ;
-  Show ('faults', st.faults) ;
-  Show ('s2xx', st.s2xx) ;
-  Show ('s4xx', st.s4xx) ;
-  Show ('s5xx', st.s5xx) ;
-  Io.WriteLine ('') ;
-  IF why # HttpServer.Drained AND why # HttpServer.Stopped THEN Io.Halt (2) END
+  | ValueRange :
+      Io.WriteLine ('FAIL: an argument or a stats line raised ValueRange') ;
+      Io.Halt (1)
+  END
 END SrvFix.

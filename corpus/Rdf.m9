@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Rdf ;
 
 (* RDF 1.1 graphs read from N-Triples, Turtle and RDF/XML and written
@@ -659,7 +660,9 @@ BEGIN
   DynStr.Append (d, 'b') ;
   DynStr.AppendI64 (d, r.fresh) ;
   r.fresh := r.fresh + 1 ;
-  RETURN DynStr.View (d)
+  (* ViewIn: the id is kept in the reader's pool, where the builder is
+     -- a View is a frame copy under the UTF switch *)
+  RETURN DynStr.ViewIn (pool, d)
 END Fresh ;
 
 PROCEDURE Labelled (VAR pool: POOL ; VAR r: Reader ; RO lab: STR) : STR
@@ -1211,11 +1214,10 @@ EXCEPT
 END Hex2 ;
 
 PROCEDURE PutIri (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange =
-VAR i : I64 ; c : CHAR ;
+VAR c : CHAR ;
 BEGIN
   DynStr.AppendChar (d, '<') ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    c := s[i] ;
+  FOR c IN s DO
     IF ORD (c) <= 0x20 OR c = '<' OR c = '>' OR c = '"' OR c = '{' OR
        c = '}' OR c = '|' OR c = '^' OR c = '`' OR c = '\' THEN
       DynStr.Append (d, '\u00') ;
@@ -1237,8 +1239,7 @@ BEGIN
       DynStr.Append (d, t.value)
   | Literal :
       DynStr.AppendChar (d, '"') ;
-      FOR i := 0 TO LEN (t.value) - 1 DO
-        c := t.value[i] ;
+      FOR c IN t.value DO
         IF c = '"' THEN DynStr.Append (d, '\"')
         ELSIF c = '\' THEN DynStr.Append (d, '\\')
         ELSIF c = 0AC THEN DynStr.Append (d, '\n')
@@ -1300,16 +1301,25 @@ PROCEDURE LocalOk (RO s: STR) : BOOL =
   (* a PN_LOCAL Turtle reads back as itself with no escape: first a
      name character, a digit or a colon; then name characters, dots
      and colons; not ending in a dot *)
-VAR i : I64 ; c : CHAR ;
+  (* by FOR c IN s, over CHARACTERS (a name may hold letters past
+     ASCII; under the UTF switch a subscript is an octet), the first
+     and the last carried *)
+VAR
+  c, last : CHAR ;
+  first : BOOL ;
 BEGIN
-  IF LEN (s) = 0 THEN RETURN TRUE END ;
-  c := s[0] ;
-  IF NOT (IsPnCharsU (c) OR c = ':' OR (c >= '0' AND c <= '9')) THEN RETURN FALSE END ;
-  FOR i := 1 TO LEN (s) - 1 DO
-    c := s[i] ;
-    IF NOT (IsPnChars (c) OR c = '.' OR c = ':') THEN RETURN FALSE END
+  first := TRUE ;
+  last := ' ' ;
+  FOR c IN s DO
+    IF first THEN
+      IF NOT (IsPnCharsU (c) OR c = ':' OR (c >= '0' AND c <= '9')) THEN RETURN FALSE END
+    ELSIF NOT (IsPnChars (c) OR c = '.' OR c = ':') THEN
+      RETURN FALSE
+    END ;
+    first := FALSE ;
+    last := c
   END ;
-  RETURN s[LEN (s) - 1] # '.'
+  RETURN first OR last # '.'
 END LocalOk ;
 
 PROCEDURE PrefixFor (VAR p: Prefixes ; RO iri: STR) : I64 =
@@ -1411,8 +1421,7 @@ BEGIN
      a short string never holds one and needs no \n or \r *)
   long := Text.FindChar (t.value, 0AC) >= 0 OR Text.FindChar (t.value, 0DC) >= 0 ;
   IF long THEN DynStr.Append (d, '"""') ELSE DynStr.AppendChar (d, '"') END ;
-  FOR i := 0 TO LEN (t.value) - 1 DO
-    c := t.value[i] ;
+  FOR c IN t.value DO
     IF c = '"' THEN DynStr.Append (d, '\"')
     ELSIF c = '\' THEN DynStr.Append (d, '\\')
     ELSIF c = 09C THEN DynStr.Append (d, '\t')
@@ -1577,15 +1586,22 @@ BEGIN
 END IsWs ;
 
 PROCEDURE NcName (RO s: STR) : BOOL =
-  (* an XML NCName: a letter or _ first, then name characters, no colon *)
-VAR i : I64 ;
+  (* an XML NCName: a letter or _ first, then name characters, no
+     colon -- by FOR c IN s, over characters *)
+VAR
+  c : CHAR ;
+  first : BOOL ;
 BEGIN
-  IF LEN (s) = 0 THEN RETURN FALSE END ;
-  IF NOT IsPnCharsU (s[0]) THEN RETURN FALSE END ;
-  FOR i := 1 TO LEN (s) - 1 DO
-    IF NOT (IsPnChars (s[i]) OR s[i] = '.') THEN RETURN FALSE END
+  first := TRUE ;
+  FOR c IN s DO
+    IF first THEN
+      IF NOT IsPnCharsU (c) THEN RETURN FALSE END
+    ELSIF NOT (IsPnChars (c) OR c = '.') THEN
+      RETURN FALSE
+    END ;
+    first := FALSE
   END ;
-  RETURN TRUE
+  RETURN NOT first
 END NcName ;
 
 PROCEDURE IsCoreSyntax (RO local: STR) : BOOL =
@@ -1921,10 +1937,9 @@ END PropertyElt ;
 (* ---- XML literals: exclusive canonical XML of the content ------------ *)
 
 PROCEDURE EscText (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange =
-VAR i : I64 ; c : CHAR ;
+VAR c : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    c := s[i] ;
+  FOR c IN s DO
     IF c = '&' THEN DynStr.Append (d, '&amp;')
     ELSIF c = '<' THEN DynStr.Append (d, '&lt;')
     ELSIF c = '>' THEN DynStr.Append (d, '&gt;')
@@ -1935,10 +1950,9 @@ BEGIN
 END EscText ;
 
 PROCEDURE EscAttr (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange =
-VAR i : I64 ; c : CHAR ;
+VAR c : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    c := s[i] ;
+  FOR c IN s DO
     IF c = '&' THEN DynStr.Append (d, '&amp;')
     ELSIF c = '<' THEN DynStr.Append (d, '&lt;')
     ELSIF c = '"' THEN DynStr.Append (d, '&quot;')
@@ -3258,7 +3272,8 @@ PROCEDURE CanonDouble (r: F64) : STR RAISES ValueRange =
      back (Fmt.Short): 1.0E0, 1.2345E2, 1.0E21, 1.0E-3 *)
 VAR
   s, digits, mant : STR ;
-  i, e, exp, dot, lead : I64 ;
+  e, exp, dot, lead : I64 ;
+  c : CHAR ;
   neg : BOOL ;
 BEGIN
   s := Fmt.Short (r) ;
@@ -3273,8 +3288,8 @@ BEGIN
   dot := Text.FindChar (s, '.') ;
   IF dot < 0 THEN dot := LEN (s) END ;
   digits := '' ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] # '.' THEN digits := digits + s[i] END
+  FOR c IN s DO
+    IF c # '.' THEN digits := digits + c END
   END ;
   exp := exp + dot - 1 ;
   lead := 0 ;

@@ -1,0 +1,40 @@
+MODULE R4OwnReturn ;
+(* a view kept in module state, then the owner RETURNED; the caller disposes it *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[3]))
+END Churn ;
+PROCEDURE Mk () : PTR Store =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  RETURN o
+END Mk ;
+VAR gs : SLICE OF I64 ;
+PROCEDURE Mk2 () : PTR Store =
+VAR o : PTR Store ;
+BEGIN
+  o := Mk () ;
+  gs := o.data ;
+  RETURN o
+END Mk2 ;
+PROCEDURE Go () RAISES IndexError =
+VAR p : PTR Store ;
+BEGIN
+  p := Mk2 () ;
+  DISPOSE (p) ;
+  Churn () ;
+  Io.WriteLine (Fmt.I64Str (gs[0]))
+END Go ;
+BEGIN
+  Go ()
+EXCEPT
+| IndexError (i, n) : Io.WriteLine ('IndexError')
+END R4OwnReturn.

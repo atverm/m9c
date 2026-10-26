@@ -1,0 +1,41 @@
+M9 Runtime Library Exception
+
+This file grants an additional permission under section 7 of the
+GNU General Public License, version 3. It applies to the Runtime
+Library of Modula-9, which consists of:
+
+  - the C runtime, runtime/m9rt.c and runtime/m9rt.h, the tables
+    runtime/m9powfive.h and runtime/m9powten.h, and the C files beside them in runtime/:
+    fmtshim.c, hashshim.c, m9session.c, pgshim.c, sha256shim.c,
+    tcpshim.c and tlsshim.c;
+  - the standard library modules listed in RUNTIME-LIBRARY-FILES;
+  - any code m9c copies from these into the C it generates.
+
+It does not apply to the compiler m9c and its modules, the bootstrap
+C in runtime/gen/, or the tools (m9lsp, m9fmt, m9elide, the editor
+extension, and the Jupyter kernel). These remain under the GPL alone.
+
+The permission is the GNU Classpath exception, reproduced verbatim,
+where "this library" means the Runtime Library:
+
+  Linking this library statically or dynamically with other modules
+  is making a combined work based on this library. Thus, the terms
+  and conditions of the GNU General Public License cover the whole
+  combination.
+
+  As a special exception, the copyright holders of this library give
+  you permission to link this library with independent modules to
+  produce an executable, regardless of the license terms of these
+  independent modules, and to copy and distribute the resulting
+  executable under terms of your choice, provided that you also meet,
+  for each linked independent module, the terms and conditions of the
+  license of that module. An independent module is a module which is
+  not derived from or based on this library. If you modify this
+  library, you may extend this exception to your version of the
+  library, but you are not obligated to do so. If you do not wish to
+  do so, delete this exception statement from your version.
+
+Compiler output. The C code m9c generates from your program is not a
+work based on m9c merely because m9c produced it. Where that code
+contains material copied from the Runtime Library, the permission
+above covers that material.

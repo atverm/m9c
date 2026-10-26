@@ -1,0 +1,33 @@
+(* the compiler review of 2026-10-21, checker repro A4 (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE A4 ;
+IMPORT Io, Fmt ;
+TYPE Node = RECORD s : STR ; next : OPT PTR Node END ;
+VAR kpool : POOL ;
+VAR root : PTR Node IN kpool ;
+PROCEDURE Label (h: PTR Node ; n: I64) =
+BEGIN
+  IF h.next IS SOME u THEN u.s := 'number ' + Fmt.I64Str (n) END
+END Label ;
+PROCEDURE LabelVar (VAR h: PTR Node ; n: I64) =
+VAR q : PTR Node ;
+BEGIN
+  q := h ;
+  q.s := 'varnum ' + Fmt.I64Str (n)
+END LabelVar ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+VAR k : PTR Node IN kpool ;
+BEGIN
+  root := NEW (kpool, Node) ;
+  k := NEW (kpool, Node) ;
+  root.next := SOME (k) ;
+  Label (root, 7) ;
+  LabelVar (k, 9) ;
+  Churn () ;
+  IF root.next IS SOME u THEN Io.WriteLine (u.s) END ;
+  Io.WriteLine (root.s)
+END A4.

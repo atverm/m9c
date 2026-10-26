@@ -15,9 +15,7 @@ cd "$(dirname "$0")"
 . ./lib/reviewnorm.sh
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
-    ../gen/Lex.c ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
-    ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o m9c
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o m9c
 M9C=$(pwd)/m9c
 SRC=$(cd ../../corpus && pwd)
 GOLD=$(pwd)/review

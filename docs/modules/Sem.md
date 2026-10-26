@@ -38,7 +38,7 @@ first mistake makes the caller run it once per mistake.
 
 _(documented with the group below)_
 
-### ErrAt (i: I64) : STR RAISES IndexError
+### ErrAt (i: I64) : UTF RAISES IndexError
 
 the diagnostics, in the order they were found, each already
 formatted with its line:col.
@@ -52,7 +52,7 @@ formatted with its line:col.
 
 _(documented with the group below)_
 
-### LedgerAt (i: I64) : STR RAISES IndexError
+### LedgerAt (i: I64) : UTF RAISES IndexError
 
 the par 4.1 contortion ledger: measured, not rejected.  The
 kill-gate reads this, so it is output and not a debug aside --
@@ -67,7 +67,34 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### StatName (i: I64) : STR
+### SetStrUtf (on: BOOL)
+
+THE SWITCH, REHEARSED (docs/utf8-stage4-plan.md, 4d behind a flag;
+Alex, 2026-10-24): with SetStrUtf (TRUE) before CheckFile, STR
+names the UTF type -- a subscript or a LEN of one is refused as a
+UTF's is, STR (u) and UTF (s) are identities -- and the twins
+collapse: a procedure X whose module declares XUtf is not checked
+(its body is the one the switch deletes) and every call of X is
+a call of XUtf.  `m9c --utf-str'.  Off, nothing changes.
+
+### SetRegions (on: BOOL)
+
+_(documented with the group below)_
+
+### RegionCount () : I64
+
+_(documented with the group below)_
+
+### RegionAt (i: I64) : UTF RAISES IndexError
+
+the one region judgement of docs/region-plan.md, in SHADOW: with
+SetRegions (TRUE) before CheckFile, every procedure body is also
+walked by it, and what it finds -- `regions: KIND: ...' -- is
+listed here and refused nowhere, to be measured against the
+diagnostics before it replaces any of them.  m9c prints the list
+under M9_REGIONS=1.
+
+### StatName (i: I64) : UTF
 
 _(documented with the group below)_
 
@@ -108,7 +135,7 @@ accumulate over every CheckFile of the process.
 
 _(documented with the group below)_
 
-### ThreadWrite (i: I64) : STR
+### ThreadWrite (i: I64) : UTF
 
 the THREADs whose target, or what it calls that the checker can
 follow, WRITES a variable of a STATEFUL module that is not a
@@ -122,11 +149,59 @@ the reviewer reads.
        (Mod.P, line N)', the THREAD's line first, as the page
        prints a site.
 
-### ShowType (RO KEPT name: STR)
+### StaleCalls () : I64
 
 _(documented with the group below)_
 
-### ShownType () : STR
+### StaleCall (i: I64) : UTF
+
+the calls of a STR procedure whose module declares a UTF twin --
+the DEPRECATED forms of the transition (docs/utf8-plan.md, (C)) --
+for `m9c --review', so a module sees the edits it still owes by
+name.  A call inside the module declaring both is not one: a
+module using its own STR forms is the transition itself.
+
+  i -- 0 .. StaleCalls () - 1: `LINE Mod.P -> Mod.PUtf', the call's
+       line first, as the page prints a site.
+
+### AdrSites () : I64
+
+_(documented with the group below)_
+
+### AdrSite (i: I64) : UTF
+
+every ADR of the unit, the trust points where C reads or writes M9
+storage the checker cannot follow (2026-10-26, the third review's
+trust advice): `LINE reads|writes|descriptor in Proc', for `m9c
+--review''s TRUSTED rows, so a new one is a reviewed diff.
+
+  i -- 0 .. AdrSites () - 1
+
+### StrSites () : I64
+
+_(documented with the group below)_
+
+### StrSite (i: I64) : UTF
+
+every use of a STR the UTF-8 switch refuses -- a subscript, a
+write through one, a LEN (docs/utf8-stage4-plan.md) -- by the
+DECLARED type: STR or an alias of it, not SLICE OF CHAR spelled
+out, which stays a character array.  For `m9c --review', so a
+module reads the edits the switch will ask of it before it comes:
+Text.BAt or CpAt, FOR c IN s, Text.BLen or CpCount.  Each node
+once; a write is listed beside its subscript.  A site inside a
+STR procedure whose UTF twin this module declares (`X' beside
+`XUtf') is NOT one: the switch deletes that body with the twins'
+collapse, so it is no edit anybody makes.
+
+  i -- 0 .. StrSites () - 1: `LINE KIND what', KIND one of index,
+       write, len, the line first, as the page prints a site.
+
+### ShowType (RO KEPT name: UTF)
+
+_(documented with the group below)_
+
+### ShownType () : UTF
 
 for `m9c --show`, which asks the type of an expression
 (docs/kernel-show-plan.md): armed with a name, the checker
@@ -138,7 +213,7 @@ OF F64`, `PTR Frame.Fr`, `a real literal`), '' if none was
 met or a side was unknown.  M9 side only, like the counters
 above: nothing in the Pascal twin calls it.
 
-### ShownRaises () : STR
+### ShownRaises () : UTF
 
 while armed, the checked exceptions a body raises and does not
 handle are recorded here instead of refused: the names, each

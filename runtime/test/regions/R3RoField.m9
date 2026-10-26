@@ -1,0 +1,22 @@
+MODULE R3RoField ;
+(* a read-only literal held in ONE field of a local record, lent to a
+   VAR STR the callee writes through.  The bare-name form W (s) with
+   s := 'abc' is refused (RgVarWrites); the field form? *)
+IMPORT Io ;
+TYPE R = RECORD s, t : STR END ;
+PROCEDURE W (VAR s: STR) =
+BEGIN
+  s[0] := 'X'
+END W ;
+PROCEDURE F () RAISES IndexError =
+VAR r : R ;
+BEGIN
+  r.s := 'abc' ;
+  W (r.s) ;
+  Io.WriteLine (r.s)
+END F ;
+BEGIN
+  F ()
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END R3RoField.

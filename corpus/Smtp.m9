@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Smtp ;
 
 (* Mail submission: a message built by calls and sent by SMTP (RFC
@@ -564,15 +565,19 @@ BEGIN
 END Wire ;
 
 PROCEDURE Stuffed (RO text: STR) : STR =
+  (* by FOR c IN text with the previous character carried: the same
+     both sides of the UTF switch *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
-  i : I64 ;
+  c, prev : CHAR ;
 BEGIN
   d := DynStr.New (scratch) ;
-  FOR i := 0 TO LEN (text) - 1 DO
-    IF text[i] = '.' AND (i = 0 OR text[i - 1] = 0AC) THEN DynStr.AppendChar (d, '.') END ;
-    DynStr.AppendChar (d, text[i])
+  prev := 0AC ;                        (* a line starts at the start *)
+  FOR c IN text DO
+    IF c = '.' AND prev = 0AC THEN DynStr.AppendChar (d, '.') END ;
+    DynStr.AppendChar (d, c) ;
+    prev := c
   END ;
   RETURN DynStr.View (d)
 END Stuffed ;

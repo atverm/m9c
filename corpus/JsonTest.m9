@@ -74,9 +74,29 @@ EXCEPT
 | ValueRange : Check.That (t, 'NewRawIn ValueRange', FALSE)
 END Pooled ;
 
+PROCEDURE Unicode () =
+  (* text past ASCII through the parser and the serialiser: a \u
+     escape, a surrogate pair and raw UTF-8 -- the switched Json gave
+     each octet of a raw `é' back as a character of its own until its
+     decoder copied the text between escapes as runs *)
+VAR
+  n : PTR Json.Node ;
+BEGIN
+  n := Json.Parse ('"aéb 😀 é€"') ;
+  Check.EqStr (t, 'Parse decodes a \u escape, a surrogate pair and raw UTF-8',
+               Json.Text (n), 'aéb 😀 é€') ;
+  Check.EqStr (t, 'and Compact writes the characters as they are',
+               Json.Compact (Json.NewStr ('é€ 😀')), '"é€ 😀"')
+EXCEPT
+| Json.ParseError (m, l, c) : Check.That (t, 'Unicode: parse refused', FALSE)
+| Json.TypeMismatch (m) : Check.That (t, 'Unicode: mismatch', FALSE)
+| ValueRange : Check.That (t, 'Unicode: ValueRange', FALSE)
+END Unicode ;
+
 BEGIN
   FOR i := 0 TO LEN (Raws) - 1 DO Kept (Raws[i]) END ;
   Pooled () ;
+  Unicode () ;
   Check.That (t, 'NewRaw refuses what is no JSON: 1.', NotJson ('1.')) ;
   Check.That (t, 'and 0x10', NotJson ('0x10')) ;
   Check.That (t, 'and two numbers', NotJson ('1 2')) ;

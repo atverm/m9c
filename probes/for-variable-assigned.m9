@@ -1,0 +1,26 @@
+(* EXPECT: j is the control variable of the FOR at line 23: it cannot be assigned inside the loop -- leave with EXIT, or count in a WHILE (par 2.1) *)
+MODULE m ;
+(* a FOR's control variable is written by the loop alone (par 2.1; Alex,
+   2026-10-25).  `IF j = 0 THEN j := 3 END' inside `FOR j := 0 TO 2' ran
+   forever under 0.25's exit test and stopped under 0.17's: the meaning
+   moved with the generator (zarrm9's 0.25 report).  Legal forms first:
+   the variable read, another variable assigned, the variable assigned
+   AFTER its loop, a FOR IN's variable (a copy) assigned, EXIT *)
+VAR j, n, k : I64 ;
+VAR xs : ARRAY 3 OF I64 ;
+VAR x : I64 ;
+BEGIN
+  n := 0 ;
+  FOR j := 0 TO 2 DO
+    n := n + j ;
+    k := j ;
+    IF j = 1 THEN EXIT END
+  END ;
+  j := 7 ;
+  FOR x IN xs DO
+    x := x + 1
+  END ;
+  FOR j := 0 TO 2 DO
+    IF j = 0 THEN j := 3 END
+  END
+END m.

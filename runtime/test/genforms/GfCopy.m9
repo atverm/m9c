@@ -1,0 +1,68 @@
+MODULE GfCopy ;
+
+(* WANT: copy 3 4 5 | 7 8 9 | 1 0 1 2 | 0 1 2 | IndexError 3 2 | abc | 0 *)
+
+(* COPY (to, from), the block copy (docs/blockcopy-plan.md, 2026-10-22):
+   a slice from a slice, an array from a slice and back, sub-slices
+   through SLICE, overlap both ways (as if through a temporary), unequal
+   lengths refused with IndexError and nothing copied, a string, and an
+   empty copy. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+VAR
+  a, b : SLICE OF I64 ;
+  arr : ARRAY 3 OF I64 ;
+  t : STR ;
+  i : I64 ;
+  out : STR ;
+
+PROCEDURE Show (RO s: SLICE OF I64) : STR =
+VAR
+  r : STR ;
+  k : I64 ;
+BEGIN
+  r := '' ;
+  FOR k := 0 TO LEN (s) - 1 DO
+    IF k > 0 THEN r := r + ' ' END ;
+    r := r + Fmt.I64Str (s[k])
+  END ;
+  RETURN r
+END Show ;
+
+BEGIN
+  a := NEW (I64, 4) ;
+  b := NEW (I64, 4) ;
+  FOR i := 0 TO 3 DO b[i] := i + 2 END ;
+  (* slice from slice, through SLICE *)
+  COPY (SLICE (a, 0, 3), SLICE (b, 1, 3)) ;
+  out := 'copy ' + Show (SLICE (a, 0, 3)) ;
+  (* array from slice, then the array into a slice *)
+  b[0] := 7 ; b[1] := 8 ; b[2] := 9 ;
+  COPY (arr, SLICE (b, 0, 3)) ;
+  COPY (SLICE (a, 0, 3), arr) ;
+  out := out + ' | ' + Show (SLICE (a, 0, 3)) ;
+  (* overlap, rightwards and leftwards: as if through a temporary *)
+  FOR i := 0 TO 3 DO a[i] := i END ;
+  COPY (SLICE (a, 1, 3), SLICE (a, 0, 3)) ;
+  a[0] := 1 ;
+  out := out + ' | ' + Show (a) ;
+  COPY (SLICE (a, 0, 3), SLICE (a, 1, 3)) ;
+  out := out + ' | ' + Show (SLICE (a, 0, 3)) ;
+  (* unequal lengths: IndexError, nothing copied *)
+  BEGIN
+    COPY (SLICE (a, 0, 2), SLICE (b, 0, 3))
+  EXCEPT
+  | IndexError (idx, len) :
+      out := out + ' | IndexError ' + Fmt.I64Str (idx) + ' ' + Fmt.I64Str (len)
+  END ;
+  (* a string *)
+  t := NEW (CHAR, 3) ;
+  COPY (t, 'abc') ;
+  out := out + ' | ' + t ;
+  (* nothing into nothing *)
+  COPY (SLICE (a, 0, 0), SLICE (b, 2, 0)) ;
+  out := out + ' | ' + Fmt.I64Str (LEN (SLICE (a, 0, 0))) ;
+  Io.WriteLine (out)
+END GfCopy.

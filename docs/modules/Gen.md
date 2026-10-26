@@ -33,7 +33,7 @@ was a hole: a direct dependency's signature may name a type from
 a module this one does not import.  It resolved to nothing and,
 until the guard went in, became integer arithmetic.
 
-### SetPrefix (RO KEPT module: STR ; RO KEPT prefix: STR)
+### SetPrefix (RO module: UTF ; RO prefix: UTF)
 
 emit module MODULE's C names -- its procedures, initialiser,
 exceptions, exported variables and types -- under PREFIX instead
@@ -42,7 +42,7 @@ run again, beside the generation before it in one process
 (docs/notebook-state-plan.md phase 2).  Without a call, every
 name is the module's own and the C is what it always was.
 
-### SetDebugSource (RO KEPT file: STR)
+### SetDebugSource (RO file: UTF)
 
 Emit `#line` directives naming FILE, so a debugger and a
 backtrace report the M9 source rather than the generated C.
@@ -52,15 +52,15 @@ under -g and only under -g: the C emitted without it is
 byte-for-byte what it always was, which is what keeps gendiff
 and the bootstrap fixpoint meaningful.
 
-### Emit (RO forModule: STR)
+### Emit (RO forModule: UTF)
 
 _(documented with the group below)_
 
-### HText () : STR
+### HText () : UTF
 
 _(documented with the group below)_
 
-### CText () : STR
+### CText () : UTF
 
 _(documented with the group below)_
 
@@ -72,10 +72,25 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### ErrMsgAt (i: I64) : STR
+### ErrMsgAt (i: I64) : UTF
 
 the first eight generator errors, with source lines: a count
 alone cost a bisect every time a module was written outside the
 corpus, and then cost one INSIDE the tutorial.  i in
 0 .. MIN (Errs (), 8) - 1; msgs may be '' where a site has no
 wording yet.
+
+### SetIrCheck (on: BOOL)
+
+_(documented with the group below)_
+
+### SetStrUtf (on: BOOL)
+
+the switch, rehearsed (Sem.SetStrUtf): STR is m9_sl_UTF8, a
+literal and a string CONST are octets, STR (u) is u, X whose
+module declares XUtf is not emitted and a call of X calls XUtf
+
+### IrReport () : UTF
+
+one line a disagreement since SetIrCheck: `LINE: tree X, emitter Y:
+C', '' when there was none

@@ -1,0 +1,18 @@
+MODULE R3OwnN20 ;
+(* a view into a SHARED object kept after its last handle is disposed *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;
+PROCEDURE Go () =
+VAR o : PTR Store ; h : SHARED PTR Store ; s : SLICE OF I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  h := SHARED (o) ;
+  s := h.data ;
+  DISPOSE (h) ;
+  Io.WriteLine (Fmt.I64Str (s[0]))
+END Go ;
+BEGIN
+  Go ()
+END R3OwnN20.

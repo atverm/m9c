@@ -304,7 +304,7 @@ END BadCrcRefused ;
 PROCEDURE Sums () RAISES ValueRange =
 VAR
   length, crc, adler, ff : SLICE OF I64 ;
-  b, ones : SLICE OF BYTE ;
+  b, ones, cb : SLICE OF BYTE ;
   i, k, okCrc, okAdler, okFf : I64 ;
 BEGIN
   length := Check.GoldI64s (t, gold, 'sum.length') ;
@@ -331,12 +331,14 @@ BEGIN
                LEN (length)) ;
   Check.EqI64 (t, 'Adler32 of nothing but ones, where its sums are largest',
                okFf, LEN (length)) ;
-  (* the check value of the CRC-32 every table of it prints *)
-  b := DynStr.Bytes (pool, '123456789', FALSE) ;
-  Check.EqI64 (t, 'Crc32 of 123456789 is cbf43926', Zip.Crc32 (b), 3421780262) ;
-  Check.EqI64 (t, 'Crc32Update from 0 is Crc32', Zip.Crc32Update (0, b), 3421780262) ;
+  (* the check value of the CRC-32 every table of it prints; its own
+     name, because b is written above and under the UTF switch these
+     octets are a read-only view *)
+  cb := DynStr.Bytes (pool, '123456789', FALSE) ;
+  Check.EqI64 (t, 'Crc32 of 123456789 is cbf43926', Zip.Crc32 (cb), 3421780262) ;
+  Check.EqI64 (t, 'Crc32Update from 0 is Crc32', Zip.Crc32Update (0, cb), 3421780262) ;
   Check.EqI64 (t, 'Crc32Update carried over two pieces, zlib.crc32 (b, crc)',
-               Zip.Crc32Update (Zip.Crc32Update (0, SLICE (b, 0, 5)), SLICE (b, 5, 4)), 3421780262) ;
+               Zip.Crc32Update (Zip.Crc32Update (0, SLICE (cb, 0, 5)), SLICE (cb, 5, 4)), 3421780262) ;
   Check.EqI64 (t, 'Crc32Update over nothing changes nothing', Zip.Crc32Update (3421780262, NEW (BYTE, 0)), 3421780262) ;
   Check.That (t, 'Crc32Update refuses a value no CRC-32 has', BadCrcRefused ())
 END Sums ;

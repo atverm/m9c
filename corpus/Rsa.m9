@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Rsa ;
 
 (* RSA signature VERIFICATION (docs/library-plan-2.md, item 5): a

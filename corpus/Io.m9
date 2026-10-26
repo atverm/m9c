@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Io ;
 
 (* The narrowest useful boundary to the outside: standard output,
@@ -260,6 +261,62 @@ PROCEDURE AppendFileBytes (RO path: STR ; RO content: SLICE OF BYTE)
 
 EXCEPTION IOError (RO path: STR) ;
 
+(* ---- UTF, UTF-8 text (docs/utf8-plan.md, stage 2): the twins of the
+   text procedures above.  A UTF IS its UTF-8 octets, so nothing is
+   encoded on the way out or decoded on the way in -- a write hands the
+   octets on, a read validates them once.  Io.WriteLine (u) with a UTF
+   is WriteLineUtf (u): twins by type. ---- *)
+
+PROCEDURE WriteUtf (RO u: UTF) ;
+PROCEDURE WriteLineUtf (RO u: UTF) ;
+  (* the line and its LF in one write, as WriteLine's are *)
+PROCEDURE ErrLineUtf (RO u: UTF) ;
+
+PROCEDURE ReadFileUtf (RO path: UTF) : UTF RAISES ValueRange, IOError [FRESH] ;
+  (* the whole file as text: its octets validated as UTF-8 (ValueRange,
+     with the offset of the first that is not) and kept as they are --
+     a UTF of the file's size, where ReadFile's STR is four times it.
+     Not ReadFile's twin by shape: it answers in the caller's frame,
+     where ReadFile answers into a pool (`UTF (pool, Io.ReadFileUtf
+     (path))` keeps it) *)
+
+PROCEDURE WriteFileUtf (RO path: UTF ; RO content: UTF)
+  RAISES ValueRange, IOError ;
+PROCEDURE AppendFileUtf (RO path: UTF ; RO content: UTF)
+  RAISES ValueRange, IOError ;
+  (* the file's bytes become, or gain, content's octets *)
+
+(* The twins by type (docs/utf8-plan.md, stage 2): every string of the
+   heading is a UTF, the shape otherwise the same, so `Io.Exists (p)`
+   with a UTF p is ExistsUtf.  A path goes to the C library as its
+   octets, with no decoding on the way.                              *)
+PROCEDURE RunUtf (RO cmd: UTF) : I64 RAISES ValueRange ;
+PROCEDURE EnvUtf (VAR pool: POOL ; RO name: UTF) : UTF RAISES ValueRange ;
+  (* the value's bytes validated as UTF-8 (ValueRange when they are
+     not) -- Env answers them one CHAR a byte, so `UTF (Io.Env (..))`
+     would encode each byte again *)
+PROCEDURE ArgUtf (VAR pool: POOL ; i: I64) : UTF
+  RAISES IndexError, ValueRange ;
+PROCEDURE ExistsUtf (RO path: UTF) : BOOL RAISES ValueRange ;
+PROCEDURE ModTimeUtf (RO path: UTF) : I64 RAISES ValueRange ;
+PROCEDURE RemoveUtf (RO path: UTF) : BOOL RAISES ValueRange ;
+PROCEDURE FileSizeUtf (RO path: UTF) : I64 RAISES ValueRange, IOError ;
+PROCEDURE MkDirUtf (RO path: UTF) RAISES ValueRange, IOError ;
+PROCEDURE MkDirsUtf (RO path: UTF) RAISES ValueRange, IOError ;
+PROCEDURE RenameUtf (RO from: UTF ; RO to: UTF) RAISES ValueRange, IOError ;
+PROCEDURE ListDirUtf (VAR pool: POOL ; RO path: UTF) : SLICE OF UTF
+  RAISES IOError, ValueRange ;
+  (* a name that is not UTF-8 is ValueRange, where ListDir answers it
+     one CHAR a byte *)
+PROCEDURE ReadFileBytesUtf (VAR pool: POOL ; RO path: UTF) : SLICE OF BYTE
+  RAISES ValueRange, IOError ;
+PROCEDURE WriteFileBytesUtf (RO path: UTF ; RO content: SLICE OF BYTE)
+  RAISES ValueRange, IOError ;
+PROCEDURE AppendFileBytesUtf (RO path: UTF ; RO content: SLICE OF BYTE)
+  RAISES ValueRange, IOError ;
+PROCEDURE ParseI64Utf (RO s: UTF) : I64 RAISES ValueRange ;
+PROCEDURE ErrUtf (RO u: UTF) ;
+
 END Io.
 
 
@@ -268,6 +325,8 @@ UNSAFE DEFINITION MODULE FOR "C" cio ;
 PROCEDURE PutChars = "m9_put_chars" (buf: C.ConstPtr ; n: C.SizeT)
   [REENTRANT] ;
 PROCEDURE PutBytes = "m9_put_bytes" (buf: C.ConstPtr ; n: C.SizeT)
+  [REENTRANT] ;
+PROCEDURE PutErrBytes = "m9_put_bytes_err" (buf: C.ConstPtr ; n: C.SizeT)
   [REENTRANT] ;
   (* CHARs straight out as UTF-8.  Console output is TOTAL: every
      Unicode scalar has a UTF-8 encoding, so unlike DynStr.Bytes --
@@ -306,6 +365,11 @@ PROCEDURE ReadAt = "m9_read_at" (path: C.ConstPtr ; buf: C.MutPtr ;
 PROCEDURE ReadWhole = "m9_read_file" (path: C.ConstPtr ;
                                       buf: C.MutPtr ; cap: C.SSizeT)
   : C.SSizeT  [REENTRANT] ;
+PROCEDURE CAdopt = "m9_utf_adopt_p" (p: C.ConstPtr ; n: C.SSizeT ; out: C.MutPtr)
+  : C.SSizeT  [REENTRANT] ;
+  (* the bytes validated in place and answered as a UTF over the same
+     storage (m9rt.h), for ReadFileUtf: -1, or the offset of the first
+     byte that is no UTF-8 *)
   (* cap = 0 asks for the size and touches nothing.  REENTRANT: the
      shim opens a PRIVATE FILE* on its own path, reads, and closes it,
      touching no shared state -- the identical shape as m9_read_at,
@@ -344,7 +408,7 @@ UNSAFE IMPLEMENTATION MODULE Io ;
    else is checked code; the audit surface is this file, grep ADR.   *)
 
 IMPORT DynStr ;
-FROM cio IMPORT PutChars, PutBytes, ArgC, ArgLen, ArgCopy, ReadWhole, WriteWhole,
+FROM cio IMPORT PutChars, PutBytes, PutErrBytes, ArgC, ArgLen, ArgCopy, ReadWhole, WriteWhole, CAdopt,
                 Exit, PutErr, RunCmd, GetEnv, Stat, Unlink, Access,
                 LsDir, CMkDir, CRename, ReadIn, ReadAt, FlushOut,
                 AppendWhole ;
@@ -771,5 +835,314 @@ VAR scratch : POOL ;
 BEGIN
   AppendFileBytes (path, DynStr.Utf8 (scratch, content))
 END AppendFile ;
+
+(* ---- UTF (docs/utf8-plan.md, stage 2) ---- *)
+
+PROCEDURE WriteUtf (RO u: UTF) =
+BEGIN
+  WriteBytes (OCTETS (u))
+END WriteUtf ;
+
+PROCEDURE WriteLineUtf (RO u: UTF) =
+VAR line : UTF ;
+BEGIN
+  line := u + 0AC ;
+  WriteBytes (OCTETS (line))
+END WriteLineUtf ;
+
+PROCEDURE ErrLineUtf (RO u: UTF) =
+VAR
+  line : UTF ;
+  o : SLICE OF BYTE ;
+BEGIN
+  line := u + 0AC ;
+  o := OCTETS (line) ;      (* a designator: ADR needs storage *)
+  PutErrBytes (ADR (o), C.SizeT (LEN (o)))
+END ErrLineUtf ;
+
+(* a UTF path for the C library: its octets, zero-terminated -- PathZ
+   without the encoding, the octets being the UTF-8 already *)
+PROCEDURE PathZUtf (VAR scratch: POOL ; RO path: UTF) : SLICE OF BYTE =
+VAR
+  u, z : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  u := OCTETS (path) ;
+  z := NEW (scratch, BYTE, LEN (u) + 1) ;
+  FOR i := 0 TO LEN (u) - 1 DO z[i] := u[i] END ;
+  RETURN z
+END PathZUtf ;
+
+PROCEDURE ReadFileBytesUtf (VAR pool: POOL ; RO path: UTF) : SLICE OF BYTE
+  RAISES ValueRange, IOError =
+VAR
+  scratch : POOL ;
+  pb, b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  pb := PathZUtf (scratch, path) ;
+  n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (0))) ;
+  IF n < 0 THEN RAISE IOError (STR (path)) END ;
+  b := NEW (pool, BYTE, n + 1) ;           (* the terminator, as ReadFileBytes *)
+  IF n = 0 THEN RETURN SLICE (b, 0, 0) END ;
+  n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (n))) ;
+  IF n < 0 THEN RAISE IOError (STR (path)) END ;
+  RETURN SLICE (b, 0, n)
+END ReadFileBytesUtf ;
+
+(* a UTF descriptor the runtime fills (its one field lies at the
+   record's start, where m9_utf_adopt_p writes) *)
+TYPE Adopted = RECORD u : UTF END ;
+
+PROCEDURE ReadFileUtf (RO path: UTF) : UTF RAISES ValueRange, IOError [FRESH] =
+VAR
+  scratch : POOL ;
+  pb, b : SLICE OF BYTE ;
+  n : I64 ;
+  h : Adopted ;
+BEGIN
+  (* the bytes are read into the FRAME -- a function answering a UTF
+     builds in its caller's arena, where the answer lives -- and
+     validated IN PLACE (m9_utf_adopt_p): one allocation, no copy.  b
+     is a local nothing else names, which is what makes the adoption
+     safe; Text.AdoptUtf8 offered it for any caller's slice and was
+     withdrawn on 2026-10-26 (the third review: frame bytes adopted and
+     kept, or an alias written under the UTF, were accepted).  Until
+     2026-10-25 they were read into a scratch pool and UTF (b) copied
+     them: the second allocation's page faults were half the read on
+     the Xeon (643 of 1,309 MB/s). *)
+  pb := PathZUtf (scratch, path) ;
+  n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (0))) ;
+  IF n < 0 THEN RAISE IOError (STR (path)) END ;
+  IF n = 0 THEN RETURN '' END ;
+  b := NEW (BYTE, n + 1) ;                  (* the terminator, as ReadFileBytes *)
+  n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (n))) ;
+  IF n < 0 THEN RAISE IOError (STR (path)) END ;
+  IF I64 (CAdopt (ADR (b), C.SSizeT (n), ADR (h))) >= 0 THEN RAISE ValueRange END ;
+  RETURN h.u
+END ReadFileUtf ;
+
+PROCEDURE WriteFileBytesUtf (RO path: UTF ; RO content: SLICE OF BYTE)
+  RAISES ValueRange, IOError =
+VAR
+  scratch : POOL ;
+  pb : SLICE OF BYTE ;
+  rc : C.Int ;
+BEGIN
+  pb := PathZUtf (scratch, path) ;
+  rc := WriteWhole (ADR (pb), ADR (content), C.SizeT (LEN (content))) ;
+  IF I64 (rc) # 0 THEN RAISE IOError (STR (path)) END
+END WriteFileBytesUtf ;
+
+PROCEDURE AppendFileBytesUtf (RO path: UTF ; RO content: SLICE OF BYTE)
+  RAISES ValueRange, IOError =
+VAR
+  scratch : POOL ;
+  pb : SLICE OF BYTE ;
+  rc : C.Int ;
+BEGIN
+  pb := PathZUtf (scratch, path) ;
+  rc := AppendWhole (ADR (pb), ADR (content), C.SizeT (LEN (content))) ;
+  IF I64 (rc) # 0 THEN RAISE IOError (STR (path)) END
+END AppendFileBytesUtf ;
+
+PROCEDURE WriteFileUtf (RO path: UTF ; RO content: UTF)
+  RAISES ValueRange, IOError =
+BEGIN
+  WriteFileBytesUtf (path, OCTETS (content))
+END WriteFileUtf ;
+
+PROCEDURE AppendFileUtf (RO path: UTF ; RO content: UTF)
+  RAISES ValueRange, IOError =
+BEGIN
+  AppendFileBytesUtf (path, OCTETS (content))
+END AppendFileUtf ;
+
+PROCEDURE RunUtf (RO cmd: UTF) : I64 RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  b := PathZUtf (scratch, cmd) ;
+  RETURN I64 (RunCmd (ADR (b)))
+END RunUtf ;
+
+PROCEDURE EnvUtf (VAR pool: POOL ; RO name: UTF) : UTF RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  nb, buf : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  nb := PathZUtf (scratch, name) ;
+  buf := NEW (scratch, BYTE, MaxEnv) ;
+  n := I64 (GetEnv (ADR (nb), ADR (buf), C.Int (MaxEnv))) ;
+  IF n < 0 THEN RETURN '' END ;
+  IF n > MaxEnv THEN                       (* the true length: see Env *)
+    buf := NEW (scratch, BYTE, n) ;
+    n := I64 (GetEnv (ADR (nb), ADR (buf), C.Int (n))) ;
+    IF n > LEN (buf) THEN n := LEN (buf) END
+  END ;
+  RETURN UTF (pool, SLICE (buf, 0, n))
+END EnvUtf ;
+
+PROCEDURE ArgUtf (VAR pool: POOL ; i: I64) : UTF
+  RAISES IndexError, ValueRange =
+VAR
+  scratch : POOL ;
+  n : I64 ;
+  b : SLICE OF BYTE ;
+BEGIN
+  n := I64 (ArgLen (C.Int (i))) ;
+  IF n < 0 THEN RAISE IndexError (i, ArgCount ()) END ;
+  b := NEW (scratch, BYTE, n) ;
+  n := I64 (ArgCopy (C.Int (i), ADR (b), C.Int (n))) ;
+  RETURN UTF (pool, SLICE (b, 0, n))       (* UTF-8 on every platform: see Arg *)
+END ArgUtf ;
+
+PROCEDURE ExistsUtf (RO path: UTF) : BOOL RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  b := PathZUtf (scratch, path) ;
+  RETURN I64 (Access (ADR (b))) # 0
+END ExistsUtf ;
+
+PROCEDURE ModTimeUtf (RO path: UTF) : I64 RAISES ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  RETURN I64 (Stat (ADR (PathZUtf (scratch, path))))
+END ModTimeUtf ;
+
+PROCEDURE RemoveUtf (RO path: UTF) : BOOL RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  b := PathZUtf (scratch, path) ;
+  RETURN I64 (Unlink (ADR (b))) = 0
+END RemoveUtf ;
+
+PROCEDURE FileSizeUtf (RO path: UTF) : I64
+  RAISES ValueRange, IOError =
+VAR
+  scratch : POOL ;
+  pb, b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  pb := PathZUtf (scratch, path) ;
+  n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (0))) ;
+  IF n < 0 THEN RAISE IOError (STR (path)) END ;
+  RETURN n
+END FileSizeUtf ;
+
+PROCEDURE MkDirUtf (RO path: UTF)
+  RAISES ValueRange, IOError =
+VAR
+  scratch : POOL ;
+  pb : SLICE OF BYTE ;
+  rc : C.Int ;
+BEGIN
+  pb := PathZUtf (scratch, path) ;
+  rc := CMkDir (ADR (pb)) ;
+  IF I64 (rc) # 0 THEN RAISE IOError (STR (path)) END
+END MkDirUtf ;
+
+PROCEDURE MkDirsUtf (RO path: UTF)
+  RAISES ValueRange, IOError =
+VAR
+  o : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  (* the separators are ASCII bytes, which no character's octets
+     contain, so the scan is over the octets and each prefix ends at
+     a character boundary *)
+  o := OCTETS (path) ;
+  FOR i := 1 TO LEN (o) - 1 DO
+    IF o[i] = BYTE (47) OR o[i] = BYTE (92) THEN
+      IF o[i - 1] # BYTE (47) AND o[i - 1] # BYTE (92) THEN
+        MkDirUtf (SLICE (path, 0, i))
+      END
+    END
+  END ;
+  MkDirUtf (path)
+END MkDirsUtf ;
+
+PROCEDURE RenameUtf (RO from: UTF ; RO to: UTF)
+  RAISES ValueRange, IOError =
+VAR
+  scratch : POOL ;
+  fb, tb : SLICE OF BYTE ;
+  rc : C.Int ;
+BEGIN
+  fb := PathZUtf (scratch, from) ;
+  tb := PathZUtf (scratch, to) ;
+  rc := CRename (ADR (fb), ADR (tb)) ;
+  IF I64 (rc) # 0 THEN RAISE IOError (STR (to)) END
+END RenameUtf ;
+
+PROCEDURE ListDirUtf (VAR pool: POOL ; RO path: UTF) : SLICE OF UTF
+  RAISES IOError, ValueRange =
+VAR
+  scratch : POOL ;
+  buf : SLICE OF BYTE ;
+  names : SLICE OF UTF ;
+  need, got, i, start, count, k : I64 ;
+BEGIN
+  need := I64 (LsDir (ADR (PathZUtf (scratch, path)),
+                      ADR (buf), C.SSizeT (0))) ;
+  IF need < 0 THEN RAISE IOError (STR (path)) END ;
+  IF need = 0 THEN
+    names := NEW (pool, UTF, 0) ;
+    RETURN names
+  END ;
+  buf := NEW (scratch, BYTE, need) ;
+  got := I64 (LsDir (ADR (PathZUtf (scratch, path)),
+                     ADR (buf), C.SSizeT (need))) ;
+  IF got # need THEN RAISE IOError (STR (path)) END ;   (* torn: see ListDir *)
+  count := 0 ;
+  FOR i := 0 TO need - 1 DO
+    IF buf[i] = BYTE (0) THEN count := count + 1 END
+  END ;
+  names := NEW (pool, UTF, count) ;
+  start := 0 ;
+  k := 0 ;
+  FOR i := 0 TO need - 1 DO
+    IF buf[i] = BYTE (0) THEN
+      names[k] := UTF (pool, SLICE (buf, start, i - start)) ;
+      k := k + 1 ;
+      start := i + 1
+    END
+  END ;
+  RETURN names
+END ListDirUtf ;
+
+PROCEDURE ParseI64Utf (RO s: UTF) : I64 RAISES ValueRange =
+VAR
+  o : SLICE OF BYTE ;
+  i, v, first : I64 ;
+  neg : BOOL ;
+BEGIN
+  o := OCTETS (s) ;
+  IF LEN (o) = 0 THEN RAISE ValueRange END ;
+  neg := o[0] = BYTE (45) ;
+  first := 0 ;
+  IF neg THEN first := 1 END ;
+  IF LEN (o) = first THEN RAISE ValueRange END ;
+  v := 0 ;
+  FOR i := first TO LEN (o) - 1 DO
+    IF o[i] < BYTE (48) OR o[i] > BYTE (57) THEN RAISE ValueRange END ;
+    v := v * 10 - (I64 (o[i]) - 48)        (* negative space: see ParseI64 *)
+  END ;
+  IF neg THEN RETURN v END ;
+  RETURN 0 - v
+END ParseI64Utf ;
+
+PROCEDURE ErrUtf (RO u: UTF) =
+VAR o : SLICE OF BYTE ;
+BEGIN
+  o := OCTETS (u) ;
+  PutErrBytes (ADR (o), C.SizeT (LEN (o)))
+END ErrUtf ;
 
 END Io.

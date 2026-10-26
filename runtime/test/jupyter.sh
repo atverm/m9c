@@ -9,7 +9,7 @@
 # else python3.  NOT a skip when they are missing -- a gate that skips
 # where it should run is a gate that says nothing; CI installs them
 # (python3-ipykernel, python3-nbclient, python3-nbformat).
-# Uses the m9c that m9c.sh builds, or $M9C, or out/m9c.
+# Uses an m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
 set -e
 cd "$(dirname "$0")"
 
@@ -17,10 +17,7 @@ PY=${JUPYTER_PY:-python3}
 "$PY" -c 'import ipykernel, nbclient, nbformat' 2>/dev/null ||
   { echo "jupyter: $PY lacks ipykernel, nbclient or nbformat"; exit 1; }
 
-M9C=${M9C:-}
-[ -n "$M9C" ] || { [ -x ./m9c ] && M9C=$(pwd)/m9c; }
-[ -n "$M9C" ] || { [ -x ../../out/m9c ] && M9C=$(cd ../../out && pwd)/m9c; }
-[ -n "$M9C" ] || { echo "jupyter: no m9c (run m9c.sh or build.sh)"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 # --cell and --prefix too: a runtime/test/m9c older than the tree
 # passed the --run test and failed ten checks on `cannot find: --cell'
 # (the MacBook, 2026-10-05)

@@ -7,6 +7,7 @@
 
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
+extern void m9_put_bytes_err (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -22,10 +23,14 @@ extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
+extern int64_t m9_utf_adopt_p (const void *, int64_t, void *);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
+extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_short (double, void *, int64_t);
 extern double fmod (double, double);
 extern double sqrt (double);
 extern double log (double);
@@ -66,6 +71,8 @@ extern float erff (float);
 extern float erfcf (float);
 extern float fabsf (float);
 extern float hypotf (float, float);
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 
 static const uint32_t Known_s0[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
 static const uint32_t Known_s1[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
@@ -336,11 +343,11 @@ void Check_EqI64s (Check_T *t, m9_sl_CHAR label, m9_sl_I64 got, m9_sl_I64 want, 
       if (err->exc) goto L_ret;
       first = m9v;
     }
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
+    if (i <= m9t2to) for (;;) {
       bool m9t3 = ((*(int64_t *) m9_at (got.p, i, got.len, sizeof (int64_t), err)) != (*(int64_t *) m9_at (want.p, i, want.len, sizeof (int64_t), err)));
       if (err->exc) goto L_ret;
       if (m9t3) {
@@ -352,6 +359,8 @@ void Check_EqI64s (Check_T *t, m9_sl_CHAR label, m9_sl_I64 got, m9_sl_I64 want, 
           n = m9v;
         }
       }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     if ((n > INT64_C(0))) {
       { __typeof__((*(int64_t *) m9_at (got.p, first, got.len, sizeof (int64_t), err))) m9a6 = (*(int64_t *) m9_at (got.p, first, got.len, sizeof (int64_t), err));
@@ -397,12 +406,16 @@ void Check_EqStrs (Check_T *t, m9_sl_CHAR label, m9_sl_m9_sl_CHAR got, m9_sl_m9_
       if (err->exc) goto L_ret;
       first = m9v;
     }
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
-      bool m9t3 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (got.p, i, got.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at (want.p, i, want.len, sizeof (m9_sl_CHAR), err)), err));
+    if (i <= m9t2to) for (;;) {
+      { __typeof__((*(m9_sl_CHAR *) m9_at (got.p, i, got.len, sizeof (m9_sl_CHAR), err))) m9a10 = (*(m9_sl_CHAR *) m9_at (got.p, i, got.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (want.p, i, want.len, sizeof (m9_sl_CHAR), err))) m9a11 = (*(m9_sl_CHAR *) m9_at (want.p, i, want.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      bool m9t3 = (!Text_Eq (m9a10, m9a11, err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         if ((n == INT64_C(0))) {
@@ -412,18 +425,20 @@ void Check_EqStrs (Check_T *t, m9_sl_CHAR label, m9_sl_m9_sl_CHAR got, m9_sl_m9_
           if (err->exc) goto L_ret;
           n = m9v;
         }
-      }
+      } } }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     if ((n > INT64_C(0))) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (got.p, first, got.len, sizeof (m9_sl_CHAR), err))) m9a10 = (*(m9_sl_CHAR *) m9_at (got.p, first, got.len, sizeof (m9_sl_CHAR), err));
-        if (err->exc) goto L_ret;
-      { __typeof__(Check_Quote (m9a10, err)) m9a11 = Check_Quote (m9a10, err);
-        if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (want.p, first, want.len, sizeof (m9_sl_CHAR), err))) m9a12 = (*(m9_sl_CHAR *) m9_at (want.p, first, want.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (got.p, first, got.len, sizeof (m9_sl_CHAR), err))) m9a12 = (*(m9_sl_CHAR *) m9_at (got.p, first, got.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
       { __typeof__(Check_Quote (m9a12, err)) m9a13 = Check_Quote (m9a12, err);
         if (err->exc) goto L_ret;
-      Check_Differ (t, label, n, (want).len, first, m9a11, m9a13, err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (want.p, first, want.len, sizeof (m9_sl_CHAR), err))) m9a14 = (*(m9_sl_CHAR *) m9_at (want.p, first, want.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(Check_Quote (m9a14, err)) m9a15 = Check_Quote (m9a14, err);
+        if (err->exc) goto L_ret;
+      Check_Differ (t, label, n, (want).len, first, m9a13, m9a15, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -458,11 +473,11 @@ void Check_EqBools (Check_T *t, m9_sl_CHAR label, m9_sl_BOOL got, m9_sl_BOOL wan
       if (err->exc) goto L_ret;
       first = m9v;
     }
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
+    if (i <= m9t2to) for (;;) {
       bool m9t3 = ((*(bool *) m9_at (got.p, i, got.len, sizeof (bool), err)) != (*(bool *) m9_at (want.p, i, want.len, sizeof (bool), err)));
       if (err->exc) goto L_ret;
       if (m9t3) {
@@ -474,17 +489,19 @@ void Check_EqBools (Check_T *t, m9_sl_CHAR label, m9_sl_BOOL got, m9_sl_BOOL wan
           n = m9v;
         }
       }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     if ((n > INT64_C(0))) {
-      { __typeof__((*(bool *) m9_at (got.p, first, got.len, sizeof (bool), err))) m9a14 = (*(bool *) m9_at (got.p, first, got.len, sizeof (bool), err));
-        if (err->exc) goto L_ret;
-      { __typeof__(Check_BoolStr (m9a14, err)) m9a15 = Check_BoolStr (m9a14, err);
-        if (err->exc) goto L_ret;
-      { __typeof__((*(bool *) m9_at (want.p, first, want.len, sizeof (bool), err))) m9a16 = (*(bool *) m9_at (want.p, first, want.len, sizeof (bool), err));
+      { __typeof__((*(bool *) m9_at (got.p, first, got.len, sizeof (bool), err))) m9a16 = (*(bool *) m9_at (got.p, first, got.len, sizeof (bool), err));
         if (err->exc) goto L_ret;
       { __typeof__(Check_BoolStr (m9a16, err)) m9a17 = Check_BoolStr (m9a16, err);
         if (err->exc) goto L_ret;
-      Check_Differ (t, label, n, (want).len, first, m9a15, m9a17, err);
+      { __typeof__((*(bool *) m9_at (want.p, first, want.len, sizeof (bool), err))) m9a18 = (*(bool *) m9_at (want.p, first, want.len, sizeof (bool), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(Check_BoolStr (m9a18, err)) m9a19 = Check_BoolStr (m9a18, err);
+        if (err->exc) goto L_ret;
+      Check_Differ (t, label, n, (want).len, first, m9a17, m9a19, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -519,12 +536,16 @@ void Check_NearF64s (Check_T *t, m9_sl_CHAR label, m9_sl_F64 got, m9_sl_F64 want
       if (err->exc) goto L_ret;
       first = m9v;
     }
-    { int64_t m9t2to;
+    { __typeof__(i) m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((want).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t2to; i += 1) {
-      bool m9t3 = (!Check_IsNear ((*(double *) m9_at (got.p, i, got.len, sizeof (double), err)), (*(double *) m9_at (want.p, i, want.len, sizeof (double), err)), absTol, relTol, err));
+    if (i <= m9t2to) for (;;) {
+      { __typeof__((*(double *) m9_at (got.p, i, got.len, sizeof (double), err))) m9a20 = (*(double *) m9_at (got.p, i, got.len, sizeof (double), err));
+        if (err->exc) goto L_ret;
+      { __typeof__((*(double *) m9_at (want.p, i, want.len, sizeof (double), err))) m9a21 = (*(double *) m9_at (want.p, i, want.len, sizeof (double), err));
+        if (err->exc) goto L_ret;
+      bool m9t3 = (!Check_IsNear (m9a20, m9a21, absTol, relTol, err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         if ((n == INT64_C(0))) {
@@ -534,22 +555,24 @@ void Check_NearF64s (Check_T *t, m9_sl_CHAR label, m9_sl_F64 got, m9_sl_F64 want
           if (err->exc) goto L_ret;
           n = m9v;
         }
-      }
+      } } }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
     if ((n > INT64_C(0))) {
-      { __typeof__((*(double *) m9_at (got.p, first, got.len, sizeof (double), err))) m9a18 = (*(double *) m9_at (got.p, first, got.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
-      { __typeof__((*(double *) m9_at (want.p, first, want.len, sizeof (double), err))) m9a19 = (*(double *) m9_at (want.p, first, want.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
-      { __typeof__(Check_Shown (m9a18, m9a19, err)) m9a20 = Check_Shown (m9a18, m9a19, err);
-        if (err->exc) goto L_ret;
-      { __typeof__((*(double *) m9_at (want.p, first, want.len, sizeof (double), err))) m9a21 = (*(double *) m9_at (want.p, first, want.len, sizeof (double), err));
-        if (err->exc) goto L_ret;
       { __typeof__((*(double *) m9_at (got.p, first, got.len, sizeof (double), err))) m9a22 = (*(double *) m9_at (got.p, first, got.len, sizeof (double), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Check_Shown (m9a21, m9a22, err)) m9a23 = Check_Shown (m9a21, m9a22, err);
+      { __typeof__((*(double *) m9_at (want.p, first, want.len, sizeof (double), err))) m9a23 = (*(double *) m9_at (want.p, first, want.len, sizeof (double), err));
         if (err->exc) goto L_ret;
-      Check_Differ (t, label, n, (want).len, first, m9a20, m9a23, err);
+      { __typeof__(Check_Shown (m9a22, m9a23, err)) m9a24 = Check_Shown (m9a22, m9a23, err);
+        if (err->exc) goto L_ret;
+      { __typeof__((*(double *) m9_at (want.p, first, want.len, sizeof (double), err))) m9a25 = (*(double *) m9_at (want.p, first, want.len, sizeof (double), err));
+        if (err->exc) goto L_ret;
+      { __typeof__((*(double *) m9_at (got.p, first, got.len, sizeof (double), err))) m9a26 = (*(double *) m9_at (got.p, first, got.len, sizeof (double), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(Check_Shown (m9a25, m9a26, err)) m9a27 = Check_Shown (m9a25, m9a26, err);
+        if (err->exc) goto L_ret;
+      Check_Differ (t, label, n, (want).len, first, m9a24, m9a27, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -580,9 +603,9 @@ void Check_Raises (Check_T *t, m9_sl_CHAR label, Check_Action act, m9_sl_CHAR wa
   if (err->exc) goto L_ret;
   if (m9t1) {
     m9_mark m9t2 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s13, 46 }), ((m9_sl_CHAR){ (uint32_t *) m9s14, 16 }), err), Check_Quote (want, err), err)) m9a24 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s13, 46 }), ((m9_sl_CHAR){ (uint32_t *) m9s14, 16 }), err), Check_Quote (want, err), err);
+    { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s13, 46 }), ((m9_sl_CHAR){ (uint32_t *) m9s14, 16 }), err), Check_Quote (want, err), err)) m9a28 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s13, 46 }), ((m9_sl_CHAR){ (uint32_t *) m9s14, 16 }), err), Check_Quote (want, err), err);
       if (err->exc) goto L_ret;
-    Check_Bad (t, label, m9a24, err);
+    Check_Bad (t, label, m9a28, err);
     if (err->exc) goto L_ret;
     }
     m9_pool_release (err->res, m9t2);
@@ -680,19 +703,21 @@ m9_sl_F64 Check_GoldF64s (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state
     if (err->exc) goto L_hdl_m9t1;
     out = m9v;
   }
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(3);
   m9t3to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; i <= m9t3to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err))) m9a25 = (*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err));
+  if (i <= m9t3to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err))) m9a29 = (*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__((*(double *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (double), err))) m9v = Fmt_ParseBits (m9a25, err);
+    { __typeof__((*(double *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (double), err))) m9v = Fmt_ParseBits (m9a29, err);
       if (err->exc) goto L_hdl_m9t1;
       (*(double *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_hdl_m9t1;
     }
     }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = out;
@@ -702,9 +727,9 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     m9_mark m9t4 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s20, 33 }), path, err)) m9a26 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s20, 33 }), path, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s20, 33 }), path, err)) m9a30 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s20, 33 }), path, err);
       if (err->exc) goto L_ret;
-    Check_Fault (t, name, m9a26, err);
+    Check_Fault (t, name, m9a30, err);
     if (err->exc) goto L_ret;
     }
     m9_pool_release (err->res, m9t4);
@@ -750,14 +775,14 @@ m9_sl_I64 Check_GoldI64s (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state
     if (err->exc) goto L_ret;
     out = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(3);
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err))) m9a27 = (*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err));
+  if (i <= m9t1to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err))) m9a31 = (*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(int64_t *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (int64_t), err))) m9v = Check_Int (m9a27, &(ok), err);
+    { __typeof__((*(int64_t *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (int64_t), err))) m9v = Check_Int (m9a31, &(ok), err);
       if (err->exc) goto L_ret;
       (*(int64_t *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (int64_t), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -765,9 +790,9 @@ m9_sl_I64 Check_GoldI64s (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state
     }
     if ((!ok)) {
       m9_mark m9t2 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s22, 30 }), path, err)) m9a28 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s22, 30 }), path, err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s22, 30 }), path, err)) m9a32 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s22, 30 }), path, err);
         if (err->exc) goto L_ret;
-      Check_Fault (t, name, m9a28, err);
+      Check_Fault (t, name, m9a32, err);
       if (err->exc) goto L_ret;
       }
       m9_pool_release (err->res, m9t2);
@@ -776,6 +801,8 @@ m9_sl_I64 Check_GoldI64s (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state
       if (err->exc) goto L_ret;
       goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = out;
@@ -813,27 +840,31 @@ m9_sl_BOOL Check_GoldBools (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_sta
     if (err->exc) goto L_ret;
     out = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(3);
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    bool m9t2 = Text_Eq ((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s24, 1 }), err);
+  if (i <= m9t1to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err))) m9a33 = (*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    bool m9t2 = Text_Eq (m9a33, ((m9_sl_CHAR){ (uint32_t *) m9s24, 1 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       (*(bool *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (bool), err)) = true;
       if (err->exc) goto L_ret;
     } else {
-      bool m9t3 = Text_Eq ((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s25, 1 }), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err))) m9a34 = (*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      bool m9t3 = Text_Eq (m9a34, ((m9_sl_CHAR){ (uint32_t *) m9s25, 1 }), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
         (*(bool *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (bool), err)) = false;
         if (err->exc) goto L_ret;
     } else {
       m9_mark m9t4 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s26, 31 }), path, err)) m9a29 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s26, 31 }), path, err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s26, 31 }), path, err)) m9a35 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s26, 31 }), path, err);
         if (err->exc) goto L_ret;
-      Check_Fault (t, name, m9a29, err);
+      Check_Fault (t, name, m9a35, err);
       if (err->exc) goto L_ret;
       }
       m9_pool_release (err->res, m9t4);
@@ -841,7 +872,9 @@ m9_sl_BOOL Check_GoldBools (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_sta
       m9ret = M9_POOL_SL (m9_sl_BOOL, bool, err->res, INT64_C(0), err);
       if (err->exc) goto L_ret;
       goto L_ret;
-    } }
+    } } } }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = out;
@@ -879,12 +912,14 @@ m9_sl_m9_sl_CHAR Check_GoldStrs (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m
     if (err->exc) goto L_ret;
     out = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(3);
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    bool m9t2 = Text_Eq ((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s28, 2 }), err);
+  if (i <= m9t1to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err))) m9a36 = (*(m9_sl_CHAR *) m9_at (f.p, i, f.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    bool m9t2 = Text_Eq (m9a36, ((m9_sl_CHAR){ (uint32_t *) m9s28, 2 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       (*(m9_sl_CHAR *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
@@ -895,7 +930,9 @@ m9_sl_m9_sl_CHAR Check_GoldStrs (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m
         (*(m9_sl_CHAR *) m9_at (out.p, m9_sub_i64 (i, INT64_C(3), err), out.len, sizeof (m9_sl_CHAR), err)) = m9v;
         if (err->exc) goto L_ret;
       }
-    }
+    } }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = out;
@@ -971,9 +1008,9 @@ int64_t Check_Done (Check_T t, m9_sl_CHAR name, m9_state *err)
   int64_t m9ret = 0;
   if ((t.checks == INT64_C(0))) {
     m9_mark m9t1 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s29, 31 }), name, err)) m9a30 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s29, 31 }), name, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s29, 31 }), name, err)) m9a37 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s29, 31 }), name, err);
       if (err->exc) goto L_ret;
-    Io_WriteLine (m9a30, err);
+    Io_WriteLine (m9a37, err);
     if (err->exc) goto L_ret;
     }
     m9_pool_release (err->res, m9t1);
@@ -983,9 +1020,9 @@ int64_t Check_Done (Check_T t, m9_sl_CHAR name, m9_state *err)
   }
   if ((t.failed > INT64_C(0))) {
     m9_mark m9t2 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 7 }), Fmt_I64Str (t.failed, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 4 }), err), Fmt_I64Str (t.checks, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s32, 4 }), err), name, err)) m9a31 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 7 }), Fmt_I64Str (t.failed, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 4 }), err), Fmt_I64Str (t.checks, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s32, 4 }), err), name, err);
+    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 7 }), Fmt_I64Str (t.failed, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 4 }), err), Fmt_I64Str (t.checks, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s32, 4 }), err), name, err)) m9a38 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 7 }), Fmt_I64Str (t.failed, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 4 }), err), Fmt_I64Str (t.checks, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s32, 4 }), err), name, err);
       if (err->exc) goto L_ret;
-    Io_WriteLine (m9a31, err);
+    Io_WriteLine (m9a38, err);
     if (err->exc) goto L_ret;
     }
     m9_pool_release (err->res, m9t2);
@@ -994,9 +1031,9 @@ int64_t Check_Done (Check_T t, m9_sl_CHAR name, m9_state *err)
     goto L_ret;
   }
   m9_mark m9t3 = m9_pool_mark (err->res);
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 6 }), Fmt_I64Str (t.checks, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 12 }), err), name, err)) m9a32 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 6 }), Fmt_I64Str (t.checks, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 12 }), err), name, err);
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 6 }), Fmt_I64Str (t.checks, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 12 }), err), name, err)) m9a39 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 6 }), Fmt_I64Str (t.checks, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 12 }), err), name, err);
     if (err->exc) goto L_ret;
-  Io_WriteLine (m9a32, err);
+  Io_WriteLine (m9a39, err);
   if (err->exc) goto L_ret;
   }
   m9_pool_release (err->res, m9t3);
@@ -1019,22 +1056,24 @@ static void Check_Bad (Check_T *t, m9_sl_CHAR label, m9_sl_CHAR detail, m9_state
     if (err->exc) goto L_ret;
     (*t).failed = m9v;
   }
-  if (((detail).len == INT64_C(0))) {
-    m9_mark m9t1 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s35, 5 }), label, err)) m9a33 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s35, 5 }), label, err);
-      if (err->exc) goto L_ret;
-    Io_WriteLine (m9a33, err);
-    if (err->exc) goto L_ret;
-    }
-    m9_pool_release (err->res, m9t1);
-  } else {
+  bool m9t1 = Text_Eq (detail, (m9_sl_CHAR){ NULL, 0 }, err);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
     m9_mark m9t2 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 5 }), label, err), ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), err), detail, err)) m9a34 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 5 }), label, err), ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), err), detail, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s35, 5 }), label, err)) m9a40 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s35, 5 }), label, err);
       if (err->exc) goto L_ret;
-    Io_WriteLine (m9a34, err);
+    Io_WriteLine (m9a40, err);
     if (err->exc) goto L_ret;
     }
     m9_pool_release (err->res, m9t2);
+  } else {
+    m9_mark m9t3 = m9_pool_mark (err->res);
+    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 5 }), label, err), ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), err), detail, err)) m9a41 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 5 }), label, err), ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), err), detail, err);
+      if (err->exc) goto L_ret;
+    Io_WriteLine (m9a41, err);
+    if (err->exc) goto L_ret;
+    }
+    m9_pool_release (err->res, m9t3);
   }
 L_ret: ;
   err->res = m9res;
@@ -1097,14 +1136,18 @@ static m9_sl_CHAR Check_Shown (double v, double other, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  bool m9t1 = (Text_Eq (Check_Num (v, err), Check_Num (other, err), err) && (v != other));
+  { __typeof__(Check_Num (v, err)) m9a42 = Check_Num (v, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Check_Num (other, err)) m9a43 = Check_Num (other, err);
+    if (err->exc) goto L_ret;
+  bool m9t1 = (Text_Eq (m9a42, m9a43, err) && (v != other));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
     m9ret = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Check_Num (v, err), ((m9_sl_CHAR){ (uint32_t *) m9s42, 7 }), err), Fmt_Bits (v, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s43, 1 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
-  }
+  } } }
   err->res = m9res;
   m9ret = Check_Num (v, err);
   if (err->exc) goto L_ret;
@@ -1219,9 +1262,9 @@ static void Check_Differ (Check_T *t, m9_sl_CHAR label, int64_t n, int64_t total
   (void) m9res;
   err->res = &m9frame;
   m9_mark m9t1 = m9_pool_mark (err->res);
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_CHAR){ (uint32_t *) m9s48, 4 }), err), Fmt_I64Str (total, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s49, 19 }), err), Fmt_I64Str (first, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s50, 7 }), err), got, err), ((m9_sl_CHAR){ (uint32_t *) m9s51, 7 }), err), want, err)) m9a35 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_CHAR){ (uint32_t *) m9s48, 4 }), err), Fmt_I64Str (total, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s49, 19 }), err), Fmt_I64Str (first, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s50, 7 }), err), got, err), ((m9_sl_CHAR){ (uint32_t *) m9s51, 7 }), err), want, err);
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_CHAR){ (uint32_t *) m9s48, 4 }), err), Fmt_I64Str (total, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s49, 19 }), err), Fmt_I64Str (first, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s50, 7 }), err), got, err), ((m9_sl_CHAR){ (uint32_t *) m9s51, 7 }), err), want, err)) m9a44 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (n, err), ((m9_sl_CHAR){ (uint32_t *) m9s48, 4 }), err), Fmt_I64Str (total, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s49, 19 }), err), Fmt_I64Str (first, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s50, 7 }), err), got, err), ((m9_sl_CHAR){ (uint32_t *) m9s51, 7 }), err), want, err);
     if (err->exc) goto L_ret;
-  Check_Bad (t, label, m9a35, err);
+  Check_Bad (t, label, m9a44, err);
   if (err->exc) goto L_ret;
   }
   m9_pool_release (err->res, m9t1);
@@ -1244,9 +1287,9 @@ static bool Check_Lengths (Check_T *t, m9_sl_CHAR label, int64_t got, int64_t wa
     goto L_ret;
   }
   m9_mark m9t1 = m9_pool_mark (err->res);
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s52, 7 }), Fmt_I64Str (got, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 7 }), err), Fmt_I64Str (want, err), err)) m9a36 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s52, 7 }), Fmt_I64Str (got, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 7 }), err), Fmt_I64Str (want, err), err);
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s52, 7 }), Fmt_I64Str (got, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 7 }), err), Fmt_I64Str (want, err), err)) m9a45 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s52, 7 }), Fmt_I64Str (got, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 7 }), err), Fmt_I64Str (want, err), err);
     if (err->exc) goto L_ret;
-  Check_Bad (t, label, m9a36, err);
+  Check_Bad (t, label, m9a45, err);
   if (err->exc) goto L_ret;
   }
   m9_pool_release (err->res, m9t1);
@@ -1312,22 +1355,24 @@ static void Check_Raised (Check_T *t, m9_sl_CHAR label, m9_sl_CHAR did, m9_sl_CH
   bool m9t1 = (!Text_Eq (did, want, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    if (((did).len == INT64_C(0))) {
-      m9_mark m9t2 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s57, 21 }), want, err)) m9a37 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s57, 21 }), want, err);
-        if (err->exc) goto L_ret;
-      Check_Bad (t, label, m9a37, err);
-      if (err->exc) goto L_ret;
-      }
-      m9_pool_release (err->res, m9t2);
-    } else {
+    bool m9t2 = Text_Eq (did, (m9_sl_CHAR){ NULL, 0 }, err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
       m9_mark m9t3 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 7 }), did, err), ((m9_sl_CHAR){ (uint32_t *) m9s59, 7 }), err), want, err)) m9a38 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 7 }), did, err), ((m9_sl_CHAR){ (uint32_t *) m9s59, 7 }), err), want, err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s57, 21 }), want, err)) m9a46 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s57, 21 }), want, err);
         if (err->exc) goto L_ret;
-      Check_Bad (t, label, m9a38, err);
+      Check_Bad (t, label, m9a46, err);
       if (err->exc) goto L_ret;
       }
       m9_pool_release (err->res, m9t3);
+    } else {
+      m9_mark m9t4 = m9_pool_mark (err->res);
+      { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 7 }), did, err), ((m9_sl_CHAR){ (uint32_t *) m9s59, 7 }), err), want, err)) m9a47 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 7 }), did, err), ((m9_sl_CHAR){ (uint32_t *) m9s59, 7 }), err), want, err);
+        if (err->exc) goto L_ret;
+      Check_Bad (t, label, m9a47, err);
+      if (err->exc) goto L_ret;
+      }
+      m9_pool_release (err->res, m9t4);
     }
   }
 L_ret: ;
@@ -1405,40 +1450,49 @@ static m9_sl_m9_sl_CHAR Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_CHAR
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   bool ok = false; (void) ok;
-  { __typeof__(text) m9v = Io_ReadFile (scratch, path, err);
+  { __typeof__(m9_utf_from_chars (err->res, path, err)) m9a48 = m9_utf_from_chars (err->res, path, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(text) m9v = m9_utf_to_chars (err->res, Io_ReadFileUtf (m9a48, err), err);
     if (err->exc) goto L_hdl_m9t1;
     text = m9v;
+  }
   }
   { __typeof__(lines) m9v = Text_Split (text, 10u, err);
     if (err->exc) goto L_hdl_m9t1;
     lines = m9v;
   }
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 ((lines).len, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; i <= m9t3to; i += 1) {
-    bool m9t4 = Text_StartsWith ((*(m9_sl_CHAR *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_CHAR), err)), name, err);
+  if (i <= m9t3to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_CHAR), err))) m9a49 = (*(m9_sl_CHAR *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_hdl_m9t1;
+    bool m9t4 = Text_StartsWith (m9a49, name, err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_CHAR), err))) m9a39 = (*(m9_sl_CHAR *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_CHAR), err))) m9a50 = (*(m9_sl_CHAR *) m9_at (lines.p, i, lines.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(f) m9v = Text_Fields (m9a39, 32u, err);
+      { __typeof__(f) m9v = Text_Fields (m9a50, 32u, err);
         if (err->exc) goto L_hdl_m9t1;
         f = m9v;
       }
       }
       if (((f).len >= INT64_C(3))) {
-        bool m9t5 = Text_Eq ((*(m9_sl_CHAR *) m9_at (f.p, INT64_C(0), f.len, sizeof (m9_sl_CHAR), err)), name, err);
+        { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, INT64_C(0), f.len, sizeof (m9_sl_CHAR), err))) m9a51 = (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(0), f.len, sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_hdl_m9t1;
+        bool m9t5 = Text_Eq (m9a51, name, err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t5) {
-          bool m9t6 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_CHAR), err)), kind, err));
+          { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_CHAR), err))) m9a52 = (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_CHAR), err));
+            if (err->exc) goto L_hdl_m9t1;
+          bool m9t6 = (!Text_Eq (m9a52, kind, err));
           if (err->exc) goto L_hdl_m9t1;
           if (m9t6) {
             m9_mark m9t7 = m9_pool_mark (err->res);
-            { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s60, 3 }), (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s61, 4 }), err), path, err), ((m9_sl_CHAR){ (uint32_t *) m9s62, 15 }), err), kind, err)) m9a40 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s60, 3 }), (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s61, 4 }), err), path, err), ((m9_sl_CHAR){ (uint32_t *) m9s62, 15 }), err), kind, err);
+            { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s60, 3 }), (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s61, 4 }), err), path, err), ((m9_sl_CHAR){ (uint32_t *) m9s62, 15 }), err), kind, err)) m9a53 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s60, 3 }), (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(1), f.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s61, 4 }), err), path, err), ((m9_sl_CHAR){ (uint32_t *) m9s62, 15 }), err), kind, err);
               if (err->exc) goto L_hdl_m9t1;
-            Check_Fault (t, name, m9a40, err);
+            Check_Fault (t, name, m9a53, err);
             if (err->exc) goto L_hdl_m9t1;
             }
             m9_pool_release (err->res, m9t7);
@@ -1446,10 +1500,10 @@ static m9_sl_m9_sl_CHAR Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_CHAR
             m9ret = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, INT64_C(0), err);
             if (err->exc) goto L_hdl_m9t1;
             goto L_ret;
-          }
-          { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_CHAR), err))) m9a41 = (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_CHAR), err));
+          } }
+          { __typeof__((*(m9_sl_CHAR *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_CHAR), err))) m9a54 = (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_CHAR), err));
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(n) m9v = Check_Int (m9a41, &(ok), err);
+          { __typeof__(n) m9v = Check_Int (m9a54, &(ok), err);
             if (err->exc) goto L_hdl_m9t1;
             n = m9v;
           }
@@ -1458,11 +1512,11 @@ static m9_sl_m9_sl_CHAR Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_CHAR
           if (err->exc) goto L_hdl_m9t1;
           if (m9t8) {
             m9_mark m9t9 = m9_pool_mark (err->res);
-            { __typeof__(m9_sub_i64 ((f).len, INT64_C(3), err)) m9a42 = m9_sub_i64 ((f).len, INT64_C(3), err);
+            { __typeof__(m9_sub_i64 ((f).len, INT64_C(3), err)) m9a55 = m9_sub_i64 ((f).len, INT64_C(3), err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s63, 5 }), (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s64, 18 }), err), Fmt_I64Str (m9a42, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s65, 4 }), err), path, err)) m9a43 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s63, 5 }), (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s64, 18 }), err), Fmt_I64Str (m9a42, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s65, 4 }), err), path, err);
+            { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s63, 5 }), (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s64, 18 }), err), Fmt_I64Str (m9a55, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s65, 4 }), err), path, err)) m9a56 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s63, 5 }), (*(m9_sl_CHAR *) m9_at (f.p, INT64_C(2), f.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s64, 18 }), err), Fmt_I64Str (m9a55, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s65, 4 }), err), path, err);
               if (err->exc) goto L_hdl_m9t1;
-            Check_Fault (t, name, m9a43, err);
+            Check_Fault (t, name, m9a56, err);
             if (err->exc) goto L_hdl_m9t1;
             }
             }
@@ -1475,14 +1529,16 @@ static m9_sl_m9_sl_CHAR Check_GoldLine (Check_T *t, m9_pool *scratch, m9_sl_CHAR
           err->res = m9res;
           m9ret = f;
           goto L_ret;
-        }
+        } }
       }
-    }
+    } }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   m9_mark m9t10 = m9_pool_mark (err->res);
-  { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s66, 18 }), path, err)) m9a44 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s66, 18 }), path, err);
+  { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s66, 18 }), path, err)) m9a57 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s66, 18 }), path, err);
     if (err->exc) goto L_hdl_m9t1;
-  Check_Fault (t, name, m9a44, err);
+  Check_Fault (t, name, m9a57, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   m9_pool_release (err->res, m9t10);
@@ -1495,9 +1551,9 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     err->exc = NULL;
     m9_mark m9t11 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s67, 12 }), path, err)) m9a45 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s67, 12 }), path, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s67, 12 }), path, err)) m9a58 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s67, 12 }), path, err);
       if (err->exc) goto L_ret;
-    Check_Fault (t, name, m9a45, err);
+    Check_Fault (t, name, m9a58, err);
     if (err->exc) goto L_ret;
     }
     m9_pool_release (err->res, m9t11);
@@ -1510,9 +1566,9 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     m9_mark m9t12 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s68, 12 }), path, err)) m9a46 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s68, 12 }), path, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s68, 12 }), path, err)) m9a59 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s68, 12 }), path, err);
       if (err->exc) goto L_ret;
-    Check_Fault (t, name, m9a46, err);
+    Check_Fault (t, name, m9a59, err);
     if (err->exc) goto L_ret;
     }
     m9_pool_release (err->res, m9t12);

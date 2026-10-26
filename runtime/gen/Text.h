@@ -15,6 +15,24 @@ static const uint32_t Text_UpTo_d[1670] = { 65u, 66u, 67u, 68u, 69u, 70u, 71u, 7
 #define Text_UpTo ((m9_sl_CHAR){ (uint32_t *) Text_UpTo_d, 1670 })
 static const uint32_t Text_LowTo_d[1461] = { 97u, 98u, 99u, 100u, 101u, 102u, 103u, 104u, 105u, 106u, 107u, 108u, 109u, 110u, 111u, 112u, 113u, 114u, 115u, 116u, 117u, 118u, 119u, 120u, 121u, 122u, 224u, 225u, 226u, 227u, 228u, 229u, 230u, 231u, 232u, 233u, 234u, 235u, 236u, 237u, 238u, 239u, 240u, 241u, 242u, 243u, 244u, 245u, 246u, 248u, 249u, 250u, 251u, 252u, 253u, 254u, 257u, 259u, 261u, 263u, 265u, 267u, 269u, 271u, 273u, 275u, 277u, 279u, 281u, 283u, 285u, 287u, 289u, 291u, 293u, 295u, 297u, 299u, 301u, 303u, 105u, 775u, 307u, 309u, 311u, 314u, 316u, 318u, 320u, 322u, 324u, 326u, 328u, 331u, 333u, 335u, 337u, 339u, 341u, 343u, 345u, 347u, 349u, 351u, 353u, 355u, 357u, 359u, 361u, 363u, 365u, 367u, 369u, 371u, 373u, 375u, 255u, 378u, 380u, 382u, 595u, 387u, 389u, 596u, 392u, 598u, 599u, 396u, 477u, 601u, 603u, 402u, 608u, 611u, 617u, 616u, 409u, 623u, 626u, 629u, 417u, 419u, 421u, 640u, 424u, 643u, 429u, 648u, 432u, 650u, 651u, 436u, 438u, 658u, 441u, 445u, 454u, 454u, 457u, 457u, 460u, 460u, 462u, 464u, 466u, 468u, 470u, 472u, 474u, 476u, 479u, 481u, 483u, 485u, 487u, 489u, 491u, 493u, 495u, 499u, 499u, 501u, 405u, 447u, 505u, 507u, 509u, 511u, 513u, 515u, 517u, 519u, 521u, 523u, 525u, 527u, 529u, 531u, 533u, 535u, 537u, 539u, 541u, 543u, 414u, 547u, 549u, 551u, 553u, 555u, 557u, 559u, 561u, 563u, 11365u, 572u, 410u, 11366u, 578u, 384u, 649u, 652u, 583u, 585u, 587u, 589u, 591u, 881u, 883u, 887u, 1011u, 940u, 941u, 942u, 943u, 972u, 973u, 974u, 945u, 946u, 947u, 948u, 949u, 950u, 951u, 952u, 953u, 954u, 955u, 956u, 957u, 958u, 959u, 960u, 961u, 963u, 964u, 965u, 966u, 967u, 968u, 969u, 970u, 971u, 983u, 985u, 987u, 989u, 991u, 993u, 995u, 997u, 999u, 1001u, 1003u, 1005u, 1007u, 952u, 1016u, 1010u, 1019u, 891u, 892u, 893u, 1104u, 1105u, 1106u, 1107u, 1108u, 1109u, 1110u, 1111u, 1112u, 1113u, 1114u, 1115u, 1116u, 1117u, 1118u, 1119u, 1072u, 1073u, 1074u, 1075u, 1076u, 1077u, 1078u, 1079u, 1080u, 1081u, 1082u, 1083u, 1084u, 1085u, 1086u, 1087u, 1088u, 1089u, 1090u, 1091u, 1092u, 1093u, 1094u, 1095u, 1096u, 1097u, 1098u, 1099u, 1100u, 1101u, 1102u, 1103u, 1121u, 1123u, 1125u, 1127u, 1129u, 1131u, 1133u, 1135u, 1137u, 1139u, 1141u, 1143u, 1145u, 1147u, 1149u, 1151u, 1153u, 1163u, 1165u, 1167u, 1169u, 1171u, 1173u, 1175u, 1177u, 1179u, 1181u, 1183u, 1185u, 1187u, 1189u, 1191u, 1193u, 1195u, 1197u, 1199u, 1201u, 1203u, 1205u, 1207u, 1209u, 1211u, 1213u, 1215u, 1231u, 1218u, 1220u, 1222u, 1224u, 1226u, 1228u, 1230u, 1233u, 1235u, 1237u, 1239u, 1241u, 1243u, 1245u, 1247u, 1249u, 1251u, 1253u, 1255u, 1257u, 1259u, 1261u, 1263u, 1265u, 1267u, 1269u, 1271u, 1273u, 1275u, 1277u, 1279u, 1281u, 1283u, 1285u, 1287u, 1289u, 1291u, 1293u, 1295u, 1297u, 1299u, 1301u, 1303u, 1305u, 1307u, 1309u, 1311u, 1313u, 1315u, 1317u, 1319u, 1321u, 1323u, 1325u, 1327u, 1377u, 1378u, 1379u, 1380u, 1381u, 1382u, 1383u, 1384u, 1385u, 1386u, 1387u, 1388u, 1389u, 1390u, 1391u, 1392u, 1393u, 1394u, 1395u, 1396u, 1397u, 1398u, 1399u, 1400u, 1401u, 1402u, 1403u, 1404u, 1405u, 1406u, 1407u, 1408u, 1409u, 1410u, 1411u, 1412u, 1413u, 1414u, 11520u, 11521u, 11522u, 11523u, 11524u, 11525u, 11526u, 11527u, 11528u, 11529u, 11530u, 11531u, 11532u, 11533u, 11534u, 11535u, 11536u, 11537u, 11538u, 11539u, 11540u, 11541u, 11542u, 11543u, 11544u, 11545u, 11546u, 11547u, 11548u, 11549u, 11550u, 11551u, 11552u, 11553u, 11554u, 11555u, 11556u, 11557u, 11559u, 11565u, 43888u, 43889u, 43890u, 43891u, 43892u, 43893u, 43894u, 43895u, 43896u, 43897u, 43898u, 43899u, 43900u, 43901u, 43902u, 43903u, 43904u, 43905u, 43906u, 43907u, 43908u, 43909u, 43910u, 43911u, 43912u, 43913u, 43914u, 43915u, 43916u, 43917u, 43918u, 43919u, 43920u, 43921u, 43922u, 43923u, 43924u, 43925u, 43926u, 43927u, 43928u, 43929u, 43930u, 43931u, 43932u, 43933u, 43934u, 43935u, 43936u, 43937u, 43938u, 43939u, 43940u, 43941u, 43942u, 43943u, 43944u, 43945u, 43946u, 43947u, 43948u, 43949u, 43950u, 43951u, 43952u, 43953u, 43954u, 43955u, 43956u, 43957u, 43958u, 43959u, 43960u, 43961u, 43962u, 43963u, 43964u, 43965u, 43966u, 43967u, 5112u, 5113u, 5114u, 5115u, 5116u, 5117u, 7306u, 4304u, 4305u, 4306u, 4307u, 4308u, 4309u, 4310u, 4311u, 4312u, 4313u, 4314u, 4315u, 4316u, 4317u, 4318u, 4319u, 4320u, 4321u, 4322u, 4323u, 4324u, 4325u, 4326u, 4327u, 4328u, 4329u, 4330u, 4331u, 4332u, 4333u, 4334u, 4335u, 4336u, 4337u, 4338u, 4339u, 4340u, 4341u, 4342u, 4343u, 4344u, 4345u, 4346u, 4349u, 4350u, 4351u, 7681u, 7683u, 7685u, 7687u, 7689u, 7691u, 7693u, 7695u, 7697u, 7699u, 7701u, 7703u, 7705u, 7707u, 7709u, 7711u, 7713u, 7715u, 7717u, 7719u, 7721u, 7723u, 7725u, 7727u, 7729u, 7731u, 7733u, 7735u, 7737u, 7739u, 7741u, 7743u, 7745u, 7747u, 7749u, 7751u, 7753u, 7755u, 7757u, 7759u, 7761u, 7763u, 7765u, 7767u, 7769u, 7771u, 7773u, 7775u, 7777u, 7779u, 7781u, 7783u, 7785u, 7787u, 7789u, 7791u, 7793u, 7795u, 7797u, 7799u, 7801u, 7803u, 7805u, 7807u, 7809u, 7811u, 7813u, 7815u, 7817u, 7819u, 7821u, 7823u, 7825u, 7827u, 7829u, 223u, 7841u, 7843u, 7845u, 7847u, 7849u, 7851u, 7853u, 7855u, 7857u, 7859u, 7861u, 7863u, 7865u, 7867u, 7869u, 7871u, 7873u, 7875u, 7877u, 7879u, 7881u, 7883u, 7885u, 7887u, 7889u, 7891u, 7893u, 7895u, 7897u, 7899u, 7901u, 7903u, 7905u, 7907u, 7909u, 7911u, 7913u, 7915u, 7917u, 7919u, 7921u, 7923u, 7925u, 7927u, 7929u, 7931u, 7933u, 7935u, 7936u, 7937u, 7938u, 7939u, 7940u, 7941u, 7942u, 7943u, 7952u, 7953u, 7954u, 7955u, 7956u, 7957u, 7968u, 7969u, 7970u, 7971u, 7972u, 7973u, 7974u, 7975u, 7984u, 7985u, 7986u, 7987u, 7988u, 7989u, 7990u, 7991u, 8000u, 8001u, 8002u, 8003u, 8004u, 8005u, 8017u, 8019u, 8021u, 8023u, 8032u, 8033u, 8034u, 8035u, 8036u, 8037u, 8038u, 8039u, 8064u, 8065u, 8066u, 8067u, 8068u, 8069u, 8070u, 8071u, 8080u, 8081u, 8082u, 8083u, 8084u, 8085u, 8086u, 8087u, 8096u, 8097u, 8098u, 8099u, 8100u, 8101u, 8102u, 8103u, 8112u, 8113u, 8048u, 8049u, 8115u, 8050u, 8051u, 8052u, 8053u, 8131u, 8144u, 8145u, 8054u, 8055u, 8160u, 8161u, 8058u, 8059u, 8165u, 8056u, 8057u, 8060u, 8061u, 8179u, 969u, 107u, 229u, 8526u, 8560u, 8561u, 8562u, 8563u, 8564u, 8565u, 8566u, 8567u, 8568u, 8569u, 8570u, 8571u, 8572u, 8573u, 8574u, 8575u, 8580u, 9424u, 9425u, 9426u, 9427u, 9428u, 9429u, 9430u, 9431u, 9432u, 9433u, 9434u, 9435u, 9436u, 9437u, 9438u, 9439u, 9440u, 9441u, 9442u, 9443u, 9444u, 9445u, 9446u, 9447u, 9448u, 9449u, 11312u, 11313u, 11314u, 11315u, 11316u, 11317u, 11318u, 11319u, 11320u, 11321u, 11322u, 11323u, 11324u, 11325u, 11326u, 11327u, 11328u, 11329u, 11330u, 11331u, 11332u, 11333u, 11334u, 11335u, 11336u, 11337u, 11338u, 11339u, 11340u, 11341u, 11342u, 11343u, 11344u, 11345u, 11346u, 11347u, 11348u, 11349u, 11350u, 11351u, 11352u, 11353u, 11354u, 11355u, 11356u, 11357u, 11358u, 11359u, 11361u, 619u, 7549u, 637u, 11368u, 11370u, 11372u, 593u, 625u, 592u, 594u, 11379u, 11382u, 575u, 576u, 11393u, 11395u, 11397u, 11399u, 11401u, 11403u, 11405u, 11407u, 11409u, 11411u, 11413u, 11415u, 11417u, 11419u, 11421u, 11423u, 11425u, 11427u, 11429u, 11431u, 11433u, 11435u, 11437u, 11439u, 11441u, 11443u, 11445u, 11447u, 11449u, 11451u, 11453u, 11455u, 11457u, 11459u, 11461u, 11463u, 11465u, 11467u, 11469u, 11471u, 11473u, 11475u, 11477u, 11479u, 11481u, 11483u, 11485u, 11487u, 11489u, 11491u, 11500u, 11502u, 11507u, 42561u, 42563u, 42565u, 42567u, 42569u, 42571u, 42573u, 42575u, 42577u, 42579u, 42581u, 42583u, 42585u, 42587u, 42589u, 42591u, 42593u, 42595u, 42597u, 42599u, 42601u, 42603u, 42605u, 42625u, 42627u, 42629u, 42631u, 42633u, 42635u, 42637u, 42639u, 42641u, 42643u, 42645u, 42647u, 42649u, 42651u, 42787u, 42789u, 42791u, 42793u, 42795u, 42797u, 42799u, 42803u, 42805u, 42807u, 42809u, 42811u, 42813u, 42815u, 42817u, 42819u, 42821u, 42823u, 42825u, 42827u, 42829u, 42831u, 42833u, 42835u, 42837u, 42839u, 42841u, 42843u, 42845u, 42847u, 42849u, 42851u, 42853u, 42855u, 42857u, 42859u, 42861u, 42863u, 42874u, 42876u, 7545u, 42879u, 42881u, 42883u, 42885u, 42887u, 42892u, 613u, 42897u, 42899u, 42903u, 42905u, 42907u, 42909u, 42911u, 42913u, 42915u, 42917u, 42919u, 42921u, 614u, 604u, 609u, 620u, 618u, 670u, 647u, 669u, 43859u, 42933u, 42935u, 42937u, 42939u, 42941u, 42943u, 42945u, 42947u, 42900u, 642u, 7566u, 42952u, 42954u, 612u, 42957u, 42961u, 42967u, 42969u, 42971u, 411u, 42998u, 65345u, 65346u, 65347u, 65348u, 65349u, 65350u, 65351u, 65352u, 65353u, 65354u, 65355u, 65356u, 65357u, 65358u, 65359u, 65360u, 65361u, 65362u, 65363u, 65364u, 65365u, 65366u, 65367u, 65368u, 65369u, 65370u, 66600u, 66601u, 66602u, 66603u, 66604u, 66605u, 66606u, 66607u, 66608u, 66609u, 66610u, 66611u, 66612u, 66613u, 66614u, 66615u, 66616u, 66617u, 66618u, 66619u, 66620u, 66621u, 66622u, 66623u, 66624u, 66625u, 66626u, 66627u, 66628u, 66629u, 66630u, 66631u, 66632u, 66633u, 66634u, 66635u, 66636u, 66637u, 66638u, 66639u, 66776u, 66777u, 66778u, 66779u, 66780u, 66781u, 66782u, 66783u, 66784u, 66785u, 66786u, 66787u, 66788u, 66789u, 66790u, 66791u, 66792u, 66793u, 66794u, 66795u, 66796u, 66797u, 66798u, 66799u, 66800u, 66801u, 66802u, 66803u, 66804u, 66805u, 66806u, 66807u, 66808u, 66809u, 66810u, 66811u, 66967u, 66968u, 66969u, 66970u, 66971u, 66972u, 66973u, 66974u, 66975u, 66976u, 66977u, 66979u, 66980u, 66981u, 66982u, 66983u, 66984u, 66985u, 66986u, 66987u, 66988u, 66989u, 66990u, 66991u, 66992u, 66993u, 66995u, 66996u, 66997u, 66998u, 66999u, 67000u, 67001u, 67003u, 67004u, 68800u, 68801u, 68802u, 68803u, 68804u, 68805u, 68806u, 68807u, 68808u, 68809u, 68810u, 68811u, 68812u, 68813u, 68814u, 68815u, 68816u, 68817u, 68818u, 68819u, 68820u, 68821u, 68822u, 68823u, 68824u, 68825u, 68826u, 68827u, 68828u, 68829u, 68830u, 68831u, 68832u, 68833u, 68834u, 68835u, 68836u, 68837u, 68838u, 68839u, 68840u, 68841u, 68842u, 68843u, 68844u, 68845u, 68846u, 68847u, 68848u, 68849u, 68850u, 68976u, 68977u, 68978u, 68979u, 68980u, 68981u, 68982u, 68983u, 68984u, 68985u, 68986u, 68987u, 68988u, 68989u, 68990u, 68991u, 68992u, 68993u, 68994u, 68995u, 68996u, 68997u, 71872u, 71873u, 71874u, 71875u, 71876u, 71877u, 71878u, 71879u, 71880u, 71881u, 71882u, 71883u, 71884u, 71885u, 71886u, 71887u, 71888u, 71889u, 71890u, 71891u, 71892u, 71893u, 71894u, 71895u, 71896u, 71897u, 71898u, 71899u, 71900u, 71901u, 71902u, 71903u, 93792u, 93793u, 93794u, 93795u, 93796u, 93797u, 93798u, 93799u, 93800u, 93801u, 93802u, 93803u, 93804u, 93805u, 93806u, 93807u, 93808u, 93809u, 93810u, 93811u, 93812u, 93813u, 93814u, 93815u, 93816u, 93817u, 93818u, 93819u, 93820u, 93821u, 93822u, 93823u, 125218u, 125219u, 125220u, 125221u, 125222u, 125223u, 125224u, 125225u, 125226u, 125227u, 125228u, 125229u, 125230u, 125231u, 125232u, 125233u, 125234u, 125235u, 125236u, 125237u, 125238u, 125239u, 125240u, 125241u, 125242u, 125243u, 125244u, 125245u, 125246u, 125247u, 125248u, 125249u, 125250u, 125251u };
 #define Text_LowTo ((m9_sl_CHAR){ (uint32_t *) Text_LowTo_d, 1461 })
+#define Text_GcbOther INT64_C(0)
+#define Text_GcbCR INT64_C(1)
+#define Text_GcbLF INT64_C(2)
+#define Text_GcbControl INT64_C(3)
+#define Text_GcbExtend INT64_C(4)
+#define Text_GcbZWJ INT64_C(5)
+#define Text_GcbRI INT64_C(6)
+#define Text_GcbPrepend INT64_C(7)
+#define Text_GcbSpacingMark INT64_C(8)
+#define Text_GcbL INT64_C(9)
+#define Text_GcbV INT64_C(10)
+#define Text_GcbT INT64_C(11)
+#define Text_GcbLV INT64_C(12)
+#define Text_GcbLVT INT64_C(13)
+#define Text_GcbExtPict INT64_C(14)
+#define Text_InCbLinker INT64_C(1)
+#define Text_InCbConsonant INT64_C(2)
+#define Text_InCbExtend INT64_C(3)
 
 #ifndef M9SL_m9_arr_1552_int64_t
 #define M9SL_m9_arr_1552_int64_t
@@ -32,9 +50,17 @@ typedef struct { int64_t v[1460]; } m9_arr_1460_int64_t;
 #define M9SL_m9_arr_1461_int64_t
 typedef struct { int64_t v[1461]; } m9_arr_1461_int64_t;
 #endif
+#ifndef M9SL_m9_arr_1481_int64_t
+#define M9SL_m9_arr_1481_int64_t
+typedef struct { int64_t v[1481]; } m9_arr_1481_int64_t;
+#endif
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 #endif
 
 bool Text_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
@@ -69,5 +95,50 @@ m9_sl_CHAR Text_ToBase64 (m9_sl_BYTE b, m9_state *err);
 m9_sl_CHAR Text_ToBase64Url (m9_sl_BYTE b, m9_state *err);
 m9_sl_BYTE Text_FromBase64Url (m9_sl_CHAR s, m9_state *err);
 m9_sl_BYTE Text_FromBase64 (m9_sl_CHAR s, m9_state *err);
+int64_t Text_BLen (m9_sl_UTF8 u, m9_state *err);
+uint8_t Text_BAt (m9_sl_UTF8 u, int64_t i, m9_state *err);
+uint32_t Text_BChar (m9_sl_UTF8 u, int64_t i, m9_state *err);
+bool Text_BIs (m9_sl_UTF8 u, int64_t i, uint32_t c, m9_state *err);
+int64_t Text_CpCount (m9_sl_UTF8 u, m9_state *err);
+uint32_t Text_CpAt (m9_sl_UTF8 u, int64_t x, m9_state *err);
+uint32_t Text_NextCp (m9_sl_UTF8 u, int64_t *at, m9_state *err);
+m9_sl_UTF8 Text_ToUtf (m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_FromUtf (m9_sl_UTF8 u, m9_state *err);
+m9_sl_UTF8 Text_FromUtf8 (m9_sl_BYTE b, m9_state *err);
+bool Text_EqUtf (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err);
+int64_t Text_CompareUtf (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err);
+m9_sl_UTF8 Text_NextGr (m9_sl_UTF8 u, int64_t *at, m9_state *err);
+int64_t Text_GrCount (m9_sl_UTF8 u, m9_state *err);
+m9_sl_UTF8 Text_GrAt (m9_sl_UTF8 u, int64_t x, m9_state *err);
+int64_t Text_FindUtf (m9_sl_UTF8 hay, m9_sl_UTF8 needle, m9_state *err);
+int64_t Text_FindCharUtf (m9_sl_UTF8 s, uint32_t c, m9_state *err);
+int64_t Text_LastCharUtf (m9_sl_UTF8 s, uint32_t c, m9_state *err);
+bool Text_ContainsUtf (m9_sl_UTF8 hay, m9_sl_UTF8 needle, m9_state *err);
+bool Text_StartsWithUtf (m9_sl_UTF8 s, m9_sl_UTF8 prefix, m9_state *err);
+bool Text_EndsWithUtf (m9_sl_UTF8 s, m9_sl_UTF8 suffix, m9_state *err);
+int64_t Text_CountCharUtf (m9_sl_UTF8 s, uint32_t c, m9_state *err);
+m9_sl_UTF8 Text_TrimUtf (m9_sl_UTF8 s, m9_state *err);
+m9_sl_UTF8 Text_TrimLeftUtf (m9_sl_UTF8 s, m9_state *err);
+m9_sl_UTF8 Text_TrimRightUtf (m9_sl_UTF8 s, m9_state *err);
+m9_sl_m9_sl_UTF8 Text_SplitUtf (m9_sl_UTF8 s, uint32_t sep, m9_state *err);
+m9_sl_m9_sl_UTF8 Text_FieldsUtf (m9_sl_UTF8 s, uint32_t sep, m9_state *err);
+m9_sl_UTF8 Text_JoinUtf (m9_sl_m9_sl_UTF8 parts, m9_sl_UTF8 sep, m9_state *err);
+m9_sl_UTF8 Text_ReplaceUtf (m9_sl_UTF8 s, m9_sl_UTF8 old, m9_sl_UTF8 by, m9_state *err);
+m9_sl_UTF8 Text_LowerUtf (m9_sl_UTF8 s, m9_state *err);
+m9_sl_UTF8 Text_UpperUtf (m9_sl_UTF8 s, m9_state *err);
+int64_t Text_IndexOfUtf (m9_sl_m9_sl_UTF8 among, m9_sl_UTF8 s, m9_state *err);
+bool Text_OneOfUtf (m9_sl_UTF8 s, m9_sl_m9_sl_UTF8 among, m9_state *err);
+m9_sl_UTF8 Text_KeepUtf (m9_pool *pool, m9_sl_UTF8 s, m9_state *err);
+m9_sl_UTF8 Text_CatUtf (m9_pool *pool, m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err);
+bool Text_MatchUtf (m9_sl_UTF8 pattern, m9_sl_UTF8 s, m9_state *err);
+bool Text_AllInUtf (m9_sl_UTF8 s, m9_sl_UTF8 set, m9_state *err);
+bool Text_AllDigitsUtf (m9_sl_UTF8 s, m9_state *err);
+bool Text_AllLowerUtf (m9_sl_UTF8 s, m9_state *err);
+bool Text_AllUpperUtf (m9_sl_UTF8 s, m9_state *err);
+bool Text_AllAlnumUtf (m9_sl_UTF8 s, m9_state *err);
+m9_sl_UTF8 Text_ToBase64Utf (m9_sl_BYTE b, m9_state *err);
+m9_sl_UTF8 Text_ToBase64UrlUtf (m9_sl_BYTE b, m9_state *err);
+m9_sl_BYTE Text_FromBase64Utf (m9_sl_UTF8 s, m9_state *err);
+m9_sl_BYTE Text_FromBase64UrlUtf (m9_sl_UTF8 s, m9_state *err);
 
 #endif

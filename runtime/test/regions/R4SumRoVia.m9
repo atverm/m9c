@@ -1,0 +1,24 @@
+MODULE R4SumRoVia ;
+IMPORT Io ;
+TYPE R = RECORD s : STR ; n : I64 END ;
+PROCEDURE Mk (n: I64) : R =
+VAR r : R ;
+BEGIN
+  r.n := n ;
+  r.s := 'abcdef' ;
+  RETURN r
+END Mk ;
+PROCEDURE Mk2 (n: I64) : R =
+BEGIN
+  RETURN Mk (n)
+END Mk2 ;
+PROCEDURE Poke () =
+VAR s : STR ;
+BEGIN
+  s := Mk2 (1).s ;
+  s[0] := 'X' ;
+  Io.WriteLine (s)
+END Poke ;
+BEGIN
+  Poke ()
+END R4SumRoVia.

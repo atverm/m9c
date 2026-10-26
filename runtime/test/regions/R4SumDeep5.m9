@@ -1,0 +1,29 @@
+MODULE R4SumDeep5 ;
+IMPORT Io, Fmt ;
+VAR last : STR ;
+PROCEDURE Mk (n: I64) : STR =
+VAR t1, t2, t3, t4, t5, t6 : STR ;
+BEGIN
+  t1 := 'frame string number ' + Fmt.I64Str (n) ;
+  t2 := t1 ;
+  t3 := t2 ;
+  t4 := t3 ;
+  t5 := t4 ;
+  t6 := t5 ;
+  RETURN t6
+END Mk ;
+PROCEDURE Fill () =
+BEGIN
+  last := Mk (1)
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (last)
+END R4SumDeep5.

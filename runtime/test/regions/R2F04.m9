@@ -1,0 +1,21 @@
+MODULE R2F04 ;
+IMPORT Io ;
+TYPE R = RECORD s : STR END ;
+VAR g : STR ;
+PROCEDURE F () : R =
+BEGIN
+  RETURN R ('a' + 'b')
+END F ;
+PROCEDURE P () =
+BEGIN
+  g := F ().s
+END P ;
+PROCEDURE Q () =
+VAR t : STR ;
+BEGIN
+  t := 'zzzzzzzzzzzzzzzz' + 'yyyyyyyyyyyyyyyyyy'
+END Q ;
+BEGIN
+  P () ; Q () ;
+  Io.WriteLine (g)
+END R2F04.

@@ -63,7 +63,19 @@ b_fmt () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Fmt.c fmt_driver.c \
     -lm -o fmt_test
-./fmt_test
+d=$(mktemp -d)
+./fmt_test > "$d/plain.out" || { cat "$d/plain.out"; exit 1; }
+cat "$d/plain.out"
+# and once more on Fmt's own digits: Fixed and Sci take the C
+# library's through the runtime since 2026-10-25, Short Dragonbox's,
+# and keep the M9 code for where the runtime declines (m9rt.h); both
+# twins are held to printf, and Short's two runs must hash the same
+M9_FMT_PORTABLE=1 ./fmt_test > "$d/portable.out" || { cat "$d/portable.out"; exit 1; }
+cat "$d/portable.out"
+grep '^Short hash' "$d/plain.out" > "$d/h1"
+grep '^Short hash' "$d/portable.out" > "$d/h2"
+cmp "$d/h1" "$d/h2" || { echo "FAIL: Short's runtime and M9 digits disagree"; exit 1; }
+rm -rf "$d"
 }
 b_time () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
@@ -117,6 +129,84 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/Bits.c bits_driver.c \
     -o bits_test
 ./bits_test
+}
+
+# The runtime's CRC-32 fast path (m9_crc_raw) against its portable
+# twin and against zlib's crc32: 9,002 checks over random pieces at
+# every alignment, whole and in two parts.  No generated module on the
+# line: the function is the runtime's and the gate is C against C.
+# -O2 because the speed line it prints is the operation as a program
+# links it; the checks hold at any -O.  Sabotaged (a table entry
+# flipped) it fails 2,979 of them.  zlib is in every gate machine's
+# toolchain (CI: zlib1g-dev; macOS: the system's; zoefii: zlib1g-dev).
+b_crc () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c crc_driver.c -lz -lm -o crc_test
+./crc_test
+}
+
+# The runtime's eight-bytes-at-a-time UTF paths (the ASCII lane of the
+# validator, the code point count, memmem) against the plain loops, with
+# corruptions of every class at many offsets.  C against C, no generated
+# module; -O2 for the speed line it prints.
+b_utfrt () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c utfrt_driver.c -lm -o utfrt_test
+./utfrt_test
+# and once more with the runtime kept to its sequence loop: the vector
+# validator (NEON, SSSE3/SSE4.1) and its portable twin both held
+M9_UTF_PORTABLE=1 ./utfrt_test
+}
+
+# The per-thread cache of large pool blocks (m9rt.h), held to its
+# policy by counting: kept blocks taken 49 of 50 times, none across a
+# size class or above the cap, none left by a thread that returned.
+# Run plain and with the cache off -- the control that reads 0.
+b_blockreuse () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c blockreuse_driver.c -lm -o blockreuse_test
+./blockreuse_test
+M9_BLOCK_REUSE=0 ./blockreuse_test
+}
+
+# ExecWithin's limit as poll takes it: past 2^31 ms it wrapped through
+# (int) and killed a child after half a second (the second review's R2)
+b_execlimit () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c execlimit_driver.c -lm -o execlimit_test
+./execlimit_test
+}
+
+# m9_strtod -- Eisel-Lemire where it decides, strtod where it does not
+# -- held to strtod bit for bit over two million strings in every
+# shape, the halfway cases and the hard ones; plain and under
+# M9_PARSE_PORTABLE (every answer strtod's, the control).
+b_parsef64 () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c parsef64_driver.c -lm -o parsef64_test
+./parsef64_test
+M9_PARSE_PORTABLE=1 ./parsef64_test
+}
+
+# The runtime's radix sorts against a stable reference over seven
+# shapes of array and every length class; plain and under
+# M9_SORT_PORTABLE (the runtime declines every one, the control).
+b_sort_rt () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c sort_driver.c -lm -o sort_rt_test
+./sort_rt_test
+M9_SORT_PORTABLE=1 ./sort_rt_test
+}
+
+# The runtime's CSV number recogniser (Csv.IsNumber's grammar in one
+# pass) held to a table of verdicts read off that grammar, and the field
+# parser's value to strtod; plain and under M9_CSV_PORTABLE (-1 for
+# every field, the control).
+b_csvnum () {
+gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c csvnum_driver.c -lm -o csvnum_test
+./csvnum_test
+M9_CSV_PORTABLE=1 ./csvnum_test
 }
 
 # System: the process seen from inside.  The driver is run with a
@@ -578,7 +668,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
 echo "PASS (1 check) -- catbench.c still compiles"
 }
 
-for b in dynstr dict fmt time text syslog math mat sort bits system stats \
+for b in dynstr dict fmt time text syslog math mat sort sort_rt bits crc utfrt blockreuse execlimit parsef64 csvnum system stats \
          frame delim io zip csv grib json apispec arrow \
          httpserver sigpipe release zarrw stores; do
   battery "$b"

@@ -1,0 +1,55 @@
+MODULE GfHoistForCase ;
+
+(* WANT: for: IndexError ran FALSE, case: IndexError ran FALSE *)
+
+(* A raising argument in a FOR bound or a CASE selector is guarded
+   before the call it is an argument of (2026-10-21, the compiler
+   review's G6; statements and IF/WHILE conditions were hoisted already):
+   Len (SLICE (s, 0, 100000)) called Len with the IndexError pending, and
+   Len's first act -- an assignment, which nothing checks -- ran. *)
+
+IMPORT Io ;
+
+VAR
+  ran : BOOL ;
+  out : STR ;
+
+PROCEDURE Len (RO s: STR) : I64 =
+BEGIN
+  ran := TRUE ;
+  RETURN LEN (s)
+END Len ;
+
+PROCEDURE Said () : STR =
+BEGIN
+  IF ran THEN RETURN 'TRUE' END ;
+  RETURN 'FALSE'
+END Said ;
+
+PROCEDURE ForBound (RO s: STR) : STR =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO Len (SLICE (s, 0, 100000)) DO n := n + 1 END ;
+  RETURN 'for ran its body'
+EXCEPT
+| IndexError (a, b) : RETURN 'for: IndexError ran ' + Said ()
+END ForBound ;
+
+PROCEDURE CaseSel (RO s: STR) : STR =
+BEGIN
+  CASE Len (SLICE (s, 0, 100000)) OF
+  | 3 : RETURN 'case 3'
+  ELSE RETURN 'case else'
+  END
+EXCEPT
+| IndexError (a, b) : RETURN 'case: IndexError ran ' + Said ()
+END CaseSel ;
+
+BEGIN
+  ran := FALSE ;
+  out := ForBound ('abc') ;
+  ran := FALSE ;
+  out := out + ', ' + CaseSel ('abc') ;
+  Io.WriteLine (out)
+END GfHoistForCase.

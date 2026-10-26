@@ -368,6 +368,30 @@ It cannot be combined with
 or
 .BR \-\-doc .
 .TP
+.B \-\-utf\-str
+The switch of
+.IR docs/utf8-stage4-plan.md ,
+rehearsed:
+.B STR
+names the UTF-8 text type, so a subscript or a
+.B LEN
+of a string is refused as a UTF's is,
+.B STR (u)
+and
+.B UTF (s)
+are identities, and the twins collapse \(em a procedure
+.B X
+whose module declares
+.B XUtf
+is neither checked nor emitted, and every call of
+.B X
+is a call of
+.BR XUtf .
+Off by default until the switch release; a program built with it does
+not mix with one built without (the
+.B \-\-run
+cache keys the flag).
+.TP
 .B \-\-review
 Do what
 .B \-\-check

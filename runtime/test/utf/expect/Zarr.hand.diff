@@ -1,0 +1,35 @@
+--- Zarr.m9
++++ Zarr.m9
+@@ -1174,23 +1174,23 @@
+   i := 0 ;
+   WHILE i + 3 <= n DO
+     v := I64 (b[i]) * 65536 + I64 (b[i + 1]) * 256 + I64 (b[i + 2]) ;
+-    DynStr.AppendChar (d, Alphabet[v DIV 262144]) ;
+-    DynStr.AppendChar (d, Alphabet[(v DIV 4096) MOD 64]) ;
+-    DynStr.AppendChar (d, Alphabet[(v DIV 64) MOD 64]) ;
+-    DynStr.AppendChar (d, Alphabet[v MOD 64]) ;
++    DynStr.AppendChar (d, Text.BChar (Alphabet, v DIV 262144)) ;   (* ASCII *)
++    DynStr.AppendChar (d, Text.BChar (Alphabet, (v DIV 4096) MOD 64)) ;   (* ASCII *)
++    DynStr.AppendChar (d, Text.BChar (Alphabet, (v DIV 64) MOD 64)) ;   (* ASCII *)
++    DynStr.AppendChar (d, Text.BChar (Alphabet, v MOD 64)) ;   (* ASCII *)
+     i := i + 3
+   END ;
+   rest := n - i ;
+   IF rest = 1 THEN
+     v := I64 (b[i]) * 65536 ;
+-    DynStr.AppendChar (d, Alphabet[v DIV 262144]) ;
+-    DynStr.AppendChar (d, Alphabet[(v DIV 4096) MOD 64]) ;
++    DynStr.AppendChar (d, Text.BChar (Alphabet, v DIV 262144)) ;   (* ASCII *)
++    DynStr.AppendChar (d, Text.BChar (Alphabet, (v DIV 4096) MOD 64)) ;   (* ASCII *)
+     DynStr.Append (d, '==')
+   ELSIF rest = 2 THEN
+     v := I64 (b[i]) * 65536 + I64 (b[i + 1]) * 256 ;
+-    DynStr.AppendChar (d, Alphabet[v DIV 262144]) ;
+-    DynStr.AppendChar (d, Alphabet[(v DIV 4096) MOD 64]) ;
+-    DynStr.AppendChar (d, Alphabet[(v DIV 64) MOD 64]) ;
++    DynStr.AppendChar (d, Text.BChar (Alphabet, v DIV 262144)) ;   (* ASCII *)
++    DynStr.AppendChar (d, Text.BChar (Alphabet, (v DIV 4096) MOD 64)) ;   (* ASCII *)
++    DynStr.AppendChar (d, Text.BChar (Alphabet, (v DIV 64) MOD 64)) ;   (* ASCII *)
+     DynStr.AppendChar (d, '=')
+   END ;
+   DynStr.AppendChar (d, '"') ;

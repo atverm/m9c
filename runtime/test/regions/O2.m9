@@ -1,0 +1,38 @@
+(* oneflux's 0.25 report, item 28, its C6.m9 (2026-10-25): the same hand-back with the string kept in the ACTIVATION's pool and Chunk called twice -- accepted, and st.date pointed into the freed cpool after Chunk returned; it printed right only because nothing reused the block.  held by regions.sh *)
+MODULE O2 ;
+IMPORT Io, Fmt, Text ;
+TYPE
+  Stats = RECORD
+    n : I64 ;
+    date : STR ;
+  END ;
+  Job = RECORD
+    s : Stats ;
+  END ;
+  Jobs = RECORD
+    job : SLICE OF Job ;
+  END ;
+VAR
+  pool : POOL ;
+  st : Stats ;
+PROCEDURE Carry (VAR p: POOL ; VAR dst: Stats ; RO src: Stats) =
+BEGIN
+  dst := src
+END Carry ;
+PROCEDURE Chunk () RAISES IndexError =
+VAR
+  cpool : POOL ;
+  jobs : PTR Jobs IN cpool ;
+BEGIN
+  jobs := NEW (cpool, Jobs) ;
+  jobs.job := NEW (cpool, Job, 1) ;
+  jobs.job[0].s.n := st.n + 1 ;
+  jobs.job[0].s.date := Text.Keep (cpool, '2023-07-02') ;
+  Carry (pool, st, jobs.job[0].s)
+END Chunk ;
+BEGIN
+  Chunk () ; Chunk () ;
+  Io.WriteLine (Fmt.I64Str (st.n) + ' ' + st.date)
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END O2.

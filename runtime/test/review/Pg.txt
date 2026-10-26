@@ -2,10 +2,10 @@ REVIEW Pg -- 32 procedures with a body, 26 of them functions; 21 headings in a D
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              26
-  assignments                                   112
+  assignments                                   113
   arguments                                     186
   RETURN values                                  38
-  operands of a comparison or an operator       113
+  operands of a comparison or an operator       112
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                          19
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     6   writes or reads in CText, writes or reads in Open, writes or reads in Run, writes or reads in Query, writes or reads in Script, writes or reads in F64Cell
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        2
   NEW in the frame                                0
   NEW in a named pool                            10
+  calls of a STR form with a UTF twin             1   Fmt.ParseF64 -> Fmt.ParseF64Utf
+  STR subscripts, writes and LEN                 36   len s, index s[i], index s[i], index s[i], index items[0], len s, +30 more

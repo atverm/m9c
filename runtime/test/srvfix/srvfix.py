@@ -520,11 +520,13 @@ if NATIVE_WIN:
     # The server answers 408 and closes while the client is still
     # sending; the client's next byte draws a reset, and WINDOWS'
     # stack discards the 408 waiting in the client's receive buffer
-    # when it arrives, where Linux's delivers it first.  The cure is
-    # the server's: a lingering close (half-close, drain, close),
-    # owed in CLAUDE.md (the VM, 2026-10-19).  Said, not failed.
-    print("srvfix: SKIP a header trickling in (Windows discards the 408 on the reset; "
-          "a lingering close is owed)", file=sys.stderr)
+    # when it arrives, where Linux's delivers it first.  This client
+    # never reads while it sends, so no bounded drain outlasts it, and a
+    # client that does not read is not owed the answer (Alex,
+    # 2026-10-25: "if the client does not read the 408 will not be read
+    # so why waste it").  Said, not failed: a decision, not a defect.
+    print("srvfix: SKIP a header trickling in (Windows drops the 408 on the reset; "
+          "a client that does not read is not owed it)", file=sys.stderr)
 else:
     g = statuses(P, None, ["GET"], "a header trickling in", [408], wait=8.0,
                  chunks=[req[i:i + 1] for i in range(len(req))], gap=0.4)

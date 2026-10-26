@@ -74,10 +74,6 @@ typedef struct { int64_t v[30]; } m9_arr_30_int64_t;
 #define M9SL_m9_arr_19_int64_t
 typedef struct { int64_t v[19]; } m9_arr_19_int64_t;
 #endif
-#ifndef M9SL_m9_arr_256_int64_t
-#define M9SL_m9_arr_256_int64_t
-typedef struct { int64_t v[256]; } m9_arr_256_int64_t;
-#endif
 
 Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 int64_t Zip_Count (Zip_Archive * a, m9_state *err);

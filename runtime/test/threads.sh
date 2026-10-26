@@ -15,9 +15,7 @@ set -e
 cd "$(dirname "$0")"
 
 REPO=$(cd ../.. && pwd)
-M9C=${M9C:-$REPO/runtime/test/m9c}
-[ -x "$M9C" ] || M9C=$REPO/out/m9c
-[ -x "$M9C" ] || { echo "no m9c: run runtime/test/m9c.sh or ./build.sh"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 
 OUT=/tmp/m9threads
 rm -rf "$OUT"; mkdir -p "$OUT"
@@ -124,6 +122,21 @@ if [ "$ibad" -ne 0 ]; then
 fi
 echo "         5 runs of eight threads over 800 distinct files agreed"
 echo "         with what each thread wrote, byte for byte"
+
+# ---- CONCURRENT EXEC: one child's pipes are not another's (2026-10-21,
+# the compiler review's G9).  ExecPar.m9 runs `echo' while a THREAD runs
+# `sleep 3', six rounds; with pipe () lacking close-on-exec the sleep
+# inherited echo's output and held it three seconds (the review's C
+# repro: 2 of 5 rounds).  The program says when an echo took a second
+# or more, which the old runtime does (3.01 s, measured).
+cp ExecPar.m9 "$OUT/"
+( cd "$OUT" && "$M9C" --make -o execpar ExecPar.m9 -I. >/dev/null )
+out=$(cd "$OUT" && ./execpar 2>&1 || echo "CRASHED ($?)")
+case "$out" in
+  "exec par: every echo beside a sleep came back at once") : ;;
+  *) echo "threads: concurrent Exec: $out"; exit 1 ;;
+esac
+echo "         an Exec beside a slow one came back at once, six rounds"
 
 # ---- CONCURRENT HTTPS, which the shim's [REENTRANT] tag now claims.
 # It said [SERIAL] until 2026-08-30 and that was load-bearing: the

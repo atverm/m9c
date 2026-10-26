@@ -1,0 +1,26 @@
+(* the compiler review of 2026-10-21, checker repro B1 (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE B1 ;
+IMPORT Io, Fmt ;
+VAR last : STR ;
+VAR first : STR ;
+PROCEDURE Fill () =
+VAR arr : SLICE OF STR ; s, t : STR ; i : I64 ;
+BEGIN
+  arr := NEW (STR, 3) ;
+  FOR i := 0 TO 2 DO arr[i] := 'item ' + Fmt.I64Str (i) END ;
+  FOR s IN arr DO last := s END ;
+  t := arr[0] ;
+  first := t
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (last) ;
+  Io.WriteLine (first)
+END B1.

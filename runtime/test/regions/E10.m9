@@ -1,0 +1,18 @@
+(* the compiler review of 2026-10-21, checker repro E10 (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE E10 ;
+IMPORT Io ;
+CONST Names = ['alpha', 'beta'] ;
+TYPE R = RECORD s : STR END ;
+PROCEDURE Up () =
+VAR x : STR ; xs : SLICE OF STR ; r : R ;
+BEGIN
+  xs := NEW (STR, 2) ;
+  xs[0] := Names[0] ;
+  r.s := Names[1] ;
+  x := xs[0] ;
+  x[0] := 0058C ;
+  Io.WriteLine (x)
+END Up ;
+BEGIN
+  Up ()
+END E10.

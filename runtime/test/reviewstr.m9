@@ -1,0 +1,54 @@
+MODULE reviewstr ;
+
+(* the review page's row for the UTF-8 switch (docs/utf8-stage4-plan.md,
+   4b): every subscript of a STR, every write through one and every
+   LEN of one is listed by kind, by the DECLARED type -- STR, or a name
+   for it -- while a SLICE OF CHAR spelled out and a UTF are not.  Six
+   sites: t[0] read, s[0] written (its subscript and the write), LEN of
+   s, LEN and a subscript of nm, whose type is a name for STR; the
+   slice cs and the UTF u are used the same ways and must not appear;
+   nor may Head's subscript, the body of a STR form whose UTF twin
+   this module declares -- the switch deletes it.  Held by
+   reviewdiff.sh, which must find exactly the six. *)
+
+IMPORT Text ;
+
+TYPE
+  Name = STR ;
+
+VAR
+  t, s : STR ;
+  nm : Name ;
+  cs : SLICE OF CHAR ;
+  u : UTF ;
+  c : CHAR ;
+  n : I64 ;
+
+PROCEDURE Head (RO s: STR) : CHAR =
+BEGIN
+  RETURN s[0]
+END Head ;
+
+PROCEDURE HeadUtf (RO s: UTF) : CHAR =
+BEGIN
+  RETURN Text.CpAt (s, 0)
+END HeadUtf ;
+
+BEGIN
+  t := 'abc' ;
+  s := NEW (CHAR, 3) ;
+  nm := 'xy' ;
+  cs := NEW (CHAR, 3) ;
+  u := 'abc' ;
+  c := t[0] ;
+  s[0] := 'z' ;
+  n := LEN (s) ;
+  n := LEN (nm) ;
+  c := nm[1] ;
+  cs[0] := 'q' ;
+  c := cs[1] ;
+  n := LEN (cs) ;
+  n := Text.BLen (u) ;
+  c := Head (t) ;
+  c := HeadUtf (u)
+END reviewstr.

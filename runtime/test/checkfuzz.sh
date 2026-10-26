@@ -19,14 +19,11 @@ cd "$(dirname "$0")"
 
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Lex.c \
-    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c \
+    ../gen/Ast.c ../gen/Parse.c ../gen/DynUtf.c ../gen/Print.c ../gen/Text.c \
     ../gen/Sem.c semdump_m9.c -o semdump_m9
 ( cd ../../host/fpc && fpc -O2 semdump.pas >/dev/null )
 
-M9C=${M9C:-}
-[ -n "$M9C" ] || { [ -x ./m9c ] && M9C=$(pwd)/m9c; }
-[ -n "$M9C" ] || { [ -x ../../out/m9c ] && M9C=$(cd ../../out && pwd)/m9c; }
-[ -n "$M9C" ] || { echo "checkfuzz: no m9c (run m9c.sh or build.sh)"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 
 R=$(cd ../.. && pwd)
 OUT=${TMPDIR:-/tmp}/checkfuzz.$$

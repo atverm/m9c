@@ -1,0 +1,52 @@
+(* EXPECT: the value moved in holds a SHARED handle to *)
+MODULE m ;
+(* a value moved into a THREAD is the worker's, but a SHARED handle it
+   holds reaches an object the starting thread may still name: both
+   write it (the fourth review's SharedInMoved, a race TSan reports).
+   Legal forms first: a moved value holding a SHARED handle to a MONITOR,
+   and one holding a handle to a record marked [SHARABLE]. *)
+TYPE
+  Store = RECORD n : I64 END ;
+  Shared = RECORD n : I64 END [SHARABLE] ;
+  Gate = MONITOR RECORD n : I64 END ;
+  JobM = RECORD g : SHARED PTR Gate END ;
+  JobS = RECORD s : SHARED PTR Shared END ;
+  JobX = RECORD s : SHARED PTR Store END ;
+PROCEDURE RunM (OWN j: PTR JobM) =
+BEGIN
+  DISPOSE (j)
+END RunM ;
+PROCEDURE RunS (OWN j: PTR JobS) =
+BEGIN
+  DISPOSE (j)
+END RunS ;
+PROCEDURE RunX (OWN j: PTR JobX) =
+BEGIN
+  j.s.n := j.s.n + 1 ;
+  DISPOSE (j)
+END RunX ;
+PROCEDURE Go () =
+VAR
+  jm : PTR JobM ;
+  js : PTR JobS ;
+  jx : PTR JobX ;
+  g : PTR Gate ;
+  sh : PTR Shared ;
+  st : PTR Store ;
+BEGIN
+  g := NEW (OWN, Gate) ;
+  jm := NEW (OWN, JobM) ;
+  jm.g := SHARED (g) ;
+  THREAD (RunM, jm) ;
+  sh := NEW (OWN, Shared) ;
+  js := NEW (OWN, JobS) ;
+  js.s := SHARED (sh) ;
+  THREAD (RunS, js) ;
+  st := NEW (OWN, Store) ;
+  jx := NEW (OWN, JobX) ;
+  jx.s := SHARED (st) ;
+  THREAD (RunX, jx)
+END Go ;
+BEGIN
+  Go ()
+END m.

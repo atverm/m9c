@@ -1,0 +1,14 @@
+(* EXPECT-ERROR: unhandled RAISES ParseError from call to Json.Parse *)
+(* A RAISES clause naming one module's exception covered a call raising
+   another module's of the same name: the accounting compared bare
+   names.  Observed 2026-10-21 by the compiler review (C7), and the same
+   day in the zarr proxy: Grid.Build declares `RAISES Error' -- its own
+   -- and let Attrs.Error through. *)
+MODULE m ;
+IMPORT Json, Csv ;
+PROCEDURE Load () : PTR Json.Node RAISES Csv.ParseError =
+BEGIN
+  RETURN Json.Parse ('[1, 2')
+END Load ;
+BEGIN
+END m.

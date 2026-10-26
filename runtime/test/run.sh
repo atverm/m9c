@@ -18,15 +18,11 @@
 # the imports' text fails the edited-import check, a warm path that
 # never reuses the binary fails the unchanged-run check.
 #
-# Uses the m9c that m9c.sh builds (run after it, as ci.yml does), or
-# $M9C, or out/m9c.
+# Uses an m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
 set -e
 cd "$(dirname "$0")"
 
-M9C=${M9C:-}
-[ -n "$M9C" ] || { [ -x ./m9c ] && M9C=$(pwd)/m9c; }
-[ -n "$M9C" ] || { [ -x ../../out/m9c ] && M9C=$(cd ../../out && pwd)/m9c; }
-[ -n "$M9C" ] || { echo "run: no m9c (run m9c.sh or build.sh)"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 
 export M9RUNTIME=$(cd .. && pwd)
 export M9LIBRARY=$(cd ../../corpus && pwd)
@@ -108,10 +104,87 @@ export M9CACHE="$RW/cache"
     { echo "FAIL: RAISE payloads were read back wrong:"; cat o9.txt; exit 1; }
   printf 'pool wrong 0 of 1000\nplus wrong 0 of 1000\nrethrow wrong 0 of 1000\nnested wrong 0 of 2000\n' > want9.txt
   cmp -s o9.txt want9.txt || { echo "FAIL: RaisePayload said:"; cat o9.txt; exit 1; }
+  # --show of an exported variable whose TYPE is a module the cell does
+  # not import: ShObs.f is a PTR Frame.Fr.  The NULL test on a value
+  # read out of a module variable (2026-10-21) named the type, which the
+  # cell cannot spell -- `gen: unknown name: Frame.Fr', the notebook's
+  # `Obs.f', until 2026-10-22; CI's drivers job was red on it, and this
+  # is the lex job's check
+  cp "$FIX/ShObs.m9" "$FIX/ShowDeep.m9" src/
+  "$M9C" --show --run src/ShowDeep.m9 < /dev/null > o10.txt 2>&1 ||
+    { echo "FAIL: --show of a variable of an indirect module's type:"; cat o10.txt; exit 1; }
+  grep -q '0 rows x 0 columns' o10.txt ||
+    { echo "FAIL: --show did not show the frame:"; cat o10.txt; exit 1; }
+  # TWO DEFINITIONS IMPORTING EACH OTHER build from clean, both ways
+  # (Alex, 2026-10-22: allowed; types do not change at run time).  A
+  # clean --make failed on the partner's missing header and a second
+  # run passed on the leftovers; with the header written, the partner's
+  # record was `unknown type name' in the other's prototype
+  cp "$FIX/MutA.m9" "$FIX/MutB.m9" "$FIX/MutMain.m9" src/
+  [ "$("$M9C" --run src/MutMain.m9 < /dev/null 2>&1)" = "5 70" ] ||
+    { echo "FAIL: --run of two definitions importing each other:";
+      "$M9C" --run src/MutMain.m9 < /dev/null 2>&1 | grep -v 'm9c: gcc' | head -5; exit 1; }
+  MD=$(mktemp -d)
+  cp "$FIX/MutA.m9" "$FIX/MutB.m9" "$FIX/MutMain.m9" "$MD/"
+  ( cd "$MD" && "$M9C" --make -o mm MutMain.m9 > make.txt 2>&1 && [ "$(./mm)" = "5 70" ] ) ||
+    { echo "FAIL: --make of two definitions importing each other, from clean:";
+      grep -v 'm9c: gcc\|m9c: wrote' "$MD/make.txt" | head -5; exit 1; }
+  rm -r "$MD"
+  # A PROCEDURE TYPE'S RAISES is its declaring module's (zarrm9's 0.25
+  # report, 2026-10-25): a caller in another module declaring
+  # PtyDef.Error, directly or through an alias, is accepted and catches
+  # it; one declaring an Error of its own is refused -- 0.25.0 refused
+  # the first two and accepted the third, which then died unhandled
+  cp "$FIX/PtyDef.m9" "$FIX/PtyUse.m9" "$FIX/PtyAlias.m9" "$FIX/PtyOwn.m9" src/
+  for p in PtyUse PtyAlias; do
+    [ "$("$M9C" --run src/$p.m9 < /dev/null 2>&1)" = "PtyDef.Error raised" ] ||
+      { echo "FAIL: $p, a caller declaring the type's own exception:";
+        "$M9C" --run src/$p.m9 < /dev/null 2>&1 | grep -v 'm9c: gcc' | head -5; exit 1; }
+  done
+  if "$M9C" --check src/PtyOwn.m9 > own.txt 2>&1; then
+    echo "FAIL: PtyOwn accepted: its own Error does not cover PtyDef.Error"; exit 1
+  fi
+  grep -q 'unhandled RAISES PtyDef.Error from call to f' own.txt ||
+    { echo "FAIL: PtyOwn refused for another reason:"; head -3 own.txt; exit 1; }
+  # A monitor re-entered through a PROCEDURE VALUE, which the checker's
+  # MonReach cannot follow, stops the program by name (2026-10-26, the
+  # third review's S11(d)); the old runtime hung -- `timeout' says 124
+  cp "$FIX/MonValue.m9" src/
+  st=0
+  out=$( (command -v timeout > /dev/null && timeout 20 "$M9C" --run src/MonValue.m9 || "$M9C" --run src/MonValue.m9) < /dev/null 2>&1 ) || st=$?
+  if [ "$st" = 0 ] || [ "$st" = 124 ] ||
+     ! printf '%s\n' "$out" | grep -q 'a monitor was entered again by the thread that holds it'; then
+    echo "FAIL: MonValue, a monitor re-entered through a procedure value (exit $st):"
+    printf '%s\n' "$out" | grep -v 'm9c: gcc' | head -5; exit 1
+  fi
+  # A record answer built in ANOTHER module, its field a concatenation of
+  # two STR parameters, kept in a module variable (2026-10-26, the third
+  # review's typing CcUse, a heap-use-after-free): refused by the region
+  # judgement, which reads the callee's body in the callee's module and
+  # takes an untyped `+' for a string's unless it shows a number
+  cp "$FIX/CcDef.m9" "$FIX/CcUse.m9" src/
+  if "$M9C" --check src/CcUse.m9 > ccuse.txt 2>&1; then
+    echo "FAIL: CcUse accepted: CcDef.Mk's answer holds a frame string"; exit 1
+  fi
+  grep -q 'storage of this activation stored into module variable g' ccuse.txt ||
+    { echo "FAIL: CcUse refused for another reason:"; head -3 ccuse.txt; exit 1; }
+  # A module-pool answer from another module kept in a module variable
+  # (zarrm9's Serve.Run, 2026-10-26): accepted -- 011e837b refused it,
+  # reading the builder's integer `+' as a frame string
+  cp "$FIX/RcDef.m9" "$FIX/RcUse.m9" src/
+  [ "$("$M9C" --run src/RcUse.m9 < /dev/null 2>&1)" = "root/x 1" ] ||
+    { echo "FAIL: RcUse, a module-pool answer kept in module state:";
+      "$M9C" --run src/RcUse.m9 < /dev/null 2>&1 | grep -v 'm9c: gcc' | head -5; exit 1; }
+  # (a FOR body moving its variable past the bound, the same report's
+  # second item, is REFUSED since 2026-10-25: probes
+  # for-variable-assigned and for-variable-var-arg, museum
+  # for-variable-past-bound.m9)
   # --out-dir: the C goes where it is told, and nowhere else
   mkdir -p gen && "$M9C" --out-dir gen src/RunHelper.m9
   [ -f gen/RunHelper.c ] && [ -f gen/RunHelper.h ] && [ ! -f RunHelper.c ] ||
     { echo "FAIL: --out-dir wrote:"; ls . gen; exit 1; } ) || exit 1
 echo "run: --run builds into its cache once, runs unchanged programs without"
 echo "     a C compiler, sees an edited import, refuses what the checker refuses,"
-echo "     and RAISE payloads survive the frame that built them"
+echo "     RAISE payloads survive the frame that built them, and --show reads"
+echo "     a variable whose type is a module the cell does not import, and"
+echo "     two definitions importing each other build from clean"

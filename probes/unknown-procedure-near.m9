@@ -1,0 +1,15 @@
+(* EXPECT: unknown procedure: Prnt -- did you mean Print? *)
+(* A procedure name one or two edits from a declared one says which it
+   meant (since 2026-10-22, the compiler review's tier 3: `Io.WriteLn'
+   said only "unknown procedure").  The legal form first: the name
+   spelled right. *)
+MODULE m ;
+VAR n : I64 ;
+PROCEDURE Print (k: I64) =
+BEGIN
+  n := k
+END Print ;
+BEGIN
+  Print (1) ;
+  Prnt (2)
+END m.

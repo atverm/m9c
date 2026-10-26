@@ -1,0 +1,29 @@
+--- Hash.m9
++++ Hash.m9
+@@ -114,18 +114,21 @@
+ END Sha256Of ;
+ 
+ PROCEDURE Hex (RO digest: SLICE OF BYTE) : STR RAISES ValueRange =
++  (* two ASCII octets a byte into a buffer, then the text of it: the
++     UTF form of a string built by position *)
+ VAR
+-  s, digits : STR ;
++  o : SLICE OF BYTE ;
++  digits : STR ;
+   i, v : I64 ;
+ BEGIN
+   digits := '0123456789abcdef' ;
+-  s := NEW (CHAR, 2 * LEN (digest)) ;
++  o := NEW (BYTE, 2 * LEN (digest)) ;
+   FOR i := 0 TO LEN (digest) - 1 DO
+     v := I64 (digest[i]) ;
+-    s[2 * i] := Text.BChar (digits, v DIV 16) ;
+-    s[2 * i + 1] := Text.BChar (digits, v MOD 16)
++    o[2 * i] := Text.BAt (digits, v DIV 16) ;
++    o[2 * i + 1] := Text.BAt (digits, v MOD 16)
+   END ;
+-  RETURN s
++  RETURN UTF (o)
+ END Hex ;
+ 
+ PROCEDURE HmacInit (VAR m: Hmac ; RO key: SLICE OF BYTE) RAISES ValueRange =

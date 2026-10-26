@@ -1,0 +1,28 @@
+MODULE CcUse ;
+
+(* CcDef.Mk answers a record whose field is a concatenation of two STR
+   variables, built in Keep's caller's frame; kept in a module variable *)
+
+IMPORT Io, CcDef ;
+
+VAR g : STR ;
+
+PROCEDURE Keep (RO a, b: STR) =
+BEGIN
+  g := CcDef.Mk (a, b).s
+END Keep ;
+
+PROCEDURE Churn (RO a: STR) : I64 =
+VAR t : STR ;
+BEGIN
+  t := a + a + a + a ;
+  RETURN LEN (t)
+END Churn ;
+
+VAR k : I64 ;
+
+BEGIN
+  Keep ('abc', 'def') ;
+  k := Churn ('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz') ;
+  Io.WriteLine (g)
+END CcUse.

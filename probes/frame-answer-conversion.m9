@@ -1,0 +1,57 @@
+(* EXPECT: the answer of View dies with this frame; it cannot be stored in module variable kept *)
+(* A function whose RETURN is a UTF builtin -- `UTF (s)`, `UTF (b)`,
+   `STR (u)` -- or a `+` of UTFs builds its answer in its caller's
+   frame, as a STR function answering `s + t` does, and the answer may
+   not reach module state.  The checker read a callee's RETURN for a
+   frame NEW, a `+` of STRs and a frame-answering call, and not for
+   these: found 2026-10-23 three times in one day, when DynUtf.View
+   (`RETURN UTF (...)`) was kept in Sem's message list, as Gen's dedup
+   key and as m9c's own output file names, each read back as freed
+   storage, each accepted by --check.  What must NOT be refused comes
+   first: the answer consumed at once, held in a local, decoded,
+   joined, answered onward. *)
+MODULE p ;
+TYPE
+  Buf = RECORD s : STR END ;
+VAR
+  kept : UTF ;
+  box : Buf ;
+PROCEDURE View (RO d: Buf) : UTF =
+BEGIN
+  RETURN UTF (d.s)
+END View ;
+PROCEDURE Conv (RO s: STR) : UTF =
+BEGIN
+  RETURN UTF (s)
+END Conv ;
+PROCEDURE Back (RO u: UTF) : STR =
+BEGIN
+  RETURN STR (u)
+END Back ;
+PROCEDURE Both (RO a: UTF ; RO b: UTF) : UTF =
+BEGIN
+  RETURN a + b
+END Both ;
+PROCEDURE Onward (RO s: STR) : UTF =
+BEGIN
+  RETURN Conv (s)
+END Onward ;
+PROCEDURE Fine (RO s: STR ; RO d: Buf) : I64 =
+VAR
+  u : UTF ;
+  t : STR ;
+BEGIN
+  u := View (d) ;
+  u := Both (u, Onward (s)) ;
+  t := Back (u) ;
+  RETURN LEN (t)
+END Fine ;
+PROCEDURE Bad (RO d: Buf) =
+BEGIN
+  kept := View (d)
+END Bad ;
+BEGIN
+  box.s := 'x' ;
+  kept := '' ;
+  IF Fine ('x', box) = 1 THEN Bad (box) END
+END p.

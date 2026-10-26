@@ -1,0 +1,69 @@
+MODULE GfThreadOwn ;
+
+(* WANT: thread own: 42 and 7 *)
+
+(* A THREAD whose target takes its argument OWN, or VAR, with a
+   pointer type (2026-10-21, found writing runtime/test/ExecPar.m9):
+   such a parameter is passed by reference, `Job **', and the thread's
+   thunk handed it the pointer itself, so the target read the record's
+   own first field as the pointer -- 42 here, a crash; ExecPar's 0 was
+   a NULL that DISPOSE forgave.  The thunk now keeps the pointer in a
+   local and passes its address.  A VAR record parameter (Mat's bands)
+   is `Job *' and was right. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Job = RECORD
+    n : I64 ;
+    m : I64 ;
+  END [SHARABLE] ;
+  Gate = MONITOR RECORD
+    done : I64 ;
+    sum : I64 ;
+  END ;
+
+VAR
+  g : Gate ;
+  a, b : PTR Job ;
+
+PROCEDURE Note (VAR gg: Gate ; v: I64) =
+BEGIN
+  gg.sum := gg.sum * 100 + v ;
+  gg.done := gg.done + 1 ;
+  SIGNAL (gg)
+END Note ;
+
+PROCEDURE Await (VAR gg: Gate ; n: I64) : I64 =
+BEGIN
+  WHILE gg.done < n DO WAIT (gg) END ;
+  RETURN gg.sum
+END Await ;
+
+PROCEDURE Owned (OWN j: PTR Job) =
+VAR v : I64 ;
+BEGIN
+  v := j.n ;
+  DISPOSE (j) ;
+  Note (g, v)
+END Owned ;
+
+PROCEDURE Lent (VAR j: PTR Job) =
+BEGIN
+  Note (g, j.m)
+END Lent ;
+
+VAR s : I64 ;
+
+BEGIN
+  a := NEW (OWN, Job) ;
+  a.n := 42 ;
+  THREAD (Owned, a) ;
+  s := Await (g, 1) ;
+  b := NEW (OWN, Job) ;
+  b.n := 99 ;
+  b.m := 7 ;
+  THREAD (Lent, b) ;
+  s := Await (g, 2) ;
+  Io.WriteLine ('thread own: ' + Fmt.I64Str (s DIV 100) + ' and ' + Fmt.I64Str (s MOD 100))
+END GfThreadOwn.

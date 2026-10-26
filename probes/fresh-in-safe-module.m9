@@ -1,0 +1,16 @@
+(* EXPECT: [FRESH] states what an UNSAFE body cannot show; in a safe module the body is the evidence *)
+MODULE m ;
+(* [FRESH] states where a procedure's answer lives, for a body whose C
+   the checker cannot read; in a safe module the body is read, and a
+   statement beside it could only disagree with it (2026-10-26).  Legal
+   form first: a [PURE] procedure. *)
+PROCEDURE Twice (x: I64) : I64 [PURE] =
+BEGIN
+  RETURN 2 * x
+END Twice ;
+PROCEDURE Hello () : STR [FRESH] =
+BEGIN
+  RETURN 'hello'
+END Hello ;
+BEGIN
+END m.

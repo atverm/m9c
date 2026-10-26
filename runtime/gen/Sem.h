@@ -3,12 +3,13 @@
 #define M9G_Sem_H
 #include "m9rt.h"
 #include "Ast.h"
-#include "DynStr.h"
+#include "DynUtf.h"
 #include "Print.h"
 #include "Text.h"
 
 void Sem_m9init (m9_state *err);
 
+typedef struct Sem_NameIx Sem_NameIx;
 typedef struct Sem_ProcInfo Sem_ProcInfo;
 typedef struct Sem_Binding Sem_Binding;
 typedef struct Sem_VariantInfo Sem_VariantInfo;
@@ -38,13 +39,35 @@ static const uint32_t Sem_ModeModule_d[1] = { 109u };
 #define Sem_ModeModule ((m9_sl_CHAR){ (uint32_t *) Sem_ModeModule_d, 1 })
 static const uint32_t Sem_ModeBinder_d[1] = { 98u };
 #define Sem_ModeBinder ((m9_sl_CHAR){ (uint32_t *) Sem_ModeBinder_d, 1 })
+#define Sem_NxMul INT64_C(-7046029254386353131)
+static const uint32_t Sem_UtfTy_d[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 60u, 117u, 56u, 62u };
+#define Sem_UtfTy ((m9_sl_CHAR){ (uint32_t *) Sem_UtfTy_d, 13 })
+static const uint32_t Sem_I64Max_d[19] = { 57u, 50u, 50u, 51u, 51u, 55u, 50u, 48u, 51u, 54u, 56u, 53u, 52u, 55u, 55u, 53u, 56u, 48u, 55u };
+#define Sem_I64Max ((m9_sl_CHAR){ (uint32_t *) Sem_I64Max_d, 19 })
+#define Sem_RgStatic INT64_C(0)
+#define Sem_RgModule INT64_C(1)
+#define Sem_RgOwned INT64_C(2)
+#define Sem_RgCaller INT64_C(3)
+#define Sem_RgPool INT64_C(4)
+#define Sem_RgFrame INT64_C(5)
+#define Sem_RgRo INT64_C(6)
+#define Sem_RgFrModule INT64_C(7)
+#define Sem_RgFrCaller INT64_C(8)
+#define Sem_RgFrPool INT64_C(9)
+#define Sem_RgFrFrame INT64_C(10)
+#define Sem_RgStack INT64_C(11)
+#define Sem_RgArg0 INT64_C(12)
+#define Sem_RgArgMax INT64_C(48)
+#define Sem_OlOuter INT64_C(60)
+#define Sem_OlDead INT64_C(61)
+#define Sem_OlMaxOwn INT64_C(60)
 #define Sem_DeclPlain INT64_C(0)
 #define Sem_DeclForward INT64_C(1)
 #define Sem_DeclBody INT64_C(2)
 
-#ifndef M9SL_m9_sl_m9_sl_CHAR
-#define M9SL_m9_sl_m9_sl_CHAR
-typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 #endif
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep
@@ -98,30 +121,52 @@ typedef struct { m9_sl_CHAR v[9]; } m9_arr_9_m9_sl_CHAR;
 #define M9SL_m9_arr_5_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[5]; } m9_arr_5_m9_sl_CHAR;
 #endif
+#ifndef M9SL_m9_arr_11_m9_sl_CHAR
+#define M9SL_m9_arr_11_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[11]; } m9_arr_11_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_20_m9_sl_CHAR
+#define M9SL_m9_arr_20_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[20]; } m9_arr_20_m9_sl_CHAR;
+#endif
 #ifndef M9SL_m9_arr_4_m9_sl_CHAR
 #define M9SL_m9_arr_4_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[4]; } m9_arr_4_m9_sl_CHAR;
 #endif
-#ifndef M9SL_m9_arr_256_m9_sl_CHAR
-#define M9SL_m9_arr_256_m9_sl_CHAR
-typedef struct { m9_sl_CHAR v[256]; } m9_arr_256_m9_sl_CHAR;
+#ifndef M9SL_m9_sl_m9_sl_CHAR
+#define M9SL_m9_sl_m9_sl_CHAR
+typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_256_m9_sl_UTF8
+#define M9SL_m9_arr_256_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 v[256]; } m9_arr_256_m9_sl_UTF8;
 #endif
 
 void Sem_LoadFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err);
 void Sem_CheckFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err);
 int64_t Sem_ErrCount (m9_state *err);
-m9_sl_CHAR Sem_ErrAt (int64_t i, m9_state *err);
+m9_sl_UTF8 Sem_ErrAt (int64_t i, m9_state *err);
 int64_t Sem_LedgerCount (m9_state *err);
-m9_sl_CHAR Sem_LedgerAt (int64_t i, m9_state *err);
-m9_sl_CHAR Sem_StatName (int64_t i, m9_state *err);
+m9_sl_UTF8 Sem_LedgerAt (int64_t i, m9_state *err);
+void Sem_SetStrUtf (bool on, m9_state *err);
+void Sem_SetRegions (bool on, m9_state *err);
+int64_t Sem_RegionCount (m9_state *err);
+m9_sl_UTF8 Sem_RegionAt (int64_t i, m9_state *err);
+m9_sl_UTF8 Sem_StatName (int64_t i, m9_state *err);
 int64_t Sem_StatChecked (int64_t i, m9_state *err);
 int64_t Sem_StatSkipped (int64_t i, m9_state *err);
 int64_t Sem_StatLines (int64_t i, m9_state *err);
 int64_t Sem_StatLine (int64_t i, int64_t j, m9_state *err);
 int64_t Sem_ThreadWrites (m9_state *err);
-m9_sl_CHAR Sem_ThreadWrite (int64_t i, m9_state *err);
-void Sem_ShowType (m9_sl_CHAR name, m9_state *err);
-m9_sl_CHAR Sem_ShownType (m9_state *err);
-m9_sl_CHAR Sem_ShownRaises (m9_state *err);
+m9_sl_UTF8 Sem_ThreadWrite (int64_t i, m9_state *err);
+int64_t Sem_StaleCalls (m9_state *err);
+m9_sl_UTF8 Sem_StaleCall (int64_t i, m9_state *err);
+int64_t Sem_AdrSites (m9_state *err);
+m9_sl_UTF8 Sem_AdrSite (int64_t i, m9_state *err);
+int64_t Sem_StrSites (m9_state *err);
+m9_sl_UTF8 Sem_StrSite (int64_t i, m9_state *err);
+void Sem_ShowType (m9_sl_UTF8 name, m9_state *err);
+m9_sl_UTF8 Sem_ShownType (m9_state *err);
+m9_sl_UTF8 Sem_ShownRaises (m9_state *err);
 
 #endif

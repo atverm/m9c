@@ -1,0 +1,17 @@
+(* a caller with an Error of its OWN: its RAISES does not cover the
+   PtyDef.Error the call raises, so it is refused.  0.25.0 before the fix
+   ACCEPTED it, taking PtyDef.Error for PtyOwn.Error; the handler missed
+   and the program ended "m9: unhandled Error" *)
+MODULE PtyOwn ;
+IMPORT PtyDef, Io ;
+EXCEPTION Error (RO msg: STR) ;
+PROCEDURE Run (f: PtyDef.Mk) RAISES Error =
+BEGIN
+  f (-1)
+END Run ;
+BEGIN
+  Run (PtyDef.One) ;
+  Io.WriteLine ('fell through')
+EXCEPT
+| Error (m) : Io.WriteLine ('caught as PtyOwn.Error')
+END PtyOwn.

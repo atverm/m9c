@@ -1,0 +1,23 @@
+(* EXPECT: i is the control variable of the FOR at line 19: it cannot be handed to a VAR or OWN parameter inside the loop -- pass a copy (par 2.1) *)
+MODULE m ;
+(* a FOR's control variable handed to a VAR parameter is written by the
+   callee, which is the assignment the rule refuses (par 2.1; Alex,
+   2026-10-25).  Legal forms first: the variable to a value parameter, a
+   copy of it to the VAR parameter *)
+PROCEDURE Show (v: I64) : I64 =
+BEGIN
+  RETURN v
+END Show ;
+PROCEDURE Skip (VAR v: I64) =
+BEGIN
+  v := 100
+END Skip ;
+VAR i, k, n : I64 ;
+BEGIN
+  FOR i := 0 TO 9 DO n := Show (i) ; k := i ; Skip (k) END ;
+  n := 0 ;
+  FOR i := 0 TO 9 DO
+    n := n + 1 ;
+    Skip (i)
+  END
+END m.

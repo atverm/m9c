@@ -4,6 +4,7 @@
 
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
+extern void m9_put_bytes_err (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -19,6 +20,7 @@ extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
+extern int64_t m9_utf_adopt_p (const void *, int64_t, void *);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
@@ -435,8 +437,11 @@ static void Narrow_SubU64 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s22, 9 }), false, (int64_t)(b), err);
+  { __typeof__(m9_i64_u64 (b, err)) m9a1 = m9_i64_u64 (b, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s22, 9 }), false, m9a1, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
@@ -472,8 +477,11 @@ static void Narrow_MulU64 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s25, 12 }), false, (int64_t)(b), err);
+  { __typeof__(m9_i64_u64 (b, err)) m9a2 = m9_i64_u64 (b, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s25, 12 }), false, m9a2, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
@@ -543,8 +551,11 @@ static void Narrow_InRange (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     x = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s31, 25 }), false, (int64_t)(x), err);
+  { __typeof__(m9_i64_u64 (x, err)) m9a3 = m9_i64_u64 (x, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s31, 25 }), false, m9a3, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   a = INT64_C(7);
   { __typeof__(b) m9v = m9_mod_i32 (a, INT64_C(3), err);
     if (err->exc) goto L_hdl_m9t1;

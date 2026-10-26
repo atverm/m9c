@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE System ;
 
 (* The process, seen from inside: what it was called with, how big it
@@ -31,6 +32,13 @@ TYPE
                                  and status is the kill.  Never TRUE
                                  from Exec, which sets no limit. *)
   END ;
+  ResultUtf = RECORD
+    status : I64 ;
+    out, err : UTF ;          (* the streams as the UTF-8 they are *)
+    stopped : BOOL ;
+  END ;
+  (* Result for ExecUtf and ExecWithinUtf: the same fields, each
+     stream validated as UTF-8 (ValueRange when it is not) *)
 
 EXCEPTION NoPool (i, n: I64) ;
 
@@ -141,6 +149,7 @@ PROCEDURE Positional (VAR pool: POOL) : SLICE OF STR
   (* every argument that is not an option, in order *)
 
 PROCEDURE Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange ;
+  (* see GlobUtf below for the UTF form *)
   (* the paths that exist and fit the pattern, SORTED by code point:
      Python's glob.glob, which answers them in the order the
      filesystem happens to hold, sorted.  The pattern is cut at its
@@ -154,6 +163,24 @@ PROCEDURE Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange ;
      directory that is not there: nothing found is not a failure.
      A pattern that ENDS in a slash asks for directories only; they
      are answered without it.  There is no `**'. *)
+
+
+(* The twins by type (docs/utf8-plan.md, stage 2): every string of the
+   heading a UTF, the shape otherwise the same.  A program's words go
+   to the child as their octets, with no encoding on the way.        *)
+PROCEDURE ExecUtf (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ;
+                   RO input: UTF ; RO env: SLICE OF UTF)
+  : ResultUtf RAISES ValueRange, Io.IOError ;
+PROCEDURE ExecWithinUtf (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ;
+                         RO input: UTF ; RO env: SLICE OF UTF ; seconds: F64)
+  : ResultUtf RAISES ValueRange, Io.IOError ;
+PROCEDURE BecomeUtf (RO prog: UTF ; RO name: UTF ; RO args: SLICE OF UTF)
+  RAISES ValueRange, Io.IOError ;
+PROCEDURE ExecutableUtf (VAR pool: POOL) : UTF RAISES ValueRange ;
+  (* the path's bytes validated as UTF-8 -- Executable answers them one
+     CHAR a byte, so `UTF (System.Executable (pool))` would encode a
+     name past ASCII twice *)
+PROCEDURE GlobUtf (RO pattern: UTF) : SLICE OF UTF RAISES ValueRange ;
 
 END System.
 
@@ -506,42 +533,48 @@ BEGIN
   RETURN p
 END Positional ;
 
-(* ---- Glob ---- *)
+(* ---- Glob ----
+   The family is written over UTF (2026-10-24): GlobUtf has the body
+   and Glob, the STR form, encodes its pattern and decodes the names
+   it gets back.  Until then GlobUtf decoded and called Glob, and under
+   the rehearsed switch -- where a call of Glob IS a call of GlobUtf --
+   it called itself (SystemTest, a stack overflow); the rule is that
+   the UTF form is the real one. *)
 
-PROCEDURE HasMagic (RO s: STR) : BOOL =
-VAR i : I64 ;
+PROCEDURE HasMagic (RO s: UTF) : BOOL =
+VAR c : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '*' OR s[i] = '?' OR s[i] = '[' THEN RETURN TRUE END
+  FOR c IN s DO
+    IF c = '*' OR c = '?' OR c = '[' THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END HasMagic ;
 
-PROCEDURE Joined (RO dir, name: STR) : STR =
+PROCEDURE Joined (RO dir, name: UTF) : UTF =
 BEGIN
-  IF LEN (dir) = 0 THEN RETURN name + '' END ;
-  IF dir[LEN (dir) - 1] = '/' THEN RETURN dir + name END ;
+  IF Text.BLen (dir) = 0 THEN RETURN name + '' END ;
+  IF Text.BIs (dir, Text.BLen (dir) - 1, '/') THEN RETURN dir + name END ;
   RETURN dir + '/' + name
 END Joined ;
 
 (* the names in a directory, and none where it is not one *)
-PROCEDURE Entries (VAR pool: POOL ; RO dir: STR) : SLICE OF STR =
+PROCEDURE Entries (VAR pool: POOL ; RO dir: UTF) : SLICE OF UTF =
 BEGIN
-  IF LEN (dir) = 0 THEN RETURN Io.ListDir (pool, '.') END ;
-  RETURN Io.ListDir (pool, dir)
+  IF Text.BLen (dir) = 0 THEN RETURN Io.ListDirUtf (pool, '.') END ;
+  RETURN Io.ListDirUtf (pool, dir)
 EXCEPT
-| Io.IOError : RETURN NEW (pool, STR, 0)
-| ValueRange : RETURN NEW (pool, STR, 0)
+| Io.IOError : RETURN NEW (pool, UTF, 0)
+| ValueRange : RETURN NEW (pool, UTF, 0)
 END Entries ;
 
 (* can it be listed?  Io has no question for this, and listing is the
    one a directory answers and a file does not *)
-PROCEDURE IsDir (RO path: STR) : BOOL =
+PROCEDURE IsDir (RO path: UTF) : BOOL =
 VAR
   scratch : POOL ;
-  names : SLICE OF STR ;
+  names : SLICE OF UTF ;
 BEGIN
-  names := Io.ListDir (scratch, path) ;
+  names := Io.ListDirUtf (scratch, path) ;
   RETURN TRUE
 EXCEPT
 | Io.IOError : RETURN FALSE
@@ -549,23 +582,23 @@ EXCEPT
 END IsDir ;
 
 (* a name beginning with a dot is hidden from a piece that does not *)
-PROCEDURE Fits (RO piece, name: STR) : BOOL =
+PROCEDURE Fits (RO piece, name: UTF) : BOOL =
 BEGIN
-  IF LEN (name) > 0 AND name[0] = '.' THEN
-    IF LEN (piece) = 0 OR piece[0] # '.' THEN RETURN FALSE END
+  IF Text.BLen (name) > 0 AND Text.BIs (name, 0, '.') THEN
+    IF Text.BLen (piece) = 0 OR NOT Text.BIs (piece, 0, '.') THEN RETURN FALSE END
   END ;
-  RETURN Text.Match (piece, name)
+  RETURN Text.MatchUtf (piece, name)
 END Fits ;
 
 (* every path of dirs taken one piece of the pattern further *)
-PROCEDURE Expand (RO dirs: SLICE OF STR ; RO piece: STR) : SLICE OF STR =
+PROCEDURE Expand (RO dirs: SLICE OF UTF ; RO piece: UTF) : SLICE OF UTF =
 VAR
   scratch : POOL ;
-  names, out : SLICE OF STR ;
+  names, out : SLICE OF UTF ;
   d, k, n : I64 ;
 BEGIN
   IF NOT HasMagic (piece) THEN
-    out := NEW (STR, LEN (dirs)) ;
+    out := NEW (UTF, LEN (dirs)) ;
     FOR d := 0 TO LEN (dirs) - 1 DO out[d] := Joined (dirs[d], piece) END ;
     RETURN out
   END ;
@@ -577,7 +610,7 @@ BEGIN
       IF Fits (piece, names[k]) THEN n := n + 1 END
     END
   END ;
-  out := NEW (STR, n) ;
+  out := NEW (UTF, n) ;
   n := 0 ;
   FOR d := 0 TO LEN (dirs) - 1 DO
     names := Entries (scratch, dirs[d]) ;
@@ -595,28 +628,30 @@ END Expand ;
    the shorter first.  Sort.Strs orders the same way; it is not
    imported because the compiler links System, and would then link
    Sort and Math in every place it is built by hand. *)
-PROCEDURE Before (RO a, b: STR) : BOOL =
+PROCEDURE Before (RO a, b: UTF) : BOOL =
+  (* octet by octet: UTF-8 orders by octets as it orders by code
+     point, so this is the order the STR form had *)
 VAR i, n : I64 ;
 BEGIN
-  n := LEN (a) ;
-  IF LEN (b) < n THEN n := LEN (b) END ;
+  n := Text.BLen (a) ;
+  IF Text.BLen (b) < n THEN n := Text.BLen (b) END ;
   FOR i := 0 TO n - 1 DO
-    IF a[i] < b[i] THEN RETURN TRUE END ;
-    IF a[i] > b[i] THEN RETURN FALSE END
+    IF Text.BAt (a, i) < Text.BAt (b, i) THEN RETURN TRUE END ;
+    IF Text.BAt (a, i) > Text.BAt (b, i) THEN RETURN FALSE END
   END ;
-  RETURN LEN (a) < LEN (b)
+  RETURN Text.BLen (a) < Text.BLen (b)
 END Before ;
 
-PROCEDURE Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange =
+PROCEDURE GlobUtf (RO pattern: UTF) : SLICE OF UTF RAISES ValueRange =
 VAR
-  pieces, found, out : SLICE OF STR ;
-  held : STR ;
+  pieces, found, out : SLICE OF UTF ;
+  held : UTF ;
   i, k, n : I64 ;
   any, spelled, there, dirsOnly : BOOL ;
 BEGIN
-  pieces := Text.Split (pattern, '/') ;
-  found := NEW (STR, 1) ;
-  IF LEN (pattern) > 0 AND pattern[0] = '/' THEN
+  pieces := Text.SplitUtf (pattern, '/') ;
+  found := NEW (UTF, 1) ;
+  IF Text.BLen (pattern) > 0 AND Text.BIs (pattern, 0, '/') THEN
     found[0] := '/'
   ELSE
     found[0] := ''
@@ -624,25 +659,25 @@ BEGIN
   any := FALSE ;
   spelled := FALSE ;
   FOR i := 0 TO LEN (pieces) - 1 DO
-    IF LEN (pieces[i]) > 0 THEN
+    IF Text.BLen (pieces[i]) > 0 THEN
       found := Expand (found, pieces[i]) ;
       spelled := NOT HasMagic (pieces[i]) ;
       any := TRUE
     END
   END ;
-  IF NOT any AND LEN (found[0]) = 0 THEN RETURN NEW (STR, 0) END ;
+  IF NOT any AND Text.BLen (found[0]) = 0 THEN RETURN NEW (UTF, 0) END ;
   (* a last piece that was matched is there; one that was spelled out
      has yet to be looked for.  And a pattern that ends in a slash
      asks for directories. *)
   n := LEN (found) ;
-  dirsOnly := any AND pattern[LEN (pattern) - 1] = '/' ;
+  dirsOnly := any AND Text.BIs (pattern, Text.BLen (pattern) - 1, '/') ;
   IF spelled OR dirsOnly THEN
     n := 0 ;
     FOR k := 0 TO LEN (found) - 1 DO
       IF dirsOnly THEN
         there := IsDir (found[k])
       ELSE
-        there := Io.Exists (found[k])
+        there := Io.ExistsUtf (found[k])
       END ;
       IF there THEN
         found[n] := found[k] ;
@@ -650,7 +685,7 @@ BEGIN
       END
     END
   END ;
-  out := NEW (STR, n) ;
+  out := NEW (UTF, n) ;
   FOR k := 0 TO n - 1 DO out[k] := found[k] END ;
   FOR i := 1 TO n - 1 DO
     held := out[i] ;
@@ -662,6 +697,127 @@ BEGIN
     out[k] := held
   END ;
   RETURN out
+END GlobUtf ;
+
+PROCEDURE Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange =
+  (* the STR form: the pattern encoded once, each name found decoded
+     once *)
+VAR
+  u : SLICE OF UTF ;
+  s : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  u := GlobUtf (UTF (pattern)) ;
+  s := NEW (STR, LEN (u)) ;
+  FOR i := 0 TO LEN (u) - 1 DO s[i] := STR (u[i]) END ;
+  RETURN s
 END Glob ;
+
+(* ---- the UTF twins (docs/utf8-plan.md, stage 2) ---- *)
+
+(* a UTF's octets into the argument block, NUL after: Put without the
+   encoding, the octets being the UTF-8 already *)
+PROCEDURE PutU (VAR block: SLICE OF BYTE ; VAR k: I64 ; RO s: UTF) =
+VAR
+  b : SLICE OF BYTE ;
+  j : I64 ;
+BEGIN
+  b := OCTETS (s) ;
+  FOR j := 0 TO LEN (b) - 1 DO
+    block[k] := b[j] ;
+    k := k + 1
+  END ;
+  k := k + 1
+END PutU ;
+
+PROCEDURE StreamUtf (VAR pool: POOL ; h, which: I64) : UTF RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  n := I64 (ExecLen (C.Int (h), C.Int (which))) ;
+  b := NEW (scratch, BYTE, n + 1) ;
+  n := I64 (ExecCopy (C.Int (h), C.Int (which), ADR (b), C.SSizeT (n))) ;
+  RETURN UTF (pool, SLICE (b, 0, n))
+END StreamUtf ;
+
+PROCEDURE ExecWithinUtf (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ;
+                         RO input: UTF ; RO env: SLICE OF UTF ; seconds: F64)
+  : ResultUtf RAISES ValueRange, Io.IOError =
+VAR
+  scratch : POOL ;
+  block, eblock, inb : SLICE OF BYTE ;
+  total, etotal, i, k, h, ms : I64 ;
+  r : ResultUtf ;
+BEGIN
+  ms := 0 ;
+  IF seconds > 0.0 THEN
+    ms := I64 (seconds * 1000.0) ;
+    IF ms < 1 THEN ms := 1 END
+  END ;
+  total := Text.BLen (prog) + 1 ;
+  FOR i := 0 TO LEN (args) - 1 DO total := total + Text.BLen (args[i]) + 1 END ;
+  block := NEW (scratch, BYTE, total) ;
+  k := 0 ;
+  PutU (block, k, prog) ;
+  FOR i := 0 TO LEN (args) - 1 DO PutU (block, k, args[i]) END ;
+  inb := OCTETS (input) ;
+  etotal := 0 ;
+  FOR i := 0 TO LEN (env) - 1 DO etotal := etotal + Text.BLen (env[i]) + 1 END ;
+  eblock := NEW (scratch, BYTE, etotal) ;
+  k := 0 ;
+  FOR i := 0 TO LEN (env) - 1 DO PutU (eblock, k, env[i]) END ;
+  h := I64 (ExecStart (ADR (block), C.Int (LEN (args) + 1),
+                       ADR (inb), C.SSizeT (LEN (inb)),
+                       ADR (eblock), C.Int (LEN (env)), C.SSizeT (ms))) ;
+  IF h < 0 THEN RAISE Io.IOError (STR (prog)) END ;
+  r.status := I64 (ExecStatus (C.Int (h))) ;
+  r.stopped := I64 (ExecStopped (C.Int (h))) # 0 ;
+  r.out := StreamUtf (pool, h, Out) ;
+  r.err := StreamUtf (pool, h, Err) ;
+  ExecRelease (C.Int (h)) ;
+  RETURN r
+END ExecWithinUtf ;
+
+PROCEDURE ExecUtf (VAR pool: POOL ; RO prog: UTF ; RO args: SLICE OF UTF ;
+                   RO input: UTF ; RO env: SLICE OF UTF)
+  : ResultUtf RAISES ValueRange, Io.IOError =
+BEGIN
+  RETURN ExecWithinUtf (pool, prog, args, input, env, 0.0)
+END ExecUtf ;
+
+PROCEDURE BecomeUtf (RO prog: UTF ; RO name: UTF ; RO args: SLICE OF UTF)
+  RAISES ValueRange, Io.IOError =
+VAR
+  scratch : POOL ;
+  pb, block : SLICE OF BYTE ;
+  total, i, k : I64 ;
+BEGIN
+  pb := NEW (scratch, BYTE, Text.BLen (prog) + 1) ;
+  k := 0 ;
+  PutU (pb, k, prog) ;
+  total := Text.BLen (name) + 1 ;
+  FOR i := 0 TO LEN (args) - 1 DO total := total + Text.BLen (args[i]) + 1 END ;
+  block := NEW (scratch, BYTE, total) ;
+  k := 0 ;
+  PutU (block, k, name) ;
+  FOR i := 0 TO LEN (args) - 1 DO PutU (block, k, args[i]) END ;
+  IF I64 (BecomeC (ADR (pb), ADR (block), C.Int (LEN (args) + 1))) < 0 THEN
+    RAISE Io.IOError (STR (prog))
+  END
+END BecomeUtf ;
+
+PROCEDURE ExecutableUtf (VAR pool: POOL) : UTF RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  buf : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  buf := NEW (scratch, BYTE, MaxPath) ;
+  n := I64 (ExePath (ADR (buf), C.Int (MaxPath))) ;
+  IF n < 0 THEN RETURN '' END ;
+  RETURN UTF (pool, SLICE (buf, 0, n))
+END ExecutableUtf ;
 
 END System.

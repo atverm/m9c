@@ -1,0 +1,59 @@
+(* EXPECT: may enter a monitor of another type while this procedure holds its own, and a procedure bound to that type may enter one of this type *)
+MODULE m ;
+(* two monitor types taken in opposite orders: a procedure bound to A
+   enters B while one bound to B enters A, and two threads deadlock (the
+   fourth review's Abba, 3 runs of 3).  Legal forms first: A entering B
+   with nothing bound to B entering A, and an unbound procedure entering
+   both in turn. *)
+TYPE
+  A = MONITOR RECORD
+    n : I64 ;
+  END ;
+  B = MONITOR RECORD
+    n : I64 ;
+  END ;
+  C = MONITOR RECORD
+    n : I64 ;
+  END ;
+VAR
+  a : A ;
+  b : B ;
+  c : C ;
+PROCEDURE InB (VAR x: B) =
+BEGIN
+  x.n := x.n + 1
+END InB ;
+PROCEDURE InC (VAR x: C) =
+BEGIN
+  x.n := x.n + 1
+END InC ;
+PROCEDURE InA (VAR x: A) =
+BEGIN
+  x.n := x.n + 1
+END InA ;
+PROCEDURE AthenC (VAR x: A) =
+BEGIN
+  x.n := x.n + 1 ;
+  InC (c)
+END AthenC ;
+PROCEDURE Both () =
+BEGIN
+  InA (a) ;
+  InB (b)
+END Both ;
+PROCEDURE AthenB (VAR x: A) =
+BEGIN
+  x.n := x.n + 1 ;
+  InB (b)
+END AthenB ;
+PROCEDURE BthenA (VAR x: B) =
+BEGIN
+  x.n := x.n + 1 ;
+  InA (a)
+END BthenA ;
+BEGIN
+  AthenC (a) ;
+  Both () ;
+  AthenB (a) ;
+  BthenA (b)
+END m.

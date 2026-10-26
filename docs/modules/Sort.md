@@ -141,3 +141,24 @@ cannot notice a slice that is not sorted.
 
 A NaN x is after everything, as numpy has it: Lower and Upper
 answer LEN (a), and Find -1.
+
+runtime/m9rt.c (m9rt.h): LSD radix sorts over a slice's storage,
+stable, answering 1 when done and 0 when the caller's merge sort
+must do it.  No LINK: the runtime's.  REENTRANT: scratch from
+malloc, no shared state.
+
+### CSortF64 (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT]
+
+_(undocumented)_
+
+### CSortI64 (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT]
+
+_(undocumented)_
+
+### CArgF64 (v: C.ConstPtr ; idx: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT]
+
+_(undocumented)_
+
+### CArgI64 (v: C.ConstPtr ; idx: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT]
+
+_(undocumented)_

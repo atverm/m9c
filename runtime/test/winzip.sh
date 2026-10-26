@@ -90,9 +90,7 @@ if [ ! -x "$M9C" ]; then
   ( cd "$R/runtime/test" && . ./lib/gen.sh >/dev/null &&
     gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
         -Wno-unused-parameter -Wno-unused-function \
-        -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
-        ../gen/Lex.c ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
-        ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o "$W/m9c" )
+        -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$W/m9c" )
   M9C=$W/m9c
 fi
 M9RUNTIME="$R/runtime" M9LIBRARY="$R/corpus" "$M9C" --run "$R/tools/tutor/MkTutor.m9" \

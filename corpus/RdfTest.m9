@@ -121,6 +121,7 @@ BEGIN
     doc := Io.ReadFileBytes (p, Path ('rdf-xml', file))
   EXCEPT
   | Io.IOError (e) : msg := 'cannot read' ; RETURN FALSE
+  | ValueRange : msg := 'ValueRange' ; RETURN FALSE
   END ;
   BEGIN
     g := Rdf.ParseRdfXml (p, doc, xmlBase + file) ;

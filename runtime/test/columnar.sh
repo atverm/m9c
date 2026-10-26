@@ -16,9 +16,7 @@ set -e
 cd "$(dirname "$0")"
 
 REPO=$(cd ../.. && pwd)
-M9C=${M9C:-$REPO/runtime/test/m9c}
-[ -x "$M9C" ] || M9C=$REPO/out/m9c
-[ -x "$M9C" ] || { echo "no m9c: run runtime/test/m9c.sh or ./build.sh"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 # the Python that judges the PARQUET half: $COLUMNAR_PY when the
 # system's has no pyarrow (zoefii: ~/miniconda3/bin/python3, pyarrow
 # 25.0.1 -- the suite sets it, or that half SKIPs there).  The NETCDF

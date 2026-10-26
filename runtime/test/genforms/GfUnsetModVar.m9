@@ -1,0 +1,62 @@
+MODULE GfUnsetModVar ;
+
+(* WANT: unset: module -1 0, copied -1 0, var parameter -1 0, set 7 *)
+
+(* A module variable whose type is a pointer that is not OPT is a zeroed
+   static, like a zeroed record's field: it holds NULL until set, and any
+   procedure may read it, so no rule at the source can say it was set.
+   A VAR parameter is the caller's storage itself, which may be such a
+   variable -- an output parameter its procedure never filled.  Following
+   either, or copying it out, was a SIGSEGV; IndexError (-1, 0) now, as
+   for a field (2026-10-21, soundfuzz's first findings, the compiler
+   review's tier 2 item 10). *)
+
+IMPORT Io, Fmt ;
+
+TYPE Node = RECORD n : I64 END ;
+
+VAR
+  g, h : PTR Node ;
+  out : STR ;
+
+PROCEDURE Module () : STR =
+BEGIN
+  RETURN Fmt.I64Str (g.n)
+EXCEPT
+| IndexError (i, len) : RETURN Fmt.I64Str (i) + ' ' + Fmt.I64Str (len)
+END Module ;
+
+PROCEDURE Copied () : STR =
+VAR q : PTR Node ;
+BEGIN
+  q := g ;
+  RETURN 'copied an unset pointer'
+EXCEPT
+| IndexError (i, len) : RETURN Fmt.I64Str (i) + ' ' + Fmt.I64Str (len)
+END Copied ;
+
+PROCEDURE Fill (VAR p: PTR Node ; set: BOOL) : I64 =
+BEGIN
+  IF set THEN p := NEW (Node) ; p.n := 7 END ;
+  RETURN p.n
+END Fill ;
+
+PROCEDURE ViaVar () : STR =
+BEGIN
+  RETURN Fmt.I64Str (Fill (g, FALSE))
+EXCEPT
+| IndexError (i, len) : RETURN Fmt.I64Str (i) + ' ' + Fmt.I64Str (len)
+END ViaVar ;
+
+PROCEDURE Set () : STR =
+BEGIN
+  RETURN Fmt.I64Str (Fill (h, TRUE)) + ''
+EXCEPT
+| IndexError (i, len) : RETURN 'IndexError on a set pointer'
+END Set ;
+
+BEGIN
+  out := 'unset: module ' + Module () + ', copied ' + Copied () +
+    ', var parameter ' + ViaVar () + ', set ' + Set () ;
+  Io.WriteLine (out)
+END GfUnsetModVar.

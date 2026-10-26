@@ -1,0 +1,77 @@
+MODULE GfRegionWide ;
+
+(* WANT: g 1.5 names abc *)
+
+(* A record of more fields than the region judgement had room for
+   (2026-10-25, flexpartm9's Config.Read under 0.25.0, found and reduced
+   by its session).  The table of tracked names held the scope plus 96;
+   once full a field was no longer tracked on its own and fell back to
+   its record, so an RO string stored into one field's elements made the
+   whole record read-only storage, and every later write through another
+   field -- into storage NEW made -- was refused (73 sites in Config.m9).
+   With 95 fields it was accepted.  The table is sized from the body now.
+   The write into the field that does hold the RO string stays refused
+   (runtime/test/regions/W1.m9). *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Options = RECORD
+    f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12,
+    f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24,
+    f25, f26, f27, f28, f29, f30, f31, f32, f33, f34, f35, f36,
+    f37, f38, f39, f40, f41, f42, f43, f44, f45, f46, f47, f48,
+    f49, f50, f51, f52, f53, f54, f55, f56, f57, f58, f59, f60,
+    f61, f62, f63, f64, f65, f66, f67, f68, f69, f70, f71, f72,
+    f73, f74, f75, f76, f77, f78, f79, f80, f81, f82, f83, f84,
+    f85, f86, f87, f88, f89, f90, f91, f92, f93, f94, f95, f96,
+    f97, f98, f99, f100, f101, f102, f103, f104, f105, f106, f107, f108,
+    f109, f110 : SLICE OF F64 ;
+    names : SLICE OF STR ;
+    g : SLICE OF F64
+  END ;
+
+PROCEDURE Pick (RO d: STR) : STR =
+BEGIN
+  RETURN d
+END Pick ;
+
+PROCEDURE Read () : Options RAISES IndexError =
+VAR o : Options ;
+BEGIN
+  o.f1 := NEW (F64, 1) ; o.f2 := NEW (F64, 1) ; o.f3 := NEW (F64, 1) ; o.f4 := NEW (F64, 1) ; o.f5 := NEW (F64, 1) ;
+  o.f6 := NEW (F64, 1) ; o.f7 := NEW (F64, 1) ; o.f8 := NEW (F64, 1) ; o.f9 := NEW (F64, 1) ; o.f10 := NEW (F64, 1) ;
+  o.f11 := NEW (F64, 1) ; o.f12 := NEW (F64, 1) ; o.f13 := NEW (F64, 1) ; o.f14 := NEW (F64, 1) ; o.f15 := NEW (F64, 1) ;
+  o.f16 := NEW (F64, 1) ; o.f17 := NEW (F64, 1) ; o.f18 := NEW (F64, 1) ; o.f19 := NEW (F64, 1) ; o.f20 := NEW (F64, 1) ;
+  o.f21 := NEW (F64, 1) ; o.f22 := NEW (F64, 1) ; o.f23 := NEW (F64, 1) ; o.f24 := NEW (F64, 1) ; o.f25 := NEW (F64, 1) ;
+  o.f26 := NEW (F64, 1) ; o.f27 := NEW (F64, 1) ; o.f28 := NEW (F64, 1) ; o.f29 := NEW (F64, 1) ; o.f30 := NEW (F64, 1) ;
+  o.f31 := NEW (F64, 1) ; o.f32 := NEW (F64, 1) ; o.f33 := NEW (F64, 1) ; o.f34 := NEW (F64, 1) ; o.f35 := NEW (F64, 1) ;
+  o.f36 := NEW (F64, 1) ; o.f37 := NEW (F64, 1) ; o.f38 := NEW (F64, 1) ; o.f39 := NEW (F64, 1) ; o.f40 := NEW (F64, 1) ;
+  o.f41 := NEW (F64, 1) ; o.f42 := NEW (F64, 1) ; o.f43 := NEW (F64, 1) ; o.f44 := NEW (F64, 1) ; o.f45 := NEW (F64, 1) ;
+  o.f46 := NEW (F64, 1) ; o.f47 := NEW (F64, 1) ; o.f48 := NEW (F64, 1) ; o.f49 := NEW (F64, 1) ; o.f50 := NEW (F64, 1) ;
+  o.f51 := NEW (F64, 1) ; o.f52 := NEW (F64, 1) ; o.f53 := NEW (F64, 1) ; o.f54 := NEW (F64, 1) ; o.f55 := NEW (F64, 1) ;
+  o.f56 := NEW (F64, 1) ; o.f57 := NEW (F64, 1) ; o.f58 := NEW (F64, 1) ; o.f59 := NEW (F64, 1) ; o.f60 := NEW (F64, 1) ;
+  o.f61 := NEW (F64, 1) ; o.f62 := NEW (F64, 1) ; o.f63 := NEW (F64, 1) ; o.f64 := NEW (F64, 1) ; o.f65 := NEW (F64, 1) ;
+  o.f66 := NEW (F64, 1) ; o.f67 := NEW (F64, 1) ; o.f68 := NEW (F64, 1) ; o.f69 := NEW (F64, 1) ; o.f70 := NEW (F64, 1) ;
+  o.f71 := NEW (F64, 1) ; o.f72 := NEW (F64, 1) ; o.f73 := NEW (F64, 1) ; o.f74 := NEW (F64, 1) ; o.f75 := NEW (F64, 1) ;
+  o.f76 := NEW (F64, 1) ; o.f77 := NEW (F64, 1) ; o.f78 := NEW (F64, 1) ; o.f79 := NEW (F64, 1) ; o.f80 := NEW (F64, 1) ;
+  o.f81 := NEW (F64, 1) ; o.f82 := NEW (F64, 1) ; o.f83 := NEW (F64, 1) ; o.f84 := NEW (F64, 1) ; o.f85 := NEW (F64, 1) ;
+  o.f86 := NEW (F64, 1) ; o.f87 := NEW (F64, 1) ; o.f88 := NEW (F64, 1) ; o.f89 := NEW (F64, 1) ; o.f90 := NEW (F64, 1) ;
+  o.f91 := NEW (F64, 1) ; o.f92 := NEW (F64, 1) ; o.f93 := NEW (F64, 1) ; o.f94 := NEW (F64, 1) ; o.f95 := NEW (F64, 1) ;
+  o.f96 := NEW (F64, 1) ; o.f97 := NEW (F64, 1) ; o.f98 := NEW (F64, 1) ; o.f99 := NEW (F64, 1) ; o.f100 := NEW (F64, 1) ;
+  o.f101 := NEW (F64, 1) ; o.f102 := NEW (F64, 1) ; o.f103 := NEW (F64, 1) ; o.f104 := NEW (F64, 1) ; o.f105 := NEW (F64, 1) ;
+  o.f106 := NEW (F64, 1) ; o.f107 := NEW (F64, 1) ; o.f108 := NEW (F64, 1) ; o.f109 := NEW (F64, 1) ; o.f110 := NEW (F64, 1) ;
+  o.names := NEW (STR, 1) ;
+  o.names[0] := Pick ('abc') ;
+  o.g := NEW (F64, 3) ;
+  o.g[0] := 1.5 ;
+  RETURN o
+END Read ;
+
+VAR o : Options ;
+BEGIN
+  o := Read () ;
+  Io.WriteLine ('g ' + Fmt.Short (o.g[0]) + ' names ' + o.names[0])
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError')
+END GfRegionWide.

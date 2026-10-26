@@ -17,6 +17,10 @@ type
     cur : TToken;
     peeked   : Boolean;
     peekTok  : TToken;
+    depth    : Integer;   { levels open, against MaxDepth }
+    tdepth   : Integer;   { type levels open, against MaxTypeDepth }
+    deep     : Boolean;   { a bound passed: the rest is EOF }
+    procedure Deeper (by: Integer);
     procedure Bump;
     function Nxt: TToken;
     procedure Err (const msg: string);
@@ -38,11 +42,13 @@ type
     function PHandler: TNode;
     { types }
     function PType: TNode;
+    function PType0: TNode;
     function PFieldSeq (stops: TTokSet): TNode;
     function PVariant: TNode;
     { statements }
     function PStmtSeq (stops: TTokSet): TNode;
     function PStatement: TNode;
+    function PStatement0: TNode;
     function PCaseArm: TNode;
     function PCaseLabel: TNode;
     function QualPattern (e: TNode): TNode;
@@ -54,6 +60,7 @@ type
     function PSimple: TNode;
     function PTerm: TNode;
     function PFactor: TNode;
+    function PFactor0: TNode;
     function PNew: TNode;
     function PDesignator: TNode;
     procedure PSels (n: TNode);
@@ -71,6 +78,9 @@ type
 implementation
 
 const
+  { corpus/Parse.m9's MaxDepth says why }
+  MaxDepth = 1000;
+  MaxTypeDepth = 100;
   DeclStarts = [tkCONST, tkTYPE, tkVAR, tkEXCEPTION, tkPROCEDURE];
   RelOps     = [tkEq, tkNeq, tkLt, tkLe, tkGt, tkGe];
   AddOps     = [tkPlus, tkMinus, tkPlusWrap, tkMinusWrap];
@@ -98,6 +108,9 @@ begin
   lx := TLexer.Create (src);
   Errors := TStringList.Create;
   peeked := False;
+  depth := 0;
+  tdepth := 0;
+  deep := False;
   Bump;
 end;
 
@@ -110,6 +123,11 @@ end;
 
 procedure TParser.Bump;
 begin
+  if deep then
+  begin
+    cur.kind := tkEOF;
+    Exit;
+  end;
   repeat
     if peeked then
     begin
@@ -125,6 +143,12 @@ end;
 
 function TParser.Nxt: TToken;
 begin
+  if deep then
+  begin
+    Result := cur;
+    Result.kind := tkEOF;
+    Exit;
+  end;
   if not peeked then
   begin
     repeat
@@ -144,7 +168,19 @@ end;
 
 procedure TParser.ErrAt (const msg: string; ln, cl: Integer);
 begin
+  if deep then Exit;
   Errors.Add (Format ('%d:%d %s', [ln, cl, msg]));
+end;
+
+procedure TParser.Deeper (by: Integer);
+begin
+  depth := depth + by;
+  if (depth > MaxDepth) and not deep then
+  begin
+    Err ('nesting deeper than 1000 levels: the expression, statement or type here is too deep to compile -- give a part a name of its own, a local, a procedure or a TYPE');
+    deep := True;
+    cur.kind := tkEOF;
+  end;
 end;
 
 function TParser.Expect (k: TTokKind; const what: string): Boolean;
@@ -628,6 +664,21 @@ end;
 { ---- types ---- }
 
 function TParser.PType: TNode;
+begin
+  Deeper (1);
+  Inc (tdepth);
+  if (tdepth > MaxTypeDepth) and not deep then
+  begin
+    Err ('a type nested deeper than 100 levels: give a part a TYPE name of its own');
+    deep := True;
+    cur.kind := tkEOF;
+  end;
+  Result := PType0;
+  Dec (tdepth);
+  depth := depth - 1;
+end;
+
+function TParser.PType0: TNode;
 var
   n : TNode;
 begin
@@ -866,6 +917,13 @@ begin
 end;
 
 function TParser.PStatement: TNode;
+begin
+  Deeper (1);
+  Result := PStatement0;
+  depth := depth - 1;
+end;
+
+function TParser.PStatement0: TNode;
 var
   des, n : TNode;
 begin
@@ -1181,10 +1239,14 @@ end;
 function TParser.PDisj: TNode;
 var
   n : TNode;
+  k : Integer;
 begin
   Result := PConj;
+  k := 0;
   while cur.kind = tkOR do
   begin
+    Deeper (1);
+    Inc (k);
     n := NewNode (nkBin);
     n.a := 'OR';
     Bump;
@@ -1192,15 +1254,20 @@ begin
     n.Add (PConj);
     Result := n;
   end;
+  depth := depth - k;
 end;
 
 function TParser.PConj: TNode;
 var
   n : TNode;
+  k : Integer;
 begin
   Result := PRel;
+  k := 0;
   while cur.kind = tkAND do
   begin
+    Deeper (1);
+    Inc (k);
     n := NewNode (nkBin);
     n.a := 'AND';
     Bump;
@@ -1208,6 +1275,7 @@ begin
     n.Add (PRel);
     Result := n;
   end;
+  depth := depth - k;
 end;
 
 function TParser.PRel: TNode;
@@ -1229,6 +1297,7 @@ end;
 function TParser.PSimple: TNode;
 var
   n : TNode;
+  k : Integer;
   signed : TNode;
 begin
   signed := nil;
@@ -1244,8 +1313,11 @@ begin
     signed.Add (Result);
     Result := signed;
   end;
+  k := 0;
   while cur.kind in AddOps do
   begin
+    Deeper (1);
+    Inc (k);
     n := NewNode (nkBin);
     n.a := OpText (cur.kind);
     Bump;
@@ -1253,15 +1325,20 @@ begin
     n.Add (PTerm);
     Result := n;
   end;
+  depth := depth - k;
 end;
 
 function TParser.PTerm: TNode;
 var
   n : TNode;
+  k : Integer;
 begin
   Result := PFactor;
+  k := 0;
   while cur.kind in MulOps do
   begin
+    Deeper (1);
+    Inc (k);
     n := NewNode (nkBin);
     n.a := OpText (cur.kind);
     Bump;
@@ -1269,9 +1346,17 @@ begin
     n.Add (PFactor);
     Result := n;
   end;
+  depth := depth - k;
 end;
 
 function TParser.PFactor: TNode;
+begin
+  Deeper (1);
+  Result := PFactor0;
+  depth := depth - 1;
+end;
+
+function TParser.PFactor0: TNode;
 var
   des, cs : TNode;
 begin
@@ -1376,7 +1461,12 @@ begin
       Err ('expression expected, found ' + KindName (cur.kind));
       Result := NewNode (nkInt);
       Result.a := '0';
-      Bump;
+      { a token that ends a statement or a construct is left for whoever
+        owns it (mirrors Parse.PFactor; the compiler review's tier 3) }
+      if not (cur.kind in [tkSemi, tkEND, tkELSE, tkELSIF, tkTHEN, tkDO, tkOF,
+                           tkRParen, tkRBrack, tkComma, tkBar, tkEXCEPT,
+                           tkFINALLY, tkTO, tkBY, tkEOF]) then
+        Bump;
     end;
   end;
 end;

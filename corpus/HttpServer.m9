@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE HttpServer ;
 
 (* An HTTP/1.1 server for a program to carry: a route table, a pool
@@ -983,11 +984,11 @@ BEGIN
 END IsTchar ;
 
 PROCEDURE IsToken (RO s: STR) : BOOL =
-VAR i : I64 ;
+VAR c : CHAR ;
 BEGIN
   IF LEN (s) = 0 THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF NOT IsTchar (s[i]) THEN RETURN FALSE END
+  FOR c IN s DO                   (* by character: the same under the switch *)
+    IF NOT IsTchar (c) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END IsToken ;
@@ -1473,16 +1474,16 @@ PROCEDURE SafeName (RO name: STR) : BOOL =
   (* names separated by single slashes: no empty segment, none that
      begins with a dot, no control character, backslash or colon *)
 VAR
-  i : I64 ;
-  c : CHAR ;
+  c, prev : CHAR ;
 BEGIN
   IF LEN (name) = 0 THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (name) - 1 DO
-    c := name[i] ;
+  prev := '/' ;                   (* the start counts as after a slash *)
+  FOR c IN name DO                (* by character: the same under the switch *)
     IF ORD (c) < 32 OR ORD (c) = 127 OR c = '\' OR c = ':' THEN RETURN FALSE END ;
-    IF (i = 0 OR name[i - 1] = '/') AND (c = '/' OR c = '.') THEN RETURN FALSE END
+    IF prev = '/' AND (c = '/' OR c = '.') THEN RETURN FALSE END ;
+    prev := c
   END ;
-  RETURN name[LEN (name) - 1] # '/'
+  RETURN prev # '/'
 END SafeName ;
 
 PROCEDURE IsDir (RO path: STR) : BOOL RAISES ValueRange =
@@ -2222,6 +2223,10 @@ VAR
   n, served : I64 ;
   keep : BOOL ;
 BEGIN
+  (* the FINALLY inside the handlers' block: the close converts fd too,
+     and its ValueRange is a fault like the others -- outside, it was
+     counted as handled only because the checker's handled set was
+     flat over the procedure (2026-10-21, the compiler review's C6) *)
   BEGIN
     BEGIN
       c.fd := fd ;
@@ -2238,18 +2243,18 @@ BEGIN
         keep := One (w, c, served) ;
         served := served + 1
       END
-    EXCEPT
-    | ValueRange :
-        w.s.st[w.k].faults := w.s.st[w.k].faults + 1
-    | IndexError :
-        w.s.st[w.k].faults := w.s.st[w.k].faults + 1
-    | Overflow :
-        w.s.st[w.k].faults := w.s.st[w.k].faults + 1
-    | OutOfMemory :
-        w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+    FINALLY
+      n := I64 (Close (C.Int (fd)))
     END
-  FINALLY
-    n := I64 (Close (C.Int (fd)))
+  EXCEPT
+  | ValueRange :
+      w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+  | IndexError :
+      w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+  | Overflow :
+      w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+  | OutOfMemory :
+      w.s.st[w.k].faults := w.s.st[w.k].faults + 1
   END
 END Serve1 ;
 

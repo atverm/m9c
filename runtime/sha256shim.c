@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
 /* sha256shim: Hash's SHA-256 (2026-10-11).
  *
  * Hash.Sha256 is a VALUE record -- a copy before Final forks the

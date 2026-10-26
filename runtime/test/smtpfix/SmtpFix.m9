@@ -225,12 +225,15 @@ BEGIN
     Io.WriteLine ('usage: smtpfix PLAIN LOGIN TLS STARTTLS') ;
     Io.Halt (2)
   END ;
-  plain := Int (Io.Arg (pool, 1)) ;
-  login := Int (Io.Arg (pool, 2)) ;
-  tls := Int (Io.Arg (pool, 3)) ;
-  starttls := Int (Io.Arg (pool, 4)) ;
   np := 0 ; nl := 0 ; nt := 0 ; ns := 0 ;
+  (* the arguments inside the block: Io.Arg raises ValueRange, and the
+     handler covers only its own block (2026-10-21; the flat handled
+     set had counted this one caught) *)
   BEGIN
+    plain := Int (Io.Arg (pool, 1)) ;
+    login := Int (Io.Arg (pool, 2)) ;
+    tls := Int (Io.Arg (pool, 3)) ;
+    starttls := Int (Io.Arg (pool, 4)) ;
     Run ()
   EXCEPT
   | ValueRange :

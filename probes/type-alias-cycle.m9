@@ -1,0 +1,12 @@
+(* EXPECT: type H refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2) *)
+(* A pointer to a pointer to itself is no recursion a value can end (since
+   2026-10-21): `TYPE H = SHARED PTR H' made --check run out of stack, and
+   `A = B ; B = A' or `S = SLICE OF S' looped.  The legal form first: a
+   pointer to a record that points back. *)
+MODULE m ;
+TYPE
+  P = PTR R ;
+  R = RECORD p : P END ;
+  H = SHARED PTR H ;
+BEGIN
+END m.

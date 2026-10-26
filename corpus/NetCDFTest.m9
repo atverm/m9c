@@ -204,14 +204,23 @@ EXCEPT
 | ValueRange : RETURN '?'
 END I64Text ;
 
-(* the octets of a text as CHARs 0..255, as GetAttStr answers them *)
+(* the octets of a text as CHARs 0..255, as GetAttStr answers them --
+   one per CHARACTER, by FOR c IN s, which counts the same before and
+   after the UTF switch (a LEN would count UTF-8 octets there) *)
 PROCEDURE Octets (RO s: STR) : SLICE OF I64 RAISES ValueRange =
 VAR
   o : SLICE OF I64 ;
-  i : I64 ;
+  c : CHAR ;
+  n : I64 ;
 BEGIN
-  o := NEW (pool, I64, LEN (s)) ;
-  FOR i := 0 TO LEN (s) - 1 DO o[i] := I64 (ORD (s[i])) END ;
+  n := 0 ;
+  FOR c IN s DO n := n + 1 END ;
+  o := NEW (pool, I64, n) ;
+  n := 0 ;
+  FOR c IN s DO
+    o[n] := ORD (c) ;
+    n := n + 1
+  END ;
   RETURN o
 END Octets ;
 
@@ -248,7 +257,7 @@ BEGIN
   Check.EqStr (t, 'PutAttText: two- and three-octet sequences, a global attribute',
                NetCDF.GetAttText (pool, f, NetCDF.Global, 'title'), 'µmol m-2 s-1 — CO₂') ;
   Check.EqI64 (t, 'PutAttText: the title is 23 octets for 18 characters',
-               LEN (NetCDF.GetAttStr (pool, f, NetCDF.Global, 'title')), 23) ;
+               LEN (Octets (NetCDF.GetAttStr (pool, f, NetCDF.Global, 'title'))), 23) ;
   Check.EqStr (t, 'PutAttText: ASCII is ASCII', NetCDF.GetAttStr (pool, f, NetCDF.Global, 'plain'), 'ASCII') ;
   Check.EqStr (t, 'PutAttStr: still one octet a CHAR (µ is the single octet B5)',
                NetCDF.GetAttStr (pool, f, NetCDF.Global, 'latin1'), 'µ') ;

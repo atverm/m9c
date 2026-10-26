@@ -1,0 +1,31 @@
+(* EXPECT: unhandled RAISES ValueRange from UTF conversion *)
+MODULE m ;
+(* UTF of a SLICE of octets validates them as UTF of the octets does:
+   the M9 checker typed a SLICE (b, i, n) argument as unknown and said
+   nothing (Fmt.Short, 2026-10-25; the Pascal twin refused).  Legal
+   forms first: declared, handled, a SLICE of an array declared; then
+   a SLICE of an array of octets in a procedure that raises nothing *)
+VAR u : UTF ;
+PROCEDURE Declared (RO b: SLICE OF BYTE) : UTF RAISES ValueRange =
+BEGIN
+  RETURN UTF (SLICE (b, 0, 1))
+END Declared ;
+PROCEDURE Handled (RO b: SLICE OF BYTE) : UTF =
+BEGIN
+  RETURN UTF (SLICE (b, 0, 1))
+EXCEPT
+| ValueRange : RETURN ''
+END Handled ;
+PROCEDURE FromArray () : UTF RAISES ValueRange =
+VAR a : ARRAY 4 OF BYTE ;
+BEGIN
+  RETURN UTF (SLICE (a, 0, 2))
+END FromArray ;
+PROCEDURE Bad () : UTF =
+VAR a : ARRAY 4 OF BYTE ;
+BEGIN
+  RETURN UTF (SLICE (a, 0, 2))
+END Bad ;
+BEGIN
+  u := ''
+END m.

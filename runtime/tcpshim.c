@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
 /* tcpshim.c -- the TCP shim csock and csrv bind to, on POSIX and on
    Windows.  Adapted from reference/m2-stack/tcpshim.c with one fix:
    the reference leaked the socket when connect() failed; this closes
@@ -36,6 +37,29 @@
 #include <netinet/tcp.h>
 #include <poll.h>
 #include <signal.h>
+#include <fcntl.h>
+#endif
+
+/* EVERY SOCKET IS CLOSE-ON-EXEC (2026-10-21, the compiler review's G9):
+   a child an Exec started inherited the listening socket and every
+   client's.  On Linux at the socket's making -- SOCK_CLOEXEC, and
+   accept4, which glibc declares only under _GNU_SOURCE, so here -- on
+   other Unixes by fcntl after it (macOS's spawn says CLOEXEC_DEFAULT
+   as well, which closes the window); Windows sockets are not inherited
+   by CreateProcess's explicit handle list. */
+#if defined (__linux__)
+#define M9_SOCK_CE SOCK_CLOEXEC
+int accept4 (int fd, struct sockaddr *addr, socklen_t *len, int flags);
+#define m9_accept(fd) accept4 ((fd), NULL, NULL, SOCK_CLOEXEC)
+#define m9_ce(fd) ((void) 0)
+#elif !defined (_WIN32)
+#define M9_SOCK_CE 0
+#define m9_accept(fd) accept ((fd), NULL, NULL)
+#define m9_ce(fd) ((void) fcntl ((fd), F_SETFD, FD_CLOEXEC))
+#else
+#define M9_SOCK_CE 0
+#define m9_accept(fd) accept ((fd), NULL, NULL)
+#define m9_ce(fd) ((void) 0)
 #endif
 #include <stdint.h>
 #include <string.h>
@@ -84,8 +108,9 @@ int tcp_listen (int port, int backlog)
 
   memset (&a, 0, sizeof a);
   if (!wsa ()) return -1;
-  fd = socket (AF_INET, SOCK_STREAM, 0);
+  fd = socket (AF_INET, SOCK_STREAM | M9_SOCK_CE, 0);
   if (fd == BAD_SOCK) return -1;
+  m9_ce (fd);
 #ifdef _WIN32
   /* Not SO_REUSEADDR: on Windows that option lets a second socket
      bind a port another socket is LISTENING on, the opposite of what
@@ -125,7 +150,8 @@ int tcp_listen_at (const char *addr, int port, int backlog)
   hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST | AI_NUMERICSERV;
   snprintf (ps, sizeof ps, "%d", port);
   if (getaddrinfo (addr, ps, &hints, &res) != 0) return -1;
-  fd = socket (res->ai_family, res->ai_socktype, res->ai_protocol);
+  fd = socket (res->ai_family, res->ai_socktype | M9_SOCK_CE, res->ai_protocol);
+  if (fd != BAD_SOCK) m9_ce (fd);
   if (fd == BAD_SOCK) { freeaddrinfo (res); return -1; }
 #ifdef _WIN32
   setsockopt (fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, OPTP (&one), sizeof one);
@@ -199,6 +225,16 @@ void m9_srv_signals (int on)
 }
 #endif
 
+/* a wait in ms as poll takes it: past INT_MAX it wrapped through
+   (int), so 2^32 + 500 waited half a second (review2 R2); a negative
+   wait is poll's "forever" */
+static int m9_poll_ms (int64_t ms)
+{
+  if (ms > INT_MAX) return INT_MAX;
+  if (ms < 0) return -1;
+  return (int) ms;
+}
+
 /* accept, waiting at most ms: the descriptor, -2 when nothing came in
    that time, -1 when the listener is dead.  The accepting thread
    waits in slices so that it sees a stop.                           */
@@ -210,14 +246,14 @@ int tcp_accept_wait (int fd, int64_t ms)
   p.fd = sock_of (fd);
   p.events = POLLRDNORM;
   p.revents = 0;
-  r = WSAPoll (&p, 1, (INT) ms);
+  r = WSAPoll (&p, 1, (INT) m9_poll_ms (ms));
 #else
   struct pollfd p;
   int r;
   p.fd = fd;
   p.events = POLLIN;
   p.revents = 0;
-  r = poll (&p, 1, (int) ms);
+  r = poll (&p, 1, m9_poll_ms (ms));
 #endif
   if (r == 0) return -2;
   if (r < 0) {
@@ -240,13 +276,13 @@ int tcp_readable (int fd, int64_t ms)
   p.fd = sock_of (fd);
   p.events = POLLRDNORM;
   p.revents = 0;
-  return WSAPoll (&p, 1, (INT) ms) > 0 ? 1 : 0;
+  return WSAPoll (&p, 1, (INT) m9_poll_ms (ms)) > 0 ? 1 : 0;
 #else
   struct pollfd p;
   p.fd = fd;
   p.events = POLLIN;
   p.revents = 0;
-  return poll (&p, 1, (int) ms) > 0 ? 1 : 0;
+  return poll (&p, 1, m9_poll_ms (ms)) > 0 ? 1 : 0;
 #endif
 }
 
@@ -265,8 +301,8 @@ int tcp_readable (int fd, int64_t ms)
 int tcp_accept (int fd)
 {
   for (;;) {
-    sock_t s = accept (sock_of (fd), NULL, NULL);
-    if (s != BAD_SOCK) return fd_of (s);
+    sock_t s = m9_accept (sock_of (fd));
+    if (s != BAD_SOCK) { m9_ce (s); return fd_of (s); }
 #ifdef _WIN32
     {
       int e = WSAGetLastError ();
@@ -321,8 +357,9 @@ int tcp_connect (const char *host, int port)
   hints.ai_socktype = SOCK_STREAM;
   if (getaddrinfo (host, ps, &hints, &res)) return -1;
   for (ai = res; ai; ai = ai->ai_next) {
-    fd = socket (ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    fd = socket (ai->ai_family, ai->ai_socktype | M9_SOCK_CE, ai->ai_protocol);
     if (fd == BAD_SOCK) continue;
+    m9_ce (fd);
     if (connect (fd, ai->ai_addr, (socklen_t) ai->ai_addrlen) == 0) break;
     sock_close (fd);
     fd = BAD_SOCK;

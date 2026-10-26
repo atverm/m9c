@@ -1,0 +1,40 @@
+MODULE GfOwnerSharedCopy ;
+
+(* WANT: 41 *)
+
+(* a view taken through s, then t := s and DISPOSE (s): t keeps the
+  object (F4) *)
+(* SAFE: a view through a SHARED handle, the handle copied after, one copy disposed, the view read *)
+IMPORT Io, Fmt, Text ;
+TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 ; name : STR END ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[3]))
+END Churn ;
+PROCEDURE Mk () : PTR Store =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  RETURN o
+END Mk ;
+PROCEDURE Go () RAISES IndexError =
+VAR o : PTR Store ; s, t : SHARED PTR Store ; v : SLICE OF I64 ;
+BEGIN
+  o := Mk () ;
+  s := SHARED (o) ;
+  v := s.data ;
+  t := s ;
+  DISPOSE (s) ;
+  Io.WriteLine (Fmt.I64Str (v[0])) ;
+  DISPOSE (t)
+END Go ;
+BEGIN
+  Go ()
+EXCEPT
+| IndexError (i, n) : Io.WriteLine ('IndexError')
+END GfOwnerSharedCopy.

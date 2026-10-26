@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Arrays ;
 
 (* Array operations over a SLICE OF F64 and a GRID 2 OF F64: the

@@ -1,0 +1,31 @@
+(* found 2026-10-25 testing the region table's size (flexpartm9's Config.Read): an RO answer stored in an element of a record's field, then written through that element -- accepted, SIGBUS; held by regions.sh *)
+MODULE W1 ;
+IMPORT Io ;
+TYPE
+  Options = RECORD
+    f1 : SLICE OF F64 ;
+    names : SLICE OF STR ;
+    g : SLICE OF F64
+  END ;
+PROCEDURE Pick (RO d: STR) : STR =
+BEGIN
+  RETURN d
+END Pick ;
+PROCEDURE Read () : Options RAISES IndexError =
+VAR o : Options ;
+BEGIN
+  o.f1 := NEW (F64, 1) ;
+  o.names := NEW (STR, 1) ;
+  o.names[0] := Pick ('abc') ;
+  o.g := NEW (F64, 3) ;
+  o.g[0] := 1.5 ;
+  o.names[0][0] := 'X' ;
+  RETURN o
+END Read ;
+VAR o : Options ;
+BEGIN
+  o := Read () ;
+  Io.WriteLine (o.names[0])
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError')
+END W1.

@@ -1,0 +1,259 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE DynUtf ;
+(* Growable UTF-8 text: DynStr's twin for UTF (docs/utfbuilder-plan.md),
+   with DynStr's names, so that a module moves from one to the other by
+   its qualifier.  It takes over DynStr's name when STR becomes UTF-8.
+
+   The buffer holds octets -- a quarter of DynStr's for ASCII -- and only
+   whole UTF-8 sequences: every writer below appends a UTF, one encoded
+   scalar or ASCII digits.  Text comes back as a COPY (View, ViewIn),
+   because a UTF view of octets this module still writes would be the
+   hole UTF (b) copies against; the octets come back as a read-only view
+   (Octets), for what leaves as octets anyway.                          *)
+
+TYPE
+  DString ;                              (* opaque; lives in a POOL *)
+
+PROCEDURE New (VAR pool: POOL) : PTR DString IN pool ;
+  (* an empty text, sixteen octets of room, owned by pool -- where the
+     text and every buffer it outgrows are carved *)
+
+PROCEDURE Append (VAR d: PTR DString ; RO s: UTF) ;
+  (* the octets of s onto the end, growing the buffer when it is full.
+       d -- VAR because growing REPLACES the buffer; an Octets view
+            taken before still reads the old octets.
+       s -- copied; appending d's own View to d is safe, it is a copy *)
+
+PROCEDURE AppendChar (VAR d: PTR DString ; ch: CHAR) ;
+  (* one scalar, encoded: one to four octets *)
+
+PROCEDURE AppendI64 (VAR d: PTR DString ; v: I64) ;
+  (* the decimal text of v, a minus sign first when negative; MIN (I64)
+     included *)
+
+PROCEDURE AppendStr (VAR d: PTR DString ; RO s: STR) ;
+  (* the scalars of s, encoded: the bridge for a module that has moved
+     to DynUtf and meets one that has not.  Goes when STR becomes UTF *)
+
+PROCEDURE BLen (d: PTR DString) : I64 ;
+  (* the octets written so far, never the room, O(1) *)
+
+PROCEDURE View (d: PTR DString) : UTF ;
+  (* the text so far, COPIED into the caller's frame, O(n).  The octets
+     are validated as the copy is made; since nothing writes a part of a
+     character they cannot fail, and were they to, the answer is an
+     IndexError, never a wrong text *)
+
+PROCEDURE ViewIn (VAR pool: POOL ; d: PTR DString) : UTF ;
+  (* View, the copy made in pool: for text stored into a structure that
+     outlives the frame *)
+
+PROCEDURE Octets (d: PTR DString) : RO SLICE OF BYTE ;
+  (* the octets so far, a read-only VIEW of the buffer, O(1): for a file,
+     a hash or a socket.  Valid until the next append that grows it *)
+
+PROCEDURE Equal (d: PTR DString ; RO s: UTF) : BOOL ;
+  (* the text so far equals s, octet by octet, with no copy *)
+
+PROCEDURE Bytes (VAR pool: POOL ; RO u: UTF ; zeroTerm: BOOL) : SLICE OF BYTE
+  RAISES ValueRange ;
+  (* DynStr.Bytes's contract, the inverse of Chars: ONE OCTET PER
+     CHARACTER, a character past 255 refused as ValueRange, in pool,
+     with a NUL after them when zeroTerm asks (pool storage is
+     defined-zero, so the terminator is already in place).  For ASCII
+     this is the octets of u; for a text read off a wire through Chars
+     it is the wire's bytes again -- which OCTETS (u), the UTF-8 view,
+     is not: NetCDF's GetAttText read `Â°C' for `°C' through OCTETS *)
+
+PROCEDURE Chars (VAR pool: POOL ; RO b: SLICE OF BYTE) : UTF
+  RAISES ValueRange ;
+  (* DynStr.Chars's contract: the text whose characters are the octets
+     of b, ONE CHARACTER PER OCTET (an octet above 127 is the scalar of
+     that value, two octets in the answer), placed in pool.  For bytes
+     off a wire or a disk that a parser reads as characters without
+     saying they are UTF-8 -- HttpServer's request head.  An octet is
+     always a scalar, so this cannot raise; the signature says what the
+     checker counts, as DynStr's does *)
+
+END DynUtf.
+
+IMPLEMENTATION MODULE DynUtf ;
+
+TYPE
+  DString = RECORD
+    len : I64 ;
+    buf : SLICE OF BYTE ;      (* room = LEN (buf) *)
+  END ;
+
+PROCEDURE New (VAR pool: POOL) : PTR DString IN pool =
+VAR d : PTR DString IN pool ;
+BEGIN
+  d := NEW (pool, DString) ;
+  d.len := 0 ;
+  d.buf := NEW (pool, BYTE, 16) ;
+  RETURN d
+END New ;
+
+(* room for n octets more: the buffer doubles until they fit, and the
+   octets written are moved by one COPY *)
+PROCEDURE Room (VAR d: PTR DString ; n: I64) =
+VAR
+  nb : SLICE OF BYTE ;
+  cap : I64 ;
+BEGIN
+  IF d.len + n <= LEN (d.buf) THEN RETURN END ;
+  cap := 2 * LEN (d.buf) ;
+  WHILE cap < d.len + n DO cap := 2 * cap END ;
+  nb := NEW (d, BYTE, cap) ;
+  COPY (SLICE (nb, 0, d.len), SLICE (d.buf, 0, d.len)) ;
+  d.buf := nb
+  (* the old buffer stays in the pool until the pool dies, as DynStr's *)
+END Room ;
+
+PROCEDURE Append (VAR d: PTR DString ; RO s: UTF) =
+VAR
+  o : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  o := OCTETS (s) ;
+  n := LEN (o) ;
+  Room (d, n) ;
+  (* one COPY, not a loop: faster at the compiler's ten-octet pieces too
+     (docs/utfbuilder-plan.md, step 2) *)
+  COPY (SLICE (d.buf, d.len, n), o) ;
+  d.len := d.len + n
+END Append ;
+
+(* one octet onto the end; v is below 256 at every call, and were it
+   not, the answer is an IndexError (the invariant's raise) *)
+PROCEDURE Put (VAR d: PTR DString ; v: I64) =
+BEGIN
+  d.buf[d.len] := BYTE (v) ;
+  d.len := d.len + 1
+EXCEPT
+| ValueRange : RAISE IndexError (v, 256)
+END Put ;
+
+PROCEDURE AppendChar (VAR d: PTR DString ; ch: CHAR) =
+VAR v : I64 ;
+BEGIN
+  v := ORD (ch) ;
+  IF v < 128 THEN
+    Room (d, 1) ;
+    Put (d, v)
+  ELSIF v < 2048 THEN
+    Room (d, 2) ;
+    Put (d, 192 + v DIV 64) ;
+    Put (d, 128 + v MOD 64)
+  ELSIF v < 65536 THEN
+    Room (d, 3) ;
+    Put (d, 224 + v DIV 4096) ;
+    Put (d, 128 + (v DIV 64) MOD 64) ;
+    Put (d, 128 + v MOD 64)
+  ELSE
+    Room (d, 4) ;
+    Put (d, 240 + v DIV 262144) ;
+    Put (d, 128 + (v DIV 4096) MOD 64) ;
+    Put (d, 128 + (v DIV 64) MOD 64) ;
+    Put (d, 128 + v MOD 64)
+  END
+END AppendChar ;
+
+PROCEDURE AppendI64 (VAR d: PTR DString ; v: I64) =
+VAR
+  tmp : ARRAY 20 OF I64 ;
+  n, x : I64 ;
+BEGIN
+  IF v = 0 THEN AppendChar (d, '0') ; RETURN END ;
+  (* in NEGATIVE space, as DynStr's: -MIN (I64) does not fit an I64 *)
+  IF v < 0 THEN AppendChar (d, '-') ; x := v ELSE x := 0 - v END ;
+  n := 0 ;
+  WHILE x # 0 DO
+    tmp[n] := 0 - (x MOD 10) ;
+    x := x DIV 10 ;
+    n := n + 1
+  END ;
+  Room (d, n) ;
+  WHILE n > 0 DO
+    n := n - 1 ;
+    Put (d, 48 + tmp[n])
+  END
+END AppendI64 ;
+
+PROCEDURE AppendStr (VAR d: PTR DString ; RO s: STR) =
+VAR c : CHAR ;
+BEGIN
+  FOR c IN s DO AppendChar (d, c) END
+END AppendStr ;
+
+PROCEDURE BLen (d: PTR DString) : I64 =
+BEGIN
+  RETURN d.len
+END BLen ;
+
+PROCEDURE View (d: PTR DString) : UTF =
+BEGIN
+  RETURN UTF (SLICE (d.buf, 0, d.len))
+EXCEPT
+| ValueRange : RAISE IndexError (0, d.len)
+END View ;
+
+PROCEDURE ViewIn (VAR pool: POOL ; d: PTR DString) : UTF =
+BEGIN
+  RETURN UTF (pool, SLICE (d.buf, 0, d.len))
+EXCEPT
+| ValueRange : RAISE IndexError (0, d.len)
+END ViewIn ;
+
+PROCEDURE Octets (d: PTR DString) : RO SLICE OF BYTE =
+BEGIN
+  RETURN SLICE (d.buf, 0, d.len)
+END Octets ;
+
+PROCEDURE Equal (d: PTR DString ; RO s: UTF) : BOOL =
+VAR
+  o : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  o := OCTETS (s) ;
+  IF LEN (o) # d.len THEN RETURN FALSE END ;
+  FOR i := 0 TO d.len - 1 DO
+    IF o[i] # d.buf[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Equal ;
+
+PROCEDURE Bytes (VAR pool: POOL ; RO u: UTF ; zeroTerm: BOOL) : SLICE OF BYTE
+  RAISES ValueRange =
+VAR
+  b : SLICE OF BYTE ;
+  c : CHAR ;
+  n, i : I64 ;
+BEGIN
+  n := 0 ;
+  FOR c IN u DO n := n + 1 END ;
+  IF zeroTerm THEN n := n + 1 END ;
+  b := NEW (pool, BYTE, n) ;
+  i := 0 ;
+  FOR c IN u DO
+    b[i] := BYTE (ORD (c)) ;
+    i := i + 1
+  END ;
+  RETURN b
+END Bytes ;
+
+PROCEDURE Chars (VAR pool: POOL ; RO b: SLICE OF BYTE) : UTF
+  RAISES ValueRange =
+VAR
+  d : PTR DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := New (pool) ;
+  Room (d, LEN (b)) ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    AppendChar (d, CHR (I64 (b[i])))
+  END ;
+  RETURN ViewIn (pool, d)
+END Chars ;
+
+END DynUtf.

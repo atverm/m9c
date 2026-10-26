@@ -21,6 +21,7 @@ void DynStr_AppendChar (DynStr_DString * *d, m9_pool *d_pool, uint32_t ch, m9_st
 void DynStr_Append (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err);
 int64_t DynStr_Len (DynStr_DString * d, m9_state *err);
 m9_sl_CHAR DynStr_View (DynStr_DString * d, m9_state *err);
+m9_sl_CHAR DynStr_ViewIn (m9_pool *pool, DynStr_DString * d, m9_state *err);
 bool DynStr_Equal (DynStr_DString * d, m9_sl_CHAR s, m9_state *err);
 bool DynStr_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
 void DynStr_AppendI64 (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state *err);

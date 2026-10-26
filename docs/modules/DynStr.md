@@ -49,6 +49,12 @@ quiet zero that hid an unallocated string.
 the whole content, zero-copy; replaces the M2 CharAt-in-a-loop
 and its out-of-range 0C lie -- indexing the view is checked.
 
+### ViewIn (VAR pool: POOL ; d: PTR DString) : STR
+
+View, the copy made in pool: for text stored into a structure that
+outlives the builder's pool -- DynUtf's name, so a caller reads the
+same under the switch (2026-10-24)
+
 ### Equal (d: PTR DString ; RO s: STR) : BOOL
 
 content comparison against a plain slice, without building a

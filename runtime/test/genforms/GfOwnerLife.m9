@@ -1,0 +1,92 @@
+MODULE GfOwnerLife ;
+
+(* WANT: 41 42 43 44 45 *)
+
+(* the legal forms of "what is derived from an owned object lives as
+   long as its owner" (par 4.2; 2026-10-26, the third review's ownership
+   advice): a view read BEFORE the owner is disposed (ZarrStoreTest's
+   Co2Store order: view, use, close); storage of the object stored into
+   the object itself (ZarrStore.OpenArray's `a.path'); a view kept in
+   module state of an owner that is never killed (it leaks, which par 4.2
+   allows); a view taken through a SHARED handle that outlives the one
+   disposed; an owner moved, and the view read through the new name's
+   life.  The refusals are regions/R3Own*. *)
+IMPORT Io, Fmt ;
+TYPE
+  Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 ; copy : SLICE OF I64 END ;
+VAR
+  kept : SLICE OF I64 ;
+
+PROCEDURE ViewThenDispose () : I64 RAISES IndexError =
+VAR o : PTR Store ; s : SLICE OF I64 ; v : I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 41 ;
+  s := o.data ;
+  v := s[0] ;
+  DISPOSE (o) ;
+  RETURN v
+END ViewThenDispose ;
+
+PROCEDURE SelfStore () : I64 RAISES IndexError =
+VAR o : PTR Store ; v : I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[1] := 42 ;
+  o.copy := o.data ;
+  v := o.copy[1] ;
+  DISPOSE (o) ;
+  RETURN v
+END SelfStore ;
+
+PROCEDURE Leaked () =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[2] := 43 ;
+  kept := o.data
+END Leaked ;
+
+PROCEDURE Survivor () : I64 RAISES IndexError =
+VAR o : PTR Store ; s, t : SHARED PTR Store ; v : SLICE OF I64 ; r : I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[3] := 44 ;
+  s := SHARED (o) ;
+  t := s ;
+  DISPOSE (s) ;
+  v := t.data ;
+  r := v[3] ;
+  DISPOSE (t) ;
+  RETURN r
+END Survivor ;
+
+PROCEDURE Moved () : I64 RAISES IndexError =
+VAR o, p : PTR Store ; s : SLICE OF I64 ; v : I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.data := NEW (o.pool, I64, 4) ;
+  o.data[0] := 45 ;
+  s := o.data ;
+  p := o ;
+  v := s[0] ;
+  DISPOSE (p) ;
+  RETURN v
+END Moved ;
+
+VAR a, b, c, d : I64 ;
+BEGIN
+  a := ViewThenDispose () ;
+  b := SelfStore () ;
+  Leaked () ;
+  c := Survivor () ;
+  d := Moved () ;
+  Io.WriteLine (Fmt.I64Str (a) + ' ' + Fmt.I64Str (b) + ' ' + Fmt.I64Str (kept[2]) + ' ' +
+                Fmt.I64Str (c) + ' ' + Fmt.I64Str (d))
+EXCEPT
+| IndexError (i, n) : Io.WriteLine ('IndexError')
+END GfOwnerLife.

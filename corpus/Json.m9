@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Json ;
 
 IMPORT DynStr ;
@@ -1073,11 +1074,12 @@ PROCEDURE EscapeBody (VAR d: PTR DynStr.DString ;
                       RO t: STR)
   RAISES ValueRange =
 VAR
-  i, v : I64 ;
+  v : I64 ;
   ch : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (t) - 1 DO
-    ch := t[i] ;
+  (* FOR ch IN t: over characters, the same both sides of the UTF
+     switch; a subscript there would be an octet *)
+  FOR ch IN t DO
     v := ORD (ch) ;
     IF ch = '"' THEN
       DynStr.AppendChar (d, 05CC) ;

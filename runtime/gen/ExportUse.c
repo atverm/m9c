@@ -6,6 +6,7 @@
 
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
+extern void m9_put_bytes_err (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -21,10 +22,14 @@ extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
+extern int64_t m9_utf_adopt_p (const void *, int64_t, void *);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
+extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_short (double, void *, int64_t);
 
 static m9_arr_4_double row;
 static ExportDef_Cell * c;
@@ -51,12 +56,12 @@ int main (int argc, char **argv)
     if (err->exc) goto L_hdl_m9t1;
     c = m9v;
   }
-  c->shade = ((ExportDef_Shade){ .tag = ExportDef_Shade_Dark });
-  if (((c->shade).tag == (((ExportDef_Shade){ .tag = ExportDef_Shade_Dark })).tag)) {
+  ({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade = ((ExportDef_Shade){ .tag = ExportDef_Shade_Dark });
+  if (((({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade).tag == (((ExportDef_Shade){ .tag = ExportDef_Shade_Dark })).tag)) {
     Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s0, 41 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  if (((c->shade).tag != (((ExportDef_Shade){ .tag = ExportDef_Shade_Light })).tag)) {
+  if (((({ __auto_type m9g = (c); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->shade).tag != (((ExportDef_Shade){ .tag = ExportDef_Shade_Light })).tag)) {
     Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s1, 16 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
@@ -71,7 +76,7 @@ int main (int argc, char **argv)
   }
   (*(double *) m9_at ((*ExportDef_xs).p, INT64_C(1), (*ExportDef_xs).len, sizeof (double), err)) = 9.5;
   if (err->exc) goto L_hdl_m9t1;
-  (*ExportDef_box)->n = INT64_C(7);
+  ({ __auto_type m9g = ((*ExportDef_box)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n = INT64_C(7);
   ExportDef_Show (err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;

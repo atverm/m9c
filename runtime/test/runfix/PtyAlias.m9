@@ -1,0 +1,15 @@
+(* the same through an alias declared in the caller: the type's RAISES
+   is still PtyDef's.  The Pascal twin keyed by the parameter's own
+   qualifier until 2026-10-25, which an alias does not have *)
+MODULE PtyAlias ;
+IMPORT PtyDef, Io ;
+TYPE F = PtyDef.Mk ;
+PROCEDURE Run (f: F) RAISES PtyDef.Error =
+BEGIN
+  f (-1)
+END Run ;
+BEGIN
+  Run (PtyDef.One)
+EXCEPT
+| PtyDef.Error (m) : Io.WriteLine (m)
+END PtyAlias.

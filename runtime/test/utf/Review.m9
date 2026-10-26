@@ -1,0 +1,32 @@
+MODULE Review ;
+
+(* the shapes m9utf does not rewrite, and says so: a subscript read
+   into a CHAR, a write through a subscript, a CHAR buffer assigned to a
+   STR, a DynStr member with no twin under the switch.  Beside them the
+   shapes it does rewrite, so the expected text shows both. *)
+
+IMPORT DynStr ;
+
+VAR
+  s, t : STR ;
+  c : CHAR ;
+  n : I64 ;
+  b : SLICE OF BYTE ;
+  pool : POOL ;
+
+BEGIN
+  s := 'abc' ;
+  t := NEW (CHAR, 3) ;
+  c := s[0] ;
+  t[0] := 'x' ;
+  n := LEN (s) ;
+  IF s[1] = 'b' THEN n := n + 1 END ;
+  IF 'c' # s[2] THEN n := n + 1 END ;
+  IF s[0] < t[0] THEN n := n + 1 END ;
+  n := n + ORD (s[1]) ;
+  IF DynStr.Eq (s, t) THEN n := n + 1 END ;
+  b := DynStr.Bytes (pool, s, FALSE) ;
+  t := DynStr.Chars (pool, b)
+EXCEPT
+| ValueRange : n := 0
+END Review.

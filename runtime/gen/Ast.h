@@ -101,9 +101,9 @@ typedef struct Ast_Node Ast_Node;
 #define M9SL_m9_sl_Ast_Nodep
 typedef struct { Ast_Node * *p; int64_t len; } m9_sl_Ast_Nodep;
 #endif
-#ifndef M9SL_m9_sl_m9_sl_CHAR
-#define M9SL_m9_sl_m9_sl_CHAR
-typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#ifndef M9SL_m9_sl_m9_sl_UTF8
+#define M9SL_m9_sl_m9_sl_UTF8
+typedef struct { m9_sl_UTF8 *p; int64_t len; } m9_sl_m9_sl_UTF8;
 #endif
 #ifndef M9SL_m9_arr_24_uint32_t
 #define M9SL_m9_arr_24_uint32_t
@@ -115,8 +115,8 @@ struct Ast_Node {
   int64_t kind;
   int64_t line;
   int64_t col;
-  m9_sl_CHAR a;
-  m9_sl_CHAR b;
+  m9_sl_UTF8 au;
+  m9_sl_UTF8 bu;
   bool f1;
   bool f2;
   bool f3;
@@ -128,12 +128,16 @@ struct Ast_Node {
 
 Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, m9_state *err);
 void Ast_Add (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, Ast_Node * kid, m9_state *err);
+void Ast_SetA (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_CHAR s, m9_state *err);
+void Ast_SetB (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_CHAR s, m9_state *err);
+void Ast_SetAUtf (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_UTF8 u, m9_state *err);
+void Ast_SetBUtf (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, m9_sl_UTF8 u, m9_state *err);
 bool Ast_ScalarConst (Ast_Node * k, int64_t *v, bool *ch, m9_state *err);
 int64_t Ast_CharCode (m9_sl_CHAR lit, m9_state *err);
 void Ast_SetType (int64_t id, Ast_Node * t, m9_state *err);
 Ast_Node * Ast_TypeAt (int64_t id, m9_state *err);
-void Ast_SetTyStr (int64_t id, m9_sl_CHAR t, m9_state *err);
-m9_sl_CHAR Ast_TyStrAt (int64_t id, m9_state *err);
+void Ast_SetTyStr (int64_t id, m9_sl_UTF8 t, m9_state *err);
+m9_sl_UTF8 Ast_TyStrAt (int64_t id, m9_state *err);
 bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err);
 int64_t Ast_IntText (int64_t v, m9_arr_24_uint32_t *buf, m9_state *err);
 

@@ -25,7 +25,7 @@ where the first passed-over sites
 stand, as text: `12, 40, 41, ...';
 empty when nothing was passed over
 
-### Page (root: PTR Ast.Node ; RO modName: STR ; checked: BOOL ; RO stats: SLICE OF Stat ; RO writes: SLICE OF STR) : STR
+### Page (root: PTR Ast.Node ; RO modName: UTF ; checked: BOOL ; RO stats: SLICE OF Stat ; RO writes: SLICE OF UTF ; RO stale: SLICE OF UTF ; RO strs: SLICE OF UTF ; RO adrs: SLICE OF UTF) : UTF
 
 the review page for one parsed file.
 
@@ -48,6 +48,18 @@ the review page for one parsed file.
              join, so whether two threads meet there is the
              reviewer's to read (report par 6).  Empty from a
              caller that ran no checker.
+  stale   -- the calls of a STR procedure whose module declares a
+             UTF twin (Sem.StaleCall), each `LINE Mod.P ->
+             Mod.PUtf', printed under COUNTED: the deprecated
+             forms of the UTF transition a module still uses, the
+             edits it owes (docs/utf8-plan.md).  Empty from a
+             caller that ran no checker.
+  strs    -- the uses of a STR that the UTF-8 switch refuses
+             (Sem.StrSite): a subscript, a write through one, a
+             LEN, each `LINE KIND what', printed under COUNTED --
+             the edits the switch will ask of the module, by name,
+             before it comes (docs/utf8-stage4-plan.md, 4b).  Empty
+             from a caller that ran no checker.
 
 Four sections: PROVED (or, unchecked, the functions that can
 reach their END without answering, named from the tree alone),

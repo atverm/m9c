@@ -1,0 +1,19 @@
+(* EXPECT: Bad is an EXCEPTION, not a type *)
+(* An exception is raised and handled; it has no values.  `VAR b :
+   Bad' passed the checker and reached the C compiler as a variable of
+   the exception's descriptor (2026-10-22, the review's F4). *)
+MODULE m ;
+EXCEPTION Bad (code : I64) ;
+TYPE BadInfo = RECORD code : I64 END ;
+VAR
+  info : BadInfo ;
+  b : Bad ;
+PROCEDURE Fail (n: I64) RAISES Bad =
+BEGIN
+  RAISE Bad (n)
+END Fail ;
+BEGIN
+  Fail (3)
+EXCEPT
+| Bad (c) : info.code := c
+END m.

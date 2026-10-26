@@ -10,10 +10,7 @@
 set -e
 cd "$(dirname "$0")"
 
-M9C=${M9C:-}
-[ -n "$M9C" ] || { [ -x ./m9c ] && M9C=$(pwd)/m9c; }
-[ -n "$M9C" ] || { [ -x ../../out/m9c ] && M9C=$(cd ../../out && pwd)/m9c; }
-[ -n "$M9C" ] || { echo "guiexample: no m9c (run m9c.sh or build.sh)"; exit 1; }
+. ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 
 EX=../../examples/gui
 [ -f "$EX/GuiMean.m9" ] || { echo "guiexample: SKIP -- no examples/gui in this tree"; exit 0; }

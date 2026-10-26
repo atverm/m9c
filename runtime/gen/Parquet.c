@@ -14,6 +14,7 @@
 
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
+extern void m9_put_bytes_err (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -29,12 +30,15 @@ extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
+extern int64_t m9_utf_adopt_p (const void *, int64_t, void *);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
 extern double m9_strtod (const void *);
 extern double m9_strtof (const void *);
+extern int m9_csv_number (const void *, int64_t);
+extern int m9_field_f64 (const void *, int64_t, void *);
 extern double fmod (double, double);
 extern double sqrt (double);
 extern double log (double);
@@ -75,6 +79,9 @@ extern float erff (float);
 extern float erfcf (float);
 extern float fabsf (float);
 extern float hypotf (float, float);
+extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_short (double, void *, int64_t);
 extern double m9_now (void);
 extern void m9_sleep_ms (int64_t);
 extern int nc_open (const void *, int, void *);
@@ -124,6 +131,7 @@ extern int nc_def_var_chunking (int, int, int, const void *);
 extern int nc_put_vara_text (int, int, const void *, const void *, const void *);
 extern int64_t m9_cstrlen (const void *);
 extern void * memcpy (void *, const void *, size_t);
+extern int64_t m9_crc_raw (int64_t, const void *, int64_t);
 extern int64_t m9_bits_and (int64_t, int64_t);
 extern int64_t m9_bits_or (int64_t, int64_t);
 extern int64_t m9_bits_xor (int64_t, int64_t);
@@ -418,23 +426,28 @@ void Parquet_WriteTs (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_state *e
   if (err->exc) goto L_hdl_m9t1;
   }
   }
-  { int64_t m9t3to;
+  { __typeof__(c) m9t3to;
   c = INT64_C(0);
-  m9t3to = m9_sub_i64 (Frame_Cols (Frame_TsFrame (ts, err), err), INT64_C(1), err);
+  { __typeof__(Frame_TsFrame (ts, err)) m9a6 = Frame_TsFrame (ts, err);
+    if (err->exc) goto L_hdl_m9t1;
+  m9t3to = m9_sub_i64 (Frame_Cols (m9a6, err), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  for (; c <= m9t3to; c += 1) {
-    { __typeof__(Frame_TsFrame (ts, err)) m9a6 = Frame_TsFrame (ts, err);
-      if (err->exc) goto L_hdl_m9t1;
+  if (c <= m9t3to) for (;;) {
     { __typeof__(Frame_TsFrame (ts, err)) m9a7 = Frame_TsFrame (ts, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Frame_NameAt (m9a7, c, err)) m9a8 = Frame_NameAt (m9a7, c, err);
+    { __typeof__(Frame_TsFrame (ts, err)) m9a8 = Frame_TsFrame (ts, err);
       if (err->exc) goto L_hdl_m9t1;
-    Parquet_AddCopy (pool, &(f2), &((*pool)), m9a6, m9a8, err);
+    { __typeof__(Frame_NameAt (m9a8, c, err)) m9a9 = Frame_NameAt (m9a8, c, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Parquet_AddCopy (pool, &(f2), &((*pool)), m9a7, m9a9, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     }
     }
+    if ((uint64_t) m9t3to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
+  }
   Parquet_WriteAny (pool, f2, path, true, ts, o, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -471,9 +484,9 @@ void Parquet_WriteX (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_sl_m9_sl_C
   o.kvK = kvK;
   o.kvV = kvV;
   o.nsCols = nsCols;
-  { __typeof__(Parquet_NIL9 (pool, err)) m9a9 = Parquet_NIL9 (pool, err);
+  { __typeof__(Parquet_NIL9 (pool, err)) m9a10 = Parquet_NIL9 (pool, err);
     if (err->exc) goto L_ret;
-  Parquet_WriteAny (pool, f, path, false, m9a9, o, err);
+  Parquet_WriteAny (pool, f, path, false, m9a10, o, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -494,9 +507,9 @@ m9_sl_BYTE Parquet_BytesX (m9_pool *pool, Frame_Fr * f, m9_sl_m9_sl_CHAR kvK, m9
   o.kvV = kvV;
   o.nsCols = nsCols;
   err->res = m9res;
-  { __typeof__(Parquet_NIL9 (pool, err)) m9a10 = Parquet_NIL9 (pool, err);
+  { __typeof__(Parquet_NIL9 (pool, err)) m9a11 = Parquet_NIL9 (pool, err);
     if (err->exc) goto L_ret;
-  m9ret = Parquet_AnyBytes (pool, f, false, m9a10, o, err);
+  m9ret = Parquet_AnyBytes (pool, f, false, m9a11, o, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -513,9 +526,9 @@ void Parquet_WriteOpt (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, Parquet_Opt
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(Parquet_NIL9 (pool, err)) m9a11 = Parquet_NIL9 (pool, err);
+  { __typeof__(Parquet_NIL9 (pool, err)) m9a12 = Parquet_NIL9 (pool, err);
     if (err->exc) goto L_ret;
-  Parquet_WriteAny (pool, f, path, false, m9a11, o, err);
+  Parquet_WriteAny (pool, f, path, false, m9a12, o, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -532,9 +545,9 @@ m9_sl_BYTE Parquet_BytesOpt (m9_pool *pool, Frame_Fr * f, Parquet_Options o, m9_
   err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   err->res = m9res;
-  { __typeof__(Parquet_NIL9 (pool, err)) m9a12 = Parquet_NIL9 (pool, err);
+  { __typeof__(Parquet_NIL9 (pool, err)) m9a13 = Parquet_NIL9 (pool, err);
     if (err->exc) goto L_ret;
-  m9ret = Parquet_AnyBytes (pool, f, false, m9a12, o, err);
+  m9ret = Parquet_AnyBytes (pool, f, false, m9a13, o, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -568,13 +581,15 @@ Frame_Fr * Parquet_Read (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     if (err->exc) goto L_ret;
     f = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(c) m9t1to;
   c = INT64_C(0);
   m9t1to = m9_sub_i64 (m.ncols, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t1to; c += 1) {
+  if (c <= m9t1to) for (;;) {
     Parquet_ReadColumn (pool, &(f), &((*pool)), whole, m, c, err);
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t1to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
   err->res = m9res;
   m9ret = f;
@@ -625,12 +640,14 @@ Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     if (err->exc) goto L_ret;
     tsec = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(c) m9t1to;
   c = INT64_C(0);
   m9t1to = m9_sub_i64 (m.ncols, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t1to; c += 1) {
-    bool m9t2 = Parquet_EqS ((*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err)).name, ((m9_sl_CHAR){ (uint32_t *) m9s3, 4 }), err);
+  if (c <= m9t1to) for (;;) {
+    { __typeof__((*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err)).name) m9a14 = (*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err)).name;
+      if (err->exc) goto L_ret;
+    bool m9t2 = Parquet_EqS (m9a14, ((m9_sl_CHAR){ (uint32_t *) m9s3, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       Parquet_ReadColumn (pool, &(ft), &((*pool)), whole, m, c, err);
@@ -642,7 +659,9 @@ Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     } else {
       Parquet_ReadColumn (pool, &(f), &((*pool)), whole, m, c, err);
       if (err->exc) goto L_ret;
-    }
+    } }
+    if ((uint64_t) m9t1to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
   if (((tsec).len == INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 14 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 14 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
@@ -655,26 +674,32 @@ Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   }
   res = INT64_C(0);
   descr = (m9_sl_CHAR){ NULL, 0 };
-  { int64_t m9t4to;
+  { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = m9_sub_i64 (m.nkv, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t4to; i += 1) {
-    bool m9t5 = Parquet_EqS ((*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s6, 24 }), err);
+  if (i <= m9t4to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err))) m9a15 = (*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    bool m9t5 = Parquet_EqS (m9a15, ((m9_sl_CHAR){ (uint32_t *) m9s6, 24 }), err);
     if (err->exc) goto L_ret;
     if (m9t5) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err))) m9a13 = (*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err))) m9a16 = (*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(res) m9v = Parquet_TextI64 (m9a13, err);
+      { __typeof__(res) m9v = Parquet_TextI64 (m9a16, err);
         if (err->exc) goto L_ret;
         res = m9v;
       }
       }
     } else {
-      bool m9t6 = Parquet_EqS ((*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s7, 21 }), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err))) m9a17 = (*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      bool m9t6 = Parquet_EqS (m9a17, ((m9_sl_CHAR){ (uint32_t *) m9s7, 21 }), err);
       if (err->exc) goto L_ret;
       if (m9t6) {
-        bool m9t7 = Parquet_EqS ((*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s8, 3 }), err);
+        { __typeof__((*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err))) m9a18 = (*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_ret;
+        bool m9t7 = Parquet_EqS (m9a18, ((m9_sl_CHAR){ (uint32_t *) m9s8, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t7) {
           { __typeof__(conv) m9v = Frame_ConvEnd (err);
@@ -682,30 +707,36 @@ Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
             conv = m9v;
           }
         } else {
-          bool m9t8 = Parquet_EqS ((*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s9, 3 }), err);
+          { __typeof__((*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err))) m9a19 = (*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err));
+            if (err->exc) goto L_ret;
+          bool m9t8 = Parquet_EqS (m9a19, ((m9_sl_CHAR){ (uint32_t *) m9s9, 3 }), err);
           if (err->exc) goto L_ret;
           if (m9t8) {
             { __typeof__(conv) m9v = Frame_ConvMid (err);
               if (err->exc) goto L_ret;
               conv = m9v;
             }
-        } }
+        } } } }
     } else {
-      bool m9t9 = Parquet_EqS ((*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s10, 11 }), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err))) m9a20 = (*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      bool m9t9 = Parquet_EqS (m9a20, ((m9_sl_CHAR){ (uint32_t *) m9s10, 11 }), err);
       if (err->exc) goto L_ret;
       if (m9t9) {
         { __typeof__(descr) m9v = (*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
           descr = m9v;
         }
-    } } }
+    } } } } } }
+    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   if ((res == INT64_C(0))) {
-    { int64_t m9t10to;
+    { __typeof__(r) m9t10to;
     r = INT64_C(1);
     m9t10to = m9_sub_i64 (m.rows, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; r <= m9t10to; r += 1) {
+    if (r <= m9t10to) for (;;) {
       { __typeof__(g) m9v = m9_sub_i64 ((*(int64_t *) m9_at (tsec.p, r, tsec.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (tsec.p, m9_sub_i64 (r, INT64_C(1), err), tsec.len, sizeof (int64_t), err)), err);
         if (err->exc) goto L_ret;
         g = m9v;
@@ -713,6 +744,8 @@ Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
       if (((g > INT64_C(0)) && (((res == INT64_C(0)) || (g < res))))) {
         res = g;
       }
+      if ((uint64_t) m9t10to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
     if ((res == INT64_C(0))) {
       res = INT64_C(1);
@@ -784,16 +817,18 @@ static void Parquet_Room (Parquet_Buf *u, m9_pool *u_pool, int64_t k, m9_state *
     if (err->exc) goto L_ret;
     big = m9v;
   }
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 ((*u).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t3to; i += 1) {
+  if (i <= m9t3to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at (big.p, i, big.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at ((*u).b.p, i, (*u).b.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (big.p, i, big.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   (*u).b = big;
 L_ret: ;
@@ -836,19 +871,21 @@ static void Parquet_PLE (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int64_t
   int64_t i = 0; (void) i;
   int64_t x = 0; (void) x;
   x = v;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(1);
   m9t1to = k;
-  for (; i <= m9t1to; i += 1) {
-    { __typeof__(m9_mod_i64 (x, INT64_C(256), err)) m9a14 = m9_mod_i64 (x, INT64_C(256), err);
+  if (i <= m9t1to) for (;;) {
+    { __typeof__(m9_mod_i64 (x, INT64_C(256), err)) m9a21 = m9_mod_i64 (x, INT64_C(256), err);
       if (err->exc) goto L_ret;
-    Parquet_P8 (pool, u, u_pool, m9a14, err);
+    Parquet_P8 (pool, u, u_pool, m9a21, err);
     if (err->exc) goto L_ret;
     }
     { __typeof__(x) m9v = m9_div_i64 (x, INT64_C(256), err);
       if (err->exc) goto L_ret;
       x = m9v;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -866,16 +903,18 @@ static void Parquet_PBytes (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, m9_s
   int64_t i = 0; (void) i;
   Parquet_Room (u, u_pool, (s).len, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (s.p, i, s.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__((*u).n) m9v = m9_add_i64 ((*u).n, (s).len, err);
     if (err->exc) goto L_ret;
@@ -898,9 +937,9 @@ static void Parquet_PVar (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int64_
   x = v;
   for (;;) {
     if (!((x >= INT64_C(128)))) break;
-    { __typeof__(m9_add_i64 (m9_mod_i64 (x, INT64_C(128), err), INT64_C(128), err)) m9a15 = m9_add_i64 (m9_mod_i64 (x, INT64_C(128), err), INT64_C(128), err);
+    { __typeof__(m9_add_i64 (m9_mod_i64 (x, INT64_C(128), err), INT64_C(128), err)) m9a22 = m9_add_i64 (m9_mod_i64 (x, INT64_C(128), err), INT64_C(128), err);
       if (err->exc) goto L_ret;
-    Parquet_P8 (pool, u, u_pool, m9a15, err);
+    Parquet_P8 (pool, u, u_pool, m9a22, err);
     if (err->exc) goto L_ret;
     }
     { __typeof__(x) m9v = m9_div_i64 (x, INT64_C(128), err);
@@ -946,9 +985,9 @@ static void Parquet_PField (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int6
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (id, (*last), err)), INT64_C(16), err), ct, err)) m9a16 = m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (id, (*last), err)), INT64_C(16), err), ct, err);
+  { __typeof__(m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (id, (*last), err)), INT64_C(16), err), ct, err)) m9a23 = m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (id, (*last), err)), INT64_C(16), err), ct, err);
     if (err->exc) goto L_ret;
-  Parquet_P8 (pool, u, u_pool, m9a16, err);
+  Parquet_P8 (pool, u, u_pool, m9a23, err);
   if (err->exc) goto L_ret;
   }
   (*last) = id;
@@ -967,9 +1006,9 @@ static void Parquet_PI32F (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int64
   err->res = &m9frame;
   Parquet_PField (pool, u, u_pool, last, id, Parquet_CtI32, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Parquet_Zig (v, err)) m9a17 = Parquet_Zig (v, err);
+  { __typeof__(Parquet_Zig (v, err)) m9a24 = Parquet_Zig (v, err);
     if (err->exc) goto L_ret;
-  Parquet_PVar (pool, u, u_pool, m9a17, err);
+  Parquet_PVar (pool, u, u_pool, m9a24, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -987,9 +1026,9 @@ static void Parquet_PI64F (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int64
   err->res = &m9frame;
   Parquet_PField (pool, u, u_pool, last, id, Parquet_CtI64, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Parquet_Zig (v, err)) m9a18 = Parquet_Zig (v, err);
+  { __typeof__(Parquet_Zig (v, err)) m9a25 = Parquet_Zig (v, err);
     if (err->exc) goto L_ret;
-  Parquet_PVar (pool, u, u_pool, m9a18, err);
+  Parquet_PVar (pool, u, u_pool, m9a25, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1015,16 +1054,18 @@ static void Parquet_PStrRaw (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, m9_
   if (err->exc) goto L_ret;
   Parquet_Room (u, u_pool, (bb).len, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((bb).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (bb.p, i, bb.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__((*u).n) m9v = m9_add_i64 ((*u).n, (bb).len, err);
     if (err->exc) goto L_ret;
@@ -1063,15 +1104,15 @@ static void Parquet_PListF (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int6
   Parquet_PField (pool, u, u_pool, last, id, Parquet_CtList, err);
   if (err->exc) goto L_ret;
   if ((count < INT64_C(15))) {
-    { __typeof__(m9_add_i64 (m9_mul_i64 (count, INT64_C(16), err), elemCt, err)) m9a19 = m9_add_i64 (m9_mul_i64 (count, INT64_C(16), err), elemCt, err);
+    { __typeof__(m9_add_i64 (m9_mul_i64 (count, INT64_C(16), err), elemCt, err)) m9a26 = m9_add_i64 (m9_mul_i64 (count, INT64_C(16), err), elemCt, err);
       if (err->exc) goto L_ret;
-    Parquet_P8 (pool, u, u_pool, m9a19, err);
+    Parquet_P8 (pool, u, u_pool, m9a26, err);
     if (err->exc) goto L_ret;
     }
   } else {
-    { __typeof__(m9_add_i64 (m9_mul_i64 (INT64_C(15), INT64_C(16), err), elemCt, err)) m9a20 = m9_add_i64 (m9_mul_i64 (INT64_C(15), INT64_C(16), err), elemCt, err);
+    { __typeof__(m9_add_i64 (m9_mul_i64 (INT64_C(15), INT64_C(16), err), elemCt, err)) m9a27 = m9_add_i64 (m9_mul_i64 (INT64_C(15), INT64_C(16), err), elemCt, err);
       if (err->exc) goto L_ret;
-    Parquet_P8 (pool, u, u_pool, m9a20, err);
+    Parquet_P8 (pool, u, u_pool, m9a27, err);
     if (err->exc) goto L_ret;
     }
     Parquet_PVar (pool, u, u_pool, count, err);
@@ -1214,16 +1255,18 @@ static m9_sl_BOOL Parquet_Missing (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name,
       if (err->exc) goto L_hdl_m9t1;
       m64 = m9v;
     }
-    { int64_t m9t3to;
+    { __typeof__(r) m9t3to;
     r = INT64_C(0);
     m9t3to = m9_sub_i64 ((v64).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; r <= m9t3to; r += 1) {
+    if (r <= m9t3to) for (;;) {
       { __typeof__((*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err))) m9v = ((!(((*(double *) m9_at (v64.p, r, v64.len, sizeof (double), err)) == (*(double *) m9_at (v64.p, r, v64.len, sizeof (double), err))))) || ((*(double *) m9_at (v64.p, r, v64.len, sizeof (double), err)) == m64));
         if (err->exc) goto L_hdl_m9t1;
         (*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err)) = m9v;
         if (err->exc) goto L_hdl_m9t1;
       }
+      if ((uint64_t) m9t3to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
   } else {
     if ((k == Frame_KindF32)) {
@@ -1235,16 +1278,18 @@ static m9_sl_BOOL Parquet_Missing (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name,
         if (err->exc) goto L_hdl_m9t1;
         m32 = m9v;
       }
-      { int64_t m9t4to;
+      { __typeof__(r) m9t4to;
       r = INT64_C(0);
       m9t4to = m9_sub_i64 ((v32).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t4to; r += 1) {
+      if (r <= m9t4to) for (;;) {
         { __typeof__((*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err))) m9v = ((!(((*(float *) m9_at (v32.p, r, v32.len, sizeof (float), err)) == (*(float *) m9_at (v32.p, r, v32.len, sizeof (float), err))))) || ((*(float *) m9_at (v32.p, r, v32.len, sizeof (float), err)) == m32));
           if (err->exc) goto L_hdl_m9t1;
           (*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err)) = m9v;
           if (err->exc) goto L_hdl_m9t1;
         }
+        if ((uint64_t) m9t4to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     if ((k == Frame_KindI64)) {
@@ -1256,16 +1301,18 @@ static m9_sl_BOOL Parquet_Missing (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name,
         if (err->exc) goto L_hdl_m9t1;
         mi64 = m9v;
       }
-      { int64_t m9t5to;
+      { __typeof__(r) m9t5to;
       r = INT64_C(0);
       m9t5to = m9_sub_i64 ((vi64).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t5to; r += 1) {
+      if (r <= m9t5to) for (;;) {
         { __typeof__((*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err))) m9v = ((*(int64_t *) m9_at (vi64.p, r, vi64.len, sizeof (int64_t), err)) == mi64);
           if (err->exc) goto L_hdl_m9t1;
           (*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err)) = m9v;
           if (err->exc) goto L_hdl_m9t1;
         }
+        if ((uint64_t) m9t5to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     if ((k == Frame_KindI32)) {
@@ -1277,16 +1324,18 @@ static m9_sl_BOOL Parquet_Missing (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name,
         if (err->exc) goto L_hdl_m9t1;
         mi32 = m9v;
       }
-      { int64_t m9t6to;
+      { __typeof__(r) m9t6to;
       r = INT64_C(0);
       m9t6to = m9_sub_i64 ((vi32).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t6to; r += 1) {
+      if (r <= m9t6to) for (;;) {
         { __typeof__((*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err))) m9v = ((*(int32_t *) m9_at (vi32.p, r, vi32.len, sizeof (int32_t), err)) == mi32);
           if (err->exc) goto L_hdl_m9t1;
           (*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err)) = m9v;
           if (err->exc) goto L_hdl_m9t1;
         }
+        if ((uint64_t) m9t6to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     if ((k == Frame_KindI16)) {
@@ -1298,16 +1347,18 @@ static m9_sl_BOOL Parquet_Missing (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name,
         if (err->exc) goto L_hdl_m9t1;
         mi16 = m9v;
       }
-      { int64_t m9t7to;
+      { __typeof__(r) m9t7to;
       r = INT64_C(0);
       m9t7to = m9_sub_i64 ((vi16).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t7to; r += 1) {
+      if (r <= m9t7to) for (;;) {
         { __typeof__((*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err))) m9v = ((*(int16_t *) m9_at (vi16.p, r, vi16.len, sizeof (int16_t), err)) == mi16);
           if (err->exc) goto L_hdl_m9t1;
           (*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err)) = m9v;
           if (err->exc) goto L_hdl_m9t1;
         }
+        if ((uint64_t) m9t7to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     { __typeof__(vb) m9v = Frame_ColBytes (f, name, err);
@@ -1318,16 +1369,18 @@ static m9_sl_BOOL Parquet_Missing (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name,
       if (err->exc) goto L_hdl_m9t1;
       mb = m9v;
     }
-    { int64_t m9t8to;
+    { __typeof__(r) m9t8to;
     r = INT64_C(0);
     m9t8to = m9_sub_i64 ((vb).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; r <= m9t8to; r += 1) {
+    if (r <= m9t8to) for (;;) {
       { __typeof__((*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err))) m9v = ((*(uint8_t *) m9_at (vb.p, r, vb.len, sizeof (uint8_t), err)) == mb);
         if (err->exc) goto L_hdl_m9t1;
         (*(bool *) m9_at (m.p, r, m.len, sizeof (bool), err)) = m9v;
         if (err->exc) goto L_hdl_m9t1;
       }
+      if ((uint64_t) m9t8to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
   } } } } }
   err->res = m9res;
@@ -1387,26 +1440,28 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
       if (err->exc) goto L_hdl_m9t1;
       v64 = m9v;
     }
-    { __typeof__(m9_mul_i64 (INT64_C(8), (v64).len, err)) m9a21 = m9_mul_i64 (INT64_C(8), (v64).len, err);
+    { __typeof__(m9_mul_i64 (INT64_C(8), (v64).len, err)) m9a28 = m9_mul_i64 (INT64_C(8), (v64).len, err);
       if (err->exc) goto L_hdl_m9t1;
-    Parquet_Room (u, u_pool, m9a21, err);
+    Parquet_Room (u, u_pool, m9a28, err);
     if (err->exc) goto L_hdl_m9t1;
     }
-    { int64_t m9t3to;
+    { __typeof__(r) m9t3to;
     r = INT64_C(0);
     m9t3to = m9_sub_i64 ((v64).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; r <= m9t3to; r += 1) {
+    if (r <= m9t3to) for (;;) {
       bool m9t4 = Parquet_Kept (skip, r, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t4) {
-        m9_f64_to_le ((*(double *) m9_at (v64.p, r, v64.len, sizeof (double), err)), ({ __typeof__((*u).b) m9t5 = (*u).b; int64_t m9t5a = (*u).n, m9t5n = INT64_C(8); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err);
+        m9_f64_to_le ((*(double *) m9_at (v64.p, r, v64.len, sizeof (double), err)), ({ __auto_type m9t5 = (*u).b; int64_t m9t5a = (*u).n, m9t5n = INT64_C(8); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; }), err);
         if (err->exc) goto L_hdl_m9t1;
         { __typeof__((*u).n) m9v = m9_add_i64 ((*u).n, INT64_C(8), err);
           if (err->exc) goto L_hdl_m9t1;
           (*u).n = m9v;
         }
       }
+      if ((uint64_t) m9t3to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
   } else {
     if ((k == Frame_KindF32)) {
@@ -1414,26 +1469,28 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
         if (err->exc) goto L_hdl_m9t1;
         v32 = m9v;
       }
-      { __typeof__(m9_mul_i64 (INT64_C(4), (v32).len, err)) m9a22 = m9_mul_i64 (INT64_C(4), (v32).len, err);
+      { __typeof__(m9_mul_i64 (INT64_C(4), (v32).len, err)) m9a29 = m9_mul_i64 (INT64_C(4), (v32).len, err);
         if (err->exc) goto L_hdl_m9t1;
-      Parquet_Room (u, u_pool, m9a22, err);
+      Parquet_Room (u, u_pool, m9a29, err);
       if (err->exc) goto L_hdl_m9t1;
       }
-      { int64_t m9t6to;
+      { __typeof__(r) m9t6to;
       r = INT64_C(0);
       m9t6to = m9_sub_i64 ((v32).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t6to; r += 1) {
+      if (r <= m9t6to) for (;;) {
         bool m9t7 = Parquet_Kept (skip, r, err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t7) {
-          m9_f32_to_le ((*(float *) m9_at (v32.p, r, v32.len, sizeof (float), err)), ({ __typeof__((*u).b) m9t8 = (*u).b; int64_t m9t8a = (*u).n, m9t8n = INT64_C(4); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; }), err);
+          m9_f32_to_le ((*(float *) m9_at (v32.p, r, v32.len, sizeof (float), err)), ({ __auto_type m9t8 = (*u).b; int64_t m9t8a = (*u).n, m9t8n = INT64_C(4); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; }), err);
           if (err->exc) goto L_hdl_m9t1;
           { __typeof__((*u).n) m9v = m9_add_i64 ((*u).n, INT64_C(4), err);
             if (err->exc) goto L_hdl_m9t1;
             (*u).n = m9v;
           }
         }
+        if ((uint64_t) m9t6to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     if ((k == Frame_KindI64)) {
@@ -1441,11 +1498,11 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
         if (err->exc) goto L_hdl_m9t1;
         vi64 = m9v;
       }
-      { int64_t m9t9to;
+      { __typeof__(r) m9t9to;
       r = INT64_C(0);
       m9t9to = m9_sub_i64 ((vi64).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t9to; r += 1) {
+      if (r <= m9t9to) for (;;) {
         { __typeof__(x) m9v = (*(int64_t *) m9_at (vi64.p, r, vi64.len, sizeof (int64_t), err));
           if (err->exc) goto L_hdl_m9t1;
           x = m9v;
@@ -1455,14 +1512,14 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
         if (m9t10) {
         } else {
           if ((x >= INT64_C(0))) {
-            { __typeof__(m9_mod_i64 (x, INT64_C(4294967296), err)) m9a23 = m9_mod_i64 (x, INT64_C(4294967296), err);
+            { __typeof__(m9_mod_i64 (x, INT64_C(4294967296), err)) m9a30 = m9_mod_i64 (x, INT64_C(4294967296), err);
               if (err->exc) goto L_hdl_m9t1;
-            Parquet_PLE (pool, u, u_pool, m9a23, INT64_C(4), err);
+            Parquet_PLE (pool, u, u_pool, m9a30, INT64_C(4), err);
             if (err->exc) goto L_hdl_m9t1;
             }
-            { __typeof__(m9_div_i64 (x, INT64_C(4294967296), err)) m9a24 = m9_div_i64 (x, INT64_C(4294967296), err);
+            { __typeof__(m9_div_i64 (x, INT64_C(4294967296), err)) m9a31 = m9_div_i64 (x, INT64_C(4294967296), err);
               if (err->exc) goto L_hdl_m9t1;
-            Parquet_PLE (pool, u, u_pool, m9a24, INT64_C(4), err);
+            Parquet_PLE (pool, u, u_pool, m9a31, INT64_C(4), err);
             if (err->exc) goto L_hdl_m9t1;
             }
         } else {
@@ -1470,17 +1527,19 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
             if (err->exc) goto L_hdl_m9t1;
             x = m9v;
           }
-          { __typeof__(m9_mod_i64 (x, INT64_C(4294967296), err)) m9a25 = m9_mod_i64 (x, INT64_C(4294967296), err);
+          { __typeof__(m9_mod_i64 (x, INT64_C(4294967296), err)) m9a32 = m9_mod_i64 (x, INT64_C(4294967296), err);
             if (err->exc) goto L_hdl_m9t1;
-          Parquet_PLE (pool, u, u_pool, m9a25, INT64_C(4), err);
+          Parquet_PLE (pool, u, u_pool, m9a32, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
           }
-          { __typeof__(m9_add_i64 (m9_div_i64 (x, INT64_C(4294967296), err), INT64_C(2147483648), err)) m9a26 = m9_add_i64 (m9_div_i64 (x, INT64_C(4294967296), err), INT64_C(2147483648), err);
+          { __typeof__(m9_add_i64 (m9_div_i64 (x, INT64_C(4294967296), err), INT64_C(2147483648), err)) m9a33 = m9_add_i64 (m9_div_i64 (x, INT64_C(4294967296), err), INT64_C(2147483648), err);
             if (err->exc) goto L_hdl_m9t1;
-          Parquet_PLE (pool, u, u_pool, m9a26, INT64_C(4), err);
+          Parquet_PLE (pool, u, u_pool, m9a33, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
           }
         } }
+        if ((uint64_t) m9t9to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     if ((k == Frame_KindI32)) {
@@ -1488,11 +1547,11 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
         if (err->exc) goto L_hdl_m9t1;
         vi32 = m9v;
       }
-      { int64_t m9t11to;
+      { __typeof__(r) m9t11to;
       r = INT64_C(0);
       m9t11to = m9_sub_i64 ((vi32).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t11to; r += 1) {
+      if (r <= m9t11to) for (;;) {
         bool m9t12 = Parquet_Kept (skip, r, err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t12) {
@@ -1509,6 +1568,8 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
           Parquet_PLE (pool, u, u_pool, x, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
         }
+        if ((uint64_t) m9t11to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     if ((k == Frame_KindI16)) {
@@ -1516,11 +1577,11 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
         if (err->exc) goto L_hdl_m9t1;
         vi16 = m9v;
       }
-      { int64_t m9t13to;
+      { __typeof__(r) m9t13to;
       r = INT64_C(0);
       m9t13to = m9_sub_i64 ((vi16).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t13to; r += 1) {
+      if (r <= m9t13to) for (;;) {
         bool m9t14 = Parquet_Kept (skip, r, err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t14) {
@@ -1537,6 +1598,8 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
           Parquet_PLE (pool, u, u_pool, x, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
         }
+        if ((uint64_t) m9t13to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     if ((k == Frame_KindByte)) {
@@ -1544,20 +1607,22 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
         if (err->exc) goto L_hdl_m9t1;
         vb = m9v;
       }
-      { int64_t m9t15to;
+      { __typeof__(r) m9t15to;
       r = INT64_C(0);
       m9t15to = m9_sub_i64 ((vb).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t15to; r += 1) {
+      if (r <= m9t15to) for (;;) {
         bool m9t16 = Parquet_Kept (skip, r, err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t16) {
-          { __typeof__((int64_t)((*(uint8_t *) m9_at (vb.p, r, vb.len, sizeof (uint8_t), err)))) m9a27 = (int64_t)((*(uint8_t *) m9_at (vb.p, r, vb.len, sizeof (uint8_t), err)));
+          { __typeof__((int64_t)((*(uint8_t *) m9_at (vb.p, r, vb.len, sizeof (uint8_t), err)))) m9a34 = (int64_t)((*(uint8_t *) m9_at (vb.p, r, vb.len, sizeof (uint8_t), err)));
             if (err->exc) goto L_hdl_m9t1;
-          Parquet_PLE (pool, u, u_pool, m9a27, INT64_C(4), err);
+          Parquet_PLE (pool, u, u_pool, m9a34, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
           }
         }
+        if ((uint64_t) m9t15to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
   } else {
     if ((k == Frame_KindBool)) {
@@ -1567,11 +1632,11 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
       }
       x = INT64_C(0);
       b = INT64_C(1);
-      { int64_t m9t17to;
+      { __typeof__(r) m9t17to;
       r = INT64_C(0);
       m9t17to = m9_sub_i64 ((vbo).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; r <= m9t17to; r += 1) {
+      if (r <= m9t17to) for (;;) {
         bool m9t18 = (*(bool *) m9_at (vbo.p, r, vbo.len, sizeof (bool), err));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t18) {
@@ -1590,6 +1655,8 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
           x = INT64_C(0);
           b = INT64_C(1);
         }
+        if ((uint64_t) m9t17to - (uint64_t) r < (uint64_t) 1) break;
+        r += 1;
       } }
       if ((b > INT64_C(1))) {
         Parquet_P8 (pool, u, u_pool, x, err);
@@ -1600,16 +1667,18 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
       if (err->exc) goto L_hdl_m9t1;
       vs = m9v;
     }
-    { int64_t m9t19to;
+    { __typeof__(r) m9t19to;
     r = INT64_C(0);
     m9t19to = m9_sub_i64 ((vs).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; r <= m9t19to; r += 1) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err))) m9a28 = (*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err));
+    if (r <= m9t19to) for (;;) {
+      { __typeof__((*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err))) m9a35 = (*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
-      Parquet_PStrVal (pool, u, u_pool, m9a28, err);
+      Parquet_PStrVal (pool, u, u_pool, m9a35, err);
       if (err->exc) goto L_hdl_m9t1;
       }
+      if ((uint64_t) m9t19to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
   } } } } } } }
   goto L_dn_m9t2;
@@ -1653,16 +1722,18 @@ static void Parquet_PStrVal (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, m9_
   if (err->exc) goto L_ret;
   Parquet_Room (u, u_pool, (bb).len, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((bb).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     { __typeof__((*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (bb.p, i, bb.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__((*u).n) m9v = m9_add_i64 ((*u).n, (bb).len, err);
     if (err->exc) goto L_ret;
@@ -1700,18 +1771,18 @@ static Parquet_Buf Parquet_PageFor (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name
       if (err->exc) goto L_ret;
       lv = m9v;
     }
-    { __typeof__(m9_add_i64 (m9_mul_i64 ((m9_div_i64 ((m9_add_i64 (Frame_Rows (f, err), INT64_C(7), err)), INT64_C(8), err)), INT64_C(2), err), INT64_C(1), err)) m9a29 = m9_add_i64 (m9_mul_i64 ((m9_div_i64 ((m9_add_i64 (Frame_Rows (f, err), INT64_C(7), err)), INT64_C(8), err)), INT64_C(2), err), INT64_C(1), err);
+    { __typeof__(m9_add_i64 (m9_mul_i64 ((m9_div_i64 ((m9_add_i64 (Frame_Rows (f, err), INT64_C(7), err)), INT64_C(8), err)), INT64_C(2), err), INT64_C(1), err)) m9a36 = m9_add_i64 (m9_mul_i64 ((m9_div_i64 ((m9_add_i64 (Frame_Rows (f, err), INT64_C(7), err)), INT64_C(8), err)), INT64_C(2), err), INT64_C(1), err);
       if (err->exc) goto L_ret;
-    Parquet_PVar (pool, &(lv), err->res, m9a29, err);
+    Parquet_PVar (pool, &(lv), err->res, m9a36, err);
     if (err->exc) goto L_ret;
     }
     x = INT64_C(0);
     b = INT64_C(1);
-    { int64_t m9t1to;
+    { __typeof__(r) m9t1to;
     r = INT64_C(0);
     m9t1to = m9_sub_i64 (Frame_Rows (f, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; r <= m9t1to; r += 1) {
+    if (r <= m9t1to) for (;;) {
       bool m9t2 = Parquet_Kept (skip, r, err);
       if (err->exc) goto L_ret;
       if (m9t2) {
@@ -1730,6 +1801,8 @@ static Parquet_Buf Parquet_PageFor (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name
         x = INT64_C(0);
         b = INT64_C(1);
       }
+      if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
     if ((b > INT64_C(1))) {
       Parquet_P8 (pool, &(lv), err->res, x, err);
@@ -1737,49 +1810,49 @@ static Parquet_Buf Parquet_PageFor (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name
     }
     Parquet_PLE (pool, &(vals), err->res, lv.n, INT64_C(4), err);
     if (err->exc) goto L_ret;
-    { __typeof__(({ __typeof__(lv.b) m9t3 = lv.b; int64_t m9t3a = INT64_C(0), m9t3n = lv.n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a30 = ({ __typeof__(lv.b) m9t3 = lv.b; int64_t m9t3a = INT64_C(0), m9t3n = lv.n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+    { __typeof__(({ __auto_type m9t3 = lv.b; int64_t m9t3a = INT64_C(0), m9t3n = lv.n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a37 = ({ __auto_type m9t3 = lv.b; int64_t m9t3a = INT64_C(0), m9t3n = lv.n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
       if (err->exc) goto L_ret;
-    Parquet_PBytes (pool, &(vals), err->res, m9a30, err);
+    Parquet_PBytes (pool, &(vals), err->res, m9a37, err);
     if (err->exc) goto L_ret;
     }
   }
   Parquet_PutValues (pool, &(vals), err->res, f, name, k, skip, err);
   if (err->exc) goto L_ret;
   if ((codec == Parquet_CodecSnappy)) {
-    { __typeof__(({ __typeof__(vals.b) m9t4 = vals.b; int64_t m9t4a = INT64_C(0), m9t4n = vals.n; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a31 = ({ __typeof__(vals.b) m9t4 = vals.b; int64_t m9t4a = INT64_C(0), m9t4n = vals.n; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+    { __typeof__(({ __auto_type m9t4 = vals.b; int64_t m9t4a = INT64_C(0), m9t4n = vals.n; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a38 = ({ __auto_type m9t4 = vals.b; int64_t m9t4a = INT64_C(0), m9t4n = vals.n; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
       if (err->exc) goto L_ret;
-    { __typeof__(packed) m9v = Parquet_SnappyEncode (pool, m9a31, err);
+    { __typeof__(packed) m9v = Parquet_SnappyEncode (pool, m9a38, err);
       if (err->exc) goto L_ret;
       packed = m9v;
     }
     }
   } else {
     if ((codec == Parquet_CodecGzip)) {
-      { __typeof__(({ __typeof__(vals.b) m9t5 = vals.b; int64_t m9t5a = INT64_C(0), m9t5n = vals.n; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a32 = ({ __typeof__(vals.b) m9t5 = vals.b; int64_t m9t5a = INT64_C(0), m9t5n = vals.n; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+      { __typeof__(({ __auto_type m9t5 = vals.b; int64_t m9t5a = INT64_C(0), m9t5n = vals.n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a39 = ({ __auto_type m9t5 = vals.b; int64_t m9t5a = INT64_C(0), m9t5n = vals.n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(packed) m9v = Zip_Gzip (pool, m9a32, err);
+      { __typeof__(packed) m9v = Zip_Gzip (pool, m9a39, err);
         if (err->exc) goto L_ret;
         packed = m9v;
       }
       }
   } else {
     if ((codec == Parquet_CodecZstd)) {
-      { __typeof__(({ __typeof__(vals.b) m9t6 = vals.b; int64_t m9t6a = INT64_C(0), m9t6n = vals.n; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; })) m9a33 = ({ __typeof__(vals.b) m9t6 = vals.b; int64_t m9t6a = INT64_C(0), m9t6n = vals.n; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
+      { __typeof__(({ __auto_type m9t6 = vals.b; int64_t m9t6a = INT64_C(0), m9t6n = vals.n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a40 = ({ __auto_type m9t6 = vals.b; int64_t m9t6a = INT64_C(0), m9t6n = vals.n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(packed) m9v = Parquet_ZstdEncode (pool, m9a33, err);
+      { __typeof__(packed) m9v = Parquet_ZstdEncode (pool, m9a40, err);
         if (err->exc) goto L_ret;
         packed = m9v;
       }
       }
   } else {
-    { __typeof__(packed) m9v = ({ __typeof__(vals.b) m9t7 = vals.b; int64_t m9t7a = INT64_C(0), m9t7n = vals.n; (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
+    { __typeof__(packed) m9v = ({ __auto_type m9t7 = vals.b; int64_t m9t7a = INT64_C(0), m9t7n = vals.n; int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; });
       if (err->exc) goto L_ret;
       packed = m9v;
     }
   } } }
-  { __typeof__(m9_add_i64 ((packed).len, INT64_C(64), err)) m9a34 = m9_add_i64 ((packed).len, INT64_C(64), err);
+  { __typeof__(m9_add_i64 ((packed).len, INT64_C(64), err)) m9a41 = m9_add_i64 ((packed).len, INT64_C(64), err);
     if (err->exc) goto L_ret;
-  { __typeof__(page) m9v = Parquet_NewBuf (pool, m9a34, err);
+  { __typeof__(page) m9v = Parquet_NewBuf (pool, m9a41, err);
     if (err->exc) goto L_ret;
     page = m9v;
   }
@@ -1794,9 +1867,9 @@ static Parquet_Buf Parquet_PageFor (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name
   Parquet_PField (pool, &(page), err->res, &(last), INT64_C(5), Parquet_CtStruct, err);
   if (err->exc) goto L_ret;
   last2 = INT64_C(0);
-  { __typeof__(Frame_Rows (f, err)) m9a35 = Frame_Rows (f, err);
+  { __typeof__(Frame_Rows (f, err)) m9a42 = Frame_Rows (f, err);
     if (err->exc) goto L_ret;
-  Parquet_PI32F (pool, &(page), err->res, &(last2), INT64_C(1), m9a35, err);
+  Parquet_PI32F (pool, &(page), err->res, &(last2), INT64_C(1), m9a42, err);
   if (err->exc) goto L_ret;
   }
   Parquet_PI32F (pool, &(page), err->res, &(last2), INT64_C(2), Parquet_EncPlain, err);
@@ -1843,9 +1916,9 @@ static m9_sl_BYTE Parquet_SnappyEncode (m9_pool *pool, m9_sl_BYTE d, m9_state *e
   int64_t x = 0; (void) x;
   int64_t y = 0; (void) y;
   n = (d).len;
-  { __typeof__(m9_add_i64 (m9_div_i64 (n, INT64_C(2), err), INT64_C(16), err)) m9a36 = m9_add_i64 (m9_div_i64 (n, INT64_C(2), err), INT64_C(16), err);
+  { __typeof__(m9_add_i64 (m9_div_i64 (n, INT64_C(2), err), INT64_C(16), err)) m9a43 = m9_add_i64 (m9_div_i64 (n, INT64_C(2), err), INT64_C(16), err);
     if (err->exc) goto L_ret;
-  { __typeof__(u) m9v = Parquet_NewBuf (pool, m9a36, err);
+  { __typeof__(u) m9v = Parquet_NewBuf (pool, m9a43, err);
     if (err->exc) goto L_ret;
     u = m9v;
   }
@@ -1902,14 +1975,14 @@ static m9_sl_BYTE Parquet_SnappyEncode (m9_pool *pool, m9_sl_BYTE d, m9_state *e
           len = m9v;
         }
       }
-      { __typeof__(m9_sub_i64 (i, lit, err)) m9a37 = m9_sub_i64 (i, lit, err);
+      { __typeof__(m9_sub_i64 (i, lit, err)) m9a44 = m9_sub_i64 (i, lit, err);
         if (err->exc) goto L_ret;
-      Parquet_SnapLiteral (pool, &(u), err->res, d, lit, m9a37, err);
+      Parquet_SnapLiteral (pool, &(u), err->res, d, lit, m9a44, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__(m9_sub_i64 (i, cand, err)) m9a38 = m9_sub_i64 (i, cand, err);
+      { __typeof__(m9_sub_i64 (i, cand, err)) m9a45 = m9_sub_i64 (i, cand, err);
         if (err->exc) goto L_ret;
-      Parquet_SnapCopy (pool, &(u), err->res, m9a38, len, err);
+      Parquet_SnapCopy (pool, &(u), err->res, m9a45, len, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(i) m9v = m9_add_i64 (i, len, err);
@@ -1924,13 +1997,13 @@ static m9_sl_BYTE Parquet_SnappyEncode (m9_pool *pool, m9_sl_BYTE d, m9_state *e
       }
     }
   }
-  { __typeof__(m9_sub_i64 (n, lit, err)) m9a39 = m9_sub_i64 (n, lit, err);
+  { __typeof__(m9_sub_i64 (n, lit, err)) m9a46 = m9_sub_i64 (n, lit, err);
     if (err->exc) goto L_ret;
-  Parquet_SnapLiteral (pool, &(u), err->res, d, lit, m9a39, err);
+  Parquet_SnapLiteral (pool, &(u), err->res, d, lit, m9a46, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
-  m9ret = ({ __typeof__(u.b) m9t4 = u.b; int64_t m9t4a = INT64_C(0), m9t4n = u.n; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+  m9ret = ({ __auto_type m9t4 = u.b; int64_t m9t4a = INT64_C(0), m9t4n = u.n; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -1950,62 +2023,62 @@ static void Parquet_SnapLiteral (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool,
     goto L_ret;
   }
   if ((len <= INT64_C(60))) {
-    { __typeof__(m9_mul_i64 ((m9_sub_i64 (len, INT64_C(1), err)), INT64_C(4), err)) m9a40 = m9_mul_i64 ((m9_sub_i64 (len, INT64_C(1), err)), INT64_C(4), err);
-      if (err->exc) goto L_ret;
-    Parquet_P8 (pool, u, u_pool, m9a40, err);
-    if (err->exc) goto L_ret;
-    }
-  } else {
-    if ((len <= INT64_C(256))) {
-      { __typeof__(m9_mul_i64 (INT64_C(60), INT64_C(4), err)) m9a41 = m9_mul_i64 (INT64_C(60), INT64_C(4), err);
-        if (err->exc) goto L_ret;
-      Parquet_P8 (pool, u, u_pool, m9a41, err);
-      if (err->exc) goto L_ret;
-      }
-      { __typeof__(m9_sub_i64 (len, INT64_C(1), err)) m9a42 = m9_sub_i64 (len, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-      Parquet_PLE (pool, u, u_pool, m9a42, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      }
-  } else {
-    if ((len <= INT64_C(65536))) {
-      { __typeof__(m9_mul_i64 (INT64_C(61), INT64_C(4), err)) m9a43 = m9_mul_i64 (INT64_C(61), INT64_C(4), err);
-        if (err->exc) goto L_ret;
-      Parquet_P8 (pool, u, u_pool, m9a43, err);
-      if (err->exc) goto L_ret;
-      }
-      { __typeof__(m9_sub_i64 (len, INT64_C(1), err)) m9a44 = m9_sub_i64 (len, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-      Parquet_PLE (pool, u, u_pool, m9a44, INT64_C(2), err);
-      if (err->exc) goto L_ret;
-      }
-  } else {
-    if ((len <= INT64_C(16777216))) {
-      { __typeof__(m9_mul_i64 (INT64_C(62), INT64_C(4), err)) m9a45 = m9_mul_i64 (INT64_C(62), INT64_C(4), err);
-        if (err->exc) goto L_ret;
-      Parquet_P8 (pool, u, u_pool, m9a45, err);
-      if (err->exc) goto L_ret;
-      }
-      { __typeof__(m9_sub_i64 (len, INT64_C(1), err)) m9a46 = m9_sub_i64 (len, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-      Parquet_PLE (pool, u, u_pool, m9a46, INT64_C(3), err);
-      if (err->exc) goto L_ret;
-      }
-  } else {
-    { __typeof__(m9_mul_i64 (INT64_C(63), INT64_C(4), err)) m9a47 = m9_mul_i64 (INT64_C(63), INT64_C(4), err);
+    { __typeof__(m9_mul_i64 ((m9_sub_i64 (len, INT64_C(1), err)), INT64_C(4), err)) m9a47 = m9_mul_i64 ((m9_sub_i64 (len, INT64_C(1), err)), INT64_C(4), err);
       if (err->exc) goto L_ret;
     Parquet_P8 (pool, u, u_pool, m9a47, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_sub_i64 (len, INT64_C(1), err)) m9a48 = m9_sub_i64 (len, INT64_C(1), err);
+  } else {
+    if ((len <= INT64_C(256))) {
+      { __typeof__(m9_mul_i64 (INT64_C(60), INT64_C(4), err)) m9a48 = m9_mul_i64 (INT64_C(60), INT64_C(4), err);
+        if (err->exc) goto L_ret;
+      Parquet_P8 (pool, u, u_pool, m9a48, err);
       if (err->exc) goto L_ret;
-    Parquet_PLE (pool, u, u_pool, m9a48, INT64_C(4), err);
+      }
+      { __typeof__(m9_sub_i64 (len, INT64_C(1), err)) m9a49 = m9_sub_i64 (len, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+      Parquet_PLE (pool, u, u_pool, m9a49, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      }
+  } else {
+    if ((len <= INT64_C(65536))) {
+      { __typeof__(m9_mul_i64 (INT64_C(61), INT64_C(4), err)) m9a50 = m9_mul_i64 (INT64_C(61), INT64_C(4), err);
+        if (err->exc) goto L_ret;
+      Parquet_P8 (pool, u, u_pool, m9a50, err);
+      if (err->exc) goto L_ret;
+      }
+      { __typeof__(m9_sub_i64 (len, INT64_C(1), err)) m9a51 = m9_sub_i64 (len, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+      Parquet_PLE (pool, u, u_pool, m9a51, INT64_C(2), err);
+      if (err->exc) goto L_ret;
+      }
+  } else {
+    if ((len <= INT64_C(16777216))) {
+      { __typeof__(m9_mul_i64 (INT64_C(62), INT64_C(4), err)) m9a52 = m9_mul_i64 (INT64_C(62), INT64_C(4), err);
+        if (err->exc) goto L_ret;
+      Parquet_P8 (pool, u, u_pool, m9a52, err);
+      if (err->exc) goto L_ret;
+      }
+      { __typeof__(m9_sub_i64 (len, INT64_C(1), err)) m9a53 = m9_sub_i64 (len, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+      Parquet_PLE (pool, u, u_pool, m9a53, INT64_C(3), err);
+      if (err->exc) goto L_ret;
+      }
+  } else {
+    { __typeof__(m9_mul_i64 (INT64_C(63), INT64_C(4), err)) m9a54 = m9_mul_i64 (INT64_C(63), INT64_C(4), err);
+      if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, u_pool, m9a54, err);
+    if (err->exc) goto L_ret;
+    }
+    { __typeof__(m9_sub_i64 (len, INT64_C(1), err)) m9a55 = m9_sub_i64 (len, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+    Parquet_PLE (pool, u, u_pool, m9a55, INT64_C(4), err);
     if (err->exc) goto L_ret;
     }
   } } } }
-  { __typeof__(({ __typeof__(d) m9t1 = d; int64_t m9t1a = start, m9t1n = len; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a49 = ({ __typeof__(d) m9t1 = d; int64_t m9t1a = start, m9t1n = len; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+  { __typeof__(({ __auto_type m9t1 = d; int64_t m9t1a = start, m9t1n = len; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a56 = ({ __auto_type m9t1 = d; int64_t m9t1a = start, m9t1n = len; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
     if (err->exc) goto L_ret;
-  Parquet_PBytes (pool, u, u_pool, m9a49, err);
+  Parquet_PBytes (pool, u, u_pool, m9a56, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -2030,9 +2103,9 @@ static void Parquet_SnapCopy (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, in
     if ((k > INT64_C(64))) {
       k = INT64_C(64);
     }
-    { __typeof__(m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (k, INT64_C(1), err)), INT64_C(4), err), INT64_C(2), err)) m9a50 = m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (k, INT64_C(1), err)), INT64_C(4), err), INT64_C(2), err);
+    { __typeof__(m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (k, INT64_C(1), err)), INT64_C(4), err), INT64_C(2), err)) m9a57 = m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (k, INT64_C(1), err)), INT64_C(4), err), INT64_C(2), err);
       if (err->exc) goto L_ret;
-    Parquet_P8 (pool, u, u_pool, m9a50, err);
+    Parquet_P8 (pool, u, u_pool, m9a57, err);
     if (err->exc) goto L_ret;
     }
     Parquet_PLE (pool, u, u_pool, off, INT64_C(2), err);
@@ -2060,9 +2133,9 @@ static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, 
   int64_t l3 = 0; (void) l3;
   int64_t l4 = 0; (void) l4;
   last = INT64_C(0);
-  { __typeof__(Parquet_ColPhys (k, err)) m9a51 = Parquet_ColPhys (k, err);
+  { __typeof__(Parquet_ColPhys (k, err)) m9a58 = Parquet_ColPhys (k, err);
     if (err->exc) goto L_ret;
-  Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(1), m9a51, err);
+  Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(1), m9a58, err);
   if (err->exc) goto L_ret;
   }
   if (optional) {
@@ -2081,9 +2154,9 @@ static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, 
     bool m9t1 = (Parquet_ColConv (k, err) >= INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t1) {
-      { __typeof__(Parquet_ColConv (k, err)) m9a52 = Parquet_ColConv (k, err);
+      { __typeof__(Parquet_ColConv (k, err)) m9a59 = Parquet_ColConv (k, err);
         if (err->exc) goto L_ret;
-      Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(6), m9a52, err);
+      Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(6), m9a59, err);
       if (err->exc) goto L_ret;
       }
   } }
@@ -2137,18 +2210,22 @@ static bool Parquet_InList (m9_sl_CHAR name, m9_sl_m9_sl_CHAR xs, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    bool m9t2 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err)), name, err);
+  if (i <= m9t1to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err))) m9a60 = (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    bool m9t2 = DynStr_Eq (m9a60, name, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
       m9ret = true;
       goto L_ret;
-    }
+    } }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = false;
@@ -2214,9 +2291,9 @@ static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(Parquet_AnyBytes (pool, f, withTs, ts, o, err)) m9a53 = Parquet_AnyBytes (pool, f, withTs, ts, o, err);
+  { __typeof__(Parquet_AnyBytes (pool, f, withTs, ts, o, err)) m9a61 = Parquet_AnyBytes (pool, f, withTs, ts, o, err);
     if (err->exc) goto L_ret;
-  Io_WriteFileBytes (path, m9a53, err);
+  Io_WriteFileBytes (path, m9a61, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -2233,21 +2310,23 @@ static void Parquet_CheckNames (Frame_Fr * f, m9_sl_CHAR what, m9_sl_m9_sl_CHAR 
   err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    bool m9t2 = (Frame_Find (f, (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err)), err) < INT64_C(0));
+  if (i <= m9t1to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err))) m9a62 = (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    bool m9t2 = (Frame_Find (f, m9a62, err) < INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t2) {
       { __typeof__(m9_cat (err->res, m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s16, 18 }), err), (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err)), err)) m9t3 = m9_cat (err->res, m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s16, 18 }), err), (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err)), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
-    }
-    { __typeof__((*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err))) m9a54 = (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err));
+    } }
+    { __typeof__((*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err))) m9a63 = (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(k) m9v = Parquet_KindQ (f, m9a54, err);
+    { __typeof__(k) m9v = Parquet_KindQ (f, m9a63, err);
       if (err->exc) goto L_ret;
       k = m9v;
     }
@@ -2257,6 +2336,8 @@ static void Parquet_CheckNames (Frame_Fr * f, m9_sl_CHAR what, m9_sl_m9_sl_CHAR 
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -2279,11 +2360,11 @@ static void Parquet_CheckI8 (Frame_Fr * f, m9_sl_CHAR name, int64_t k, m9_sl_BOO
       if (err->exc) goto L_hdl_m9t1;
       vi32 = m9v;
     }
-    { int64_t m9t3to;
+    { __typeof__(r) m9t3to;
     r = INT64_C(0);
     m9t3to = m9_sub_i64 ((vi32).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; r <= m9t3to; r += 1) {
+    if (r <= m9t3to) for (;;) {
       { __typeof__(x) m9v = (int64_t)((*(int32_t *) m9_at (vi32.p, r, vi32.len, sizeof (int32_t), err)));
         if (err->exc) goto L_hdl_m9t1;
         x = m9v;
@@ -2295,17 +2376,19 @@ static void Parquet_CheckI8 (Frame_Fr * f, m9_sl_CHAR name, int64_t k, m9_sl_BOO
         m9_raise (err, &Faults_BadArg);
         goto L_hdl_m9t1;
       }
+      if ((uint64_t) m9t3to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
   } else {
     { __typeof__(vi16) m9v = Frame_ColI16 (f, name, err);
       if (err->exc) goto L_hdl_m9t1;
       vi16 = m9v;
     }
-    { int64_t m9t6to;
+    { __typeof__(r) m9t6to;
     r = INT64_C(0);
     m9t6to = m9_sub_i64 ((vi16).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; r <= m9t6to; r += 1) {
+    if (r <= m9t6to) for (;;) {
       { __typeof__(x) m9v = (int64_t)((*(int16_t *) m9_at (vi16.p, r, vi16.len, sizeof (int16_t), err)));
         if (err->exc) goto L_hdl_m9t1;
         x = m9v;
@@ -2317,6 +2400,8 @@ static void Parquet_CheckI8 (Frame_Fr * f, m9_sl_CHAR name, int64_t k, m9_sl_BOO
         m9_raise (err, &Faults_BadArg);
         goto L_hdl_m9t1;
       }
+      if ((uint64_t) m9t6to - (uint64_t) r < (uint64_t) 1) break;
+      r += 1;
     } }
   }
   goto L_dn_m9t2;
@@ -2373,18 +2458,22 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   if (err->exc) goto L_ret;
   Parquet_CheckNames (f, ((m9_sl_CHAR){ (uint32_t *) m9s23, 6 }), o.i8Cols, Frame_KindI32, Frame_KindI16, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((o.usCols).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    bool m9t2 = Parquet_InList ((*(m9_sl_CHAR *) m9_at (o.usCols.p, i, o.usCols.len, sizeof (m9_sl_CHAR), err)), o.nsCols, err);
+  if (i <= m9t1to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (o.usCols.p, i, o.usCols.len, sizeof (m9_sl_CHAR), err))) m9a64 = (*(m9_sl_CHAR *) m9_at (o.usCols.p, i, o.usCols.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    bool m9t2 = Parquet_InList (m9a64, o.nsCols, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s24, 36 }), (*(m9_sl_CHAR *) m9_at (o.usCols.p, i, o.usCols.len, sizeof (m9_sl_CHAR), err)), err)) m9t3 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s24, 36 }), (*(m9_sl_CHAR *) m9_at (o.usCols.p, i, o.usCols.len, sizeof (m9_sl_CHAR), err)), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
-    }
+    } }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   if (((((o.codec != Parquet_CodecNone) && (o.codec != Parquet_CodecSnappy)) && (o.codec != Parquet_CodecGzip)) && (o.codec != Parquet_CodecZstd))) {
     { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s25, 6 }), Parquet_I64Text (o.codec, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s26, 48 }), err)) m9t4 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s25, 6 }), Parquet_I64Text (o.codec, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s26, 48 }), err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
@@ -2399,9 +2488,9 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     if (err->exc) goto L_ret;
     out = m9v;
   }
-  { __typeof__(Parquet_MagicBytes (err)) m9a55 = Parquet_MagicBytes (err);
+  { __typeof__(Parquet_MagicBytes (err)) m9a65 = Parquet_MagicBytes (err);
     if (err->exc) goto L_ret;
-  Parquet_PBytes (pool, &(out), err->res, m9a55, err);
+  Parquet_PBytes (pool, &(out), err->res, m9a65, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(pages) m9v = M9_POOL_SL (m9_sl_Parquet_Buf, Parquet_Buf, &((*pool)), nc, err);
@@ -2428,19 +2517,19 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     if (err->exc) goto L_ret;
     opt = m9v;
   }
-  { int64_t m9t5to;
+  { __typeof__(c) m9t5to;
   c = INT64_C(0);
   m9t5to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t5to; c += 1) {
+  if (c <= m9t5to) for (;;) {
     { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9v = Frame_NameAt (f, c, err);
       if (err->exc) goto L_ret;
       (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a56 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a66 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9v = Parquet_KindQ (f, m9a56, err);
+    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9v = Parquet_KindQ (f, m9a66, err);
       if (err->exc) goto L_ret;
       (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -2454,11 +2543,11 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     bool m9t6 = (*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a57 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a67 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a58 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a68 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      { __typeof__(skip) m9v = Parquet_Missing (pool, f, m9a57, m9a58, err);
+      { __typeof__(skip) m9v = Parquet_Missing (pool, f, m9a67, m9a68, err);
         if (err->exc) goto L_ret;
         skip = m9v;
       }
@@ -2470,27 +2559,29 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
         skip = m9v;
       }
     }
-    bool m9t7 = Parquet_InList ((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), o.i8Cols, err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a69 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    bool m9t7 = Parquet_InList (m9a69, o.i8Cols, err);
     if (err->exc) goto L_ret;
     if (m9t7) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a59 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a70 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a60 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a71 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      Parquet_CheckI8 (f, m9a59, m9a60, skip, err);
+      Parquet_CheckI8 (f, m9a70, m9a71, skip, err);
       if (err->exc) goto L_ret;
       }
       }
-    }
+    } }
     (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err)) = out.n;
     if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a61 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a72 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a62 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a73 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err))) m9a63 = (*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err));
+    { __typeof__((*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err))) m9a74 = (*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err));
       if (err->exc) goto L_ret;
-    { __typeof__(page) m9v = Parquet_PageFor (pool, f, m9a61, m9a62, m9a63, skip, o.codec, &((*(int64_t *) m9_at (uncs.p, c, uncs.len, sizeof (int64_t), err))), err);
+    { __typeof__(page) m9v = Parquet_PageFor (pool, f, m9a72, m9a73, m9a74, skip, o.codec, ({ __typeof__ (&((*(int64_t *) m9_at (uncs.p, c, uncs.len, sizeof (int64_t), err)))) m9v = &((*(int64_t *) m9_at (uncs.p, c, uncs.len, sizeof (int64_t), err))); if (err->exc) goto L_ret; m9v; }), err);
       if (err->exc) goto L_ret;
       page = m9v;
     }
@@ -2499,11 +2590,13 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     }
     (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)) = page;
     if (err->exc) goto L_ret;
-    { __typeof__(({ __typeof__(page.b) m9t8 = page.b; int64_t m9t8a = INT64_C(0), m9t8n = page.n; (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; })) m9a64 = ({ __typeof__(page.b) m9t8 = page.b; int64_t m9t8a = INT64_C(0), m9t8n = page.n; (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; });
+    { __typeof__(({ __auto_type m9t8 = page.b; int64_t m9t8a = INT64_C(0), m9t8n = page.n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9a75 = ({ __auto_type m9t8 = page.b; int64_t m9t8a = INT64_C(0), m9t8n = page.n; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
       if (err->exc) goto L_ret;
-    Parquet_PBytes (pool, &(out), err->res, m9a64, err);
+    Parquet_PBytes (pool, &(out), err->res, m9a75, err);
     if (err->exc) goto L_ret;
     }
+    if ((uint64_t) m9t5to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
   { __typeof__(meta) m9v = Parquet_NewBuf (pool, INT64_C(1024), err);
     if (err->exc) goto L_ret;
@@ -2512,9 +2605,9 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   last = INT64_C(0);
   Parquet_PI32F (pool, &(meta), err->res, &(last), INT64_C(1), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  { __typeof__(m9_add_i64 (nc, INT64_C(1), err)) m9a65 = m9_add_i64 (nc, INT64_C(1), err);
+  { __typeof__(m9_add_i64 (nc, INT64_C(1), err)) m9a76 = m9_add_i64 (nc, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  Parquet_PListF (pool, &(meta), err->res, &(last), INT64_C(2), Parquet_CtStruct, m9a65, err);
+  Parquet_PListF (pool, &(meta), err->res, &(last), INT64_C(2), Parquet_CtStruct, m9a76, err);
   if (err->exc) goto L_ret;
   }
   lastRg = INT64_C(0);
@@ -2524,30 +2617,30 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   if (err->exc) goto L_ret;
   Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t9to;
+  { __typeof__(c) m9t9to;
   c = INT64_C(0);
   m9t9to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t9to; c += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a66 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+  if (c <= m9t9to) for (;;) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a77 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a67 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a78 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a68 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a79 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Parquet_InList (m9a68, o.nsCols, err)) m9a69 = Parquet_InList (m9a68, o.nsCols, err);
+    { __typeof__(Parquet_InList (m9a79, o.nsCols, err)) m9a80 = Parquet_InList (m9a79, o.nsCols, err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a70 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a81 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Parquet_InList (m9a70, o.usCols, err)) m9a71 = Parquet_InList (m9a70, o.usCols, err);
+    { __typeof__(Parquet_InList (m9a81, o.usCols, err)) m9a82 = Parquet_InList (m9a81, o.usCols, err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a72 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a83 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Parquet_InList (m9a72, o.i8Cols, err)) m9a73 = Parquet_InList (m9a72, o.i8Cols, err);
+    { __typeof__(Parquet_InList (m9a83, o.i8Cols, err)) m9a84 = Parquet_InList (m9a83, o.i8Cols, err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err))) m9a74 = (*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err));
+    { __typeof__((*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err))) m9a85 = (*(bool *) m9_at (opt.p, c, opt.len, sizeof (bool), err));
       if (err->exc) goto L_ret;
-    Parquet_SchemaElem (pool, &(meta), err->res, m9a66, m9a67, m9a69, m9a71, m9a73, m9a74, err);
+    Parquet_SchemaElem (pool, &(meta), err->res, m9a77, m9a78, m9a80, m9a82, m9a84, m9a85, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -2558,10 +2651,12 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     }
     }
     }
+    if ((uint64_t) m9t9to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
-  { __typeof__(Frame_Rows (f, err)) m9a75 = Frame_Rows (f, err);
+  { __typeof__(Frame_Rows (f, err)) m9a86 = Frame_Rows (f, err);
     if (err->exc) goto L_ret;
-  Parquet_PI64F (pool, &(meta), err->res, &(last), INT64_C(3), m9a75, err);
+  Parquet_PI64F (pool, &(meta), err->res, &(last), INT64_C(3), m9a86, err);
   if (err->exc) goto L_ret;
   }
   Parquet_PListF (pool, &(meta), err->res, &(last), INT64_C(4), Parquet_CtStruct, INT64_C(1), err);
@@ -2569,82 +2664,84 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   lastRg = INT64_C(0);
   Parquet_PListF (pool, &(meta), err->res, &(lastRg), INT64_C(1), Parquet_CtStruct, nc, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t10to;
+  { __typeof__(c) m9t10to;
   c = INT64_C(0);
   m9t10to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; c <= m9t10to; c += 1) {
+  if (c <= m9t10to) for (;;) {
     lastCc = INT64_C(0);
-    { __typeof__((*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err))) m9a76 = (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err))) m9a87 = (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCc), INT64_C(2), m9a76, err);
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCc), INT64_C(2), m9a87, err);
     if (err->exc) goto L_ret;
     }
     Parquet_PField (pool, &(meta), err->res, &(lastCc), INT64_C(3), Parquet_CtStruct, err);
     if (err->exc) goto L_ret;
     lastCm = INT64_C(0);
-    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a77 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a88 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Parquet_ColPhys (m9a77, err)) m9a78 = Parquet_ColPhys (m9a77, err);
+    { __typeof__(Parquet_ColPhys (m9a88, err)) m9a89 = Parquet_ColPhys (m9a88, err);
       if (err->exc) goto L_ret;
-    Parquet_PI32F (pool, &(meta), err->res, &(lastCm), INT64_C(1), m9a78, err);
+    Parquet_PI32F (pool, &(meta), err->res, &(lastCm), INT64_C(1), m9a89, err);
     if (err->exc) goto L_ret;
     }
     }
     Parquet_PListF (pool, &(meta), err->res, &(lastCm), INT64_C(2), Parquet_CtI32, INT64_C(2), err);
     if (err->exc) goto L_ret;
-    { __typeof__(Parquet_Zig (Parquet_EncPlain, err)) m9a79 = Parquet_Zig (Parquet_EncPlain, err);
+    { __typeof__(Parquet_Zig (Parquet_EncPlain, err)) m9a90 = Parquet_Zig (Parquet_EncPlain, err);
       if (err->exc) goto L_ret;
-    Parquet_PVar (pool, &(meta), err->res, m9a79, err);
+    Parquet_PVar (pool, &(meta), err->res, m9a90, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(Parquet_Zig (Parquet_EncRle, err)) m9a80 = Parquet_Zig (Parquet_EncRle, err);
+    { __typeof__(Parquet_Zig (Parquet_EncRle, err)) m9a91 = Parquet_Zig (Parquet_EncRle, err);
       if (err->exc) goto L_ret;
-    Parquet_PVar (pool, &(meta), err->res, m9a80, err);
+    Parquet_PVar (pool, &(meta), err->res, m9a91, err);
     if (err->exc) goto L_ret;
     }
     Parquet_PListF (pool, &(meta), err->res, &(lastCm), INT64_C(3), Parquet_CtBinary, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a81 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a92 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    Parquet_PStrRaw (pool, &(meta), err->res, m9a81, err);
+    Parquet_PStrRaw (pool, &(meta), err->res, m9a92, err);
     if (err->exc) goto L_ret;
     }
     Parquet_PI32F (pool, &(meta), err->res, &(lastCm), INT64_C(4), o.codec, err);
     if (err->exc) goto L_ret;
-    { __typeof__(Frame_Rows (f, err)) m9a82 = Frame_Rows (f, err);
+    { __typeof__(Frame_Rows (f, err)) m9a93 = Frame_Rows (f, err);
       if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(5), m9a82, err);
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(5), m9a93, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__((*(int64_t *) m9_at (uncs.p, c, uncs.len, sizeof (int64_t), err))) m9a83 = (*(int64_t *) m9_at (uncs.p, c, uncs.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (uncs.p, c, uncs.len, sizeof (int64_t), err))) m9a94 = (*(int64_t *) m9_at (uncs.p, c, uncs.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(6), m9a83, err);
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(6), m9a94, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__((*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n) m9a84 = (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n;
+    { __typeof__((*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n) m9a95 = (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n;
       if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(7), m9a84, err);
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(7), m9a95, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__((*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err))) m9a85 = (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err))) m9a96 = (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(9), m9a85, err);
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(9), m9a96, err);
     if (err->exc) goto L_ret;
     }
     Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
     if (err->exc) goto L_ret;
     Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
     if (err->exc) goto L_ret;
+    if ((uint64_t) m9t10to - (uint64_t) c < (uint64_t) 1) break;
+    c += 1;
   } }
-  { __typeof__(m9_sub_i64 (out.n, INT64_C(4), err)) m9a86 = m9_sub_i64 (out.n, INT64_C(4), err);
+  { __typeof__(m9_sub_i64 (out.n, INT64_C(4), err)) m9a97 = m9_sub_i64 (out.n, INT64_C(4), err);
     if (err->exc) goto L_ret;
-  Parquet_PI64F (pool, &(meta), err->res, &(lastRg), INT64_C(2), m9a86, err);
+  Parquet_PI64F (pool, &(meta), err->res, &(lastRg), INT64_C(2), m9a97, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(Frame_Rows (f, err)) m9a87 = Frame_Rows (f, err);
+  { __typeof__(Frame_Rows (f, err)) m9a98 = Frame_Rows (f, err);
     if (err->exc) goto L_ret;
-  Parquet_PI64F (pool, &(meta), err->res, &(lastRg), INT64_C(3), m9a87, err);
+  Parquet_PI64F (pool, &(meta), err->res, &(lastRg), INT64_C(3), m9a98, err);
   if (err->exc) goto L_ret;
   }
   Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
@@ -2669,56 +2766,58 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
         if (err->exc) goto L_ret;
         conv = m9v;
       }
-      { __typeof__(Frame_TsRes (ts, err)) m9a88 = Frame_TsRes (ts, err);
+      { __typeof__(Frame_TsRes (ts, err)) m9a99 = Frame_TsRes (ts, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Parquet_I64Text (m9a88, err)) m9a89 = Parquet_I64Text (m9a88, err);
+      { __typeof__(Parquet_I64Text (m9a99, err)) m9a100 = Parquet_I64Text (m9a99, err);
         if (err->exc) goto L_ret;
-      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s29, 24 }), m9a89, err);
+      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s29, 24 }), m9a100, err);
       if (err->exc) goto L_ret;
       }
       }
-      { __typeof__(Frame_ConvName (conv, err)) m9a90 = Frame_ConvName (conv, err);
+      { __typeof__(Frame_ConvName (conv, err)) m9a101 = Frame_ConvName (conv, err);
         if (err->exc) goto L_ret;
-      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), m9a90, err);
+      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), m9a101, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__(Frame_TsDescr (ts, err)) m9a91 = Frame_TsDescr (ts, err);
+      { __typeof__(Frame_TsDescr (ts, err)) m9a102 = Frame_TsDescr (ts, err);
         if (err->exc) goto L_ret;
-      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s31, 11 }), m9a91, err);
+      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s31, 11 }), m9a102, err);
       if (err->exc) goto L_ret;
       }
     }
-    { int64_t m9t12to;
+    { __typeof__(i) m9t12to;
     i = INT64_C(0);
     m9t12to = m9_sub_i64 ((o.kvK).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; i <= m9t12to; i += 1) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (o.kvK.p, i, o.kvK.len, sizeof (m9_sl_CHAR), err))) m9a92 = (*(m9_sl_CHAR *) m9_at (o.kvK.p, i, o.kvK.len, sizeof (m9_sl_CHAR), err));
+    if (i <= m9t12to) for (;;) {
+      { __typeof__((*(m9_sl_CHAR *) m9_at (o.kvK.p, i, o.kvK.len, sizeof (m9_sl_CHAR), err))) m9a103 = (*(m9_sl_CHAR *) m9_at (o.kvK.p, i, o.kvK.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (o.kvV.p, i, o.kvV.len, sizeof (m9_sl_CHAR), err))) m9a93 = (*(m9_sl_CHAR *) m9_at (o.kvV.p, i, o.kvV.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (o.kvV.p, i, o.kvV.len, sizeof (m9_sl_CHAR), err))) m9a104 = (*(m9_sl_CHAR *) m9_at (o.kvV.p, i, o.kvV.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      Parquet_MetaKV (pool, &(meta), err->res, m9a92, m9a93, err);
+      Parquet_MetaKV (pool, &(meta), err->res, m9a103, m9a104, err);
       if (err->exc) goto L_ret;
       }
       }
+      if ((uint64_t) m9t12to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
   }
   Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
   if (err->exc) goto L_ret;
-  { __typeof__(({ __typeof__(meta.b) m9t13 = meta.b; int64_t m9t13a = INT64_C(0), m9t13n = meta.n; (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; })) m9a94 = ({ __typeof__(meta.b) m9t13 = meta.b; int64_t m9t13a = INT64_C(0), m9t13n = meta.n; (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; });
+  { __typeof__(({ __auto_type m9t13 = meta.b; int64_t m9t13a = INT64_C(0), m9t13n = meta.n; int64_t m9t13o = m9_chk_slice (m9t13a, m9t13n, m9t13.len, err); (__typeof__(m9t13)){ m9t13.p + m9t13o, err->exc ? 0 : m9t13n }; })) m9a105 = ({ __auto_type m9t13 = meta.b; int64_t m9t13a = INT64_C(0), m9t13n = meta.n; int64_t m9t13o = m9_chk_slice (m9t13a, m9t13n, m9t13.len, err); (__typeof__(m9t13)){ m9t13.p + m9t13o, err->exc ? 0 : m9t13n }; });
     if (err->exc) goto L_ret;
-  Parquet_PBytes (pool, &(out), err->res, m9a94, err);
+  Parquet_PBytes (pool, &(out), err->res, m9a105, err);
   if (err->exc) goto L_ret;
   }
   Parquet_PLE (pool, &(out), err->res, meta.n, INT64_C(4), err);
   if (err->exc) goto L_ret;
-  { __typeof__(Parquet_MagicBytes (err)) m9a95 = Parquet_MagicBytes (err);
+  { __typeof__(Parquet_MagicBytes (err)) m9a106 = Parquet_MagicBytes (err);
     if (err->exc) goto L_ret;
-  Parquet_PBytes (pool, &(out), err->res, m9a95, err);
+  Parquet_PBytes (pool, &(out), err->res, m9a106, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
-  m9ret = ({ __typeof__(out.b) m9t14 = out.b; int64_t m9t14a = INT64_C(0), m9t14n = out.n; (__typeof__(m9t14)){ m9t14.p + m9_chk_slice (m9t14a, m9t14n, m9t14.len, err), m9t14n }; });
+  m9ret = ({ __auto_type m9t14 = out.b; int64_t m9t14a = INT64_C(0), m9t14n = out.n; int64_t m9t14o = m9_chk_slice (m9t14a, m9t14n, m9t14.len, err); (__typeof__(m9t14)){ m9t14.p + m9t14o, err->exc ? 0 : m9t14n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -2776,9 +2875,9 @@ static Frame_Ts * Parquet_NIL9 (m9_pool *pool, m9_state *err)
     t = m9v;
   }
   err->res = m9res;
-  { __typeof__(Frame_ConvStart (err)) m9a96 = Frame_ConvStart (err);
+  { __typeof__(Frame_ConvStart (err)) m9a107 = Frame_ConvStart (err);
     if (err->exc) goto L_hdl_m9t1;
-  m9ret = Frame_NewTs (pool, f, t, INT64_C(1), m9a96, (m9_sl_CHAR){ NULL, 0 }, err);
+  m9ret = Frame_NewTs (pool, f, t, INT64_C(1), m9a107, (m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   goto L_ret;
@@ -2823,75 +2922,75 @@ static void Parquet_AddCopy (m9_pool *pool, Frame_Fr * *dst, m9_pool *dst_pool, 
     k = m9v;
   }
   if ((k == Frame_KindF64)) {
-    { __typeof__(Frame_ColF64 (src, name, err)) m9a97 = Frame_ColF64 (src, name, err);
+    { __typeof__(Frame_ColF64 (src, name, err)) m9a108 = Frame_ColF64 (src, name, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Frame_MissF64 (src, name, err)) m9a98 = Frame_MissF64 (src, name, err);
+    { __typeof__(Frame_MissF64 (src, name, err)) m9a109 = Frame_MissF64 (src, name, err);
       if (err->exc) goto L_hdl_m9t1;
-    Frame_AddF64 (pool, dst, dst_pool, name, m9a97, m9a98, err);
+    Frame_AddF64 (pool, dst, dst_pool, name, m9a108, m9a109, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     }
   } else {
     if ((k == Frame_KindF32)) {
-      { __typeof__(Frame_ColF32 (src, name, err)) m9a99 = Frame_ColF32 (src, name, err);
+      { __typeof__(Frame_ColF32 (src, name, err)) m9a110 = Frame_ColF32 (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Frame_MissF32 (src, name, err)) m9a100 = Frame_MissF32 (src, name, err);
+      { __typeof__(Frame_MissF32 (src, name, err)) m9a111 = Frame_MissF32 (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      Frame_AddF32 (pool, dst, dst_pool, name, m9a99, m9a100, err);
+      Frame_AddF32 (pool, dst, dst_pool, name, m9a110, m9a111, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
   } else {
     if ((k == Frame_KindI64)) {
-      { __typeof__(Frame_ColI64 (src, name, err)) m9a101 = Frame_ColI64 (src, name, err);
+      { __typeof__(Frame_ColI64 (src, name, err)) m9a112 = Frame_ColI64 (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Frame_MissI64 (src, name, err)) m9a102 = Frame_MissI64 (src, name, err);
+      { __typeof__(Frame_MissI64 (src, name, err)) m9a113 = Frame_MissI64 (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      Frame_AddI64 (pool, dst, dst_pool, name, m9a101, m9a102, err);
+      Frame_AddI64 (pool, dst, dst_pool, name, m9a112, m9a113, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
   } else {
     if ((k == Frame_KindI32)) {
-      { __typeof__(Frame_ColI32 (src, name, err)) m9a103 = Frame_ColI32 (src, name, err);
+      { __typeof__(Frame_ColI32 (src, name, err)) m9a114 = Frame_ColI32 (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Frame_MissI32 (src, name, err)) m9a104 = Frame_MissI32 (src, name, err);
+      { __typeof__(Frame_MissI32 (src, name, err)) m9a115 = Frame_MissI32 (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      Frame_AddI32 (pool, dst, dst_pool, name, m9a103, m9a104, err);
+      Frame_AddI32 (pool, dst, dst_pool, name, m9a114, m9a115, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
   } else {
     if ((k == Frame_KindI16)) {
-      { __typeof__(Frame_ColI16 (src, name, err)) m9a105 = Frame_ColI16 (src, name, err);
+      { __typeof__(Frame_ColI16 (src, name, err)) m9a116 = Frame_ColI16 (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Frame_MissI16 (src, name, err)) m9a106 = Frame_MissI16 (src, name, err);
+      { __typeof__(Frame_MissI16 (src, name, err)) m9a117 = Frame_MissI16 (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      Frame_AddI16 (pool, dst, dst_pool, name, m9a105, m9a106, err);
+      Frame_AddI16 (pool, dst, dst_pool, name, m9a116, m9a117, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
   } else {
     if ((k == Frame_KindByte)) {
-      { __typeof__(Frame_ColBytes (src, name, err)) m9a107 = Frame_ColBytes (src, name, err);
+      { __typeof__(Frame_ColBytes (src, name, err)) m9a118 = Frame_ColBytes (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Frame_MissByte (src, name, err)) m9a108 = Frame_MissByte (src, name, err);
+      { __typeof__(Frame_MissByte (src, name, err)) m9a119 = Frame_MissByte (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      Frame_AddBytes (pool, dst, dst_pool, name, m9a107, m9a108, err);
+      Frame_AddBytes (pool, dst, dst_pool, name, m9a118, m9a119, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
   } else {
     if ((k == Frame_KindBool)) {
-      { __typeof__(Frame_ColBools (src, name, err)) m9a109 = Frame_ColBools (src, name, err);
+      { __typeof__(Frame_ColBools (src, name, err)) m9a120 = Frame_ColBools (src, name, err);
         if (err->exc) goto L_hdl_m9t1;
-      Frame_AddBools (pool, dst, dst_pool, name, m9a109, err);
+      Frame_AddBools (pool, dst, dst_pool, name, m9a120, err);
       if (err->exc) goto L_hdl_m9t1;
       }
   } else {
-    { __typeof__(Frame_ColStrs (src, name, err)) m9a110 = Frame_ColStrs (src, name, err);
+    { __typeof__(Frame_ColStrs (src, name, err)) m9a121 = Frame_ColStrs (src, name, err);
       if (err->exc) goto L_hdl_m9t1;
-    Frame_AddStrs (pool, dst, dst_pool, name, m9a110, err);
+    Frame_AddStrs (pool, dst, dst_pool, name, m9a121, err);
     if (err->exc) goto L_hdl_m9t1;
     }
   } } } } } } }
@@ -3126,12 +3225,14 @@ static void Parquet_RSkip (Parquet_Rd *r, m9_pool *r_pool, int64_t ct, m9_state 
           n = m9v;
         }
       }
-      { int64_t m9t1to;
+      { __typeof__(i) m9t1to;
       i = INT64_C(1);
       m9t1to = n;
-      for (; i <= m9t1to; i += 1) {
+      if (i <= m9t1to) for (;;) {
         Parquet_RSkip (r, r_pool, et, err);
         if (err->exc) goto L_ret;
+        if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
   } else {
     if ((ct == Parquet_CtStruct)) {
@@ -3262,9 +3363,9 @@ static m9_sl_CHAR Parquet_RStr (m9_pool *pool, Parquet_Rd *r, m9_pool *r_pool, m
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  { __typeof__(({ __typeof__((*r).b) m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a111 = ({ __typeof__((*r).b) m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+  { __typeof__(({ __auto_type m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a122 = ({ __auto_type m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
     if (err->exc) goto L_ret;
-  { __typeof__(s) m9v = DynStr_FromUtf8 (pool, m9a111, err);
+  { __typeof__(s) m9v = DynStr_FromUtf8 (pool, m9a122, err);
     if (err->exc) goto L_ret;
     s = m9v;
   }
@@ -3327,10 +3428,10 @@ static void Parquet_ReadSchema (m9_pool *pool, Parquet_Rd *r, m9_pool *r_pool, P
   }
   (*m).ncols = INT64_C(0);
   first = true;
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(1);
   m9t3to = n;
-  for (; i <= m9t3to; i += 1) {
+  if (i <= m9t3to) for (;;) {
     ci.name = (m9_sl_CHAR){ NULL, 0 };
     { __typeof__(ci.phys) m9v = m9_neg_i64 (INT64_C(1), err);
       if (err->exc) goto L_ret;
@@ -3403,6 +3504,8 @@ static void Parquet_ReadSchema (m9_pool *pool, Parquet_Rd *r, m9_pool *r_pool, P
         (*m).ncols = m9v;
       }
     }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
 L_ret: ;
   err->res = m9res;
@@ -3455,7 +3558,7 @@ static Parquet_Meta Parquet_ReadMeta (m9_pool *pool, m9_sl_BYTE whole, m9_state 
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  { __typeof__(r.b) m9v = ({ __typeof__(whole) m9t6 = whole; int64_t m9t6a = m9_sub_i64 (m9_sub_i64 ((whole).len, INT64_C(8), err), mlen, err), m9t6n = mlen; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
+  { __typeof__(r.b) m9v = ({ __auto_type m9t6 = whole; int64_t m9t6a = m9_sub_i64 (m9_sub_i64 ((whole).len, INT64_C(8), err), mlen, err), m9t6n = mlen; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
     if (err->exc) goto L_ret;
     r.b = m9v;
   }
@@ -3515,13 +3618,15 @@ static Parquet_Meta Parquet_ReadMeta (m9_pool *pool, m9_sl_BYTE whole, m9_state 
           if (err->exc) goto L_ret;
           m.chunks = m9v;
         }
-        { int64_t m9t8to;
+        { __typeof__(g) m9t8to;
         g = INT64_C(0);
         m9t8to = m9_sub_i64 (n, INT64_C(1), err);
         if (err->exc) goto L_ret;
-        for (; g <= m9t8to; g += 1) {
+        if (g <= m9t8to) for (;;) {
           Parquet_ReadRowGroup (&(r), err->res, &(m), err->res, g, err);
           if (err->exc) goto L_ret;
+          if ((uint64_t) m9t8to - (uint64_t) g < (uint64_t) 1) break;
+          g += 1;
         } }
     } else {
       if (((id == INT64_C(5)) && (ct == Parquet_CtList))) {
@@ -3539,12 +3644,14 @@ static Parquet_Meta Parquet_ReadMeta (m9_pool *pool, m9_sl_BYTE whole, m9_state 
             n = m9v;
           }
         }
-        { int64_t m9t9to;
+        { __typeof__(i) m9t9to;
         i = INT64_C(1);
         m9t9to = n;
-        for (; i <= m9t9to; i += 1) {
+        if (i <= m9t9to) for (;;) {
           Parquet_ReadKV (pool, &(r), err->res, &(m), err->res, err);
           if (err->exc) goto L_ret;
+          if ((uint64_t) m9t9to - (uint64_t) i < (uint64_t) 1) break;
+          i += 1;
         } }
     } else {
       Parquet_RSkip (&(r), err->res, ct, err);
@@ -3652,16 +3759,18 @@ static void Parquet_ReadRowGroup (Parquet_Rd *r, m9_pool *r_pool, Parquet_Meta *
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
-      { int64_t m9t3to;
+      { __typeof__(c) m9t3to;
       c = INT64_C(0);
       m9t3to = m9_sub_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; c <= m9t3to; c += 1) {
-        { __typeof__(m9_add_i64 (m9_mul_i64 (g, (*m).ncols, err), c, err)) m9a112 = m9_add_i64 (m9_mul_i64 (g, (*m).ncols, err), c, err);
+      if (c <= m9t3to) for (;;) {
+        { __typeof__(m9_add_i64 (m9_mul_i64 (g, (*m).ncols, err), c, err)) m9a123 = m9_add_i64 (m9_mul_i64 (g, (*m).ncols, err), c, err);
           if (err->exc) goto L_ret;
-        Parquet_ReadChunk (r, r_pool, m, m_pool, m9a112, err);
+        Parquet_ReadChunk (r, r_pool, m, m_pool, m9a123, err);
         if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t3to - (uint64_t) c < (uint64_t) 1) break;
+        c += 1;
       } }
     } else {
       Parquet_RSkip (r, r_pool, ct, err);
@@ -3852,11 +3961,11 @@ static int64_t Parquet_LEb (m9_sl_BYTE b, int64_t at, int64_t k, m9_state *err)
   int64_t m = 0; (void) m;
   v = INT64_C(0);
   m = INT64_C(1);
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (k, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     { __typeof__(v) m9v = m9_add_i64 (v, m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (at, i, err), b.len, sizeof (uint8_t), err))), m, err), err);
       if (err->exc) goto L_ret;
       v = m9v;
@@ -3865,6 +3974,8 @@ static int64_t Parquet_LEb (m9_sl_BYTE b, int64_t at, int64_t k, m9_state *err)
       if (err->exc) goto L_ret;
       m = m9v;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = v;
@@ -3987,12 +4098,12 @@ static m9_sl_BYTE Parquet_ZstdDecode (m9_pool *pool, m9_sl_BYTE body, int64_t si
     if (err->exc) goto L_hdl_m9t1;
     out = m9v;
   }
-  { __typeof__(got) m9v = (int64_t)(ZSTD_decompress (((void *)(out).p), ((size_t) m9_u64 (size, err)), ((void *)(body).p), ((size_t) m9_u64 ((body).len, err))));
+  { __typeof__(got) m9v = (int64_t)(({ __auto_type m9_fam9t4 = (((void *)(out).p)); __auto_type m9_fam9t5 = (((size_t) m9_u64 (size, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t6 = (((void *)(body).p)); __auto_type m9_fam9t7 = (((size_t) m9_u64 ((body).len, err))); if (err->exc) goto L_hdl_m9t1; ZSTD_decompress (m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7); }));
     if (err->exc) goto L_hdl_m9t1;
     got = m9v;
   }
   if ((got != size)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s61, 19 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s61, 19 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s61, 19 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s61, 19 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_hdl_m9t1;
   }
@@ -4003,7 +4114,7 @@ static m9_sl_BYTE Parquet_ZstdDecode (m9_pool *pool, m9_sl_BYTE body, int64_t si
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s62, 19 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s62, 19 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s62, 19 })) m9t9 = ((m9_sl_CHAR){ (uint32_t *) m9s62, 19 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
@@ -4027,7 +4138,7 @@ static m9_sl_BYTE Parquet_ZstdEncode (m9_pool *pool, m9_sl_BYTE d, m9_state *err
   m9_sl_BYTE out = {0}; (void) out;
   int64_t cap = 0; (void) cap;
   int64_t got = 0; (void) got;
-  { __typeof__(cap) m9v = (int64_t)(ZSTD_compressBound (((size_t) m9_u64 ((d).len, err))));
+  { __typeof__(cap) m9v = (int64_t)(({ __auto_type m9_fam9t3 = (((size_t) m9_u64 ((d).len, err))); if (err->exc) goto L_hdl_m9t1; ZSTD_compressBound (m9_fam9t3); }));
     if (err->exc) goto L_hdl_m9t1;
     cap = m9v;
   }
@@ -4035,24 +4146,24 @@ static m9_sl_BYTE Parquet_ZstdEncode (m9_pool *pool, m9_sl_BYTE d, m9_state *err
     if (err->exc) goto L_hdl_m9t1;
     out = m9v;
   }
-  { __typeof__(got) m9v = (int64_t)(ZSTD_compress (((void *)(out).p), ((size_t) m9_u64 (cap, err)), ((void *)(d).p), ((size_t) m9_u64 ((d).len, err)), ((int)(INT64_C(3)))));
+  { __typeof__(got) m9v = (int64_t)(({ __auto_type m9_fam9t4 = (((void *)(out).p)); __auto_type m9_fam9t5 = (((size_t) m9_u64 (cap, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t6 = (((void *)(d).p)); __auto_type m9_fam9t7 = (((size_t) m9_u64 ((d).len, err))); if (err->exc) goto L_hdl_m9t1; __auto_type m9_fam9t8 = (((int)(INT64_C(3)))); ZSTD_compress (m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8); }));
     if (err->exc) goto L_hdl_m9t1;
     got = m9v;
   }
   if ((got > cap)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s63, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s63, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s63, 22 })) m9t9 = ((m9_sl_CHAR){ (uint32_t *) m9s63, 22 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_hdl_m9t1;
   }
   err->res = m9res;
-  m9ret = ({ __typeof__(out) m9t4 = out; int64_t m9t4a = INT64_C(0), m9t4n = got; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+  m9ret = ({ __auto_type m9t10 = out; int64_t m9t10a = INT64_C(0), m9t10n = got; int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; });
   if (err->exc) goto L_hdl_m9t1;
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s64, 22 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s64, 22 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s64, 22 })) m9t11 = ((m9_sl_CHAR){ (uint32_t *) m9s64, 22 }); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; m9_pay_keep (err, 0, sizeof (*m9t11.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
@@ -4165,16 +4276,18 @@ static m9_sl_BYTE Parquet_SnappyDecode (m9_pool *pool, m9_sl_BYTE s, m9_state *e
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
-      { int64_t m9t6to;
+      { __typeof__(i) m9t6to;
       i = INT64_C(0);
       m9t6to = m9_sub_i64 (len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t6to; i += 1) {
+      if (i <= m9t6to) for (;;) {
         { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (o, i, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (s.p, m9_add_i64 (at, i, err), s.len, sizeof (uint8_t), err));
           if (err->exc) goto L_ret;
           (*(uint8_t *) m9_at (out.p, m9_add_i64 (o, i, err), out.len, sizeof (uint8_t), err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
       { __typeof__(at) m9v = m9_add_i64 (at, len, err);
         if (err->exc) goto L_ret;
@@ -4254,16 +4367,18 @@ static m9_sl_BYTE Parquet_SnappyDecode (m9_pool *pool, m9_sl_BYTE s, m9_state *e
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
-      { int64_t m9t15to;
+      { __typeof__(i) m9t15to;
       i = INT64_C(0);
       m9t15to = m9_sub_i64 (len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t15to; i += 1) {
+      if (i <= m9t15to) for (;;) {
         { __typeof__((*(uint8_t *) m9_at (out.p, m9_add_i64 (o, i, err), out.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (o, off, err), i, err), out.len, sizeof (uint8_t), err));
           if (err->exc) goto L_ret;
           (*(uint8_t *) m9_at (out.p, m9_add_i64 (o, i, err), out.len, sizeof (uint8_t), err)) = m9v;
           if (err->exc) goto L_ret;
         }
+        if ((uint64_t) m9t15to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
       { __typeof__(o) m9v = m9_add_i64 (o, len, err);
         if (err->exc) goto L_ret;
@@ -4367,14 +4482,16 @@ static m9_sl_I64 Parquet_Hybrid (m9_pool *pool, m9_sl_BYTE b, int64_t *at, int64
     v = m9v;
   }
   top = INT64_C(1);
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(1);
   m9t3to = width;
-  for (; i <= m9t3to; i += 1) {
+  if (i <= m9t3to) for (;;) {
     { __typeof__(top) m9v = m9_mul_i64 (top, INT64_C(2), err);
       if (err->exc) goto L_ret;
       top = m9v;
     }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   { __typeof__(nb) m9v = m9_div_i64 ((m9_add_i64 (width, INT64_C(7), err)), INT64_C(8), err);
     if (err->exc) goto L_ret;
@@ -4419,10 +4536,10 @@ static m9_sl_I64 Parquet_Hybrid (m9_pool *pool, m9_sl_BYTE b, int64_t *at, int64
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
-      { int64_t m9t9to;
+      { __typeof__(i) m9t9to;
       i = INT64_C(1);
       m9t9to = cnt;
-      for (; i <= m9t9to; i += 1) {
+      if (i <= m9t9to) for (;;) {
         if ((got < n)) {
           (*(int64_t *) m9_at (v.p, got, v.len, sizeof (int64_t), err)) = x;
           if (err->exc) goto L_ret;
@@ -4431,6 +4548,8 @@ static m9_sl_I64 Parquet_Hybrid (m9_pool *pool, m9_sl_BYTE b, int64_t *at, int64
             got = m9v;
           }
         }
+        if ((uint64_t) m9t9to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
     } else {
       { __typeof__(groups) m9v = m9_div_i64 (hdr, INT64_C(2), err);
@@ -4454,11 +4573,11 @@ static m9_sl_I64 Parquet_Hybrid (m9_pool *pool, m9_sl_BYTE b, int64_t *at, int64
       acc = INT64_C(0);
       have = INT64_C(0);
       mul = INT64_C(1);
-      { int64_t m9t14to;
+      { __typeof__(i) m9t14to;
       i = INT64_C(1);
       m9t14to = m9_mul_i64 (groups, INT64_C(8), err);
       if (err->exc) goto L_ret;
-      for (; i <= m9t14to; i += 1) {
+      if (i <= m9t14to) for (;;) {
         for (;;) {
           if (!((have < width))) break;
           { __typeof__(acc) m9v = m9_add_i64 (acc, m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, (*at), b.len, sizeof (uint8_t), err))), mul, err), err);
@@ -4502,6 +4621,8 @@ static m9_sl_I64 Parquet_Hybrid (m9_pool *pool, m9_sl_BYTE b, int64_t *at, int64
             got = m9v;
           }
         }
+        if ((uint64_t) m9t14to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
       } }
     }
   }
@@ -4642,7 +4763,7 @@ static void Parquet_Put (m9_pool *pool, Parquet_Sink *k, m9_pool *k_pool, m9_sl_
   if (((*k).kind == Parquet_SkF64)) {
     Parquet_Need (b, (*p), INT64_C(8), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at ((*k).f64.p, (*k).at, (*k).f64.len, sizeof (double), err))) m9v = m9_f64_from_le (({ __typeof__(b) m9t1 = b; int64_t m9t1a = (*p), m9t1n = INT64_C(8); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
+    { __typeof__((*(double *) m9_at ((*k).f64.p, (*k).at, (*k).f64.len, sizeof (double), err))) m9v = m9_f64_from_le (({ __auto_type m9t1 = b; int64_t m9t1a = (*p), m9t1n = INT64_C(8); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; }), err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at ((*k).f64.p, (*k).at, (*k).f64.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -4655,7 +4776,7 @@ static void Parquet_Put (m9_pool *pool, Parquet_Sink *k, m9_pool *k_pool, m9_sl_
     if (((*k).kind == Parquet_SkF32)) {
       Parquet_Need (b, (*p), INT64_C(4), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(float *) m9_at ((*k).f32.p, (*k).at, (*k).f32.len, sizeof (float), err))) m9v = m9_f32_from_le (({ __typeof__(b) m9t2 = b; int64_t m9t2a = (*p), m9t2n = INT64_C(4); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
+      { __typeof__((*(float *) m9_at ((*k).f32.p, (*k).at, (*k).f32.len, sizeof (float), err))) m9v = m9_f32_from_le (({ __auto_type m9t2 = b; int64_t m9t2a = (*p), m9t2n = INT64_C(4); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; }), err);
         if (err->exc) goto L_ret;
         (*(float *) m9_at ((*k).f32.p, (*k).at, (*k).f32.len, sizeof (float), err)) = m9v;
         if (err->exc) goto L_ret;
@@ -4672,9 +4793,9 @@ static void Parquet_Put (m9_pool *pool, Parquet_Sink *k, m9_pool *k_pool, m9_sl_
         if (err->exc) goto L_ret;
         lo = m9v;
       }
-      { __typeof__(m9_add_i64 ((*p), INT64_C(4), err)) m9a113 = m9_add_i64 ((*p), INT64_C(4), err);
+      { __typeof__(m9_add_i64 ((*p), INT64_C(4), err)) m9a124 = m9_add_i64 ((*p), INT64_C(4), err);
         if (err->exc) goto L_ret;
-      { __typeof__(hi) m9v = Parquet_LEb (b, m9a113, INT64_C(4), err);
+      { __typeof__(hi) m9v = Parquet_LEb (b, m9a124, INT64_C(4), err);
         if (err->exc) goto L_ret;
         hi = m9v;
       }
@@ -4710,9 +4831,9 @@ static void Parquet_Put (m9_pool *pool, Parquet_Sink *k, m9_pool *k_pool, m9_sl_
       }
       Parquet_Need (b, (*p), n, err);
       if (err->exc) goto L_ret;
-      { __typeof__(({ __typeof__(b) m9t3 = b; int64_t m9t3a = (*p), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a114 = ({ __typeof__(b) m9t3 = b; int64_t m9t3a = (*p), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+      { __typeof__(({ __auto_type m9t3 = b; int64_t m9t3a = (*p), m9t3n = n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a125 = ({ __auto_type m9t3 = b; int64_t m9t3a = (*p), m9t3n = n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at ((*k).s.p, (*k).at, (*k).s.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_FromUtf8 (pool, m9a114, err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at ((*k).s.p, (*k).at, (*k).s.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_FromUtf8 (pool, m9a125, err);
         if (err->exc) goto L_ret;
         (*(m9_sl_CHAR *) m9_at ((*k).s.p, (*k).at, (*k).s.len, sizeof (m9_sl_CHAR), err)) = m9v;
         if (err->exc) goto L_ret;
@@ -4912,11 +5033,11 @@ static m9_sl_I64 Parquet_DictPos (m9_pool *pool, m9_sl_BYTE d, Parquet_ColInfo c
       goto L_ret;
   } } }
   p = INT64_C(0);
-  { int64_t m9t3to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t3to; i += 1) {
+  if (i <= m9t3to) for (;;) {
     (*(int64_t *) m9_at (pos.p, i, pos.len, sizeof (int64_t), err)) = p;
     if (err->exc) goto L_ret;
     if ((w > INT64_C(0))) {
@@ -4932,6 +5053,8 @@ static m9_sl_I64 Parquet_DictPos (m9_pool *pool, m9_sl_BYTE d, Parquet_ColInfo c
         p = m9v;
       }
     }
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   Parquet_Need (d, INT64_C(0), p, err);
   if (err->exc) goto L_ret;
@@ -5089,11 +5212,11 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
     if (err->exc) goto L_ret;
     dpos = m9v;
   }
-  { int64_t m9t1to;
+  { __typeof__(g) m9t1to;
   g = INT64_C(0);
   m9t1to = m9_sub_i64 (m.ngroups, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; g <= m9t1to; g += 1) {
+  if (g <= m9t1to) for (;;) {
     { __typeof__(ch) m9v = (*(Parquet_Chunk *) m9_at (m.chunks.p, m9_add_i64 (m9_mul_i64 (g, m.ncols, err), c, err), m.chunks.len, sizeof (Parquet_Chunk), err));
       if (err->exc) goto L_ret;
       ch = m9v;
@@ -5172,7 +5295,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
-      { __typeof__(body) m9v = ({ __typeof__(whole) m9t4 = whole; int64_t m9t4a = r.at, m9t4n = comp; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+      { __typeof__(body) m9v = ({ __auto_type m9t4 = whole; int64_t m9t4a = r.at, m9t4n = comp; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
         if (err->exc) goto L_ret;
         body = m9v;
       }
@@ -5230,9 +5353,9 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
               Parquet_Need (data, INT64_C(4), w, err);
               if (err->exc) goto L_ret;
               q = INT64_C(4);
-              { __typeof__(m9_add_i64 (INT64_C(4), w, err)) m9a115 = m9_add_i64 (INT64_C(4), w, err);
+              { __typeof__(m9_add_i64 (INT64_C(4), w, err)) m9a126 = m9_add_i64 (INT64_C(4), w, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(lv) m9v = Parquet_Hybrid (pool, data, &(q), m9a115, INT64_C(1), nv, err);
+              { __typeof__(lv) m9v = Parquet_Hybrid (pool, data, &(q), m9a126, INT64_C(1), nv, err);
                 if (err->exc) goto L_ret;
                 lv = m9v;
               }
@@ -5261,18 +5384,18 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
               }
             }
             if ((packed && (ch.codec != Parquet_CodecNone))) {
-              { __typeof__(({ __typeof__(body) m9t9 = body; int64_t m9t9a = defLen, m9t9n = m9_sub_i64 (comp, defLen, err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; })) m9a116 = ({ __typeof__(body) m9t9 = body; int64_t m9t9a = defLen, m9t9n = m9_sub_i64 (comp, defLen, err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; });
+              { __typeof__(({ __auto_type m9t9 = body; int64_t m9t9a = defLen, m9t9n = m9_sub_i64 (comp, defLen, err); int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; })) m9a127 = ({ __auto_type m9t9 = body; int64_t m9t9a = defLen, m9t9n = m9_sub_i64 (comp, defLen, err); int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; });
                 if (err->exc) goto L_ret;
-              { __typeof__(m9_sub_i64 (uncomp, defLen, err)) m9a117 = m9_sub_i64 (uncomp, defLen, err);
+              { __typeof__(m9_sub_i64 (uncomp, defLen, err)) m9a128 = m9_sub_i64 (uncomp, defLen, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(data) m9v = Parquet_PageBytes (pool, ch.codec, m9a116, m9a117, err);
+              { __typeof__(data) m9v = Parquet_PageBytes (pool, ch.codec, m9a127, m9a128, err);
                 if (err->exc) goto L_ret;
                 data = m9v;
               }
               }
               }
             } else {
-              { __typeof__(data) m9v = ({ __typeof__(body) m9t10 = body; int64_t m9t10a = defLen, m9t10n = m9_sub_i64 (comp, defLen, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; });
+              { __typeof__(data) m9v = ({ __auto_type m9t10 = body; int64_t m9t10a = defLen, m9t10n = m9_sub_i64 (comp, defLen, err); int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; });
                 if (err->exc) goto L_ret;
                 data = m9v;
               }
@@ -5284,11 +5407,11 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
             present = m9v;
           }
           np = INT64_C(0);
-          { int64_t m9t11to;
+          { __typeof__(i) m9t11to;
           i = INT64_C(0);
           m9t11to = m9_sub_i64 (nv, INT64_C(1), err);
           if (err->exc) goto L_ret;
-          for (; i <= m9t11to; i += 1) {
+          if (i <= m9t11to) for (;;) {
             { __typeof__((*(bool *) m9_at (present.p, i, present.len, sizeof (bool), err))) m9v = ((!ci.optional) || ((*(int64_t *) m9_at (lv.p, i, lv.len, sizeof (int64_t), err)) == INT64_C(1)));
               if (err->exc) goto L_ret;
               (*(bool *) m9_at (present.p, i, present.len, sizeof (bool), err)) = m9v;
@@ -5302,15 +5425,17 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
                 np = m9v;
               }
             }
+            if ((uint64_t) m9t11to - (uint64_t) i < (uint64_t) 1) break;
+            i += 1;
           } }
           if (((enc == Parquet_EncPlain) && (ci.phys == Parquet_PtBoolean))) {
             bacc = INT64_C(0);
             bleft = INT64_C(0);
-            { int64_t m9t13to;
+            { __typeof__(i) m9t13to;
             i = INT64_C(0);
             m9t13to = m9_sub_i64 (nv, INT64_C(1), err);
             if (err->exc) goto L_ret;
-            for (; i <= m9t13to; i += 1) {
+            if (i <= m9t13to) for (;;) {
               bool m9t14 = (*(bool *) m9_at (present.p, i, present.len, sizeof (bool), err));
               if (err->exc) goto L_ret;
               if (m9t14) {
@@ -5327,9 +5452,9 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
                   }
                   bleft = INT64_C(8);
                 }
-                { __typeof__((m9_mod_i64 (bacc, INT64_C(2), err) == INT64_C(1))) m9a118 = (m9_mod_i64 (bacc, INT64_C(2), err) == INT64_C(1));
+                { __typeof__((m9_mod_i64 (bacc, INT64_C(2), err) == INT64_C(1))) m9a129 = (m9_mod_i64 (bacc, INT64_C(2), err) == INT64_C(1));
                   if (err->exc) goto L_ret;
-                Parquet_PutBool (&(k), err->res, m9a118, err);
+                Parquet_PutBool (&(k), err->res, m9a129, err);
                 if (err->exc) goto L_ret;
                 }
                 { __typeof__(bacc) m9v = m9_div_i64 (bacc, INT64_C(2), err);
@@ -5344,14 +5469,16 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
                 Parquet_PutMissing (&(k), err->res, ci.name, err);
                 if (err->exc) goto L_ret;
               }
+              if ((uint64_t) m9t13to - (uint64_t) i < (uint64_t) 1) break;
+              i += 1;
             } }
           } else {
             if ((enc == Parquet_EncPlain)) {
-              { int64_t m9t15to;
+              { __typeof__(i) m9t15to;
               i = INT64_C(0);
               m9t15to = m9_sub_i64 (nv, INT64_C(1), err);
               if (err->exc) goto L_ret;
-              for (; i <= m9t15to; i += 1) {
+              if (i <= m9t15to) for (;;) {
                 bool m9t16 = (*(bool *) m9_at (present.p, i, present.len, sizeof (bool), err));
                 if (err->exc) goto L_ret;
                 if (m9t16) {
@@ -5361,6 +5488,8 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
                   Parquet_PutMissing (&(k), err->res, ci.name, err);
                   if (err->exc) goto L_ret;
                 }
+                if ((uint64_t) m9t15to - (uint64_t) i < (uint64_t) 1) break;
+                i += 1;
               } }
           } else {
             if (((enc == Parquet_EncRleDict) || (enc == Parquet_EncPlainDict))) {
@@ -5390,11 +5519,11 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
                 }
               }
               j = INT64_C(0);
-              { int64_t m9t18to;
+              { __typeof__(i) m9t18to;
               i = INT64_C(0);
               m9t18to = m9_sub_i64 (nv, INT64_C(1), err);
               if (err->exc) goto L_ret;
-              for (; i <= m9t18to; i += 1) {
+              if (i <= m9t18to) for (;;) {
                 bool m9t19 = (*(bool *) m9_at (present.p, i, present.len, sizeof (bool), err));
                 if (err->exc) goto L_ret;
                 if (m9t19) {
@@ -5419,6 +5548,8 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
                   Parquet_PutMissing (&(k), err->res, ci.name, err);
                   if (err->exc) goto L_ret;
                 }
+                if ((uint64_t) m9t18to - (uint64_t) i < (uint64_t) 1) break;
+                i += 1;
               } }
           } else {
             if (((enc == Parquet_EncRle) && (ci.phys == Parquet_PtBoolean))) {
@@ -5428,34 +5559,34 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
                 if (err->exc) goto L_ret;
                 w = m9v;
               }
-              { __typeof__(m9_add_i64 (p, INT64_C(4), err)) m9a119 = m9_add_i64 (p, INT64_C(4), err);
+              { __typeof__(m9_add_i64 (p, INT64_C(4), err)) m9a130 = m9_add_i64 (p, INT64_C(4), err);
                 if (err->exc) goto L_ret;
-              Parquet_Need (data, m9a119, w, err);
+              Parquet_Need (data, m9a130, w, err);
               if (err->exc) goto L_ret;
               }
               { __typeof__(q) m9v = m9_add_i64 (p, INT64_C(4), err);
                 if (err->exc) goto L_ret;
                 q = m9v;
               }
-              { __typeof__(m9_add_i64 (m9_add_i64 (p, INT64_C(4), err), w, err)) m9a120 = m9_add_i64 (m9_add_i64 (p, INT64_C(4), err), w, err);
+              { __typeof__(m9_add_i64 (m9_add_i64 (p, INT64_C(4), err), w, err)) m9a131 = m9_add_i64 (m9_add_i64 (p, INT64_C(4), err), w, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(idx) m9v = Parquet_Hybrid (pool, data, &(q), m9a120, INT64_C(1), np, err);
+              { __typeof__(idx) m9v = Parquet_Hybrid (pool, data, &(q), m9a131, INT64_C(1), np, err);
                 if (err->exc) goto L_ret;
                 idx = m9v;
               }
               }
               j = INT64_C(0);
-              { int64_t m9t22to;
+              { __typeof__(i) m9t22to;
               i = INT64_C(0);
               m9t22to = m9_sub_i64 (nv, INT64_C(1), err);
               if (err->exc) goto L_ret;
-              for (; i <= m9t22to; i += 1) {
+              if (i <= m9t22to) for (;;) {
                 bool m9t23 = (*(bool *) m9_at (present.p, i, present.len, sizeof (bool), err));
                 if (err->exc) goto L_ret;
                 if (m9t23) {
-                  { __typeof__(((*(int64_t *) m9_at (idx.p, j, idx.len, sizeof (int64_t), err)) == INT64_C(1))) m9a121 = ((*(int64_t *) m9_at (idx.p, j, idx.len, sizeof (int64_t), err)) == INT64_C(1));
+                  { __typeof__(((*(int64_t *) m9_at (idx.p, j, idx.len, sizeof (int64_t), err)) == INT64_C(1))) m9a132 = ((*(int64_t *) m9_at (idx.p, j, idx.len, sizeof (int64_t), err)) == INT64_C(1));
                     if (err->exc) goto L_ret;
-                  Parquet_PutBool (&(k), err->res, m9a121, err);
+                  Parquet_PutBool (&(k), err->res, m9a132, err);
                   if (err->exc) goto L_ret;
                   }
                   { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
@@ -5466,6 +5597,8 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
                   Parquet_PutMissing (&(k), err->res, ci.name, err);
                   if (err->exc) goto L_ret;
                 }
+                if ((uint64_t) m9t22to - (uint64_t) i < (uint64_t) 1) break;
+                i += 1;
               } }
           } else {
             { __typeof__(m9_cat (err->res, m9_cat (err->res, Parquet_EncName (enc, err), ((m9_sl_CHAR){ (uint32_t *) m9s78, 11 }), err), ci.name, err)) m9t24 = m9_cat (err->res, m9_cat (err->res, Parquet_EncName (enc, err), ((m9_sl_CHAR){ (uint32_t *) m9s78, 11 }), err), ci.name, err); err->s[0].p = m9t24.p; err->s[0].len = m9t24.len; m9_pay_keep (err, 0, sizeof (*m9t24.p)); }
@@ -5483,6 +5616,8 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
           goto L_ret;
       } } }
     }
+    if ((uint64_t) m9t1to - (uint64_t) g < (uint64_t) 1) break;
+    g += 1;
   } }
   if ((k.at != m.rows)) {
     { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s80, 7 }), ci.name, err), ((m9_sl_CHAR){ (uint32_t *) m9s81, 54 }), err)) m9t26 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s80, 7 }), ci.name, err), ((m9_sl_CHAR){ (uint32_t *) m9s81, 54 }), err); err->s[0].p = m9t26.p; err->s[0].len = m9t26.len; m9_pay_keep (err, 0, sizeof (*m9t26.p)); }
@@ -5614,9 +5749,9 @@ static void Parquet_AddI64Q (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err)) m9a122 = m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err);
+  { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err)) m9a133 = m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-  Frame_AddI64 (pool, f, f_pool, name, v, m9a122, err);
+  Frame_AddI64 (pool, f, f_pool, name, v, m9a133, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   goto L_dn_m9t2;
@@ -5650,9 +5785,9 @@ static void Parquet_AddI32Q (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err)) m9a123 = m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err);
+  { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err)) m9a134 = m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-  Frame_AddI32 (pool, f, f_pool, name, v, m9a123, err);
+  Frame_AddI32 (pool, f, f_pool, name, v, m9a134, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   goto L_dn_m9t2;
@@ -5686,9 +5821,9 @@ static void Parquet_AddI16Q (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(m9_neg_i64 (INT64_C(32768), err)) m9a124 = m9_neg_i64 (INT64_C(32768), err);
+  { __typeof__(m9_neg_i64 (INT64_C(32768), err)) m9a135 = m9_neg_i64 (INT64_C(32768), err);
     if (err->exc) goto L_hdl_m9t1;
-  Frame_AddI16 (pool, f, f_pool, name, v, m9a124, err);
+  Frame_AddI16 (pool, f, f_pool, name, v, m9a135, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   goto L_dn_m9t2;
@@ -5936,11 +6071,11 @@ static bool Parquet_EqS (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     bool m9t2 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) != (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -5948,6 +6083,8 @@ static bool Parquet_EqS (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
       m9ret = false;
       goto L_ret;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = true;
@@ -5973,11 +6110,11 @@ static int64_t Parquet_TextI64 (m9_sl_CHAR s, m9_state *err)
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
+  if (i <= m9t2to) for (;;) {
     bool m9t3 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
     if (err->exc) goto L_ret;
     if (m9t3) {
@@ -5989,6 +6126,8 @@ static int64_t Parquet_TextI64 (m9_sl_CHAR s, m9_state *err)
       if (err->exc) goto L_ret;
       v = m9v;
     }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = v;

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
 /* tlsshim.c -- the TLS half of csock, over OpenSSL.
 
    A separate file from tcpshim.c on purpose: this is the whole of the

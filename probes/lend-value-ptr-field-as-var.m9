@@ -1,0 +1,10 @@
+(* EXPECT: cannot lend what the value parameter q points to as VAR *)
+MODULE m ;
+TYPE R = RECORD s : STR ; n : I64 END ;
+PROCEDURE Fill (VAR x : STR) = BEGIN x := x + 'abc' END Fill ;
+PROCEDURE Bump (VAR n : I64) = BEGIN n := n + 1 END Bump ;
+(* legal: a VAR pointer's object, and a value RECORD's own copy *)
+PROCEDURE A (VAR q : PTR R) = BEGIN Fill (q.s) ; Bump (q.n) END A ;
+PROCEDURE B (r : R) = VAR t : R ; BEGIN t := r ; Bump (t.n) END B ;
+PROCEDURE C (q : PTR R) = BEGIN Fill (q.s) END C ;
+END m.

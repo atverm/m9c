@@ -1,0 +1,26 @@
+(* the compiler review of 2026-10-21, checker repro B2a (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE B2a ;
+IMPORT Io, Fmt ;
+TYPE Row = RECORD s : STR ; n : I64 END ;
+TYPE Box = RECORD r : Row END ;
+VAR last : STR ;
+PROCEDURE Fill () =
+VAR arr : SLICE OF Row ; b : Box ; r : Row ; i : I64 ;
+BEGIN
+  arr := NEW (Row, 3) ;
+  FOR i := 0 TO 2 DO arr[i].s := 'item ' + Fmt.I64Str (i) END ;
+
+
+  last := arr[1].s
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (last)
+END B2a.

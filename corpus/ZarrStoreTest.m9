@@ -15,6 +15,7 @@ MODULE ZarrStoreTest ;
 IMPORT Arrays ;
 IMPORT Check ;
 IMPORT Io ;
+IMPORT System ;
 IMPORT ZarrStore ;
 
 VAR
@@ -33,7 +34,7 @@ VAR
   ii, jj, shape : SLICE OF I64 ;
   want, got, all : SLICE OF F64 ;
   idx : SLICE OF I64 ;
-  i, j, k, n, missing : I64 ;
+  i, j, k, n, missing, held : I64 ;
   v : F64 ;
   chunk : SLICE OF BYTE ;
 BEGIN
@@ -77,6 +78,20 @@ BEGIN
                Check.GoldI64 (t, gold, 'co2.count')) ;
   Check.EqI64 (t, 'co2.zarr: the deleted chunk is 600 NaN', missing,
                Check.GoldI64 (t, gold, 'co2.missing')) ;
+  (* the array holds ONE chunk buffer and reuses it: twenty thousand
+     reads alternating between the deleted chunk and a present one --
+     every one a cache miss, a fill or a fetch -- grow the live pools
+     by less than a chunk; until 2026-10-24 each read allocated a
+     fresh 4,800-byte buffer in the cache pool, 96 MB here *)
+  held := System.PoolBytes () ;
+  FOR k := 0 TO 9999 DO
+    idx[0] := 70 ; idx[1] := 30 ;
+    v := ZarrStore.GetF64 (a, idx) ;
+    idx[0] := 0 ; idx[1] := 0 ;
+    v := ZarrStore.GetF64 (a, idx)
+  END ;
+  Check.That (t, 'co2.zarr: twenty thousand misses reuse one chunk buffer (pools grow under 64 KB)',
+              System.PoolBytes () - held < 65536) ;
   Check.EqF64 (t, 'co2.zarr: the sum of every value, to the bit (math.fsum)',
                Arrays.NanSum (all), Check.GoldF64 (t, gold, 'co2.sum')) ;
   got := NEW (pool, F64, shape[1]) ;

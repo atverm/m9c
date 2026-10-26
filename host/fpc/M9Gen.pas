@@ -1,4 +1,10 @@
 unit M9Gen;
+{ FROZEN 2026-10-22 (Alex's decision on the compiler review's item 14,
+  docs/twin-plan.md): the generator that runtime/gen and every gate
+  read is corpus/Gen.m9.  This unit stays as it was on that day -- it
+  agreed with Gen.m9 byte for byte over all 69 gendiff modules -- and
+  nothing builds it any more.  A change to code generation goes in
+  Gen.m9 alone. }
 { P4 code generator, first cut: emits C11 per report par 11 for the
   subset the DynStr milestone needs -- records, slices, pools,
   checked arithmetic and conversions, FOR/WHILE/IF/RETURN, calls.
@@ -158,6 +164,8 @@ type
     function DESSel (d: TNode; from: Integer; const res0: string;
                      tnd0: TNode; out tag: string): string;
     function EX (e: TNode; const want: string): string;
+    function NnCopy (d: TNode): Boolean;
+    function ModVarRoot (const nm: string): Boolean;
     function HoistArg (const a: string): string;
     procedure CloseHoists (ind: Integer);
     function EnumConvCount (n: TNode): Integer;
@@ -1412,6 +1420,17 @@ end;
 { the pool of the object a designator names, from its ROOT (rule 2
   of docs/pool-elision-plan.md).  Mirrors Gen.ObjPoolC, which says
   which root gets what. }
+{ is the bare name a MODULE variable -- this module's, or another's
+  exported `Mod.v'?  Mirrors Gen.ModVarRoot }
+function TGen.ModVarRoot (const nm: string): Boolean;
+var ix : Integer;
+begin
+  if ScopeMode (nm) = 'v' then Exit (True);
+  if ScopeMode (nm) <> 'l' then Exit (False);
+  ix := ScopeFind (nm);
+  Result := (ix >= mvBase) and (ix < mvBase + Length (modVarN));
+end;
+
 function TGen.ObjPoolC (a: TNode): string;
 var
   m : string;
@@ -1935,13 +1954,38 @@ var
   tnd, r, inner, px : TNode;
   sel : TNode;
   base, ix, ec, nsx : string;
-  enumIx : Boolean;
+  enumIx, pendAt, viaSel : Boolean;
   tmod : string;
+
+  { the error test before a step THROUGH what a subscript answered
+    (mirrors Gen.AtGuard; the compiler review's G3) }
+  function AtGuard (const res: string; t: TNode): string;
+  begin
+    Result := '({ ' + TyC (t) + ' m9g = (' + res + '); if (err->exc) goto ' +
+      raiseLbl + '; m9g; })';
+  end;
+
+  { the NULL test before following a pointer read out of a field or an
+    element (mirrors Gen.NnGuard; the review's C8) }
+  function NnGuard (const res: string; t: TNode; pend: Boolean): string;
+  var e : string;
+  begin
+    e := '';
+    if pend then e := 'if (err->exc) goto ' + raiseLbl + '; ';
+    { by __typeof__, not by name (mirrors Gen.NnGuard) }
+    Result := '({ __typeof__ (' + res + ') m9g = (' + res + '); ' + e +
+      'if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto ' + raiseLbl + '; } m9g; })';
+  end;
+
 begin
   tag := '?';
   Result := res0;
   tnd := tnd0;
   tmod := '';
+  pendAt := False;
+  viaSel := False;
+  { or out of a module variable, one more zeroed static (Gen.DESSel) }
+  if from = 0 then viaSel := ModVarRoot (d.a);
   for j := from to High (d.kids) do
   begin
     sel := d.kids[j];
@@ -1956,6 +2000,8 @@ begin
       px := InMod (r.kids[0], tmod);
       NoteMod (px, tmod);
       r := Resolve (px);
+      if viaSel then begin Result := NnGuard (Result, tnd, pendAt); pendAt := False end
+      else if pendAt then begin Result := AtGuard (Result, tnd); pendAt := False end;
       Result := '(*' + Result + ')';
     end;
     if r = nil then begin Err (d, 'cannot type ' + d.a); Exit ('0'); end;
@@ -1974,6 +2020,8 @@ begin
             if (inner = nil) or
                not (inner.kind in [nkRecordType, nkMonitorType]) then
               begin Err (d, 'field on non-record'); Exit ('0'); end;
+            if viaSel then begin Result := NnGuard (Result, tnd, pendAt); pendAt := False end
+            else if pendAt then begin Result := AtGuard (Result, tnd); pendAt := False end;
             Result := Result + '->' + CN (sel.a);
             tnd := Checked (sel, InMod (FieldType (inner, sel.a), tmod));
           end
@@ -1993,6 +2041,7 @@ begin
           begin
             { every axis checked against its own extent, in one call:
               the check a hand-rolled d[r*cols+c] cannot make }
+            if pendAt then begin Result := AtGuard (Result, tnd); pendAt := False end;
             base := Result;
             ec := TyC (r.kids[1]);
             ix := '';
@@ -2022,17 +2071,21 @@ begin
                 ec + '), ' + base + '.n, ' + base + '.s, (int64_t[]){' + ix +
                 '}, ' + ArrCount (r.kids[0]) + ', err))';
             stRaise := True;
+            pendAt := True;
+            viaSel := True;
             tnd := Checked (sel, InMod (r.kids[1], tmod));
             Continue;
           end;
           ix := EX (sel.kids[0], '');
           if r.kind = nkSliceType then
           begin
+            if pendAt then begin Result := AtGuard (Result, tnd); pendAt := False end;
             base := Result;
             ec := TyC (r.kids[0]);
             Result := '(*(' + ec + ' *) m9_at (' + base + '.p, ' + ix +
               ', ' + base + '.len, sizeof (' + ec + '), err))';
             stRaise := True;
+            pendAt := True;
             tnd := Checked (sel, InMod (r.kids[0], tmod));
           end
           else if r.kind = nkArrayType then
@@ -2056,6 +2109,7 @@ begin
                 ', INT64_C(' + ArrCount (r.kids[0]) + '), sizeof (' + ec +
                 '), err))';
               stRaise := True;
+              pendAt := True;
             end;
             tnd := Checked (sel, InMod (r.kids[1], tmod));
           end
@@ -2063,6 +2117,7 @@ begin
             begin Err (d, 'index on non-slice'); Exit ('0'); end;
         end;
     end;
+    viaSel := True;
   end;
   tag := TagOfType (tnd);
 end;
@@ -2238,6 +2293,19 @@ begin
   hoistOk := False;
 end;
 
+{ a conversion's argument x of tag at as the int64_t the checked
+  narrowings take: a real through m9_i64_f64 and a U64 through
+  m9_i64_u64, each checked -- until 2026-10-21 both went through C's
+  own conversion, so I32 (NaN) answered 0 without ValueRange and
+  I32 (MAX (U64)) answered -1 (the compiler review's G2) }
+function IntArgC (const x, at: string): string;
+begin
+  if (at = 'F64') or (at = 'F32') then
+    Exit ('m9_i64_f64 ((double)(' + x + '), err)');
+  if at = 'U64' then Exit ('m9_i64_u64 (' + x + ', err)');
+  Result := x;
+end;
+
 function TGen.CallC (dnode, argl, site: TNode; out tag: string): string;
 var
   svRaise : Boolean;
@@ -2251,9 +2319,11 @@ var
   ec, rk : Integer;
   isref : Boolean;
   ctype : string;
+  rpool, rp, ov, rv, rty : string;   { the pool the call adopts into }
 begin
   tag := '?';
   pmod := '';
+  rpool := '';
   name := dnode.a;
   { the dotted callee name: every field selector joins, so
     Mod.Type.Variant reaches the constructor branch whole -- the
@@ -2444,19 +2514,31 @@ begin
   end;
   if name = 'BYTE' then
   begin
-    tag := 'BYTE'; stRaise := True;
-    Exit ('m9_byte (' + EX (argl.kids[0], '') + ', err)');
+    tag := 'BYTE';
+    at := TagOfExpr (argl.kids[0]);
+    e1 := EX (argl.kids[0], '');
+    stRaise := True;
+    Exit ('m9_byte (' + IntArgC (e1, at) + ', err)');
   end;
   { the other widths, each a checked narrowing: the museum's founding
     bug is a width that converted itself, so every one of these is a
-    call that can raise rather than a cast that cannot }
+    call that can raise rather than a cast that cannot.  By SOURCE as
+    well as target: a real or a U64 is checked on its way to int64_t
+    (IntArgC), and a U64 target takes a real through its own range
+    and a U64 as it is }
   if (name = 'I8') or (name = 'I16') or (name = 'I32') or
      (name = 'U8') or (name = 'U16') or (name = 'U32') or
      (name = 'U64') then
   begin
-    tag := name; stRaise := True;
-    Exit ('m9_' + LowerCase (name) + ' (' + EX (argl.kids[0], '') +
-      ', err)');
+    tag := name;
+    at := TagOfExpr (argl.kids[0]);
+    e1 := EX (argl.kids[0], '');
+    if (name = 'U64') and (at = 'U64') then
+      Exit ('(uint64_t)(' + e1 + ')');
+    stRaise := True;
+    if (name = 'U64') and ((at = 'F64') or (at = 'F32')) then
+      Exit ('m9_u64_f64 ((double)(' + e1 + '), err)');
+    Exit ('m9_' + LowerCase (name) + ' (' + IntArgC (e1, at) + ', err)');
   end;
   if name = 'I64' then
   begin
@@ -2466,6 +2548,11 @@ begin
     begin
       stRaise := True;
       Exit ('m9_i64_f64 ((double)(' + EX (argl.kids[0], '') + '), err)');
+    end;
+    if at = 'U64' then
+    begin
+      stRaise := True;
+      Exit ('m9_i64_u64 (' + EX (argl.kids[0], '') + ', err)');
     end;
     Exit ('(int64_t)(' + EX (argl.kids[0], '') + ')');
   end;
@@ -2842,6 +2929,20 @@ begin
             if grp.f1 and (arg.kind = nkDesignator) and
                PoolParamTy (pty) then
               args := args + ', ' + ObjPoolC (arg);
+            { a STR, slice or grid takes no pool: where the argument
+              outlives the caller's arena the call is made from its
+              pool (mirrors Gen.CallC; the review's C5) }
+            if grp.f1 and (arg.kind = nkDesignator) and
+               not PoolParamTy (pty) and HasPtr (pty, 0) then
+            begin
+              rp := ObjPoolC (arg);
+              if (rp <> 'err->res') and (ScopeMode (arg.a) <> 'v') then
+              begin
+                if rpool = '' then rpool := rp
+                else if rpool <> rp then
+                  Err (site, 'VAR arguments whose storage lives in two pools: pass one per call');
+              end;
+            end;
           end
           else
           begin
@@ -2877,10 +2978,39 @@ begin
   if k <> nargs then Err (site, 'arity mismatch calling ' + name);
   if args <> '' then args := args + ', ';
   stRaise := True;                        { every call gets a guard }
+  if rpool <> '' then
+  begin
+    ov := NewTmp;
+    if pnode.kids[1] <> nil then
+    begin
+      if pmod <> '' then rty := TyC (QualIn (pnode.kids[1], pmod))
+      else rty := TyC (pnode.kids[1]);
+      rv := NewTmp;
+      Exit ('({ m9_pool *' + ov + ' = err->res; err->res = ' + rpool + '; ' +
+        rty + ' ' + rv + ' = ' + cfunc + ' (' + args + 'err); ' +
+        'err->res = ' + ov + '; ' + rv + '; })');
+    end;
+    Exit ('({ m9_pool *' + ov + ' = err->res; err->res = ' + rpool + '; ' +
+      cfunc + ' (' + args + 'err); err->res = ' + ov + '; })');
+  end;
   Result := cfunc + ' (' + args + 'err)';
 end;
 
 { ---- expressions ---- }
+
+{ is d, as a value, a non-OPT pointer read out of a field or an element
+  (mirrors Gen.NnCopy; the review's C8) }
+function TGen.NnCopy (d: TNode): Boolean;
+var dt : TNode;
+begin
+  Result := False;
+  if (d = nil) or (d.kind <> nkDesignator) then Exit;
+  if (Length (d.kids) = 0) and not ModVarRoot (d.a) then Exit;
+  if (Length (d.kids) > 0) and (d.kids[High (d.kids)] <> nil) and
+     not (d.kids[High (d.kids)].kind in [nkSelField, nkSelIndex]) then Exit;
+  dt := Resolve (DesigDecl (d));
+  Result := (dt <> nil) and (dt.kind in [nkPtrType, nkSharedType]);
+end;
 
 function TGen.EX (e: TNode; const want: string): string;
 var
@@ -2942,6 +3072,14 @@ begin
           Exit (IntToStr (Utf8Next (cvc.a, sv)) + 'u');
         end;
         Result := DES (e, tg);
+        { a non-OPT pointer read out of a field or an element, copied as
+          a value, is tested for NULL (mirrors Gen.EX, Gen.NnCopy) }
+        if NnCopy (e) then
+        begin
+          stRaise := True;
+          Result := '((__typeof__ (' + Result + ')) m9_nn ((void *) (' + Result +
+            '), err))';
+        end;
         { a CONST is a C macro holding a double literal, so in an F32
           context it must be cast or the expression widens around it }
         if (want = 'F32') and (ConstValue (e) <> nil) and
@@ -3071,8 +3209,9 @@ begin
           Result := '({ __typeof__(' + l + ') ' + w + ' = ' + l +
             '; int64_t ' + w + 'a = ' + EX (e.kids[1], '') +
             ', ' + w + 'n = ' + EX (e.kids[2], '') +
-            '; (__typeof__(' + w + ')){ ' + w + '.p + m9_chk_slice (' +
-            w + 'a, ' + w + 'n, ' + w + '.len, err), ' + w + 'n }; })'
+            '; int64_t ' + w + 'o = m9_chk_slice (' + w + 'a, ' + w + 'n, ' +
+            w + '.len, err); (__typeof__(' + w + ')){ ' + w + '.p + ' + w +
+            'o, err->exc ? 0 : ' + w + 'n }; })'
         else if (lt = 'ARR') and (e.kids[0].kind = nkDesignator) then
         begin
           { the view of an array's elements (par 2.2) }
@@ -3083,10 +3222,11 @@ begin
             Exit ('0');
           end;
           Result := '({ int64_t ' + w + 'a = ' + EX (e.kids[1], '') +
-            ', ' + w + 'n = ' + EX (e.kids[2], '') + '; (' +
-            SliceTy (inr.kids[1]) + '){ (' + l +
-            ').v + m9_chk_slice (' + w + 'a, ' + w + 'n, INT64_C(' +
-            ArrCount (inr.kids[0]) + '), err), ' + w + 'n }; })';
+            ', ' + w + 'n = ' + EX (e.kids[2], '') + '; int64_t ' + w +
+            'o = m9_chk_slice (' + w + 'a, ' + w + 'n, INT64_C(' +
+            ArrCount (inr.kids[0]) + '), err); (' +
+            SliceTy (inr.kids[1]) + '){ (' + l + ').v + ' + w +
+            'o, err->exc ? 0 : ' + w + 'n }; })';
         end
         else
         begin
@@ -3774,9 +3914,11 @@ end;
 procedure TGen.EmitStmt (st: TNode; ind: Integer);
 var
   l, l2, r, tg, w, cnd, stp, bname, fldn, sxit, lo, hi, mk : string;
-  j, i2, j2, k2, savedScope, g2, jj, sv, thrPi : Integer;
+  j, i2, j2, k2, savedScope, g2, jj, sv, thrPi, h0, kh : Integer;
+  hc : array of Integer;
   vtN, vd, lbl : TNode;
-  opened, hadElse, thrWants, lRaise, shared, rel : Boolean;
+  opened, hadElse, thrWants, lRaise, shared, rel, thrRef : Boolean;
+  thrPty : string;
 begin
   DbgLine (st);
   case st.kind of
@@ -3798,6 +3940,9 @@ begin
         { copying a SHARED handle refcounts it (par 4.2); SHARED(x)
           itself already set rc=1 and is not re-counted }
         shared := (tg = 'SHARED') and (TagOfExpr (st.kids[1]) = 'SHARED');
+        { ... and only a copy OF A BINDING counts; SHARED (o) and a call's
+          answer are moves (mirrors Gen's NAssign; the review's G7) }
+        if st.kids[1].kind <> nkDesignator then shared := False;
         if stRaise then
         begin
           { a call that raised answered nothing (report par 5,
@@ -3887,7 +4032,16 @@ begin
         end;
         mk := CondMark (st.kids[0], ind);
         stRaise := False;
+        { a raising argument in a condition is hoisted where the
+          condition is evaluated (mirrors Gen's NIf; the review's G6) }
+        SetLength (hc, Length (st.kids) + 1);
+        for kh := 0 to High (hc) do hc[kh] := 0;
+        hoistOk := True;
+        hoistInd := ind;
         cnd := EX (st.kids[0], '');
+        hoistOk := False;
+        h0 := hoistOpen;
+        hoistOpen := 0;
         if stRaise or (mk <> '') then
         begin
           w := NewTmp;
@@ -3907,7 +4061,12 @@ begin
             Line (pbuf, ind, '} else {');
             mk := CondMark (st.kids[j].kids[0], ind + 1);
             stRaise := False;
+            hoistOk := True;
+            hoistInd := ind + 1;
             cnd := EX (st.kids[j].kids[0], '');
+            hoistOk := False;
+            hc[j2 + 1] := hoistOpen;
+            hoistOpen := 0;
             if stRaise or (mk <> '') then
             begin
               w := NewTmp;
@@ -3926,7 +4085,12 @@ begin
             EmitSeq (st.kids[j].kids[0], ind + 1);
           end;
         cnd := '}';
-        for j := 1 to j2 do cnd := cnd + ' }';
+        for j := j2 downto 1 do
+        begin
+          for kh := 1 to hc[j] do cnd := cnd + ' }';
+          cnd := cnd + ' }';
+        end;
+        for kh := 1 to h0 do cnd := cnd + ' }';
         Line (pbuf, ind, cnd);
       end;
     nkWhile :
@@ -3967,7 +4131,13 @@ begin
         Line (pbuf, ind, 'for (;;) {');
         mk := CondMark (st.kids[0], ind + 1);
         stRaise := False;
+        { hoisted INSIDE the loop, closed at the end of the body }
+        hoistOk := True;
+        hoistInd := ind + 1;
         cnd := EX (st.kids[0], '');
+        hoistOk := False;
+        h0 := hoistOpen;
+        hoistOpen := 0;
         if stRaise or (mk <> '') then
         begin
           w := NewTmp;
@@ -3981,6 +4151,7 @@ begin
         sxit := xitLbl; xitLbl := ''; Inc (loopDepth);
         EmitSeq (st.kids[1], ind + 1);
         LoopExit (ind + 1);
+        for kh := 1 to h0 do Line (pbuf, ind + 1, '}');
         Dec (loopDepth); xitLbl := sxit;
         inSwitch := sv; finDepth := j2;
         Line (pbuf, ind, '}');
@@ -4034,11 +4205,20 @@ begin
           Line (pbuf, ind, '} }');
           Exit;
         end;
+        { a raising argument in a bound is hoisted, closed after the loop
+          (mirrors Gen's NFor; the compiler review's G6) }
+        hoistOk := True;
+        hoistInd := ind;
         l := EX (st.kids[0], '');
         w := NewTmp;
-        Line (pbuf, ind, '{ int64_t ' + w + 'to;');
+        { the bound in the VARIABLE's type, and the test before the step
+          (mirrors Gen's NFor; the compiler review's G5) }
+        Line (pbuf, ind, '{ __typeof__(' + CN (st.a) + ') ' + w + 'to;');
         Line (pbuf, ind, CN (st.a) + ' = ' + l + ';');
         r := EX (st.kids[1], '');
+        hoistOk := False;
+        h0 := hoistOpen;
+        hoistOpen := 0;
         Line (pbuf, ind, w + 'to = ' + r + ';');
         if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
         stp := '1';
@@ -4061,18 +4241,24 @@ begin
           end;
         end;
         if Copy (stp, 1, 1) = '-' then
-          Line (pbuf, ind, 'for (; ' + CN (st.a) + ' >= ' + w + 'to; ' +
-            CN (st.a) + ' += ' + stp + ') {')
+          Line (pbuf, ind, 'if (' + CN (st.a) + ' >= ' + w + 'to) for (;;) {')
         else
-          Line (pbuf, ind, 'for (; ' + CN (st.a) + ' <= ' + w + 'to; ' +
-            CN (st.a) + ' += ' + stp + ') {');
+          Line (pbuf, ind, 'if (' + CN (st.a) + ' <= ' + w + 'to) for (;;) {');
         sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
         sxit := xitLbl; xitLbl := ''; Inc (loopDepth);
         EmitSeq (st.kids[3], ind + 1);
         LoopExit (ind + 1);
+        if Copy (stp, 1, 1) = '-' then
+          Line (pbuf, ind + 1, 'if ((uint64_t) ' + CN (st.a) + ' - (uint64_t) ' + w +
+            'to < (uint64_t) ' + Copy (stp, 2, Length (stp) - 1) + ') break;')
+        else
+          Line (pbuf, ind + 1, 'if ((uint64_t) ' + w + 'to - (uint64_t) ' + CN (st.a) +
+            ' < (uint64_t) ' + stp + ') break;');
+        Line (pbuf, ind + 1, CN (st.a) + ' += ' + stp + ';');
         Dec (loopDepth); xitLbl := sxit;
         inSwitch := sv; finDepth := j2;
         Line (pbuf, ind, '} }');
+        for kh := 1 to h0 do Line (pbuf, ind, '}');
       end;
     nkLoop :
       begin
@@ -4154,8 +4340,12 @@ begin
         EmitSeq (st.kids[0], ind);
         Dec (finDepth);
         Line (pbuf, 0, l + ': ;');
+        { the cleanup runs with nothing pending: a raise is saved and
+          cleared here and put back after it (m9rt.h says why) }
+        Line (pbuf, ind, 'm9_fin ' + w + 'f; m9_fin_save (err, &' + w + 'f);');
         exitLbl := bname; raiseLbl := tg; curRetq := fldn;
         EmitSeq (vd.kids[0], ind);
+        Line (pbuf, ind, 'm9_fin_restore (err, &' + w + 'f);');
         if curRetq <> '' then
           Line (pbuf, ind, 'if (' + w + ') { ' + curRetq +
             ' = true; goto ' + exitLbl + '; }')
@@ -4166,7 +4356,14 @@ begin
     nkCase :
       begin
         stRaise := False;
+        { the selector's raising arguments hoisted, closed after the
+          switch (mirrors Gen's NCase; the compiler review's G6) }
+        hoistOk := True;
+        hoistInd := ind;
         cnd := EX (st.kids[0], '');
+        hoistOk := False;
+        h0 := hoistOpen;
+        hoistOpen := 0;
         tg := TagOfExpr (st.kids[0]);
         w := NewTmp;
         Line (pbuf, ind, '{ __typeof__(' + cnd + ') ' + w + ' = ' +
@@ -4311,6 +4508,7 @@ begin
         end
         else
           Err (st, 'CASE selector type unsupported yet: ' + tg);
+        for kh := 1 to h0 do Line (pbuf, ind, '}');
       end;
     { ---- par 6: the monitor statements ----
 
@@ -4381,25 +4579,41 @@ begin
                 as well, and hands it on when the target's first
                 parameter carries one (mirrors Gen.EmitStmt) }
               thrWants := False;
+              thrRef := False;
               thrPi := FindProc (bname);
               if (thrPi >= 0) and (procs[thrPi].node <> nil) and
                  (procs[thrPi].node.kids[0] <> nil) and
                  (Length (procs[thrPi].node.kids[0].kids) > 0) and
                  (procs[thrPi].node.kids[0].kids[0] <> nil) then
+              begin
                 thrWants := procs[thrPi].node.kids[0].kids[0].f1 and
                   PoolParamTy (procs[thrPi].node.kids[0].kids[0].kids[1]);
+                { a VAR or OWN parameter whose type is itself a pointer is
+                  passed by reference, T ** (mirrors Gen.EmitStmt) }
+                thrPty := TyC (procs[thrPi].node.kids[0].kids[0].kids[1]);
+                thrRef := (procs[thrPi].node.kids[0].kids[0].f1 or
+                           procs[thrPi].node.kids[0].kids[0].f2) and
+                  (thrPty <> '') and (thrPty[Length (thrPty)] = '*');
+              end;
               thrBuf.Add ('static void *m9_thr_' + modName + '_' + bname +
                 ' (void *p, m9_pool *pool)');
               thrBuf.Add ('{');
               thrBuf.Add ('  m9_state e = { 0 };');
+              if thrRef then
+              begin
+                thrBuf.Add ('  ' + w + ' m9thr = (' + w + ') p;');
+                cnd := '&m9thr';
+              end
+              else
+                cnd := '(' + w + ') p';
               if thrWants then
-                thrBuf.Add ('  ' + modName + '_' + bname + ' ((' +
-                  w + ') p, pool, &e);')
+                thrBuf.Add ('  ' + modName + '_' + bname + ' (' + cnd +
+                  ', pool, &e);')
               else
               begin
                 thrBuf.Add ('  (void) pool;');
-                thrBuf.Add ('  ' + modName + '_' + bname + ' ((' +
-                  w + ') p, &e);');
+                thrBuf.Add ('  ' + modName + '_' + bname + ' (' + cnd +
+                  ', &e);');
               end;
               thrBuf.Add ('  if (e.exc) m9_thread_died (e.exc->name);');
               thrBuf.Add ('  return NULL;');
@@ -4967,6 +5181,19 @@ begin
     + 'm9_state *err);';
 end;
 
+{ the header guard's part from the file's name (mirrors Gen.GuardName):
+  a character that is no letter or digit is `_' and its code }
+function GuardName (const n: string): string;
+var i : Integer;
+begin
+  Result := '';
+  for i := 1 to Length (n) do
+    if n[i] in ['a'..'z', 'A'..'Z', '0'..'9'] then
+      Result := Result + n[i]
+    else
+      Result := Result + '_' + IntToStr (Ord (n[i]));
+end;
+
 procedure TGen.Emit (const forModule: string);
 var
   i, ci, j2, i2 : Integer;
@@ -4990,8 +5217,8 @@ begin
     ExportWalk (mainBody, nil);
   end;
   hdr.Add ('/* generated by M9Gen from ' + forModule + '.m9 -- do not edit */');
-  hdr.Add ('#ifndef M9G_' + forModule + '_H');
-  hdr.Add ('#define M9G_' + forModule + '_H');
+  hdr.Add ('#ifndef M9G_' + GuardName (forModule) + '_H');
+  hdr.Add ('#define M9G_' + GuardName (forModule) + '_H');
   hdr.Add ('#include "m9rt.h"');
   for i := 0 to extMods.Count - 1 do
     hdr.Add ('#include "' + extMods[i] + '.h"');

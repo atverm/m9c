@@ -1,0 +1,18 @@
+MODULE GfSerialNest ;
+
+(* WANT: nested 25 *)
+
+(* F (G (x)) with both [SERIAL] in one unit: G runs before F's gate (M1) *)
+FROM cm IMPORT CFabs ;
+IMPORT Io, Fmt ;
+VAR y : F64 ;
+BEGIN
+  y := F64 (CFabs (CFabs (C.Double (-2.5)))) ;
+  Io.WriteLine ('nested ' + Fmt.I64Str (I64 (y * 10.0)))
+EXCEPT
+| ValueRange : Io.WriteLine ('vr')
+END GfSerialNest.
+
+UNSAFE DEFINITION MODULE FOR "C" cm ;
+PROCEDURE CFabs = "fabs" (x: C.Double) : C.Double [SERIAL] ;
+END cm.

@@ -21,7 +21,7 @@ fifty-four lines of Gen.m9.
 
 1-based, exactly as m9c prints them
 
-### Parse (RO line: STR ; VAR f: Finding) : BOOL
+### Parse (RO line: UTF ; VAR f: Finding) : BOOL
 
 one line of m9c's output as a finding, when it carries a
 position.  Two shapes, m9c's own:
@@ -42,9 +42,15 @@ invisible to every editor.
 
 ### One (VAR pool: POOL ; line, col: I64 ; RO msg: STR) : SLICE OF Finding
 
+**Deprecated** (the UTF transition): OneUtf is its UTF form.
+
 a single finding, as a slice: what a caller answers for a
 refusal of its own (a buffer with no MODULE line, a path it will
-not hand to a shell).
+not hand to a shell).  msg is copied into pool.
+
+### OneUtf (VAR pool: POOL ; line, col: I64 ; RO msg: UTF) : SLICE OF Finding
+
+One for a UTF message, copied into pool the same way.
 
 ### Check (VAR pool: POOL ; RO m9c: STR ; RO flags: STR ; RO dir: STR ; RO file: STR ; RO outFile: STR) : SLICE OF Finding RAISES ValueRange, IndexError
 
@@ -91,7 +97,15 @@ error token), len the token's text length in CHARs.
 
 ### JStr (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange
 
+**Deprecated** (the UTF transition): JStrUtf is its UTF form.
+
 a JSON string literal appended to d: the escapes RFC 8259
 requires and no others -- `"` and `\` backslashed, controls as
 \u00XX, everything else as it is.  Json.m9 keeps its emitter
 private; this is the shared home its three copies were owed.
+
+### JStrUtf (VAR d: PTR DynUtf.DString ; RO s: UTF) RAISES ValueRange
+
+JStr for a UTF-8 builder and text: the same escapes, byte by
+byte -- a byte past 0x7F is part of a character and goes as it
+is.

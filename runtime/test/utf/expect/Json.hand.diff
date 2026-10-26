@@ -1,0 +1,60 @@
+--- Json.m9
++++ Json.m9
+@@ -846,13 +846,8 @@
+ (* a copy of s in the pool dst lives in (rule 2): the payloads and
+    member names of a clone share their tree's pool *)
+ PROCEDURE CopyStrTo (VAR dst: PTR Node ; RO s: STR) : STR =
+-VAR
+-  c : STR ;
+-  i : I64 ;
+ BEGIN
+-  c := NEW (dst, CHAR, Text.BLen (s)) ;
+-  FOR i := 0 TO Text.BLen (s) - 1 DO c[i] := Text.BChar (s, i) END ;
+-  RETURN c
++  RETURN UTF (dst, s)
+ END CopyStrTo ;
+ 
+ PROCEDURE Clone (n: PTR Node) : PTR Node
+@@ -997,18 +992,23 @@
+      way.  Escape-free input answers the input view unchanged; a
+      decoded one is built in a scratch pool and re-homed out (par
+      2.3).                                                          *)
++  (* the characters between escapes go over as RUNS, SLICE (t, from,
++     i - from), whose ends are at a backslash or after an escape --
++     ASCII, so a character boundary; an octet appended as a character
++     would encode a character past ASCII twice *)
+ VAR
+   scratch : POOL ;
+   d : PTR DynStr.DString IN scratch ;
+-  i, v, lo : I64 ;
++  i, v, lo, from : I64 ;
+   ch : CHAR ;
+ BEGIN
+   IF NOT HasBackslash (t) THEN RETURN t END ;
+   d := DynStr.New (scratch) ;
+   i := 0 ;
++  from := 0 ;
+   WHILE i < Text.BLen (t) DO
+-    ch := Text.BChar (t, i) ;
+-    IF ORD (ch) = 92 THEN
++    IF I64 (Text.BAt (t, i)) = 92 THEN
++      DynStr.Append (d, SLICE (t, from, i - from)) ;
+       IF i + 1 >= Text.BLen (t) THEN
+         RAISE TypeMismatch ('escape at end of string')
+       END ;
+@@ -1043,12 +1043,13 @@
+         DynStr.AppendChar (d, CHR (v))
+       ELSE
+         RAISE TypeMismatch ('unknown escape in string')
+-      END
++      END ;
++      from := i
+     ELSE
+-      DynStr.AppendChar (d, ch) ;
+       i := i + 1
+     END
+   END ;
++  DynStr.Append (d, SLICE (t, from, i - from)) ;
+   RETURN DynStr.View (d)
+ END DecodeStr ;
+ 

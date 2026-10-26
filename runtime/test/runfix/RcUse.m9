@@ -1,0 +1,22 @@
+MODULE RcUse ;
+
+(* RcDef's answer, built in a MODULE pool, kept in a module variable:
+   legal, and refused by the region judgement of 011e837b *)
+
+IMPORT Io, Fmt, RcDef ;
+
+TYPE Srv = RECORD cache : PTR RcDef.Cache END ;
+
+VAR
+  pool : POOL ;
+  srv : Srv ;
+
+PROCEDURE Run () =
+BEGIN
+  srv.cache := RcDef.Build (pool, 'root')
+END Run ;
+
+BEGIN
+  Run () ;
+  Io.WriteLine (srv.cache.ents[0].name + ' ' + Fmt.I64Str (srv.cache.nent))
+END RcUse.

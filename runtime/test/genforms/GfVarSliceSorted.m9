@@ -1,0 +1,20 @@
+MODULE GfVarSliceSorted ;
+
+(* WANT: sorted *)
+
+(* the same through Sort.Strs, which writes elements but never the slice
+  (H1) *)
+IMPORT Io, Sort ;
+VAR pool : POOL ; names : SLICE OF STR ;
+PROCEDURE Open () =
+VAR entries : SLICE OF STR ;
+BEGIN
+  names := NEW (pool, STR, 10) ;
+  entries := NEW (pool, STR, 2) ;
+  Sort.Strs (entries) ;
+  names[0] := entries[0]
+END Open ;
+BEGIN
+  Open () ;
+  Io.WriteLine ('sorted')
+END GfVarSliceSorted.

@@ -1,0 +1,22 @@
+(* EXPECT: a TYPE declared in a procedure is not in the language yet: declare Pt at module level *)
+(* The grammar allows a TYPE among a procedure's declarations and
+   nothing implements one: the generator refused its first use as
+   `selector form unsupported yet' (2026-10-22). *)
+MODULE m ;
+TYPE Qt = RECORD x : I64 END ;
+PROCEDURE P () =
+CONST K = 3 ;
+VAR q : Qt ;
+BEGIN
+  q.x := K
+END P ;
+PROCEDURE R () =
+TYPE Pt = RECORD x : I64 END ;
+VAR p : Pt ;
+BEGIN
+  p.x := 1
+END R ;
+BEGIN
+  P () ;
+  R ()
+END m.

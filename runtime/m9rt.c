@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
 /* m9rt.c -- the M9 runtime's non-inline remainder.
 
    ONE FILE, TWO PLATFORMS.  Everything the runtime asks of the
@@ -12,7 +13,9 @@
    reader threads where POSIX has poll), the monitor is still a
    zeroed record, an unfound program is still -1. */
 #ifndef _WIN32
-#define _POSIX_C_SOURCE 200112L
+/* 2008, not 2001: O_CLOEXEC and F_DUPFD_CLOEXEC (2026-10-21, the Exec
+   descriptors -- see m9_pipe_ce) */
+#define _POSIX_C_SOURCE 200809L
 #ifdef __APPLE__
 /* Darwin hides everything past POSIX once _POSIX_C_SOURCE is named */
 #define _DARWIN_C_SOURCE
@@ -42,13 +45,25 @@ unsigned char m9_poison[65536];
 #endif
 
 /* the out-of-bounds cell for an element bigger than m9_poison (m9rt.h,
-   M9_POISON_CELL): its own zeroed block, never freed, and only ever on
-   the IndexError path */
+   M9_POISON_CELL), only ever on the IndexError path.  ONE per thread,
+   grown by doubling and reused: it was a fresh calloc per failed index,
+   never freed -- 20,000 caught IndexErrors on 64 KB elements took 336 MB
+   (2026-10-21, the compiler review).  A cell outgrown stays allocated,
+   since a store in flight may still land in it; the doubling bounds
+   what that keeps.  Per thread, so no lock and no thread's store lands
+   in another's cell. */
+static _Thread_local unsigned char *m9_big_cell = NULL;
+static _Thread_local size_t m9_big_cap = 0;
 void *m9_poison_big (size_t sz)
 {
-  void *p = calloc (1, sz);
-  if (p == NULL) abort ();     /* no memory even for the error path */
-  return p;
+  if (sz > m9_big_cap) {
+    size_t c = m9_big_cap == 0 ? 2 * sizeof m9_poison : m9_big_cap;
+    while (c < sz) c *= 2;
+    m9_big_cell = calloc (1, c);
+    if (m9_big_cell == NULL) abort ();   /* no memory even for the error path */
+    m9_big_cap = c;
+  }
+  return m9_big_cell;
 }
 
 const m9_exc m9_exc_Overflow    = { "Overflow" };
@@ -126,7 +141,14 @@ void m9_trap_tag (void)
 #define M9_ALIGN(n) (((n) + 15u) & ~ (size_t) 15u)
 #define M9_POOL_BLOCK_MIN 65536
 #define M9_POOL_SLACK_MAX (4u * 1024u * 1024u)   /* see m9_pool_alloc */
+#define M9_POOL_REQ_MAX (SIZE_MAX >> 2)          /* see m9_pool_alloc */
+#define M9_THREAD_STACK ((size_t) 8 * 1024 * 1024) /* see m9_pthread */
 #define M9_POOL_CACHE_MAX 4                        /* see m9_pool_free */
+#ifdef M9_ASAN
+#define M9_POOL_CACHE_ON 0     /* every block to free (): ASan's quarantine */
+#else
+#define M9_POOL_CACHE_ON 1
+#endif
 
 /* Minimum-size blocks are RECYCLED, per thread.  A frame arena (par
    2.3) is created by its first `+` and freed at the exit, so a
@@ -138,36 +160,190 @@ void m9_trap_tag (void)
    Fmt it replaced; with glibc told not to trim, 0.30 s.  So the
    runtime keeps a few freed blocks instead of asking twice: a
    thread-local list, no lock, at most M9_POOL_CACHE_MAX blocks (256
-   KB) per thread, which a thread's exit leaks -- bounded, and known.
+   KB) per thread, given back when an M9 THREAD returns (m9_big_drop).
    Only exact-minimum blocks are kept, so a 100 MB carve still goes
    straight back.  Carves are zeroed on the way OUT of the block, not
    on the way in, so a recycled block needs no memset. */
 static _Thread_local m9_pool_block *m9_block_cache = NULL;
 static _Thread_local int m9_block_cached = 0;
 
-/* the RAISE payload copies: m9rt.h says why */
-static _Thread_local struct { unsigned char *p; size_t cap; } m9_inflight[3];
+/* LARGE BLOCKS KEPT PER THREAD across statement releases (2026-10-25,
+   Alex's second follow-up; m9rt.h).  The cache above keeps minimum-size
+   blocks only, so a 64 MB carve -- a file read, a frame's columns --
+   was a fresh malloc every time, and on glibc a fresh mmap the kernel
+   zeroes page by page on first touch: measured on the Xeon, a memcpy
+   into such pages runs at 1,920 MB/s against 11,900 into pages touched
+   before, and Io.ReadFileBytes of 64 MB in a loop at 1,290 MB/s
+   against 4,000-4,500 with the block kept.  So a thread keeps up to
+   M9_BIG_SLOTS freed blocks above the minimum size, M9_BIG_MAX bytes
+   in all; a carve above the minimum takes the smallest kept block that
+   holds it and is no more than four times its size (a 64 MB block is
+   not spent on a 1 MB carve).  THE MEMORY HELD: at most M9_BIG_MAX per
+   thread of blocks the program had allocated anyway -- in the three
+   read paths measured the peak RSS did not move -- freed when an M9
+   THREAD returns (the trampolines call m9_big_drop); the main thread's
+   go with the process; a foreign thread that enters M9 and exits keeps
+   its own, as the small cache's 256 KB.  M9_BLOCK_REUSE=0 in the
+   environment turns it off (the gate runs both ways); under M9_ASAN
+   it is off with the small cache, so a freed block stays poisoned.
+   The three helpers are NOINLINE AND COLD: inlined into m9_pool_alloc
+   and m9_block_back they cost the Xeon's frame-read path 10% with the
+   cache on or off -- the hot path's shape, not its work (gcc 15 under
+   m9c's flags; the M4 did not move) -- and out of line it reads as
+   before, 1,810-1,900 against 1,871-1,877 k rows/s. */
+#define M9_BIG_SLOTS 4
+#define M9_BIG_MAX ((size_t) 128u << 20)
+static _Thread_local m9_pool_block *m9_big[M9_BIG_SLOTS];
+static _Thread_local size_t m9_big_held = 0;
+static _Thread_local int64_t m9_big_hits = 0;
 
-void m9_pay_keep (m9_state *err, int k, size_t elem)
+__attribute__ ((noinline, cold)) static int m9_big_on (void)
 {
-  size_t n;
-  if (k < 0 || k > 2 || err->s[k].len <= 0 || err->s[k].p == NULL) return;
-  n = (size_t) err->s[k].len * elem;
+  static int mode = -1;
+  int m = __atomic_load_n (&mode, __ATOMIC_RELAXED);
+  if (m < 0) {
+    const char *e = getenv ("M9_BLOCK_REUSE");
+    m = M9_POOL_CACHE_ON && !(e != NULL && e[0] == '0');
+    __atomic_store_n (&mode, m, __ATOMIC_RELAXED);
+  }
+  return m;
+}
+
+/* the smallest kept block that holds need and is at most 4 x need */
+__attribute__ ((noinline, cold)) static m9_pool_block *m9_big_take (size_t need)
+{
+  int i, best = -1;
+  m9_pool_block *b;
+  if (!m9_big_on ()) return NULL;
+  for (i = 0; i < M9_BIG_SLOTS; i++)
+    if (m9_big[i] != NULL && m9_big[i]->cap >= need && m9_big[i]->cap <= 4 * need
+        && (best < 0 || m9_big[i]->cap < m9_big[best]->cap)) best = i;
+  if (best < 0) return NULL;
+  b = m9_big[best];
+  m9_big[best] = NULL;
+  m9_big_held -= b->cap;
+  m9_big_hits++;
+  return b;
+}
+
+/* kept if above the minimum, under the cap and a slot is free */
+__attribute__ ((noinline, cold)) static int m9_big_keep (m9_pool_block *b)
+{
+  int i;
+  if (!m9_big_on () || b->cap <= M9_POOL_BLOCK_MIN || m9_big_held + b->cap > M9_BIG_MAX) return 0;
+  for (i = 0; i < M9_BIG_SLOTS; i++)
+    if (m9_big[i] == NULL) { m9_big[i] = b; m9_big_held += b->cap; return 1; }
+  return 0;
+}
+
+/* this thread's kept blocks given back: at an M9 THREAD's return */
+void m9_big_drop (void)
+{
+  int i;
+  for (i = 0; i < M9_BIG_SLOTS; i++)
+    if (m9_big[i] != NULL) {
+      m9_reg_remove (m9_big[i]);
+      free (m9_big[i]);
+      m9_big[i] = NULL;
+    }
+  m9_big_held = 0;
+  /* and the minimum-size blocks: a THREAD that allocated kept up to
+     four, and N threads one after another leaked 4 N blocks -- 4,000
+     threads 129 MB, 16,000 511 MB (the second review's R1) */
+  while (m9_block_cache != NULL) {
+    m9_pool_block *b = m9_block_cache;
+    m9_block_cache = b->next;
+    m9_reg_remove (b);
+    free (b);
+  }
+  m9_block_cached = 0;
+  free (m9_big_cell);
+  m9_big_cell = NULL;
+  m9_big_cap = 0;
+}
+
+int64_t m9_block_reuse_hits (void) { return m9_big_hits; }
+int64_t m9_block_reuse_held (void) { return (int64_t) m9_big_held; }
+
+/* the RAISE payload copies: m9rt.h says why.  n is the octets the
+   slot's payload holds now, so a FINALLY can copy it without knowing
+   the element type */
+static _Thread_local struct { unsigned char *p; size_t cap; size_t n; } m9_inflight[3];
+
+/* the octets at src into in-flight buffer k; 0 if no buffer could be
+   had (the caller leaves the slot where it was) */
+static int m9_inflight_put (int k, const void *src, size_t n)
+{
   if (n > m9_inflight[k].cap) {
     /* a new buffer, filled from the old place before the old buffer
        goes: the payload may be a view INTO it (a handler raising
        part of what it caught) */
     size_t cap = n < 256 ? 256 : n;
     unsigned char *q = malloc (cap);
-    if (q == NULL) return;              /* left where it was: no worse than before */
-    memcpy (q, err->s[k].p, n);
+    if (q == NULL) return 0;
+    memcpy (q, src, n);
     free (m9_inflight[k].p);
     m9_inflight[k].p = q;
     m9_inflight[k].cap = cap;
   } else {
-    memmove (m9_inflight[k].p, err->s[k].p, n);
+    memmove (m9_inflight[k].p, src, n);
   }
-  err->s[k].p = m9_inflight[k].p;
+  m9_inflight[k].n = n;
+  return 1;
+}
+
+void m9_pay_keep (m9_state *err, int k, size_t elem)
+{
+  if (k < 0 || k > 2 || err->s[k].len <= 0 || err->s[k].p == NULL) return;
+  /* not put: left where it was, no worse than before */
+  if (m9_inflight_put (k, err->s[k].p, (size_t) err->s[k].len * elem))
+    err->s[k].p = m9_inflight[k].p;
+}
+
+void m9_fin_save (m9_state *err, m9_fin *f)
+{
+  m9_state own;
+  int k;
+  f->exc = err->exc;
+  if (err->exc == NULL) return;
+  memcpy (f->i, err->i, sizeof f->i);
+  memcpy (f->d, err->d, sizeof f->d);
+  for (k = 0; k < 3; k++) {
+    f->s[k].p = err->s[k].p;
+    f->s[k].len = err->s[k].len;
+    f->n[k] = 0;
+    if (err->s[k].p != NULL && err->s[k].len > 0
+        && err->s[k].p == m9_inflight[k].p && m9_inflight[k].n > 0) {
+      /* a private state: running out of memory here must not replace
+         the exception the cleanup is running for; the copy then stays
+         a view of the in-flight buffer, as before 2026-10-21 */
+      void *dst;
+      memset (&own, 0, sizeof own);
+      dst = m9_pool_alloc (err->res ? err->res : &m9_heap, 1,
+                           (int64_t) m9_inflight[k].n, &own);
+      if (own.exc == NULL && dst != NULL) {
+        memcpy (dst, m9_inflight[k].p, m9_inflight[k].n);
+        f->s[k].p = dst;
+        f->n[k] = m9_inflight[k].n;
+      }
+    }
+  }
+  err->exc = NULL;
+}
+
+void m9_fin_restore (m9_state *err, const m9_fin *f)
+{
+  int k;
+  if (f->exc == NULL) return;
+  err->exc = f->exc;
+  memcpy (err->i, f->i, sizeof err->i);
+  memcpy (err->d, f->d, sizeof err->d);
+  for (k = 0; k < 3; k++) {
+    err->s[k].p = f->s[k].p;
+    err->s[k].len = f->s[k].len;
+    if (f->n[k] > 0 && m9_inflight_put (k, f->s[k].p, f->n[k]))
+      err->s[k].p = m9_inflight[k].p;
+  }
 }
 
 void *m9_pay_take (m9_state *err, int k, size_t elem)
@@ -191,15 +367,24 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
   m9_pool_block *b;
   unsigned char *at;
 
-  if (n < 0 || (elem != 0 && (uint64_t) n > SIZE_MAX / elem)) {
+  /* one bound before any arithmetic (2026-10-21, the compiler review's
+     G4): the request in octets below M9_POOL_REQ_MAX, 2^62.  The test
+     was `n > SIZE_MAX / elem', and the 16-byte alignment then WRAPPED
+     -- NEW (p, I16, MAX (I64)) is 2^64 - 2 octets, aligned to 0, so it
+     answered a 0-byte carve with LEN 2^63 - 1 and an index check of
+     100000 passed into nothing -- and at 2^64 - 16 the slack doubling
+     wrapped as well, malloc succeeded and memset ran over 2^64 octets.
+     Under the bound the alignment, the slack and the header cannot
+     wrap, and no machine has the memory it refuses. */
+  if (n < 0 || (elem != 0 && (uint64_t) n > M9_POOL_REQ_MAX / elem)) {
     m9_raise (err, &m9_exc_OutOfMemory);
     return NULL;
   }
   need = elem * (size_t) n;
   need = M9_ALIGN (need);                    /* 16-byte alignment */
   b = pool->head;
-  if ((b == NULL || b->cap - b->used < need) && need <= M9_POOL_BLOCK_MIN
-      && m9_block_cache != NULL) {
+  if (M9_POOL_CACHE_ON && (b == NULL || b->cap - b->used < need)
+      && need <= M9_POOL_BLOCK_MIN && m9_block_cache != NULL) {
     b = m9_block_cache;
     m9_block_cache = b->next;
     m9_block_cached--;
@@ -207,6 +392,14 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
     b->used = 0;
     pool->head = b;
     /* still registered from its last life: retag, no lock */
+    __atomic_store_n (&b->owner, pool, __ATOMIC_RELEASE);
+  }
+  else if ((b == NULL || b->cap - b->used < need) && need > M9_POOL_BLOCK_MIN
+           && (b = m9_big_take (need)) != NULL) {
+    /* a kept large block: still registered, retagged (m9rt.h) */
+    b->next = pool->head;
+    b->used = 0;
+    pool->head = b;
     __atomic_store_n (&b->owner, pool, __ATOMIC_RELEASE);
   }
   else if (b == NULL || b->cap - b->used < need) {
@@ -227,12 +420,15 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
     b->used = 0;
     b->cap = cap;
     pool->head = b;
+    M9_ASAN_POISON (b + 1, cap);
     m9_reg_add (b, pool);
   }
   at = (unsigned char *) (b + 1) + b->used;
   b->last = b->used + elem * (size_t) n;
   b->used += need;
+  M9_ASAN_UNPOISON (at, need);
   memset (at, 0, need);                       /* defined-zero, par 4.3 */
+  M9_ASAN_POISON (at + elem * (size_t) n, need - elem * (size_t) n);
   return at;
 }
 
@@ -242,12 +438,17 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
 static void m9_block_back (m9_pool_block *b)
 {
   M9_POISON_BYTES (b + 1, b->used);
-  if (b->cap == M9_POOL_BLOCK_MIN && m9_block_cached < M9_POOL_CACHE_MAX) {
+  if (M9_POOL_CACHE_ON && b->cap == M9_POOL_BLOCK_MIN
+      && m9_block_cached < M9_POOL_CACHE_MAX) {
     /* stays registered; an owner of NULL is what the listing skips */
     __atomic_store_n (&b->owner, (m9_pool *) NULL, __ATOMIC_RELEASE);
     b->next = m9_block_cache;
     m9_block_cache = b;
     m9_block_cached++;
+  }
+  else if (m9_big_keep (b)) {
+    /* a large block kept for this thread's next carve of its size */
+    __atomic_store_n (&b->owner, (m9_pool *) NULL, __ATOMIC_RELEASE);
   }
   else {
     m9_reg_remove (b);
@@ -322,6 +523,7 @@ static uint32_t *m9_cat_extend (m9_pool *pool, m9_sl_CHAR a, int64_t n)
   want = off + M9_ALIGN ((size_t) n * sizeof (uint32_t));
   if (want > blk->cap) return NULL;
   blk->last = off + (size_t) n * sizeof (uint32_t);
+  M9_ASAN_UNPOISON ((char *) (blk + 1) + off, (size_t) n * sizeof (uint32_t));
   /* Answer the address FROM THE BLOCK -- its top less a's aligned
      length -- and not a.p.  They are equal once the guard has passed,
      but a pointer derived from a.p carries a.p's provenance, and when
@@ -333,6 +535,35 @@ static uint32_t *m9_cat_extend (m9_pool *pool, m9_sl_CHAR a, int64_t n)
      literal behind it. */
   blk->used = want;
   return (uint32_t *) ((char *) (blk + 1) + (top - alen));
+}
+
+/* m9_cat_extend for octets: a UTF's + (m9_utf_cat) grows its left
+   operand in place under the same exact-top guard, so `u := u + x` in a
+   loop is linear as a STR's is.  Until 2026-10-23 a UTF + copied every
+   time, and 100,000 steps to a 1 MB text were killed for memory (the
+   Chars index benchmark). */
+static uint8_t *m9_cat_extend_octets (m9_pool *pool, const uint8_t *a,
+                                      int64_t alen8, int64_t n8)
+{
+  m9_pool_block *blk = pool->head;
+  uintptr_t base, ap;
+  size_t off, alen, top, want;
+
+  if (blk == NULL || a == NULL || alen8 == 0) return NULL;
+  base = (uintptr_t) (blk + 1);
+  ap   = (uintptr_t) a;
+  if (ap < base || ap >= base + blk->cap) return NULL;
+  off  = (size_t) (ap - base);
+  alen = M9_ALIGN ((size_t) alen8);
+  top  = blk->used;
+  if (off + (size_t) alen8 != blk->last) return NULL;
+  if (off + alen != top) return NULL;
+  want = off + M9_ALIGN ((size_t) n8);
+  if (want > blk->cap) return NULL;
+  blk->last = off + (size_t) n8;
+  M9_ASAN_UNPOISON ((char *) (blk + 1) + off, (size_t) n8);
+  blk->used = want;
+  return (uint8_t *) ((char *) (blk + 1) + (top - alen));
 }
 
 m9_sl_CHAR m9_cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b,
@@ -364,6 +595,550 @@ m9_sl_CHAR m9_cat_ch (m9_pool *pool, m9_sl_CHAR a, uint32_t c,
   one.p = &c;
   one.len = 1;
   return m9_cat (pool, a, one, err);
+}
+
+/* ---- UTF (docs/utf8-plan.md, U2) ---- */
+
+static int m9_utf_enc_len (uint32_t c)
+{
+  return c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
+}
+
+static int m9_utf_put (uint8_t *p, uint32_t c)
+{
+  if (c < 0x80) { p[0] = (uint8_t) c; return 1; }
+  if (c < 0x800) {
+    p[0] = (uint8_t) (0xC0 | (c >> 6));
+    p[1] = (uint8_t) (0x80 | (c & 0x3F));
+    return 2;
+  }
+  if (c < 0x10000) {
+    p[0] = (uint8_t) (0xE0 | (c >> 12));
+    p[1] = (uint8_t) (0x80 | ((c >> 6) & 0x3F));
+    p[2] = (uint8_t) (0x80 | (c & 0x3F));
+    return 3;
+  }
+  p[0] = (uint8_t) (0xF0 | (c >> 18));
+  p[1] = (uint8_t) (0x80 | ((c >> 12) & 0x3F));
+  p[2] = (uint8_t) (0x80 | ((c >> 6) & 0x3F));
+  p[3] = (uint8_t) (0x80 | (c & 0x3F));
+  return 4;
+}
+
+m9_sl_UTF8 m9_utf_from_chars (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+{
+  m9_sl_UTF8 out = { NULL, 0 };
+  int64_t n = 0, i, k = 0;
+  for (i = 0; i < s.len; i++) n += m9_utf_enc_len (s.p[i]);
+  if (n == 0) return out;
+  out.p = (uint8_t *) m9_pool_alloc (pool, 1, n, err);
+  if (err->exc != NULL) { out.p = NULL; return out; }
+  for (i = 0; i < s.len; i++) k += m9_utf_put (out.p + k, s.p[i]);
+  out.len = n;
+  return out;
+}
+
+/* the length of the well-formed sequence at p[0..n), or 0: no overlong
+   form, no surrogate, nothing past U+10FFFF (RFC 3629, as Python's
+   strict decoder) */
+static int m9_utf_seq (const uint8_t *p, int64_t n)
+{
+  uint8_t b0 = p[0];
+  if (b0 < 0x80) return 1;
+  if (b0 >= 0xC2 && b0 <= 0xDF) {
+    if (n < 2 || (p[1] & 0xC0) != 0x80) return 0;
+    return 2;
+  }
+  if (b0 >= 0xE0 && b0 <= 0xEF) {
+    if (n < 3 || (p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80) return 0;
+    if (b0 == 0xE0 && p[1] < 0xA0) return 0;          /* overlong */
+    if (b0 == 0xED && p[1] >= 0xA0) return 0;         /* a surrogate */
+    return 3;
+  }
+  if (b0 >= 0xF0 && b0 <= 0xF4) {
+    if (n < 4 || (p[1] & 0xC0) != 0x80 || (p[2] & 0xC0) != 0x80 ||
+        (p[3] & 0xC0) != 0x80) return 0;
+    if (b0 == 0xF0 && p[1] < 0x90) return 0;          /* overlong */
+    if (b0 == 0xF4 && p[1] >= 0x90) return 0;         /* past U+10FFFF */
+    return 4;
+  }
+  return 0;
+}
+
+/* ---- the vector validator (m9rt.h): Keiser and Lemire's lookup
+   algorithm ("Validating UTF-8 In Less Than One Instruction Per Byte",
+   2021; simdutf's lookup4), in NEON and in SSSE3/SSE4.1.  Three nibble
+   tables classify a byte pair (the previous byte's two nibbles, this
+   byte's high nibble) into error bits -- too short, too long, overlong,
+   surrogate, too large, two continuations -- and a saturating subtract
+   on the bytes two and three back says which positions must be
+   continuations; the two disagree exactly where the text is not UTF-8.
+   The last three positions of a block may begin a sequence the next
+   block finishes ("incomplete"); an ASCII block, or the end, after one
+   is an error.  It answers VALID OR NOT; the offset ValueRange names
+   comes from the sequence loop, run only then.  Held to that loop over
+   every 2- and 3-byte sequence, every 4-byte lead and second byte with a
+   sweep of the rest, at 16 offsets (utfrt_driver.c). */
+
+#define M9_UTF_TOO_SHORT      (1 << 0)
+#define M9_UTF_TOO_LONG       (1 << 1)
+#define M9_UTF_OVERLONG_3     (1 << 2)
+#define M9_UTF_TOO_LARGE      (1 << 3)
+#define M9_UTF_SURROGATE      (1 << 4)
+#define M9_UTF_OVERLONG_2     (1 << 5)
+#define M9_UTF_TOO_LARGE_1000 (1 << 6)
+#define M9_UTF_OVERLONG_4     (1 << 6)
+#define M9_UTF_TWO_CONTS      (1 << 7)
+#define M9_UTF_CARRY          (M9_UTF_TOO_SHORT | M9_UTF_TOO_LONG | M9_UTF_TWO_CONTS)
+#define M9_UTF_LARGE1         (M9_UTF_CARRY | M9_UTF_TOO_LARGE | M9_UTF_TOO_LARGE_1000)
+
+static const uint8_t m9_utf_b1h[16] = {
+  M9_UTF_TOO_LONG, M9_UTF_TOO_LONG, M9_UTF_TOO_LONG, M9_UTF_TOO_LONG,
+  M9_UTF_TOO_LONG, M9_UTF_TOO_LONG, M9_UTF_TOO_LONG, M9_UTF_TOO_LONG,
+  M9_UTF_TWO_CONTS, M9_UTF_TWO_CONTS, M9_UTF_TWO_CONTS, M9_UTF_TWO_CONTS,
+  M9_UTF_TOO_SHORT | M9_UTF_OVERLONG_2,
+  M9_UTF_TOO_SHORT,
+  M9_UTF_TOO_SHORT | M9_UTF_OVERLONG_3 | M9_UTF_SURROGATE,
+  M9_UTF_TOO_SHORT | M9_UTF_TOO_LARGE | M9_UTF_TOO_LARGE_1000 | M9_UTF_OVERLONG_4 };
+static const uint8_t m9_utf_b1l[16] = {
+  M9_UTF_CARRY | M9_UTF_OVERLONG_3 | M9_UTF_OVERLONG_2 | M9_UTF_OVERLONG_4,
+  M9_UTF_CARRY | M9_UTF_OVERLONG_2,
+  M9_UTF_CARRY, M9_UTF_CARRY,
+  M9_UTF_CARRY | M9_UTF_TOO_LARGE,
+  M9_UTF_LARGE1, M9_UTF_LARGE1, M9_UTF_LARGE1,
+  M9_UTF_LARGE1, M9_UTF_LARGE1, M9_UTF_LARGE1, M9_UTF_LARGE1, M9_UTF_LARGE1,
+  M9_UTF_LARGE1 | M9_UTF_SURROGATE,
+  M9_UTF_LARGE1, M9_UTF_LARGE1 };
+static const uint8_t m9_utf_b2h[16] = {
+  M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT,
+  M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT,
+  M9_UTF_TOO_LONG | M9_UTF_OVERLONG_2 | M9_UTF_TWO_CONTS | M9_UTF_OVERLONG_3 | M9_UTF_TOO_LARGE_1000 | M9_UTF_OVERLONG_4,
+  M9_UTF_TOO_LONG | M9_UTF_OVERLONG_2 | M9_UTF_TWO_CONTS | M9_UTF_OVERLONG_3 | M9_UTF_TOO_LARGE,
+  M9_UTF_TOO_LONG | M9_UTF_OVERLONG_2 | M9_UTF_TWO_CONTS | M9_UTF_SURROGATE | M9_UTF_TOO_LARGE,
+  M9_UTF_TOO_LONG | M9_UTF_OVERLONG_2 | M9_UTF_TWO_CONTS | M9_UTF_SURROGATE | M9_UTF_TOO_LARGE,
+  M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT, M9_UTF_TOO_SHORT };
+/* a lead in the last three positions of a block: >= F0, >= E0, >= C0 */
+static const uint8_t m9_utf_maxv[16] = { 255, 255, 255, 255, 255, 255, 255, 255,
+                                         255, 255, 255, 255, 255, 0xF0 - 1, 0xE0 - 1, 0xC0 - 1 };
+
+#if defined (__aarch64__)
+#include <arm_neon.h>
+#define M9_UTF_SIMD "neon"
+static int m9_utf_simd_here (void) { return 1; }
+static int m9_utf_simd_valid (const uint8_t *p, int64_t n)
+{
+  const uint8x16_t t1h = vld1q_u8 (m9_utf_b1h), t1l = vld1q_u8 (m9_utf_b1l), t2h = vld1q_u8 (m9_utf_b2h);
+  const uint8x16_t low = vdupq_n_u8 (0x0F), hi = vdupq_n_u8 (0x80), maxq = vld1q_u8 (m9_utf_maxv);
+  uint8x16_t prev = vdupq_n_u8 (0), errv = vdupq_n_u8 (0), inc = vdupq_n_u8 (0);
+  uint8_t tail[16];
+  int64_t i = 0;
+  while (i < n) {
+    uint8x16_t in;
+    if (i + 16 <= n) in = vld1q_u8 (p + i);
+    else { memset (tail, 0, 16); memcpy (tail, p + i, (size_t) (n - i)); in = vld1q_u8 (tail); }
+    if (vmaxvq_u8 (in) < 0x80) {
+      errv = vorrq_u8 (errv, inc);
+      inc = vdupq_n_u8 (0);
+    } else {
+      uint8x16_t p1 = vextq_u8 (prev, in, 15), p2 = vextq_u8 (prev, in, 14), p3 = vextq_u8 (prev, in, 13);
+      uint8x16_t sc = vandq_u8 (vandq_u8 (vqtbl1q_u8 (t1h, vshrq_n_u8 (p1, 4)),
+                                          vqtbl1q_u8 (t1l, vandq_u8 (p1, low))),
+                                vqtbl1q_u8 (t2h, vshrq_n_u8 (in, 4)));
+      uint8x16_t must = vandq_u8 (vorrq_u8 (vqsubq_u8 (p2, vdupq_n_u8 (0xE0 - 0x80)),
+                                            vqsubq_u8 (p3, vdupq_n_u8 (0xF0 - 0x80))), hi);
+      errv = vorrq_u8 (errv, veorq_u8 (must, sc));
+      inc = vcgtq_u8 (in, maxq);
+    }
+    prev = in;
+    i += 16;
+  }
+  errv = vorrq_u8 (errv, inc);
+  return vmaxvq_u8 (errv) == 0;
+}
+#elif defined (__x86_64__)
+#include <immintrin.h>
+#define M9_UTF_SIMD "ssse3/sse4.1"
+static int m9_utf_simd_here (void)
+{
+  static int here = -1;
+  int h = __atomic_load_n (&here, __ATOMIC_RELAXED);
+  if (h < 0) {
+    h = __builtin_cpu_supports ("ssse3") && __builtin_cpu_supports ("sse4.1");
+    __atomic_store_n (&here, h, __ATOMIC_RELAXED);
+  }
+  return h;
+}
+__attribute__ ((target ("ssse3,sse4.1")))
+static int m9_utf_simd_valid (const uint8_t *p, int64_t n)
+{
+  const __m128i t1h = _mm_loadu_si128 ((const __m128i *) m9_utf_b1h);
+  const __m128i t1l = _mm_loadu_si128 ((const __m128i *) m9_utf_b1l);
+  const __m128i t2h = _mm_loadu_si128 ((const __m128i *) m9_utf_b2h);
+  const __m128i maxq = _mm_loadu_si128 ((const __m128i *) m9_utf_maxv);
+  const __m128i low = _mm_set1_epi8 (0x0F), hi = _mm_set1_epi8 ((char) 0x80);
+  __m128i prev = _mm_setzero_si128 (), errv = _mm_setzero_si128 (), inc = _mm_setzero_si128 ();
+  uint8_t tail[16];
+  int64_t i = 0;
+  while (i < n) {
+    __m128i in;
+    if (i + 16 <= n) in = _mm_loadu_si128 ((const __m128i *) (p + i));
+    else { memset (tail, 0, 16); memcpy (tail, p + i, (size_t) (n - i)); in = _mm_loadu_si128 ((const __m128i *) tail); }
+    if (_mm_movemask_epi8 (in) == 0) {
+      errv = _mm_or_si128 (errv, inc);
+      inc = _mm_setzero_si128 ();
+    } else {
+      __m128i p1 = _mm_alignr_epi8 (in, prev, 15), p2 = _mm_alignr_epi8 (in, prev, 14), p3 = _mm_alignr_epi8 (in, prev, 13);
+      __m128i sc = _mm_and_si128 (_mm_and_si128 (_mm_shuffle_epi8 (t1h, _mm_and_si128 (_mm_srli_epi16 (p1, 4), low)),
+                                                 _mm_shuffle_epi8 (t1l, _mm_and_si128 (p1, low))),
+                                  _mm_shuffle_epi8 (t2h, _mm_and_si128 (_mm_srli_epi16 (in, 4), low)));
+      __m128i must = _mm_and_si128 (_mm_or_si128 (_mm_subs_epu8 (p2, _mm_set1_epi8 ((char) (0xE0 - 0x80))),
+                                                  _mm_subs_epu8 (p3, _mm_set1_epi8 ((char) (0xF0 - 0x80)))), hi);
+      errv = _mm_or_si128 (errv, _mm_xor_si128 (must, sc));
+      /* unsigned in > maxq: max (in, maxq) == in and in != maxq */
+      inc = _mm_andnot_si128 (_mm_cmpeq_epi8 (in, maxq), _mm_cmpeq_epi8 (_mm_max_epu8 (in, maxq), in));
+    }
+    prev = in;
+    i += 16;
+  }
+  errv = _mm_or_si128 (errv, inc);
+  return _mm_testz_si128 (errv, errv);
+}
+#else
+#define M9_UTF_SIMD "none"
+static int m9_utf_simd_here (void) { return 0; }
+static int m9_utf_simd_valid (const uint8_t *p, int64_t n) { (void) p; (void) n; return 0; }
+#endif
+
+/* the vector validator is used unless M9_UTF_PORTABLE is set (the
+   gates run both ways) or this machine lacks the instructions */
+static int m9_utf_simd_on (void)
+{
+  static int mode = -1;
+  int m = __atomic_load_n (&mode, __ATOMIC_RELAXED);
+  if (m < 0) {
+    m = getenv ("M9_UTF_PORTABLE") == NULL && m9_utf_simd_here ();
+    __atomic_store_n (&mode, m, __ATOMIC_RELAXED);
+  }
+  return m;
+}
+
+const char *m9_utf_fast_name (void) { return m9_utf_simd_on () ? M9_UTF_SIMD : "sequence loop"; }
+
+/* -1 when p[0..n) is UTF-8, else the offset of the first byte that is
+   not (the start of the sequence it belongs to).  The ASCII lane
+   (m9rt.h): the first byte with a high bit is found eight bytes at a
+   time; from there the vector validator says whether the rest is all
+   UTF-8, and only when it is not does the sequence loop run, to name
+   the offset.  A buffer of ASCII never reaches either.  (Five shapes
+   that interleaved the lane with the loop were measured in the real
+   build under the flags m9c supplies, and each cost text dense in
+   multi-byte characters 5 to 15% however rarely it probed -- the loop's
+   own code generation moved, not the probes; hence the prescan.) */
+static int64_t m9_utf_check (const uint8_t *p, int64_t n)
+{
+  int64_t i = 0;
+  while (i + 8 <= n) {
+    uint64_t w;
+    memcpy (&w, p + i, 8);
+    if (w & 0x8080808080808080ull) break;
+    i += 8;
+  }
+  if (i < n && m9_utf_simd_on () && m9_utf_simd_valid (p + i, n - i)) return -1;
+  while (i < n) {
+    int k = m9_utf_seq (p + i, n - i);
+    if (k == 0) return i;
+    i += k;
+  }
+  return -1;
+}
+
+/* the bytes validated IN PLACE and answered as a UTF over the same
+   storage (m9rt.h): *out, an m9_sl_UTF8, is set to them and -1
+   answered, or nothing is set and the offset of the first bad byte is
+   answered.  Io.ReadFileUtf's (2026-10-25). */
+int64_t m9_utf_adopt_p (const void *p, int64_t n, void *out)
+{
+  int64_t at = m9_utf_check ((const uint8_t *) p, n);
+  if (at >= 0) return at;
+  ((m9_sl_UTF8 *) out)->p = (uint8_t *) p;
+  ((m9_sl_UTF8 *) out)->len = n;
+  return -1;
+}
+
+/* a copy, never a view: the slice's owner may write it afterwards.
+   ValueRange names the offset of the first byte that is no UTF-8 */
+m9_sl_UTF8 m9_utf_from_bytes (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
+{
+  m9_sl_UTF8 out = { NULL, 0 };
+  int64_t at = m9_utf_check (b.p, b.len);
+  if (at >= 0) {
+    err->i[0] = at;
+    m9_raise (err, &m9_exc_ValueRange);
+    return out;
+  }
+  if (b.len == 0) return out;
+  out.p = (uint8_t *) m9_pool_alloc (pool, 1, b.len, err);
+  if (err->exc != NULL) { out.p = NULL; return out; }
+  memcpy (out.p, b.p, (size_t) b.len);
+  out.len = b.len;
+  return out;
+}
+
+/* code points = bytes - continuation bytes; a continuation byte is
+   10xxxxxx, so in a word it is a byte whose top bit is set and whose
+   next bit is clear: (w & ~(w << 1)) keeps exactly those top bits, and
+   a popcount counts them eight bytes at a time (m9rt.h) */
+int64_t m9_utf_cpcount_p (const void *p0, int64_t n)
+{
+  const uint8_t *p = (const uint8_t *) p0;
+  int64_t i = 0, cont = 0;
+  while (i + 8 <= n) {
+    uint64_t w, m;
+    memcpy (&w, p + i, 8);
+    m = (w & ~(w << 1) & 0x8080808080808080ull) >> 7;   /* 1 per continuation byte */
+    cont += (int64_t) ((m * 0x0101010101010101ull) >> 56); /* their sum, no popcount needed */
+    i += 8;
+  }
+  for (; i < n; i++) if ((p[i] & 0xC0) == 0x80) cont++;
+  return n - cont;
+}
+
+int64_t m9_utf_cpcount (m9_sl_UTF8 u)
+{
+  return m9_utf_cpcount_p (u.p, u.len);
+}
+
+/* the needle's first byte by memchr (the C library's vector scan on
+   every platform), the rest by memcmp; from `from', or -1; an empty
+   needle is at `from' (m9rt.h).  Not memmem: Darwin's ran at 3,000
+   MB/s where this runs at ten times that, glibc's is a GNU extension
+   hidden under _POSIX_C_SOURCE, and Windows has none.  A needle whose
+   first byte is everywhere degrades to the double loop it replaces,
+   no worse. */
+int64_t m9_utf_find (const void *h0, int64_t hn, const void *n0, int64_t nn,
+                     int64_t from)
+{
+  const unsigned char *h = (const unsigned char *) h0;
+  const unsigned char *n = (const unsigned char *) n0;
+  const unsigned char *p, *end;
+  if (from < 0) from = 0;
+  if (nn == 0) return from <= hn ? from : -1;
+  if (from + nn > hn) return -1;
+  p = h + from;
+  end = h + hn - nn + 1;                       /* the last start, exclusive */
+  while (p < end) {
+    p = (const unsigned char *) memchr (p, n[0], (size_t) (end - p));
+    if (p == NULL) return -1;
+    if (memcmp (p + 1, n + 1, (size_t) (nn - 1)) == 0) return (int64_t) (p - h);
+    p++;
+  }
+  return -1;
+}
+
+
+/* ---- the radix sorts (m9rt.h; 2026-10-25, Alex: "then sort") ----
+   LSD radix, eight passes of eight bits over a sortable key, stable,
+   a pass skipped when every key shares its byte, insertion sort under
+   64 elements.  An F64's key is its bits with the sign unfolded
+   (negatives complemented, positives with the top bit set) and -0.0
+   keyed as +0.0, so the two zeros stay in input order as the merge
+   sort left them; the slice has no NaN, Sort.m9 refused it before.  An
+   I64's key is its bits with the sign bit flipped.  The argsorts carry
+   the index beside the key and answer it in key order, index order
+   among equal keys: numpy's stable rule, which SortTest holds.
+   Measured against Sort.m9's merge sorts on a million values: the Xeon
+   F64s 125-130 -> 52 ms, I64s 100-104 -> 51, ArgF64 156 -> 53; qsort
+   is 122 and 111 there.  Scratch of 16 bytes an element from malloc;
+   0 answered when it cannot be had or under M9_SORT_PORTABLE, and the
+   caller's merge sort does the work. */
+
+static int m9_sort_portable (void)
+{
+  static int mode = -1;
+  int m = __atomic_load_n (&mode, __ATOMIC_RELAXED);
+  if (m < 0) {
+    m = getenv ("M9_SORT_PORTABLE") != NULL;
+    __atomic_store_n (&mode, m, __ATOMIC_RELAXED);
+  }
+  return m;
+}
+
+static uint64_t m9_key_f64 (double d)
+{
+  uint64_t u;
+  if (d == 0.0) d = 0.0;
+  memcpy (&u, &d, 8);
+  return (u & 0x8000000000000000ull) ? ~u : u | 0x8000000000000000ull;
+}
+#define M9_KEY_I64(v) ((uint64_t) (v) ^ 0x8000000000000000ull)
+
+/* keys (and their payload when pa is not NULL) sorted; answers which
+   buffer holds the result, 0 for a or 1 for t */
+static int m9_radix_u64 (uint64_t *a, uint64_t *t, int64_t *pa, int64_t *pt, int64_t n)
+{
+  int where = 0, pass, b;
+  for (pass = 0; pass < 8; pass++) {
+    int64_t count[256] = {0}, sum = 0, i;
+    int shift = pass * 8;
+    for (i = 0; i < n; i++) count[(a[i] >> shift) & 255]++;
+    for (b = 0; b < 256 && count[b] != n; b++) ;
+    if (b < 256) continue;                   /* one byte for every key: nothing moves */
+    for (b = 0; b < 256; b++) { int64_t c = count[b]; count[b] = sum; sum += c; }
+    if (pa != NULL)
+      for (i = 0; i < n; i++) { int64_t at = count[(a[i] >> shift) & 255]++; t[at] = a[i]; pt[at] = pa[i]; }
+    else
+      for (i = 0; i < n; i++) t[count[(a[i] >> shift) & 255]++] = a[i];
+    { uint64_t *x = a; a = t; t = x; }
+    { int64_t *x = pa; pa = pt; pt = x; }
+    where ^= 1;
+  }
+  return where;
+}
+
+/* the ORIGINAL bits ride beside the key as its payload, so a -0.0
+   comes back as -0.0 (the two zeros share a key) and every value as
+   the bits it had: what the merge sort answers, to the bit */
+int m9_sort_f64 (void *a0, int64_t n)
+{
+  double *a = (double *) a0;
+  uint64_t *k, *t;
+  int64_t *p, *q, i;
+  if (m9_sort_portable ()) return 0;
+  if (n < 64) {
+    for (i = 1; i < n; i++) { double v = a[i]; int64_t j = i; while (j > 0 && a[j - 1] > v) { a[j] = a[j - 1]; j--; } a[j] = v; }
+    return 1;
+  }
+  k = malloc ((size_t) n * 16);
+  p = malloc ((size_t) n * 16);
+  if (k == NULL || p == NULL) { free (k); free (p); return 0; }
+  t = k + n;
+  q = p + n;
+  for (i = 0; i < n; i++) { k[i] = m9_key_f64 (a[i]); memcpy (&p[i], &a[i], 8); }
+  if (m9_radix_u64 (k, t, p, q, n)) memcpy (a, q, (size_t) n * 8); else memcpy (a, p, (size_t) n * 8);
+  free (k);
+  free (p);
+  return 1;
+}
+
+int m9_sort_i64 (void *a0, int64_t n)
+{
+  int64_t *a = (int64_t *) a0;
+  uint64_t *k, *t, *r;
+  int64_t i;
+  if (m9_sort_portable ()) return 0;
+  if (n < 64) {
+    for (i = 1; i < n; i++) { int64_t v = a[i], j = i; while (j > 0 && a[j - 1] > v) { a[j] = a[j - 1]; j--; } a[j] = v; }
+    return 1;
+  }
+  k = malloc ((size_t) n * 16);
+  if (k == NULL) return 0;
+  t = k + n;
+  for (i = 0; i < n; i++) k[i] = M9_KEY_I64 (a[i]);
+  r = m9_radix_u64 (k, t, NULL, NULL, n) ? t : k;
+  for (i = 0; i < n; i++) a[i] = (int64_t) (r[i] ^ 0x8000000000000000ull);
+  free (k);
+  return 1;
+}
+
+/* idx[0..n) := the indices of the keys in ascending order, equal keys
+   in index order; the keys made by `key' from the element at i */
+static int m9_argsort (const void *v, int64_t *idx, int64_t n, int isf64)
+{
+  uint64_t *k, *t;
+  int64_t *p, i;
+  if (m9_sort_portable ()) return 0;
+  if (n < 64) {
+    for (i = 0; i < n; i++) idx[i] = i;
+    for (i = 1; i < n; i++) {
+      int64_t x = idx[i], j = i;
+      if (isf64) { const double *d = (const double *) v; while (j > 0 && d[idx[j - 1]] > d[x]) { idx[j] = idx[j - 1]; j--; } }
+      else { const int64_t *w = (const int64_t *) v; while (j > 0 && w[idx[j - 1]] > w[x]) { idx[j] = idx[j - 1]; j--; } }
+      idx[j] = x;
+    }
+    return 1;
+  }
+  k = malloc ((size_t) n * 16);
+  p = malloc ((size_t) n * 8);
+  if (k == NULL || p == NULL) { free (k); free (p); return 0; }
+  t = k + n;
+  for (i = 0; i < n; i++) {
+    k[i] = isf64 ? m9_key_f64 (((const double *) v)[i]) : M9_KEY_I64 (((const int64_t *) v)[i]);
+    idx[i] = i;
+  }
+  if (m9_radix_u64 (k, t, idx, p, n)) memcpy (idx, p, (size_t) n * 8);
+  free (k);
+  free (p);
+  return 1;
+}
+
+int m9_argsort_f64 (const void *v, void *idx, int64_t n) { return m9_argsort (v, (int64_t *) idx, n, 1); }
+int m9_argsort_i64 (const void *v, void *idx, int64_t n) { return m9_argsort (v, (int64_t *) idx, n, 0); }
+
+/* the decoding of a sequence m9_utf_seq accepted (a UTF's are) */
+static uint32_t m9_utf_get (const uint8_t *p, int k)
+{
+  switch (k) {
+  case 1: return p[0];
+  case 2: return ((uint32_t) (p[0] & 0x1F) << 6) | (p[1] & 0x3F);
+  case 3: return ((uint32_t) (p[0] & 0x0F) << 12) |
+                 ((uint32_t) (p[1] & 0x3F) << 6) | (p[2] & 0x3F);
+  default: return ((uint32_t) (p[0] & 0x07) << 18) |
+                  ((uint32_t) (p[1] & 0x3F) << 12) |
+                  ((uint32_t) (p[2] & 0x3F) << 6) | (p[3] & 0x3F);
+  }
+}
+
+static int m9_utf_lead (uint8_t b0)
+{
+  return b0 < 0x80 ? 1 : b0 < 0xE0 ? 2 : b0 < 0xF0 ? 3 : 4;
+}
+
+m9_sl_CHAR m9_utf_to_chars (m9_pool *pool, m9_sl_UTF8 u, m9_state *err)
+{
+  m9_sl_CHAR out = { NULL, 0 };
+  int64_t n = 0, i, j = 0;
+  for (i = 0; i < u.len; i += m9_utf_lead (u.p[i])) n++;
+  if (n == 0) return out;
+  out.p = (uint32_t *) m9_pool_alloc (pool, sizeof (uint32_t), n, err);
+  if (err->exc != NULL) { out.p = NULL; return out; }
+  for (i = 0; i < u.len; ) {
+    int k = m9_utf_lead (u.p[i]);
+    out.p[j++] = m9_utf_get (u.p + i, k);
+    i += k;
+  }
+  out.len = n;
+  return out;
+}
+
+m9_sl_UTF8 m9_utf_cat (m9_pool *pool, m9_sl_UTF8 a, m9_sl_UTF8 b,
+                       m9_state *err)
+{
+  m9_sl_UTF8 out = { NULL, 0 };
+  int64_t n = a.len + b.len;
+  uint8_t *p;
+  if (n == 0) return out;
+  p = m9_cat_extend_octets (pool, a.p, a.len, n);
+  if (p != NULL) {
+    out.p = p;
+    out.len = n;
+    if (b.len > 0) memcpy (p + a.len, b.p, (size_t) b.len);
+    return out;
+  }
+  out.p = (uint8_t *) m9_pool_alloc (pool, 1, n, err);
+  if (err->exc != NULL) { out.p = NULL; return out; }
+  if (a.len > 0) memcpy (out.p, a.p, (size_t) a.len);
+  if (b.len > 0) memcpy (out.p + a.len, b.p, (size_t) b.len);
+  out.len = n;
+  return out;
+}
+
+m9_sl_UTF8 m9_utf_of_char (m9_pool *pool, uint32_t c, m9_state *err)
+{
+  m9_sl_UTF8 out = { NULL, 0 };
+  out.p = (uint8_t *) m9_pool_alloc (pool, 1, 4, err);
+  if (err->exc != NULL) { out.p = NULL; return out; }
+  out.len = m9_utf_put (out.p, c);
+  return out;
 }
 
 m9_sl_CHAR m9_ch_cat (m9_pool *pool, uint32_t c, m9_sl_CHAR b,
@@ -404,6 +1179,19 @@ m9_sl_CHAR m9_rehome (const m9_pool *frame, m9_pool *res, m9_sl_CHAR s,
   /* on a raise path the copy may itself fail: the string comes back
      empty rather than dangling, and the OutOfMemory stands */
   return m9_strdup (res, s, err);
+}
+
+m9_sl_UTF8 m9_rehome_utf (const m9_pool *frame, m9_pool *res, m9_sl_UTF8 s,
+                          m9_state *err)
+{
+  m9_sl_UTF8 out;
+  if (frame->head == NULL || s.p == NULL || !m9_pool_owns (frame, s.p))
+    return s;
+  out.p = (uint8_t *) m9_pool_alloc (res, 1, s.len, err);
+  out.len = s.len;
+  if (err->exc != NULL) { out.len = 0; return out; }
+  if (s.len > 0) memcpy (out.p, s.p, (size_t) s.len);
+  return out;
 }
 
 void m9_pool_adopt (m9_pool *dst, m9_pool *src)
@@ -739,6 +1527,16 @@ static FILE *m9_fopen (const void *path, const char *mode)
   wm[i] = 0;
   return _wfopen (wp, wm);
 }
+#elif defined (__linux__)
+/* 'e', O_CLOEXEC at the open (glibc, musl): a file Io holds open is not
+   handed to every child an Exec starts (2026-10-21, the compiler
+   review's G9; on macOS posix_spawn's CLOEXEC_DEFAULT does it) */
+static FILE *m9_fopen (const void *path, const char *mode)
+{
+  char m[8];
+  snprintf (m, sizeof m, "%se", mode);
+  return fopen ((const char *) path, m);
+}
 #else
 #define m9_fopen(path, mode) fopen ((const char *) (path), (mode))
 #endif
@@ -957,13 +1755,212 @@ int64_t m9_repr_float (float v, void *out)
   return i;
 }
 
-/* strtod for the JSON parser's float path: hand-rolled digit
-   accumulation is an ulp off (1.5e-10 parsed one bit high), and a
-   re-serialisation held to Python's bytes needs libc's value --
-   the same judge m9_repr_double round-trips against. */
+/* ---- a decimal to the nearest double: Eisel-Lemire, strtod behind it
+   (m9rt.h; Lemire, "Number Parsing at a Gigabyte per Second", 2021;
+   fast_float's compute_float, written from the paper) ----
+   The field is read as strtod reads it -- a sign, digits, a point,
+   digits, an exponent -- into a 64-bit significand w and a decimal
+   exponent q.  Up to 19 significant digits fit; w times 5^q (the 128
+   bits of it from m9powfive.h, two multiplies where the first is not
+   enough) gives the double's 53 bits and the rounding, exactly, by
+   Lemire's proof; Clinger's exact double arithmetic takes the common
+   small case first.  Where this cannot decide -- more digits, a
+   subnormal, an infinity, nan, no digits at all -- it says so and
+   strtod answers, so every answer is strtod's.  glibc's strtod was
+   44% of a CSV read on the Xeon (perf, 2026-10-25). */
+#include "m9powfive.h"
+
+static _Thread_local int64_t m9_parse_fast = 0;
+int64_t m9_parse_f64_hits (void) { return m9_parse_fast; }
+
+static int m9_parse_portable (void)
+{
+  static int mode = -1;
+  int m = __atomic_load_n (&mode, __ATOMIC_RELAXED);
+  if (m < 0) {
+    m = getenv ("M9_PARSE_PORTABLE") != NULL;
+    __atomic_store_n (&mode, m, __ATOMIC_RELAXED);
+  }
+  return m;
+}
+
+static const double m9_pow10_exact[23] = {
+  1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,
+  1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22 };
+
+/* w * 5^q as a double, or 0 with *out untouched where this does not
+   decide (fast_float's compute_float for binary64) */
+static int m9_el_compute (int64_t q, uint64_t w, int neg, double *out)
+{
+  uint64_t hi, lo, mant, bits;
+  int lz, upperbit, shift;
+  int64_t power2;
+  if (w == 0) { *out = neg ? -0.0 : 0.0; return 1; }
+  if (q < M9_POW5_LOW || q > M9_POW5_HIGH) return 0;
+  if (q >= -22 && q <= 22 && w <= UINT64_C (9007199254740992)) {
+    double d = (double) w;                 /* Clinger: both exact, one rounding */
+    d = q < 0 ? d / m9_pow10_exact[-q] : d * m9_pow10_exact[q];
+    *out = neg ? -d : d;
+    return 1;
+  }
+  lz = __builtin_clzll (w);
+  w <<= lz;
+  {
+    unsigned __int128 p = (unsigned __int128) w * m9_pow5_128[q - M9_POW5_LOW][0];
+    hi = (uint64_t) (p >> 64);
+    lo = (uint64_t) p;
+    if ((hi & 0x1FF) == 0x1FF) {
+      unsigned __int128 p2 = (unsigned __int128) w * m9_pow5_128[q - M9_POW5_LOW][1];
+      uint64_t hi2 = (uint64_t) (p2 >> 64);
+      lo += hi2;
+      if (lo < hi2) hi++;
+    }
+  }
+  upperbit = (int) (hi >> 63);
+  shift = upperbit + 64 - 52 - 3;
+  mant = hi >> shift;
+  power2 = (((152170 + 65536) * q) >> 16) + 63 + upperbit - lz + 1023;
+  if (power2 <= 0) return 0;                 /* a subnormal: strtod's */
+  /* the halfway case rounds to even: when the product sits exactly
+     on it and the bit below the mantissa is the only one set */
+  if (lo <= 1 && q >= -4 && q <= 23 && (mant & 3) == 1 && (mant << shift) == hi) mant &= ~UINT64_C (1);
+  mant += mant & 1;
+  mant >>= 1;
+  if (mant >= (UINT64_C (2) << 52)) { mant = UINT64_C (1) << 52; power2++; }
+  mant &= ~(UINT64_C (1) << 52);
+  if (power2 >= 0x7FF) return 0;             /* an infinity: strtod's */
+  bits = mant | ((uint64_t) power2 << 52) | (neg ? UINT64_C (1) << 63 : 0);
+  memcpy (out, &bits, 8);
+  return 1;
+}
+
+/* strtod's number: [+-] digits [. digits] [e [+-] digits], stopping
+   where strtod stops; 0 where this cannot decide */
+static int m9_parse_f64_fast (const char *s, double *out)
+{
+  const char *p = s, *d0;
+  uint64_t w = 0;
+  int neg = 0, nd = 0, frac = 0;
+  int64_t q = 0, e = 0;
+  if (*p == '-') { neg = 1; p++; } else if (*p == '+') p++;
+  d0 = p;
+  if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) return 0;   /* a hexadecimal float: strtod's */
+  while (*p == '0') p++;                     /* leading zeros count for nothing */
+  while (*p >= '0' && *p <= '9') { if (nd < 19) { w = w * 10 + (uint64_t) (*p - '0'); nd++; } else return 0; p++; }
+  if (*p == '.') {
+    const char *f0;
+    p++;
+    f0 = p;
+    if (nd == 0) while (*p == '0') { p++; q--; }
+    while (*p >= '0' && *p <= '9') { if (nd < 19) { w = w * 10 + (uint64_t) (*p - '0'); nd++; q--; } else return 0; p++; }
+    frac = (int) (p - f0);
+  }
+  if (p == d0 || (p == d0 + 1 && *d0 == '.' && frac == 0)) return 0;   /* no digits: strtod's business */
+  if (*p == 'e' || *p == 'E') {
+    const char *x = p + 1;
+    int eneg = 0, ed = 0;
+    if (*x == '-') { eneg = 1; x++; } else if (*x == '+') x++;
+    while (*x >= '0' && *x <= '9') { if (e < 100000) e = e * 10 + (*x - '0'); x++; ed++; }
+    if (ed == 0) { /* 'e' with no digits: strtod stops before it */ }
+    else { q += eneg ? -e : e; p = x; }
+  }
+  if (nd == 0) { *out = neg ? -0.0 : 0.0; return 1; }
+  return m9_el_compute (q, w, neg, out);
+}
+
 double m9_strtod (const void *s)
 {
+  double d;
+  if (!m9_parse_portable () && m9_parse_f64_fast ((const char *) s, &d)) { m9_parse_fast++; return d; }
   return strtod ((const char *) s, NULL);
+}
+
+/* ---- a CSV field that is a number (m9rt.h; Csv.IsNumber's grammar in
+   one pass, 2026-10-25) ----
+   Blanks and tabs trimmed at both ends; a sign; then nan, inf or
+   infinity in any case, or digits with at most one point among them
+   and at least one digit, then an exponent -- e or E, a sign, at
+   least one digit -- or nothing; and the end.  Narrower than strtod
+   on purpose: 0x10 is no number here, nor is 1e, nor a blank inside.
+   Csv.IsNumber and Csv.Word were 31% of a CSV read on the Xeon after
+   the parser went fast; this is the same decision without the three
+   word comparisons and the second scan.  Answers 1 (a number, and for
+   m9_field_f64 the value through m9_strtod's path on the trimmed
+   field), 0 (not one), or -1 under M9_CSV_PORTABLE: then Csv's own
+   IsNumber decides, the portable twin. */
+static int m9_csv_portable (void)
+{
+  static int mode = -1;
+  int m = __atomic_load_n (&mode, __ATOMIC_RELAXED);
+  if (m < 0) {
+    m = getenv ("M9_CSV_PORTABLE") != NULL;
+    __atomic_store_n (&mode, m, __ATOMIC_RELAXED);
+  }
+  return m;
+}
+
+/* the trimmed field's start and whether it is a number by the grammar */
+static int m9_csv_scan (const unsigned char *p, int64_t n, int64_t *from)
+{
+  int64_t i = 0, e = n, digits = 0;
+  while (i < e && (p[i] == ' ' || p[i] == '\t')) i++;
+  while (e > i && (p[e - 1] == ' ' || p[e - 1] == '\t')) e--;
+  *from = i;
+  if (i >= e) return 0;
+  if (p[i] == '+' || p[i] == '-') i++;
+  if (i >= e) return 0;
+  {
+    int64_t w = e - i;
+    if (w == 3 || w == 8) {
+      char lc[8];
+      int64_t k;
+      for (k = 0; k < w; k++) lc[k] = (char) (p[i + k] >= 'A' && p[i + k] <= 'Z' ? p[i + k] + 32 : p[i + k]);
+      if (w == 3 && (memcmp (lc, "nan", 3) == 0 || memcmp (lc, "inf", 3) == 0)) return 1;
+      if (w == 8 && memcmp (lc, "infinity", 8) == 0) return 1;
+    }
+  }
+  while (i < e && p[i] >= '0' && p[i] <= '9') { i++; digits++; }
+  if (i < e && p[i] == '.') {
+    i++;
+    while (i < e && p[i] >= '0' && p[i] <= '9') { i++; digits++; }
+  }
+  if (digits == 0) return 0;
+  if (i < e) {
+    if (p[i] != 'e' && p[i] != 'E') return 0;
+    i++;
+    if (i < e && (p[i] == '+' || p[i] == '-')) i++;
+    digits = 0;
+    while (i < e && p[i] >= '0' && p[i] <= '9') { i++; digits++; }
+    if (digits == 0) return 0;
+  }
+  return i == e;
+}
+
+int m9_csv_number (const void *p, int64_t n)
+{
+  int64_t from;
+  if (m9_csv_portable ()) return -1;
+  return m9_csv_scan ((const unsigned char *) p, n, &from);
+}
+
+/* the field's value when it is a number, parsed IN PLACE: the scan
+   above has found the field well formed within n bytes, so the parser
+   reads exactly those and stops at the byte after them -- the
+   delimiter, the line end or the buffer's terminator, which Csv's
+   buffer carries, as strtod relied on before.  (A copy into a
+   NUL-terminated buffer was measured first and cost the M4 4%.) */
+int m9_field_f64 (const void *p0, int64_t n, void *out0)
+{
+  const unsigned char *p = (const unsigned char *) p0;
+  double *out = (double *) out0;
+  int64_t from;
+  int r;
+  if (m9_csv_portable ()) return -1;
+  r = m9_csv_scan (p, n, &from);
+  if (r != 1) return r;
+  if (!m9_parse_portable () && m9_parse_f64_fast ((const char *) p + from, out)) { m9_parse_fast++; return 1; }
+  *out = strtod ((const char *) p + from, NULL);
+  return 1;
 }
 
 /* rename(2) for atomic catalog rewrites: write the temp file,
@@ -1050,7 +2047,7 @@ void m9_sleep_ms (int64_t ms)
 {
   if (ms <= 0) return;
 #ifdef _WIN32
-  Sleep ((DWORD) ms);
+  Sleep (ms > 0xFFFFFFFEll ? 0xFFFFFFFEu : (DWORD) ms);
 #else
   {
     struct timespec ts;
@@ -1108,6 +2105,15 @@ void m9_put_chars_err (const void *buf, size_t n)
           fputc ((int) (0x80 | ((c >> 6) & 0x3F)), stderr);
           fputc ((int) (0x80 | (c & 0x3F)), stderr); }
     }
+  fflush (stderr);
+  M9_UNLOCK (stderr);
+}
+
+/* octets as they are, to stderr: a UTF's line (Io.ErrLineUtf) */
+void m9_put_bytes_err (const void *buf, size_t n)
+{
+  M9_LOCK (stderr);
+  if (n > 0) fwrite (buf, 1, n, stderr);
   fflush (stderr);
   M9_UNLOCK (stderr);
 }
@@ -1230,6 +2236,452 @@ int64_t m9_cstrlen (const void *s)
   return (int64_t) strlen ((const char *) s);
 }
 
+/* ---- CRC-32 (m9rt.h: the fast path and its portable twin) ---- */
+
+/* Eight tables: tab[0] is a byte's CRC, tab[k] carries it k more
+   bytes.  Built once from the polynomial, never checked in: 2,048
+   words, a few microseconds, and a table nobody wrote by hand is a
+   table nobody mistyped (the driver holds the result to zlib). */
+static uint32_t m9_crc_tab[8][256];
+
+static void m9_crc_build (void)
+{
+  for (uint32_t i = 0; i < 256; i++) {
+    uint32_t c = i;
+    for (int k = 0; k < 8; k++) c = (c & 1) ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+    m9_crc_tab[0][i] = c;
+  }
+  for (uint32_t i = 0; i < 256; i++)
+    for (int k = 1; k < 8; k++)
+      m9_crc_tab[k][i] = (m9_crc_tab[k - 1][i] >> 8)
+                         ^ m9_crc_tab[0][m9_crc_tab[k - 1][i] & 0xff];
+}
+
+#ifdef _WIN32
+static INIT_ONCE m9_crc_once = INIT_ONCE_STATIC_INIT;
+static BOOL CALLBACK m9_crc_build_once (PINIT_ONCE o, PVOID a, PVOID *b)
+{
+  (void) o; (void) a; (void) b;
+  m9_crc_build ();
+  return TRUE;
+}
+static void m9_crc_ready (void)
+{
+  InitOnceExecuteOnce (&m9_crc_once, m9_crc_build_once, NULL, NULL);
+}
+#else
+static pthread_once_t m9_crc_once = PTHREAD_ONCE_INIT;
+static void m9_crc_ready (void) { pthread_once (&m9_crc_once, m9_crc_build); }
+#endif
+
+/* slicing by eight: two words a step, each byte through its own
+   table -- portable C11 (the loads go through memcpy, so alignment
+   and byte order are the compiler's business, not ours: the words
+   are read little-endian below whatever the machine does) */
+int64_t m9_crc_raw_portable (int64_t c0, const void *p0, int64_t n)
+{
+  const unsigned char *p = (const unsigned char *) p0;
+  uint32_t c = (uint32_t) c0;
+  m9_crc_ready ();
+  while (n >= 8) {
+    uint32_t lo = (uint32_t) p[0] | (uint32_t) p[1] << 8
+                | (uint32_t) p[2] << 16 | (uint32_t) p[3] << 24;
+    uint32_t hi = (uint32_t) p[4] | (uint32_t) p[5] << 8
+                | (uint32_t) p[6] << 16 | (uint32_t) p[7] << 24;
+    lo ^= c;
+    c = m9_crc_tab[7][lo & 0xff] ^ m9_crc_tab[6][(lo >> 8) & 0xff]
+      ^ m9_crc_tab[5][(lo >> 16) & 0xff] ^ m9_crc_tab[4][lo >> 24]
+      ^ m9_crc_tab[3][hi & 0xff] ^ m9_crc_tab[2][(hi >> 8) & 0xff]
+      ^ m9_crc_tab[1][(hi >> 16) & 0xff] ^ m9_crc_tab[0][hi >> 24];
+    p += 8; n -= 8;
+  }
+  while (n-- > 0) c = m9_crc_tab[0][(c ^ *p++) & 0xff] ^ (c >> 8);
+  return (int64_t) c;
+}
+
+/* ---- Fixed and Sci through snprintf (m9rt.h says when not) ---- */
+
+/* whether the C library's digits are used: 1, or 0 under
+   M9_FMT_PORTABLE.  Read once; two threads reading the environment at
+   the same time compute the same answer.  Windows too, since the
+   sweep of 2026-10-25 (runtime/test/fmtsweep.c, run by vmgates.sh):
+   mingw's printf under this file's feature macro gave the same
+   216,000 lines as glibc on the Windows 11 VM. */
+static int m9_fmt_fast (void)
+{
+  static int mode = -1;
+  int m = __atomic_load_n (&mode, __ATOMIC_RELAXED);
+  if (m < 0) {
+    m = getenv ("M9_FMT_PORTABLE") == NULL;
+    __atomic_store_n (&mode, m, __ATOMIC_RELAXED);
+  }
+  return m;
+}
+
+/* the specials Fmt spells its own way, or -1 when v is finite */
+static int64_t m9_fmt_special (double v, char *b, int64_t cap)
+{
+  const char *s = NULL;
+  if (v != v) s = "nan";
+  else if (v > 1.7976931348623157e308) s = "inf";
+  else if (v < -1.7976931348623157e308) s = "-inf";
+  if (s == NULL) return -1;
+  if ((int64_t) strlen (s) > cap) return -2;
+  memcpy (b, s, strlen (s));
+  return (int64_t) strlen (s);
+}
+
+int64_t m9_fmt_fixed (double v, int64_t decimals, void *buf, int64_t cap)
+{
+  char *b = (char *) buf;
+  int64_t n;
+  if (!m9_fmt_fast () || decimals < 0 || decimals > 17 || cap < 1) return -1;
+  n = m9_fmt_special (v, b, cap);
+  if (n >= 0) return n;
+  if (v == 0.0) v = 0.0;                       /* -0.0: no sign, as Fmt */
+  n = snprintf (b, (size_t) cap, "%.*f", (int) decimals, v);
+  if (n < 0 || n >= cap) return -1;
+  return n;
+}
+
+int64_t m9_fmt_sci (double v, int64_t decimals, void *buf, int64_t cap)
+{
+  char t[64];
+  char *b = (char *) buf;
+  int64_t n, i, o;
+  long e10;
+  char *ep;
+  if (!m9_fmt_fast () || decimals < 0 || decimals > 17 || cap < 1) return -1;
+  n = m9_fmt_special (v, b, cap);
+  if (n >= 0) return n;
+  if (v == 0.0) v = 0.0;
+  n = snprintf (t, sizeof t, "%.*e", (int) decimals, v);
+  if (n < 0 || n >= (int64_t) sizeof t) return -1;
+  /* d.ddde+XX -> d.ddde-X: the mantissa as printed, the exponent as
+     a signed integer without padding */
+  for (i = 0; i < n && t[i] != 'e'; i++) ;
+  if (i == n) return -1;
+  e10 = strtol (t + i + 1, &ep, 10);
+  if (*ep != 0) return -1;
+  if (i + 1 + 5 > cap) return -1;              /* 'e', '-', up to 3 digits */
+  memcpy (b, t, (size_t) i);
+  o = i;
+  b[o++] = 'e';
+  o += snprintf (b + o, (size_t) (cap - o), "%ld", e10);
+  return o;
+}
+
+/* ---- Short through Dragonbox (2026-10-25; m9rt.h says the rule) ----
+
+   Junekey Jeon, "Dragonbox: A New Floating-Point Binary-to-Decimal
+   Conversion Algorithm" (2022): the double path of the author's
+   simple reference implementation, written again here in C over
+   gcc's 128-bit integer; the cache is m9powten.h, written by
+   tools/dragonbox.py from exact integers.  The constants below are
+   the reference's for binary64, computed by hand from its formulas:
+   kappa 2 (the divisors 1000 and 100), the shorter interval's left
+   endpoint an integer for exponents 2..3, a tie in that case only at
+   exponent -77.  Held to the reference over 400 million doubles and
+   to Python's repr over a million in scratch, and by FmtTest's repr
+   goldens and the fmt battery's twin sweep since. */
+#include "m9powten.h"
+
+typedef unsigned __int128 m9_u128;
+
+static int m9_flog10p2 (int e) { return (e * 315653) >> 20; }        /* floor (log10 2^e) */
+static int m9_flog2p10 (int e) { return (e * 1741647) >> 19; }       /* floor (log2 10^e) */
+static int m9_flog10p2m43 (int e) { return (e * 631305 - 261663) >> 21; }  /* floor (log10 (2^e * 3/4)) */
+
+static uint64_t m9_rotr64 (uint64_t n, unsigned r)
+{
+  r &= 63;
+  return (n >> r) | (n << ((64 - r) & 63));
+}
+
+/* trailing decimal zeros off sig, the count onto exp: the reference's
+   branchless search (eight, then four, two, one) */
+static void m9_rtz (uint64_t *sig, int *exp)
+{
+  uint64_t s = *sig, r;
+  int b, n;
+  r = m9_rotr64 (s * UINT64_C (28999941890838049), 8);
+  b = r < UINT64_C (184467440738); n = b; if (b) s = r;
+  r = m9_rotr64 (s * UINT64_C (182622766329724561), 4);
+  b = r < UINT64_C (1844674407370956); n = n * 2 + b; if (b) s = r;
+  r = m9_rotr64 (s * UINT64_C (10330176681277348905), 2);
+  b = r < UINT64_C (184467440737095517); n = n * 2 + b; if (b) s = r;
+  r = m9_rotr64 (s * UINT64_C (14757395258967641293), 1);
+  b = r < UINT64_C (1844674407370955162); n = n * 2 + b; if (b) s = r;
+  *sig = s;
+  *exp += n;
+}
+
+/* the parity and integrality of two_f * cache, read off the lower
+   128 bits of the product at bit position beta */
+static void m9_mul_parity (uint64_t two_f, const uint64_t *c, int beta, int *parity, int *integer)
+{
+  uint64_t hi = two_f * c[0] + (uint64_t) (((m9_u128) two_f * c[1]) >> 64);
+  uint64_t lo = (uint64_t) ((m9_u128) two_f * c[1]);
+  *parity = (int) ((hi >> (64 - beta)) & 1);
+  *integer = ((hi << beta) | (lo >> (64 - beta))) == 0;
+}
+
+/* the shortest decimal sig * 10^exp that reads back as the finite,
+   non-zero double with these raw fields; of the shortest the closest,
+   the even one on a tie; sig without trailing zeros */
+static void m9_dragonbox (uint64_t fbits, int ebits, uint64_t *osig, int *oexp)
+{
+  const int kappa = 2;
+  int is_even = (fbits & 1) == 0;
+  uint64_t two_fc = fbits * 2;
+  int e, minus_k, beta, ok;
+  const uint64_t *c;
+  uint64_t deltai, u, zi, sig, r, dist;
+  int z_int, par, xint, approx_y_parity, divisible;
+  uint32_t prod;
+  m9_u128 p;
+  if (ebits != 0) {
+    e = ebits - 1023 - 52;
+    if (two_fc == 0) {                         /* the shorter interval below a power of two */
+      uint64_t ch, xi, zi2;
+      minus_k = m9_flog10p2m43 (e);
+      beta = e + m9_flog2p10 (-minus_k);
+      ch = m9_pow10_128[-minus_k - M9_POW10_LOW][0];
+      xi = (ch - (ch >> 54)) >> (11 - beta);
+      zi2 = (ch + (ch >> 53)) >> (11 - beta);
+      if (!(e >= 2 && e <= 3)) xi++;           /* the left endpoint is no integer: above it */
+      sig = (uint64_t) (((m9_u128) zi2 * UINT64_C (1844674407370955162)) >> 64);   /* zi / 10 */
+      if (sig * 10 >= xi) {
+        int x = minus_k + 1;
+        m9_rtz (&sig, &x);
+        *osig = sig; *oexp = x;
+        return;
+      }
+      sig = ((ch >> (10 - beta)) + 1) / 2;     /* y rounded up */
+      if (sig % 2 != 0 && e == -77) sig--;     /* the one tie: the even one */
+      else if (sig < xi) sig++;
+      *osig = sig; *oexp = minus_k;
+      return;
+    }
+    two_fc |= UINT64_C (1) << 53;
+  } else e = -1022 - 52;                       /* subnormal */
+
+  /* step 1: the Schubfach multiplier */
+  minus_k = m9_flog10p2 (e) - kappa;
+  c = m9_pow10_128[-minus_k - M9_POW10_LOW];
+  beta = e + m9_flog2p10 (-minus_k);
+  deltai = c[0] >> (63 - beta);
+  u = (two_fc | 1) << beta;
+  p = (m9_u128) u * c[0] + (uint64_t) (((m9_u128) u * c[1]) >> 64);
+  zi = (uint64_t) (p >> 64);
+  z_int = (uint64_t) p == 0;
+
+  /* step 2: the larger divisor, 1000 */
+  sig = (uint64_t) (((m9_u128) zi * UINT64_C (4722366482869645214)) >> 64) >> 8;   /* zi / 1000 */
+  r = zi - 1000 * sig;
+  if (r < deltai) {
+    if ((r | (uint64_t) !z_int | (uint64_t) is_even) == 0) { sig--; r = 1000; ok = 0; }   /* the right endpoint excluded */
+    else ok = 1;
+  } else if (r > deltai) ok = 0;
+  else {                                       /* r == deltai: the fractional parts decide */
+    m9_mul_parity (two_fc - 1, c, beta, &par, &xint);
+    ok = par | (xint & is_even);
+  }
+  if (ok) {
+    int x = minus_k + kappa + 1;
+    m9_rtz (&sig, &x);
+    *osig = sig; *oexp = x;
+    return;
+  }
+
+  /* step 3: the smaller divisor, 100 */
+  sig *= 10;
+  dist = r - deltai / 2 + 50;
+  approx_y_parity = ((dist ^ 50) & 1) != 0;
+  prod = (uint32_t) (dist * 656);              /* dist / 100 and its divisibility, dist <= 1000 */
+  divisible = (prod & 0xffff) < 656;
+  dist = prod >> 16;
+  sig += dist;
+  if (divisible) {
+    m9_mul_parity (two_fc, c, beta, &par, &xint);
+    if (par != approx_y_parity) sig--;
+    else if ((sig % 2) & xint) sig--;          /* a tie: the even one */
+  }
+  *osig = sig; *oexp = minus_k + kappa;
+}
+
+int64_t m9_fmt_short (double v, void *buf, int64_t cap)
+{
+  char *b = (char *) buf;
+  char ds[24];
+  uint64_t bits, sig, m;
+  int ebits, nd, i, k, x, o = 0;
+  int64_t n;
+  int exp;
+  if (!m9_fmt_fast () || cap < 32) return -1;
+  n = m9_fmt_special (v, b, cap);
+  if (n >= 0) return n;
+  memcpy (&bits, &v, 8);
+  if (bits >> 63) b[o++] = '-';
+  ebits = (int) ((bits >> 52) & 0x7ff);
+  if (ebits == 0 && (bits & (UINT64_C (0xfffffffffffff))) == 0) {
+    memcpy (b + o, "0.0", 3);
+    return o + 3;
+  }
+  m9_dragonbox (bits & UINT64_C (0xfffffffffffff), ebits, &sig, &exp);
+  while (sig % 10 == 0) { sig /= 10; exp++; }  /* never, by the algorithm; the layout relies on it */
+  nd = 0;
+  for (m = sig; m != 0; m /= 10) ds[nd++] = (char) ('0' + m % 10);
+  for (i = 0; i < nd / 2; i++) { char t = ds[i]; ds[i] = ds[nd - 1 - i]; ds[nd - 1 - i] = t; }
+  /* the value is 0.ds * 10^k; repr's layout, as Fmt.Short lays it out */
+  k = exp + nd;
+  x = k - 1;
+  if (x >= -4 && x < 16) {
+    if (k <= 0) {
+      b[o++] = '0'; b[o++] = '.';
+      for (i = 0; i < -k; i++) b[o++] = '0';
+      memcpy (b + o, ds, (size_t) nd); o += nd;
+    } else if (k >= nd) {
+      memcpy (b + o, ds, (size_t) nd); o += nd;
+      for (i = 0; i < k - nd; i++) b[o++] = '0';
+      b[o++] = '.'; b[o++] = '0';
+    } else {
+      memcpy (b + o, ds, (size_t) k); o += k;
+      b[o++] = '.';
+      memcpy (b + o, ds + k, (size_t) (nd - k)); o += nd - k;
+    }
+  } else {
+    b[o++] = ds[0];
+    if (nd > 1) { b[o++] = '.'; memcpy (b + o, ds + 1, (size_t) (nd - 1)); o += nd - 1; }
+    b[o++] = 'e';
+    if (x < 0) { b[o++] = '-'; x = -x; } else b[o++] = '+';
+    if (x >= 100) b[o++] = (char) ('0' + x / 100);
+    b[o++] = (char) ('0' + (x / 10) % 10);
+    b[o++] = (char) ('0' + x % 10);
+  }
+  return o;
+}
+
+#if defined (__aarch64__) && defined (__ARM_FEATURE_CRC32)
+#include <arm_acle.h>
+/* ARMv8's crc32 instructions compute this polynomial: a doubleword
+   a step, the tail a byte at a time.  Only where the compiler's
+   target says the instructions exist; a Linux aarch64 built for the
+   base armv8-a takes the portable path. */
+int64_t m9_crc_raw (int64_t c0, const void *p0, int64_t n)
+{
+  const unsigned char *p = (const unsigned char *) p0;
+  uint32_t c = (uint32_t) c0;
+  while (n >= 8) {
+    uint64_t w;
+    memcpy (&w, p, 8);
+    c = __crc32d (c, w);
+    p += 8; n -= 8;
+  }
+  while (n-- > 0) c = __crc32b (c, *p++);
+  return (int64_t) c;
+}
+const char *m9_crc_fast_name (void) { return "aarch64 crc32"; }
+#elif defined (__x86_64__)
+#include <immintrin.h>
+/* x86-64: carry-less multiplication where the processor has it
+   (PCLMULQDQ and SSE4.1, asked once), the folding of Gopal et al.
+   (Intel, 2009) as zlib's crc_folding.c lays it out: four 128-bit lanes
+   folded by 512 bits a step over 64-byte blocks, then 128 bits a step,
+   then the reduction to 32 bits with Barrett's constants; the raw
+   state is XORed into the first four bytes, the tail under 16 bytes
+   goes through the tables.  Measured on the Xeon: slicing 2,390 MB/s,
+   this 11,750, zlib's 4,740 (2026-10-25, Alex: "And why did we not
+   take PCLMULQDQ?"). */
+static int m9_crc_pclmul_here (void)
+{
+  static int here = -1;
+  int h = __atomic_load_n (&here, __ATOMIC_RELAXED);
+  if (h < 0) {
+    h = __builtin_cpu_supports ("pclmul") && __builtin_cpu_supports ("sse4.1");
+    __atomic_store_n (&here, h, __ATOMIC_RELAXED);
+  }
+  return h;
+}
+
+__attribute__ ((target ("pclmul,sse4.1")))
+static inline __m128i m9_crc_fold (__m128i x, __m128i k, __m128i in)
+{
+  /* x.lo * k.hi  ^  x.hi * k.lo  ^  in */
+  return _mm_xor_si128 (_mm_xor_si128 (_mm_clmulepi64_si128 (x, k, 0x10),
+                                       _mm_clmulepi64_si128 (x, k, 0x01)), in);
+}
+
+__attribute__ ((target ("pclmul,sse4.1")))
+static int64_t m9_crc_raw_pclmul (int64_t c0, const void *p0, int64_t n)
+{
+  const uint8_t *p = (const uint8_t *) p0;
+  uint32_t c = (uint32_t) c0;
+  const __m128i k512 = _mm_set_epi64x ((long long) 0x154442bd4, (long long) 0x1c6e41596);
+  const __m128i k128 = _mm_set_epi64x ((long long) 0x1751997d0, (long long) 0x0ccaa009e);
+  const __m128i k64 = _mm_set_epi64x ((long long) 0x163cd6124, (long long) 0x0ccaa009e);
+  const __m128i kbar = _mm_set_epi64x ((long long) 0x1db710640, (long long) 0x1f7011640);
+  const __m128i mask64 = _mm_set_epi32 (0, 0, (int) 0xFFFFFFFF, (int) 0xFFFFFFFF);
+  const __m128i mask96 = _mm_set_epi32 ((int) 0xFFFFFFFF, (int) 0xFFFFFFFF, (int) 0xFFFFFFFF, 0);
+  __m128i x, x0, t;
+  x0 = _mm_xor_si128 (_mm_loadu_si128 ((const __m128i *) p), _mm_cvtsi32_si128 ((int) c));
+  p += 16; n -= 16;
+  if (n >= 48) {
+    __m128i x1 = _mm_loadu_si128 ((const __m128i *) p);
+    __m128i x2 = _mm_loadu_si128 ((const __m128i *) (p + 16));
+    __m128i x3 = _mm_loadu_si128 ((const __m128i *) (p + 32));
+    p += 48; n -= 48;
+    while (n >= 64) {
+      x0 = m9_crc_fold (x0, k512, _mm_loadu_si128 ((const __m128i *) p));
+      x1 = m9_crc_fold (x1, k512, _mm_loadu_si128 ((const __m128i *) (p + 16)));
+      x2 = m9_crc_fold (x2, k512, _mm_loadu_si128 ((const __m128i *) (p + 32)));
+      x3 = m9_crc_fold (x3, k512, _mm_loadu_si128 ((const __m128i *) (p + 48)));
+      p += 64; n -= 64;
+    }
+    x1 = m9_crc_fold (x0, k128, x1);
+    x2 = m9_crc_fold (x1, k128, x2);
+    x = m9_crc_fold (x2, k128, x3);
+  } else x = x0;
+  while (n >= 16) { x = m9_crc_fold (x, k128, _mm_loadu_si128 ((const __m128i *) p)); p += 16; n -= 16; }
+  /* 128 -> 64 */
+  t = x;
+  x = _mm_clmulepi64_si128 (x, k64, 0x00);
+  t = _mm_srli_si128 (t, 8);
+  x = _mm_xor_si128 (x, t);
+  t = x;
+  x = _mm_slli_si128 (x, 4);
+  x = _mm_clmulepi64_si128 (x, k64, 0x10);
+  x = _mm_xor_si128 (x, t);
+  x = _mm_and_si128 (x, mask96);
+  /* Barrett, 64 -> 32 */
+  {
+    __m128i t1 = x, t2 = x;
+    x = _mm_clmulepi64_si128 (x, kbar, 0x00);
+    x = _mm_xor_si128 (x, t2);
+    x = _mm_and_si128 (x, mask64);
+    t2 = x;
+    x = _mm_clmulepi64_si128 (x, kbar, 0x10);
+    x = _mm_xor_si128 (x, t2);
+    x = _mm_xor_si128 (x, t1);
+  }
+  c = (uint32_t) _mm_extract_epi32 (x, 2);
+  return m9_crc_raw_portable ((int64_t) c, p, n);   /* the tail */
+}
+
+int64_t m9_crc_raw (int64_t c, const void *p, int64_t n)
+{
+  if (n >= 16 && m9_crc_pclmul_here ()) return m9_crc_raw_pclmul (c, p, n);
+  return m9_crc_raw_portable (c, p, n);
+}
+const char *m9_crc_fast_name (void) { return m9_crc_pclmul_here () ? "x86-64 pclmul" : "slicing-by-8"; }
+#else
+int64_t m9_crc_raw (int64_t c, const void *p, int64_t n)
+{
+  return m9_crc_raw_portable (c, p, n);
+}
+const char *m9_crc_fast_name (void) { return "slicing-by-8"; }
+#endif
+
 int m9_exists (const void *path)
 {
 #ifdef _WIN32
@@ -1317,6 +2769,56 @@ int64_t m9_listdir (const void *path, void *buf, int64_t cap)
    this, and this stops the program with the exception's name on
    stderr -- flushed, because HALT with unflushed stdout swallowed
    three diagnostics in the session that started this project. */
+/* the monitors this thread holds (m9rt.h says why): a short stack, since
+   monitors are entered and left in order; past its room the check is
+   skipped rather than the program stopped -- it is a defence, and the
+   checker's MonReach the rule */
+#define M9_HELD_MAX 32
+static _Thread_local void *m9_held[M9_HELD_MAX];
+static _Thread_local int m9_nheld = 0;
+
+static void m9_mon_hold_slow (void *m)
+{
+  int i;
+  for (i = 0; i < m9_nheld && i < M9_HELD_MAX; i++)
+    if (m9_held[i] == m) {
+      fflush (stdout);
+      fprintf (stderr, "m9: a monitor was entered again by the thread that holds it -- "
+               "the call would wait for ever (a procedure bound to it reached another "
+               "bound to it, here through a procedure value the checker cannot follow; par 6)\n");
+      fflush (stderr);
+      abort ();
+    }
+  if (m9_nheld < M9_HELD_MAX) m9_held[m9_nheld] = m;
+  m9_nheld++;
+}
+
+static void m9_mon_drop_slow (void *m)
+{
+  int i;
+  if (m9_nheld > M9_HELD_MAX) { m9_nheld--; return; }
+  for (i = m9_nheld - 1; i >= 0; i--)
+    if (m9_held[i] == m) {
+      for (; i < m9_nheld - 1; i++) m9_held[i] = m9_held[i + 1];
+      m9_nheld--;
+      return;
+    }
+}
+
+/* the common case first -- a thread entering one monitor while it holds
+   none, and leaving it -- the scan in the slow paths */
+void m9_mon_hold (void *m)
+{
+  if (m9_nheld == 0) { m9_held[0] = m; m9_nheld = 1; return; }
+  m9_mon_hold_slow (m);
+}
+
+void m9_mon_drop (void *m)
+{
+  if (m9_nheld == 1 && m9_held[0] == m) { m9_nheld = 0; return; }
+  m9_mon_drop_slow (m);
+}
+
 void m9_thread_died (const char *name)
 {
   fflush (stdout);
@@ -1349,6 +2851,7 @@ static unsigned __stdcall m9_thread_tramp2 (void *p)
   m9_thread_cell2 c = *(m9_thread_cell2 *) p;
   free (p);
   (void) c.fn (c.arg, c.pool);
+  m9_big_drop ();
   return 0;
 }
 
@@ -1361,7 +2864,7 @@ int m9_thread_start2 (void *(*fn) (void *, m9_pool *), void *arg,
   c->fn = fn;
   c->arg = arg;
   c->pool = pool;
-  h = _beginthreadex (NULL, 0, m9_thread_tramp2, c, 0, NULL);
+  h = _beginthreadex (NULL, (unsigned) M9_THREAD_STACK, m9_thread_tramp2, c, 0, NULL);
   if (h == 0) { free (c); m9_raise (err, &m9_exc_OutOfMemory); return -1; }
   CloseHandle ((HANDLE) h);
   return 0;
@@ -1372,6 +2875,7 @@ static unsigned __stdcall m9_thread_tramp (void *p)
   m9_thread_cell c = *(m9_thread_cell *) p;
   free (p);
   (void) c.fn (c.arg);
+  m9_big_drop ();
   return 0;
 }
 
@@ -1382,7 +2886,7 @@ int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
   if (c == NULL) { m9_raise (err, &m9_exc_OutOfMemory); return -1; }
   c->fn = fn;
   c->arg = arg;
-  h = _beginthreadex (NULL, 0, m9_thread_tramp, c, 0, NULL);
+  h = _beginthreadex (NULL, (unsigned) M9_THREAD_STACK, m9_thread_tramp, c, 0, NULL);
   if (h == 0) { free (c); m9_raise (err, &m9_exc_OutOfMemory); return -1; }
   CloseHandle ((HANDLE) h);          /* detached: the handle is not the thread */
   return 0;
@@ -1399,8 +2903,8 @@ int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
 _Static_assert (sizeof (SRWLOCK) == sizeof (void *), "SRWLOCK is one pointer");
 _Static_assert (sizeof (CONDITION_VARIABLE) == sizeof (void *), "CONDITION_VARIABLE is one pointer");
 
-void m9_mon_enter (m9_mon *m) { AcquireSRWLockExclusive ((SRWLOCK *) &m->mu); }
-void m9_mon_leave (m9_mon *m) { ReleaseSRWLockExclusive ((SRWLOCK *) &m->mu); }
+void m9_mon_enter (m9_mon *m) { m9_mon_hold (m); AcquireSRWLockExclusive ((SRWLOCK *) &m->mu); }
+void m9_mon_leave (m9_mon *m) { m9_mon_drop (m); ReleaseSRWLockExclusive ((SRWLOCK *) &m->mu); }
 void m9_mon_wait (m9_mon *m)
 {
   SleepConditionVariableSRW ((CONDITION_VARIABLE *) &m->cv, (SRWLOCK *) &m->mu, INFINITE, 0);
@@ -1433,11 +2937,46 @@ void m9_mon_make (m9_mon *m)
 }
 #endif
 
+/* EVERY THREAD GETS 8 MB OF STACK, as the main thread has on Linux and
+   macOS: with no attributes macOS gives a pthread 512 KB, and a
+   procedure with an 800 KB local that ran on the main thread died with
+   SIGBUS on a THREAD, no diagnostic (2026-10-21, the compiler review).
+   Windows' _beginthreadex is told the same (M9_THREAD_STACK, above). */
+static int m9_pthread (pthread_t *t, void *(*fn) (void *), void *arg)
+{
+  pthread_attr_t a;
+  int rc;
+  pthread_attr_init (&a);
+  pthread_attr_setstacksize (&a, M9_THREAD_STACK);
+  rc = pthread_create (t, &a, fn, arg);
+  pthread_attr_destroy (&a);
+  return rc;
+}
+
+/* the one-word form through a cell too, so that the thread's kept
+   large blocks are given back when its body returns */
+typedef struct { void *(*fn) (void *); void *arg; } m9_thread_cell1;
+
+static void *m9_thread_tramp1 (void *p)
+{
+  m9_thread_cell1 c = *(m9_thread_cell1 *) p;
+  void *r;
+  free (p);
+  r = c.fn (c.arg);
+  m9_big_drop ();
+  return r;
+}
+
 int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
 {
   pthread_t t;
-  int rc = pthread_create (&t, NULL, fn, arg);
-  if (rc != 0) { m9_raise (err, &m9_exc_OutOfMemory); return rc; }
+  int rc;
+  m9_thread_cell1 *c = malloc (sizeof *c);
+  if (c == NULL) { m9_raise (err, &m9_exc_OutOfMemory); return -1; }
+  c->fn = fn;
+  c->arg = arg;
+  rc = m9_pthread (&t, m9_thread_tramp1, c);
+  if (rc != 0) { free (c); m9_raise (err, &m9_exc_OutOfMemory); return rc; }
   pthread_detach (t);
   return 0;
 }
@@ -1445,8 +2984,11 @@ int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
 static void *m9_thread_tramp2 (void *p)
 {
   m9_thread_cell2 c = *(m9_thread_cell2 *) p;
+  void *r;
   free (p);
-  return c.fn (c.arg, c.pool);
+  r = c.fn (c.arg, c.pool);
+  m9_big_drop ();
+  return r;
 }
 
 int m9_thread_start2 (void *(*fn) (void *, m9_pool *), void *arg,
@@ -1459,7 +3001,7 @@ int m9_thread_start2 (void *(*fn) (void *, m9_pool *), void *arg,
   c->fn = fn;
   c->arg = arg;
   c->pool = pool;
-  rc = pthread_create (&t, NULL, m9_thread_tramp2, c);
+  rc = m9_pthread (&t, m9_thread_tramp2, c);
   if (rc != 0) { free (c); m9_raise (err, &m9_exc_OutOfMemory); return rc; }
   pthread_detach (t);
   return 0;
@@ -1885,7 +3427,7 @@ static char *m9_win_env (const char *envblock, int envn)
   return out;
 }
 
-typedef struct { HANDLE h; unsigned char *buf; int64_t n, cap; } m9_win_reader;
+typedef struct { HANDLE h; unsigned char *buf; int64_t n, cap; int lost; } m9_win_reader;
 
 static unsigned __stdcall m9_win_read (void *p)
 {
@@ -1894,8 +3436,11 @@ static unsigned __stdcall m9_win_read (void *p)
   DWORD got;
   /* ReadFile fails with ERROR_BROKEN_PIPE once the child has exited
      and every inherited copy of the write end is closed: that is EOF */
+  /* a capture that cannot grow is LOST, and said so (m9_drain says
+     why); the reading goes on, so the child is not left on a full pipe */
   while (ReadFile (r->h, tmp, sizeof tmp, &got, NULL) && got > 0)
-    if (!m9_append (&r->buf, &r->n, &r->cap, tmp, (int64_t) got)) break;
+    if (!r->lost && !m9_append (&r->buf, &r->n, &r->cap, tmp, (int64_t) got))
+      r->lost = 1;
   return 0;
 }
 
@@ -1929,6 +3474,7 @@ static DWORD m9_win_left (int64_t deadline, int limited)
   int64_t left;
   if (!limited) return INFINITE;
   left = deadline - m9_mono_ms ();
+  if (left > 0xFFFFFFFEll) return 0xFFFFFFFEu;   /* past it wrapped; all ones is INFINITE */
   return left > 0 ? (DWORD) left : 0;
 }
 
@@ -2038,8 +3584,8 @@ int m9_exec (const void *argblock, int nargs,
   CloseHandle (outw); outw = NULL;
   CloseHandle (errw); errw = NULL;
 
-  rd[0].h = outr; rd[0].buf = NULL; rd[0].n = rd[0].cap = 0;
-  rd[1].h = errr; rd[1].buf = NULL; rd[1].n = rd[1].cap = 0;
+  rd[0].h = outr; rd[0].buf = NULL; rd[0].n = rd[0].cap = 0; rd[0].lost = 0;
+  rd[1].h = errr; rd[1].buf = NULL; rd[1].n = rd[1].cap = 0; rd[1].lost = 0;
   th[0] = (HANDLE) _beginthreadex (NULL, 0, m9_win_read, &rd[0], 0, NULL);
   th[1] = (HANDLE) _beginthreadex (NULL, 0, m9_win_read, &rd[1], 0, NULL);
   wr.h = inw; wr.buf = in; wr.len = inlen;
@@ -2079,6 +3625,11 @@ int m9_exec (const void *argblock, int nargs,
   sl->s[0] = rd[0].buf; sl->n[0] = rd[0].n;
   sl->s[1] = rd[1].buf; sl->n[1] = rd[1].n;
   free (cmd); free (env);
+  if (rd[0].lost || rd[1].lost) {
+    free (sl->s[0]); free (sl->s[1]);
+    m9_exec_drop (slot);
+    return -1;
+  }
   return slot;
 
 fail_slot:
@@ -2100,12 +3651,50 @@ fail:
 
 extern char **environ;
 
-static int m9_drain (int fd, unsigned char **buf, int64_t *n, int64_t *cap)
+/* A CAPTURE THAT CANNOT GROW IS LOST, AND SAID SO (2026-10-21, the
+   compiler review): a failed realloc answered 0 here, which the loop
+   read as end of file, so the output came back silently cut short.
+   Now *lost is set, the reading goes on and is discarded -- a child
+   writing into a pipe nobody reads would never end -- and m9_exec
+   answers -1, which System.Exec raises as Io.IOError. */
+static int m9_drain (int fd, unsigned char **buf, int64_t *n, int64_t *cap,
+                     int *lost)
 {
   unsigned char tmp[8192];
   ssize_t got = read (fd, tmp, sizeof tmp);
   if (got <= 0) return 0;                       /* EOF, or an error: done */
-  return m9_append (buf, n, cap, tmp, (int64_t) got);
+  if (!*lost && !m9_append (buf, n, cap, tmp, (int64_t) got)) *lost = 1;
+  return 1;
+}
+
+/* THE PIPES OF ONE CHILD ARE NOT INHERITED BY ANOTHER (2026-10-21, the
+   compiler review's G9): with plain pipe (), a child started by one
+   thread inherited the pipe ends another thread had just made for its
+   own -- an `echo' beside a `sleep 3' took 3 s, holding sleep's output
+   open -- and every child the parent's files and sockets.  Each end is
+   close-on-exec from its making, made and spawned under one lock so no
+   spawn falls between a pipe and its flag (POSIX has no pipe2), and an
+   end below 3 is moved up, since dup2 onto itself would leave the flag
+   and the child without that stream.  On macOS the spawn also says
+   POSIX_SPAWN_CLOEXEC_DEFAULT: the child gets the three named and
+   nothing else, whoever opened the rest. */
+static pthread_mutex_t m9_spawn_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static int m9_pipe_ce (int p[2])
+{
+  int i, d;
+  if (pipe (p) != 0) return -1;
+  for (i = 0; i < 2; i++) {
+    if (p[i] < 3) {
+      d = fcntl (p[i], F_DUPFD_CLOEXEC, 3);
+      if (d < 0) { close (p[0]); close (p[1]); return -1; }
+      close (p[i]);
+      p[i] = d;
+    } else {
+      fcntl (p[i], F_SETFD, FD_CLOEXEC);
+    }
+  }
+  return 0;
 }
 
 /* Writing to a pipe whose reader has gone raises SIGPIPE, which by
@@ -2154,7 +3743,7 @@ int m9_exec (const void *argblock, int nargs,
   const char *p = (const char *) argblock;
   const char *in = (const char *) input;
   char **argv, **envp;
-  int inp[2], outp[2], errp[2], k, slot = -1, st = 0;
+  int inp[2], outp[2], errp[2], k, slot = -1, st = 0, lost = 0;
   int limited = limit_ms > 0;
   int64_t deadline = m9_mono_ms () + (limited ? limit_ms : 0);
   pid_t pid;
@@ -2180,10 +3769,13 @@ int m9_exec (const void *argblock, int nargs,
   if (slot < 0) goto fail;
   sl = &m9_execs[slot];
 
-  if (pipe (inp) != 0) goto fail_slot;
-  if (pipe (outp) != 0) { close (inp[0]); close (inp[1]); goto fail_slot; }
-  if (pipe (errp) != 0) { close (inp[0]); close (inp[1]);
-                          close (outp[0]); close (outp[1]); goto fail_slot; }
+  pthread_mutex_lock (&m9_spawn_lock);
+  if (m9_pipe_ce (inp) != 0) { pthread_mutex_unlock (&m9_spawn_lock); goto fail_slot; }
+  if (m9_pipe_ce (outp) != 0) { close (inp[0]); close (inp[1]);
+                                pthread_mutex_unlock (&m9_spawn_lock); goto fail_slot; }
+  if (m9_pipe_ce (errp) != 0) { close (inp[0]); close (inp[1]);
+                                close (outp[0]); close (outp[1]);
+                                pthread_mutex_unlock (&m9_spawn_lock); goto fail_slot; }
   posix_spawn_file_actions_init (&fa);
   posix_spawn_file_actions_adddup2 (&fa, inp[0], 0);
   posix_spawn_file_actions_adddup2 (&fa, outp[1], 1);
@@ -2203,14 +3795,20 @@ int m9_exec (const void *argblock, int nargs,
      when bounded -- a group of its own is also a child that no
      longer gets the terminal's Ctrl-C, and an unbounded Exec (m9c
      running cc) must keep it. */
-  if (limited) {
-    posix_spawnattr_init (&at);
-    posix_spawnattr_setflags (&at, POSIX_SPAWN_SETPGROUP);
-    posix_spawnattr_setpgroup (&at, 0);
+  posix_spawnattr_init (&at);
+  {
+    short fl = 0;
+    if (limited) fl |= POSIX_SPAWN_SETPGROUP;
+#ifdef POSIX_SPAWN_CLOEXEC_DEFAULT
+    fl |= POSIX_SPAWN_CLOEXEC_DEFAULT;
+#endif
+    posix_spawnattr_setflags (&at, fl);
+    if (limited) posix_spawnattr_setpgroup (&at, 0);
   }
-  k = posix_spawnp (&pid, argv[0], &fa, limited ? &at : NULL, argv, envp);
+  k = posix_spawnp (&pid, argv[0], &fa, &at, argv, envp);
+  pthread_mutex_unlock (&m9_spawn_lock);
   posix_spawn_file_actions_destroy (&fa);
-  if (limited) posix_spawnattr_destroy (&at);
+  posix_spawnattr_destroy (&at);
   close (inp[0]); close (outp[1]); close (errp[1]);
   if (k != 0) { close (inp[1]); close (outp[0]); close (errp[0]);
                 goto fail_slot; }
@@ -2236,7 +3834,7 @@ int m9_exec (const void *argblock, int nargs,
       if (open_in)  { pf[np].fd = inp[1];  pf[np].events = POLLOUT; ii = np++; }
       if (limited) {
         int64_t left = deadline - m9_mono_ms ();
-        tmo = left > 0 ? (int) left : 0;
+        tmo = left > INT_MAX ? INT_MAX : left > 0 ? (int) left : 0;   /* a limit past 2^31 ms wrapped (review2 R2) */
       }
       got = poll (pf, (nfds_t) np, tmo);
       if (got < 0) { if (errno == EINTR) continue; break; }
@@ -2252,9 +3850,9 @@ int m9_exec (const void *argblock, int nargs,
         break;
       }
       if (io >= 0 && (pf[io].revents & (POLLIN | POLLHUP | POLLERR)))
-        if (!m9_drain (outp[0], &sl->s[0], &sl->n[0], &cap[0])) open_out = 0;
+        if (!m9_drain (outp[0], &sl->s[0], &sl->n[0], &cap[0], &lost)) open_out = 0;
       if (ie >= 0 && (pf[ie].revents & (POLLIN | POLLHUP | POLLERR)))
-        if (!m9_drain (errp[0], &sl->s[1], &sl->n[1], &cap[1])) open_err = 0;
+        if (!m9_drain (errp[0], &sl->s[1], &sl->n[1], &cap[1], &lost)) open_err = 0;
       if (ii >= 0 && (pf[ii].revents & (POLLOUT | POLLERR | POLLHUP))) {
         int64_t want = inlen - sent;
         ssize_t wr;
@@ -2273,6 +3871,11 @@ int m9_exec (const void *argblock, int nargs,
   else if (WIFSIGNALED (st)) sl->status = -WTERMSIG (st);
   free (argv);
   if (envp != environ) free (envp);
+  if (lost) {
+    free (sl->s[0]); free (sl->s[1]);
+    m9_exec_drop (slot);
+    return -1;
+  }
   return slot;
 
 fail_slot:

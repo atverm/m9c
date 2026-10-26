@@ -2,17 +2,17 @@ REVIEW Lsp -- 18 procedures with a body, 13 of them functions; 0 headings in a D
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              13
-  assignments                                    72
-  arguments                                     183
+  assignments                                    70
+  arguments                                     188
   RETURN values                                  26
-  operands of a comparison or an operator        79
+  operands of a comparison or an operator        69
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                    10   ReadLine.pool, ReadBody.pool, Send.scratch, ItoA.pool, Cat.pool, UriPath.pool, +4 more
+  local pools                                     7   Send.scratch, ItoA.pool, Cat.pool, DiagJson.pool, Respond.pool, RenderIdS.pool, +1 more
   pool parameters                                 2   Check, Handle
   KEPT parameters                                 0
   HEAP named                                      3   Fill, (body), (body)
@@ -29,10 +29,14 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
   RAISE statements                                0
   handlers                                        6
-  NEW in the frame                                0
+  NEW in the frame                                1
   NEW in a named pool                             2
+  calls of a STR form with a UTF twin             3   Io.ErrLine -> Io.ErrLineUtf, Io.Env -> Io.EnvUtf, Io.ErrLine -> Io.ErrLineUtf
+  STR subscripts, writes and LEN                  1   len m9c

@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           3
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     4   writes or reads in Init, writes or reads in Update, reads in Update, writes or reads in Final
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        0
   NEW in the frame                                4
   NEW in a named pool                             0
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  6   index s[2 * i], write s[2 * i], index digits[v DIV 16], index s[2 * i + 1], write s[2 * i + 1], index digits[v MOD 16]

@@ -1,0 +1,27 @@
+#!/bin/sh
+# The C compiler tsan.sh hands m9c as $CC: ThreadSanitizer on every
+# compile and the link, as sancc does for ASan (2026-10-26, the third
+# review's concurrency advice: there was no race lane).  -flto and gcc's
+# --param are dropped -- clang takes neither, and TSan wants the code as
+# compiled, not merged.  TSANCC_REAL names the compiler: Apple clang on
+# macOS (Homebrew's gcc ships no TSan runtime there), cc elsewhere (gcc
+# and clang both have it on Linux).
+G=
+real=${TSANCC_REAL:-}
+if [ -z "$real" ]; then
+  case "$(uname -s)" in Darwin) real=/usr/bin/clang ;; *) real=cc ;; esac
+fi
+skip=0
+set --  "$@" --end--
+while [ "$1" != --end-- ]; do
+  a=$1 ; shift
+  if [ $skip = 1 ]; then skip=0 ; continue ; fi
+  case "$a" in
+    -flto|-flto=*) ;;
+    --param) skip=1 ;;
+    -c) G=-g ; set -- "$@" "$a" ;;
+    *) set -- "$@" "$a" ;;
+  esac
+done
+shift
+exec "$real" -fsanitize=thread -fno-omit-frame-pointer -O1 $G "$@"

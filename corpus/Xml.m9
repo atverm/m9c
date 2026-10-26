@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Xml ;
 
 (* XML 1.0 (fifth edition) with Namespaces 1.0: a pull reader, a small
@@ -190,13 +191,22 @@ BEGIN
 END IsNameChar ;
 
 PROCEDURE IsName (RO s: STR) : BOOL =
-VAR i : I64 ;
+  (* by FOR c IN s, over CHARACTERS: a name may hold letters past
+     ASCII, and under the UTF switch a subscript is an octet *)
+VAR
+  c : CHAR ;
+  first : BOOL ;
 BEGIN
-  IF LEN (s) = 0 OR NOT IsNameStart (ORD (s[0])) THEN RETURN FALSE END ;
-  FOR i := 1 TO LEN (s) - 1 DO
-    IF NOT IsNameChar (ORD (s[i])) THEN RETURN FALSE END
+  first := TRUE ;
+  FOR c IN s DO
+    IF first THEN
+      IF NOT IsNameStart (ORD (c)) THEN RETURN FALSE END
+    ELSIF NOT IsNameChar (ORD (c)) THEN
+      RETURN FALSE
+    END ;
+    first := FALSE
   END ;
-  RETURN TRUE
+  RETURN NOT first
 END IsName ;
 
 (* ---- the reader's position ---------------------------------------- *)

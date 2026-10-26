@@ -10,8 +10,11 @@ from 7 and operators from 200.  Codes are identifiers, not
 positions in a sorted list: a new keyword APPENDS at the next
 free code rather than renumbering its alphabetical neighbours.
 Errors are tokens carrying their message; lexing continues.
-STATEFUL for one small truth: the unexpected-character message
-is composed in a module buffer.
+STATEFUL for the comment side channel's list (Collect, below); the
+unexpected-character message was the other reason, a module buffer
+until 2026-10-23.  The source is UTF-8 (step 4 of
+docs/utf8-stage3-plan.md): Init takes a STR and encodes it, InitUtf
+takes the octets as they are.
 
 ### TYPE Token
 
@@ -31,8 +34,15 @@ _(undocumented)_
 
 ### Init (VAR lx: Lexer ; RO src: STR)
 
-the lexer keeps the source slice; keep it alive while lexing --
-the Json.Parse contract again
+**Deprecated** (the UTF transition): InitUtf is its UTF form.
+
+src encoded into the lexer's own pool: the STR form, for a caller
+that has not moved to UTF; Lex.Init (lx, u) with a UTF is InitUtf
+
+### InitUtf (VAR lx: Lexer ; RO src: UTF)
+
+the lexer keeps the source; keep it alive while lexing -- the
+Json.Parse contract again.  Nothing is copied
 
 ### Next (VAR lx: Lexer ; VAR t: Token)
 

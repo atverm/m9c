@@ -1,0 +1,22 @@
+MODULE R2N14 ;
+(* a slice of a local ARRAY stored through a VAR record parameter *)
+IMPORT Io, Fmt ;
+TYPE Box = RECORD s : SLICE OF I64 END ;
+PROCEDURE Fill (VAR b: Box) =
+VAR a : ARRAY 4 OF I64 ; i : I64 ;
+BEGIN
+  FOR i := 0 TO 3 DO a[i] := 41 END ;
+  b.s := SLICE (a, 0, 4)
+END Fill ;
+PROCEDURE Churn () =
+VAR c : ARRAY 64 OF I64 ; i : I64 ;
+BEGIN
+  FOR i := 0 TO 63 DO c[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (c[3]))
+END Churn ;
+VAR bx : Box ;
+BEGIN
+  Fill (bx) ;
+  Churn () ;
+  Io.WriteLine (Fmt.I64Str (bx.s[0]))
+END R2N14.

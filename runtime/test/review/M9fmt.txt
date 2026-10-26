@@ -1,11 +1,11 @@
-REVIEW M9fmt -- 8 procedures with a body, 2 of them functions; 0 headings in a DEFINITION
+REVIEW M9fmt -- 9 procedures with a body, 3 of them functions; 0 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path               2
-  assignments                                    80
-  arguments                                     140
-  RETURN values                                   2
-  operands of a comparison or an operator        93
+  functions answering on every path               3
+  assignments                                    81
+  arguments                                     153
+  RETURN values                                   3
+  operands of a comparison or an operator        91
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -15,13 +15,13 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   local pools                                     0
   pool parameters                                 0
   KEPT parameters                                 0
-  HEAP named                                      5   ErrPos, (body), (body), (body), (body)
+  HEAP named                                      5   ErrPos, ErrPos, (body), (body), (body)
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
   [SHARABLE] records                              0
-  module variables                                8   path, src, out, bp, write, check, +2 more
+  module variables                                8   path, bp, src, out, write, check, +2 more
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        3
   NEW in the frame                                0
   NEW in a named pool                            12
+  calls of a STR form with a UTF twin             8   Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, +2 more
+  STR subscripts, writes and LEN                  0

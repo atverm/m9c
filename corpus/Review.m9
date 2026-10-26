@@ -27,16 +27,17 @@ TYPE
      unknown.  The caller fills these from the checker; this module
      does not import it, and stays a client of the tree alone. *)
   Stat = RECORD
-    name : STR ;
+    name : UTF ;
     checked, skipped : I64 ;
-    lines : STR ;                (* where the first passed-over sites
+    lines : UTF ;                (* where the first passed-over sites
                                     stand, as text: `12, 40, 41, ...';
                                     empty when nothing was passed over *)
   END ;
 
-PROCEDURE Page (root: PTR Ast.Node ; RO modName: STR ;
+PROCEDURE Page (root: PTR Ast.Node ; RO modName: UTF ;
                 checked: BOOL ; RO stats: SLICE OF Stat ;
-                RO writes: SLICE OF STR) : STR ;
+                RO writes: SLICE OF UTF ; RO stale: SLICE OF UTF ;
+                RO strs: SLICE OF UTF ; RO adrs: SLICE OF UTF) : UTF ;
   (* the review page for one parsed file.
 
        root    -- the NFile node Parse.File answered.
@@ -58,6 +59,18 @@ PROCEDURE Page (root: PTR Ast.Node ; RO modName: STR ;
                   join, so whether two threads meet there is the
                   reviewer's to read (report par 6).  Empty from a
                   caller that ran no checker.
+       stale   -- the calls of a STR procedure whose module declares a
+                  UTF twin (Sem.StaleCall), each `LINE Mod.P ->
+                  Mod.PUtf', printed under COUNTED: the deprecated
+                  forms of the UTF transition a module still uses, the
+                  edits it owes (docs/utf8-plan.md).  Empty from a
+                  caller that ran no checker.
+       strs    -- the uses of a STR that the UTF-8 switch refuses
+                  (Sem.StrSite): a subscript, a write through one, a
+                  LEN, each `LINE KIND what', printed under COUNTED --
+                  the edits the switch will ask of the module, by name,
+                  before it comes (docs/utf8-stage4-plan.md, 4b).  Empty
+                  from a caller that ran no checker.
 
      Four sections: PROVED (or, unchecked, the functions that can
      reach their END without answering, named from the tree alone),
@@ -72,7 +85,7 @@ END Review.
 
 IMPLEMENTATION MODULE Review ;
 
-IMPORT DynStr ;
+IMPORT DynUtf ;
 IMPORT Text ;
 
 CONST
@@ -95,24 +108,24 @@ TYPE
 
 (* ---- the site log: one line per place, tagged by what it is ---- *)
 
-PROCEDURE Site (VAR log: PTR DynStr.DString ; tag: CHAR ; line: I64 ;
-                RO what: STR) =
+PROCEDURE Site (VAR log: PTR DynUtf.DString ; tag: CHAR ; line: I64 ;
+                RO what: UTF) =
 BEGIN
-  DynStr.AppendChar (log, tag) ;
-  DynStr.AppendChar (log, ' ') ;
-  DynStr.AppendI64 (log, line) ;
-  IF LEN (what) > 0 THEN
-    DynStr.AppendChar (log, ' ') ;
-    DynStr.Append (log, what)
+  DynUtf.AppendChar (log, tag) ;
+  DynUtf.AppendChar (log, ' ') ;
+  DynUtf.AppendI64 (log, line) ;
+  IF Text.BLen (what) > 0 THEN
+    DynUtf.AppendChar (log, ' ') ;
+    DynUtf.Append (log, what)
   END ;
-  DynStr.AppendChar (log, 0AC)
+  DynUtf.AppendChar (log, 0AC)
 END Site ;
 
 PROCEDURE IsPool (k: Ast.Kid) : BOOL =
 BEGIN
   IF k IS SOME t THEN
-    RETURN t.kind = Ast.NQualident AND DynStr.Eq (t.a, 'POOL')
-           AND LEN (t.b) = 0
+    RETURN t.kind = Ast.NQualident AND Text.Eq (t.au, 'POOL')
+           AND Text.BLen (t.bu) = 0
   END ;
   RETURN FALSE
 END IsPool ;
@@ -132,11 +145,11 @@ END IsPool ;
 
 CONST
   Predeclared = ['I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64',
-                 'F32', 'F64', 'BYTE', 'BOOL', 'CHAR', 'STR'] ;
+                 'F32', 'F64', 'BYTE', 'BOOL', 'CHAR', 'STR', 'UTF'] ;
 
 (* does a unit of the file declare the type `name' -- or, when
    module, import the module `name'? *)
-PROCEDURE Declares (root: PTR Ast.Node ; RO name: STR ; module: BOOL) : BOOL =
+PROCEDURE Declares (root: PTR Ast.Node ; RO name: UTF ; module: BOOL) : BOOL =
 VAR i, j, k : I64 ;
 BEGIN
   FOR i := 0 TO root.nkids - 1 DO
@@ -147,14 +160,14 @@ BEGIN
             IF sec.kids[0] IS SOME ids THEN
               FOR k := 0 TO ids.nkids - 1 DO
                 IF ids.kids[k] IS SOME id THEN
-                  IF DynStr.Eq (id.a, name) THEN RETURN TRUE END
+                  IF Text.Eq (id.au, name) THEN RETURN TRUE END
                 END
               END
             END
           ELSIF NOT module AND sec.kind = Ast.NTypeSection THEN
             FOR k := 0 TO sec.nkids - 1 DO
               IF sec.kids[k] IS SOME td THEN
-                IF DynStr.Eq (td.a, name) THEN RETURN TRUE END
+                IF Text.Eq (td.au, name) THEN RETURN TRUE END
               END
             END
           END
@@ -168,12 +181,13 @@ END Declares ;
 PROCEDURE NamesType (root: PTR Ast.Node ; d: PTR Ast.Node) : BOOL =
 BEGIN
   IF d.nkids = 0 THEN
-    RETURN Text.OneOf (d.a, Predeclared) OR Declares (root, d.a, FALSE)
+    (* the table is STR until the switch: the one STR read left here *)
+    RETURN Text.OneOf (STR (d.au), Predeclared) OR Declares (root, d.au, FALSE)
   END ;
   IF d.nkids = 1 THEN
     IF d.kids[0] IS SOME sel THEN
       IF sel.kind = Ast.NSelField THEN
-        RETURN DynStr.Eq (d.a, 'C') OR Declares (root, d.a, TRUE)
+        RETURN Text.Eq (d.au, 'C') OR Declares (root, d.au, TRUE)
       END
     END
   END ;
@@ -270,8 +284,8 @@ END EndsSeq ;
 
 (* ---- the walk over statements and expressions ---- *)
 
-PROCEDURE Walk (VAR c: Counts ; VAR log: PTR DynStr.DString ;
-                root: PTR Ast.Node ; k: Ast.Kid ; RO proc: STR) =
+PROCEDURE Walk (VAR c: Counts ; VAR log: PTR DynUtf.DString ;
+                root: PTR Ast.Node ; k: Ast.Kid ; RO proc: UTF) =
 VAR i : I64 ;
 BEGIN
   IF k IS SOME n THEN
@@ -293,7 +307,7 @@ BEGIN
         Site (log, 'T', n.line, proc)
     | Ast.NNewExpr :
         IF n.kids[0] IS SOME p THEN
-          IF DynStr.Eq (p.a, 'OWN') THEN
+          IF Text.Eq (p.au, 'OWN') THEN
             c.newOwn := c.newOwn + 1 ;
             Site (log, 'O', n.line, proc)
           ELSIF NamesType (root, p) THEN
@@ -305,7 +319,7 @@ BEGIN
           c.newFrame := c.newFrame + 1
         END
     | Ast.NDesignator :
-        IF DynStr.Eq (n.a, 'HEAP') THEN
+        IF Text.Eq (n.au, 'HEAP') THEN
           c.heap := c.heap + 1 ;
           Site (log, 'H', n.line, proc)
         END
@@ -317,8 +331,8 @@ END Walk ;
 
 (* ---- declarations ---- *)
 
-PROCEDURE Vars (VAR c: Counts ; VAR log: PTR DynStr.DString ;
-                sec: PTR Ast.Node ; RO proc: STR ; atModule: BOOL) =
+PROCEDURE Vars (VAR c: Counts ; VAR log: PTR DynUtf.DString ;
+                sec: PTR Ast.Node ; RO proc: UTF ; atModule: BOOL) =
 VAR i, j : I64 ;
 BEGIN
   FOR i := 0 TO sec.nkids - 1 DO
@@ -329,14 +343,14 @@ BEGIN
             IF IsPool (vd.kids[1]) THEN
               IF atModule THEN
                 c.modPools := c.modPools + 1 ;
-                Site (log, 'M', vd.line, id.a)
+                Site (log, 'M', vd.line, id.au)
               ELSE
                 c.localPools := c.localPools + 1 ;
-                Site (log, 'L', vd.line, proc + '.' + id.a)
+                Site (log, 'L', vd.line, proc + '.' + id.au)
               END
             ELSIF atModule THEN
               c.modVars := c.modVars + 1 ;
-              Site (log, 'V', vd.line, id.a)
+              Site (log, 'V', vd.line, id.au)
             END
           END
         END
@@ -345,8 +359,8 @@ BEGIN
   END
 END Vars ;
 
-PROCEDURE Params (VAR c: Counts ; VAR log: PTR DynStr.DString ;
-                  k: Ast.Kid ; RO proc: STR) =
+PROCEDURE Params (VAR c: Counts ; VAR log: PTR DynUtf.DString ;
+                  k: Ast.Kid ; RO proc: UTF) =
 VAR
   i, n : I64 ;
 BEGIN
@@ -368,7 +382,7 @@ BEGIN
   END
 END Params ;
 
-PROCEDURE Proc (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+PROCEDURE Proc (VAR c: Counts ; VAR log: PTR DynUtf.DString ;
                 root: PTR Ast.Node ; p: PTR Ast.Node ; foreignUnit: BOOL) =
 VAR
   i : I64 ;
@@ -381,8 +395,8 @@ BEGIN
   IF foreignUnit THEN
     c.foreign := c.foreign + 1 ;
     IF p.kids[3] IS SOME at THEN
-      IF DynStr.Eq (at.a, 'SERIAL') THEN c.serial := c.serial + 1
-      ELSIF DynStr.Eq (at.a, 'REENTRANT') THEN c.reentrant := c.reentrant + 1
+      IF Text.Eq (at.au, 'SERIAL') THEN c.serial := c.serial + 1
+      ELSIF Text.Eq (at.au, 'REENTRANT') THEN c.reentrant := c.reentrant + 1
       END
     END ;
     RETURN
@@ -395,20 +409,20 @@ BEGIN
   END ;
   c.procs := c.procs + 1 ;
   IF isFunc THEN c.funcs := c.funcs + 1 END ;
-  Params (c, log, p.kids[0], p.a) ;
+  Params (c, log, p.kids[0], p.au) ;
   IF p.kids[4] IS SOME body THEN
     FOR i := 0 TO body.nkids - 2 DO
       IF body.kids[i] IS SOME dc THEN
-        IF dc.kind = Ast.NVarSection THEN Vars (c, log, dc, p.a, FALSE) END
+        IF dc.kind = Ast.NVarSection THEN Vars (c, log, dc, p.au, FALSE) END
       END
     END ;
     IF body.nkids > 0 THEN
-      Walk (c, log, root, body.kids[body.nkids - 1], p.a) ;
+      Walk (c, log, root, body.kids[body.nkids - 1], p.au) ;
       IF isFunc THEN
         IF body.kids[body.nkids - 1] IS SOME blk THEN
           IF NOT EndsStmt (blk) THEN
             c.fallOff := c.fallOff + 1 ;
-            Site (log, 'F', p.line, p.a)
+            Site (log, 'F', p.line, p.au)
           END
         END
       END
@@ -418,7 +432,7 @@ END Proc ;
 
 (* a RECORD marked [SHARABLE]: its author's claim that threads sharing
    it write disjoint parts (report par 6), which no checker proves *)
-PROCEDURE Sharable (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+PROCEDURE Sharable (VAR c: Counts ; VAR log: PTR DynUtf.DString ;
                     sec: PTR Ast.Node) =
 VAR i : I64 ;
 BEGIN
@@ -427,9 +441,9 @@ BEGIN
       IF td.kids[0] IS SOME body THEN
         IF body.kind = Ast.NRecordType AND body.nkids > 2 THEN
           IF body.kids[2] IS SOME at THEN
-            IF Text.Eq (at.a, 'SHARABLE') THEN
+            IF Text.Eq (at.au, 'SHARABLE') THEN
               c.sharable := c.sharable + 1 ;
-              Site (log, 'R', td.line, td.a)
+              Site (log, 'R', td.line, td.au)
             END
           END
         END
@@ -438,25 +452,25 @@ BEGIN
   END
 END Sharable ;
 
-PROCEDURE Unit (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+PROCEDURE Unit (VAR c: Counts ; VAR log: PTR DynUtf.DString ;
                 root: PTR Ast.Node ; u: PTR Ast.Node) =
 VAR
   i : I64 ;
   foreignUnit : BOOL ;
 BEGIN
-  foreignUnit := u.kind = Ast.NDefinition AND LEN (u.b) > 0 ;
+  foreignUnit := u.kind = Ast.NDefinition AND Text.BLen (u.bu) > 0 ;
   IF u.kind = Ast.NDefinition THEN c.defs := c.defs + 1
   ELSIF u.kind = Ast.NImplementation THEN c.impls := c.impls + 1
   ELSE c.progs := c.progs + 1 END ;
   IF u.f1 THEN
     c.unsafeUnits := c.unsafeUnits + 1 ;
-    Site (log, 'U', u.line, u.a)
+    Site (log, 'U', u.line, u.au)
   END ;
   IF u.f2 THEN c.statefulUnits := c.statefulUnits + 1 END ;
   FOR i := 0 TO u.nkids - 1 DO
     IF u.kids[i] IS SOME kd THEN
       IF kd.kind = Ast.NVarSection THEN
-        Vars (c, log, kd, u.a, TRUE)
+        Vars (c, log, kd, u.au, TRUE)
       ELSIF kd.kind = Ast.NProcDecl THEN
         Proc (c, log, root, kd, foreignUnit)
       ELSIF kd.kind = Ast.NTypeSection THEN
@@ -470,10 +484,10 @@ END Unit ;
 
 (* ---- the page ---- *)
 
-PROCEDURE Spaces (VAR d: PTR DynStr.DString ; n: I64) =
+PROCEDURE Spaces (VAR d: PTR DynUtf.DString ; n: I64) =
 VAR i : I64 ;
 BEGIN
-  FOR i := 1 TO n DO DynStr.AppendChar (d, ' ') END
+  FOR i := 1 TO n DO DynUtf.AppendChar (d, ' ') END
 END Spaces ;
 
 PROCEDURE Digits (n: I64) : I64 =
@@ -488,82 +502,83 @@ BEGIN
   RETURN k
 END Digits ;
 
-PROCEDURE Row (VAR d: PTR DynStr.DString ; RO lines: SLICE OF STR ;
-               RO label: STR ; n: I64 ; tag: CHAR) =
+PROCEDURE Row (VAR d: PTR DynUtf.DString ; RO lines: SLICE OF UTF ;
+               RO label: UTF ; n: I64 ; tag: CHAR) =
   (* `  label ......... n   line what, line what, +k more` -- the
      sites are the lines of the log that carry this row's tag; a tag
      of ' ' is a row with no sites *)
 VAR
   i, shown, total : I64 ;
-  ln : STR ;
+  ln : UTF ;
 BEGIN
   Spaces (d, 2) ;
-  DynStr.Append (d, label) ;
-  Spaces (d, LabelWidth - LEN (label) + 5 - Digits (n)) ;
-  DynStr.AppendI64 (d, n) ;
+  DynUtf.Append (d, label) ;
+  Spaces (d, LabelWidth - Text.CpCount (label) + 5 - Digits (n)) ;
+  DynUtf.AppendI64 (d, n) ;
   IF tag # ' ' THEN
     shown := 0 ;
     total := 0 ;
     FOR i := 0 TO LEN (lines) - 1 DO
       ln := lines[i] ;
-      IF LEN (ln) > 2 THEN
-        IF ln[0] = tag THEN
+      IF Text.BLen (ln) > 2 THEN
+        IF Text.CpAt (ln, 0) = tag THEN
           total := total + 1 ;
           IF shown < MaxSites THEN
-            IF shown = 0 THEN Spaces (d, 3) ELSE DynStr.Append (d, ', ') END ;
-            DynStr.Append (d, SLICE (ln, 2, LEN (ln) - 2)) ;
+            IF shown = 0 THEN Spaces (d, 3) ELSE DynUtf.Append (d, ', ') END ;
+            DynUtf.Append (d, SLICE (ln, 2, Text.BLen (ln) - 2)) ;
             shown := shown + 1
           END
         END
       END
     END ;
     IF total > shown THEN
-      DynStr.Append (d, ', +') ;
-      DynStr.AppendI64 (d, total - shown) ;
-      DynStr.Append (d, ' more')
+      DynUtf.Append (d, ', +') ;
+      DynUtf.AppendI64 (d, total - shown) ;
+      DynUtf.Append (d, ' more')
     END
   END ;
-  DynStr.AppendChar (d, 0AC)
+  DynUtf.AppendChar (d, 0AC)
 END Row ;
 
-PROCEDURE Head (VAR d: PTR DynStr.DString ; RO s: STR) =
+PROCEDURE Head (VAR d: PTR DynUtf.DString ; RO s: UTF) =
 BEGIN
-  DynStr.AppendChar (d, 0AC) ;
-  DynStr.Append (d, s) ;
-  DynStr.AppendChar (d, 0AC)
+  DynUtf.AppendChar (d, 0AC) ;
+  DynUtf.Append (d, s) ;
+  DynUtf.AppendChar (d, 0AC)
 END Head ;
 
-PROCEDURE StatRow (VAR d: PTR DynStr.DString ; RO label: STR ;
-                   checked, skipped: I64 ; RO lines: STR) =
+PROCEDURE StatRow (VAR d: PTR DynUtf.DString ; RO label: UTF ;
+                   checked, skipped: I64 ; RO lines: UTF) =
   (* `  label ......... n   passed over, a type unknown: k -- line 12, 40`
      -- the second number and its lines are printed only when it is
      not zero, so that the eye lands on the rows that have one *)
 BEGIN
   Spaces (d, 2) ;
-  DynStr.Append (d, label) ;
-  Spaces (d, LabelWidth - LEN (label) + 5 - Digits (checked)) ;
-  DynStr.AppendI64 (d, checked) ;
+  DynUtf.Append (d, label) ;
+  Spaces (d, LabelWidth - Text.BLen (label) + 5 - Digits (checked)) ;
+  DynUtf.AppendI64 (d, checked) ;
   IF skipped > 0 THEN
-    DynStr.Append (d, '   passed over, a type unknown: ') ;
-    DynStr.AppendI64 (d, skipped) ;
-    IF LEN (lines) > 0 THEN
-      DynStr.Append (d, ' -- line ') ;
-      DynStr.Append (d, lines)
+    DynUtf.Append (d, '   passed over, a type unknown: ') ;
+    DynUtf.AppendI64 (d, skipped) ;
+    IF Text.BLen (lines) > 0 THEN
+      DynUtf.Append (d, ' -- line ') ;
+      DynUtf.Append (d, lines)
     END
   END ;
-  DynStr.AppendChar (d, 0AC)
+  DynUtf.AppendChar (d, 0AC)
 END StatRow ;
 
-PROCEDURE Page (root: PTR Ast.Node ; RO modName: STR ;
+PROCEDURE Page (root: PTR Ast.Node ; RO modName: UTF ;
                 checked: BOOL ; RO stats: SLICE OF Stat ;
-                RO writes: SLICE OF STR) : STR =
+                RO writes: SLICE OF UTF ; RO stale: SLICE OF UTF ;
+                RO strs: SLICE OF UTF ; RO adrs: SLICE OF UTF) : UTF =
 VAR
   scratch : POOL ;
-  d : PTR DynStr.DString IN scratch ;
-  log : PTR DynStr.DString IN scratch ;
+  d : PTR DynUtf.DString IN scratch ;
+  log : PTR DynUtf.DString IN scratch ;
   c : Counts ;
-  lines, wl : SLICE OF STR ;
-  i : I64 ;
+  lines, wl, sl : SLICE OF UTF ;
+  i, nd : I64 ;
 BEGIN
   c.procs := 0 ; c.funcs := 0 ; c.exported := 0 ; c.fallOff := 0 ;
   c.modPools := 0 ; c.localPools := 0 ; c.poolParams := 0 ;
@@ -573,23 +588,23 @@ BEGIN
   c.foreign := 0 ; c.serial := 0 ; c.reentrant := 0 ;
   c.cases := 0 ; c.raises := 0 ; c.handlers := 0 ;
   c.defs := 0 ; c.impls := 0 ; c.progs := 0 ;
-  d := DynStr.New (scratch) ;
-  log := DynStr.New (scratch) ;
+  d := DynUtf.New (scratch) ;
+  log := DynUtf.New (scratch) ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN Unit (c, log, root, u) END
   END ;
-  lines := Text.Split (DynStr.View (log), 0AC) ;
+  lines := Text.Split (DynUtf.View (log), 0AC) ;
 
-  DynStr.Append (d, 'REVIEW ') ;
-  DynStr.Append (d, modName) ;
-  DynStr.Append (d, ' -- ') ;
-  DynStr.AppendI64 (d, c.procs) ;
-  DynStr.Append (d, ' procedures with a body, ') ;
-  DynStr.AppendI64 (d, c.funcs) ;
-  DynStr.Append (d, ' of them functions; ') ;
-  DynStr.AppendI64 (d, c.exported) ;
-  DynStr.Append (d, ' headings in a DEFINITION') ;
-  DynStr.AppendChar (d, 0AC) ;
+  DynUtf.Append (d, 'REVIEW ') ;
+  DynUtf.Append (d, modName) ;
+  DynUtf.Append (d, ' -- ') ;
+  DynUtf.AppendI64 (d, c.procs) ;
+  DynUtf.Append (d, ' procedures with a body, ') ;
+  DynUtf.AppendI64 (d, c.funcs) ;
+  DynUtf.Append (d, ' of them functions; ') ;
+  DynUtf.AppendI64 (d, c.exported) ;
+  DynUtf.Append (d, ' headings in a DEFINITION') ;
+  DynUtf.AppendChar (d, 0AC) ;
 
   IF checked THEN
     (* the checker accepted the file, and this rule needs no type,
@@ -627,9 +642,24 @@ BEGIN
   Row (d, lines, 'foreign procedures', c.foreign, ' ') ;
   Row (d, lines, '  of them [SERIAL]', c.serial, ' ') ;
   Row (d, lines, '  of them [REENTRANT]', c.reentrant, ' ') ;
-  wl := NEW (STR, LEN (writes)) ;
+  wl := NEW (UTF, LEN (writes)) ;
   FOR i := 0 TO LEN (writes) - 1 DO wl[i] := 'W ' + writes[i] END ;
   Row (d, wl, 'THREADs writing STATEFUL state', LEN (writes), 'W') ;
+  wl := NEW (UTF, LEN (adrs)) ;
+  FOR i := 0 TO LEN (adrs) - 1 DO wl[i] := 'A ' + adrs[i] END ;
+  Row (d, wl, 'ADR sites (C reading or writing M9 storage)', LEN (adrs), 'A') ;
+  (* the kind that matters most: C writing a reference no assignment
+     shows, allowed only under a stated [FRESH] *)
+  nd := 0 ;
+  FOR i := 0 TO LEN (adrs) - 1 DO
+    IF Text.Contains (adrs[i], 'descriptor') THEN nd := nd + 1 END
+  END ;
+  sl := NEW (UTF, nd) ;
+  nd := 0 ;
+  FOR i := 0 TO LEN (adrs) - 1 DO
+    IF Text.Contains (adrs[i], 'descriptor') THEN sl[nd] := 'D ' + adrs[i] ; nd := nd + 1 END
+  END ;
+  Row (d, sl, '  of them filling a descriptor ([FRESH])', nd, 'D') ;
 
   Head (d, 'COUNTED -- how much there was to check') ;
   Row (d, lines, 'CASE statements', c.cases, ' ') ;
@@ -637,7 +667,13 @@ BEGIN
   Row (d, lines, 'handlers', c.handlers, ' ') ;
   Row (d, lines, 'NEW in the frame', c.newFrame, ' ') ;
   Row (d, lines, 'NEW in a named pool', c.newPool, ' ') ;
-  RETURN DynStr.View (d)
+  sl := NEW (UTF, LEN (stale)) ;
+  FOR i := 0 TO LEN (stale) - 1 DO sl[i] := 'X ' + stale[i] END ;
+  Row (d, sl, 'calls of a STR form with a UTF twin', LEN (stale), 'X') ;
+  sl := NEW (UTF, LEN (strs)) ;
+  FOR i := 0 TO LEN (strs) - 1 DO sl[i] := 'B ' + strs[i] END ;
+  Row (d, sl, 'STR subscripts, writes and LEN', LEN (strs), 'B') ;
+  RETURN DynUtf.View (d)
 END Page ;
 
 END Review.

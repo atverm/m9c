@@ -1,0 +1,31 @@
+(* the compiler review of 2026-10-21, checker repro A1b (docs/review-2026-10-21/checker): held by regions.sh *)
+MODULE A1b ;
+IMPORT Io, Fmt ;
+TYPE R = RECORD v : I64 ; s : STR END ;
+TYPE Maker = PROCEDURE (v: I64) : PTR R ;
+VAR saved : PTR R ;
+VAR mk : OPT Maker ;
+PROCEDURE Make (v: I64) : PTR R =
+VAR p : PTR R ;
+BEGIN
+  p := NEW (R) ;
+  p.v := v ;
+  p.s := 'value ' + Fmt.I64Str (v) ;
+  RETURN p
+END Make ;
+PROCEDURE Keep () =
+BEGIN
+  IF mk IS SOME m THEN saved := m (3) END
+END Keep ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  mk := SOME (Make) ;
+  Keep () ;
+  Churn () ;
+  Io.WriteLine (Fmt.I64Str (saved.v) + " len " + Fmt.I64Str (LEN (saved.s)))
+END A1b.

@@ -1,0 +1,44 @@
+--- JsonUtf.m9
++++ JsonUtf.m9
+@@ -618,17 +618,22 @@
+ (* Json.DecodeStr over the decoded characters of t *)
+ PROCEDURE DecodeChars (RO t: STR) : STR
+   RAISES TypeMismatch, ValueRange =
++  (* the characters between escapes go over as RUNS, SLICE (t, from,
++     i - from), whose ends are at a backslash or after an escape --
++     ASCII, so a character boundary; an octet appended as a character
++     would encode a character past ASCII twice *)
+ VAR
+   scratch : POOL ;
+   d : PTR DynStr.DString IN scratch ;
+-  i, v, lo : I64 ;
++  i, v, lo, from : I64 ;
+   ch : CHAR ;
+ BEGIN
+   d := DynStr.New (scratch) ;
+   i := 0 ;
++  from := 0 ;
+   WHILE i < Text.BLen (t) DO
+-    ch := Text.BChar (t, i) ;
+-    IF ORD (ch) = 92 THEN
++    IF I64 (Text.BAt (t, i)) = 92 THEN
++      DynStr.Append (d, SLICE (t, from, i - from)) ;
+       IF i + 1 >= Text.BLen (t) THEN RAISE TypeMismatch ('escape at end of string') END ;
+       ch := Text.BChar (t, i + 1) ;
+       i := i + 2 ;
+@@ -658,12 +663,13 @@
+         DynStr.AppendChar (d, CHR (v))
+       ELSE
+         RAISE TypeMismatch ('unknown escape in string')
+-      END
++      END ;
++      from := i
+     ELSE
+-      DynStr.AppendChar (d, ch) ;
+       i := i + 1
+     END
+   END ;
++  DynStr.Append (d, SLICE (t, from, i - from)) ;
+   RETURN DynStr.View (d)
+ END DecodeChars ;
+ 

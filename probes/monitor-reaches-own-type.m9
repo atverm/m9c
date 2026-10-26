@@ -1,0 +1,42 @@
+(* EXPECT: a call of Helper may enter a monitor of the type this procedure is bound to and holds the lock of *)
+MODULE m ;
+(* a bound procedure holds its monitor's lock, which is not recursive:
+   reaching a procedure bound to a monitor of the SAME TYPE -- through
+   an unbound helper, or on another variable of the type -- waits for
+   ever when it is the same monitor and can deadlock two threads when it
+   is another (the reviews' S11: N30, N30b hung).  Legal forms first: a
+   helper that enters no monitor, and a bound procedure of another
+   monitor TYPE. *)
+TYPE
+  Gate = MONITOR RECORD n : I64 END ;
+  Lamp = MONITOR RECORD on : BOOL END ;
+VAR
+  g : Gate ;
+  l : Lamp ;
+PROCEDURE Twice (v: I64) : I64 =
+BEGIN
+  RETURN 2 * v
+END Twice ;
+PROCEDURE Lit (VAR x: Lamp) : BOOL =
+BEGIN
+  RETURN x.on
+END Lit ;
+PROCEDURE Same (VAR h: Gate ; k: I64) : BOOL =
+BEGIN
+  RETURN h.n = k
+END Same ;
+PROCEDURE Helper () : BOOL =
+BEGIN
+  RETURN Same (g, 3)
+END Helper ;
+PROCEDURE Fine (VAR h: Gate) : BOOL =
+BEGIN
+  h.n := Twice (h.n) ;
+  RETURN Lit (l)
+END Fine ;
+PROCEDURE Bad (VAR h: Gate) : BOOL =
+BEGIN
+  h.n := h.n + 1 ;
+  RETURN Helper ()
+END Bad ;
+END m.

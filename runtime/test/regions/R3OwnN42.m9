@@ -1,0 +1,29 @@
+MODULE R3OwnN42 ;
+(* an owned pointer lent to a KEPT parameter that keeps it in module state, then disposed *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 END ;
+VAR g : OPT PTR Store ;
+PROCEDURE Keep (KEPT p: PTR Store) =
+BEGIN
+  g := SOME (p)
+END Keep ;
+PROCEDURE Go () =
+VAR o : PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  o.n := 41 ;
+  Keep (o) ;
+  DISPOSE (o)
+END Go ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN
+  xs := NEW (I64, 100) ;
+  FOR i := 0 TO 99 DO xs[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (xs[5]))
+END Churn ;
+BEGIN
+  Go () ;
+  Churn () ;
+  IF g IS SOME r THEN Io.WriteLine (Fmt.I64Str (r.n)) END
+END R3OwnN42.

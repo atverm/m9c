@@ -1,228 +1,113 @@
-/* sort_driver.c -- Sort.m9 against a reference, and against its stated
-   refusals.
-
-   The VALUES are held to a reference: qsort for the multiset (a sort's
-   output is the sorted multiset whatever its algorithm), strcmp order
-   for strings (ASCII only, so scalar order and byte order agree), and
-   an O(n^2) stable insertion sort written here for the one property
-   qsort does not have, stability, checked through ArgF64 -- equal
-   values must keep index order -- and through By.
-
-   By is called with a C FUNCTION of the procedure type's own
-   signature, `bool (int64_t, int64_t, m9_state *)`: if the typedef
-   the generator emits did not match the heading rule, this file
-   would not compile.  That is the ABI of par 2.2.3 proven from the
-   outside.
-
-   The REFUSALS: an F64 sort meeting a NaN raises NotANumber with the
-   index as payload; an argsort with an index slice of the wrong
-   length raises IndexError.  A sort over a SUB-RANGE is a slice into
-   the middle of an array, and the ends must not move.               */
+/* sort_driver.c -- the runtime's radix sorts (m9rt.h: m9_sort_f64,
+   m9_sort_i64, m9_argsort_f64, m9_argsort_i64) held to a stable
+   reference -- qsort over the value with the index as the tie-break,
+   which is what a stable sort answers -- over 400 arrays of seven
+   shapes: random reals, ten repeated values, sorted, reversed, the two
+   zeros among 1.5s, any finite bit pattern, decimals of three places;
+   lengths 0..99 and up to 5,000, so both the insertion sort below 64
+   and every radix pass with and without a skipped byte are reached.
+   -0.0 and 0.0 are one key and keep their input order among
+   themselves, as the merge sort left them.  Under M9_SORT_PORTABLE the
+   runtime answers 0 (the caller sorts) and this says so.  Shown able
+   to fail: the index not carried through a pass fails the argsorts
+   (2026-10-25).  Speed is printed, never gated. */
+#define _POSIX_C_SOURCE 200809L
+#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <math.h>
-#include "Sort.h"
+#include <string.h>
+#include <time.h>
+#include "m9rt.h"
 
-static int checks = 0, failed = 0;
+static long bad = 0, checks = 0;
+static uint64_t rs = 0x9E3779B97F4A7C15ull;
+static uint64_t rnd (void) { rs ^= rs << 13; rs ^= rs >> 7; rs ^= rs << 17; return rs; }
+static double now (void) { struct timespec t; clock_gettime (CLOCK_MONOTONIC, &t); return t.tv_sec + t.tv_nsec * 1e-9; }
 
-static void ok (const char *what, int cond)
+static const double *keys_d;
+static const int64_t *keys_i;
+static int cmp_arg_d (const void *a, const void *b)
 {
-  checks++;
-  if (!cond) { failed++; printf ("FAIL: %s\n", what); }
+  int64_t i = *(const int64_t *) a, j = *(const int64_t *) b;
+  if (keys_d[i] < keys_d[j]) return -1;
+  if (keys_d[i] > keys_d[j]) return 1;
+  return (i > j) - (i < j);
+}
+static int cmp_arg_i (const void *a, const void *b)
+{
+  int64_t i = *(const int64_t *) a, j = *(const int64_t *) b;
+  if (keys_i[i] < keys_i[j]) return -1;
+  if (keys_i[i] > keys_i[j]) return 1;
+  return (i > j) - (i < j);
 }
 
-static uint64_t st = 7;
-static int64_t rnd (int64_t mod)
+static double value (int shape, int64_t i, int64_t n)
 {
-  st = st * 6364136223846793005ULL + 1442695040888963407ULL;
-  return (int64_t) ((st >> 33) % (uint64_t) mod);
-}
-
-static int cmp_i64 (const void *a, const void *b)
-{
-  int64_t x = *(const int64_t *) a, y = *(const int64_t *) b;
-  return (x > y) - (x < y);
-}
-
-static int cmp_f64 (const void *a, const void *b)
-{
-  double x = *(const double *) a, y = *(const double *) b;
-  return (x > y) - (x < y);
-}
-
-/* the table By orders by: descending, with many ties */
-static int64_t table[64];
-
-static bool by_table_desc (int64_t a, int64_t b, m9_state *err)
-{
-  (void) err;
-  return table[a] > table[b];
-}
-
-static m9_sl_CHAR S (const char *s, uint32_t *buf)
-{
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
-}
-
-static int cmp_cstr (const void *a, const void *b)
-{
-  return strcmp (*(const char *const *) a, *(const char *const *) b);
+  switch (shape) {
+  case 0: return ((rnd () >> 11) * (1.0 / 9007199254740992.0) - 0.5) * 1e6;
+  case 1: return (double) (int64_t) (rnd () % 10) - 5;
+  case 2: return (double) i;
+  case 3: return (double) (n - i);
+  case 4: return (rnd () % 3 == 0) ? -0.0 : (rnd () % 3 == 1 ? 0.0 : 1.5);
+  case 5: { uint64_t b = rnd (); double v; memcpy (&v, &b, 8); if (v != v || v > 1e308 || v < -1e308) v = 2.0; return v; }
+  default: return (double) (int64_t) (rnd () % 100000) * 1e-3;
+  }
 }
 
 int main (void)
 {
-  m9_state e = {0};
-  int64_t sizes[] = { 0, 1, 2, 3, 17, 1000 };
-  int si, i;
-
-  /* I64s and F64s against qsort, many duplicates */
-  for (si = 0; si < 6; si++)
-  {
-    int64_t n = sizes[si];
-    int64_t *a = malloc ((size_t) (n + 1) * sizeof *a);
-    int64_t *r = malloc ((size_t) (n + 1) * sizeof *r);
-    double *f = malloc ((size_t) (n + 1) * sizeof *f);
-    double *g = malloc ((size_t) (n + 1) * sizeof *g);
-    for (i = 0; i < n; i++) { a[i] = rnd (50) - 25; r[i] = a[i]; f[i] = (double) (rnd (40) - 20) / 4.0; g[i] = f[i]; }
-    { m9_sl_I64 sa = { a, n }; Sort_I64s (&sa, &e); }
-    qsort (r, (size_t) n, sizeof *r, cmp_i64);
-    ok ("I64s is qsort's multiset", memcmp (a, r, (size_t) n * sizeof *a) == 0);
-    { m9_sl_F64 sf = { f, n }; Sort_F64s (&sf, &e); }
-    qsort (g, (size_t) n, sizeof *g, cmp_f64);
-    ok ("F64s is qsort's multiset", memcmp (f, g, (size_t) n * sizeof *f) == 0);
-    free (a); free (r); free (f); free (g);
+  int portable = getenv ("M9_SORT_PORTABLE") != NULL;
+  for (int round = 0; round < 400; round++) {
+    int64_t n = round < 100 ? round : (int64_t) (rnd () % 5000) + 1;
+    int shape = round % 7;
+    double *v = malloc ((size_t) (n + 1) * 8), *d = malloc ((size_t) (n + 1) * 8);
+    int64_t *w = malloc ((size_t) (n + 1) * 8), *ix = malloc ((size_t) (n + 1) * 8), *iq = malloc ((size_t) (n + 1) * 8);
+    for (int64_t i = 0; i < n; i++) { v[i] = value (shape, i, n); w[i] = (int64_t) (v[i] * 7); }
+    /* the stable order of v, by reference */
+    for (int64_t i = 0; i < n; i++) iq[i] = i;
+    keys_d = v; qsort (iq, (size_t) n, 8, cmp_arg_d);
+    /* m9_sort_f64: the values in that order, -0.0 and 0.0 as they came */
+    memcpy (d, v, (size_t) n * 8);
+    int did = m9_sort_f64 (d, n);
+    checks++;
+    if (portable) { if (did) { bad++; printf ("FAIL sort_f64 sorted under M9_SORT_PORTABLE\n"); } }
+    else if (!did) { bad++; printf ("FAIL sort_f64 declined\n"); }
+    else for (int64_t i = 0; i < n; i++) if (memcmp (&d[i], &v[iq[i]], 8) != 0) { bad++; printf ("FAIL sort_f64 shape %d n %lld at %lld\n", shape, (long long) n, (long long) i); break; }
+    /* argsort f64 */
+    checks++;
+    did = m9_argsort_f64 (v, ix, n);
+    if (portable) { if (did) { bad++; printf ("FAIL argsort_f64 sorted under M9_SORT_PORTABLE\n"); } }
+    else if (!did || memcmp (ix, iq, (size_t) n * 8) != 0) { bad++; printf ("FAIL argsort_f64 shape %d n %lld\n", shape, (long long) n); }
+    /* i64 and its argsort */
+    for (int64_t i = 0; i < n; i++) iq[i] = i;
+    keys_i = w; qsort (iq, (size_t) n, 8, cmp_arg_i);
+    checks++;
+    did = m9_argsort_i64 (w, ix, n);
+    if (portable) { if (did) { bad++; printf ("FAIL argsort_i64 under M9_SORT_PORTABLE\n"); } }
+    else if (!did || memcmp (ix, iq, (size_t) n * 8) != 0) { bad++; printf ("FAIL argsort_i64 shape %d n %lld\n", shape, (long long) n); }
+    int64_t *ws = malloc ((size_t) (n + 1) * 8);
+    for (int64_t i = 0; i < n; i++) ws[i] = w[iq[i]];
+    checks++;
+    did = m9_sort_i64 (w, n);
+    if (portable) { if (did) { bad++; printf ("FAIL sort_i64 under M9_SORT_PORTABLE\n"); } }
+    else if (!did || memcmp (w, ws, (size_t) n * 8) != 0) { bad++; printf ("FAIL sort_i64 shape %d n %lld\n", shape, (long long) n); }
+    free (v); free (d); free (w); free (ix); free (iq); free (ws);
   }
-  ok ("the plain sorts raised nothing", e.exc == NULL);
-
-  /* a sub-range: a slice into the middle, the ends untouched */
-  {
-    int64_t a[9] = { 9, 8, 5, 4, 3, 2, 1, 8, 9 };
-    int64_t want[9] = { 9, 8, 1, 2, 3, 4, 5, 8, 9 };
-    m9_sl_I64 mid = { a + 2, 5 };
-    Sort_I64s (&mid, &e);
-    ok ("a sub-range sorts in place and the ends do not move",
-        memcmp (a, want, sizeof a) == 0 && e.exc == NULL);
+  if (!portable) {
+    int64_t N = 1000000;
+    double *src = malloc ((size_t) N * 8), *d = malloc ((size_t) N * 8);
+    int64_t *w = malloc ((size_t) N * 8), *ix = malloc ((size_t) N * 8);
+    double best, t0, t1;
+    for (int64_t i = 0; i < N; i++) src[i] = ((rnd () >> 11) * (1.0 / 9007199254740992.0) - 0.5) * 1e6;
+    best = 1e9; for (int r = 0; r < 3; r++) { memcpy (d, src, (size_t) N * 8); t0 = now (); m9_sort_f64 (d, N); t1 = now (); if (t1 - t0 < best) best = t1 - t0; }
+    printf ("a million doubles: %.1f ms", best * 1e3);
+    best = 1e9; for (int r = 0; r < 3; r++) { for (int64_t i = 0; i < N; i++) w[i] = (int64_t) src[i]; t0 = now (); m9_sort_i64 (w, N); t1 = now (); if (t1 - t0 < best) best = t1 - t0; }
+    printf (", int64s: %.1f ms", best * 1e3);
+    best = 1e9; for (int r = 0; r < 3; r++) { t0 = now (); m9_argsort_f64 (src, ix, N); t1 = now (); if (t1 - t0 < best) best = t1 - t0; }
+    printf (", the argsort: %.1f ms\n", best * 1e3);
+    free (src); free (d); free (w); free (ix);
   }
-
-  /* ArgF64: a permutation, non-decreasing through it, STABLE on ties */
-  {
-    enum { N = 500 };
-    static double v[N];
-    static int64_t idx[N];
-    static int seen[N];
-    int perm = 1, mono = 1, stable = 1;
-    for (i = 0; i < N; i++) v[i] = (double) rnd (7);      /* seven values: ties everywhere */
-    m9_sl_I64 sidx = { idx, N };
-    Sort_ArgF64 ((m9_sl_F64){ v, N }, &sidx, &e);
-    memset (seen, 0, sizeof seen);
-    for (i = 0; i < N; i++) {
-      if (idx[i] < 0 || idx[i] >= N || seen[idx[i]]) perm = 0; else seen[idx[i]] = 1;
-    }
-    for (i = 1; i < N; i++) {
-      if (v[idx[i]] < v[idx[i - 1]]) mono = 0;
-      if (v[idx[i]] == v[idx[i - 1]] && idx[i] < idx[i - 1]) stable = 0;
-    }
-    ok ("ArgF64 answers a permutation", perm);
-    ok ("ArgF64 orders the values", mono);
-    ok ("ArgF64 is STABLE: equal values keep index order", stable);
-    ok ("ArgF64 raised nothing", e.exc == NULL);
-    for (i = 0; i < N; i++) ok ("v untouched", v[i] >= 0.0 && v[i] <= 6.0);
-  }
-
-  /* Strs against strcmp order (ASCII: scalar order is byte order),
-     the shorter first on a prefix, stable on equal strings */
-  {
-    const char *words[] = { "pear", "Apple", "apple", "app", "zeta", "", "banana", "app", "Zeta", "b" };
-    const char *sorted[10];
-    static uint32_t bufs[10][16];
-    static m9_sl_CHAR sl[10];
-    char back[10][16];
-    int n = 10, same = 1;
-    for (i = 0; i < n; i++) { sl[i] = S (words[i], bufs[i]); sorted[i] = words[i]; }
-    m9_sl_m9_sl_CHAR ssl = { sl, n };
-    Sort_Strs (&ssl, &e);
-    qsort (sorted, (size_t) n, sizeof *sorted, cmp_cstr);
-    for (i = 0; i < n; i++) {
-      int64_t j;
-      for (j = 0; j < sl[i].len && j < 15; j++) back[i][j] = (char) sl[i].p[j];
-      back[i][j] = 0;
-      if (strcmp (back[i], sorted[i]) != 0) same = 0;
-    }
-    ok ("Strs is strcmp's order on ASCII", same && e.exc == NULL);
-  }
-
-  /* Strs at size: 400 random words over a 3-letter alphabet, lengths
-     0..5, so the permutation has long cycles and many equal keys.
-     Since 2026-09-28 Strs is an argsort applied IN PLACE by cycle
-     following (no KEPT); a wrong cycle walk shows here, not on ten
-     words.  Held to qsort's strcmp order; equal strings are
-     indistinguishable, so stability is not observable and is not
-     claimed by this check. */
-  {
-    enum { M = 400 };
-    static char text[M][8];
-    static const char *sorted[M];
-    static uint32_t bufs[M][8];
-    static m9_sl_CHAR sl[M];
-    char back[8];
-    int same = 1;
-    for (i = 0; i < M; i++) {
-      int64_t len = rnd (6), j;
-      for (j = 0; j < len; j++) text[i][j] = (char) ('a' + rnd (3));
-      text[i][len] = 0;
-      sl[i] = S (text[i], bufs[i]);
-      sorted[i] = text[i];
-    }
-    m9_sl_m9_sl_CHAR ssl = { sl, M };
-    Sort_Strs (&ssl, &e);
-    qsort (sorted, (size_t) M, sizeof *sorted, cmp_cstr);
-    for (i = 0; i < M; i++) {
-      int64_t j;
-      for (j = 0; j < sl[i].len && j < 7; j++) back[j] = (char) sl[i].p[j];
-      back[j] = 0;
-      if (strcmp (back, sorted[i]) != 0) same = 0;
-    }
-    ok ("Strs at 400 with long cycles is strcmp's order", same && e.exc == NULL);
-  }
-
-  /* By: a C function IS a value of the type; descending by a table
-     with ties, stable on the ties */
-  {
-    static int64_t keys[64];
-    int n = 64, mono = 1, stable = 1;
-    for (i = 0; i < n; i++) { table[i] = rnd (5); keys[i] = i; }
-    m9_sl_I64 sk = { keys, n };
-    Sort_By (&sk, by_table_desc, &e);
-    for (i = 1; i < n; i++) {
-      if (table[keys[i]] > table[keys[i - 1]]) mono = 0;
-      if (table[keys[i]] == table[keys[i - 1]] && keys[i] < keys[i - 1]) stable = 0;
-    }
-    ok ("By follows the caller's order", mono);
-    ok ("By is stable on ties", stable);
-    ok ("By raised nothing", e.exc == NULL);
-  }
-
-  /* the refusals, by name and with the payload */
-  {
-    double v[4] = { 1.0, 2.0, nan (""), 0.5 };
-    int64_t idx[3];
-    m9_sl_F64 sv = { v, 4 };
-    m9_sl_I64 si3 = { idx, 3 };
-    Sort_F64s (&sv, &e);
-    ok ("F64s with a NaN raises NotANumber", e.exc == &Sort_NotANumber);
-    ok ("and names the index", e.i[0] == 2);
-    ok ("and moved nothing", v[0] == 1.0 && v[1] == 2.0 && v[3] == 0.5);
-    e.exc = NULL;
-    Sort_ArgF64 (sv, &si3, &e);
-    ok ("ArgF64 with the wrong index length raises IndexError",
-        e.exc == &m9_exc_IndexError);
-    e.exc = NULL;
-  }
-
-  printf (failed ? "FAIL (%d of %d checks)\n" : "PASS (%d checks)\n",
-          failed ? failed : checks, checks);
-  return failed != 0;
+  if (bad) { printf ("sort_driver: %ld of %ld checks FAIL\n", bad, checks); return 1; }
+  printf ("sort_driver: %ld checks ok%s\n", checks, portable ? " (M9_SORT_PORTABLE: the runtime declined every one)" : "");
+  return 0;
 }

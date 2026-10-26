@@ -1,0 +1,32 @@
+MODULE R4SumCompVia ;
+IMPORT Io, Fmt ;
+TYPE R = RECORD s : STR ; n : I64 END ;
+VAR last : STR ;
+PROCEDURE Mk (n: I64) : R =
+VAR r : R ;
+BEGIN
+  r.n := n ;
+  r.s := 'frame string number ' + Fmt.I64Str (n) ;
+  RETURN r
+END Mk ;
+PROCEDURE Mk2 (n: I64) : R =
+VAR q : R ;
+BEGIN
+  q := Mk (n) ;
+  RETURN q
+END Mk2 ;
+PROCEDURE Fill () =
+BEGIN
+  last := Mk2 (1).s
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (last)
+END R4SumCompVia.

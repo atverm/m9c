@@ -4,7 +4,7 @@
 #include "m9rt.h"
 #include "Ast.h"
 #include "Lex.h"
-#include "DynStr.h"
+#include "Text.h"
 
 void Parse_m9init (m9_state *err);
 
@@ -12,6 +12,8 @@ typedef struct Parse_Perr Parse_Perr;
 typedef struct Parse_Parser Parse_Parser;
 
 #define Parse_MaxErr INT64_C(64)
+#define Parse_MaxDepth INT64_C(1000)
+#define Parse_MaxTypeDepth INT64_C(100)
 #define Parse_TkEOF INT64_C(0)
 #define Parse_TkError INT64_C(1)
 #define Parse_TkIdent INT64_C(2)
@@ -123,7 +125,7 @@ typedef struct Parse_Perr Parse_Perr;
 struct Parse_Perr {
   int64_t line;
   int64_t col;
-  m9_sl_CHAR msg;
+  m9_sl_UTF8 msg;
 };
 
 #ifndef M9SL_m9_arr_64_Parse_Perr
@@ -139,9 +141,13 @@ struct Parse_Parser {
   int64_t nerr;
   int64_t nkept;
   m9_arr_64_Parse_Perr errs;
+  int64_t depth;
+  int64_t tdepth;
+  bool deep;
 };
 
 void Parse_Init (Parse_Parser *p, m9_pool *p_pool, m9_sl_CHAR src, m9_state *err);
+void Parse_InitUtf (Parse_Parser *p, m9_pool *p_pool, m9_sl_UTF8 src, m9_state *err);
 Ast_Node * Parse_File (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, m9_state *err);
 
 #endif

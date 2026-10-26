@@ -2,10 +2,10 @@ REVIEW HttpServer -- 94 procedures with a body, 66 of them functions; 23 heading
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              66
-  assignments                                   468
+  assignments                                   471
   arguments                                     844
   RETURN values                                 249
-  operands of a comparison or an operator       540
+  operands of a comparison or an operator       535
   CASE labels                                    35
   THREAD arguments                                1
   CASE over variants, proved total                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              5
     of them [REENTRANT]                           7
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     8   reads in WriteAll, writes or reads in Fill, writes or reads in ReadFixed, writes or reads in Serve1, writes or reads in Busy, writes or reads in Run, +2 more
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 1
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                       18
   NEW in the frame                                0
   NEW in a named pool                            10
+  calls of a STR form with a UTF twin             3   Io.FileSize -> Io.FileSizeUtf, Io.ListDir -> Io.ListDirUtf, Io.Exists -> Io.ExistsUtf
+  STR subscripts, writes and LEN                165   len path, index path[i], index path[i], index path[i], len path, len r.headers, +159 more

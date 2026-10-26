@@ -1,0 +1,45 @@
+(* EXPECT: ADR of a variable of type m.Held, which holds a reference: C can write one no assignment shows *)
+(* ADR of a variable whose type holds a reference lets C write one that
+   no assignment shows, and the region judgement read such an answer as
+   module storage: Text.AdoptUtf8 of frame bytes kept in a module UTF
+   was a heap-use-after-free (the second review's S9).  It is allowed
+   where the procedure states where its answer lives, [FRESH] (the third
+   review's trust advice, 2026-10-26).  Legal forms first: ADR of a
+   slice, ADR of a scalar record, and a [FRESH] procedure filling a
+   descriptor. *)
+UNSAFE DEFINITION MODULE FOR "C" ca ;
+PROCEDURE Fill = "m9_ca_fill" (p: C.MutPtr ; n: C.SizeT) [REENTRANT] ;
+END ca.
+DEFINITION MODULE m ;
+TYPE Held = RECORD u : UTF END ;
+PROCEDURE Bytes (b: SLICE OF BYTE) ;
+PROCEDURE Count () : I64 ;
+PROCEDURE Made () : UTF [FRESH] ;
+PROCEDURE Unstated () : UTF ;
+END m.
+UNSAFE IMPLEMENTATION MODULE m ;
+IMPORT ca ;
+TYPE Pair = RECORD a, b : I64 END ;
+PROCEDURE Bytes (b: SLICE OF BYTE) =
+BEGIN
+  ca.Fill (ADR (b), C.SizeT (LEN (b)))
+END Bytes ;
+PROCEDURE Count () : I64 =
+VAR p : Pair ;
+BEGIN
+  ca.Fill (ADR (p), C.SizeT (16)) ;
+  RETURN p.a
+END Count ;
+PROCEDURE Made () : UTF [FRESH] =
+VAR h : Held ;
+BEGIN
+  ca.Fill (ADR (h), C.SizeT (16)) ;
+  RETURN h.u
+END Made ;
+PROCEDURE Unstated () : UTF =
+VAR h : Held ;
+BEGIN
+  ca.Fill (ADR (h), C.SizeT (16)) ;
+  RETURN h.u
+END Unstated ;
+END m.

@@ -1,4 +1,10 @@
 /* fmt_driver.c -- Fmt.m9 against printf and strtod.
+   Run twice by build.sh's fmt battery since 2026-10-25: plain, where
+   Fixed and Sci take their digits from the C library through the
+   runtime (m9_fmt_fixed/m9_fmt_sci, so this holds the LAYOUT: the
+   short exponent, the sign of zero, the specials), and under
+   M9_FMT_PORTABLE=1, where Fmt's own big-integer code answers and the
+   200,000-value sweep is the comparison it was written as.
    Two different promises get two different tests:
 
      Bits is claimed EXACT, so it is tested as a property:
@@ -345,6 +351,68 @@ int main (void)
         err.exc = NULL;
       }
     ok ("ParseF64 rejects what is not a number", all);
+  }
+
+  /* ---- Short: two properties, and a hash both runs must share ----
+     Short's digits come from the runtime (Dragonbox) on the plain run
+     and from Fmt's Burger-Dybvig under M9_FMT_PORTABLE; neither side
+     can be asked for the other's answer in one process, so each run
+     prints an FNV hash of its 200,000 strings and build.sh compares
+     the two lines.  The properties hold on either path: the string
+     reads back as the same bits, and its digit count is the least
+     %.Ng that does. */
+  {
+    uint64_t st = 0x9E3779B97F4A7C15ull, h = 1469598103934665603ull;
+    long total = 0, trip = 0, fewest = 0;
+    for (i = 0; i < 200000; i++)
+      {
+        uint64_t bits;
+        double x, back;
+        int e, nd, nn, lead, j;
+        char digs[40];
+        const char *q;
+        char *p;
+        st ^= st << 13; st ^= st >> 7; st ^= st << 17;
+        bits = st;
+        if (i % 4 == 1) bits = ((uint64_t) (1023 + (int) (st % 100) - 50) << 52) | (st & 0xfffffffffffffull);
+        if (i % 4 == 2) bits = (uint64_t) (st % 2047) << 52;          /* a power of two: the shorter interval */
+        if (i % 8 == 3) bits = st & 0xfffffffffffffull;                /* a subnormal */
+        e = (int) ((bits >> 52) & 0x7ff);
+        if (e == 0x7ff || (bits & 0x7fffffffffffffffull) == 0) continue;
+        memcpy (&x, &bits, 8);
+        to_c (Fmt_Short (x, &err), buf, sizeof buf);
+        total++;
+        for (p = buf; *p; p++) h = (h ^ (uint64_t) (unsigned char) *p) * 1099511628211ull;
+        h = (h ^ 10u) * 1099511628211ull;
+        back = strtod (buf, NULL);
+        if (same_bits (back, x)) trip++;
+        /* the significant digits: the digit string without its
+           point, leading zeros and trailing zeros */
+        nd = 0; lead = 1;
+        for (q = buf; *q && *q != 'e'; q++)
+          {
+            if (*q < '0' || *q > '9') continue;
+            if (lead && *q == '0') continue;
+            lead = 0;
+            digs[nd++] = *q;
+          }
+        while (nd > 0 && digs[nd - 1] == '0') nd--;
+        /* the least N whose nearest N-digit decimal (%.Ng) reads back:
+           Short never needs more, and needs exactly that many unless
+           the double is a power of two -- there the interval below it
+           is half as wide, and the nearest N-digit decimal can fall
+           outside it while a farther one above lies inside */
+        for (nn = 1; nn <= 17; nn++)
+          {
+            snprintf (ref, sizeof ref, "%.*g", nn, x);
+            if (same_bits (strtod (ref, NULL), x)) break;
+          }
+        if (nd <= nn && (nd == nn || (bits & 0xfffffffffffffull) == 0)) fewest++;
+        (void) j;
+      }
+    ok ("Short reads back as the same bits on every value", trip == total && total > 150000);
+    ok ("Short has the fewest digits that read back", fewest == total);
+    printf ("Short hash %016llx over %ld values\n", (unsigned long long) h, total);
   }
 
   m9_pool_free (&pool);

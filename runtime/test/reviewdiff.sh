@@ -23,11 +23,13 @@ cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
 . ./lib/reviewnorm.sh   # the page without its line numbers
 
+M9CNEW=$(mktemp -d)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
-    ../gen/Lex.c ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
-    ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o m9c
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
+# replaced only when it differs: a gate in another lane running m9c keeps
+# its file, and --run's cache, whose key holds m9c's mtime, its entries
+if cmp -s "$M9CNEW/m9c" m9c; then rm -r "$M9CNEW"; else mv -f "$M9CNEW/m9c" m9c; rmdir "$M9CNEW"; fi
 
 M9C=$(pwd)/m9c
 SRC=$(cd ../../corpus && pwd)
@@ -73,7 +75,7 @@ echo "reviewdiff: the counters reproduce the hand count of reviewcalib.m9 (8 row
 # WHO FREES THE STORAGE, held to a hand count the same way.
 # reviewnew.m9 spells NEW every way there is -- one argument, a
 # predeclared type, a type of the module, a type of an imported
-# module, a grid, STR; a pool, a pool with an extent, a pool that is
+# module, a grid, STR, UTF; a pool, a pool with an extent, a pool that is
 # a field, HEAP; OWN -- and reviewnew.want is the three rows typed
 # from its comments.  The page has no scopes and decides pool or
 # type by NAME; until 2026-10-02 it called every two-argument NEW a
@@ -86,7 +88,7 @@ if ! diff reviewnew.want "$OUT/new.got" > "$OUT/new.diff"; then
   sed 's/^/    /' "$OUT/new.diff"; cat "$OUT/new.err"
   exit 1
 fi
-echo "reviewdiff: the NEW rows reproduce the hand count of reviewnew.m9 (1 owned, 6 in the frame, 5 in a pool)"
+echo "reviewdiff: the NEW rows reproduce the hand count of reviewnew.m9 (1 owned, 7 in the frame, 5 in a pool)"
 
 # A THREAD WRITING A STATEFUL MODULE'S STATE is listed under TRUSTED
 # (report par 6, decision 49): reviewthread.m9 has two such threads,
@@ -105,9 +107,42 @@ case "$got" in
 esac
 echo "reviewdiff: the STATEFUL row lists the two writing threads of reviewthread.m9 and not the reader"
 
+# the UTF transition's row: calls of a STR form whose module declares a
+# UTF twin (Sem.StaleCall).  reviewstale.m9 makes three and three UTF
+# calls that reach the twins already; the library's pages list their own,
+# but nothing else holds that a UTF call is NOT listed.
+"$M9C" --review reviewstale.m9 > "$OUT/stale.txt" 2> "$OUT/stale.err" ||
+  { echo "reviewdiff: m9c --review refused reviewstale.m9:"; cat "$OUT/stale.err"; exit 1; }
+got=$(grep '^  calls of a STR form with a UTF twin' "$OUT/stale.txt")
+case "$got" in
+  *" 3   "*"Text.Eq -> Text.EqUtf"*"Text.Find -> Text.FindUtf"*"Io.WriteLine -> Io.WriteLineUtf"*) ;;
+  *) echo "reviewdiff: the stale-call row of reviewstale.m9 is not its three STR calls:"
+     echo "    $got"; exit 1 ;;
+esac
+echo "reviewdiff: the stale-call row lists the three STR calls of reviewstale.m9 and none of its UTF ones"
+
+# the UTF switch's row (docs/utf8-stage4-plan.md, 4b): every STR subscript,
+# write through one and LEN, by the DECLARED type (Sem.StrSite).
+# reviewstr.m9 has six such sites -- one through a name for STR -- and the
+# same uses of a SLICE OF CHAR spelled out and of a UTF, which must not
+# be listed, nor a site in a STR form whose UTF twin the module declares
+# (Head beside HeadUtf: a body the switch deletes); the library's 62 pages
+# carry their own counts (1,270 sites on 2026-10-24 with Text ported,
+# stage 4a's meter), but nothing else holds the kinds or the exemptions.
+# Compared whole, without line numbers.
+"$M9C" --review reviewstr.m9 > "$OUT/str.txt" 2> "$OUT/str.err" ||
+  { echo "reviewdiff: m9c --review refused reviewstr.m9:"; cat "$OUT/str.err"; exit 1; }
+got=$(review_norm < "$OUT/str.txt" | grep '^  STR subscripts, writes and LEN')
+want='  STR subscripts, writes and LEN                  6   index t[0], index s[0], write s[0], len s, len nm, index nm[1]'
+if [ "$got" != "$want" ]; then
+  echo "reviewdiff: the STR row of reviewstr.m9 is not its six sites (< wanted, > this page):"
+  echo "    < $want"; echo "    > $got"; exit 1
+fi
+echo "reviewdiff: the STR row lists the six STR sites of reviewstr.m9 and none of its SLICE OF CHAR or UTF ones"
+
 n=0; bad=0
 funcs=0; mpools=0; lpools=0; ppar=0; kept=0; heap=0; own=0; thr=0; mvars=0; unsafe=0; foreign=0
-exam=0; passed=0; ctot=0; cover=0
+exam=0; passed=0; ctot=0; cover=0; strs=0
 for m in $(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh |
            sed 's/LIBRARY="//; s/"$//; s/\\$//' | tr -s ' \n' ' '); do
   d=""
@@ -142,6 +177,7 @@ for m in $(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh |
   mvars=$((mvars + $(row "$f" 'module variables')))
   unsafe=$((unsafe + $(row "$f" 'UNSAFE units')))
   foreign=$((foreign + $(row "$f" 'foreign procedures')))
+  strs=$((strs + $(row "$f" 'STR subscripts, writes and LEN')))
   # the six kinds of site where two types are held to each other
   for k in 'assignments' 'arguments' 'RETURN values' \
            'operands of a comparison or an operator' 'CASE labels' 'THREAD arguments'; do
@@ -165,4 +201,5 @@ echo "            $exam sites where two types were held to each other, $passed m
 echo "            $ctot CASEs over variants proved total, $cover passed over;"
 echo "            decided by a person: $mpools module pools, $lpools local pools, $ppar pool parameters,"
 echo "            $kept KEPT parameters, HEAP named $heap times, $own NEW (OWN, T), $thr THREAD, $mvars module variables;"
-echo "            trusted: $unsafe UNSAFE units, $foreign foreign procedures"
+echo "            trusted: $unsafe UNSAFE units, $foreign foreign procedures;"
+echo "            the UTF switch's edits (STR subscripts, writes and LEN): $strs"

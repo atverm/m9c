@@ -1,3 +1,4 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Regex ;
 
 (* Regular expressions: the subset Python's re and RE2 share, matched
@@ -1119,7 +1120,9 @@ BEGIN
     ELSIF c = '\' THEN
       item := Escape (sp, ps, re)
     ELSIF Quant (ps, min, max, width) THEN
-      Fail (ps, 'nothing to repeat', at)
+      (* RAISE written out, not Fail (...): a call is never an ending,
+         and this arm gives item no value (definite assignment) *)
+      RAISE BadPattern ('nothing to repeat', at)
     ELSE
       ps.pos := ps.pos + 1 ;
       item := CharNode (sp, ps, re, ORD (c))

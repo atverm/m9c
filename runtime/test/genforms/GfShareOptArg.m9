@@ -1,0 +1,33 @@
+MODULE GfShareOptArg ;
+
+(* WANT: kept 41 *)
+
+(* SOME (p) handed on as an OPT SHARED argument and kept counts (the
+  fourth review's concurrency 3) *)
+(* GfSharedSome's shape, the kept OPT SHARED handle reached another way: ret *)
+IMPORT Io, Fmt ;
+TYPE Store = RECORD n : I64 END ;
+  Holder = RECORD g : OPT SHARED PTR Store END ;
+VAR g : OPT SHARED PTR Store ; hold : Holder ; arr : ARRAY 2 OF OPT SHARED PTR Store ;
+PROCEDURE Wrap (KEPT p: SHARED PTR Store) : OPT SHARED PTR Store =
+BEGIN RETURN SOME (p) END Wrap ;
+PROCEDURE Keep2 (KEPT q: OPT SHARED PTR Store) =
+BEGIN g := q END Keep2 ;
+PROCEDURE Keep (KEPT p: SHARED PTR Store) =
+BEGIN Keep2 (SOME (p)) END Keep ;
+PROCEDURE Go () =
+VAR o : PTR Store ; h : SHARED PTR Store ;
+BEGIN
+  o := NEW (OWN, Store) ; o.n := 41 ; h := SHARED (o) ;
+  Keep (h) ;
+  DISPOSE (h)
+END Go ;
+PROCEDURE Churn () =
+VAR i : I64 ; xs : SLICE OF I64 ;
+BEGIN xs := NEW (I64, 100) ; FOR i := 0 TO 99 DO xs[i] := 77777777 END END Churn ;
+BEGIN
+  Go () ; Churn () ;
+  IF g IS SOME r THEN Io.WriteLine ('kept ' + Fmt.I64Str (r.n)) END ;
+  IF hold.g IS SOME r2 THEN Io.WriteLine ('kept ' + Fmt.I64Str (r2.n)) END ;
+  IF arr[0] IS SOME r3 THEN Io.WriteLine ('kept ' + Fmt.I64Str (r3.n)) END
+END GfShareOptArg.

@@ -1,0 +1,19 @@
+STATEFUL DEFINITION MODULE ShObs ;
+
+(* run.sh's --show fixture: an exported variable of a type from a
+   module the show cell does not import (the notebook's Obs.f) *)
+
+IMPORT Frame ;
+VAR f : PTR Frame.Fr ;
+END ShObs.
+
+IMPLEMENTATION MODULE ShObs ;
+IMPORT Faults ;
+IMPORT Frame ;
+IMPORT Io ;
+VAR pool : POOL ;
+BEGIN
+  f := Frame.New (pool, 0)
+EXCEPT
+| Faults.SizeError (got, want) : Io.ErrLine ('no frame')
+END ShObs.

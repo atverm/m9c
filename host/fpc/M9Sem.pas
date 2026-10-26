@@ -80,12 +80,16 @@ type
   private
     mods : array of TModuleInfo;
     curMod : string;
+    localTys : array of string;      { CheckDeclTypes: this procedure's TYPEs }
     curUnsafe : Boolean;
     curPure : Boolean;                 { inside a [PURE] body (par 3.2) }
+    curFresh : Boolean;                { inside a [FRESH] body (par 7) }
     curInBody : Boolean;               { the module init body, whose
                                          frame and module vars co-live,
                                          so a concat stored in a module
                                          var there does not outlive it }
+    boundMonNode : TNode;              { the bound monitor's type node, or nil }
+    allocNoPool : Boolean;             { AllocsThrough for a THREAD (mirrors Sem) }
     boundMon : string;                 { the bound monitor parameter,
                                          '' if this procedure is not
                                          bound to one (par 6) }
@@ -113,14 +117,30 @@ type
     loopsOpen, finSinceLoop : Integer; { LOOPs around the walk; FINALLY blocks since the innermost }
     forNames : array of string;        { the FORs being walked, innermost last (issue 3) }
     forLines : array of Integer;
+    forPlain : array of Boolean;       { a FOR's, not a FOR IN's: only it may not be written }
     mro : TStringList;                 { ModRoSeed: module variable=what|line, per unit }
     nAgg : Integer;                    { aggregate CONSTs in this unit:
                                          the walk that guards them is
                                          skipped at zero }
     tyI64 : TNode;                     { synthetic 'I64' for FOR vars }
     strNode : TNode;                   { the SLICE OF CHAR that STR names }
+    utfNode : TNode;                   { the SLICE OF <u8> that UTF names }
     tyCHAR : TNode;                    { its element }
-    ansMemo : TStringList;             { AnswersFrame: Module.Proc=yes|no|busy }
+    ansMemo : TStringList;             { AnswersFrame: Module.Proc=yes|no|busy|redo }
+    { the memo's iteration at a cycle's head (mirrors Sem.AnsFind/AnsYes/
+      AnsSet, the third review's summaries advice): per entry the depth it
+      was opened at and whether a descendant read it while busy; per open
+      depth the lowest depth it leaned on, where its provisional entries
+      start, and whether an assumption proved wrong }
+    ansDep : array of Integer;
+    ansRB : array of Boolean;
+    ansLow, ansBase : array of Integer;
+    ansDirty : array of Boolean;
+    provIx : array of Integer;
+    provTop, ansDepth : Integer;
+    function AnsGet (const key: string; out res: Boolean): Boolean;
+    procedure AnsPut (const key, state: string);
+    procedure AnsRoom;
     function FindMod (const n: string): TModuleInfo;
     function ProcNamed (const modn, callee: string; out pr: TProcInfo): Boolean;
     function NewIsFrameIn (e: TNode; const modn: string): Boolean;
@@ -134,6 +154,8 @@ type
     function AnswersRo (const qual: string; const pr: TProcInfo): Boolean;
     function AnswersViewAt (const qual: string; const pr: TProcInfo; j: Integer): Boolean;
     function AnswersViewAny (const qual: string; const pr: TProcInfo): Boolean;
+    function AnswersBorrowAny (const qual: string; const pr: TProcInfo): Boolean;
+    function ReturnBorrows (k: TNode; const nm: string): Boolean;
     function ViewExprEvidence (k, d: TNode; const modn: string; depth: Integer;
                                const nm: string): Boolean;
     function ViewEvidence (k, d: TNode; const modn, nm: string): Boolean;
@@ -142,6 +164,10 @@ type
     function ViewCarrier (const cn: string; d: TNode; const modn: string;
                           depth: Integer; const nm: string): Boolean;
     function ViewCallOf (k: TNode): TNode;
+    function UtfName (const nm: string): Boolean;
+    function UtfBuiltin (e: TNode): string;
+    function UtfInPool (e: TNode): string;
+    function OctetsArg (e: TNode): TNode;
     function ViewArgOf (vc: TNode; j: Integer): Boolean;
     function PtrBearing (t: TNode; depth: Integer): Boolean;
     function ParamSelType (d, e: TNode; const modn: string;
@@ -154,10 +180,22 @@ type
     function RoEvidence (k, d: TNode; const modn: string): Boolean;
     function RoAnswerText (const name: string; const pr: TProcInfo): string;
     function CallAnswersFrame (dn: TNode): string;
-    function ShareWhy (const aTy: string): string;
+    function ShareWhy (const aTy: string; anyRecord: Boolean): string;
+    function SharedFieldWhy (const aTy: string): string;
     procedure ErrN (n: TNode; const ctx, msg: string);
     function SigOf (p: TNode): string;
     function RaisesOf (p: TNode): TStringArray;
+    function RaisesSpelled (p: TNode): TStringArray;
+    function ExcKey (const md, spelled: string): string;
+    function ExcShown (const key: string): string;
+    procedure ForVarWrite (d: TNode; const ctx: string; byRef: Boolean);
+    procedure SameMonitorCall (const ctx, name: string; callee, a0: TNode);
+    function MonIdOf (d: TNode; const modn: string): TNode;
+    function MonReach (const pr: TProcInfo; mon: TNode): Boolean;
+    function MonCycle (const pr: TProcInfo; mon: TNode): Boolean;
+    function MonWaits (const pr: TProcInfo): Boolean;
+    function MonWaitWalk (k: TNode; const modn: string): Boolean;
+    function MonReachWalk (k: TNode; const modn: string; mon: TNode): Boolean;
     function ExcKnown (const qual, nm: string): Boolean;
     function ExcDeclOf (const qual, nm: string; out owner: string): TNode;
     function IxDecl: TNode;
@@ -165,6 +203,9 @@ type
     function ExcFieldsText (q: TNode): string;
     procedure CheckExcName (n: TNode; const ctx: string);
     function TypeKnown (const qual, nm: string): Boolean;
+    function ExcNotType (const nm: string): Boolean;
+    function TypeNowhere (const nm: string): Boolean;
+    procedure LocalTypes (body: TNode);
     procedure CheckTypeNode (t: TNode; const ctx: string);
     procedure CheckFieldTypes (fs: TNode; const ctx: string);
     procedure CheckVarTypes (holder: TNode; const ctx: string);
@@ -191,6 +232,7 @@ type
                            out vi: TVariantInfo): Boolean;
     function FindVariant (const tn, vn: string; out ownerMod: string;
                           out fields: TNode): Boolean;
+    function MemberMissing (const mn, tn, vn: string): Boolean;
     function VariantIn (const mn, tn, vn: string; out ownerMod: string;
       out fields: TNode): Boolean;
     function ResolveType (t: TNode): TNode;
@@ -223,6 +265,25 @@ type
 
 implementation
 
+const UtfTy = 'SLICE OF <u8>';   { the canonical type UTF names }
+
+{ the SLICE OF <u8> that UTF names, by its element (Sem.IsUtfNode) }
+function IsUtfNode (r: TNode): Boolean;
+begin
+  Result := (r <> nil) and (r.kind = nkSliceType) and (Length (r.kids) > 0) and
+    (r.kids[0] <> nil) and (r.kids[0].kind = nkQualident) and
+    (r.kids[0].b = '') and (r.kids[0].a = '<u8>');
+end;
+
+{ a string literal adapts to a UTF where one is wanted (Sem.AdaptLit) }
+function AdaptLit (k: TNode; const dst, src: string): string;
+begin
+  if (dst = UtfTy) and (k <> nil) and (k.kind = nkString) then
+    Result := UtfTy
+  else
+    Result := src;
+end;
+
 const
   Unchecked : array [0..2] of string = ('Overflow', 'IndexError',
     'OutOfMemory');
@@ -233,6 +294,10 @@ const
 const
   BuiltinTypes : array [0..12] of string = ('I8', 'I16', 'I32', 'I64',
     'U8', 'U16', 'U32', 'U64', 'F32', 'F64', 'BYTE', 'BOOL', 'CHAR');
+  { builtins whose answer holds no reference (mirrors Sem.ScalarFns) }
+  ScalarFnNames : array [0..19] of string = ('LEN', 'ORD', 'CHR', 'ABS', 'ODD',
+    'MAX', 'MIN', 'I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64', 'F32',
+    'F64', 'CHAR', 'BOOL', 'BYTE');
 
 function InList (const s: string; const a: array of string): Boolean;
 var i : Integer;
@@ -503,6 +568,8 @@ begin
   Result := Length (s);
 end;
 
+function ExcCovers (const k, raisedKey: string): Boolean; forward;
+
 { two lists as they stand after RAISES, 'A, B': is every name of src
   one of dst's? }
 function RaisesWithin (const src, dst: string): Boolean;
@@ -521,7 +588,7 @@ begin
     begin
       eb := b;
       while (eb <= Length (dst)) and (dst[eb] <> ',') do Inc (eb);
-      found := Copy (src, a, ea - a) = Copy (dst, b, eb - b);
+      found := ExcCovers (Copy (dst, b, eb - b), Copy (src, a, ea - a));
       b := eb + 2;
     end;
     if not found then Exit (False);
@@ -633,6 +700,23 @@ begin
   Result := (t = '<str1>') or (t = 'SLICE OF CHAR') or (t = 'CHAR');
 end;
 
+{ a decimal integer literal past MAX (I64) is a U64 literal (mirrors
+  Sem.BeyondI64; the compiler review's F1, 2026-10-21) }
+function BeyondI64 (const a: string): Boolean;
+const I64Max = '9223372036854775807';
+var i, k : Integer;
+begin
+  i := 1;
+  while (i < Length (a)) and (a[i] = '0') do Inc (i);
+  if Length (a) - i + 1 <> 19 then Exit (Length (a) - i + 1 > 19);
+  for k := 0 to 18 do
+  begin
+    if not (a[i + k] in ['0'..'9']) then Exit (False);
+    if a[i + k] <> I64Max[k + 1] then Exit (a[i + k] > I64Max[k + 1]);
+  end;
+  Result := False;
+end;
+
 function LitType (e: TNode): string;
 var l, r : string;
 begin
@@ -645,7 +729,7 @@ begin
   end;
   case e.kind of
     nkAggregate : Result := AggType (e);
-    nkInt  : Result := '<int>';
+    nkInt  : if BeyondI64 (e.a) then Result := 'U64' else Result := '<int>';
     nkReal : Result := '<real>';
     nkChar : Result := 'CHAR';
     nkString :
@@ -718,6 +802,9 @@ begin
   RoCand := TStringList.Create; RoCand.CaseSensitive := True;
   varParams := TStringList.Create; varParams.CaseSensitive := True;
   ansMemo := TStringList.Create; ansMemo.CaseSensitive := True;
+  provTop := 0; ansDepth := 0;
+  SetLength (ansLow, 64); SetLength (ansBase, 64); SetLength (ansDirty, 64);
+  SetLength (provIx, 256); SetLength (ansDep, 64); SetLength (ansRB, 64);
   keptParams := TStringList.Create; keptParams.CaseSensitive := True;
   keptUsed := TStringList.Create; keptUsed.CaseSensitive := True;
   varWritten := TStringList.Create; varWritten.CaseSensitive := True;
@@ -729,6 +816,12 @@ begin
   strNode := TNode.Create (nkSliceType);
   strNode.Add (tyCHAR);
   strNode.Add (nil);              { attribute lives on the STR name }
+  { UTF names SLICE OF <u8>: an octet of valid UTF-8, an element type no
+    program can write (docs/utf8-plan.md, stage 1) }
+  utfNode := TNode.Create (nkSliceType);
+  utfNode.Add (TNode.Create (nkQualident));
+  utfNode.kids[0].a := '<u8>';
+  utfNode.Add (nil);
 end;
 
 destructor TSem.Destroy;
@@ -836,6 +929,12 @@ begin
     Exit (ExprEvidence (k.kids[0], modn, isStr, body, depth));
   if k.kind = nkNewExpr then Exit (NewIsFrameIn (k, modn));
   if k.kind = nkBin then Exit (isStr and (k.a = '+'));
+  { UTF (x), UTF (b) and STR (u) build their answer in this frame as +
+    does; OCTETS (x) is a view of x (mirrors Sem.ExprEvidence, 2026-10-23) }
+  nm := UtfBuiltin (k);
+  if (nm = 'UTF') or (nm = 'STR') then Exit (True);
+  if OctetsArg (k) <> nil then
+    Exit (ExprEvidence (OctetsArg (k), modn, isStr, body, depth));
   if k.kind = nkCallExpr then
   begin
     if (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) then
@@ -882,7 +981,7 @@ end;
 { par 6: SHARABLE (mirrors Sem.ShareWhy, 2026-10-11): the type a
   THREAD's unmoved argument shares, when it is a RECORD neither a
   MONITOR nor marked [SHARABLE]; '' otherwise }
-function TSem.ShareWhy (const aTy: string): string;
+function TSem.ShareWhy (const aTy: string; anyRecord: Boolean): string;
 var
   t, mn, tn : string;
   m, mm : TModuleInfo;
@@ -931,8 +1030,73 @@ begin
   end;
   if (body = nil) or (body.kind <> nkRecordType) then Exit;
   if (Length (body.kids) > 2) and (body.kids[2] <> nil) and
-     (body.kids[2].a = 'SHARABLE') then Exit;
+     (body.kids[2].a = 'SHARABLE') and not anyRecord then Exit;
   Result := t;
+end;
+
+{ the first SHARED field of the record a type names whose target
+  ShareWhy names, or '' (mirrors Sem.SharedFieldWhy: the field types
+  read in the module the type is written in) }
+function TSem.SharedFieldWhy (const aTy: string): string;
+var
+  t, mn, tn, ft, w, was : string;
+  m, mm : TModuleInfo;
+  dot, depth, g : Integer;
+  body : TNode;
+begin
+  Result := '';
+  t := aTy;
+  if Copy (t, 1, 4) = 'OPT ' then t := Copy (t, 5, MaxInt);
+  if Copy (t, 1, 11) = 'SHARED PTR ' then t := Copy (t, 12, MaxInt)
+  else if Copy (t, 1, 4) = 'PTR ' then t := Copy (t, 5, MaxInt);
+  dot := Pos ('.', t);
+  if dot > 1 then
+  begin
+    mn := Copy (t, 1, dot - 1);
+    tn := Copy (t, dot + 1, MaxInt);
+  end
+  else
+  begin
+    mn := curMod;
+    tn := t;
+  end;
+  m := FindMod (mn);
+  if m = nil then Exit;
+  body := m.FindType (tn);
+  for depth := 0 to 8 do
+  begin
+    if body = nil then Exit;
+    if body.kind in [nkPtrType, nkSharedType, nkOptType] then
+      body := body.kids[0]
+    else if body.kind = nkQualident then
+    begin
+      if body.b = '' then
+        body := m.FindType (body.a)
+      else
+      begin
+        mm := FindMod (body.a);
+        if mm = nil then Exit;
+        m := mm;
+        body := m.FindType (body.b);
+      end;
+    end
+    else
+      Break;
+  end;
+  if (body = nil) or (body.kind <> nkRecordType) or (body.kids[1] = nil) then Exit;
+  for g := 0 to High (body.kids[1].kids) do
+    if body.kids[1].kids[g] <> nil then
+    begin
+      was := canonCtx;
+      canonCtx := mn;
+      ft := CanonT (body.kids[1].kids[g].kids[1], 0);
+      canonCtx := was;
+      if (Copy (ft, 1, 7) = 'SHARED ') or (Copy (ft, 1, 11) = 'OPT SHARED ') then
+      begin
+        w := ShareWhy (ft, False);
+        if w <> '' then Exit (w);
+      end;
+    end;
 end;
 
 { a RECORD takes one attribute, [SHARABLE] (mirrors Sem.RecordAttribWalk) }
@@ -947,16 +1111,96 @@ begin
   for i := 0 to High (n.kids) do RecordAttribWalk (sem, n.kids[i], ctx);
 end;
 
+procedure TSem.AnsRoom;
+begin
+  if ansDepth + 2 >= Length (ansLow) then
+  begin
+    SetLength (ansLow, 2 * Length (ansLow) + 64);
+    SetLength (ansBase, Length (ansLow));
+    SetLength (ansDirty, Length (ansLow));
+  end;
+  if provTop + 1 >= Length (provIx) then SetLength (provIx, 2 * Length (provIx) + 256);
+end;
+
+{ a memo read: FALSE when the key is absent or must be asked again; a read
+  of an entry in progress answers no and records that the reader leaned on it }
+function TSem.AnsGet (const key: string; out res: Boolean): Boolean;
+var i : Integer;
+begin
+  res := False;
+  i := ansMemo.IndexOfName (key);
+  if (i < 0) or (ansMemo.ValueFromIndex[i] = 'redo') then Exit (False);
+  if ansMemo.ValueFromIndex[i] = 'busy' then
+  begin
+    if ansDep[i] < ansLow[ansDepth] then ansLow[ansDepth] := ansDep[i];
+    ansRB[i] := True;
+    Exit (True);
+  end;
+  res := ansMemo.ValueFromIndex[i] = 'yes';
+  Result := True;
+end;
+
+procedure TSem.AnsPut (const key, state: string);
+var i, d, k : Integer;
+begin
+  i := ansMemo.IndexOfName (key);
+  d := 0;
+  if state = 'busy' then
+  begin
+    AnsRoom;
+    Inc (ansDepth);
+    ansLow[ansDepth] := ansDepth;
+    ansBase[ansDepth] := provTop;
+    ansDirty[ansDepth] := False;
+    d := ansDepth;
+    if i >= 0 then ansRB[i] := False;
+  end
+  else if (i >= 0) and (ansMemo.ValueFromIndex[i] = 'busy') then
+  begin
+    d := ansDep[i];
+    if ansRB[i] and (state <> 'no') then ansDirty[d] := True;
+    if ansLow[d] < d then
+    begin
+      AnsRoom;
+      provIx[provTop] := i;
+      Inc (provTop);
+      if ansLow[d] < ansLow[d - 1] then ansLow[d - 1] := ansLow[d];
+      if ansDirty[d] then ansDirty[d - 1] := True;
+    end
+    else
+    begin
+      if ansDirty[d] then
+        for k := ansBase[d] to provTop - 1 do ansMemo.ValueFromIndex[provIx[k]] := 'redo';
+      provTop := ansBase[d];
+    end;
+    ansDepth := d - 1;
+  end;
+  if i >= 0 then
+  begin
+    ansMemo.ValueFromIndex[i] := state;
+    ansDep[i] := d;
+    Exit;
+  end;
+  ansMemo.Add (key + '=' + state);
+  i := ansMemo.Count - 1;
+  if i >= Length (ansDep) then
+  begin
+    SetLength (ansDep, 2 * i + 64);
+    SetLength (ansRB, 2 * i + 64);
+  end;
+  ansDep[i] := d;
+  ansRB[i] := False;
+end;
+
 function TSem.AnswersFrame (const qual: string; const pr: TProcInfo): Boolean;
 var
   ix, g : Integer;
   isStr, hasPool : Boolean;
   pl : TNode;
 begin
-  ix := ansMemo.IndexOfName (qual);
-  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
+  if AnsGet (qual, Result) then Exit;
   { in progress counts as no: a cycle adds no evidence of its own }
-  ansMemo.Values[qual] := 'busy';
+  AnsPut (qual, 'busy');
   Result := False;
   if pr.body <> nil then
   begin
@@ -972,12 +1216,13 @@ begin
     { ... but only for what it returns; a local POOL is evidence only
       in a pool-less string function (Sem.AnswersFrame says why) }
     isStr := (pr.body.kids[1] <> nil) and
-             (CanonT (pr.body.kids[1], 0) = 'SLICE OF CHAR');
+             ((CanonT (pr.body.kids[1], 0) = 'SLICE OF CHAR') or
+              (CanonT (pr.body.kids[1], 0) = UtfTy));
     Result := FrameEvidence (pr.body.kids[4], pr.modName, isStr,
                              pr.body.kids[4], not hasPool);
   end;
-  if Result then ansMemo.Values[qual] := 'yes'
-  else ansMemo.Values[qual] := 'no';
+  if Result then AnsPut (qual, 'yes')
+  else AnsPut (qual, 'no');
 end;
 
 { Sem.AnswersRo: may the function answer READ-ONLY storage -- a string
@@ -1004,6 +1249,8 @@ begin
   if k.kind = nkString then Exit (Length (k.a) > 0);
   if (k.kind = nkSliceOf3) or (k.kind = nkGridOf) then
     Exit (RoExprEvidence (k.kids[0], d, modn, depth + 1));
+  { the octets of a UTF are read-only storage, whatever holds it }
+  if UtfBuiltin (k) = 'OCTETS' then Exit (True);
   if (k.kind = nkDesignator) and (Length (k.kids) = 0) then
   begin
     if IsRoParamOfD (d, k.a) then Exit (True);
@@ -1036,9 +1283,8 @@ function TSem.AnswersRo (const qual: string; const pr: TProcInfo): Boolean;
 var ix : Integer; key, t : string;
 begin
   key := 'ro ' + qual;
-  ix := ansMemo.IndexOfName (key);
-  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
-  ansMemo.Values[key] := 'busy';
+  if AnsGet (key, Result) then Exit;
+  AnsPut (key, 'busy');
   Result := False;
   if (pr.body <> nil) and (pr.body.kids[1] <> nil) then
   begin
@@ -1046,8 +1292,8 @@ begin
     if StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'GRID ') then
       Result := RoEvidence (pr.body.kids[4], pr.body, pr.modName);
   end;
-  if Result then ansMemo.Values[key] := 'yes'
-  else ansMemo.Values[key] := 'no';
+  if Result then AnsPut (key, 'yes')
+  else AnsPut (key, 'no');
 end;
 
 { Sem.AnswersView: does the callee answer a VIEW of one of its own
@@ -1131,6 +1377,8 @@ begin
   if (k.kind = nkSliceOf3) or (k.kind = nkGridOf) or (k.kind = nkParen) or
      (k.kind = nkSomeExpr) then
     Exit (ViewExprEvidence (k.kids[0], d, modn, depth + 1, nm));
+  if OctetsArg (k) <> nil then
+    Exit (ViewExprEvidence (OctetsArg (k), d, modn, depth + 1, nm));
   if k.kind = nkDesignator then
   begin
     if k.a = nm then Exit (ParamViewBearing (d, k, modn));
@@ -1383,9 +1631,8 @@ begin
   Result := False;
   if i = j then Exit;
   key := 'back ' + qual + '#' + IntToStr (i) + '#' + IntToStr (j);
-  ix := ansMemo.IndexOfName (key);
-  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
-  ansMemo.Values[key] := 'busy';
+  if AnsGet (key, Result) then Exit;
+  AnsPut (key, 'busy');
   if pr.body <> nil then
   begin
     cn := VarParamAt (pr.body, i);
@@ -1393,8 +1640,8 @@ begin
     if (cn <> '') and (src <> '') then
       Result := CarrierEvidence (pr.body.kids[4], cn, pr.body, pr.modName, 0, src, False);
   end;
-  if Result then ansMemo.Values[key] := 'yes'
-  else ansMemo.Values[key] := 'no';
+  if Result then AnsPut (key, 'yes')
+  else AnsPut (key, 'no');
 end;
 
 { HandsBackFrom's question with the store BEYOND the frame: into what
@@ -1406,9 +1653,8 @@ begin
   Result := False;
   if i = j then Exit;
   key := 'deep ' + qual + '#' + IntToStr (i) + '#' + IntToStr (j);
-  ix := ansMemo.IndexOfName (key);
-  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
-  ansMemo.Values[key] := 'busy';
+  if AnsGet (key, Result) then Exit;
+  AnsPut (key, 'busy');
   if pr.body <> nil then
   begin
     cn := VarParamAt (pr.body, i);
@@ -1416,8 +1662,8 @@ begin
     if (cn <> '') and (src <> '') then
       Result := CarrierEvidence (pr.body.kids[4], cn, pr.body, pr.modName, 0, src, True);
   end;
-  if Result then ansMemo.Values[key] := 'yes'
-  else ansMemo.Values[key] := 'no';
+  if Result then AnsPut (key, 'yes')
+  else AnsPut (key, 'no');
 end;
 
 function TSem.ViewEvidence (k, d: TNode; const modn, nm: string): Boolean;
@@ -1438,9 +1684,8 @@ function TSem.AnswersViewAt (const qual: string; const pr: TProcInfo; j: Integer
 var ix : Integer; key, t, nm : string;
 begin
   key := 'view ' + qual + '#' + IntToStr (j);
-  ix := ansMemo.IndexOfName (key);
-  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
-  ansMemo.Values[key] := 'busy';
+  if AnsGet (key, Result) then Exit;
+  AnsPut (key, 'busy');
   Result := False;
   if (pr.body <> nil) and (pr.body.kids[1] <> nil) then
   begin
@@ -1449,8 +1694,8 @@ begin
     if (nm <> '') and (StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'GRID ')) then
       Result := ViewEvidence (pr.body.kids[4], pr.body, pr.modName, nm);
   end;
-  if Result then ansMemo.Values[key] := 'yes'
-  else ansMemo.Values[key] := 'no';
+  if Result then AnsPut (key, 'yes')
+  else AnsPut (key, 'no');
 end;
 
 { the parameters a parameter list declares (the pass's CountParams is
@@ -1477,9 +1722,140 @@ begin
     if AnswersViewAt (qual, pr, j) then Exit (True);
 end;
 
+{ is the J-th parameter OWN?  Mirrors Sem.ParamOwnAt }
+function ParamOwnAt (d: TNode; j: Integer): Boolean;
+var g, k : Integer;
+begin
+  Result := False;
+  k := 0;
+  if d.kids[0] = nil then Exit;
+  for g := 0 to High (d.kids[0].kids) do
+    if (d.kids[0].kids[g] <> nil) and (d.kids[0].kids[g].kids[0] <> nil) then
+    begin
+      if j < k + Length (d.kids[0].kids[g].kids[0].kids) then
+        Exit (d.kids[0].kids[g].f2);
+      Inc (k, Length (d.kids[0].kids[g].kids[0].kids));
+    end;
+end;
+
+{ does a RETURN under k answer a call -- through parens and SOME -- whose
+  callee answers a borrow, with an argument rooted at nm?  Mirrors
+  Sem.ReturnBorrows (decision 61's open half, 2026-10-25) }
+function TSem.ReturnBorrows (k: TNode; const nm: string): Boolean;
+var i : Integer; r : TNode; pr : TProcInfo;
+  { CheckBody's EscRootOf, which is nested there }
+  function RootOf (e: TNode): string;
+  var cn : string;
+  begin
+    Result := '';
+    if e = nil then Exit;
+    if e.kind = nkDesignator then Exit (e.a);
+    if (e.kind = nkSomeExpr) or (e.kind = nkParen) or
+       (e.kind = nkSliceOf3) or (e.kind = nkSharedExpr) or
+       (e.kind = nkGridOf) then
+      Exit (RootOf (e.kids[0]));
+    if OctetsArg (e) <> nil then Exit (RootOf (OctetsArg (e)));
+    if (e.kind = nkCallExpr) and (e.kids[0] <> nil) and
+       (e.kids[0].kind = nkDesignator) and
+       (Length (e.kids[0].kids) = 0) then
+    begin
+      cn := e.kids[0].a;
+      if ((cn = 'SLICE') or (cn = 'VIEW') or (cn = 'SHARED')) and
+         (e.kids[1] <> nil) and (Length (e.kids[1].kids) > 0) then
+        Exit (RootOf (e.kids[1].kids[0]));
+    end;
+  end;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if (k.kind = nkReturn) and (Length (k.kids) > 0) then
+  begin
+    r := k.kids[0];
+    while (r <> nil) and ((r.kind = nkParen) or (r.kind = nkSomeExpr)) do r := r.kids[0];
+    if (r <> nil) and (r.kind = nkCallExpr) and (Length (r.kids) > 1) and
+       (r.kids[0] <> nil) and (r.kids[0].kind = nkDesignator) and
+       LookupProcInfo (CallName (r.kids[0]), pr) and (pr.foreign = '') and
+       AnswersBorrowAny (pr.modName + '.' + pr.name, pr) and (r.kids[1] <> nil) then
+      for i := 0 to High (r.kids[1].kids) do
+        if RootOf (r.kids[1].kids[i]) = nm then Exit (True);
+    Exit;
+  end;
+  for i := 0 to High (k.kids) do
+    if ReturnBorrows (k.kids[i], nm) then Exit (True);
+end;
+
+{ does the callee answer a POINTER it was lent?  Then its answer is a
+  borrow, not an owner (the review's O4b).  Mirrors Sem.AnswersBorrowAny }
+function TSem.AnswersBorrowAny (const qual: string; const pr: TProcInfo): Boolean;
+var ix, j, n : Integer; key, t, nm : string;
+begin
+  key := 'borrow ' + qual;
+  if AnsGet (key, Result) then Exit;
+  AnsPut (key, 'busy');
+  Result := False;
+  if (pr.body <> nil) and (pr.body.kids[1] <> nil) then
+  begin
+    t := CanonT (pr.body.kids[1], 0);
+    if StartsWithS (t, 'PTR ') or StartsWithS (t, 'OPT ') then
+    begin
+      n := CountParamsOf (pr.body.kids[0]);
+      j := 0;
+      while (j < n) and not Result do
+      begin
+        nm := ParamNameAt (pr.body, j);
+        if (nm <> '') and not ParamOwnAt (pr.body, j) then
+          Result := ViewEvidence (pr.body.kids[4], pr.body, pr.modName, nm) or
+                    ReturnBorrows (pr.body.kids[4], nm);
+        Inc (j);
+      end;
+    end;
+  end;
+  if Result then AnsPut (key, 'yes')
+  else AnsPut (key, 'no');
+end;
+
 { the call under K -- through parens, SOME, SLICE and GRID -- when its
   callee answers a view of some parameter; nil otherwise.  Mirrors
   Sem.ViewCallOf }
+{ the UTF builtins (mirrors Sem.UtfName/UtfBuiltin/OctetsArg): UTF (s),
+  UTF (b), STR (u), OCTETS (u), by the callee's bare name and one
+  argument; a procedure of the program's own by the name is not one }
+function TSem.UtfName (const nm: string): Boolean;
+var pr : TProcInfo;
+begin
+  Result := ((nm = 'UTF') or (nm = 'STR') or (nm = 'OCTETS')) and
+            not LookupProcInfo (nm, pr);
+end;
+
+function TSem.UtfBuiltin (e: TNode): string;
+begin
+  Result := '';
+  if (e = nil) or (e.kind <> nkCallExpr) then Exit;
+  if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) or
+     (Length (e.kids[0].kids) <> 0) then Exit;
+  if not UtfName (e.kids[0].a) then Exit;
+  if (e.kids[1] <> nil) and (Length (e.kids[1].kids) = 1) then
+    Result := e.kids[0].a;
+end;
+
+function TSem.UtfInPool (e: TNode): string;
+begin
+  Result := '';
+  if (e = nil) or (e.kind <> nkCallExpr) then Exit;
+  if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) or
+     (Length (e.kids[0].kids) <> 0) or (e.kids[0].a <> 'UTF') then Exit;
+  if not UtfName ('UTF') then Exit;
+  if (e.kids[1] <> nil) and (Length (e.kids[1].kids) = 2) and
+     (e.kids[1].kids[0] <> nil) and (e.kids[1].kids[0].kind = nkDesignator) then
+    Result := e.kids[1].kids[0].a;
+end;
+
+function TSem.OctetsArg (e: TNode): TNode;
+begin
+  Result := nil;
+  if UtfBuiltin (e) = 'OCTETS' then Result := e.kids[1].kids[0];
+end;
+
 function TSem.ViewCallOf (k: TNode): TNode;
 var pr : TProcInfo;
 begin
@@ -1488,6 +1864,7 @@ begin
   if (k.kind = nkParen) or (k.kind = nkSomeExpr) or
      (k.kind = nkSliceOf3) or (k.kind = nkGridOf) then
     Exit (ViewCallOf (k.kids[0]));
+  if OctetsArg (k) <> nil then Exit (ViewCallOf (OctetsArg (k)));
   if (k.kind = nkCallExpr) and (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) then
     if LookupProcInfo (CallName (k.kids[0]), pr) and (pr.foreign = '') then
       if AnswersViewAny (pr.modName + '.' + pr.name, pr) then
@@ -1767,7 +2144,10 @@ var ln, cl : Integer;
 begin
   ln := 0; cl := 0;
   if n <> nil then begin ln := n.line; cl := n.col; end;
-  Errors.Add (Format ('%d:%d %s: %s', [ln, cl, ctx, msg]));
+  { the type UTF names is spelled UTF: SLICE OF <u8> is nothing a
+    program can write (docs/utf8-plan.md) }
+  Errors.Add (Format ('%d:%d %s: %s',
+    [ln, cl, ctx, StringReplace (msg, UtfTy, 'UTF', [rfReplaceAll])]));
 end;
 
 function TSem.SigOf (p: TNode): string;
@@ -1792,6 +2172,218 @@ begin
       Result[i] := p.kids[2].kids[i].b
     else
       Result[i] := p.kids[2].kids[i].a;
+end;
+
+{ a RAISES clause's names as SPELLED, `A.E' or `E', for the accounting
+  (mirrors Sem.RaisesSpelled; RaisesOf's bare names stay the signature) }
+function TSem.RaisesSpelled (p: TNode): TStringArray;
+var i : Integer;
+begin
+  SetLength (Result, 0);
+  if p.kids[2] = nil then Exit;
+  SetLength (Result, Length (p.kids[2].kids));
+  for i := 0 to High (p.kids[2].kids) do
+    if p.kids[2].kids[i].b <> '' then
+      Result[i] := p.kids[2].kids[i].a + '.' + p.kids[2].kids[i].b
+    else
+      Result[i] := p.kids[2].kids[i].a;
+end;
+
+{ an exception's KEY in the RAISES accounting: module and name (mirrors
+  Sem.ExcKey; the compiler review's C6, second half) }
+function TSem.ExcKey (const md, spelled: string): string;
+var m : TModuleInfo; i : Integer;
+begin
+  if Pos ('.', spelled) > 0 then Exit (spelled);
+  m := FindMod (md);
+  if m <> nil then
+    for i := 0 to High (m.exNames) do
+      if m.exNames[i] = spelled then Exit (md + '.' + spelled);
+  Result := spelled;
+end;
+
+{ a key's bare name, for the message }
+function ExcBare (const key: string): string;
+var i : Integer;
+begin
+  i := Length (key);
+  while (i > 0) and (key[i] <> '.') do Dec (i);
+  Result := Copy (key, i + 1, Length (key) - i);
+end;
+
+{ does a handler's or a clause's key cover a raised key (mirrors
+  Sem.ExcCovers): the same key, or a bare key and the raised bare name }
+{ a procedure bound to a monitor calling another bound to the SAME
+  monitor waits for its own lock.  Mirrors Sem.SameMonitorCall; the
+  binding test is CheckFile's nested BoundMonitorOf, copied here }
+{ the monitor TYPE a procedure is bound to, as its type node (mirrors
+  Sem.MonIdOf) }
+function TSem.MonIdOf (d: TNode; const modn: string): TNode;
+var grp, rt : TNode; was : string;
+begin
+  Result := nil;
+  if (d = nil) or (d.kids[0] = nil) or (Length (d.kids[0].kids) = 0) then Exit;
+  grp := d.kids[0].kids[0];
+  if (grp = nil) or (grp.kids[0] = nil) or (Length (grp.kids[0].kids) = 0) then Exit;
+  was := canonCtx;
+  canonCtx := modn;
+  rt := ResolveType (grp.kids[1]);
+  while (rt <> nil) and (rt.kind in [nkPtrType, nkSharedType]) do
+    rt := ResolveType (rt.kids[0]);
+  canonCtx := was;
+  if (rt <> nil) and (rt.kind = nkMonitorType) then Result := rt;
+end;
+
+function TSem.MonReachWalk (k: TNode; const modn: string; mon: TNode): Boolean;
+var i : Integer; cn : string; cpr : TProcInfo;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if ((k.kind = nkCallExpr) or (k.kind = nkCallStmt)) and (k.kids[0] <> nil) and
+     (k.kids[0].kind = nkDesignator) then
+  begin
+    cn := k.kids[0].a;
+    for i := 0 to High (k.kids[0].kids) do
+      if k.kids[0].kids[i].kind = nkSelField then
+        cn := cn + '.' + k.kids[0].kids[i].a
+      else
+      begin
+        cn := k.kids[0].a;
+        break;
+      end;
+    if ProcNamed (modn, cn, cpr) and (cpr.foreign = '') then
+      if MonReach (cpr, mon) then Exit (True);
+  end;
+  for i := 0 to High (k.kids) do
+    if MonReachWalk (k.kids[i], modn, mon) then Exit (True);
+end;
+
+{ may a call of pr enter a monitor of the type mon (mirrors Sem.MonReach) }
+function TSem.MonReach (const pr: TProcInfo; mon: TNode): Boolean;
+var key : string;
+begin
+  key := 'mon ' + IntToStr (PtrUInt (mon)) + ' ' + pr.modName + '.' + pr.name;
+  if AnsGet (key, Result) then Exit;
+  AnsPut (key, 'busy');
+  Result := (pr.node <> nil) and (MonIdOf (pr.node, pr.modName) = mon);
+  if not Result and (pr.body <> nil) and (Length (pr.body.kids) > 4) then
+    Result := MonReachWalk (pr.body.kids[4], pr.modName, mon);
+  if Result then AnsPut (key, 'yes') else AnsPut (key, 'no');
+end;
+
+{ may a call of pr WAIT, at any depth (mirrors Sem.MonWaits) }
+function TSem.MonWaitWalk (k: TNode; const modn: string): Boolean;
+var i : Integer; cn : string; cpr : TProcInfo;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if k.kind = nkWait then Exit (True);
+  if ((k.kind = nkCallExpr) or (k.kind = nkCallStmt)) and (k.kids[0] <> nil) and
+     (k.kids[0].kind = nkDesignator) then
+  begin
+    cn := k.kids[0].a;
+    for i := 0 to High (k.kids[0].kids) do
+      if k.kids[0].kids[i].kind = nkSelField then
+        cn := cn + '.' + k.kids[0].kids[i].a
+      else
+      begin
+        cn := k.kids[0].a;
+        break;
+      end;
+    if ProcNamed (modn, cn, cpr) and (cpr.foreign = '') then
+      if MonWaits (cpr) then Exit (True);
+  end;
+  for i := 0 to High (k.kids) do
+    if MonWaitWalk (k.kids[i], modn) then Exit (True);
+end;
+
+function TSem.MonWaits (const pr: TProcInfo): Boolean;
+var key : string;
+begin
+  key := 'waits ' + pr.modName + '.' + pr.name;
+  if AnsGet (key, Result) then Exit;
+  AnsPut (key, 'busy');
+  Result := False;
+  if (pr.body <> nil) and (Length (pr.body.kids) > 4) then
+    Result := MonWaitWalk (pr.body.kids[4], pr.modName);
+  if Result then AnsPut (key, 'yes') else AnsPut (key, 'no');
+end;
+
+{ a lock-order cycle across two monitor types (mirrors Sem.MonCycle) }
+function TSem.MonCycle (const pr: TProcInfo; mon: TNode): Boolean;
+var m, i : Integer; t : TNode;
+begin
+  Result := False;
+  for m := 0 to High (mods) do
+    for i := 0 to High (mods[m].procs) do
+      if mods[m].procs[i].node <> nil then
+      begin
+        t := MonIdOf (mods[m].procs[i].node, mods[m].name);
+        if (t <> nil) and (t <> mon) and MonReach (pr, t) and
+           MonReach (mods[m].procs[i], mon) then Exit (True);
+      end;
+end;
+
+procedure TSem.SameMonitorCall (const ctx, name: string; callee, a0: TNode);
+var grp, rt : TNode; bound : string;
+begin
+  if (boundMon = '') or (a0 = nil) or (callee = nil) then Exit;
+  if (a0.kind <> nkDesignator) or (Length (a0.kids) <> 0) or (a0.a <> boundMon) then Exit;
+  bound := '';
+  if (callee.kids[0] <> nil) and (Length (callee.kids[0].kids) > 0) then
+  begin
+    grp := callee.kids[0].kids[0];
+    if Length (grp.kids[0].kids) > 0 then
+    begin
+      rt := ResolveType (grp.kids[1]);
+      while (rt <> nil) and (rt.kind in [nkPtrType, nkSharedType]) do
+        rt := ResolveType (rt.kids[0]);
+      if (rt <> nil) and (rt.kind = nkMonitorType) then
+        bound := grp.kids[0].kids[0].a;
+    end;
+  end;
+  if bound <> '' then
+    ErrN (a0, ctx, name + ' is bound to the monitor ' + boundMon +
+      ', which this procedure is bound to and holds the lock of: the call waits for that lock for ever' +
+      ' -- pass what it needs instead of the monitor, or call it from a procedure that is not bound (par 6)');
+end;
+
+{ a FOR's control variable is written by the loop alone.  Mirrors
+  Sem.ForVarWrite (Alex, 2026-10-25) }
+procedure TSem.ForVarWrite (d: TNode; const ctx: string; byRef: Boolean);
+var j : Integer;
+begin
+  if (d = nil) or (d.kind <> nkDesignator) or (Length (d.kids) <> 0) then Exit;
+  for j := High (forNames) downto 0 do
+    if forPlain[j] and (forNames[j] = d.a) then
+    begin
+      if byRef then
+        ErrN (d, ctx, d.a + ' is the control variable of the FOR at line ' +
+          IntToStr (forLines[j]) + ': it cannot be handed to a VAR or OWN parameter inside the loop' +
+          ' -- pass a copy (par 2.1)')
+      else
+        ErrN (d, ctx, d.a + ' is the control variable of the FOR at line ' +
+          IntToStr (forLines[j]) + ': it cannot be assigned inside the loop' +
+          ' -- leave with EXIT, or count in a WHILE (par 2.1)');
+      Exit;
+    end;
+end;
+
+{ the name a refusal shows for a raised key.  Mirrors Sem.ExcShown }
+function TSem.ExcShown (const key: string): string;
+var bare : string;
+begin
+  bare := ExcBare (key);
+  if (Pos ('.', key) > 0) and (Copy (key, 1, Length (curMod) + 1) <> curMod + '.') and
+     (ExcKey (curMod, bare) = curMod + '.' + bare) then
+    Exit (key);
+  Result := bare;
+end;
+
+function ExcCovers (const k, raisedKey: string): Boolean;
+begin
+  if k = raisedKey then Exit (True);
+  Result := (Pos ('.', k) = 0) and (k = ExcBare (raisedKey));
 end;
 
 { an exception cited by RAISE, a RAISES clause or a handler must be
@@ -1965,17 +2557,46 @@ begin
   Result := InList (nm, m.opaque);
 end;
 
+{ nm, bare, names an exception of this module or a predeclared one,
+  and no type of it }
+function TSem.ExcNotType (const nm: string): Boolean;
+var m : TModuleInfo;
+begin
+  Result := False;
+  m := FindMod (curMod);
+  if m = nil then Exit;
+  if m.FindType (nm) <> nil then Exit;
+  if InList (nm, m.opaque) then Exit;
+  Result := m.HasExc (nm) or (nm = 'Overflow') or (nm = 'IndexError') or
+    (nm = 'OutOfMemory') or (nm = 'ValueRange');
+end;
+
 procedure TSem.CheckTypeNode (t: TNode; const ctx: string);
 { every qualident reachable through PTR, OPT, SHARED, SLICE, ARRAY,
   GRID and the fields of a record, monitor or case record }
-var i : Integer;
+var
+  i : Integer;
+  cv : Int64;
+  cch : Boolean;
 begin
   if t = nil then Exit;
   case t.kind of
     nkQualident :
-      if (t.b <> '') and not TypeKnown (t.a, t.b) then
-        ErrN (t, ctx, 'unknown type: ' + t.a + '.' + t.b + ' -- '
-                      + t.a + ' declares no such type');
+      begin
+        if (t.b <> '') and not TypeKnown (t.a, t.b) then
+          ErrN (t, ctx, 'unknown type: ' + t.a + '.' + t.b + ' -- '
+                        + t.a + ' declares no such type');
+        { a bare name of an EXCEPTION is no type: `VAR b : Bad'
+          reached the C compiler as a variable of an m9_exc }
+        if (t.b = '') and ExcNotType (t.a) then
+          ErrN (t, ctx, t.a + ' is an EXCEPTION, not a type -- an exception' +
+            ' is raised and handled; a value of its fields is a RECORD')
+        { decision 32 left this soft; Alex decided 2026-10-22 to refuse it }
+        else if (t.b = '') and TypeNowhere (t.a) then
+          ErrN (t, ctx, 'unknown type: ' + t.a +
+            ' -- no module declares it; declare it, or write the module it is in (Mod.' +
+            t.a + ') and IMPORT that module');
+      end;
     nkPtrType, nkSharedType :
       CheckTypeNode (t.kids[0], ctx);
     nkOptType :
@@ -1996,6 +2617,13 @@ begin
     nkArrayType :
       begin
         CheckTypeNode (t.kids[1], ctx);
+        { the count, where it folds to a value, is at least 1: the
+          generator refused ARRAY -3 OF as `array count form
+          unsupported yet' (the review's F4) }
+        cv := 1; cch := False;
+        if ScalarConst (t.kids[0], cv, cch) and not cch and (cv < 1) then
+          ErrN (t, ctx, 'an ARRAY holds at least one element; its count is ' +
+            ExprText (t.kids[0]));
         if IsBareProc (t.kids[1]) then
           ErrN (t, ctx, 'a slice or array of procedure values is not in the language yet (par 2.2.3)');
       end;
@@ -2059,9 +2687,47 @@ begin
       begin
         for b := 0 to High (holder.kids[a].kids) do
           if holder.kids[a].kids[b] <> nil then
+          begin
             CheckTypeNode (holder.kids[a].kids[b].kids[0], ctx);
+            { nothing implements a TYPE in a procedure (mirrors
+              Sem.CheckVarTypes) }
+            if not (holder.kind in [nkProgram, nkImplementation, nkDefinition]) then
+              ErrN (holder.kids[a].kids[b], ctx,
+                'a TYPE declared in a procedure is not in the language yet: declare ' +
+                holder.kids[a].kids[b].a + ' at module level');
+          end;
       end;
     end;
+end;
+
+{ the TYPE names a procedure body declares, for TypeNowhere }
+procedure TSem.LocalTypes (body: TNode);
+var a, b : Integer;
+begin
+  SetLength (localTys, 0);
+  if body = nil then Exit;
+  for a := 0 to High (body.kids) do
+    if (body.kids[a] <> nil) and (body.kids[a].kind = nkTypeSection) then
+      for b := 0 to High (body.kids[a].kids) do
+        if body.kids[a].kids[b] <> nil then
+        begin
+          SetLength (localTys, Length (localTys) + 1);
+          localTys[High (localTys)] := body.kids[a].kids[b].a;
+        end;
+end;
+
+{ nm, bare, is no type anywhere (mirrors Sem.TypeNowhere) }
+function TSem.TypeNowhere (const nm: string): Boolean;
+var i : Integer;
+begin
+  Result := False;
+  if InList (nm, BuiltinTypes) or (nm = 'STR') or (nm = 'UTF') or
+     (nm = 'POOL') then Exit;
+  if LookupTypeName ('', nm) <> nil then Exit;
+  if InList (nm, localTys) then Exit;
+  for i := 0 to High (mods) do
+    if InList (nm, mods[i].opaque) or mods[i].HasExc (nm) then Exit;
+  Result := True;
 end;
 
 procedure TSem.CheckDeclTypes (u: TNode);
@@ -2072,11 +2738,13 @@ var
   i, a : Integer;
   d, pl : TNode;
 begin
+  SetLength (localTys, 0);
   CheckVarTypes (u, u.a);
   for i := 0 to High (u.kids) do
   begin
     d := u.kids[i];
     if (d = nil) or (d.kind <> nkProcDecl) then Continue;
+    if Length (d.kids) > 4 then LocalTypes (d.kids[4]) else SetLength (localTys, 0);
     pl := d.kids[0];
     if pl <> nil then
       for a := 0 to High (pl.kids) do
@@ -2102,7 +2770,8 @@ begin
   if t = nil then Exit;
   case t.kind of
     nkQualident :
-      if (t.b = '') and not InList (t.a, BuiltinTypes) and (t.a <> 'STR') then
+      if (t.b = '') and not InList (t.a, BuiltinTypes) and (t.a <> 'STR') and
+         (t.a <> 'UTF') then
       begin
         n := TNode.Create (nkQualident);
         n.a := modName;
@@ -2213,7 +2882,7 @@ begin
             p.foreign := d.b;
             if d.kids[3] <> nil then p.attrib := d.kids[3].a
             else p.attrib := '';
-            p.raises := RaisesOf (d);
+            p.raises := RaisesSpelled (d);
             p.sig := SigOf (d);
             p.node := d;
             p.body := nil;
@@ -2432,16 +3101,22 @@ end;
 
 function TSem.VariantOwner (const vname: string;
   out vi: TVariantInfo): Boolean;
-var i, j, k : Integer;
+var i, j, k, pass : Integer;
 begin
-  for i := 0 to High (mods) do
-    for j := 0 to High (mods[i].vts) do
-      for k := 0 to High (mods[i].vts[j].variants) do
-        if mods[i].vts[j].variants[k] = vname then
-        begin
-          vi := mods[i].vts[j];
-          Exit (True);
-        end;
+  { the module being checked first, then the others: a bare variant
+    name meant the first module LOADED that declares it, so JsonUtf's
+    `Str (t)' took Json's `Str : RO s: STR' (semtest loads every corpus
+    module; 2026-10-23, the canonCtx class) -- as Sem.m9's lookup does }
+  for pass := 0 to 1 do
+    for i := 0 to High (mods) do
+      if (pass = 1) <> (mods[i].name = curMod) then
+        for j := 0 to High (mods[i].vts) do
+          for k := 0 to High (mods[i].vts[j].variants) do
+            if mods[i].vts[j].variants[k] = vname then
+            begin
+              vi := mods[i].vts[j];
+              Exit (True);
+            end;
   Result := False;
 end;
 
@@ -2516,6 +3191,11 @@ begin
       Result := strNode;
       Break;
     end;
+    if (Result.b = '') and (Result.a = 'UTF') then
+    begin
+      Result := utfNode;
+      Break;
+    end;
     if Result.b <> '' then
       Result := LookupTypeName (Result.a, Result.b)
     else
@@ -2548,6 +3228,25 @@ begin
           fields := m.vts[a].fields[b];
           Exit (True);
         end;
+end;
+
+{ Module mn declares an enumeration or case record tn and vn is none
+  of its members: Hue.Nope. }
+function TSem.MemberMissing (const mn, tn, vn: string): Boolean;
+var
+  m : TModuleInfo;
+  a, b : Integer;
+begin
+  Result := False;
+  m := FindMod (mn);
+  if m = nil then Exit;
+  for a := 0 to High (m.vts) do
+    if m.vts[a].typeName = tn then
+    begin
+      for b := 0 to High (m.vts[a].variants) do
+        if m.vts[a].variants[b] = vn then Exit;
+      Exit (True);
+    end;
 end;
 
 function TSem.FindVariant (const tn, vn: string; out ownerMod: string;
@@ -2627,7 +3326,7 @@ begin
   Result := '';
   dot := Pos ('.', name);
   if dot > 0 then begin md := Copy (name, 1, dot - 1); ty := Copy (name, dot + 1, MaxInt); end
-  else begin md := ''; ty := name; end;
+  else begin md := curMod; ty := name; end;   { a bare name is this module's (Sem.EnumConvType) }
   if AllPayloadless (LookupTypeName (md, ty)) then
     Result := CanonQual (md, ty, 0);
 end;
@@ -2638,7 +3337,7 @@ var
   i : Integer;
 
   function TryMod (mm: TModuleInfo): string;
-  var td : TNode;
+  var td : TNode; was : string;
   begin
     Result := '';
     if mm = nil then Exit;
@@ -2647,7 +3346,12 @@ var
     begin
       if td.kind in [nkRecordType, nkCaseRecordType, nkMonitorType, nkEnumType] then
         Exit (mm.name + '.' + typeName);
-      Exit (CanonT (td, depth + 1));
+      { the declaration's bare names are the declaring module's }
+      was := canonCtx;
+      canonCtx := mm.name;
+      Result := CanonT (td, depth + 1);
+      canonCtx := was;
+      Exit;
     end;
     if InList (typeName, mm.opaque) then
       Exit (mm.name + '.' + typeName);
@@ -2718,10 +3422,12 @@ begin
   if rs <> nil then
   begin
     SetLength (names, Length (rs.kids));
+    { each name KEYED as the RAISES accounting keys it (Sem.ProcSig) }
+    if canonCtx <> '' then tmp := canonCtx else tmp := curMod;
     for i := 0 to High (rs.kids) do
       if rs.kids[i] <> nil then
-        if rs.kids[i].b <> '' then names[i] := rs.kids[i].b
-        else names[i] := rs.kids[i].a;
+        if rs.kids[i].b <> '' then names[i] := ExcKey (tmp, rs.kids[i].a + '.' + rs.kids[i].b)
+        else names[i] := ExcKey (tmp, rs.kids[i].a);
     for i := 1 to High (names) do
     begin
       k := i;
@@ -2781,6 +3487,10 @@ begin
         { predeclared alias, par 2.2: identical to what it abbreviates,
           so conformance and assignment see no difference at all }
         Result := 'SLICE OF CHAR'
+      else if t.a = 'UTF' then
+        Result := UtfTy
+      else if t.a = '<u8>' then
+        Result := '<u8>'
       else if t.a = 'POOL' then
         { a type like any other to the comparison of an argument with
           its parameter; until 2026-10-01 it had no canonical form and
@@ -2939,11 +3649,36 @@ begin
         'opaque type not defined in the implementation');
 end;
 
+{ the Levenshtein distance of two names (Sem.EditDist) }
+function EditDist (const a, b: string): Integer;
+var
+  prev, cur : array of Integer;
+  i, j, c, x : Integer;
+begin
+  SetLength (prev, Length (b) + 1);
+  SetLength (cur, Length (b) + 1);
+  for j := 0 to Length (b) do prev[j] := j;
+  for i := 1 to Length (a) do
+  begin
+    cur[0] := i;
+    for j := 1 to Length (b) do
+    begin
+      if a[i] = b[j] then c := 0 else c := 1;
+      x := prev[j - 1] + c;
+      if prev[j] + 1 < x then x := prev[j] + 1;
+      if cur[j - 1] + 1 < x then x := cur[j - 1] + 1;
+      cur[j] := x;
+    end;
+    for j := 0 to Length (b) do prev[j] := cur[j];
+  end;
+  Result := prev[Length (b)];
+end;
+
 procedure TSem.CheckBody (body: TNode; const ctx: string;
   const declared: array of string; scope: TStringList;
   const retTy: string);
 var
-  raised, handled, calls, ownState : TStringList;
+  raised, calls, ownState : TStringList;
   i : Integer;
   { ---- par 4.1, DIRECTIONAL: the ledger names stores; these decide
     which stores anyone outside the frame can still see.  Per local
@@ -3033,7 +3768,7 @@ var
     case t.kind of
       nkQualident :
         if (t.b = '') and not InList (t.a, BuiltinTypes) and
-           (t.a <> 'STR') then
+           (t.a <> 'STR') and (t.a <> 'UTF') then
         begin
           n := TNode.Create (nkQualident);
           n.a := modName;
@@ -3098,6 +3833,45 @@ var
   function IsConstHere (const nm: string): Boolean;
   begin
     Result := (ScopeMode (nm) = '') and (constMap.IndexOfName (nm) >= 0);
+  end;
+
+  { a designator naming a CONST whose value is a string literal -- this
+    module's bare name, or an imported Mod.C -- adapts to a UTF as the
+    literal does (decision 66, 2026-10-23; mirrors Sem.StrConstDesig):
+    a CONST's recorded type is its literal's, SLICE OF CHAR or <str1> }
+  function StrConstDesig (k: TNode): Boolean;
+  var
+    t : string;
+    mi : TModuleInfo;
+    j : Integer;
+  begin
+    Result := False;
+    if (k = nil) or (k.kind <> nkDesignator) then Exit;
+    t := '';
+    if Length (k.kids) = 0 then
+    begin
+      if not IsConstHere (k.a) then Exit;
+      t := constMap.Values[k.a];
+    end
+    else if (Length (k.kids) = 1) and (k.kids[0] <> nil) and
+            (k.kids[0].kind = nkSelField) then
+    begin
+      if ScopeMode (k.a) <> '' then Exit;
+      mi := FindMod (k.a);
+      if mi = nil then Exit;
+      for j := 0 to High (mi.cnNames) do
+        if mi.cnNames[j] = k.kids[0].a then t := mi.cnTypes[j];
+    end
+    else
+      Exit;
+    Result := (t = 'SLICE OF CHAR') or (t = '<str1>');
+  end;
+
+  { AdaptLit with the CONST rule: the plain function knows literals only }
+  function AdaptLitC (k: TNode; const dst, src: string): string;
+  begin
+    if (dst = UtfTy) and StrConstDesig (k) then Result := UtfTy
+    else Result := AdaptLit (k, dst, src);
   end;
 
   { a FOR step that is a constant: what ScalarConst folds, or a name --
@@ -3194,6 +3968,7 @@ var
        (e.kind = nkSliceOf3) or (e.kind = nkSharedExpr) or
        (e.kind = nkGridOf) then
       Exit (EscRootOf (e.kids[0]));
+    if OctetsArg (e) <> nil then Exit (EscRootOf (OctetsArg (e)));
     if (e.kind = nkCallExpr) and (e.kids[0] <> nil) and
        (e.kids[0].kind = nkDesignator) and
        (Length (e.kids[0].kids) = 0) then
@@ -3254,6 +4029,7 @@ var
   var pr : TProcInfo; name : string;
   begin
     Result := '';
+    if UtfBuiltin (e) = 'OCTETS' then Exit ('the octets of a UTF (OCTETS)');
     if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) then Exit;
     name := CallName (e.kids[0]);
     if not LookupProcInfo (name, pr) then Exit;
@@ -3501,6 +4277,12 @@ var
         Result := e.kids[0].a;
       Exit;
     end;
+    { UTF (pool, x) answers in pool, as NEW (pool, ...) does (mirrors Sem) }
+    if UtfInPool (e) <> '' then
+    begin
+      if IsPoolName (UtfInPool (e)) then Result := UtfInPool (e);
+      Exit;
+    end;
     if e.kind <> nkCallExpr then Exit;
     if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) then Exit;
     if not LookupProcInfo (DesigName (e.kids[0]), pr) then Exit;
@@ -3653,8 +4435,22 @@ var
     while (e <> nil) and ((e.kind = nkParen) or (e.kind = nkSomeExpr)) do
       e := e.kids[0];
     if e = nil then Exit;
-    if (e.kind = nkBin) and (e.a = '+') and (u = 'SLICE OF CHAR') then
+    if (e.kind = nkBin) and (e.a = '+') and
+       ((u = 'SLICE OF CHAR') or (u = UtfTy)) then
       Exit ('a concatenation');
+    { UTF (x) and STR (u) build their answer in this frame, as + does;
+      OCTETS (u) is a view of u (mirrors Sem.FrameWhat) }
+    if (UtfBuiltin (e) = 'UTF') or (UtfBuiltin (e) = 'STR') then
+      Exit ('the answer of ' + UtfBuiltin (e));
+    if OctetsArg (e) <> nil then
+    begin
+      p := FrameWhat (OctetsArg (e), UtfTy);
+      if p <> '' then
+      begin
+        if StartsWithS (p, 'a view') then Exit (p);
+        Exit ('a view of ' + p);
+      end;
+    end;
     if (e.kind = nkNewExpr) and NewIsFrame (e) then
       Exit ('a frame allocation');
     if (e.kind = nkCallExpr) and (e.kids[0] <> nil) then
@@ -3881,6 +4677,7 @@ var
   { DISPOSE frees only a name that may OWN what it holds (mirrors
     Sem.OwnFedSeed, 2026-10-10) }
   function OwnFedBy (r: TNode): Boolean;
+  var pr : TProcInfo;
   begin
     Result := False;
     while (r <> nil) and (r.kind = nkParen) do r := r.kids[0];
@@ -3888,8 +4685,17 @@ var
     if r.kind = nkNewExpr then
       Result := (r.kids[0] <> nil) and (r.kids[0].kind = nkDesignator) and
                 (Length (r.kids[0].kids) = 0) and (r.kids[0].a = 'OWN')
-    else if (r.kind = nkSharedExpr) or (r.kind = nkCallExpr) then
+    else if r.kind = nkSharedExpr then
       Result := True
+    else if r.kind = nkCallExpr then
+    begin
+      { a call's answer owns, unless the callee answers what it was
+        lent (Sem.OwnFedBy) }
+      Result := True;
+      if (r.kids[0] <> nil) and (r.kids[0].kind = nkDesignator) then
+        if LookupProcInfo (CallName (r.kids[0]), pr) and (pr.foreign = '') then
+          Result := not AnswersBorrowAny (pr.modName + '.' + pr.name, pr);
+    end
     else if (r.kind = nkDesignator) and (Length (r.kids) = 0) then
       Result := (ScopeMode (r.a) = 'o') or (OwnedCandKind (r.a) = 2) or
                 (ownFed.IndexOf (r.a) >= 0);
@@ -4131,6 +4937,108 @@ var
     if r.kind = nkPtrType then Result := r.kids[1];
   end;
 
+  { may the callee allocate THROUGH its VAR pointer parameter j: a NEW
+    on it, or it handed on as VAR to a callee that does (mirrors
+    Sem.AllocsThrough; memoised in ansMemo as `alloc Mod.Proc#j') }
+  function AllocsThrough (const pr: TProcInfo; j: Integer): Boolean;
+  var
+    key, nm : string;
+    ix : Integer;
+    function Walk (k: TNode): Boolean;
+    var
+      i, g, b, a : Integer;
+      cpr : TProcInfo;
+      cn : string;
+      pl, al : TNode;
+    begin
+      Result := False;
+      if k = nil then Exit;
+      if (k.kind = nkNewExpr) and (k.kids[0] <> nil) and
+         (k.kids[0].kind = nkDesignator) and (k.kids[0].a = nm) and
+         { for a THREAD, NEW (j.wp, T) is in the worker's own pool field
+           (mirrors Sem.PoolField) }
+         not (allocNoPool and (Length (k.kids[0].kids) > 0) and
+              (M9AST.TypeAt (k.kids[0].kids[High (k.kids[0].kids)]) <> nil) and
+              (M9AST.TypeAt (k.kids[0].kids[High (k.kids[0].kids)]).kind = nkQualident) and
+              (M9AST.TypeAt (k.kids[0].kids[High (k.kids[0].kids)]).a = 'POOL') and
+              (M9AST.TypeAt (k.kids[0].kids[High (k.kids[0].kids)]).b = '')) then Exit (True);
+      { `UTF (j, s)': built in j's object's pool (mirrors Sem.UtfPoolArg) }
+      if (k.kind = nkCallExpr) and (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) and
+         (Length (k.kids[0].kids) = 0) and (k.kids[0].a = 'UTF') and (k.kids[1] <> nil) and
+         (Length (k.kids[1].kids) = 2) and (k.kids[1].kids[0] <> nil) and
+         (k.kids[1].kids[0].kind = nkDesignator) and (k.kids[1].kids[0].a = nm) then Exit (True);
+      if ((k.kind = nkCallExpr) or (k.kind = nkCallStmt)) and (k.kids[0] <> nil) and
+         (k.kids[0].kind = nkDesignator) then
+      begin
+        cn := k.kids[0].a;
+        for i := 0 to High (k.kids[0].kids) do
+          if k.kids[0].kids[i].kind = nkSelField then
+            cn := cn + '.' + k.kids[0].kids[i].a
+          else
+          begin
+            cn := k.kids[0].a;
+            break;
+          end;
+        { a call through a procedure value handed the parameter or a
+          component of it (mirrors Sem.AllocWalk; the fourth review's
+          AllocValue) }
+        if not ProcNamed (pr.modName, cn, cpr) and
+           not ((Length (k.kids[0].kids) = 0) and InList (cn, ScalarFnNames)) and
+           (k.kids[1] <> nil) then
+          for i := 0 to High (k.kids[1].kids) do
+            if (k.kids[1].kids[i] <> nil) and (k.kids[1].kids[i].kind = nkDesignator) and
+               (k.kids[1].kids[i].a = nm) and (TyStrAt (k.kids[1].kids[i]) <> '') and
+               not InList (TyStrAt (k.kids[1].kids[i]), BuiltinTypes) then Exit (True);
+        if ProcNamed (pr.modName, cn, cpr) and (cpr.foreign = '') and (cpr.node <> nil) then
+        begin
+          pl := cpr.node.kids[0];
+          al := k.kids[1];
+          if (pl <> nil) and (al <> nil) then
+          begin
+            a := 0;
+            for g := 0 to High (pl.kids) do
+              if (pl.kids[g] <> nil) and (pl.kids[g].kids[0] <> nil) then
+                for b := 0 to High (pl.kids[g].kids[0].kids) do
+                begin
+                  if (a <= High (al.kids)) and pl.kids[g].f1 and (al.kids[a] <> nil) and
+                     (al.kids[a].kind = nkDesignator) and (al.kids[a].a = nm) and
+                     not (allocNoPool and (pl.kids[g].kids[1] <> nil) and
+                          (pl.kids[g].kids[1].kind = nkQualident) and
+                          (pl.kids[g].kids[1].a = 'POOL') and (pl.kids[g].kids[1].b = '')) then
+                    if AllocsThrough (cpr, a) then Exit (True);
+                  Inc (a);
+                end;
+          end;
+        end;
+      end;
+      for i := 0 to High (k.kids) do
+        if Walk (k.kids[i]) then Exit (True);
+    end;
+  begin
+    if allocNoPool then key := 'talloc ' else key := 'alloc ';
+    key := key + pr.modName + '.' + pr.name + '#' + IntToStr (j);
+    if AnsGet (key, Result) then Exit;
+    AnsPut (key, 'busy');
+    Result := False;
+    if pr.body <> nil then
+    begin
+      nm := ParamNameAt (pr.body, j);
+      if (nm <> '') and (Length (pr.body.kids) > 4) then Result := Walk (pr.body.kids[4]);
+    end;
+    if Result then AnsPut (key, 'yes') else AnsPut (key, 'no');
+  end;
+
+  { AllocsThrough for a THREAD's target, a POOL argument its own pool
+    (mirrors Sem.CheckThread's allocNoPool) }
+  function ThreadAllocs (const pr: TProcInfo; perWorker: Boolean): Boolean;
+  begin
+    { a POOL field or argument is the worker's own only when each thread
+      is handed its own object (mirrors Sem.CheckThread) }
+    allocNoPool := perWorker;
+    Result := AllocsThrough (pr, 0);
+    allocNoPool := False;
+  end;
+
   { the pool of the object a designator names, as a call handing the
     object to a VAR pointer parameter needs it (rule 2): '' when the
     generator can name it from the ROOT, else why not.  Mirrors
@@ -4178,6 +5086,15 @@ var
       if (Length (a.kids) = 0) and (res <> nil) and (res.kind = nkPtrType) then
         Exit ('');
       Exit (a.a + ' is a value parameter');
+    end
+    else if (m = 'l') and (Length (a.kids) = 0) then
+    begin
+      { a local without IN lends the FRAME as its object's pool: wrong
+        for a POOL allocation (pval; mirrors Sem.ObjPoolIssue, 2026-10-23) }
+      if DeclPool (ScopeType (a.a)) <> nil then Exit ('');
+      if pval.IndexOf (a.a) >= 0 then
+        Exit (a.a + ' holds a pool allocation and is declared without IN; declare ' +
+              a.a + ' IN that pool');
     end;
     Result := '';
   end;
@@ -4341,13 +5258,16 @@ var
   begin
     SetLength (forNames, Length (forNames) + 1);
     SetLength (forLines, Length (forLines) + 1);
+    SetLength (forPlain, Length (forPlain) + 1);
     forNames[High (forNames)] := st.a;
     forLines[High (forLines)] := st.line;
+    forPlain[High (forPlain)] := st.kind = nkFor;
   end;
   procedure ForPop;
   begin
     SetLength (forNames, Length (forNames) - 1);
     SetLength (forLines, Length (forLines) - 1);
+    SetLength (forPlain, Length (forPlain) - 1);
   end;
   { FOR x IN s (mirrors Sem.CheckForIn, 2026-10-11) }
   function CheckForIn (st: TNode): Boolean;
@@ -4364,7 +5284,10 @@ var
           ' IN takes a name -- a variable, a field, an element: give the value one first (par 10)');
       end;
       t := ExprType (st.kids[0]);
-      if StartsWithS (t, 'SLICE OF ') then
+      if t = UtfTy then
+        { FOR c IN u decodes: c is a CHAR (mirrors Sem.CheckForIn) }
+        elem := 'CHAR'
+      else if StartsWithS (t, 'SLICE OF ') then
         elem := Copy (t, 10, Length (t) - 9)
       else if StartsWithS (t, 'ARRAY ') then
       begin
@@ -4429,6 +5352,31 @@ var
     end;
   end;
 
+  { each integer bound held to the loop variable's type, as an
+    assignment's right side is (mirrors Sem.CheckForFit): the variable
+    takes both values, and the generator compares in its type, so a
+    bound it cannot hold -- an I64 for an I32, 300 for an I8 -- was
+    truncated in C (2026-10-21, the compiler review's G5) }
+  procedure CheckForFit (st: TNode; const lo, hi: string);
+  var vt, bt : string; k : Integer; b : TNode; lv : Int64;
+  begin
+    if ScopeMode (st.a) = '' then Exit;
+    vt := CT (ScopeType (st.a));
+    if (vt = '') or not IsIntStr (vt) then Exit;
+    for k := 0 to 1 do
+    begin
+      b := st.kids[k];
+      if k = 0 then bt := lo else bt := hi;
+      if b = nil then Continue;
+      if (bt <> '') and not Compat (vt, bt) then
+        ErrN (b, ctx, 'cannot bound FOR variable ' + st.a + ' of ' +
+          TyName (vt) + ' by ' + TyName (bt) + ' (no implicit conversions, par 2.1)')
+      else if LitOut (b, vt, lv) then
+        ErrN (b, ctx, 'integer literal ' + IntToStr (lv) + ' does not fit ' +
+          TyName (vt));
+    end;
+  end;
+
   { the canonical enumeration (or case-record) type an ARRAY bound
     names, or '' when the bound is an integer.  ARRAY Colour OF T is
     indexed by the type: its subscript is a member, not an ordinal, so
@@ -4453,6 +5401,25 @@ var
     operand of IS, where the final OPT component is legal.  Errors
     fire only when a selector is applied THROUGH an OPT or CASE
     RECORD component; the walk goes soft (nil) on anything unknown. }
+  { a selector the type it is applied to cannot take (mirrors
+    Sem.SelRefuse): a field of a slice, an array, an enumeration or a
+    scalar, a subscript of a record, a monitor, an enumeration or a
+    scalar -- passed by the checker, refused by the generator as
+    `unsupported yet' until 2026-10-22 }
+  procedure SelRefuse (d: TNode; const ctx: string; sel, ty: TNode);
+  var whole : string;
+  begin
+    { F (x).f has its own refusal, naming the answer's type }
+    if d.kind = nkCallSel then Exit;
+    whole := ExprText (d);
+    if sel.kind = nkSelField then
+      ErrN (d, ctx, whole + ': no field ' + sel.a + ' -- the type ' +
+        TypeText (ty) + ' has no fields')
+    else
+      ErrN (d, ctx, whole + ': cannot index -- the type ' +
+        TypeText (ty) + ' is no array, slice, grid or string');
+  end;
+
   { the selectors of d from kid FROM on, walked from the type START
     (mirrors Sem.SelWalk): a designator's from its name, a call's
     answer -- F (x).f, nkCallSel -- from the callee's declared result }
@@ -4503,7 +5470,14 @@ var
         NoteMod (declN, tmod);
         res := ResolveType (declN);
       end;
-      if res = nil then begin declN := nil; Continue; end;
+      if res = nil then
+      begin
+        { a builtin scalar resolves to nothing: I64, F64, BOOL ... }
+        if (declN.kind = nkQualident) and (declN.b = '') and
+           InList (declN.a, BuiltinTypes) then
+          SelRefuse (d, ctx, sel, declN);
+        declN := nil; Continue;
+      end;
       if res.kind = nkOptType then
       begin
         if not guard then
@@ -4543,7 +5517,11 @@ var
             declN := InMod (FieldSeqType (res.kids[0], sel.a), tmod);
           end
           else
+          begin
+            if res.kind in [nkSliceType, nkArrayType, nkGridType, nkEnumType] then
+              SelRefuse (d, ctx, sel, declN);
             declN := nil;
+          end;
         nkSelIndex :
           if res.kind = nkGridType then
           begin
@@ -4554,6 +5532,14 @@ var
                 ' needs ' + ExprText (res.kids[0]) + ' subscripts, not ' +
                 IntToStr (Length (sel.kids)));
             declN := InMod (res.kids[1], tmod);
+          end
+          else if (res.kind = nkSliceType) and IsUtfNode (res) then
+          begin
+            { a UTF has no O(1) i-th character, so no subscript: the
+              operation says its unit and its cost (docs/utf8-plan.md) }
+            ErrN (d, ctx, ExprText (d) +
+              ': a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i, Text.CpAt (u, x) or FOR c IN u for a character');
+            Exit (nil);
           end
           else if res.kind = nkSliceType then
           begin
@@ -4570,7 +5556,11 @@ var
             declN := InMod (res.kids[1], tmod);
           end
           else
+          begin
+            if res.kind in [nkRecordType, nkMonitorType, nkEnumType] then
+              SelRefuse (d, ctx, sel, declN);
             declN := nil;
+          end;
       end;
       { the typed tree: what this selector reaches, qualified where it
         was declared, for the generator to read (M9AST.SetType) }
@@ -4588,11 +5578,23 @@ var
     in the callee's module; nil for a call through a procedure value
     or a callee the checker does not know (mirrors Sem.CallResultNode) }
   function CallResultNode (ce: TNode): TNode;
-  var pr : TProcInfo;
+  var pr : TProcInfo; nm : string; i : Integer; any : Boolean;
   begin
     Result := nil;
     if (ce = nil) or (ce.kind <> nkCallExpr) or (ce.kids[0] = nil) then Exit;
-    if not LookupProcInfo (DesigName (ce.kids[0]), pr) then Exit;
+    { the procedure the call IS: a UTF argument sends it to its Utf twin,
+      read from the recorded types (mirrors Sem.CallResultNode) }
+    nm := DesigName (ce.kids[0]);
+    any := False;
+    if ce.kids[1] <> nil then
+      for i := 0 to High (ce.kids[1].kids) do
+        if (ce.kids[1].kids[i] <> nil) and
+           ((ce.kids[1].kids[i].tys = UtfTy) or
+            (ce.kids[1].kids[i].tys = 'SLICE OF ' + UtfTy)) then any := True;
+    if any and (Length (nm) > 3) and (Copy (nm, Length (nm) - 2, 3) <> 'Utf') and
+       LookupProcInfo (nm + 'Utf', pr) then
+      nm := nm + 'Utf';
+    if not LookupProcInfo (nm, pr) then Exit;
     if (pr.node = nil) or (Length (pr.node.kids) < 2) or
        (pr.node.kids[1] = nil) then Exit;
     Result := InMod (pr.node.kids[1], pr.modName);
@@ -5054,6 +6056,7 @@ var
   function CallType (dnode, argl, site: TNode): string;
   var
     name, om, pTy, amode, aliasTo, t, what, why, roWhat : string;
+    nmk : string;                    { a raised exception's key }
     cOm, cFty, cSv, hbMode, hroot : string;
     cFlat : TNodeArr;
     cj, iu : Integer;
@@ -5065,9 +6068,11 @@ var
     pl, grp, vfields, ares, dcl, rec, vcn : TNode;
     mi : TModuleInfo;
     hint : string;
+    best, bd, d : Integer;
     isVar : Boolean;
     flat : array of TNode;
     ptn, sty : TNode;                { a call through a procedure value }
+    tmod : string;                   { the module that declares its type }
     haveHead : Boolean;
 
     procedure Arity (want: Integer);
@@ -5090,6 +6095,85 @@ var
           Exit (True);
     end;
 
+    { COPY (to, from): two slices or arrays of one scalar element type,
+      `to' writable (mirrors Sem.CheckCopy) }
+    procedure CopyCheck (const toTy, fromTy: string; toArg: TNode);
+    var
+      te, fe, w : string;
+      root : TNode;
+      dot : Integer;
+      ok : Boolean;
+      function Elem (const t: string): string;
+      begin
+        if StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'ARRAY ') then
+          Result := ElemOfArray (t)
+        else
+          Result := '';
+      end;
+    begin
+      if (toTy = '') or (fromTy = '') then Exit;
+      te := Elem (toTy);
+      fe := Elem (fromTy);
+      if te = '' then
+      begin
+        ErrN (site, ctx, 'COPY copies into a slice or an array, not ' + TyName (toTy));
+        Exit;
+      end;
+      if fe = '' then
+      begin
+        ErrN (site, ctx, 'COPY copies from a slice or an array, not ' + TyName (fromTy));
+        Exit;
+      end;
+      if te <> fe then
+      begin
+        ErrN (site, ctx, 'COPY needs one element type: ' + TyName (te) + ' and ' + TyName (fe));
+        Exit;
+      end;
+      ok := InList (te, BuiltinTypes);
+      if not ok then
+      begin
+        dot := Pos ('.', te);
+        if dot > 1 then
+          ok := AllPayloadless (LookupTypeName (Copy (te, 1, dot - 1), Copy (te, dot + 1, MaxInt)));
+      end;
+      if not ok then
+      begin
+        ErrN (site, ctx, 'COPY copies elements of a scalar type, not ' + TyName (te) +
+          ' -- such elements are stores the ownership rules follow one by one: keep the loop');
+        Exit;
+      end;
+      root := toArg;
+      if (toArg <> nil) and (toArg.kind = nkSliceOf3) then root := toArg.kids[0];
+      w := '';
+      if root <> nil then
+      begin
+        if root.kind = nkString then
+          w := 'a string literal'
+        else if (root.kind = nkDesignator) and
+                (StartsWithS (toTy, 'SLICE OF') or StartsWithS (toTy, 'GRID ') or
+                 (toTy = '<str1>')) then
+        begin
+          if ScopeMode (root.a) = 'r' then
+            w := 'the RO parameter ' + root.a
+          else if ScopeRo (root.a) then
+            w := 'the RO variable ' + root.a
+          else if ScopeRoFrom (root.a) <> '' then
+            w := root.a + ', which holds ' + ScopeRoFrom (root.a) + ','
+          else if IsConstHere (root.a) then
+            w := 'the CONST ' + root.a
+          else if RoFieldOf (root) <> '' then
+            w := 'the RO field ' + RoFieldOf (root);
+        end
+        else if (root.kind = nkCallExpr) and
+                (StartsWithS (toTy, 'SLICE OF') or StartsWithS (toTy, 'GRID ')) then
+          w := RoAnswerOf (root);
+        if (root.kind = nkDesignator) and (Length (root.kids) = 0) and IsConstHere (root.a) then
+          w := 'the CONST ' + root.a;
+      end;
+      if w <> '' then
+        ErrN (site, ctx, 'COPY writes into ' + w + ', which is read-only (par 2.4)');
+    end;
+
   begin
     Result := '';
     name := DesigName (dnode);
@@ -5101,6 +6185,50 @@ var
     begin
       aNode[j] := argl.kids[j];
       aTy[j] := ExprType (argl.kids[j]);
+    end;
+    { the UTF builtins (docs/utf8-plan.md, U2; mirrors Sem.UtfConvType):
+      UTF (b) of octets validates them, ValueRange when they are not
+      UTF-8; the others cannot fail }
+    if (nargs = 2) and (name = 'UTF') and UtfName (name) then
+    begin
+      calls.Add (name);
+      { the pool as NEW takes it: a POOL, or a VAR pointer parameter whose
+        object's pool it is (mirrors Sem.ObjPoolArg) }
+      if (aTy[0] <> '') and (aTy[0] <> 'POOL') and
+         not ((aNode[0] <> nil) and (aNode[0].kind = nkDesignator) and
+              (Length (aNode[0].kids) = 0) and (ScopeMode (aNode[0].a) = 'v') and
+              PtrParamTy (ScopeType (aNode[0].a))) then
+        ErrN (site, ctx, 'UTF (pool, x) takes the pool first, not ' + TyName (aTy[0]));
+      if not ((aTy[1] = '') or (aTy[1] = 'SLICE OF CHAR') or (aTy[1] = '<str1>') or
+              (aTy[1] = 'SLICE OF BYTE') or (aTy[1] = UtfTy)) then
+        ErrN (site, ctx, 'UTF converts a STR (encoding it) or a SLICE OF BYTE (validating it), not ' +
+          TyName (aTy[1]));
+      if (aTy[1] = 'SLICE OF BYTE') and (raised.Values['ValueRange'] = '') then
+        raised.Values['ValueRange'] := 'UTF conversion';
+      Exit (UtfTy);
+    end;
+    if (nargs = 1) and UtfName (name) then
+    begin
+      calls.Add (name);
+      if name = 'UTF' then
+      begin
+        if not ((aTy[0] = '') or (aTy[0] = 'SLICE OF CHAR') or (aTy[0] = '<str1>') or
+                (aTy[0] = 'SLICE OF BYTE') or (aTy[0] = UtfTy)) then
+          ErrN (site, ctx, 'UTF converts a STR (encoding it) or a SLICE OF BYTE (validating it), not ' +
+            TyName (aTy[0]));
+        if (aTy[0] = 'SLICE OF BYTE') and (raised.Values['ValueRange'] = '') then
+          raised.Values['ValueRange'] := 'UTF conversion';
+        Exit (UtfTy);
+      end;
+      if not ((aTy[0] = '') or (aTy[0] = UtfTy)) then
+      begin
+        if name = 'STR' then
+          ErrN (site, ctx, 'STR decodes a UTF, not ' + TyName (aTy[0]))
+        else
+          ErrN (site, ctx, 'OCTETS views the octets of a UTF, not ' + TyName (aTy[0]));
+      end;
+      if name = 'STR' then Exit ('SLICE OF CHAR');
+      Exit ('SLICE OF BYTE');
     end;
     { WIDTH DISPATCH BY DECLARED TWIN.  `Math.Sqrt (x)` with an F32
       argument is `Math.SqrtF32 (x)`, because sqrtf's answer is not
@@ -5124,6 +6252,18 @@ var
       end;
       if (g > 0) and (k = 0) and LookupProcInfo (name + 'F32', pr) then
         name := name + 'F32';
+    end;
+    { TWINS BY TYPE for UTF (mirrors Sem.UtfTwin): a call with a UTF
+      argument is the module's XxxUtf when it declares one }
+    if (nargs >= 1) and (Length (name) > 3) and
+       (Copy (name, Length (name) - 2, 3) <> 'Utf') then
+    begin
+      g := 0;
+      { a UTF, or a slice of them (Text.Join's parts) -- Sem.UtfVotes }
+      for j := 0 to nargs - 1 do
+        if (aTy[j] = UtfTy) or (aTy[j] = 'SLICE OF ' + UtfTy) then Inc (g);
+      if (g > 0) and LookupProcInfo (name + 'Utf', pr) then
+        name := name + 'Utf';
     end;
     calls.Add (name);
     if InList (name, ConvVR) then
@@ -5157,12 +6297,30 @@ var
       if not curUnsafe then
         ErrN (site, ctx, 'ADR exists only inside UNSAFE modules');
       Arity (1);
+      { of read-only storage or of a UTF: a const pointer, which no
+        C.MutPtr parameter takes (mirrors Sem; the third review's T4, T6) }
+      { of a variable whose type holds a reference, unless the procedure
+        states [FRESH] (mirrors Sem; the second review's S9) }
+      if (nargs = 1) and not curFresh and (aTy[0] <> '') and
+         not StartsWithS (aTy[0], 'SLICE OF ') and not StartsWithS (aTy[0], 'ARRAY ') and
+         not StartsWithS (aTy[0], 'GRID ') and (aTy[0] <> UtfTy) and TyBearing (aTy[0]) then
+        ErrN (site, ctx, 'ADR of a variable of type ' + TyName (aTy[0]) +
+          ', which holds a reference: C can write one no assignment shows -- state where the answer lives with [FRESH] on the procedure, or hand C a slice (par 7)');
+      if (nargs = 1) and ((RoWhatOf (aNode[0]) <> '') or (aTy[0] = UtfTy)) then
+        Exit ('C.ConstPtr');
       Exit ('C.Ptr');       { a C pointer, fitting any C.*Ptr parameter (mirrors Sem) }
     end;
     if (name = 'F32') or (name = 'F64') then
     begin
       Arity (1);
       Exit (name);
+    end;
+    if name = 'COPY' then
+    begin
+      { a block copy (docs/blockcopy-plan.md, Alex 2026-10-22) }
+      Arity (2);
+      if nargs = 2 then CopyCheck (aTy[0], aTy[1], aNode[0]);
+      Exit ('<void>');
     end;
     if name = 'LEN' then
     begin
@@ -5186,6 +6344,24 @@ var
       if GridRank (aTy[0]) > 0 then
         ErrN (site, ctx,
           'LEN of a GRID needs an axis: LEN (g, 0)');
+      if aTy[0] = UtfTy then
+        ErrN (site, ctx,
+          'LEN of a UTF -- Text.BLen (u) for its bytes, Text.CpCount (u) for its characters');
+      { LEN of a scalar, or of a type: the generator refused both, as
+        `unknown name: I64' or an unsupported form (the review's F4) }
+      if nargs = 1 then
+      begin
+        if InList (aTy[0], BuiltinTypes) or (aTy[0] = '<int>') or
+           (aTy[0] = '<real>') then
+          ErrN (site, ctx, 'LEN takes an array, slice, grid or string, not ' +
+            TyName (aTy[0]))
+        else if (aNode[0] <> nil) and (aNode[0].kind = nkDesignator) and
+           (Length (aNode[0].kids) = 0) and (ScopeMode (aNode[0].a) = '') and
+           (InList (aNode[0].a, BuiltinTypes) or (aNode[0].a = 'STR') or
+            ((FindMod (curMod) <> nil) and
+             (FindMod (curMod).FindType (aNode[0].a) <> nil))) then
+          ErrN (site, ctx, 'LEN takes a value, not the type ' + aNode[0].a);
+      end;
       Arity (1);
       Exit ('I64');
     end;
@@ -5310,6 +6486,8 @@ var
       ptn := ResolveType (sty);
       if (ptn <> nil) and (ptn.kind = nkProcType) then
       begin
+        tmod := resolvedIn;          { the declaring module, before anything else resolves }
+        if tmod = '' then tmod := curMod;
         if curPure then
           ErrN (site, ctx, 'PURE procedure calls through the procedure value '
             + name + ' (par 3.2)');
@@ -5323,12 +6501,15 @@ var
         SetLength (pr.raises, 0);
         if ptn.kids[2] <> nil then
         begin
+          { keyed in the module that DECLARES the type (ResolveType's last
+            lookup, through any alias), an inline type in the caller's:
+            the qualifier alone missed `TYPE F = Pk.Mk'.  Mirrors Sem.NoteCall }
           SetLength (pr.raises, Length (ptn.kids[2].kids));
           for j := 0 to High (ptn.kids[2].kids) do
             if ptn.kids[2].kids[j].b <> '' then
-              pr.raises[j] := ptn.kids[2].kids[j].b
+              pr.raises[j] := ptn.kids[2].kids[j].a + '.' + ptn.kids[2].kids[j].b
             else
-              pr.raises[j] := ptn.kids[2].kids[j].a;
+              pr.raises[j] := ExcKey (tmod, ptn.kids[2].kids[j].a);
         end;
         haveHead := True;
       end;
@@ -5336,11 +6517,34 @@ var
     if haveHead or LookupProcInfo (name, pr) then
     begin
       for j := 0 to High (pr.raises) do
-        if raised.Values[pr.raises[j]] = '' then
-          raised.Values[pr.raises[j]] := 'call to ' + name;
+      begin
+        nmk := ExcKey (pr.modName, pr.raises[j]);
+        if raised.Values[nmk] = '' then
+          raised.Values[nmk] := 'call to ' + name;
+      end;
       canonCtx := pr.modName;
       pl := pr.node.kids[0];
       Arity (CountParams (pl));
+      if Length (aNode) > 0 then SameMonitorCall (ctx, name, pr.node, aNode[0]);
+      { and what the call may reach (mirrors Sem; the reviews' S11) }
+      if (boundMonNode <> nil) and
+         not ((Length (aNode) > 0) and (boundMon <> '') and (aNode[0] <> nil) and
+              (aNode[0].kind = nkDesignator) and (Length (aNode[0].kids) = 0) and
+              (aNode[0].a = boundMon) and (MonIdOf (pr.node, pr.modName) <> nil)) and
+         MonReach (pr, boundMonNode) then
+        ErrN (site, ctx, 'a call of ' + name + ' may enter a monitor of the type this procedure is bound to and holds the lock of: on the same monitor it waits for ever, on another of its type two threads can take the two in opposite orders -- take what the callee needs out of the monitor first, or make the call from a procedure that is not bound (par 6)')
+      else if (boundMonNode <> nil) and
+         not ((Length (aNode) > 0) and (boundMon <> '') and (aNode[0] <> nil) and
+              (aNode[0].kind = nkDesignator) and (Length (aNode[0].kids) = 0) and
+              (aNode[0].a = boundMon) and (MonIdOf (pr.node, pr.modName) <> nil)) and
+         MonCycle (pr, boundMonNode) then
+        ErrN (site, ctx, 'a call of ' + name + ' may enter a monitor of another type while this procedure holds its own, and a procedure bound to that type may enter one of this type: two threads can take the two locks in opposite orders -- take what the callee needs out of the monitor first, or make the call from a procedure that is not bound (par 6)')
+      else if (boundMonNode <> nil) and
+         not ((Length (aNode) > 0) and (boundMon <> '') and (aNode[0] <> nil) and
+              (aNode[0].kind = nkDesignator) and (Length (aNode[0].kids) = 0) and
+              (aNode[0].a = boundMon) and (MonIdOf (pr.node, pr.modName) <> nil)) and
+         MonWaits (pr) then
+        ErrN (site, ctx, 'a call of ' + name + ' may WAIT on another monitor while this procedure holds its own: the wait releases only that one, and what would SIGNAL it may need the lock held here -- wait from a procedure that is not bound (par 6)');
       { how many VAR or KEPT arguments are FRAME values: a frame value
         handed to a KEPT parameter is refused unless another frame
         value is the keeper (mirrors Sem.CallType) }
@@ -5394,7 +6598,10 @@ var
                 be written through, and `Up ('abc')` with `s[0] :=
                 'X'` inside was accepted and died with SIGSEGV until
                 2026-10-01 (museum/write-through-literal.m9). }
+              { nothing writes through a UTF -- it has no subscript --
+                so read-only storage may be lent to any UTF parameter }
               if (not isVar) and (not grp.f3) and (aNode[k] <> nil) and
+                 (pTy <> UtfTy) and
                  (StartsWithS (pTy, 'SLICE OF') or
                   StartsWithS (pTy, 'GRID ')) then
               begin
@@ -5427,6 +6634,7 @@ var
                     'argument %d of %s: %s can be lent only to an RO' +
                     ' parameter (par 2.4)', [k + 1, name, roWhat]));
               end;
+              aTy[k] := AdaptLitC (aNode[k], pTy, aTy[k]);
               if aTy[k] = '<void>' then
                 ErrN (site, ctx, Format (
                   'argument %d of %s returns no value', [k + 1, name]))
@@ -5438,6 +6646,7 @@ var
                 ErrN (site, ctx, Format (
                   'argument %d of %s must be a variable (VAR/OWN parameter)',
                   [k + 1, name]));
+              if isVar then ForVarWrite (aNode[k], ctx, True);
               { P3: a value parameter of pointer type is a shared
                 borrow; lending it onward as VAR would launder the
                 write restriction through a call (par 4.1) }
@@ -5448,6 +6657,20 @@ var
                 ErrN (site, ctx, Format (
                   'argument %d of %s: cannot lend the value parameter ' +
                   '%s as VAR (shared borrow, par 4.1)',
+                  [k + 1, name, aNode[k].a]))
+              { and what it points to, `q.s' (mirrors Sem.CheckArg;
+                the second review's gen N3, 2026-10-26) }
+              else if isVar and (aNode[k].kind = nkDesignator) and
+                 (Length (aNode[k].kids) > 0) and
+                 (ScopeMode (aNode[k].a) = 'p') and
+                 BaseIsPtr (aNode[k]) and
+                 { a monitor's own lock (mirrors Sem.MonitorArg) }
+                 not ((M9AST.TypeAt (aNode[k].kids[High (aNode[k].kids)]) <> nil) and
+                      (ResolveType (M9AST.TypeAt (aNode[k].kids[High (aNode[k].kids)])) <> nil) and
+                      (ResolveType (M9AST.TypeAt (aNode[k].kids[High (aNode[k].kids)])).kind = nkMonitorType)) then
+                ErrN (site, ctx, Format (
+                  'argument %d of %s: cannot lend what the value parameter ' +
+                  '%s points to as VAR (shared borrow, par 4.1)',
                   [k + 1, name, aNode[k].a]));
               { rule 2: the callee may allocate in the object's pool,
                 which the generator names from the ROOT of this
@@ -5457,6 +6680,11 @@ var
                  PtrParamTy (grp.kids[1]) and (pr.foreign = '') then
               begin
                 why := ObjPoolIssue (aNode[k]);
+                { a local without IN: only where the callee may allocate
+                  through this parameter (mirrors Sem.CheckArg) }
+                if (why <> '') and (ScopeMode (aNode[k].a) = 'l') and
+                   not AllocsThrough (pr, k) then
+                  why := '';
                 if why <> '' then
                   ErrN (site, ctx, Format (
                     'argument %d of %s: the pool of %s is not known here,' +
@@ -5482,6 +6710,16 @@ var
                   ErrN (site, ctx, Format (
                     'argument %d of %s: cannot move %s into ' +
                     'an OWN parameter -- it lives in the frame (par 4.3)',
+                    [k + 1, name, aNode[k].a]))
+                { a procedure cannot move what the module owns (mirrors Sem) }
+                else if (amode = 'm') and not ownModule and
+                        (ResolveType (ScopeType (aNode[k].a)) <> nil) and
+                        (((ResolveType (ScopeType (aNode[k].a)).kind = nkPtrType) and
+                          (ResolveType (ScopeType (aNode[k].a)).kids[1] = nil)) or
+                         (ResolveType (ScopeType (aNode[k].a)).kind = nkSharedType)) then
+                  ErrN (site, ctx, Format (
+                    'argument %d of %s: cannot move the module variable %s into an OWN parameter in a procedure: ' +
+                    'the module owns it, and its body reads it after the call -- move it in the module body, or keep the owned value in a local (par 4.2)',
                     [k + 1, name, aNode[k].a]))
                 else
                 begin
@@ -5556,6 +6794,26 @@ var
                     end;
               end;
             end;
+            Inc (k);
+          end;
+        end;
+      { par 4.2: a name moved into an OWN parameter is not also lent
+        in the same call (mirrors Sem.CallType; the review's C7) }
+      k := 0;
+      if pl <> nil then
+        for g := 0 to High (pl.kids) do
+        begin
+          grp := pl.kids[g];
+          for j := 0 to High (grp.kids[0].kids) do
+          begin
+            if (k < nargs) and grp.f2 and (aNode[k] <> nil) and
+               (aNode[k].kind = nkDesignator) and (Length (aNode[k].kids) = 0) then
+              for iu := 0 to nargs - 1 do
+                if (iu <> k) and (EscRootOf (aNode[iu]) = aNode[k].a) and
+                   TyBearing (aTy[iu]) then
+                  ErrN (site, ctx, 'argument ' + IntToStr (k + 1) + ' of ' + name +
+                    ': ' + aNode[k].a + ' is moved into an OWN parameter and lent as argument ' +
+                    IntToStr (iu + 1) + ' of the same call (par 4.2)');
             Inc (k);
           end;
         end;
@@ -5640,6 +6898,7 @@ var
         if k <= High (flat) then
         begin
           pTy := CT (flat[k]);
+          aTy[k] := AdaptLitC (aNode[k], pTy, aTy[k]);
           if not Compat (pTy, aTy[k]) then
             ErrN (site, ctx, Format (
               'argument %d of %s: cannot pass %s where %s is expected',
@@ -5712,6 +6971,7 @@ var
         if k <= High (flat) then
         begin
           pTy := CT (flat[k]);
+          aTy[k] := AdaptLitC (aNode[k], pTy, aTy[k]);
           if not Compat (pTy, aTy[k]) then
             ErrN (site, ctx, Format (
               'field %d of %s: cannot give %s where %s is expected',
@@ -5733,6 +6993,21 @@ var
           if dot > 0 then hint := Copy (name, 1, dot - 1) + '.' + mi.procs[k].name
           else hint := mi.procs[k].name;
         end;
+    { or the nearest name: at most two edits and a third of its length,
+      the first so near in declaration order (Sem.CaseTwin) }
+    if (hint = '') and (mi <> nil) and (Length (name) - dot >= 4) then
+    begin
+      best := -1;
+      bd := 3;
+      for k := 0 to High (mi.procs) do
+      begin
+        d := EditDist (LowerCase (Copy (name, dot + 1, MaxInt)), LowerCase (mi.procs[k].name));
+        if (d < bd) and (d * 3 <= Length (name) - dot) then begin bd := d; best := k; end;
+      end;
+      if best >= 0 then
+        if dot > 0 then hint := Copy (name, 1, dot - 1) + '.' + mi.procs[best].name
+        else hint := mi.procs[best].name;
+    end;
     if hint <> '' then
       ErrN (site, ctx, 'unknown procedure: ' + name + ' -- did you mean ' + hint + '?')
     else
@@ -5813,7 +7088,8 @@ var
         == for a struct: `IF name = 'cancel'` was the C compiler's to
         refuse until 2026-10-02 (par 2.3). }
       else if StrSide (lt) and StrSide (rt) and
-              ((lt = 'SLICE OF CHAR') or (rt = 'SLICE OF CHAR')) then
+              ((lt = 'SLICE OF CHAR') or (rt = 'SLICE OF CHAR')) or
+              (lt = UtfTy) or (rt = UtfTy) then
         ErrN (e, ctx, 'no ''' + op + ''' between two strings: Text.Eq' +
           ' (a, b) answers equality, and no operator orders them' +
           ' (par 2.3)')
@@ -5834,6 +7110,22 @@ var
       `s + c` to decide silently (the rule used to refuse it, on a
       Pascal/C worry M9 does not have; revised 2026-09-06).  Anything
       else -- a number, a record -- must be formatted first. }
+    { a UTF concatenates with a UTF, a CHAR or a string literal (which
+      adapts); a STR does not join a UTF (mirrors Sem) }
+    if (op = '+') and ((lt = UtfTy) or (rt = UtfTy)) then
+    begin
+      if not ((lt = UtfTy) or (lt = 'CHAR') or
+              ((e.kids[0] <> nil) and (e.kids[0].kind = nkString)) or
+              StrConstDesig (e.kids[0])) then
+        ErrN (e, ctx, 'cannot concatenate ' + TyName (lt) +
+          ' with a UTF -- UTF (s) converts a STR')
+      else if not ((rt = UtfTy) or (rt = 'CHAR') or
+              ((e.kids[1] <> nil) and (e.kids[1].kind = nkString)) or
+              StrConstDesig (e.kids[1])) then
+        ErrN (e, ctx, 'cannot concatenate a UTF with ' + TyName (rt) +
+          ' -- UTF (s) converts a STR');
+      Exit (UtfTy);
+    end;
     if (op = '+') and (StrSide (lt) or StrSide (rt)) then
     begin
       if not (StrSide (lt) or (lt = 'CHAR')) then
@@ -5892,7 +7184,7 @@ var
     Result := '';
     if e = nil then Exit;
     case e.kind of
-      nkInt  : Result := '<int>';
+      nkInt  : if BeyondI64 (e.a) then Result := 'U64' else Result := '<int>';
       nkReal : Result := '<real>';
       nkChar : Result := 'CHAR';
       nkString :
@@ -6180,6 +7472,21 @@ var
              not ModHasName (e.a, e.kids[0].a) then
             ErrN (e, ctx, 'unknown name: ' + e.a + '.' + e.kids[0].a +
               ' -- ' + e.a + ' declares no such name');
+          { a member an enumeration or case record does not declare:
+            Hue.Nope here, Palette.Hue.Nope in a loaded module }
+          if (Length (e.kids) = 1) and (ScopeMode (e.a) = '') and
+             (FindMod (e.a) = nil) and (e.kids[0] <> nil) and
+             (e.kids[0].kind = nkSelField) and
+             MemberMissing (curMod, e.a, e.kids[0].a) then
+            ErrN (e, ctx, 'unknown member: ' + e.a + '.' + e.kids[0].a +
+              ' -- ' + e.a + ' declares no such member');
+          if (Length (e.kids) = 2) and (ScopeMode (e.a) = '') and
+             (FindMod (e.a) <> nil) and (e.kids[0] <> nil) and
+             (e.kids[1] <> nil) and (e.kids[0].kind = nkSelField) and
+             (e.kids[1].kind = nkSelField) and
+             MemberMissing (e.a, e.kids[0].a, e.kids[1].a) then
+            ErrN (e, ctx, 'unknown member: ' + e.a + '.' + e.kids[0].a + '.' +
+              e.kids[1].a + ' -- ' + e.kids[0].a + ' declares no such member');
           Result := DesigStrType (e, False);
         end;
       nkCallExpr : Result := CallType (e.kids[0], e.kids[1], e);
@@ -6217,6 +7524,302 @@ var
     Result := ExprType0 (e);
     SetTyStr (e, Result);
   end;
+
+  { ---- definite assignment of the locals whose type is a pointer that
+    is not OPT (mirrors Sem.DaProc and its helpers; report par 4, the
+    compiler review's C8) ---- }
+type
+  TDaArr = array of Boolean;
+var
+  daNames : array of string;
+  daN : Integer;
+
+  function DaFind (const nm: string): Integer;
+  var i : Integer;
+  begin
+    for i := 0 to daN - 1 do
+      if daNames[i] = nm then Exit (i);
+    Result := -1;
+  end;
+
+  procedure DaRead (e: TNode; var st: TDaArr);
+  var x : Integer;
+  begin
+    x := DaFind (e.a);
+    if (x >= 0) and not st[x] then
+    begin
+      ErrN (e, ctx, e.a +
+        ' is read before it is assigned: a PTR that is not OPT has no value until it is given one -- assign it on every path first (par 4)');
+      st[x] := True;
+    end;
+  end;
+
+  { mirrors Sem.DaGives: an assignment to the bare name, or the name
+    handed on as an argument (the second review's S10) }
+  function DaGives (k: TNode; const nm: string): Boolean;
+  var i : Integer;
+  begin
+    Result := False;
+    if k = nil then Exit;
+    if (k.kind = nkAssign) and (k.kids[0] <> nil) and
+       (k.kids[0].kind = nkDesignator) and (Length (k.kids[0].kids) = 0) and
+       (k.kids[0].a = nm) then Exit (True);
+    if k.kind = nkArgList then
+      for i := 0 to High (k.kids) do
+        if (k.kids[i] <> nil) and (k.kids[i].kind = nkDesignator) and
+           (Length (k.kids[i].kids) = 0) and (k.kids[i].a = nm) then Exit (True);
+    for i := 0 to High (k.kids) do
+      if DaGives (k.kids[i], nm) then Exit (True);
+  end;
+
+  function DaArgByRef (cd: TNode; k: Integer): Boolean;
+  var pr : TProcInfo; g, j, n : Integer; pl, grp : TNode;
+  begin
+    Result := False;
+    if not LookupProcInfo (DesigName (cd), pr) then Exit;
+    if (pr.node = nil) or (pr.node.kids[0] = nil) then Exit;
+    pl := pr.node.kids[0];
+    n := 0;
+    for g := 0 to High (pl.kids) do
+    begin
+      grp := pl.kids[g];
+      if (grp = nil) or (grp.kids[0] = nil) then Continue;
+      for j := 0 to High (grp.kids[0].kids) do
+      begin
+        if n = k then
+        begin
+          if grp.f1 and not grp.f2 and (pr.body <> nil) and
+             (grp.kids[0].kids[j] <> nil) then
+            Exit (DaGives (pr.body.kids[4], grp.kids[0].kids[j].a));
+          Exit (grp.f1 or grp.f2);
+        end;
+        Inc (n);
+      end;
+    end;
+  end;
+
+  procedure DaExpr (k: TNode; var st: TDaArr); forward;
+
+  procedure DaArgs (cd, al: TNode; var st: TDaArr);
+  var i, x : Integer; byRef : Boolean; ar : TNode;
+  begin
+    if al = nil then Exit;
+    for i := 0 to High (al.kids) do
+    begin
+      ar := al.kids[i];
+      if ar = nil then Continue;
+      byRef := (cd <> nil) and (cd.kind = nkDesignator) and DaArgByRef (cd, i);
+      if byRef and (ar.kind = nkDesignator) and (Length (ar.kids) = 0) then
+      begin
+        x := DaFind (ar.a);
+        if x >= 0 then st[x] := True;
+      end
+      else
+        DaExpr (ar, st);
+    end;
+  end;
+
+  procedure DaExpr (k: TNode; var st: TDaArr);
+  var i : Integer;
+  begin
+    if k = nil then Exit;
+    if k.kind = nkCallExpr then
+    begin
+      DaArgs (k.kids[0], k.kids[1], st);
+      Exit;
+    end;
+    if k.kind = nkDesignator then DaRead (k, st);
+    for i := 0 to High (k.kids) do DaExpr (k.kids[i], st);
+  end;
+
+  procedure DaMerge (var acc: TDaArr; const b: TDaArr; ended: Boolean;
+                     var alive: Boolean);
+  var i : Integer;
+  begin
+    if ended then Exit;
+    alive := True;
+    for i := 0 to High (acc) do acc[i] := acc[i] and b[i];
+  end;
+
+  function DaAll (n: Integer): TDaArr;
+  var i : Integer;
+  begin
+    SetLength (Result, n);
+    for i := 0 to n - 1 do Result[i] := True;
+  end;
+
+  function DaSeq (k: TNode; var st: TDaArr): Boolean; forward;
+
+  function DaStmt (s: TNode; var st: TDaArr): Boolean;
+  var j, x, i : Integer; acc, b : TDaArr; alive, hasElse, e2 : Boolean; t : TNode;
+  begin
+    Result := False;
+    if s = nil then Exit;
+    case s.kind of
+      nkAssign :
+        begin
+          DaExpr (s.kids[1], st);
+          if s.kids[0] <> nil then
+            if Length (s.kids[0].kids) = 0 then
+            begin
+              x := DaFind (s.kids[0].a);
+              if x >= 0 then st[x] := True;
+            end
+            else
+              DaExpr (s.kids[0], st);
+        end;
+      nkCallStmt :
+        DaArgs (s.kids[0], s.kids[1], st);
+      nkReturn, nkRaiseStmt :
+        begin
+          for j := 0 to High (s.kids) do DaExpr (s.kids[j], st);
+          Exit (True);
+        end;
+      nkExit :
+        Exit (True);
+      nkIf :
+        begin
+          DaExpr (s.kids[0], st);
+          acc := DaAll (Length (st));
+          alive := False;
+          b := Copy (st);
+          e2 := DaSeq (s.kids[1], b);
+          DaMerge (acc, b, e2, alive);
+          hasElse := False;
+          for j := 2 to High (s.kids) do
+          begin
+            t := s.kids[j];
+            if t = nil then Continue;
+            b := Copy (st);
+            if t.kind = nkElsif then
+            begin
+              DaExpr (t.kids[0], b);
+              e2 := DaSeq (t.kids[1], b);
+            end
+            else
+            begin
+              hasElse := True;
+              e2 := DaSeq (t.kids[0], b);
+            end;
+            DaMerge (acc, b, e2, alive);
+          end;
+          if not hasElse then DaMerge (acc, st, False, alive);
+          if not alive then Exit (True);
+          for i := 0 to High (st) do st[i] := acc[i];
+        end;
+      nkCase :
+        begin
+          DaExpr (s.kids[0], st);
+          acc := DaAll (Length (st));
+          alive := False;
+          hasElse := False;
+          for j := 1 to High (s.kids) do
+          begin
+            t := s.kids[j];
+            if t = nil then Continue;
+            b := Copy (st);
+            if t.kind = nkCaseArm then
+              e2 := DaSeq (t.kids[1], b)
+            else
+            begin
+              hasElse := True;
+              e2 := DaSeq (t.kids[0], b);
+            end;
+            DaMerge (acc, b, e2, alive);
+          end;
+          if not hasElse then DaMerge (acc, st, False, alive);
+          if not alive then Exit (True);
+          for i := 0 to High (st) do st[i] := acc[i];
+        end;
+      nkWhile :
+        begin
+          DaExpr (s.kids[0], st);
+          b := Copy (st);
+          e2 := DaSeq (s.kids[1], b);
+        end;
+      nkFor :
+        begin
+          DaExpr (s.kids[0], st);
+          DaExpr (s.kids[1], st);
+          b := Copy (st);
+          e2 := DaSeq (s.kids[3], b);
+        end;
+      nkForIn :
+        begin
+          DaExpr (s.kids[0], st);
+          b := Copy (st);
+          { the loop gives its variable each element (mirrors Sem.DaStmt) }
+          x := DaFind (s.a);
+          if x >= 0 then b[x] := True;
+          e2 := DaSeq (s.kids[1], b);
+        end;
+      nkLoop :
+        begin
+          b := Copy (st);
+          e2 := DaSeq (s.kids[0], b);
+        end;
+      nkBlock :
+        begin
+          b := Copy (st);
+          e2 := DaSeq (s.kids[0], b);
+          acc := DaAll (Length (st));
+          alive := False;
+          DaMerge (acc, b, e2, alive);
+          for j := 1 to High (s.kids) do
+          begin
+            t := s.kids[j];
+            if t = nil then Continue;
+            if t.kind = nkHandler then
+            begin
+              b := Copy (st);
+              e2 := DaSeq (t.kids[2], b);
+              DaMerge (acc, b, e2, alive);
+            end
+            else if t.kind = nkFinally then
+            begin
+              b := Copy (st);
+              e2 := DaSeq (t.kids[0], b);
+            end;
+          end;
+          if not alive then Exit (True);
+          for i := 0 to High (st) do st[i] := acc[i];
+        end;
+    else
+      for j := 0 to High (s.kids) do DaExpr (s.kids[j], st);
+    end;
+  end;
+
+  function DaSeq (k: TNode; var st: TDaArr): Boolean;
+  var j : Integer;
+  begin
+    Result := False;
+    if k = nil then Exit;
+    if k.kind <> nkStmtSeq then Exit (DaStmt (k, st));
+    for j := 0 to High (k.kids) do
+      if DaStmt (k.kids[j], st) then Exit (True);
+  end;
+
+  procedure DaProc (body: TNode);
+  var i : Integer; st : TDaArr; e2 : Boolean; rt : TNode;
+  begin
+    SetLength (daNames, scope.Count + 1);
+    daN := 0;
+    for i := 0 to scope.Count - 1 do
+      if scope.ValueFromIndex[i] = 'l' then
+      begin
+        rt := ResolveType (TNode (scope.Objects[i]));
+        if (rt <> nil) and (rt.kind in [nkPtrType, nkSharedType]) then
+        begin
+          daNames[daN] := scope.Names[i];
+          Inc (daN);
+        end;
+      end;
+    if daN = 0 then Exit;
+    SetLength (st, daN);
+    for i := 0 to daN - 1 do st[i] := False;
+    e2 := DaSeq (body, st);
+  end;
+
   procedure WalkSeq (s: TNode); forward;
 
   procedure BindPattern (lbl: TNode; const selRoot: string);
@@ -6290,6 +7893,7 @@ var
       begin
         at := ExprType (args.kids[k]);
         ft := CT (ExcFieldType (decl, owner, k));
+        at := AdaptLitC (args.kids[k], ft, at);
         if (at <> '') and (ft <> '') and not Compat (ft, at) then
           ErrN (xn, ctx, 'field ' + IntToStr (k + 1) + ' of ' + nm +
             ': cannot give ' + TyName (at) + ' where ' + TyName (ft) +
@@ -6297,13 +7901,24 @@ var
       end;
   end;
 
+  { a handler's name qualified by a name in scope: `| v.E' with v a
+    variable (mirrors Sem.HandlerQualVar) }
+  procedure HandlerQualVar (n: TNode);
+  begin
+    if (n <> nil) and (n.b <> '') and (ScopeMode (n.a) <> '') then
+      ErrN (n, ctx, n.a + '.' + n.b + ': ' + n.a +
+        ' is a variable, not a module -- name the exception as declared');
+  end;
+
   procedure WalkStmt (st: TNode);
   var
     xowner : string;
+    nmk : string;                    { a raised exception's key }
     xdecl : TNode;
     j, k : Integer;
     lv : Int64;                      { an out-of-range literal's value }
     sv64 : Int64;                    { a FOR step's value }
+    forLo, forHi : string;           { a FOR's bound types, for CheckForFit }
     sch : Boolean;
     tname, tpTy, taTy, tamode : string;   { THREAD's target and argument }
     tpr : TProcInfo;
@@ -6323,14 +7938,31 @@ var
     said : Boolean;
     pre, hpre : string;
     snaps : array of string;
+    hfrom : Integer;                 { a block's first raise, for the drop }
+    hnames : string;                 { the names its handlers catch }
   begin
     case st.kind of
       nkAssign :
         begin
+          ForVarWrite (st.kids[0], ctx, False);
           t := DesigStrType (st.kids[0], False);
-          { a bare name on the left declared nowhere: `x := 1' with no x }
-          if (Length (st.kids[0].kids) = 0) and not BareNameKnown (st.kids[0].a) then
+          { a bare name on the left declared nowhere: `x := 1' with no x;
+            a procedure is declared, and is no variable: `P := 1',
+            `Io.WriteLine := s' }
+          if (Length (st.kids[0].kids) = 0) and (ScopeMode (st.kids[0].a) = '') and
+             (FindMod (curMod) <> nil) and
+             (FindMod (curMod).FindProc (st.kids[0].a) >= 0) then
+            ErrN (st.kids[0], ctx, 'cannot assign to ' + st.kids[0].a + ' -- ' +
+              st.kids[0].a + ' is a PROCEDURE, not a variable')
+          else if (Length (st.kids[0].kids) = 0) and not BareNameKnown (st.kids[0].a) then
             ErrN (st.kids[0], ctx, 'unknown name: ' + st.kids[0].a);
+          if (Length (st.kids[0].kids) = 1) and (ScopeMode (st.kids[0].a) = '') and
+             (FindMod (st.kids[0].a) <> nil) and (st.kids[0].kids[0] <> nil) and
+             (st.kids[0].kids[0].kind = nkSelField) and
+             (FindMod (st.kids[0].a).FindProc (st.kids[0].kids[0].a) >= 0) then
+            ErrN (st.kids[0], ctx, 'cannot assign to ' + st.kids[0].a + '.' +
+              st.kids[0].kids[0].a + ' -- ' + st.kids[0].a + '.' +
+              st.kids[0].kids[0].a + ' is a PROCEDURE, not a variable');
           u := ExprType (st.kids[1]);
           { par 2.3: a FRAME-SCOPED string (a concatenation, or a name
             already holding one) may not be stored where it will be
@@ -6459,6 +8091,7 @@ var
           { anchored at the RIGHT-HAND SIDE, not the statement: a
             value on its own line used to be reported one line too
             high, at the := (found by the first m9edit user) }
+          u := AdaptLitC (st.kids[1], t, u);
           if u = '<void>' then
             ErrN (st.kids[1], ctx, 'the right-hand side returns no value')
           else if not Compat (t, u) then
@@ -6612,6 +8245,7 @@ var
             ErrN (st, ctx, 'FOR bounds must be integers, not ' + TyName (t));
           if not IsIntish (u) then
             ErrN (st, ctx, 'FOR bounds must be integers, not ' + TyName (u));
+          forLo := t; forHi := u;
           if st.kids[2] <> nil then
           begin
             u := ExprType (st.kids[2]);
@@ -6625,6 +8259,7 @@ var
               ErrN (st, ctx, 'a FOR step of 0 never reaches its bound');
           end;
           CheckForVar (st, '', False);
+          CheckForFit (st, forLo, forHi);
           CheckForNest (st);
           pre := OwnSnap;
           ForPush (st);
@@ -6645,7 +8280,11 @@ var
           ForPush (st);
           k := finSinceLoop; finSinceLoop := 0; Inc (loopsOpen);
           { the loop's own assignment first (mirrors Sem.WalkStmt) }
-          if headOk and (Length (st.kids) > 2) then WalkStmt (st.kids[2]);
+          { not over a UTF: its element is decoded, a CHAR that holds no
+            storage, and `c := u[0]' is the subscript a UTF refuses }
+          if headOk and (Length (st.kids) > 2) and
+             not ((st.kids[0] <> nil) and (st.kids[0].tys = UtfTy)) then
+            WalkStmt (st.kids[2]);
           WalkSeq (st.kids[1]);
           LoopCarry (pre, st.kids[1]);
           Dec (loopsOpen); finSinceLoop := k;
@@ -6781,7 +8420,7 @@ var
           end
           else
           begin
-            t := ExprType (st.kids[0]);
+            t := AdaptLitC (st.kids[0], retTy, ExprType (st.kids[0]));
             if retTy = '<void>' then
               ErrN (st, ctx, 'RETURN with a value in a proper procedure')
             else if t = '<void>' then
@@ -6835,12 +8474,11 @@ var
             corpus procedure to raise another module's exception; the
             M9 checker had it right and semdiff said so. }
           if st.kids[0].b <> '' then
-          begin
-            if raised.Values[st.kids[0].b] = '' then
-              raised.Values[st.kids[0].b] := 'RAISE';
-          end
-          else if raised.Values[st.kids[0].a] = '' then
-            raised.Values[st.kids[0].a] := 'RAISE';
+            nmk := ExcKey (curMod, st.kids[0].a + '.' + st.kids[0].b)
+          else
+            nmk := ExcKey (curMod, st.kids[0].a);
+          if raised.Values[nmk] = '' then
+            raised.Values[nmk] := 'RAISE';
           CheckRaisePayload (st.kids[0], st.kids[1]);
           if st.kids[1] <> nil then
             for j := 0 to High (st.kids[1].kids) do
@@ -6853,13 +8491,18 @@ var
             ErrN (st, ctx, 'cannot DISPOSE through a selector of ' + st.kids[0].a +
               ': DISPOSE frees a name that owns its pointer, and ' +
               'ownership is not followed into a field (par 4.2)')
-          else if (ScopeMode (st.kids[0].a) = 'l') and
+          { in a procedure a module variable is no owner (mirrors Sem) }
+          else if (ScopeMode (st.kids[0].a) = 'm') and not ownModule then
+            ErrN (st, ctx, 'cannot DISPOSE the module variable ' + st.kids[0].a +
+              ' in a procedure: the module owns it, and nothing here shows that no other name still holds it -- DISPOSE it in the module body, or keep the owned value in a local or an OWN parameter (par 4.2)')
+          else if ((ScopeMode (st.kids[0].a) = 'l') or
+                   (ownModule and (ScopeMode (st.kids[0].a) = 'm'))) and
                   (OwnedCandKind (st.kids[0].a) = 1) and
                   (fval.IndexOf (st.kids[0].a) < 0) and
                   (ownFed.IndexOf (st.kids[0].a) < 0) then
             ErrN (st, ctx, 'cannot DISPOSE ' + st.kids[0].a +
               ': nothing here gives it an owned pointer -- only NEW (OWN, T), ' +
-              'an owned name moved in or a call does (par 4.2)')
+              'an owned name moved in or a call that does not answer what it was lent does (par 4.2)')
           else if Length (st.kids[0].kids) = 0 then
           begin
             NoteUse (st.kids[0]);
@@ -6948,21 +8591,44 @@ var
                 end;
               end;
             end;
+            { what a moved argument holds is shared all the same
+              (mirrors Sem.CheckThread; the fourth review's SharedInMoved) }
+            if tmoved then
+            begin
+              sw := SharedFieldWhy (taTy);
+              if sw <> '' then
+                ErrN (st, ctx, 'THREAD (' + tname + '): the value moved in holds a SHARED handle to ' + sw +
+                  ' which the starting thread may still hold, and it is neither a MONITOR nor a RECORD marked [SHARABLE] (par 6)');
+            end;
             { SHARABLE: what is not moved, both threads hold (mirrors
               Sem.CheckThread) }
             if not tmoved then
             begin
-              sw := ShareWhy (taTy);
+              sw := ShareWhy (taTy, False);
               if sw <> '' then
                 ErrN (st, ctx, 'THREAD (' + tname + '): both threads hold the ' + sw +
-                  ' handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE] -- mark it RECORD ... END [SHARABLE] if the threads'' writes to it are disjoint, or move an owned value in (par 6)');
+                  ' handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE] -- mark it RECORD ... END [SHARABLE] if the threads'' writes to it are disjoint, or move an owned value in (par 6)')
+              { a shared record's pool, carved by both threads (mirrors
+                Sem.CheckThread; the reviews' G8) }
+              else if (ShareWhy (taTy, True) <> '') and LookupProcInfo (tname, tpr) and
+                      ThreadAllocs (tpr, (loopsOpen = 0) or
+                        ((st.kids[1].kind = nkDesignator) and (Length (st.kids[1].kids) > 0))) then
+                ErrN (st, ctx, 'THREAD (' + tname + '): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock -- give the worker a POOL of its own to allocate in, or move an owned value in (par 6)');
             end;
           end;
         end;
       nkTransfer :
         begin ExprType (st.kids[0]); ExprType (st.kids[1]); end;
       nkWait, nkSignal :
-        ExprType (st.kids[0]);
+        begin
+          ExprType (st.kids[0]);
+          { the bound monitor only (mirrors Sem.WalkStmt; the fourth
+            review's WaitOther) }
+          if not ((st.kids[0] <> nil) and (st.kids[0].kind = nkDesignator) and
+                  (Length (st.kids[0].kids) = 0) and (boundMon <> '') and
+                  (st.kids[0].a = boundMon)) then
+            ErrN (st, ctx, 'WAIT and SIGNAL take the monitor this procedure is bound to -- its first parameter -- and no other: on another monitor there is no lock held to release (par 6)');
+        end;
       nkExit :
         begin
           { EXIT leaves the innermost LOOP (mirrors Sem's NExit) }
@@ -6975,25 +8641,39 @@ var
         begin
           for j := 1 to High (st.kids) do
             if st.kids[j].kind = nkFinally then Inc (finSinceLoop);
+          { what a block catches it catches for its guarded sequence ONLY:
+            the raises that sequence added are dropped before the handler
+            bodies are walked (mirrors Sem.WalkStmt; the review's C6) }
+          hfrom := raised.Count;
           WalkSeq (st.kids[0]);
+          hnames := ' ';
+          for j := 1 to High (st.kids) do
+            if st.kids[j].kind = nkHandler then
+              for k := 0 to High (st.kids[j].kids) do
+                if (k = 0) or (k >= 3) then
+                begin
+                  if st.kids[j].kids[k].b <> '' then
+                    hnames := hnames + ExcKey (curMod, st.kids[j].kids[k].a + '.' +
+                      st.kids[j].kids[k].b) + ' '
+                  else
+                    hnames := hnames + ExcKey (curMod, st.kids[j].kids[k].a) + ' ';
+                end;
+          for k := raised.Count - 1 downto hfrom do
+            if (Pos (' ' + raised.Names[k] + ' ', hnames) > 0) or
+               (Pos (' ' + ExcBare (raised.Names[k]) + ' ', hnames) > 0) then
+              raised.Delete (k);
           hpre := OwnSnap;
           SetLength (snaps, 0);
           for j := 1 to High (st.kids) do
             if st.kids[j].kind = nkHandler then
             begin
               CheckExcName (st.kids[j].kids[0], ctx);
-              if st.kids[j].kids[0].b <> '' then
-                handled.Add (st.kids[j].kids[0].b)
-              else
-                handled.Add (st.kids[j].kids[0].a);
+              HandlerQualVar (st.kids[j].kids[0]);
               { the further names of `| A, B :' (mirrors Sem.WalkStmt) }
               for k := 3 to High (st.kids[j].kids) do
               begin
                 CheckExcName (st.kids[j].kids[k], ctx);
-                if st.kids[j].kids[k].b <> '' then
-                  handled.Add (st.kids[j].kids[k].b)
-                else
-                  handled.Add (st.kids[j].kids[k].a);
+                HandlerQualVar (st.kids[j].kids[k]);
                 if (st.kids[j].kids[1] <> nil) and
                    (ExcFieldsText (st.kids[j].kids[0]) <> ExcFieldsText (st.kids[j].kids[k])) then
                   ErrN (st.kids[j], ctx,
@@ -7045,6 +8725,8 @@ var
 
 var
   nm, origin : string;
+  dk : Boolean;                      { a raised key the clause declares }
+  dki : Integer;
   prc : TProcInfo;
   changed, selfHit : Boolean;
   a2, b2, msg2, msgE, dmode : string;
@@ -7052,7 +8734,7 @@ var
   tl : TStringList;
 begin
   raised := TStringList.Create; raised.CaseSensitive := True;
-  handled := TStringList.Create; handled.CaseSensitive := True;
+
   calls := TStringList.Create; calls.CaseSensitive := True;
   ownState := TStringList.Create; ownState.CaseSensitive := True;
   escSet := TStringList.Create; escSet.CaseSensitive := True;
@@ -7070,6 +8752,7 @@ begin
   RoSeed (body);
   OwnFedSeed (body);
   if nAgg > 0 then AggWalk (body, nkProcBody);
+  DaProc (body);
   if body.kind = nkStmtSeq then
     WalkSeq (body)
   else
@@ -7151,12 +8834,14 @@ begin
     nm := raised.Names[i];
     origin := raised.ValueFromIndex[i];
     if InList (nm, Unchecked) then Continue;
-    if handled.IndexOf (nm) >= 0 then Continue;
-    if InList (nm, declared) then Continue;
+    dk := False;
+    for dki := 0 to High (declared) do
+      if ExcCovers (ExcKey (curMod, declared[dki]), nm) then dk := True;
+    if dk then Continue;
     { the edit, said (mirrors Sem.ReportUnhandled) }
-    ErrN (body, ctx, 'unhandled RAISES ' + nm + ' from ' + origin +
+    ErrN (body, ctx, 'unhandled RAISES ' + ExcShown (nm) + ' from ' + origin +
       ' -- add it to this procedure''s RAISES, or handle it: EXCEPT | ' +
-      nm + ' : ...');
+      ExcShown (nm) + ' : ...');
   end;
   { par 3.2 rule 3: a PURE procedure may call only PURE procedures.
     This is what makes "no I/O" true without the checker knowing what
@@ -7175,7 +8860,7 @@ begin
           ErrN (body, ctx, 'PURE procedure calls ' + calls[i] +
             ', which is not PURE (par 3.2)');
   raised.Free;
-  handled.Free;
+
   calls.Free;
   ownState.Free;
   escSet.Free;
@@ -7745,6 +9430,230 @@ var
     once.Free;
   end;
 
+  { ---- a type refers to itself only through a pointer to a record
+    (report par 2.2).  corpus/Sem.m9's TypeCycles says why; the same
+    walk, in the same order, with the same words. ---- }
+  function TcDecl (uu: TNode; const nm: string; var at: Integer): TNode;
+  var a, b : Integer;
+  begin
+    at := -1;
+    Result := nil;
+    for a := 0 to High (uu.kids) do
+      if (uu.kids[a] <> nil) and (uu.kids[a].kind = nkTypeSection) then
+        for b := 0 to High (uu.kids[a].kids) do
+          if (uu.kids[a].kids[b] <> nil) and (uu.kids[a].kids[b].a = nm) then
+          begin
+            at := a * 100000 + b;
+            Exit (uu.kids[a].kids[b].kids[0]);
+          end;
+  end;
+
+  function TcIsRecord (uu, k: TNode; depth: Integer): Boolean;
+  var at : Integer;
+  begin
+    Result := False;
+    if (depth > 4096) or (k = nil) then Exit;
+    if k.kind in [nkRecordType, nkCaseRecordType, nkMonitorType] then
+      Exit (True);
+    if k.kind = nkQualident then
+    begin
+      if k.b <> '' then Exit (True);
+      Result := TcIsRecord (uu, TcDecl (uu, k.a, at), depth + 1);
+    end;
+  end;
+
+  function TcWalk (uu, k: TNode; const start: string; depth: Integer;
+                   var seen: TStringList): Boolean; forward;
+
+  function TcFields (uu, k: TNode; const start: string; depth: Integer;
+                     var seen: TStringList): Boolean;
+  var a : Integer;
+  begin
+    Result := False;
+    if k = nil then Exit;
+    for a := 0 to High (k.kids) do
+      if k.kids[a] <> nil then
+        if TcWalk (uu, k.kids[a].kids[1], start, depth + 1, seen) then
+          Exit (True);
+  end;
+
+  function TcWalk (uu, k: TNode; const start: string; depth: Integer;
+                   var seen: TStringList): Boolean;
+  var
+    a, at : Integer;
+    d : TNode;
+  begin
+    Result := False;
+    { the visited names end the walk (mirrors Sem.TcWalk; 200 let a
+      ring of 101 names through, the second review's fuzz N1) }
+    if (depth > 100000) or (k = nil) then Exit;
+    case k.kind of
+      nkQualident:
+        begin
+          if k.b <> '' then Exit;
+          if k.a = start then Exit (True);
+          d := TcDecl (uu, k.a, at);
+          if at < 0 then Exit;
+          { a name walked already for this start did not lead back }
+          if seen.IndexOf (IntToStr (at)) >= 0 then Exit;
+          seen.Add (IntToStr (at));
+          Result := TcWalk (uu, d, start, depth + 1, seen);
+        end;
+      nkPtrType, nkSharedType:
+        begin
+          if TcIsRecord (uu, k.kids[0], 0) then Exit;
+          Result := TcWalk (uu, k.kids[0], start, depth + 1, seen);
+        end;
+      nkOptType, nkSliceType:
+        Result := TcWalk (uu, k.kids[0], start, depth + 1, seen);
+      nkArrayType, nkGridType:
+        Result := TcWalk (uu, k.kids[1], start, depth + 1, seen);
+      nkRecordType:
+        Result := TcFields (uu, k.kids[1], start, depth, seen);
+      nkMonitorType:
+        Result := TcFields (uu, k.kids[0], start, depth, seen);
+      nkCaseRecordType:
+        for a := 0 to High (k.kids) do
+          if k.kids[a] <> nil then
+            if TcFields (uu, k.kids[a].kids[0], start, depth, seen) then
+              Exit (True);
+      nkProcType:
+        begin
+          if TcFields (uu, k.kids[0], start, depth, seen) then Exit (True);
+          if Length (k.kids) > 1 then
+            Result := TcWalk (uu, k.kids[1], start, depth + 1, seen);
+        end;
+    end;
+  end;
+
+  { ---- a field, a variant arm's field, an enumeration member: once.
+    Mirrors Sem.CheckFieldsOnce. ---- }
+  procedure OnceNames (ids: TNode; const what, ctx: string; seen: TStringList);
+  var i : Integer;
+  begin
+    if ids = nil then Exit;
+    for i := 0 to High (ids.kids) do
+      if ids.kids[i] <> nil then
+      begin
+        if seen.IndexOf (ids.kids[i].a) >= 0 then
+          ErrN (ids.kids[i], ctx, ids.kids[i].a + ' is declared twice in ' + what + ' (par 2.2)')
+        else
+          seen.Add (ids.kids[i].a);
+      end;
+  end;
+
+  procedure FieldsOnceIn (k: TNode; const what, ctx: string); forward;
+
+  procedure FieldSeqOnce (fs: TNode; const what, ctx: string);
+  var g : Integer; seen : TStringList;
+  begin
+    seen := TStringList.Create;
+    seen.CaseSensitive := True;
+    if fs <> nil then
+      for g := 0 to High (fs.kids) do
+        if fs.kids[g] <> nil then
+        begin
+          OnceNames (fs.kids[g].kids[0], what, ctx, seen);
+          FieldsOnceIn (fs.kids[g].kids[1], what, ctx);
+        end;
+    seen.Free;
+  end;
+
+  procedure FieldsOnceIn (k: TNode; const what, ctx: string);
+  var i : Integer; seen : TStringList;
+  begin
+    if k = nil then Exit;
+    case k.kind of
+      nkRecordType: FieldSeqOnce (k.kids[1], what, ctx);
+      nkMonitorType: FieldSeqOnce (k.kids[0], what, ctx);
+      nkCaseRecordType:
+        for i := 0 to High (k.kids) do
+          if k.kids[i] <> nil then
+            FieldSeqOnce (k.kids[i].kids[0], what + ' arm ' + k.kids[i].a, ctx);
+      nkEnumType:
+        begin
+          seen := TStringList.Create;
+          seen.CaseSensitive := True;
+          OnceNames (k, what, ctx, seen);
+          seen.Free;
+        end;
+      nkPtrType, nkOptType, nkSharedType, nkSliceType:
+        FieldsOnceIn (k.kids[0], what, ctx);
+      nkArrayType, nkGridType:
+        FieldsOnceIn (k.kids[1], what, ctx);
+    end;
+  end;
+
+  { ---- a binder: once in its list.  Mirrors Sem.BindersOnce. ---- }
+  procedure BindersOnce (k: TNode; const ctx: string);
+  var i : Integer; ids : TNode; what : string; seen : TStringList;
+  begin
+    if k = nil then Exit;
+    ids := nil;
+    what := '';
+    if (k.kind = nkHandler) and (Length (k.kids) > 1) then
+    begin
+      ids := k.kids[1];
+      what := 'the binders of a handler';
+    end
+    else if (k.kind = nkLabelPattern) and (Length (k.kids) > 0) then
+    begin
+      ids := k.kids[0];
+      what := 'the binders of ' + k.a;
+    end;
+    if ids <> nil then
+    begin
+      seen := TStringList.Create;
+      seen.CaseSensitive := True;
+      for i := 0 to High (ids.kids) do
+        if (ids.kids[i] <> nil) and (ids.kids[i].kind = nkIdent) then
+        begin
+          if seen.IndexOf (ids.kids[i].a) >= 0 then
+            ErrN (ids.kids[i], ctx, ids.kids[i].a + ' is declared twice in ' + what + ' (par 2.2)')
+          else
+            seen.Add (ids.kids[i].a);
+        end;
+      seen.Free;
+    end;
+    for i := 0 to High (k.kids) do BindersOnce (k.kids[i], ctx);
+  end;
+
+  procedure CheckFieldsOnce (uu: TNode);
+  var a, b : Integer;
+  begin
+    for a := 0 to High (uu.kids) do
+      if (uu.kids[a] <> nil) and (uu.kids[a].kind = nkTypeSection) then
+        for b := 0 to High (uu.kids[a].kids) do
+          if uu.kids[a].kids[b] <> nil then
+            FieldsOnceIn (uu.kids[a].kids[b].kids[0], 'type ' + uu.kids[a].kids[b].a, uu.a);
+  end;
+
+  function TypeCycles (uu: TNode): Boolean;
+  var
+    a, b : Integer;
+    td : TNode;
+    seen : TStringList;
+  begin
+    Result := False;
+    seen := TStringList.Create;
+    seen.CaseSensitive := True;
+    for a := 0 to High (uu.kids) do
+      if (uu.kids[a] <> nil) and (uu.kids[a].kind = nkTypeSection) then
+        for b := 0 to High (uu.kids[a].kids) do
+        begin
+          td := uu.kids[a].kids[b];
+          if td = nil then Continue;
+          seen.Clear;
+          if TcWalk (uu, td.kids[0], td.a, 0, seen) then
+          begin
+            ErrN (td, uu.a, 'type ' + td.a +
+              ' refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2)');
+            Result := True;
+          end;
+        end;
+    seen.Free;
+  end;
+
   procedure AddParamsOf (procNode: TNode);
   var
     a, b : Integer;
@@ -7780,6 +9689,9 @@ var
   end;
 
 begin
+  { a file with no unit (Sem.CheckFile) }
+  if Length (root.kids) = 0 then
+    ErrN (root, 'file', 'the file holds no unit: a MODULE, DEFINITION MODULE or IMPLEMENTATION MODULE (par 3)');
   for ui := 0 to High (root.kids) do
   begin
     u := root.kids[ui];
@@ -7812,6 +9724,9 @@ begin
     for i := 0 to High (u.kids) do
       ExportWalk (u, nil, u.kids[i]);
     CheckDeclaredOnce (u);
+    if TypeCycles (u) then Exit;
+    CheckFieldsOnce (u);
+    BindersOnce (u, u.a);
     CheckExcFields (u);
     RecordAttribWalk (Self, u, u.a);
     constMap.Clear;
@@ -7906,15 +9821,23 @@ begin
               LitType (p.kids[j].kids[k2].kids[0]);
             localConsts.Add (p.kids[j].kids[k2].a);
           end;
-      declared := RaisesOf (d);
+      declared := RaisesSpelled (d);
       { a RAISES clause may only cite an exception the reader can find }
       if d.kids[2] <> nil then
         for k2 := 0 to High (d.kids[2].kids) do
           CheckExcName (d.kids[2].kids[k2], ctx);
       { par 3.2: kid 3 is the attribute, if any }
       curPure := (d.kids[3] <> nil) and (d.kids[3].a = 'PURE');
+      curFresh := (d.kids[3] <> nil) and (d.kids[3].a = 'FRESH');
+      { mirrors Sem: [FRESH] only in an UNSAFE implementation, and no
+        other attribute }
+      if curFresh and not curUnsafe then
+        ErrN (d.kids[3], ctx, '[FRESH] states what an UNSAFE body cannot show; in a safe module the body is the evidence -- drop the attribute (par 7)')
+      else if (d.kids[3] <> nil) and not curPure and not curFresh then
+        ErrN (d.kids[3], ctx, 'a procedure takes the attribute [PURE] or, in an UNSAFE implementation, [FRESH] (par 3.2, par 7), not [' + d.kids[3].a + ']');
       curInBody := False;
       boundMon := BoundMonitorOf (d);
+      boundMonNode := MonIdOf (d, curMod);
       if d.kids[1] <> nil then
         rt := CanonT (d.kids[1], 0)
       else
@@ -7966,8 +9889,10 @@ begin
         last -- it leaked into this frame on the first run and
         reported the body writing its own module variables }
       curPure := False;
+      curFresh := False;
       curInBody := True;
       boundMon := '';            { a module body binds no monitor }
+      boundMonNode := nil;
       ownModule := True;
       CheckBody (sec.kids[0], ctx, declared, scope, '<void>');
       ownModule := False;

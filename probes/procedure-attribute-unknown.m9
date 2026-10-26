@@ -1,0 +1,16 @@
+(* EXPECT: a procedure takes the attribute [PURE] or, in an UNSAFE implementation, [FRESH] (par 3.2, par 7), not [PUER] *)
+MODULE m ;
+(* a procedure's attribute was read where it was known and ignored
+   where it was not: `[PUER]' compiled as no attribute at all, and the
+   purity the author meant was never checked (2026-10-26).  Legal form
+   first: [PURE]. *)
+PROCEDURE Twice (x: I64) : I64 [PURE] =
+BEGIN
+  RETURN 2 * x
+END Twice ;
+PROCEDURE Thrice (x: I64) : I64 [PUER] =
+BEGIN
+  RETURN 3 * x
+END Thrice ;
+BEGIN
+END m.

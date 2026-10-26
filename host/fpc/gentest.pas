@@ -84,6 +84,9 @@ begin
   GenModule ('Stats', ['Math', 'Bits', 'Faults', 'Sort']);
   GenModule ('System', ['Io', 'DynStr', 'Text']);
   GenModule ('Json', ['DynStr']);
+  GenModule ('JsonUtf', ['DynStr', 'Text']);
+  GenModule ('Chars', ['Bits', 'Faults', 'Text']);
+  GenModule ('DynUtf', []);
   GenModule ('Http', ['DynStr', 'Io']);
   GenModule ('HttpServer', ['DynStr', 'Http', 'Io', 'Logger', 'Zip']);
   GenModule ('OpenApi', ['HttpServer', 'DynStr']);
@@ -93,17 +96,17 @@ begin
   GenModule ('Sparql', ['DynStr', 'Io', 'Http', 'Json', 'Text']);
   GenModule ('Rdf', ['DynStr', 'Fmt', 'Json', 'Text', 'Xml']);
   GenModule ('Regex', ['DynStr', 'Text']);
-  GenModule ('Map', ['DynStr', 'Faults', 'Fmt', 'Math', 'Plot', 'Stats']);
+  GenModule ('Map', ['DynStr', 'Faults', 'Fmt', 'Math', 'Plot', 'Stats', 'Text']);
   GenModule ('Xml', ['DynStr', 'Fmt', 'Text']);
   GenModule ('Hash', ['Bits', 'Faults']);
   GenModule ('Smtp', ['Time', 'DynStr', 'Fmt', 'Text']);
   GenModule ('Rsa', ['Hash', 'Text']);
   GenModule ('Zarr', ['DynStr', 'Json', 'Io', 'Math']);
   GenModule ('Plot', ['DynStr', 'Mat', 'Math', 'Faults', 'Fmt', 'Text', 'Time']);
-  GenModule ('Lex', ['DynStr']);
+  GenModule ('Lex', ['DynStr', 'Text']);
   GenModule ('Ast', []);
-  GenModule ('Print', ['Ast', 'DynStr']);
-  GenModule ('Parse', ['Ast', 'Lex', 'DynStr']);
+  GenModule ('Print', ['Ast', 'DynUtf', 'Text']);
+  GenModule ('Parse', ['Ast', 'Lex', 'Text']);
   GenModule ('Dict', []);
   GenModule ('Fmt', []);
   GenModule ('Io', ['DynStr']);
@@ -137,10 +140,10 @@ begin
   GenModule ('ExportDef', ['Io', 'Fmt']);
   GenModule ('ExportUse', ['ExportDef', 'Io', 'Fmt']);
   GenModule ('ShareUse', ['Io']);
-  GenModule ('Sem', ['Ast', 'DynStr', 'Print', 'Text']);
-  GenModule ('Doc', ['Ast', 'DynStr', 'Text', 'Print', 'Lex']);
-  GenModule ('Review', ['Ast', 'DynStr', 'Text']);
-  GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Review', 'Lex', 'System']);
-  GenModule ('Gen', ['Ast', 'DynStr', 'Text']);
-  GenModule ('Diag', ['DynStr', 'Io', 'Lex']);
+  GenModule ('Sem', ['Ast', 'DynUtf', 'Print', 'Text']);
+  GenModule ('Doc', ['Ast', 'DynUtf', 'Text', 'Print', 'Lex']);
+  GenModule ('Review', ['Ast', 'DynUtf', 'Text']);
+  GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynUtf', 'Doc', 'Review', 'Lex', 'System', 'Text']);
+  GenModule ('Gen', ['Ast', 'DynUtf', 'Text']);
+  GenModule ('Diag', ['DynStr', 'DynUtf', 'Io', 'Lex', 'Text']);
 end.

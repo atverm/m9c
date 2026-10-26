@@ -1,0 +1,21 @@
+MODULE R2N06 ;
+(* a slice of a LOCAL ARRAY (C stack storage) kept in a module variable *)
+IMPORT Io, Fmt ;
+VAR gs : SLICE OF I64 ;
+PROCEDURE Fill () =
+VAR a : ARRAY 4 OF I64 ; i : I64 ;
+BEGIN
+  FOR i := 0 TO 3 DO a[i] := 41 END ;
+  gs := SLICE (a, 0, 4)
+END Fill ;
+PROCEDURE Churn () =
+VAR b : ARRAY 64 OF I64 ; i : I64 ;
+BEGIN
+  FOR i := 0 TO 63 DO b[i] := 77777777 END ;
+  Io.WriteLine (Fmt.I64Str (b[3]))
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  Io.WriteLine (Fmt.I64Str (gs[0]))
+END R2N06.

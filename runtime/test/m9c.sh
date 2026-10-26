@@ -20,13 +20,16 @@ OUT=/tmp/m9c-out
 # DIVERGES against agreeing generators -- which is how this was
 # noticed, after Gen.m9 gained a case -- and a stale gen consistent
 # with a stale m9c built from it reports agreement that is not there.
-# Same hole bootstrap.sh had.
-( cd ../../host/fpc && fpc -O2 gentest.pas >/dev/null && ./gentest >/dev/null )
+# Same hole bootstrap.sh had.  lib/gen.sh produces it (or proves by its
+# stamp that it is what the generator writes from these sources).
+. ./lib/gen.sh
 
+M9CNEW=$(mktemp -d)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Lex.c \
-    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
-    ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o m9c
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
+# replaced only when it differs: a gate in another lane running m9c keeps
+# its file, and --run's cache, whose key holds m9c's mtime, its entries
+if cmp -s "$M9CNEW/m9c" m9c; then rm -r "$M9CNEW"; else mv -f "$M9CNEW/m9c" m9c; rmdir "$M9CNEW"; fi
 
 M9C=$(pwd)/m9c
 GEN=$(cd "$G" && pwd)
@@ -45,12 +48,12 @@ check () {                      # check MODULE [DEP ...]
 check DynStr
 check Dict
 check Json DynStr
-check Lex DynStr
-check Parse Ast Lex DynStr
-check Gen Ast DynStr Text
-check Sem Ast DynStr Print Text
+check Lex DynStr Text
+check Parse Ast Lex Text
+check Gen Ast DynUtf Text
+check Sem Ast DynUtf Print Text
 check Io DynStr
-check M9c Io Ast Parse Gen Sem DynStr Doc Review Lex System
+check M9c Io Ast Parse Gen Sem DynUtf Doc Review Lex System Text
 
 # usage and exit status are part of the tool, so they are checked too.
 # Asking for help SUCCEEDS; getting the usage because you gave no
@@ -436,11 +439,11 @@ rm -rf "$LIB"; mkdir -p "$LIB"; cd "$LIB"
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 
-for m in DynStr Text Io System Lex Ast Parse Print Sem Gen Doc Review; do "$M9C" -c $m; done
+for m in DynStr DynUtf Text Io System Lex Ast Parse Print Sem Gen Doc Review; do "$M9C" -c $m; done
 "$M9C" -v --ar libm9.a M9c 2>ar.txt
 [ -f libm9.a ] || { echo "FAIL: --ar produced no archive"; exit 1; }
 # the members are the closure m9c just resolved, and its own object
-for o in M9c.o DynStr.o Io.o System.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o Review.o; do
+for o in M9c.o DynStr.o Io.o System.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o DynUtf.o Review.o; do
   ar t libm9.a | grep -qx "$o" ||
     { echo "FAIL: $o is not in the archive"; exit 1; }
 done
@@ -697,26 +700,28 @@ echo "m9c: a qualified handler catches exactly the module it names"
 # generator learned it, then an expression as a CASE label until stage
 # 2 of the typed tree the same evening, a variable FOR step until stage
 # 3 (the checker refuses it now, par 10), a SLICE of an array a call
-# answers until the checker refused it too (2026-10-10); it is a VIEW of
-# a grid a call answers now, which the checker passes and the generator
-# refuses (runtime/test/genforms.owed lists every such form).  The reversed
-# NEW is checked below, where it belongs now.
+# answers until the checker refused it too (2026-10-10), a VIEW of a grid
+# a call answers until the generator learned it (2026-10-25); it is two
+# VAR string arguments whose storage lives in two pools now (decision
+# 60), which the checker passes and the generator refuses by name.  The
+# reversed NEW is checked below, where it belongs now.
 GMSG=/tmp/m9c-genmsg
 rm -rf "$GMSG"; mkdir -p "$GMSG"; cd "$GMSG"
 cat > Exc.m9 <<'M9'
 MODULE Exc ;
 IMPORT Io ;
-PROCEDURE Mk () : GRID 2 OF F64 = BEGIN RETURN NEW (F64, 2, 3) END Mk ;
-VAR g : GRID 1 OF F64 ;
+TYPE Box = RECORD s : STR END ;
+VAR mp : POOL ; b : PTR Box IN mp ; g : STR ;
+PROCEDURE Set2 (VAR x: STR ; VAR y: STR) = BEGIN x := 'one' ; y := 'two' END Set2 ;
+PROCEDURE Use () = BEGIN Set2 (b.s, g) END Use ;
 BEGIN
-  g := VIEW (Mk (), 1, ALL) ;
-  Io.WriteLine ('viewed')
+  b := NEW (mp, Box) ; Use () ; Io.WriteLine (b.s + g)
 END Exc.
 M9
 if M9LIBRARY="$SRC" "$M9C" --make -c ./Exc.m9 2>gm.txt; then
-  echo "FAIL: a VIEW of a call's grid should be refused"; exit 1
+  echo "FAIL: two VAR arguments in two pools should be refused"; exit 1
 fi
-grep -q 'Exc.m9:6: gen: VIEW form' gm.txt ||
+grep -q 'Exc.m9:6: gen: VAR arguments whose storage lives in two pools' gm.txt ||
   { echo "FAIL: the generator error lost its line or message:"; \
     head -3 gm.txt; exit 1; }
 
@@ -741,7 +746,7 @@ M9
 if M9LIBRARY="$SRC" "$M9C" --make -c ./Rev.m9 2>rv.txt; then
   echo "FAIL: a reversed NEW should be refused"; exit 1
 fi
-grep -q '11:8 Rev body: NEW takes the pool first, then the type' rv.txt ||
+grep -q 'Rev.m9:11:8: Rev body: NEW takes the pool first, then the type' rv.txt ||
   { echo "FAIL: the checker did not name the reversed NEW:"; \
     head -3 rv.txt; exit 1; }
 
@@ -815,21 +820,23 @@ fi
 # learned it; an expression as a CASE label until stage 2 of the typed
 # tree the same evening; a variable FOR step until stage 3, when the
 # checker learned to refuse it; a SLICE of a call's array until the
-# checker refused that too; a VIEW of a call's grid now)
+# checker refused that too; a VIEW of a call's grid until the generator
+# learned it; two VAR arguments in two pools now)
 cat > Late.m9 <<'LATE'
 MODULE Late ;
 IMPORT Io ;
-PROCEDURE Mk () : GRID 2 OF F64 = BEGIN RETURN NEW (F64, 2, 3) END Mk ;
-VAR g : GRID 1 OF F64 ;
+TYPE Box = RECORD s : STR END ;
+VAR mp : POOL ; b : PTR Box IN mp ; g : STR ;
+PROCEDURE Set2 (VAR x: STR ; VAR y: STR) = BEGIN x := 'one' ; y := 'two' END Set2 ;
+PROCEDURE Use () = BEGIN Set2 (b.s, g) END Use ;
 BEGIN
-  g := VIEW (Mk (), 1, ALL) ;
-  Io.WriteLine ('viewed')
+  b := NEW (mp, Box) ; Use () ; Io.WriteLine (b.s + g)
 END Late.
 LATE
 if M9LIBRARY="$SRC" "$M9C" --check Late.m9 2>late.err; then
   echo "FAIL: --check accepted a program the generator refuses"; cat late.err; exit 1
 fi
-grep -q "gen: VIEW form" late.err ||
+grep -q "gen: VAR arguments whose storage lives in two pools" late.err ||
   { echo "FAIL: --check exit 1 without the generator's line:"; cat late.err; exit 1; }
 [ -z "$(ls -A "$CK" | grep -v -E '^(Broke|Late)\.m9$|\.err$')" ] ||
   { echo "FAIL: --check on a generator refusal wrote files:"; ls -A "$CK"; exit 1; }
@@ -846,6 +853,43 @@ fi
   echo "FAIL: a non-UTF-8 source should be said once, as not text, and not as missing:"; cat notutf.err; exit 1; }
 rm -f NotUtf.m9 notutf.err
 echo "m9c: a source that is not UTF-8 is refused once, by what it is"
+
+# A PATH THAT IS NOT THERE is not a module name: `m9c --check
+# no/such/dir/Text.m9' checked the library's Text and exited 0 (the
+# review's F6).  A bare name is still searched for.  AN UNKNOWN OPTION
+# is said as one, once: it was taken for a source, `cannot find:
+# --frobnicate'.
+if M9LIBRARY="$SRC" "$M9C" --check no/such/dir/Text.m9 2>miss.err; then
+  echo "FAIL: a missing path was answered by the library's module"; exit 1
+fi
+grep -q 'cannot read: no/such/dir/Text.m9' miss.err ||
+  { echo "FAIL: a missing path should be said as such:"; cat miss.err; exit 1; }
+M9LIBRARY="$SRC" "$M9C" --check Text 2>miss.err ||
+  { echo "FAIL: a bare module name was not searched for:"; cat miss.err; exit 1; }
+if M9LIBRARY="$SRC" "$M9C" --frobnicate Text 2>miss.err; then
+  echo "FAIL: an unknown option was accepted"; exit 1
+fi
+[ "$(wc -l < miss.err | tr -d ' ')" = 1 ] && grep -q 'unknown option --frobnicate' miss.err ||
+  { echo "FAIL: an unknown option should be said once, as one:"; cat miss.err; exit 1; }
+rm -f miss.err
+echo "m9c: a missing path and an unknown option are said as what they are"
+
+# A HEADER GUARD IS ONE IDENTIFIER, ONE PER FILE: `a-b.m9' gave
+# `#ifndef M9G_a-b_H', which is M9G_a and junk, the guard of `a-c.m9'
+# too, so including both dropped the second (the review's F6).
+GD=$(mktemp -d)
+printf 'MODULE ab ;\nCONST X = 1 ;\nBEGIN\nEND ab.\n' > "$GD/a-b.m9"
+printf 'MODULE ac ;\nCONST Y = 2 ;\nBEGIN\nEND ac.\n' > "$GD/a-c.m9"
+( cd "$GD" && M9LIBRARY="$SRC" "$M9C" --out-dir . a-b.m9 && M9LIBRARY="$SRC" "$M9C" --out-dir . a-c.m9 ) ||
+  { echo "FAIL: the two guard fixtures did not generate"; exit 1; }
+[ "$(sed -n 's/^#ifndef //p' "$GD/a-b.h")" = M9G_a_45b_H ] &&
+  [ "$(sed -n 's/^#ifndef //p' "$GD/a-c.h")" = M9G_a_45c_H ] ||
+  { echo "FAIL: header guards are not one identifier each:"; grep -h '^#ifndef' "$GD"/*.h; exit 1; }
+printf '#include "a-b.h"\n#include "a-c.h"\n#ifndef M9G_a_45c_H\n#error the second header was dropped\n#endif\nint main (void) { return 0; }\n' > "$GD/t.c"
+${CC:-cc} -fsyntax-only -iquote "$SRC/../runtime" -iquote "$GD" "$GD/t.c" ||
+  { echo "FAIL: two headers with distinct guards did not both take effect"; exit 1; }
+rm -r "$GD"
+echo "m9c: a header guard is one identifier per file, whatever the file is called"
 
 # THE VERSION CANNOT DRIFT FROM THE CHANGELOG.  Two releases in a row
 # shipped a first build whose receipt said the previous version,
@@ -1050,7 +1094,7 @@ cp "$SRC/Hello.m9" w2/
 rm -rf zip w3 && mkdir -p zip/bin zip/lib/m9 zip/runtime w3
 cp "$M9C" zip/bin/m9c
 cp "$SRC/DynStr.m9" "$SRC/Io.m9" zip/lib/m9/
-cp "$RT/m9rt.h" "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/fmtshim.c" zip/runtime/
+cp "$RT/m9rt.h" "$RT/m9rt.c" "$RT/m9powfive.h" "$RT/m9powten.h" "$RT/tcpshim.c" "$RT/fmtshim.c" zip/runtime/
 cp "$SRC/Hello.m9" w3/
 ( cd w3 &&
   env -u M9LIBRARY -u M9RUNTIME ../zip/bin/m9c --make -v -o hello Hello.m9 >r.txt 2>&1 ||
@@ -1083,7 +1127,7 @@ rm -rf w4 && mkdir -p w4 && cp "$SRC/Hello.m9" w4/
 grep -q "needs the runtime sources" w4/c0.txt ||
   { echo "FAIL: --cell without runtime sources did not say why:"; cat w4/c0.txt; exit 1; }
 mkdir -p inst/usr/share/m9/runtime
-cp "$RT/m9rt.h" "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/fmtshim.c" "$RT/tlsshim.c" \
+cp "$RT/m9rt.h" "$RT/m9rt.c" "$RT/m9powfive.h" "$RT/m9powten.h" "$RT/tcpshim.c" "$RT/fmtshim.c" "$RT/tlsshim.c" \
    "$RT/m9session.c" inst/usr/share/m9/runtime/
 ( cd w4 &&
   env -u M9LIBRARY -u M9RUNTIME M9CACHE="$PWD/cache" \

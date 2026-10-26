@@ -21,17 +21,24 @@ rm -rf "$W"; mkdir -p "$W"
 
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c \
-    ../gen/Text.c ../gen/System.c ../gen/Lex.c ../gen/Ast.c ../gen/Print.c \
-    ../gen/Parse.c ../gen/Sem.c ../gen/Doc.c ../gen/Review.c ../gen/Gen.c \
-    ../gen/Io.c ../gen/M9c.c -lm -o "$W/m9c"
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c"
 ( cd "$W" && M9RUNTIME="$RT" M9LIBRARY="$SRC" ./m9c --make -o m9fmt "$SRC/M9fmt.m9" >build.log 2>&1 ) || \
   { echo "fmt: FAIL building m9fmt:"; tail -5 "$W/build.log"; exit 1; }
 FMT="$W/m9fmt"
 
-( cd ../../host/fpc && fpc -O2 comdump.pas >/dev/null 2>&1 ) || true
+# comdump counts the comments.  Built fresh where fpc exists, and a
+# failed build is a FAILURE: until 2026-10-22 it was `|| true', and a
+# comdump left by an earlier build was then used as if it were this
+# tree's (the compiler review's tier 3).  Only without fpc is the count
+# skipped, and the gate says so.
 CD=../../host/fpc/comdump
-[ -x "$CD" ] || { echo "fmt: SKIP comment counting (no fpc for comdump)"; CD=; }
+if command -v fpc > /dev/null 2>&1; then
+  rm -f "$CD"
+  ( cd ../../host/fpc && fpc -O2 comdump.pas > "$W/comdump.log" 2>&1 ) ||
+    { echo "fmt: FAIL building comdump:"; tail -5 "$W/comdump.log"; exit 1; }
+else
+  echo "fmt: SKIP comment counting (no fpc for comdump)"; CD=
+fi
 
 files=0; div=0
 for f in ../../corpus/*.m9 ../../bench/*.m9 ../../museum/*.m9; do

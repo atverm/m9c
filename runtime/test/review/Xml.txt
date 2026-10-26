@@ -2,10 +2,10 @@ REVIEW Xml -- 58 procedures with a body, 32 of them functions; 13 headings in a 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              32
-  assignments                                   346
+  assignments                                   349
   arguments                                     626
   RETURN values                                  62
-  operands of a comparison or an operator       400
+  operands of a comparison or an operator       398
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -29,6 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              0
     of them [REENTRANT]                           0
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     0
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
@@ -36,3 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        4
   NEW in the frame                                0
   NEW in a named pool                            34
+  calls of a STR form with a UTF twin            36   Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.FindChar -> Text.FindCharUtf, +30 more
+  STR subscripts, writes and LEN                107   index s[0], len r.src, index r[i], len r.src, len r.src, index r[r.pos], +101 more

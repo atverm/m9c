@@ -3,6 +3,9 @@
 #include "DynStr.h"
 #include "Fmt.h"
 
+extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
+extern int64_t m9_fmt_short (double, void *, int64_t);
 extern double m9_now (void);
 extern void m9_sleep_ms (int64_t);
 
@@ -418,10 +421,10 @@ Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
     goto L_ret;
   }
   v = INT64_C(0);
-  { int64_t m9t4to;
+  { __typeof__(i) m9t4to;
   i = INT64_C(0);
   m9t4to = INT64_C(3);
-  for (; i <= m9t4to; i += 1) {
+  if (i <= m9t4to) for (;;) {
     bool m9t5 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
     if (err->exc) goto L_ret;
     if (m9t5) {
@@ -432,6 +435,8 @@ Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
       if (err->exc) goto L_ret;
       v = m9v;
     }
+    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   c.year = v;
   { __typeof__(c.month) m9v = Time_Digits2 (s, INT64_C(5), err);
@@ -450,7 +455,7 @@ Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     c.minute = m9v;
   }
-  { __typeof__(({ __typeof__(s) m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; })) m9a11 = ({ __typeof__(s) m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
+  { __typeof__(({ __auto_type m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a11 = ({ __auto_type m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
     if (err->exc) goto L_ret;
   { __typeof__(c.second) m9v = Fmt_ParseF64 (m9a11, err);
     if (err->exc) goto L_ret;
@@ -1151,11 +1156,11 @@ static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
   v = INT64_C(0);
-  { int64_t m9t1to;
+  { __typeof__(i) m9t1to;
   i = at;
   m9t1to = m9_add_i64 (at, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
+  if (i <= m9t1to) for (;;) {
     bool m9t2 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
     if (err->exc) goto L_ret;
     if (m9t2) {
@@ -1166,6 +1171,8 @@ static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_state *err)
       if (err->exc) goto L_ret;
       v = m9v;
     }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = v;
@@ -1194,11 +1201,11 @@ static int64_t Time_DigitsAt (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err
     goto L_ret;
   }
   v = INT64_C(0);
-  { int64_t m9t2to;
+  { __typeof__(i) m9t2to;
   i = at;
   m9t2to = m9_sub_i64 (m9_add_i64 (at, n, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t2to; i += 1) {
+  if (i <= m9t2to) for (;;) {
     bool m9t3 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
     if (err->exc) goto L_ret;
     if (m9t3) {
@@ -1211,6 +1218,8 @@ static int64_t Time_DigitsAt (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err
       if (err->exc) goto L_ret;
       v = m9v;
     }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
   } }
   err->res = m9res;
   m9ret = v;

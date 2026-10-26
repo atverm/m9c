@@ -125,9 +125,13 @@ _(documented with the group below)_
 
 ### Name (VAR pool: POOL ; t: PTR Table ; c: I64) : STR RAISES IndexError, ValueRange
 
+**Deprecated** (the UTF transition): NameUtf is its UTF form.
+
 _(documented with the group below)_
 
 ### Find (t: PTR Table ; RO name: STR) : I64
+
+**Deprecated** (the UTF transition): FindUtf is its UTF form.
 
 the column index, or -1.  Not an error: a caller choosing
 between conventions needs the question, not the diagnosis
@@ -212,9 +216,23 @@ _(documented with the group below)_
 
 ### TextAt (VAR pool: POOL ; t: PTR Table ; c, row: I64) : STR RAISES IndexError, ValueRange
 
+**Deprecated** (the UTF transition): TextAtUtf is its UTF form.
+
 a text field, built on demand out of the file still in memory: a
 table of a hundred thousand rows does not want a hundred
 thousand strings nobody asked for
+
+### NameUtf (VAR pool: POOL ; t: PTR Table ; c: I64) : UTF RAISES IndexError, ValueRange
+
+_(undocumented)_
+
+### TextAtUtf (VAR pool: POOL ; t: PTR Table ; c, row: I64) : UTF RAISES IndexError, ValueRange
+
+_(undocumented)_
+
+### FindUtf (t: PTR Table ; RO name: UTF) : I64
+
+_(undocumented)_
 
 ### StrToF64 (s: C.ConstPtr) : C.Double [REENTRANT]
 
@@ -222,17 +240,15 @@ _(documented with the group below)_
 
 ### StrToF32 (s: C.ConstPtr) : C.Double [REENTRANT]
 
-the runtime's one-line shim over strtof, not strtof itself:
-C.ConstPtr is `const void *` and stdlib.h has already declared
-strtof with `const char *`, so a direct binding collides.  The
-same collision m9_cstrlen answers, and the second instance of
-it -- a libc function the runtime header prototypes cannot be
-bound directly today.
+_(documented with the group below)_
 
-The answer is a C.Double because M9 has no C.Float.  It carries
-exactly the float strtof computed: widening is exact, and the
-conversion back to F32 in FieldF32 is the identity, so the
-reader still parses decimal text to F32 with ONE rounding.
+### CNumber (p: C.ConstPtr ; n: C.SSizeT) : C.Int [REENTRANT]
 
-REENTRANT: strtof reads the C locale, which this never
-changes.
+_(documented with the group below)_
+
+### CFieldF64 (p: C.ConstPtr ; n: C.SSizeT ; out: C.MutPtr) : C.Int [REENTRANT]
+
+IsNumber's grammar in one pass in the runtime (m9rt.h,
+2026-10-25), CFieldF64 with the value: 1 a number, 0 not one, -1
+under M9_CSV_PORTABLE -- then IsNumber and FieldF64 below decide,
+the portable twin.  IsNumber and Word were 31% of a CSV read.

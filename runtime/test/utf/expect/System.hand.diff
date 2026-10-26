@@ -1,0 +1,26 @@
+--- System.m9
++++ System.m9
+@@ -474,16 +474,14 @@
+   RETURN FALSE
+ END Flag ;
+ 
+-(* a copy of s that lives in pool, for an answer that must outlive
+-   the frame it was found in *)
+-PROCEDURE Dup (RO s: STR) : STR =
+-VAR
+-  r : STR ;
+-  j : I64 ;
++(* a copy of s, for an answer that must outlive the storage it was
++   found in: UTF (b) of the octets COPIES them (the validation cannot
++   fail on a UTF's own octets; its raise is the invariant's) *)
++PROCEDURE Dup (RO s: STR) : STR =
+ BEGIN
+-  r := NEW (CHAR, Text.BLen (s)) ;
+-  FOR j := 0 TO Text.BLen (s) - 1 DO r[j] := Text.BChar (s, j) END ;
+-  RETURN r
++  RETURN UTF (OCTETS (s))
++EXCEPT
++| ValueRange : RAISE IndexError (0, Text.BLen (s))
+ END Dup ;
+ 
+ PROCEDURE Value (RO name: STR ; RO dflt: STR) : STR

@@ -1,0 +1,1281 @@
+(* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
+DEFINITION MODULE JsonUtf ;
+
+(* Json over UTF text (docs/utf8-plan.md, stage 2; Alex, 2026-10-23:
+   "create the modules and test them, add UTF to the module name, swap
+   the names when STR becomes UTF").  The same tree, the same API and
+   the same contracts as Json -- read Json's comments for each procedure
+   -- with every piece of text a UTF: the document parsed, the payloads
+   and member names it keeps (views of the document, as Json's are), the
+   texts answered and the renderings produced.  A document is held at
+   its UTF-8 size, where Json's STR tree holds four octets a character.
+
+   What differs, and why:
+     - positions in a ParseError are lines and columns of CHARACTERS, as
+       Json's are; the scanner steps one code point at a time over byte
+       offsets (Text.NextCp);
+     - escape decoding and the renderings are built through STR and
+       converted once at the end: transient text, where the tree is what
+       lives on, and the switch at stage 3 makes the detour go away;
+     - AppendJString and AppendF64 append to a DynStr, which is STR, so
+       their text argument is converted;
+     - the exceptions' messages stay STR: they are ASCII, and a RAISE's
+       string payload is copied as a STR.
+
+   At the end of the transition this module becomes Json, and Json
+   goes. *)
+
+IMPORT DynStr ;
+
+TYPE
+  Node ;                                 (* opaque; lives in a POOL *)
+  Value = CASE RECORD
+  | Object  : first: OPT PTR Node
+  | Arr     : first: OPT PTR Node ; count: I64
+  | Str     : RO s: UTF
+  | Num     : r: F64 ; i: I64 ; isInt: BOOL
+  | Bool    : b: BOOL
+  | Null
+  END ;
+
+EXCEPTION
+  ParseError (RO msg: STR ; line, col: I64) ;
+  TypeMismatch (RO msg: STR) ;
+
+PROCEDURE Parse (RO src: UTF) : PTR Node
+  RAISES ParseError ;
+PROCEDURE ParseIn (VAR pool: POOL ; RO src: UTF) : PTR Node IN pool
+  RAISES ParseError ;
+PROCEDURE Field (obj: PTR Node ; RO name: UTF)
+  : OPT PTR Node ;
+PROCEDURE Item (arr: PTR Node ; i: I64) : PTR Node
+  RAISES TypeMismatch, IndexError ;
+PROCEDURE Count (arr: PTR Node) : I64
+  RAISES TypeMismatch ;
+PROCEDURE MemberCount (obj: PTR Node) : I64
+  RAISES TypeMismatch ;
+PROCEDURE NameAt (obj: PTR Node ; i: I64) : UTF
+  RAISES TypeMismatch, IndexError ;
+PROCEDURE MemberAt (obj: PTR Node ; i: I64) : PTR Node
+  RAISES TypeMismatch, IndexError ;
+PROCEDURE AsI64 (n: PTR Node) : I64
+  RAISES TypeMismatch, ValueRange ;
+PROCEDURE AsF64 (n: PTR Node) : F64
+  RAISES TypeMismatch ;
+PROCEDURE AsBool (n: PTR Node) : BOOL
+  RAISES TypeMismatch ;
+PROCEDURE AsStr (n: PTR Node) : UTF
+  RAISES TypeMismatch ;
+PROCEDURE Text (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange ;
+PROCEDURE StrIs (n: PTR Node ; RO s: UTF) : BOOL ;
+PROCEDURE IsNull (n: PTR Node) : BOOL ;
+PROCEDURE Compact (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange ;
+PROCEDURE Spaced (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange ;
+PROCEDURE CompactSorted (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange, IndexError ;
+PROCEDURE Pretty (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange ;
+PROCEDURE ReprText (r: F64) : UTF
+  RAISES ValueRange ;
+PROCEDURE NumText (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange ;
+PROCEDURE AppendF64 (VAR d: PTR DynStr.DString ; r: F64)
+  RAISES ValueRange ;
+PROCEDURE AppendJString (VAR d: PTR DynStr.DString ; RO t: UTF)
+  RAISES ValueRange ;
+
+PROCEDURE NewObj () : PTR Node ;
+PROCEDURE NewArr () : PTR Node ;
+PROCEDURE NewStr (RO s: UTF) : PTR Node
+  RAISES ValueRange ;
+PROCEDURE NewI64 (v: I64) : PTR Node ;
+PROCEDURE NewF64 (r: F64) : PTR Node ;
+PROCEDURE NewBool (b: BOOL) : PTR Node ;
+PROCEDURE NewNull () : PTR Node ;
+PROCEDURE NewRaw (RO text: UTF) : PTR Node
+  RAISES ParseError, TypeMismatch ;
+PROCEDURE NewObjIn (VAR pool: POOL) : PTR Node IN pool ;
+PROCEDURE NewArrIn (VAR pool: POOL) : PTR Node IN pool ;
+PROCEDURE NewStrIn (VAR pool: POOL ; RO s: UTF) : PTR Node IN pool
+  RAISES ValueRange ;
+PROCEDURE NewI64In (VAR pool: POOL ; v: I64) : PTR Node IN pool ;
+PROCEDURE NewF64In (VAR pool: POOL ; r: F64) : PTR Node IN pool ;
+PROCEDURE NewRawIn (VAR pool: POOL ; RO text: UTF) : PTR Node IN pool
+  RAISES ParseError, TypeMismatch ;
+PROCEDURE NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool ;
+PROCEDURE NewNullIn (VAR pool: POOL) : PTR Node IN pool ;
+PROCEDURE Name (RO s: UTF) : UTF
+  RAISES ValueRange ;
+PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: UTF ;
+               VAR KEPT v: PTR Node)
+  RAISES TypeMismatch ;
+PROCEDURE Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node)
+  RAISES TypeMismatch ;
+PROCEDURE CloneIn (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
+  RAISES TypeMismatch ;
+PROCEDURE Clone (n: PTR Node) : PTR Node
+  RAISES TypeMismatch ;
+
+END JsonUtf.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cjurepr ;
+
+(* the float printer and reader Json binds (cjrepr), bound again here so
+   that JsonUtf stands alone *)
+
+PROCEDURE ReprF64 = "m9_repr_double" (v: C.Double ; buf: C.MutPtr)
+  : C.SSizeT
+  [REENTRANT] ;
+PROCEDURE StrToD = "m9_strtod" (s: C.ConstPtr) : C.Double
+  [REENTRANT] ;
+
+END cjurepr.
+
+
+UNSAFE IMPLEMENTATION MODULE JsonUtf ;
+
+(* UNSAFE for ADR at the float-printing boundary, as Json. *)
+
+FROM cjurepr IMPORT ReprF64, StrToD ;
+
+IMPORT DynStr ;
+IMPORT Text ;
+
+TYPE
+  Node = RECORD
+    v    : Value ;
+    RO name : UTF ;    (* member name inside Object, document text *)
+    next : OPT PTR Node ;
+    RO raw : UTF ;     (* a Num's text as NewRaw was given it; '' else *)
+  END ;
+
+  Cursor = RECORD
+    RO src    : UTF ;
+    pos       : I64 ;      (* a byte offset, at a character's start *)
+    line, col : I64 ;      (* in characters *)
+  END ;
+
+(* the code point at the cursor, 0C at the end *)
+PROCEDURE Cur (VAR c: PTR Cursor) : CHAR =
+VAR at : I64 ;
+BEGIN
+  IF c.pos >= Text.BLen (c.src) THEN RETURN 0C END ;
+  at := c.pos ;
+  RETURN Text.NextCp (c.src, at)
+EXCEPT
+| IndexError : RETURN 0C
+END Cur ;
+
+PROCEDURE Bump (VAR c: PTR Cursor) =
+VAR ch : CHAR ;
+BEGIN
+  IF c.pos >= Text.BLen (c.src) THEN RETURN END ;
+  ch := Text.NextCp (c.src, c.pos) ;
+  IF ch = 0AC THEN c.line := c.line + 1 ; c.col := 1
+  ELSE c.col := c.col + 1 END
+EXCEPT
+| IndexError : c.pos := Text.BLen (c.src)
+END Bump ;
+
+PROCEDURE Skip (VAR c: PTR Cursor) =
+BEGIN
+  WHILE Cur (c) = ' ' OR Cur (c) = 09C OR Cur (c) = 0AC OR Cur (c) = 0DC DO
+    Bump (c)
+  END
+END Skip ;
+
+PROCEDURE Fail (VAR c: PTR Cursor ; RO msg: STR)
+  RAISES ParseError =
+BEGIN
+  RAISE ParseError (msg, c.line, c.col)
+END Fail ;
+
+PROCEDURE ParseValue (VAR c: PTR Cursor) : PTR Node
+  RAISES ParseError =
+VAR n : PTR Node ;
+BEGIN
+  Skip (c) ;
+  CASE Cur (c) OF
+  | '{' : RETURN ParseObject (c)
+  | '[' : RETURN ParseArray (c)
+  | '"' : n := NEW (c, Node) ;
+          n.v := Value.Str (ParseString (c)) ;
+          RETURN n
+  ELSE
+    IF Match (c, 'true') THEN
+      n := NEW (c, Node) ; n.v := Value.Bool (TRUE) ; RETURN n
+    ELSIF Match (c, 'false') THEN
+      n := NEW (c, Node) ; n.v := Value.Bool (FALSE) ; RETURN n
+    ELSIF Match (c, 'null') THEN
+      n := NEW (c, Node) ; n.v := Value.Null ; RETURN n
+    ELSIF Cur (c) = '-' OR (Cur (c) >= '0' AND Cur (c) <= '9') THEN
+      RETURN ParseNumber (c)
+    ELSE
+      RAISE ParseError ('value expected', c.line, c.col)
+    END
+  END
+END ParseValue ;
+
+PROCEDURE ParseObject (VAR c: PTR Cursor) : PTR Node
+  RAISES ParseError =
+VAR
+  n, child   : PTR Node ;
+  head, last : OPT PTR Node ;
+  RO nm      : UTF ;
+BEGIN
+  Bump (c) ;
+  Skip (c) ;
+  head := NONE ; last := NONE ;
+  IF Cur (c) = '}' THEN
+    Bump (c) ;
+    n := NEW (c, Node) ; n.v := Value.Object (NONE) ; RETURN n
+  END ;
+  LOOP
+    Skip (c) ;
+    nm := ParseString (c) ;
+    Skip (c) ;
+    IF Cur (c) # ':' THEN Fail (c, 'colon expected after member name') END ;
+    Bump (c) ;
+    child := ParseValue (c) ;
+    child.name := nm ;
+    IF last IS SOME lp THEN lp.next := SOME (child)
+    ELSE head := SOME (child) END ;
+    last := SOME (child) ;
+    Skip (c) ;
+    IF Cur (c) = ',' THEN Bump (c)
+    ELSIF Cur (c) = '}' THEN Bump (c) ; EXIT
+    ELSE Fail (c, 'comma or closing brace expected') END
+  END ;
+  n := NEW (c, Node) ;
+  n.v := Value.Object (head) ;
+  RETURN n
+END ParseObject ;
+
+PROCEDURE ParseArray (VAR c: PTR Cursor) : PTR Node
+  RAISES ParseError =
+VAR
+  n, child   : PTR Node ;
+  head, last : OPT PTR Node ;
+  k          : I64 ;
+BEGIN
+  Bump (c) ;
+  Skip (c) ;
+  head := NONE ; last := NONE ; k := 0 ;
+  IF Cur (c) = ']' THEN
+    Bump (c) ;
+    n := NEW (c, Node) ; n.v := Value.Arr (NONE, 0) ; RETURN n
+  END ;
+  LOOP
+    child := ParseValue (c) ;
+    IF last IS SOME lp THEN lp.next := SOME (child)
+    ELSE head := SOME (child) END ;
+    last := SOME (child) ;
+    k := k + 1 ;
+    Skip (c) ;
+    IF Cur (c) = ',' THEN Bump (c)
+    ELSIF Cur (c) = ']' THEN Bump (c) ; EXIT
+    ELSE Fail (c, 'comma or closing bracket expected') END
+  END ;
+  n := NEW (c, Node) ;
+  n.v := Value.Arr (head, k) ;
+  RETURN n
+END ParseArray ;
+
+(* the raw text between the quotes, a view of the document as Json's
+   is: both ends sit at a quote, so the slice is at character
+   boundaries *)
+PROCEDURE ParseString (VAR c: PTR Cursor) : RO UTF
+  RAISES ParseError =
+VAR
+  start : I64 ;
+  RO s  : UTF ;
+BEGIN
+  IF Cur (c) # '"' THEN Fail (c, 'string expected') END ;
+  Bump (c) ;
+  start := c.pos ;
+  WHILE Cur (c) # '"' DO
+    IF c.pos >= Text.BLen (c.src) THEN Fail (c, 'unterminated string') END ;
+    IF Cur (c) = '\' THEN Bump (c) END ;
+    Bump (c)
+  END ;
+  s := SLICE (c.src, start, c.pos - start) ;
+  Bump (c) ;
+  RETURN s
+EXCEPT
+| IndexError : RAISE ParseError ('string not at a character boundary', c.line, c.col)
+END ParseString ;
+
+PROCEDURE ParseNumber (VAR c: PTR Cursor) : PTR Node
+  RAISES ParseError =
+VAR
+  scratch          : POOL ;
+  n                : PTR Node ;
+  neg, negE, isInt : BOOL ;
+  ip, d, ex, start, len : I64 ;
+  r, frac, sc      : F64 ;
+  tb               : SLICE OF BYTE ;
+BEGIN
+  start := c.pos ;
+  neg := FALSE ;
+  IF Cur (c) = '-' THEN neg := TRUE ; Bump (c) END ;
+  IF Cur (c) < '0' OR Cur (c) > '9' THEN Fail (c, 'digit expected') END ;
+  ip := 0 ; r := 0.0 ; isInt := TRUE ;
+  WHILE Cur (c) >= '0' AND Cur (c) <= '9' DO
+    d := ORD (Cur (c)) - ORD ('0') ;
+    r := r * 10.0 + F64 (d) ;
+    IF isInt AND (ip <= (MAX (I64) - d) DIV 10) THEN ip := ip * 10 + d
+    ELSE isInt := FALSE END ;
+    Bump (c)
+  END ;
+  IF Cur (c) = '.' THEN
+    isInt := FALSE ;
+    Bump (c) ;
+    IF Cur (c) < '0' OR Cur (c) > '9' THEN
+      Fail (c, 'digit expected after decimal point') END ;
+    frac := 0.0 ; sc := 0.1 ;
+    WHILE Cur (c) >= '0' AND Cur (c) <= '9' DO
+      frac := frac + sc * F64 (ORD (Cur (c)) - ORD ('0')) ;
+      sc := sc / 10.0 ;
+      Bump (c)
+    END ;
+    r := r + frac
+  END ;
+  IF Cur (c) = 'e' OR Cur (c) = 'E' THEN
+    isInt := FALSE ;
+    Bump (c) ;
+    negE := FALSE ;
+    IF Cur (c) = '-' THEN negE := TRUE ; Bump (c)
+    ELSIF Cur (c) = '+' THEN Bump (c) END ;
+    IF Cur (c) < '0' OR Cur (c) > '9' THEN
+      Fail (c, 'digit expected in exponent') END ;
+    ex := 0 ;
+    WHILE Cur (c) >= '0' AND Cur (c) <= '9' DO
+      IF ex < 1000 THEN ex := ex * 10 + ORD (Cur (c)) - ORD ('0') END ;
+      Bump (c)
+    END ;
+    WHILE ex > 0 DO
+      IF negE THEN r := r / 10.0 ELSE r := r * 10.0 END ;
+      ex := ex - 1
+    END
+  END ;
+  IF neg THEN r := -r ; ip := -ip END ;
+  IF NOT isInt THEN
+    (* libc's value of the token, as Json: its octets and a NUL *)
+    len := c.pos - start ;
+    tb := NEW (scratch, BYTE, len + 1) ;
+    COPY (SLICE (tb, 0, len), SLICE (OCTETS (c.src), start, len)) ;
+    tb[len] := 0 ;
+    r := F64 (StrToD (ADR (tb)))
+  END ;
+  n := NEW (c, Node) ;
+  n.v := Value.Num (r, ip, isInt) ;
+  RETURN n
+EXCEPT
+| IndexError :
+    Fail (c, 'number unrepresentable') ;
+    RETURN NEW (c, Node)
+END ParseNumber ;
+
+(* a keyword, ASCII: compared octet by octet *)
+PROCEDURE Match (VAR c: PTR Cursor ; RO lit: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF c.pos + LEN (lit) > Text.BLen (c.src) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (lit) - 1 DO
+    IF I64 (Text.BAt (c.src, c.pos + i)) # ORD (lit[i]) THEN RETURN FALSE END
+  END ;
+  c.pos := c.pos + LEN (lit) ;
+  c.col := c.col + LEN (lit) ;
+  RETURN TRUE
+EXCEPT
+| IndexError : RETURN FALSE
+END Match ;
+
+PROCEDURE Parse (RO src: UTF) : PTR Node
+  RAISES ParseError =
+VAR
+  c : PTR Cursor ;
+  n : PTR Node ;
+BEGIN
+  c := NEW (Cursor) ;
+  c.src := src ; c.pos := 0 ; c.line := 1 ; c.col := 1 ;
+  n := ParseValue (c) ;
+  Skip (c) ;
+  IF c.pos < Text.BLen (c.src) THEN Fail (c, 'trailing characters after value') END ;
+  RETURN n
+END Parse ;
+
+PROCEDURE ParseIn (VAR pool: POOL ; RO src: UTF) : PTR Node IN pool
+  RAISES ParseError =
+VAR
+  c : PTR Cursor IN pool ;
+  n : PTR Node IN pool ;
+BEGIN
+  c := NEW (pool, Cursor) ;
+  c.src := src ; c.pos := 0 ; c.line := 1 ; c.col := 1 ;
+  n := ParseValue (c) ;
+  Skip (c) ;
+  IF c.pos < Text.BLen (c.src) THEN Fail (c, 'trailing characters after value') END ;
+  RETURN n
+END ParseIn ;
+
+PROCEDURE Field (obj: PTR Node ; RO name: UTF)
+  : OPT PTR Node =
+VAR c : OPT PTR Node ;
+BEGIN
+  CASE obj.v OF
+  | Object (first) : c := first
+  ELSE RETURN NONE
+  END ;
+  WHILE c IS SOME p DO
+    IF Text.EqUtf (p.name, name) THEN RETURN SOME (p) END ;
+    c := p.next
+  END ;
+  RETURN NONE
+END Field ;
+
+PROCEDURE Item (arr: PTR Node ; i: I64) : PTR Node
+  RAISES TypeMismatch, IndexError =
+VAR
+  c : OPT PTR Node ;
+  j : I64 ;
+BEGIN
+  CASE arr.v OF
+  | Arr (first, count) :
+      IF i < 0 OR i >= count THEN RAISE IndexError (i, count) END ;
+      c := first ;
+      j := i ;
+      WHILE c IS SOME p DO
+        IF j = 0 THEN RETURN p END ;
+        j := j - 1 ;
+        c := p.next
+      END ;
+      RAISE IndexError (i, count)
+  ELSE
+    RAISE TypeMismatch ('array expected')
+  END
+END Item ;
+
+PROCEDURE Count (arr: PTR Node) : I64
+  RAISES TypeMismatch =
+BEGIN
+  CASE arr.v OF
+  | Arr (first, count) : RETURN count
+  ELSE RAISE TypeMismatch ('array expected')
+  END
+END Count ;
+
+PROCEDURE MemberCount (obj: PTR Node) : I64
+  RAISES TypeMismatch =
+VAR
+  c : OPT PTR Node ;
+  n : I64 ;
+BEGIN
+  CASE obj.v OF
+  | Object (first) : c := first
+  ELSE RAISE TypeMismatch ('object expected')
+  END ;
+  n := 0 ;
+  WHILE c IS SOME p DO
+    n := n + 1 ;
+    c := p.next
+  END ;
+  RETURN n
+END MemberCount ;
+
+PROCEDURE MemberNode (obj: PTR Node ; i: I64) : PTR Node
+  RAISES TypeMismatch, IndexError =
+VAR
+  c : OPT PTR Node ;
+  n : I64 ;
+BEGIN
+  CASE obj.v OF
+  | Object (first) : c := first
+  ELSE RAISE TypeMismatch ('object expected')
+  END ;
+  n := 0 ;
+  WHILE c IS SOME p DO
+    IF n = i THEN RETURN p END ;
+    n := n + 1 ;
+    c := p.next
+  END ;
+  RAISE IndexError
+END MemberNode ;
+
+PROCEDURE NameAt (obj: PTR Node ; i: I64) : UTF
+  RAISES TypeMismatch, IndexError =
+VAR p : PTR Node ;
+BEGIN
+  p := MemberNode (obj, i) ;
+  RETURN p.name
+END NameAt ;
+
+PROCEDURE MemberAt (obj: PTR Node ; i: I64) : PTR Node
+  RAISES TypeMismatch, IndexError =
+BEGIN
+  RETURN MemberNode (obj, i)
+END MemberAt ;
+
+PROCEDURE AsI64 (n: PTR Node) : I64
+  RAISES TypeMismatch, ValueRange =
+BEGIN
+  CASE n.v OF
+  | Num (r, i, isInt) :
+      IF isInt THEN RETURN i END ;
+      RETURN I64 (r)
+  ELSE
+    RAISE TypeMismatch ('number expected')
+  END
+END AsI64 ;
+
+PROCEDURE AsF64 (n: PTR Node) : F64
+  RAISES TypeMismatch =
+BEGIN
+  CASE n.v OF
+  | Num (r, i, isInt) :
+      IF isInt THEN RETURN F64 (i) END ;
+      RETURN r
+  ELSE
+    RAISE TypeMismatch ('number expected')
+  END
+END AsF64 ;
+
+PROCEDURE AsBool (n: PTR Node) : BOOL
+  RAISES TypeMismatch =
+BEGIN
+  CASE n.v OF
+  | Bool (b) : RETURN b
+  ELSE
+    RAISE TypeMismatch ('true or false expected')
+  END
+END AsBool ;
+
+PROCEDURE AsStr (n: PTR Node) : UTF
+  RAISES TypeMismatch =
+BEGIN
+  CASE n.v OF
+  | Str (t) : RETURN t
+  ELSE RAISE TypeMismatch ('expected a string')
+  END
+END AsStr ;
+
+PROCEDURE StrIs (n: PTR Node ; RO s: UTF) : BOOL =
+BEGIN
+  CASE n.v OF
+  | Str (t) : RETURN Text.EqUtf (t, s)
+  ELSE RETURN FALSE
+  END
+END StrIs ;
+
+PROCEDURE IsNull (n: PTR Node) : BOOL =
+BEGIN
+  CASE n.v OF
+  | Null : RETURN TRUE
+  ELSE RETURN FALSE
+  END
+END IsNull ;
+
+(* ---- escapes: decoded and made through STR (transient text) ---- *)
+
+(* does the document text hold a backslash?  An octet scan: 92 is never
+   inside a multi-octet character *)
+PROCEDURE HasBackslash (RO t: UTF) : BOOL =
+VAR o : SLICE OF BYTE ; b : BYTE ;
+BEGIN
+  o := OCTETS (t) ;
+  FOR b IN o DO
+    IF I64 (b) = 92 THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END HasBackslash ;
+
+PROCEDURE HexVal (ch: CHAR) : I64 =
+BEGIN
+  IF ch >= '0' AND ch <= '9' THEN RETURN ORD (ch) - ORD ('0') END ;
+  IF ch >= 'a' AND ch <= 'f' THEN RETURN ORD (ch) - ORD ('a') + 10 END ;
+  IF ch >= 'A' AND ch <= 'F' THEN RETURN ORD (ch) - ORD ('A') + 10 END ;
+  RETURN -1
+END HexVal ;
+
+PROCEDURE Hex4 (RO t: STR ; at: I64) : I64
+  RAISES TypeMismatch =
+VAR v, k, h : I64 ;
+BEGIN
+  IF at + 3 >= LEN (t) THEN RAISE TypeMismatch ('truncated unicode escape') END ;
+  v := 0 ;
+  FOR k := 0 TO 3 DO
+    h := HexVal (t[at + k]) ;
+    IF h < 0 THEN RAISE TypeMismatch ('bad hex in unicode escape') END ;
+    v := v * 16 + h
+  END ;
+  RETURN v
+END Hex4 ;
+
+(* Json.DecodeStr over the decoded characters of t *)
+PROCEDURE DecodeChars (RO t: STR) : STR
+  RAISES TypeMismatch, ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i, v, lo : I64 ;
+  ch : CHAR ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  i := 0 ;
+  WHILE i < LEN (t) DO
+    ch := t[i] ;
+    IF ORD (ch) = 92 THEN
+      IF i + 1 >= LEN (t) THEN RAISE TypeMismatch ('escape at end of string') END ;
+      ch := t[i + 1] ;
+      i := i + 2 ;
+      IF ch = '"' OR ch = '/' OR ORD (ch) = 92 THEN DynStr.AppendChar (d, ch)
+      ELSIF ch = 'b' THEN DynStr.AppendChar (d, 08C)
+      ELSIF ch = 't' THEN DynStr.AppendChar (d, 09C)
+      ELSIF ch = 'n' THEN DynStr.AppendChar (d, 0AC)
+      ELSIF ch = 'f' THEN DynStr.AppendChar (d, 0CC)
+      ELSIF ch = 'r' THEN DynStr.AppendChar (d, 0DC)
+      ELSIF ch = 'u' THEN
+        v := Hex4 (t, i) ;
+        i := i + 4 ;
+        IF v >= 55296 AND v <= 56319 THEN
+          IF i + 5 < LEN (t) AND ORD (t[i]) = 92 AND t[i + 1] = 'u' THEN
+            lo := Hex4 (t, i + 2) ;
+            IF lo < 56320 OR lo > 57343 THEN
+              RAISE TypeMismatch ('lone surrogate in unicode escape')
+            END ;
+            v := 65536 + (v - 55296) * 1024 + (lo - 56320) ;
+            i := i + 6
+          ELSE
+            RAISE TypeMismatch ('lone surrogate in unicode escape')
+          END
+        ELSIF v >= 56320 AND v <= 57343 THEN
+          RAISE TypeMismatch ('lone surrogate in unicode escape')
+        END ;
+        DynStr.AppendChar (d, CHR (v))
+      ELSE
+        RAISE TypeMismatch ('unknown escape in string')
+      END
+    ELSE
+      DynStr.AppendChar (d, ch) ;
+      i := i + 1
+    END
+  END ;
+  RETURN DynStr.View (d)
+END DecodeChars ;
+
+(* the decoded text: escape-free document text is answered as it is, a
+   view, nothing copied (Json.Text's promise) *)
+PROCEDURE DecodeStr (RO t: UTF) : UTF
+  RAISES TypeMismatch, ValueRange =
+BEGIN
+  IF NOT HasBackslash (t) THEN RETURN t END ;
+  RETURN UTF (DecodeChars (STR (t)))
+END DecodeStr ;
+
+PROCEDURE Text (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange =
+BEGIN
+  CASE n.v OF
+  | Str (t) : RETURN DecodeStr (t)
+  ELSE RAISE TypeMismatch ('expected a string')
+  END
+END Text ;
+
+PROCEDURE HexDigit (v: I64) : CHAR
+  RAISES ValueRange =
+BEGIN
+  IF v < 10 THEN RETURN CHR (ORD ('0') + v) END ;
+  RETURN CHR (ORD ('a') + v - 10)
+END HexDigit ;
+
+(* Json.EscapeBody: json.dumps' escaping, non-ASCII kept as it is *)
+PROCEDURE EscapeBody (VAR d: PTR DynStr.DString ; RO t: STR)
+  RAISES ValueRange =
+VAR
+  v : I64 ;
+  ch : CHAR ;
+BEGIN
+  (* FOR ch IN t: over characters, the same both sides of the UTF
+     switch; a subscript there would be an octet *)
+  FOR ch IN t DO
+    v := ORD (ch) ;
+    IF ch = '"' THEN DynStr.AppendChar (d, 05CC) ; DynStr.AppendChar (d, '"')
+    ELSIF v = 92 THEN DynStr.AppendChar (d, 05CC) ; DynStr.AppendChar (d, 05CC)
+    ELSIF v = 8 THEN DynStr.AppendChar (d, 05CC) ; DynStr.AppendChar (d, 'b')
+    ELSIF v = 9 THEN DynStr.AppendChar (d, 05CC) ; DynStr.AppendChar (d, 't')
+    ELSIF v = 10 THEN DynStr.AppendChar (d, 05CC) ; DynStr.AppendChar (d, 'n')
+    ELSIF v = 12 THEN DynStr.AppendChar (d, 05CC) ; DynStr.AppendChar (d, 'f')
+    ELSIF v = 13 THEN DynStr.AppendChar (d, 05CC) ; DynStr.AppendChar (d, 'r')
+    ELSIF v < 32 THEN
+      DynStr.Append (d, '\u00') ;
+      DynStr.AppendChar (d, HexDigit (v DIV 16)) ;
+      DynStr.AppendChar (d, HexDigit (v MOD 16))
+    ELSE
+      DynStr.AppendChar (d, ch)
+    END
+  END
+END EscapeBody ;
+
+(* a decoded text written as a JSON string *)
+PROCEDURE EmitJStr (VAR d: PTR DynStr.DString ; RO t: UTF)
+  RAISES ValueRange =
+BEGIN
+  DynStr.AppendChar (d, '"') ;
+  EscapeBody (d, STR (t)) ;
+  DynStr.AppendChar (d, '"')
+END EmitJStr ;
+
+PROCEDURE AppendJString (VAR d: PTR DynStr.DString ; RO t: UTF)
+  RAISES ValueRange =
+BEGIN
+  EmitJStr (d, t)
+END AppendJString ;
+
+PROCEDURE Name (RO s: UTF) : UTF
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  EscapeBody (d, STR (s)) ;
+  RETURN UTF (DynStr.View (d))
+END Name ;
+
+(* ---- the renderings, built as STR and converted once ---- *)
+
+PROCEDURE AppendF64 (VAR d: PTR DynStr.DString ; r: F64)
+  RAISES ValueRange =
+VAR
+  buf : ARRAY 32 OF BYTE ;
+  n, i : I64 ;
+BEGIN
+  IF r # r THEN DynStr.Append (d, 'NaN') ; RETURN END ;
+  IF r > MAX (F64) THEN DynStr.Append (d, 'Infinity') ; RETURN END ;
+  IF r < 0.0 - MAX (F64) THEN DynStr.Append (d, '-Infinity') ; RETURN END ;
+  n := I64 (ReprF64 (C.Double (r), ADR (buf))) ;
+  FOR i := 0 TO n - 1 DO
+    DynStr.AppendChar (d, CHR (I64 (buf[i])))
+  END
+END AppendF64 ;
+
+PROCEDURE EmitNum (VAR d: PTR DynStr.DString ; n: PTR Node ; r: F64 ;
+                   i: I64 ; isInt: BOOL)
+  RAISES ValueRange =
+BEGIN
+  IF Text.BLen (n.raw) > 0 THEN DynStr.Append (d, STR (n.raw))
+  ELSIF isInt THEN DynStr.AppendI64 (d, i)
+  ELSE AppendF64 (d, r) END
+END EmitNum ;
+
+PROCEDURE EmitVal (VAR d: PTR DynStr.DString ; n: PTR Node ; spaced: BOOL)
+  RAISES TypeMismatch, ValueRange =
+VAR
+  c : OPT PTR Node ;
+  sep : BOOL ;
+BEGIN
+  CASE n.v OF
+  | Object (first) :
+      DynStr.AppendChar (d, '{') ;
+      c := first ;
+      sep := FALSE ;
+      WHILE c IS SOME p DO
+        IF sep THEN
+          DynStr.AppendChar (d, ',') ;
+          IF spaced THEN DynStr.AppendChar (d, ' ') END
+        END ;
+        sep := TRUE ;
+        EmitJStr (d, DecodeStr (p.name)) ;
+        DynStr.AppendChar (d, ':') ;
+        IF spaced THEN DynStr.AppendChar (d, ' ') END ;
+        EmitVal (d, p, spaced) ;
+        c := p.next
+      END ;
+      DynStr.AppendChar (d, '}')
+  | Arr (first, count) :
+      DynStr.AppendChar (d, '[') ;
+      c := first ;
+      sep := FALSE ;
+      WHILE c IS SOME p DO
+        IF sep THEN
+          DynStr.AppendChar (d, ',') ;
+          IF spaced THEN DynStr.AppendChar (d, ' ') END
+        END ;
+        sep := TRUE ;
+        EmitVal (d, p, spaced) ;
+        c := p.next
+      END ;
+      DynStr.AppendChar (d, ']')
+  | Str (t) : EmitJStr (d, DecodeStr (t))
+  | Num (r, i, isInt) : EmitNum (d, n, r, i, isInt)
+  | Bool (b) :
+      IF b THEN DynStr.Append (d, 'true') ELSE DynStr.Append (d, 'false') END
+  | Null : DynStr.Append (d, 'null')
+  END
+END EmitVal ;
+
+PROCEDURE Compact (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  EmitVal (d, n, FALSE) ;
+  RETURN UTF (DynStr.View (d))
+END Compact ;
+
+PROCEDURE Spaced (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  EmitVal (d, n, TRUE) ;
+  RETURN UTF (DynStr.View (d))
+END Spaced ;
+
+TYPE
+  NodeP = PTR Node ;
+
+(* sort_keys orders by the decoded name's code points, which for UTF-8
+   is the order of the octets (Text.CompareUtf) *)
+PROCEDURE EmitSorted (VAR d: PTR DynStr.DString ; n: PTR Node)
+  RAISES TypeMismatch, ValueRange, IndexError =
+VAR
+  c : OPT PTR Node ;
+  ms : SLICE OF NodeP ;
+  nms : SLICE OF UTF ;
+  cnt, i, j : I64 ;
+  t : NodeP ;
+  ns : UTF ;
+  sep : BOOL ;
+BEGIN
+  CASE n.v OF
+  | Object (first) :
+      cnt := 0 ;
+      c := first ;
+      WHILE c IS SOME p DO cnt := cnt + 1 ; c := p.next END ;
+      ms := NEW (d, NodeP, cnt) ;
+      nms := NEW (d, UTF, cnt) ;
+      cnt := 0 ;
+      c := first ;
+      WHILE c IS SOME p DO
+        ms[cnt] := p ;
+        nms[cnt] := DecodeStr (p.name) ;
+        cnt := cnt + 1 ;
+        c := p.next
+      END ;
+      FOR i := 1 TO cnt - 1 DO
+        j := i ;
+        WHILE j > 0 AND Text.CompareUtf (nms[j], nms[j - 1]) < 0 DO
+          t := ms[j] ; ms[j] := ms[j - 1] ; ms[j - 1] := t ;
+          ns := nms[j] ; nms[j] := nms[j - 1] ; nms[j - 1] := ns ;
+          j := j - 1
+        END
+      END ;
+      DynStr.AppendChar (d, '{') ;
+      sep := FALSE ;
+      FOR i := 0 TO cnt - 1 DO
+        IF sep THEN DynStr.AppendChar (d, ',') END ;
+        sep := TRUE ;
+        EmitJStr (d, nms[i]) ;
+        DynStr.AppendChar (d, ':') ;
+        EmitSorted (d, ms[i])
+      END ;
+      DynStr.AppendChar (d, '}')
+  | Arr (first, count) :
+      DynStr.AppendChar (d, '[') ;
+      c := first ;
+      sep := FALSE ;
+      WHILE c IS SOME p DO
+        IF sep THEN DynStr.AppendChar (d, ',') END ;
+        sep := TRUE ;
+        EmitSorted (d, p) ;
+        c := p.next
+      END ;
+      DynStr.AppendChar (d, ']')
+  ELSE
+    EmitVal (d, n, FALSE)
+  END
+END EmitSorted ;
+
+PROCEDURE CompactSorted (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  EmitSorted (d, n) ;
+  RETURN UTF (DynStr.View (d))
+END CompactSorted ;
+
+PROCEDURE Indent (VAR d: PTR DynStr.DString ; depth: I64)
+  RAISES ValueRange =
+VAR i : I64 ;
+BEGIN
+  DynStr.AppendChar (d, 0AC) ;
+  FOR i := 1 TO depth * 2 DO DynStr.AppendChar (d, ' ') END
+END Indent ;
+
+PROCEDURE EmitPretty (VAR d: PTR DynStr.DString ; n: PTR Node ; depth: I64)
+  RAISES TypeMismatch, ValueRange =
+VAR
+  c : OPT PTR Node ;
+  sep : BOOL ;
+  cnt : I64 ;
+BEGIN
+  CASE n.v OF
+  | Object (first) :
+      cnt := 0 ;
+      c := first ;
+      WHILE c IS SOME p DO cnt := cnt + 1 ; c := p.next END ;
+      IF cnt = 0 THEN DynStr.Append (d, '{}') ; RETURN END ;
+      c := first ;
+      DynStr.AppendChar (d, '{') ;
+      sep := FALSE ;
+      WHILE c IS SOME p DO
+        IF sep THEN DynStr.AppendChar (d, ',') END ;
+        sep := TRUE ;
+        Indent (d, depth + 1) ;
+        EmitJStr (d, DecodeStr (p.name)) ;
+        DynStr.Append (d, ': ') ;
+        EmitPretty (d, p, depth + 1) ;
+        c := p.next
+      END ;
+      Indent (d, depth) ;
+      DynStr.AppendChar (d, '}')
+  | Arr (first, count) :
+      IF count = 0 THEN DynStr.Append (d, '[]') ; RETURN END ;
+      c := first ;
+      DynStr.AppendChar (d, '[') ;
+      sep := FALSE ;
+      WHILE c IS SOME p DO
+        IF sep THEN DynStr.AppendChar (d, ',') END ;
+        sep := TRUE ;
+        Indent (d, depth + 1) ;
+        EmitPretty (d, p, depth + 1) ;
+        c := p.next
+      END ;
+      Indent (d, depth) ;
+      DynStr.AppendChar (d, ']')
+  ELSE
+    EmitVal (d, n, FALSE)
+  END
+END EmitPretty ;
+
+PROCEDURE Pretty (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  EmitPretty (d, n, 0) ;
+  RETURN UTF (DynStr.View (d))
+END Pretty ;
+
+PROCEDURE ReprText (r: F64) : UTF
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  AppendF64 (d, r) ;
+  RETURN UTF (DynStr.View (d))
+END ReprText ;
+
+PROCEDURE NumText (n: PTR Node) : UTF
+  RAISES TypeMismatch, ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  IF Text.BLen (n.raw) > 0 THEN RETURN n.raw END ;
+  CASE n.v OF
+  | Num (r, i, isInt) :
+      d := DynStr.New (scratch) ;
+      IF isInt THEN DynStr.AppendI64 (d, i) ELSE AppendF64 (d, r) END ;
+      RETURN UTF (DynStr.View (d))
+  ELSE RAISE TypeMismatch ('number expected')
+  END
+END NumText ;
+
+(* ---- building and copying ---- *)
+
+(* a copy of s in the pool dst lives in (rule 2): UTF (dst, s) *)
+PROCEDURE CopyStrTo (VAR dst: PTR Node ; RO s: UTF) : UTF =
+BEGIN
+  RETURN UTF (dst, s)
+END CopyStrTo ;
+
+PROCEDURE CopyInto (VAR root: PTR Node ; VAR c: PTR Node ; n: PTR Node)
+  RAISES TypeMismatch =
+VAR
+  cc : PTR Node ;
+  cur, head, last : OPT PTR Node ;
+  k : I64 ;
+BEGIN
+  CASE n.v OF
+  | Object (first) :
+      head := NONE ; last := NONE ;
+      cur := first ;
+      WHILE cur IS SOME p DO
+        cc := NEW (root, Node) ;
+        CopyInto (root, cc, p) ;
+        cc.name := CopyStrTo (root, p.name) ;
+        cc.next := NONE ;
+        IF last IS SOME lp THEN lp.next := SOME (cc) ELSE head := SOME (cc) END ;
+        last := SOME (cc) ;
+        cur := p.next
+      END ;
+      c.v := Value.Object (head)
+  | Arr (first, count) :
+      head := NONE ; last := NONE ; k := 0 ;
+      cur := first ;
+      WHILE cur IS SOME p DO
+        cc := NEW (root, Node) ;
+        CopyInto (root, cc, p) ;
+        cc.next := NONE ;
+        IF last IS SOME lp THEN lp.next := SOME (cc) ELSE head := SOME (cc) END ;
+        last := SOME (cc) ;
+        k := k + 1 ;
+        cur := p.next
+      END ;
+      c.v := Value.Arr (head, k)
+  | Str (t) :
+      (* the payload is copied, as Json's is: a view kept into another
+         pool would dangle *)
+      c.v := Value.Str (CopyStrTo (root, t))
+  | Num (r, i, isInt) :
+      c.v := Value.Num (r, i, isInt) ;
+      IF Text.BLen (n.raw) > 0 THEN c.raw := CopyStrTo (root, n.raw) END
+  | Bool (b) :
+      c.v := Value.Bool (b)
+  | Null :
+      c.v := Value.Null
+  END
+END CopyInto ;
+
+PROCEDURE Clone (n: PTR Node) : PTR Node
+  RAISES TypeMismatch =
+VAR c : PTR Node ;
+BEGIN
+  c := NEW (Node) ;
+  CopyInto (c, c, n) ;
+  RETURN c
+END Clone ;
+
+PROCEDURE CloneIn (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
+  RAISES TypeMismatch =
+VAR c : PTR Node IN pool ;
+BEGIN
+  c := NEW (pool, Node) ;
+  CopyInto (c, c, n) ;
+  RETURN c
+END CloneIn ;
+
+PROCEDURE NewObj () : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Object (NONE) ;
+  RETURN n
+END NewObj ;
+
+PROCEDURE NewArr () : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Arr (NONE, 0) ;
+  RETURN n
+END NewArr ;
+
+PROCEDURE NewStr (RO s: UTF) : PTR Node
+  RAISES ValueRange =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Str (Name (s)) ;
+  RETURN n
+END NewStr ;
+
+PROCEDURE NewI64 (v: I64) : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Num (F64 (v), v, TRUE) ;
+  RETURN n
+END NewI64 ;
+
+PROCEDURE NewF64 (r: F64) : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Num (r, 0, FALSE) ;
+  RETURN n
+END NewF64 ;
+
+PROCEDURE NewBool (b: BOOL) : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Bool (b) ;
+  RETURN n
+END NewBool ;
+
+PROCEDURE NewNull () : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Null ;
+  RETURN n
+END NewNull ;
+
+PROCEDURE NewObjIn (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Object (NONE) ;
+  RETURN n
+END NewObjIn ;
+
+PROCEDURE NewArrIn (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Arr (NONE, 0) ;
+  RETURN n
+END NewArrIn ;
+
+PROCEDURE NewStrIn (VAR pool: POOL ; RO s: UTF) : PTR Node IN pool
+  RAISES ValueRange =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Str (CopyStrTo (n, Name (s))) ;
+  RETURN n
+END NewStrIn ;
+
+PROCEDURE NewI64In (VAR pool: POOL ; v: I64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Num (F64 (v), v, TRUE) ;
+  RETURN n
+END NewI64In ;
+
+PROCEDURE NewF64In (VAR pool: POOL ; r: F64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Num (r, 0, FALSE) ;
+  RETURN n
+END NewF64In ;
+
+PROCEDURE RawValue (RO text: UTF) : Value
+  RAISES ParseError, TypeMismatch =
+VAR t : PTR Node ;
+BEGIN
+  t := Parse (text) ;
+  CASE t.v OF
+  | Num (r, i, isInt) : RETURN Value.Num (r, i, isInt)
+  ELSE RAISE TypeMismatch ('a raw value is one JSON number')
+  END
+END RawValue ;
+
+PROCEDURE NewRaw (RO text: UTF) : PTR Node
+  RAISES ParseError, TypeMismatch =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := RawValue (text) ;
+  n.raw := CopyStrTo (n, text) ;
+  RETURN n
+END NewRaw ;
+
+PROCEDURE NewRawIn (VAR pool: POOL ; RO text: UTF) : PTR Node IN pool
+  RAISES ParseError, TypeMismatch =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := RawValue (text) ;
+  n.raw := CopyStrTo (n, text) ;
+  RETURN n
+END NewRawIn ;
+
+PROCEDURE NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Bool (b) ;
+  RETURN n
+END NewBoolIn ;
+
+PROCEDURE NewNullIn (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Null ;
+  RETURN n
+END NewNullIn ;
+
+PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: UTF ;
+               VAR KEPT v: PTR Node)
+  RAISES TypeMismatch =
+VAR
+  cur, prev : OPT PTR Node ;
+BEGIN
+  CASE obj.v OF
+  | Object (first) : cur := first
+  ELSE RAISE TypeMismatch ('Set on a node that is not an object')
+  END ;
+  v.name := name ;
+  prev := NONE ;
+  WHILE cur IS SOME p DO
+    IF Text.EqUtf (p.name, name) THEN
+      v.next := p.next ;
+      IF prev IS SOME q THEN q.next := SOME (v)
+      ELSE obj.v := Value.Object (SOME (v)) END ;
+      RETURN
+    END ;
+    prev := SOME (p) ;
+    cur := p.next
+  END ;
+  v.next := NONE ;
+  IF prev IS SOME q THEN q.next := SOME (v)
+  ELSE obj.v := Value.Object (SOME (v)) END
+END Set ;
+
+PROCEDURE Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node)
+  RAISES TypeMismatch =
+VAR
+  cur, prev, head : OPT PTR Node ;
+  k : I64 ;
+BEGIN
+  CASE arr.v OF
+  | Arr (first, count) : head := first ; cur := first ; k := count
+  ELSE RAISE TypeMismatch ('Add on a node that is not an array')
+  END ;
+  v.next := NONE ;
+  prev := NONE ;
+  WHILE cur IS SOME p DO
+    prev := SOME (p) ;
+    cur := p.next
+  END ;
+  IF prev IS SOME q THEN
+    q.next := SOME (v) ;
+    arr.v := Value.Arr (head, k + 1)
+  ELSE
+    arr.v := Value.Arr (SOME (v), k + 1)
+  END
+END Add ;
+
+END JsonUtf.

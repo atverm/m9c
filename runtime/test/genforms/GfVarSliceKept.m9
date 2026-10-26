@@ -1,0 +1,25 @@
+MODULE GfVarSliceKept ;
+
+(* WANT: kept *)
+
+(* a pooled slice lent as VAR SLICE OF STR to a callee that gives it no
+  new value keeps its storage (H1: refused as frame storage) *)
+IMPORT Io ;
+VAR pool : POOL ; names : SLICE OF STR ;
+PROCEDURE P (VAR v : SLICE OF STR) =
+BEGIN
+END P ;
+PROCEDURE Open () RAISES IndexError =
+VAR entries : SLICE OF STR ;
+BEGIN
+  names := NEW (pool, STR, 10) ;
+  entries := NEW (pool, STR, 2) ;
+  P (entries) ;
+  names[0] := entries[0]
+END Open ;
+BEGIN
+  Open () ;
+  Io.WriteLine ('kept')
+EXCEPT
+| IndexError : names := names
+END GfVarSliceKept.

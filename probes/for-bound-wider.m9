@@ -1,0 +1,24 @@
+(* EXPECT: cannot bound FOR variable i of I32 by I64 (no implicit conversions, par 2.1) *)
+(* A FOR's bounds are held to its variable's type as an assignment's
+   right side is (since 2026-10-21, the compiler review's G5): the
+   variable takes both values, and the loop compares in its type, so
+   an I64 bound of 3e9 for an I32 variable was truncated in C -- 2
+   passes at -O2, 1001 at -O1.  The legal forms first: literals that
+   fit, a bound of the variable's own type, an I8 loop up to its last
+   value, a U8 loop down to 0. *)
+MODULE m ;
+VAR
+  i, top : I32 ;
+  b : I8 ;
+  u : U8 ;
+  big, n : I64 ;
+BEGIN
+  n := 0 ;
+  top := 10 ;
+  FOR i := 0 TO 9 DO n := n + 1 END ;
+  FOR i := 0 TO top DO n := n + 1 END ;
+  FOR b := 120 TO 127 DO n := n + 1 END ;
+  FOR u := 3 TO 0 BY -1 DO n := n + 1 END ;
+  big := 3000000000 ;
+  FOR i := 0 TO big DO n := n + 1 END
+END m.

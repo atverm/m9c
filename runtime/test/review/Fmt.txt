@@ -1,18 +1,18 @@
-REVIEW Fmt -- 38 procedures with a body, 29 of them functions; 11 headings in a DEFINITION
+REVIEW Fmt -- 47 procedures with a body, 37 of them functions; 16 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              29
-  assignments                                   277
-  arguments                                     255
-  RETURN values                                  60
-  operands of a comparison or an operator       403
+  functions answering on every path              37
+  assignments                                   360
+  arguments                                     354
+  RETURN values                                  76
+  operands of a comparison or an operator       500
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                     5   Bits.scratch, ParseBits.scratch, Short.scratch, Make.scratch, Parts.scratch
+  local pools                                     6   Bits.scratch, ParseBits.scratch, Short.scratch, Make.scratch, Parts.scratch, ParseBitsUtf.scratch
   pool parameters                                 0
   KEPT parameters                                 0
   HEAP named                                      0
@@ -24,15 +24,19 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module variables                                0
 
 TRUSTED -- outside what the checker can see
-  UNSAFE units                                    0
-  foreign procedures                              0
+  UNSAFE units                                    2   Fmt, cfmt
+  foreign procedures                              3
     of them [SERIAL]                              0
-    of them [REENTRANT]                           0
+    of them [REENTRANT]                           3
   THREADs writing STATEFUL state                  0
+  ADR sites (C reading or writing M9 storage)     3   writes or reads in RtShort, writes or reads in FixedUtf, writes or reads in Sci
+    of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               12
-  handlers                                        0
+  RAISE statements                               23
+  handlers                                        1
   NEW in the frame                                0
-  NEW in a named pool                             5
+  NEW in a named pool                             6
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

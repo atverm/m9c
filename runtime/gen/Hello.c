@@ -5,6 +5,7 @@
 
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
+extern void m9_put_bytes_err (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -20,6 +21,7 @@ extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
+extern int64_t m9_utf_adopt_p (const void *, int64_t, void *);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
@@ -82,16 +84,18 @@ int main (int argc, char **argv)
     Hello_Greet (&(pool), ((m9_sl_CHAR){ (uint32_t *) m9s1, 5 }), err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
-    { int64_t m9t4to;
+    { __typeof__(i) m9t4to;
     i = INT64_C(1);
     m9t4to = m9_sub_i64 (Io_ArgCount (err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    for (; i <= m9t4to; i += 1) {
+    if (i <= m9t4to) for (;;) {
       { __typeof__(Io_Arg (&(pool), i, err)) m9a2 = Io_Arg (&(pool), i, err);
         if (err->exc) goto L_hdl_m9t1;
       Hello_Greet (&(pool), m9a2, err);
       if (err->exc) goto L_hdl_m9t1;
       }
+      if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
     } }
   }
   Io_WriteI64 (greeted, err);

@@ -1,0 +1,197 @@
+MODULE DynUtfTest ;
+
+(* DynUtf held to Python (runtime/test/gold/DynUtf.gold, written by
+   tools/dynutfgold.py): the octets of scalars of one to four octets, the
+   decimal text of I64s at their edges, and 25,000 pieces -- 1.2 MB, every
+   doubling from 16 octets past 2^20 -- appended by all three writers in
+   turn, held to the length and CRC-32 of Python's join.  The pieces come
+   from a recipe both sides follow; the answers are Python's. *)
+
+IMPORT Bits ;
+IMPORT Check ;
+IMPORT DynUtf ;
+IMPORT Io ;
+IMPORT Text ;
+IMPORT Zip ;
+
+CONST
+  Mul = 6364136223846793005 ;
+  Inc = 1442695040888963407 ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+
+PROCEDURE AsI64s (RO o: SLICE OF BYTE) : SLICE OF I64 =
+VAR v : SLICE OF I64 ; i : I64 ;
+BEGIN
+  v := NEW (I64, LEN (o)) ;
+  FOR i := 0 TO LEN (o) - 1 DO v[i] := I64 (o[i]) END ;
+  RETURN v
+END AsI64s ;
+
+(* the generator's scalar (x): 1 to 4 octets in equal shares *)
+PROCEDURE Scalar (x: I64) : I64 RAISES ValueRange =
+VAR r, k : I64 ;
+BEGIN
+  r := Bits.Shr (x, 40) ;
+  k := Bits.Shr (x, 33) MOD 4 ;
+  IF k = 0 THEN RETURN 32 + r MOD 95
+  ELSIF k = 1 THEN RETURN 128 + r MOD (2048 - 128)
+  ELSIF k = 2 THEN RETURN 2048 + r MOD (55296 - 2048)
+  END ;
+  RETURN 65536 + r MOD (1114112 - 65536)
+END Scalar ;
+
+PROCEDURE Chars () RAISES ValueRange =
+VAR
+  pool : POOL ;
+  d : PTR DynUtf.DString IN pool ;
+  ins : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  d := DynUtf.New (pool) ;
+  ins := Check.GoldI64s (t, gold, 'chars.in') ;
+  FOR i := 0 TO LEN (ins) - 1 DO DynUtf.AppendChar (d, CHR (ins[i])) END ;
+  Check.EqI64s (t, 'AppendChar writes what str.encode writes', AsI64s (DynUtf.Octets (d)),
+                Check.GoldI64s (t, gold, 'chars.octets'))
+END Chars ;
+
+PROCEDURE Ints () =
+VAR
+  pool : POOL ;
+  d : PTR DynUtf.DString IN pool ;
+  ins : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  d := DynUtf.New (pool) ;
+  ins := Check.GoldI64s (t, gold, 'ints.in') ;
+  FOR i := 0 TO LEN (ins) - 1 DO
+    IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
+    DynUtf.AppendI64 (d, ins[i])
+  END ;
+  Check.EqI64s (t, 'AppendI64 writes what str (int) writes, MIN and MAX too',
+                AsI64s (DynUtf.Octets (d)), Check.GoldI64s (t, gold, 'ints.octets'))
+END Ints ;
+
+PROCEDURE Big () RAISES ValueRange =
+VAR
+  pool : POOL ;
+  d : PTR DynUtf.DString IN pool ;
+  s : STR ;
+  v : UTF ;
+  x, k, n, i, chars : I64 ;
+BEGIN
+  d := DynUtf.New (pool) ;
+  x := 12345 ;
+  chars := 0 ;
+  FOR k := 0 TO 24999 DO
+    x := x *% Mul +% Inc ;
+    n := Bits.Shr (x, 33) MOD 40 ;
+    s := NEW (CHAR, n) ;
+    FOR i := 0 TO n - 1 DO
+      x := x *% Mul +% Inc ;
+      s[i] := CHR (Scalar (x))
+    END ;
+    chars := chars + n ;
+    (* the three writers in turn *)
+    IF k MOD 3 = 0 THEN
+      DynUtf.Append (d, UTF (s))
+    ELSIF k MOD 3 = 1 THEN
+      DynUtf.AppendStr (d, s)
+    ELSE
+      FOR i := 0 TO n - 1 DO DynUtf.AppendChar (d, s[i]) END
+    END
+  END ;
+  Check.EqI64 (t, "25,000 pieces: the octets of Python's join", DynUtf.BLen (d),
+               Check.GoldI64 (t, gold, 'big.blen')) ;
+  Check.EqI64 (t, "25,000 pieces: the CRC-32 of Python's join", Zip.Crc32 (DynUtf.Octets (d)),
+               Check.GoldI64 (t, gold, 'big.crc')) ;
+  v := DynUtf.View (d) ;
+  Check.EqI64 (t, 'View copies the same octets', Zip.Crc32 (OCTETS (v)),
+               Check.GoldI64 (t, gold, 'big.crc')) ;
+  Check.EqI64 (t, 'View holds every character appended', Text.CpCount (v), chars) ;
+  Check.That (t, 'Equal to its own View', DynUtf.Equal (d, v))
+END Big ;
+
+(* a text built in the caller's pool and answered from a frame that ends *)
+PROCEDURE Made (VAR pool: POOL) : UTF =
+VAR d : PTR DynUtf.DString IN pool ;
+BEGIN
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, 'kept ') ;
+  DynUtf.AppendChar (d, 0E9C) ;
+  RETURN DynUtf.ViewIn (pool, d)
+END Made ;
+
+PROCEDURE Small () RAISES ValueRange =
+VAR
+  pool : POOL ;
+  e, d : PTR DynUtf.DString IN pool ;
+  u : UTF ;
+  b : SLICE OF BYTE ;
+BEGIN
+  e := DynUtf.New (pool) ;
+  Check.EqI64 (t, 'an empty builder holds 0 octets', DynUtf.BLen (e), 0) ;
+  Check.That (t, 'an empty builder equals the empty text', DynUtf.Equal (e, '')) ;
+  Check.That (t, 'and not a', NOT DynUtf.Equal (e, 'a')) ;
+  Check.That (t, 'its View is empty', Text.EqUtf (DynUtf.View (e), '')) ;
+  d := DynUtf.New (pool) ;
+  DynUtf.Append (d, 'ab') ;
+  DynUtf.Append (d, DynUtf.View (d)) ;
+  Check.That (t, 'a builder appended its own View: abab', DynUtf.Equal (d, 'abab')) ;
+  Check.That (t, 'Equal is FALSE for a prefix', NOT DynUtf.Equal (d, 'aba')) ;
+  Check.That (t, 'Equal is FALSE for another text of the length', NOT DynUtf.Equal (d, 'abac')) ;
+  DynUtf.AppendStr (d, ' Grüße') ;
+  Check.That (t, 'AppendStr encodes', DynUtf.Equal (d, 'abab Grüße')) ;
+  Check.EqI64 (t, 'BLen counts octets', DynUtf.BLen (d), 12) ;
+  u := Made (pool) ;
+  Check.That (t, 'ViewIn outlives the frame that made it', Text.EqUtf (u, 'kept é')) ;
+  (* Chars: one character per octet, DynStr.Chars's contract -- 0x61,
+     0xE9, 0xFF are a, é, ÿ (five octets of UTF-8), never three octets
+     taken as they are *)
+  b := NEW (BYTE, 3) ;
+  b[0] := BYTE (97) ;
+  b[1] := BYTE (233) ;
+  b[2] := BYTE (255) ;
+  u := DynUtf.Chars (pool, b) ;
+  Check.That (t, 'Chars makes one character of each octet', Text.EqUtf (u, 'aéÿ')) ;
+  Check.EqI64 (t, 'Chars of three octets above and below 128 is five octets', Text.BLen (u), 5) ;
+  Check.EqI64 (t, 'and three characters', Text.CpCount (u), 3) ;
+  (* Bytes: one octet per CHARACTER, Chars's inverse, a NUL after them
+     when asked -- the C boundary's string and the wire's bytes back *)
+  b := DynUtf.Bytes (pool, 'aé', TRUE) ;
+  Check.EqI64 (t, 'Bytes with a terminator is one per character and one more', LEN (b), 3) ;
+  Check.EqI64 (t, 'the terminator is NUL', I64 (b[2]), 0) ;
+  Check.EqI64 (t, 'é is the one octet 0xE9', I64 (b[1]), 233) ;
+  b := DynUtf.Bytes (pool, 'aé', FALSE) ;
+  Check.EqI64 (t, 'Bytes without one is one per character', LEN (b), 2) ;
+  Check.That (t, 'Bytes of Chars gives the octets back',
+              LEN (DynUtf.Bytes (pool, DynUtf.Chars (pool, b), FALSE)) = 2) ;
+  Check.That (t, 'a character past 255 is refused', BytesRefused ())
+END Small ;
+
+PROCEDURE BytesRefused () : BOOL =
+VAR
+  pool : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  b := DynUtf.Bytes (pool, 'a€', FALSE) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+END BytesRefused ;
+
+BEGIN
+  gold := Check.GoldPath ('DynUtf.gold') ;
+  BEGIN
+    Chars () ;
+    Ints () ;
+    Big () ;
+    Small ()
+  EXCEPT
+  | ValueRange : Check.That (t, 'no ValueRange', FALSE)
+  | IndexError (i, n) : Check.That (t, "no IndexError (the invariant's raise)", FALSE)
+  END ;
+  Io.Halt (Check.Done (t, 'DynUtf'))
+END DynUtfTest.

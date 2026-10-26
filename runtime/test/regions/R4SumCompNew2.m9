@@ -1,0 +1,30 @@
+MODULE R4SumCompNew2 ;
+IMPORT Io, Fmt ;
+TYPE Node = RECORD v : I64 ; s : STR END ;
+TYPE R = RECORD p : PTR Node ; n : I64 END ;
+VAR lastp : OPT PTR Node ;
+PROCEDURE Mk (n: I64) : R =
+VAR r : R ;
+BEGIN
+  r.n := n ;
+  r.p := NEW (Node) ;
+  r.p.v := 4242 ;
+  RETURN r
+END Mk ;
+PROCEDURE Fill () =
+VAR rr : R ;
+BEGIN
+  rr := Mk (1) ;
+  lastp := SOME (rr.p)
+END Fill ;
+PROCEDURE Churn () =
+VAR i : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO 50 DO t := 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz' + Fmt.I64Str (i) END ;
+  Io.WriteLine (t)
+END Churn ;
+BEGIN
+  Fill () ;
+  Churn () ;
+  IF lastp IS SOME q THEN Io.WriteLine (Fmt.I64Str (q.v)) END
+END R4SumCompNew2.

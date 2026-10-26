@@ -15,18 +15,20 @@
 # manual page, applied in the one direction that is safe.
 #
 # It builds its own m9c rather than accepting one it finds.  mandiff
-# takes $M9C, then ./m9c, then ../../out/m9c, and any of those can be
-# left over from an earlier run; the project's "THE GATES WERE TESTING
+# took $M9C, then ./m9c, then ../../out/m9c (until lib/freshm9c.sh, 2026-10-25),
+# and any of those could be left over from an earlier run; the project's "THE GATES WERE TESTING
 # STALE CODE" is the reason not to repeat that here.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
 
+M9CNEW=$(mktemp -d)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
-    ../gen/Lex.c ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
-    ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o m9c
+    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
+# replaced only when it differs: a gate in another lane running m9c keeps
+# its file, and --run's cache, whose key holds m9c's mtime, its entries
+if cmp -s "$M9CNEW/m9c" m9c; then rm -r "$M9CNEW"; else mv -f "$M9CNEW/m9c" m9c; rmdir "$M9CNEW"; fi
 
 M9C=$(pwd)/m9c
 SRC=$(cd ../../corpus && pwd)

@@ -6,6 +6,11 @@
 # the lexer has must be marked.  Keywords come from tools/edit/
 # keywords.json, which the edit gate holds to the lexer's own table.
 # Needs node; CI's lex job has it.
+# scratch files in a directory of this run's own: fixed /tmp names
+# collided between two checkouts or two gates run at once (the compiler
+# review's tier 3, 2026-10-22)
+TG=$(mktemp -d "${TMPDIR:-/tmp}/m9gate.XXXXXX")
+trap 'rm -rf "$TG"' EXIT
 set -e
 cd "$(dirname "$0")"
 command -v node >/dev/null || { echo "highlight: no node"; exit 1; }
@@ -14,10 +19,10 @@ KW=../../tools/edit/keywords.json
 n=0
 for f in ../../corpus/*.m9 ../../museum/*.m9 runfix/Shebang.m9; do
   ../../host/fpc/lexdump "$f" | awk '$2 == $3 && $2 ~ /^[A-Z]+$/ { print $1, $2 } $2 == "StrLit" { print $1, "StrLit" }' \
-    > /tmp/hl_lex.txt
-  node highlight.mjs "$KW" "$f" > /tmp/hl_mode.txt
-  cmp -s /tmp/hl_lex.txt /tmp/hl_mode.txt ||
-    { echo "highlight: DIVERGES from the lexer on $f"; diff /tmp/hl_lex.txt /tmp/hl_mode.txt | head -8; exit 1; }
+    > "$TG"/hl_lex.txt
+  node highlight.mjs "$KW" "$f" > "$TG"/hl_mode.txt
+  cmp -s "$TG"/hl_lex.txt "$TG"/hl_mode.txt ||
+    { echo "highlight: DIVERGES from the lexer on $f"; diff "$TG"/hl_lex.txt "$TG"/hl_mode.txt | head -8; exit 1; }
   n=$((n+1))
 done
 echo "highlight: $n files, every keyword and string where the lexer has one"

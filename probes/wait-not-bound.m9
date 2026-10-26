@@ -1,0 +1,36 @@
+(* EXPECT: WAIT and SIGNAL take the monitor this procedure is bound to -- its first parameter -- and no other: on another monitor there is no lock held to release (par 6) *)
+MODULE m ;
+(* WAIT releases the lock its procedure holds and waits for a SIGNAL: on
+   a monitor the procedure is not bound to there is no lock held, and
+   the wait returned at once on macOS, undefined elsewhere (the fourth
+   review's WaitOther, 2026-10-26).  Legal forms first: WAIT and SIGNAL
+   on the bound parameter. *)
+TYPE
+  Box = MONITOR RECORD
+    n : I64 ;
+  END ;
+  Other = MONITOR RECORD
+    k : I64 ;
+  END ;
+VAR
+  b : Box ;
+  o : Other ;
+PROCEDURE Put (VAR x: Box) =
+BEGIN
+  x.n := x.n + 1 ;
+  SIGNAL (x)
+END Put ;
+PROCEDURE Take (VAR x: Box) =
+BEGIN
+  WHILE x.n = 0 DO WAIT (x) END ;
+  x.n := x.n - 1
+END Take ;
+PROCEDURE Wrong (VAR x: Box) =
+BEGIN
+  WAIT (o)
+END Wrong ;
+BEGIN
+  Put (b) ;
+  Take (b) ;
+  Wrong (b)
+END m.

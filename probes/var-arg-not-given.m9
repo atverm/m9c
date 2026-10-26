@@ -1,0 +1,15 @@
+(* EXPECT: q is read before it is assigned *)
+MODULE m ;
+TYPE Node = RECORD n : I64 END ;
+PROCEDURE Make (VAR p : PTR Node) = BEGIN p := NEW (Node) END Make ;
+PROCEDURE Pass (VAR p : PTR Node) = BEGIN Make (p) END Pass ;
+PROCEDURE Look (VAR p : PTR Node) : I64 = BEGIN RETURN 0 END Look ;
+(* legal: a callee that gives the parameter a value, or hands it on *)
+PROCEDURE A () : I64 = VAR p, r : PTR Node ; BEGIN Make (p) ; Pass (r) ; RETURN p.n + r.n END A ;
+PROCEDURE B () : I64 =
+VAR q : PTR Node ; k : I64 ;
+BEGIN
+  k := Look (q) ;
+  RETURN q.n + k
+END B ;
+END m.

@@ -1,0 +1,25 @@
+MODULE GfVariantPool ;
+
+(* WANT: 4 *)
+
+(* a variant constructor holding NEW (o.pool, I64, 4) stored into o: it
+  holds its arguments and builds nothing in the frame (the fourth
+  review's A16b, a false refusal older than the review) *)
+(* SAFE: a variant built from an allocation in the object's own pool, stored into the object *)
+IMPORT Io, Fmt ;
+TYPE V = CASE RECORD | Sl : xs : SLICE OF I64 | Nothing END ;
+TYPE Obj = RECORD pool : POOL ; v : V END ;
+PROCEDURE Go () =
+VAR o : PTR Obj ;
+BEGIN
+  o := NEW (OWN, Obj) ;
+  o.v := V.Sl (NEW (o.pool, I64, 4)) ;
+  CASE o.v OF
+  | Sl (xs) : Io.WriteLine (Fmt.I64Str (LEN (xs)))
+  | Nothing : Io.WriteLine ('none')
+  END ;
+  DISPOSE (o)
+END Go ;
+BEGIN
+  Go ()
+END GfVariantPool.

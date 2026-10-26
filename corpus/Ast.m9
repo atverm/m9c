@@ -74,7 +74,10 @@ TYPE
 
   Node = RECORD
     kind, line, col : I64 ;
-    a, b : STR ;
+    au, bu : UTF ;              (* the node's names, UTF-8 since
+                                   docs/utf8-stage3-plan.md step 7
+                                   (2026-10-23): written by SetA/SetB
+                                   below, which copy *)
     f1, f2, f3, f4 : BOOL ;     (* f3: the RO mode on a binding;
                                    f4: KEPT, which composes with any
                                    of the modes rather than replacing
@@ -88,7 +91,7 @@ TYPE
 
 PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
   : PTR Node IN pool ;
-  (* a node with no children and empty a/b, ready for Add.
+  (* a node with no children and empty au/bu, ready for Add.
 
        kind      -- one of the N* constants above.  They are
                     EXPORTED CONSTS with fixed values, not an
@@ -103,6 +106,20 @@ PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
                     far a declaration reached.                     *)
 
 PROCEDURE Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid) ;
+
+PROCEDURE SetA (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR) ;
+PROCEDURE SetB (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR) ;
+PROCEDURE SetAUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF) ;
+PROCEDURE SetBUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF) ;
+  (* a node's name, given as either text and COPIED into pool: a node
+     owns its names.  Ast.SetA (pool, n, t) reaches the UTF form by t's
+     type.  The one way to write au or bu since 2026-10-23.
+       pool -- the node's, as Add takes it: NOT the object-pool form
+               NEW (n, ...), which for a local declared without IN
+               lends the caller's FRAME as the node's pool (decision
+               18's known gap) -- the first cut did, the checker
+               accepted it, and every name in the tree read as freed
+               storage *)
 
 (* THE TYPED TREE (2026-10-09, the review's decision): the checker
    records the type it resolved at a node -- on a designator's
@@ -129,8 +146,8 @@ PROCEDURE TypeAt (id: I64) : Kid ;
 (* stage 3: an EXPRESSION's type, as the checker's canonical string
    ('I64', 'PTR Mod.T', '<str1>', ...), copied into this module's pool;
    '' where none was recorded *)
-PROCEDURE SetTyStr (id: I64 ; RO t: STR) ;
-PROCEDURE TyStrAt (id: I64) : STR ;
+PROCEDURE SetTyStr (id: I64 ; RO t: UTF) ;
+PROCEDURE TyStrAt (id: I64) : UTF ;
   (* NONE is a legal child: absence with a position *)
 
 PROCEDURE FoldInt (k: Kid ; VAR v: I64) : BOOL ;
@@ -154,7 +171,9 @@ IMPLEMENTATION MODULE Ast ;
 VAR
   nextId : I64 ;                (* the next node's number *)
   tys    : SLICE OF Kid ;       (* the typed tree, by node id *)
-  tstr   : SLICE OF STR ;       (* stage 3: expression types, by id *)
+  tstr   : SLICE OF UTF ;       (* stage 3: expression types, by id;
+                                   UTF since 2026-10-23, Sem and Gen
+                                   both reading them so *)
   typool : POOL ;
 
 PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
@@ -171,6 +190,27 @@ BEGIN
   nextId := nextId + 1 ;
   RETURN n
 END NewNode ;
+
+(* the name copied into pool, encoded where it arrives as a STR *)
+PROCEDURE SetA (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR) =
+BEGIN
+  n.au := UTF (pool, s)
+END SetA ;
+
+PROCEDURE SetB (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR) =
+BEGIN
+  n.bu := UTF (pool, s)
+END SetB ;
+
+PROCEDURE SetAUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF) =
+BEGIN
+  n.au := UTF (pool, u)
+END SetAUtf ;
+
+PROCEDURE SetBUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF) =
+BEGIN
+  n.bu := UTF (pool, u)
+END SetBUtf ;
 
 PROCEDURE SetType (id: I64 ; KEPT t: Kid) =
 VAR
@@ -194,32 +234,32 @@ BEGIN
   RETURN NONE
 END TypeAt ;
 
-PROCEDURE SetTyStr (id: I64 ; RO t: STR) =
+PROCEDURE SetTyStr (id: I64 ; RO t: UTF) =
 VAR
-  grown : SLICE OF STR ;
-  c : STR ;
+  grown : SLICE OF UTF ;
+  o, q : SLICE OF BYTE ;
   i, n : I64 ;
 BEGIN
   IF id < 0 THEN RETURN END ;
   IF id >= LEN (tstr) THEN
     n := 2 * LEN (tstr) ;
     IF n < id + 4096 THEN n := id + 4096 END ;
-    grown := NEW (typool, STR, n) ;
+    grown := NEW (typool, UTF, n) ;
     FOR i := 0 TO LEN (tstr) - 1 DO grown[i] := tstr[i] END ;
     tstr := grown
   END ;
-  IF LEN (t) = LEN (tstr[id]) THEN
-    IF LEN (t) = 0 THEN RETURN END ;
+  o := OCTETS (t) ;
+  q := OCTETS (tstr[id]) ;
+  IF LEN (o) = LEN (q) THEN
+    IF LEN (o) = 0 THEN RETURN END ;
     i := 0 ;
-    WHILE i < LEN (t) AND t[i] = tstr[id][i] DO i := i + 1 END ;
-    IF i = LEN (t) THEN RETURN END              (* the same: no copy *)
+    WHILE i < LEN (o) AND o[i] = q[i] DO i := i + 1 END ;
+    IF i = LEN (o) THEN RETURN END              (* the same: no copy *)
   END ;
-  c := NEW (typool, CHAR, LEN (t)) ;
-  FOR i := 0 TO LEN (t) - 1 DO c[i] := t[i] END ;
-  tstr[id] := c
+  tstr[id] := UTF (typool, t)
 END SetTyStr ;
 
-PROCEDURE TyStrAt (id: I64) : STR =
+PROCEDURE TyStrAt (id: I64) : UTF =
 BEGIN
   IF id >= 0 AND id < LEN (tstr) THEN RETURN tstr[id] END ;
   RETURN ''
@@ -239,26 +279,35 @@ BEGIN
   n.nkids := n.nkids + 1
 END Add ;
 
-PROCEDURE Is (RO a: STR ; RO b: STR) : BOOL =
-VAR i : I64 ;
+(* the two texts equal, octet by octet (Ast imports no Text) *)
+PROCEDURE Is (RO a: UTF ; RO b: UTF) : BOOL =
+VAR
+  x, y : SLICE OF BYTE ;
+  i : I64 ;
 BEGIN
-  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (a) - 1 DO IF a[i] # b[i] THEN RETURN FALSE END END ;
+  x := OCTETS (a) ;
+  y := OCTETS (b) ;
+  IF LEN (x) # LEN (y) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (x) - 1 DO IF x[i] # y[i] THEN RETURN FALSE END END ;
   RETURN TRUE
 END Is ;
 
-PROCEDURE LitInt (RO s: STR ; VAR v: I64) : BOOL RAISES Overflow =
-VAR i, d, base, from : I64 ;
+PROCEDURE LitInt (RO s: UTF ; VAR v: I64) : BOOL RAISES Overflow =
+VAR
+  o : SLICE OF BYTE ;         (* a literal's digits are ASCII octets *)
+  i, c, d, base, from : I64 ;
 BEGIN
+  o := OCTETS (s) ;
   base := 10 ;
   from := 0 ;
-  IF LEN (s) > 2 AND s[0] = '0' AND (s[1] = 'x' OR s[1] = 'X') THEN base := 16 ; from := 2 END ;
-  IF LEN (s) <= from THEN RETURN FALSE END ;
+  IF LEN (o) > 2 AND I64 (o[0]) = 48 AND (I64 (o[1]) = 120 OR I64 (o[1]) = 88) THEN base := 16 ; from := 2 END ;
+  IF LEN (o) <= from THEN RETURN FALSE END ;
   v := 0 ;
-  FOR i := from TO LEN (s) - 1 DO
-    IF s[i] >= '0' AND s[i] <= '9' THEN d := ORD (s[i]) - 48
-    ELSIF base = 16 AND s[i] >= 'a' AND s[i] <= 'f' THEN d := ORD (s[i]) - 87
-    ELSIF base = 16 AND s[i] >= 'A' AND s[i] <= 'F' THEN d := ORD (s[i]) - 55
+  FOR i := from TO LEN (o) - 1 DO
+    c := I64 (o[i]) ;
+    IF c >= 48 AND c <= 57 THEN d := c - 48
+    ELSIF base = 16 AND c >= 97 AND c <= 102 THEN d := c - 87
+    ELSIF base = 16 AND c >= 65 AND c <= 70 THEN d := c - 55
     ELSE RETURN FALSE
     END ;
     v := v * base + d
@@ -270,10 +319,10 @@ PROCEDURE FoldInt (k: Kid ; VAR v: I64) : BOOL =
 VAR a, b : I64 ;
 BEGIN
   IF k IS SOME e THEN
-    IF e.kind = NInt THEN RETURN LitInt (e.a, v) END ;
+    IF e.kind = NInt THEN RETURN LitInt (e.au, v) END ;
     IF e.nkids < 1 THEN RETURN FALSE END ;
     IF e.kind = NParen THEN RETURN FoldInt (e.kids[0], v) END ;
-    IF e.kind = NUn AND Is (e.a, '-') THEN
+    IF e.kind = NUn AND Is (e.au, '-') THEN
       IF NOT FoldInt (e.kids[0], a) THEN RETURN FALSE END ;
       v := 0 - a ;
       RETURN TRUE
@@ -281,13 +330,13 @@ BEGIN
     IF e.kind = NBin AND e.nkids = 2 THEN
       IF NOT FoldInt (e.kids[0], a) THEN RETURN FALSE END ;
       IF NOT FoldInt (e.kids[1], b) THEN RETURN FALSE END ;
-      IF Is (e.a, '+') THEN v := a + b ; RETURN TRUE END ;
-      IF Is (e.a, '-') THEN v := a - b ; RETURN TRUE END ;
-      IF Is (e.a, '*') THEN v := a * b ; RETURN TRUE END ;
-      IF Is (e.a, 'DIV') OR Is (e.a, 'MOD') THEN
+      IF Is (e.au, '+') THEN v := a + b ; RETURN TRUE END ;
+      IF Is (e.au, '-') THEN v := a - b ; RETURN TRUE END ;
+      IF Is (e.au, '*') THEN v := a * b ; RETURN TRUE END ;
+      IF Is (e.au, 'DIV') OR Is (e.au, 'MOD') THEN
         IF b = 0 THEN RETURN FALSE END ;
         IF b = -1 AND a = -9223372036854775807 - 1 THEN RETURN FALSE END ;
-        IF Is (e.a, 'DIV') THEN v := a DIV b ELSE v := a MOD b END ;
+        IF Is (e.au, 'DIV') THEN v := a DIV b ELSE v := a MOD b END ;
         RETURN TRUE
       END
     END
@@ -316,17 +365,19 @@ EXCEPT
 END CharCode ;
 
 PROCEDURE ScalarConst (k: Kid ; VAR v: I64 ; VAR ch: BOOL) : BOOL =
+VAR t : STR ;
 BEGIN
   ch := FALSE ;
   IF k IS SOME e THEN
     IF e.kind = NChar THEN
-      v := CharCode (e.a) ;
+      v := CharCode (STR (e.au)) ;
       ch := TRUE ;
       RETURN v >= 0
     END ;
     IF e.kind = NString THEN
-      IF LEN (e.a) # 1 THEN RETURN FALSE END ;
-      v := ORD (e.a[0]) ;
+      t := STR (e.au) ;
+      IF LEN (t) # 1 THEN RETURN FALSE END ;
+      v := ORD (t[0]) ;
       ch := TRUE ;
       RETURN TRUE
     END ;
