@@ -33,7 +33,7 @@ IMPORT JsonUtf ;
 IMPORT Diag ;
 
 CONST
-  Version = '0.25.0' ;
+  Version = '0.25.1' ;
   RdCap = 65536 ;
 
 VAR

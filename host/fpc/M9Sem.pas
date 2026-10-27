@@ -4942,8 +4942,10 @@ var
     Sem.AllocsThrough; memoised in ansMemo as `alloc Mod.Proc#j') }
   function AllocsThrough (const pr: TProcInfo; j: Integer): Boolean;
   var
-    key, nm : string;
-    ix : Integer;
+    key, nm, wasCtx : string;
+    ix, g, b, q : Integer;
+    mon : Boolean;
+    rt : TNode;
     function Walk (k: TNode): Boolean;
     var
       i, g, b, a : Integer;
@@ -4957,7 +4959,9 @@ var
          (k.kids[0].kind = nkDesignator) and (k.kids[0].a = nm) and
          { for a THREAD, NEW (j.wp, T) is in the worker's own pool field
            (mirrors Sem.PoolField) }
-         not (allocNoPool and (Length (k.kids[0].kids) > 0) and
+         { and NEW (d.p, T) on a MONITOR parameter d: its fields are
+           reached only under its lock (mirrors Sem.ParamMonitorAt) }
+         not ((allocNoPool or mon) and (Length (k.kids[0].kids) > 0) and
               (M9AST.TypeAt (k.kids[0].kids[High (k.kids[0].kids)]) <> nil) and
               (M9AST.TypeAt (k.kids[0].kids[High (k.kids[0].kids)]).kind = nkQualident) and
               (M9AST.TypeAt (k.kids[0].kids[High (k.kids[0].kids)]).a = 'POOL') and
@@ -5020,6 +5024,24 @@ var
     if AnsGet (key, Result) then Exit;
     AnsPut (key, 'busy');
     Result := False;
+    { is parameter j of a MONITOR type, read in the callee's module }
+    mon := False;
+    q := 0;
+    if (pr.node <> nil) and (pr.node.kids[0] <> nil) then
+      for g := 0 to High (pr.node.kids[0].kids) do
+        if (pr.node.kids[0].kids[g] <> nil) and (pr.node.kids[0].kids[g].kids[0] <> nil) then
+          for b := 0 to High (pr.node.kids[0].kids[g].kids[0].kids) do
+          begin
+            if q = j then
+            begin
+              wasCtx := canonCtx;
+              canonCtx := pr.modName;
+              rt := ResolveType (pr.node.kids[0].kids[g].kids[1]);
+              canonCtx := wasCtx;
+              mon := (rt <> nil) and (rt.kind = nkMonitorType);
+            end;
+            Inc (q);
+          end;
     if pr.body <> nil then
     begin
       nm := ParamNameAt (pr.body, j);

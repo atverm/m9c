@@ -1,11 +1,11 @@
-REVIEW Sem -- 614 procedures with a body, 418 of them functions; 85 headings in a DEFINITION
+REVIEW Sem -- 619 procedures with a body, 423 of them functions; 85 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             418
-  assignments                                  2548
-  arguments                                   10518
-  RETURN values                                1472
-  operands of a comparison or an operator      3198
+  functions answering on every path             423
+  assignments                                  2570
+  arguments                                   10557
+  RETURN values                                1484
+  operands of a comparison or an operator      3215
   CASE labels                                   179
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -21,7 +21,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          0
   [SHARABLE] records                              0
-  module variables                              205   showName, shown, shownRaises, mods, nmods, impB, +199 more
+  module variables                              206   showName, shown, shownRaises, mods, nmods, impB, +200 more
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        2
   NEW in the frame                               18
   NEW in a named pool                           159
-  calls of a STR form with a UTF twin            24   Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, +18 more
+  calls of a STR form with a UTF twin            25   Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, +19 more
   STR subscripts, writes and LEN                  0

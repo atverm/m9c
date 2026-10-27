@@ -1,0 +1,54 @@
+MODULE SanVarComponentStr ;
+
+(* WANT: model-3 *)
+
+(* oneflux's item 30 (PpV1, 2026-10-26): a new string a callee assigns
+   to a VAR STR argument is re-homed in the arena the call is made from
+   (decision 60), and an argument rooted at a VAR parameter was left to
+   that parameter's own exit -- which adopts the bare parameter only.
+   `RStr (pool, ..., st.instr[0].model)' with st a VAR record parameter
+   left the string in Retrieve's frame, freed at its exit; the module
+   body read it back (ASan: heap-use-after-free).  A component of a VAR
+   parameter is now called from the parameter's pool. *)
+(* Dynmd's shape: a period's pool handed down beside the run state, a
+   string kept in that pool stored into the run state, read by the
+   next period after the first one's pool is gone *)
+IMPORT Io, Fmt, Text ;
+TYPE
+  Instr = RECORD model : STR END ;
+  Run = RECORD instr : SLICE OF Instr END ;
+VAR
+  pool : POOL ;
+  st : Run ;
+PROCEDURE RStr (VAR pool: POOL ; RO s: STR ; VAR dst: STR) =
+VAR
+  i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (dst) - 1 DO n := n + ORD (dst[i]) END ;     (* the old value read first *)
+  IF n < 0 THEN Io.WriteLine ('never') END ;
+  dst := '' + s
+END RStr ;
+PROCEDURE Retrieve (VAR pool: POOL ; VAR st: Run ; k: I64) RAISES IndexError =
+BEGIN
+  RStr (pool, 'model-' + Fmt.I64Str (k), st.instr[0].model)
+END Retrieve ;
+PROCEDURE Period (k: I64) RAISES IndexError =
+VAR
+  ppool : POOL ;
+  big : SLICE OF CHAR ;
+BEGIN
+  big := NEW (ppool, CHAR, 1000000) ;
+  big[0] := 'x' ;
+  Retrieve (ppool, st, k)
+END Period ;
+VAR
+  k : I64 ;
+BEGIN
+  st.instr := NEW (pool, Instr, 1) ;
+  st.instr[0].model := 'none' ;
+  FOR k := 1 TO 3 DO Period (k) END ;
+  Io.WriteLine (st.instr[0].model)
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END SanVarComponentStr.

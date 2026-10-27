@@ -1791,7 +1791,7 @@ void Zarr_PutI64 (Zarr_Sink * *s, m9_pool *s_pool, int64_t v, m9_state *err)
   }
   { __typeof__(m9_mul_i64 (({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, ({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->esize, err)) m9a29 = m9_mul_i64 (({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, ({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->esize, err);
     if (err->exc) goto L_hdl_m9t1;
-  Zarr_PutIntLE (&(({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->buf), m9a29, ({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->esize, v, err);
+  ({ m9_pool *m9t3 = err->res; err->res = s_pool; Zarr_PutIntLE (&(({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->buf), m9a29, ({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->esize, v, err); err->res = m9t3; });
   if (err->exc) goto L_hdl_m9t1;
   }
   { __typeof__(({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n) m9v = m9_add_i64 (({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, INT64_C(1), err);
@@ -1806,7 +1806,7 @@ void Zarr_PutI64 (Zarr_Sink * *s, m9_pool *s_pool, int64_t v, m9_state *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s65, 25 }), ({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->adir, err)) m9t3 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s65, 25 }), ({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s65, 25 }), ({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->adir, err)) m9t4 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s65, 25 }), ({ __auto_type m9g = ((*s)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->adir, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;

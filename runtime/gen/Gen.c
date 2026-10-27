@@ -14981,7 +14981,7 @@ static m9_sl_UTF8 Gen_CallC0 (Ast_Node * dn, Ast_Node * argl, m9_sl_UTF8 *tag, m
                           if (err->exc) goto L_ret;
                           rp = m9v;
                         }
-                        bool m9t100 = ({ bool m9t99 = (!Text_EqUtf (rp, ((m9_sl_UTF8){ (uint8_t *) m9s1190, 8 }), err)); if (m9t99) { { __typeof__(Gen_ScopeMode (arg->au, err)) m9a735 = Gen_ScopeMode (arg->au, err);   if (err->exc) goto L_ret; m9t99 = ((((!Text_EqUtf (m9a735, ((m9_sl_UTF8){ (uint8_t *) m9s1191, 1 }), err)) || Gen_Exported (arg->au, err)))); } } m9t99; });
+                        bool m9t100 = ({ bool m9t99 = (!Text_EqUtf (rp, ((m9_sl_UTF8){ (uint8_t *) m9s1190, 8 }), err)); if (m9t99) { { __typeof__(Gen_ScopeMode (arg->au, err)) m9a735 = Gen_ScopeMode (arg->au, err);   if (err->exc) goto L_ret; m9t99 = (((((!Text_EqUtf (m9a735, ((m9_sl_UTF8){ (uint8_t *) m9s1191, 1 }), err)) || Gen_Exported (arg->au, err)) || (arg->nkids > INT64_C(0))))); } } m9t99; });
                         if (err->exc) goto L_ret;
                         if (m9t100) {
                           bool m9t101 = (Text_BLen (rpool, err) == INT64_C(0));

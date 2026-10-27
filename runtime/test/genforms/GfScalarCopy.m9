@@ -1,0 +1,89 @@
+MODULE GfScalarCopy ;
+
+(* WANT: 2 9 7 *)
+
+(* numbers copied out of a local pool into the caller's pool answer
+   nothing of the local pool (cp-kernel's live-demo branch, three false
+   refusals under 0.25.0): Seq.I64sOf of a list kept in scratch and grown
+   there (Series.Build), a record of numbers copied element by element
+   (Portal.CopyPairs), and a number added into a field of an element
+   from a record in scratch (Series.Build's `prods[pi].dl') *)
+(* SAFE: the answer and the module's set hold only pool storage; scratch holds the lists and the counts *)
+IMPORT Io, Fmt, Seq ;
+
+TYPE
+  Pair = RECORD key, n : I64 END ;
+  Fam = RECORD products : SLICE OF I64 ; n : I64 END ;
+  Set = RECORD families : SLICE OF Fam ; pairs : SLICE OF Pair END ;
+  Usage = RECORD dl : SLICE OF I64 END ;
+
+VAR
+  mp : POOL ;
+  kept : OPT PTR Set ;
+
+PROCEDURE GrowS (VAR pool: POOL ; RO KEPT a: SLICE OF Seq.I64s ; n: I64) : SLICE OF Seq.I64s RAISES IndexError =
+VAR
+  b : SLICE OF Seq.I64s ;
+  i : I64 ;
+BEGIN
+  b := NEW (pool, Seq.I64s, 2 * n) ;
+  FOR i := 0 TO n - 1 DO b[i] := a[i] END ;
+  RETURN b
+END GrowS ;
+
+PROCEDURE CopyPairs (VAR pool: POOL ; RO a: SLICE OF Pair) : SLICE OF Pair RAISES IndexError =
+VAR
+  b : SLICE OF Pair ;
+  i : I64 ;
+BEGIN
+  b := NEW (pool, Pair, LEN (a)) ;
+  FOR i := 0 TO LEN (a) - 1 DO b[i] := a[i] END ;
+  RETURN b
+END CopyPairs ;
+
+PROCEDURE Build (VAR pool: POOL ; u: PTR Usage) : PTR Set IN pool RAISES IndexError =
+VAR
+  scratch : POOL ;
+  s : PTR Set IN pool ;
+  lists : SLICE OF Seq.I64s ;
+  out : SLICE OF Pair ;
+  i : I64 ;
+BEGIN
+  s := NEW (pool, Set) ;
+  s.families := NEW (pool, Fam, 2) ;
+  lists := NEW (scratch, Seq.I64s, 1) ;
+  lists := GrowS (scratch, lists, 1) ;
+  FOR i := 0 TO 1 DO
+    Seq.AddI64 (scratch, lists[i], i + 1) ;
+    s.families[i].products := Seq.I64sOf (pool, lists[i]) ;
+    s.families[i].n := s.families[i].n + u.dl[i]
+  END ;
+  out := NEW (scratch, Pair, 1) ;
+  out[0].key := 7 ;
+  s.pairs := CopyPairs (pool, out) ;
+  RETURN s
+END Build ;
+
+PROCEDURE Of () : PTR Set RAISES IndexError =
+VAR
+  scratch : POOL ;
+  u : PTR Usage IN scratch ;
+  s : PTR Set IN mp ;
+BEGIN
+  u := NEW (scratch, Usage) ;
+  u.dl := NEW (scratch, I64, 2) ;
+  u.dl[1] := 9 ;
+  s := Build (mp, u) ;
+  kept := SOME (s) ;
+  RETURN s
+END Of ;
+
+VAR
+  t : PTR Set IN mp ;
+BEGIN
+  t := Of () ;
+  Io.WriteLine (Fmt.I64Str (t.families[1].products[0]) + ' ' + Fmt.I64Str (t.families[1].n)
+                + ' ' + Fmt.I64Str (t.pairs[0].key))
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END GfScalarCopy.

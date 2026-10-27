@@ -5521,10 +5521,16 @@ BEGIN
                       IF grp.f1 AND arg.kind = Ast.NDesignator AND
                          NOT PoolParamTy (pty) AND HasPtr (pty, 0) THEN
                         (* a VAR parameter's root is adopted into its pool
-                           at this procedure's own exit (AdoptEmit) *)
+                           at this procedure's own exit (AdoptEmit) -- the
+                           bare parameter only: a COMPONENT of one,
+                           `st.instr[0].model' with st a VAR record, is
+                           called from the parameter's pool too (oneflux's
+                           PpV1: the string read back freed under ASan,
+                           2026-10-26) *)
                         rp := ObjPoolC (arg) ;
                         IF NOT Text.Eq (rp, 'err->res') AND
-                           (NOT Text.Eq (ScopeMode (arg.au), 'v') OR Exported (arg.au)) THEN
+                           (NOT Text.Eq (ScopeMode (arg.au), 'v') OR Exported (arg.au) OR
+                            arg.nkids > 0) THEN
                           IF Text.BLen (rpool) = 0 THEN
                             rpool := rp
                           ELSIF NOT Text.Eq (rpool, rp) THEN

@@ -2856,20 +2856,20 @@ static void Zip_Fixed (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
     if ((uint64_t) m9t4to - (uint64_t) s < (uint64_t) 1) break;
     s += 1;
   } }
-  { __typeof__(left) m9v = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(288), err);
+  { __typeof__(left) m9v = ({ m9_pool *m9t5 = err->res; err->res = z_pool; int64_t m9t6 = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(288), err); err->res = m9t5; m9t6; });
     if (err->exc) goto L_ret;
     left = m9v;
   }
-  { __typeof__(s) m9t5to;
+  { __typeof__(s) m9t7to;
   s = INT64_C(0);
-  m9t5to = INT64_C(29);
-  if (s <= m9t5to) for (;;) {
+  m9t7to = INT64_C(29);
+  if (s <= m9t7to) for (;;) {
     (*(int64_t *) m9_at ((*z).lens.p, s, (*z).lens.len, sizeof (int64_t), err)) = INT64_C(5);
     if (err->exc) goto L_ret;
-    if ((uint64_t) m9t5to - (uint64_t) s < (uint64_t) 1) break;
+    if ((uint64_t) m9t7to - (uint64_t) s < (uint64_t) 1) break;
     s += 1;
   } }
-  { __typeof__(left) m9v = Zip_Build (&((*z).dfast), &((*z).dcount), &((*z).dsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(30), err);
+  { __typeof__(left) m9v = ({ m9_pool *m9t8 = err->res; err->res = z_pool; int64_t m9t9 = Zip_Build (&((*z).dfast), &((*z).dcount), &((*z).dsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(30), err); err->res = m9t8; m9t9; });
     if (err->exc) goto L_ret;
     left = m9v;
   }
@@ -2947,7 +2947,7 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   if ((*z).short_) {
     goto L_ret;
   }
-  { __typeof__(left) m9v = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(19), err);
+  { __typeof__(left) m9v = ({ m9_pool *m9t3 = err->res; err->res = z_pool; int64_t m9t4 = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), INT64_C(19), err); err->res = m9t3; m9t4; });
     if (err->exc) goto L_ret;
     left = m9v;
   }
@@ -2957,9 +2957,9 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   }
   i = INT64_C(0);
   for (;;) {
-    bool m9t3 = (i < m9_add_i64 (nlen, ndist, err));
+    bool m9t5 = (i < m9_add_i64 (nlen, ndist, err));
     if (err->exc) goto L_ret;
-    if (!(m9t3)) break;
+    if (!(m9t5)) break;
     Zip_Refill (z, z_pool, err);
     if (err->exc) goto L_ret;
     { __typeof__(s) m9v = Zip_Sym (z, z_pool, (*z).lfast, (*z).lcount, (*z).lsym, err);
@@ -3006,9 +3006,9 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
       if ((*z).short_) {
         goto L_ret;
       }
-      bool m9t4 = (m9_add_i64 (i, rep, err) > m9_add_i64 (nlen, ndist, err));
+      bool m9t6 = (m9_add_i64 (i, rep, err) > m9_add_i64 (nlen, ndist, err));
       if (err->exc) goto L_ret;
-      if (m9t4) {
+      if (m9t6) {
         (*z).bad = true;
         goto L_ret;
       }
@@ -3027,29 +3027,29 @@ static void Zip_Dynamic (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
       }
     }
   }
-  bool m9t5 = ((*(int64_t *) m9_at ((*z).lens.p, INT64_C(256), (*z).lens.len, sizeof (int64_t), err)) == INT64_C(0));
-  if (err->exc) goto L_ret;
-  if (m9t5) {
-    (*z).bad = true;
-    goto L_ret;
-  }
-  { __typeof__(left) m9v = Zip_Build (&((*z).dfast), &((*z).dcount), &((*z).dsym), &((*z).work), (*z).lens, nlen, ndist, err);
-    if (err->exc) goto L_ret;
-    left = m9v;
-  }
-  bool m9t6 = ((left < INT64_C(0)) || (((left > INT64_C(0)) && (ndist != m9_add_i64 ((*(int64_t *) m9_at ((*z).dcount.p, INT64_C(0), (*z).dcount.len, sizeof (int64_t), err)), (*(int64_t *) m9_at ((*z).dcount.p, INT64_C(1), (*z).dcount.len, sizeof (int64_t), err)), err)))));
-  if (err->exc) goto L_ret;
-  if (m9t6) {
-    (*z).bad = true;
-    goto L_ret;
-  }
-  { __typeof__(left) m9v = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), nlen, err);
-    if (err->exc) goto L_ret;
-    left = m9v;
-  }
-  bool m9t7 = ((left < INT64_C(0)) || (((left > INT64_C(0)) && (nlen != m9_add_i64 ((*(int64_t *) m9_at ((*z).lcount.p, INT64_C(0), (*z).lcount.len, sizeof (int64_t), err)), (*(int64_t *) m9_at ((*z).lcount.p, INT64_C(1), (*z).lcount.len, sizeof (int64_t), err)), err)))));
+  bool m9t7 = ((*(int64_t *) m9_at ((*z).lens.p, INT64_C(256), (*z).lens.len, sizeof (int64_t), err)) == INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t7) {
+    (*z).bad = true;
+    goto L_ret;
+  }
+  { __typeof__(left) m9v = ({ m9_pool *m9t8 = err->res; err->res = z_pool; int64_t m9t9 = Zip_Build (&((*z).dfast), &((*z).dcount), &((*z).dsym), &((*z).work), (*z).lens, nlen, ndist, err); err->res = m9t8; m9t9; });
+    if (err->exc) goto L_ret;
+    left = m9v;
+  }
+  bool m9t10 = ((left < INT64_C(0)) || (((left > INT64_C(0)) && (ndist != m9_add_i64 ((*(int64_t *) m9_at ((*z).dcount.p, INT64_C(0), (*z).dcount.len, sizeof (int64_t), err)), (*(int64_t *) m9_at ((*z).dcount.p, INT64_C(1), (*z).dcount.len, sizeof (int64_t), err)), err)))));
+  if (err->exc) goto L_ret;
+  if (m9t10) {
+    (*z).bad = true;
+    goto L_ret;
+  }
+  { __typeof__(left) m9v = ({ m9_pool *m9t11 = err->res; err->res = z_pool; int64_t m9t12 = Zip_Build (&((*z).lfast), &((*z).lcount), &((*z).lsym), &((*z).work), (*z).lens, INT64_C(0), nlen, err); err->res = m9t11; m9t12; });
+    if (err->exc) goto L_ret;
+    left = m9v;
+  }
+  bool m9t13 = ((left < INT64_C(0)) || (((left > INT64_C(0)) && (nlen != m9_add_i64 ((*(int64_t *) m9_at ((*z).lcount.p, INT64_C(0), (*z).lcount.len, sizeof (int64_t), err)), (*(int64_t *) m9_at ((*z).lcount.p, INT64_C(1), (*z).lcount.len, sizeof (int64_t), err)), err)))));
+  if (err->exc) goto L_ret;
+  if (m9t13) {
     (*z).bad = true;
   }
 L_ret: ;

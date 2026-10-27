@@ -5940,13 +5940,20 @@ MODULE m ;
    own object: one record handed to eight threads in a loop shares its
    pool field, and NEW (j.wp, T) from eight workers at once left 129,000
    of 160,000 cells wrong (the fourth review's PoolField, 2026-10-26).
-   Legal forms first: the record handed once, outside any loop, and an
-   element of a slice of records handed in a loop (zarrm9's Shuttle). *)
+   Legal forms first: the record handed once, outside any loop, an
+   element of a slice of records handed in a loop (zarrm9's Shuttle),
+   and a POOL field of a MONITOR the record holds, carved only by a
+   procedure bound to it, so under its lock (cp-kernel's Search.Put,
+   2026-10-26). *)
 TYPE
   Cell = RECORD n : I64 END ;
   Job = RECORD wp : POOL ; n : I64 END [SHARABLE] ;
   JobP = PTR Job ;
+  Box = MONITOR RECORD p : POOL ; n : I64 END ;
+  Hold = RECORD b : Box END [SHARABLE] ;
+  HoldP = PTR Hold ;
 VAR
+  h : HoldP ;
   mp : POOL ;
   a, d : JobP ;
   js : SLICE OF JobP ;
@@ -5958,6 +5965,17 @@ BEGIN
   c.n := 1 ;
   j.n := c.n
 END Own ;
+PROCEDURE Fill (VAR b: Box) =
+VAR c : PTR Cell IN b.p ;
+BEGIN
+  c := NEW (b.p, Cell) ;
+  c.n := 1 ;
+  b.n := b.n + c.n
+END Fill ;
+PROCEDURE Fills (VAR k: Hold) =
+BEGIN
+  Fill (k.b)
+END Fills ;
 BEGIN
   a := NEW (mp, Job) ;
   THREAD (Own, a) ;
@@ -5965,6 +5983,10 @@ BEGIN
   FOR i := 0 TO 3 DO
     js[i] := NEW (mp, Job) ;
     THREAD (Own, js[i])
+  END ;
+  h := NEW (mp, Hold) ;
+  FOR i := 0 TO 3 DO
+    THREAD (Fills, h)
   END ;
   d := NEW (mp, Job) ;
   FOR i := 0 TO 3 DO

@@ -1,0 +1,38 @@
+MODULE R4CopyHoldsView ;
+(* the copy GfScalarCopy makes of a record of numbers, made of a record
+   holding a STRING: b[i] := a[i] copies the view, so the answer holds the
+   scratch pool's text, freed when Build returns -- refused, as before the
+   scalar-element rule (2026-10-26) *)
+IMPORT Io, Text ;
+TYPE
+  Named = RECORD key : I64 ; name : STR END ;
+  Set = RECORD items : SLICE OF Named END ;
+VAR mp : POOL ;
+PROCEDURE CopyNamed (VAR pool: POOL ; RO a: SLICE OF Named) : SLICE OF Named RAISES IndexError =
+VAR
+  b : SLICE OF Named ;
+  i : I64 ;
+BEGIN
+  b := NEW (pool, Named, LEN (a)) ;
+  FOR i := 0 TO LEN (a) - 1 DO b[i] := a[i] END ;
+  RETURN b
+END CopyNamed ;
+PROCEDURE Build (VAR pool: POOL) : PTR Set IN pool RAISES IndexError =
+VAR
+  scratch : POOL ;
+  s : PTR Set IN pool ;
+  out : SLICE OF Named ;
+BEGIN
+  s := NEW (pool, Set) ;
+  out := NEW (scratch, Named, 1) ;
+  out[0].name := Text.Keep (scratch, 'gone') ;
+  s.items := CopyNamed (pool, out) ;
+  RETURN s
+END Build ;
+VAR t : PTR Set IN mp ;
+BEGIN
+  t := Build (mp) ;
+  Io.WriteLine (t.items[0].name)
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END R4CopyHoldsView.

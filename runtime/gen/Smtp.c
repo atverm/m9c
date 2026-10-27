@@ -266,7 +266,7 @@ void Smtp_AddTo (Smtp_Message * *m, m9_pool *m_pool, m9_sl_CHAR addr, m9_state *
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Smtp_Grow (m, m_pool, &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->to), &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nto), addr, err);
+  ({ m9_pool *m9t1 = err->res; err->res = m_pool; Smtp_Grow (m, m_pool, &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->to), &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nto), addr, err); err->res = m9t1; });
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -281,7 +281,7 @@ void Smtp_AddCc (Smtp_Message * *m, m9_pool *m_pool, m9_sl_CHAR addr, m9_state *
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Smtp_Grow (m, m_pool, &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cc), &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ncc), addr, err);
+  ({ m9_pool *m9t1 = err->res; err->res = m_pool; Smtp_Grow (m, m_pool, &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->cc), &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ncc), addr, err); err->res = m9t1; });
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -296,7 +296,7 @@ void Smtp_AddBcc (Smtp_Message * *m, m9_pool *m_pool, m9_sl_CHAR addr, m9_state 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Smtp_Grow (m, m_pool, &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->bcc), &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nbcc), addr, err);
+  ({ m9_pool *m9t1 = err->res; err->res = m_pool; Smtp_Grow (m, m_pool, &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->bcc), &(({ __auto_type m9g = ((*m)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nbcc), addr, err); err->res = m9t1; });
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;

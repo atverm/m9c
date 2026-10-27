@@ -390,6 +390,7 @@ VAR
                                       there does not outlive it *)
   boundMonId : I64 ;               (* the bound monitor's type node, or -1 *)
   allocNoPool : BOOL ;             (* AllocsThrough for a THREAD: a POOL argument is its own pool *)
+  allocMon : BOOL ;                (* AllocsThrough of a MONITOR parameter: its POOL fields are carved under its lock *)
   boundMon : UTF ;                 (* the bound monitor parameter, or
                                       empty when this procedure is not
                                       bound to one (par 6) *)
@@ -3635,6 +3636,41 @@ BEGIN
   RETURN ''
 END ParamNameAt ;
 
+(* is the callee's parameter j of a MONITOR type, read in its module: a
+   POOL field of it is reached only by a procedure bound to it, so only
+   under its lock (report par 6) -- `NEW (d.p, T)' in Search.Put of
+   cp-kernel's live-demo branch, eight workers through one job *)
+PROCEDURE ParamMonitorAt (pr: ProcInfo ; j: I64) : BOOL =
+VAR
+  g, b, k : I64 ;
+  was : UTF ;
+  r : Ast.Kid ;
+BEGIN
+  k := 0 ;
+  IF pr.node IS SOME d THEN
+    IF d.kids[0] IS SOME ps THEN
+      FOR g := 0 TO ps.nkids - 1 DO
+        IF ps.kids[g] IS SOME grp THEN
+          IF grp.kids[0] IS SOME ids THEN
+            FOR b := 0 TO ids.nkids - 1 DO
+              IF k = j THEN
+                was := canonCtx ;
+                canonCtx := Text.Keep (pool, pr.modName) ;
+                r := ResolveType (grp.kids[1]) ;
+                canonCtx := was ;
+                IF r IS SOME rn THEN RETURN rn.kind = Ast.NMonitorType END ;
+                RETURN FALSE
+              END ;
+              k := k + 1
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END ParamMonitorAt ;
+
 (* may a callee allocate THROUGH its VAR pointer parameter j: a NEW on
    the parameter, or the parameter handed on as a VAR argument to a
    callee that does?  Read off the body, memoised as `alloc Mod.Proc#j'
@@ -3692,7 +3728,7 @@ BEGIN
           (* for a THREAD, `NEW (j.wp, T)' is in the worker's own pool
              field, by the type the typed tree recorded for its last
              step (a THREAD's target is in the checked unit) *)
-          IF NOT (allocNoPool AND d.nkids > 0 AND PoolField (d)) THEN RETURN TRUE END
+          IF NOT ((allocNoPool OR allocMon) AND d.nkids > 0 AND PoolField (d)) THEN RETURN TRUE END
         END
       END
     END ;
@@ -3757,7 +3793,7 @@ PROCEDURE AllocsThrough (pr: ProcInfo ; j: I64) : BOOL =
 VAR
   q, key, nm : UTF ;
   i : I64 ;
-  res : BOOL ;
+  res, wasMon : BOOL ;
 BEGIN
   IF allocNoPool THEN
     q := S4 ('talloc ', Qualify (pr.modName, pr.name), '#', ItoA (j))
@@ -3772,7 +3808,10 @@ BEGIN
   IF pr.body IS SOME d THEN
     nm := ParamNameAt (d, j) ;
     IF Text.BLen (nm) > 0 AND d.nkids > 4 THEN
-      res := AllocWalk (d.kids[4], nm, pr.modName)
+      wasMon := allocMon ;
+      allocMon := ParamMonitorAt (pr, j) ;
+      res := AllocWalk (d.kids[4], nm, pr.modName) ;
+      allocMon := wasMon
     END
   END ;
   IF res THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
@@ -13339,44 +13378,108 @@ END RgDeclType ;
 
 (* d indexes a string, or a slice or array of a scalar, that the callee
    being read declares: its element holds no reference (Text.Keep's
-   `r[i] := s[i]' copies characters, not a view of s) *)
-PROCEDURE RgScalarElem (d: PTR Ast.Node) : BOOL =
+   `r[i] := s[i]' copies characters, not a view of s).  Since 2026-10-26
+   also a FIELD of a record held by value on the way, and a named type at
+   the end that holds no reference, each name resolved in the module it
+   was written in (cp-kernel's Series.Build: `prods[pi].dl := prods[pi].dl
+   + u.dl[x]' stores a number; Portal.CopyPairs copies a record of
+   numbers), through a pointer too (`s.head := ix.head').  A name that
+   does not resolve says nothing *)
+PROCEDURE RgResolveIn (VAR m: UTF ; t: Ast.Kid) : Ast.Kid =
 VAR
-  i : I64 ;
-  t : Ast.Kid ;
-  el : UTF ;
+  was, mm : UTF ;
+  r : Ast.Kid ;
+BEGIN
+  was := canonCtx ;
+  canonCtx := Text.Keep (pool, m) ;
+  r := ResolveType (t) ;
+  mm := ResolvedMod () ;
+  canonCtx := was ;
+  IF Text.BLen (mm) > 0 THEN m := Text.Keep (pool, mm) END ;
+  RETURN r
+END RgResolveIn ;
+
+PROCEDURE RgScalarWalk (d: PTR Ast.Node ; num: BOOL) : BOOL =
+VAR
+  i, k : I64 ;
+  t, r : Ast.Kid ;
+  el, m : UTF ;
 BEGIN
   IF d.nkids = 0 THEN RETURN FALSE END ;
   t := RgDeclType (d.au) ;
-  (* down one level per subscript, by the declared types; a field, or a
-     name that is not a builtin, says nothing *)
+  m := Text.Keep (pool, rgCompMod) ;
   FOR i := 0 TO d.nkids - 1 DO
-    IF d.kids[i] IS SOME sl THEN
-      IF sl.kind # Ast.NSelIndex THEN RETURN FALSE END
+    IF t IS SOME tq THEN
+      IF tq.kind = Ast.NQualident AND Text.BLen (tq.bu) = 0 AND
+         (Text.Eq (tq.au, 'STR') OR Text.Eq (tq.au, 'UTF')) THEN
+        IF d.kids[i] IS SOME s0 THEN
+          IF s0.kind # Ast.NSelIndex THEN RETURN FALSE END
+        END ;
+        (* a character: no reference, but no number for `+' either *)
+        RETURN i = d.nkids - 1 AND NOT num
+      END
     END ;
-    IF t IS SOME tn THEN
-      IF tn.kind = Ast.NQualident AND Text.BLen (tn.bu) = 0 AND
-         (Text.Eq (tn.au, 'STR') OR Text.Eq (tn.au, 'UTF')) THEN
-        RETURN i = d.nkids - 1
-      ELSIF tn.kind = Ast.NSliceType THEN
-        t := tn.kids[0]
-      ELSIF tn.kind = Ast.NArrayType THEN
-        t := tn.kids[1]
+    r := RgResolveIn (m, t) ;
+    (* through a pointer to what it leads to: a number read or stored
+       through `ix.head' moves no reference *)
+    k := 0 ;
+    LOOP
+      IF r IS SOME pn THEN
+        IF (pn.kind = Ast.NPtrType OR pn.kind = Ast.NSharedType) AND k < 8 THEN
+          r := RgResolveIn (m, pn.kids[0]) ;
+          k := k + 1
+        ELSE
+          EXIT
+        END
+      ELSE
+        EXIT
+      END
+    END ;
+    IF d.kids[i] IS SOME sl THEN
+      IF r IS SOME tn THEN
+        IF sl.kind = Ast.NSelIndex AND tn.kind = Ast.NSliceType THEN
+          t := tn.kids[0]
+        ELSIF sl.kind = Ast.NSelIndex AND tn.kind = Ast.NArrayType THEN
+          t := tn.kids[1]
+        ELSIF sl.kind = Ast.NSelField AND tn.kind = Ast.NRecordType THEN
+          t := FieldTypeOf (tn, sl.au)
+        ELSE
+          RETURN FALSE
+        END
       ELSE
         RETURN FALSE
       END
-    ELSE
-      RETURN FALSE
     END
   END ;
   IF t IS SOME e THEN
     IF e.kind = Ast.NQualident AND Text.BLen (e.bu) = 0 THEN
       el := e.au ;
-      RETURN Text.OneOf (STR (el), NumericTys) OR Text.Eq (el, 'CHAR') OR Text.Eq (el, 'BOOL')
+      IF Text.OneOf (STR (el), NumericTys) THEN RETURN TRUE END ;
+      IF NOT num AND (Text.Eq (el, 'CHAR') OR Text.Eq (el, 'BOOL')) THEN RETURN TRUE END
+    END ;
+    (* a named type that holds no reference, read in its module; only a
+       name the canon resolved to its module (`Mod.T'): an unknown name
+       says nothing *)
+    IF e.kind = Ast.NQualident THEN
+      el := CanonIn (m, t) ;
+      IF num THEN RETURN Text.OneOf (STR (el), NumericTys) END ;
+      RETURN Text.ContainsUtf (el, '.') AND NOT RgBearing (el)
     END
   END ;
   RETURN FALSE
+END RgScalarWalk ;
+
+PROCEDURE RgScalarElem (d: PTR Ast.Node) : BOOL =
+BEGIN
+  RETURN RgScalarWalk (d, FALSE)
 END RgScalarElem ;
+
+(* d's element or field is a NUMBER by the callee's declarations: an
+   operand of an integer `+' (a CHAR joins a string) *)
+PROCEDURE RgNumElem (d: PTR Ast.Node) : BOOL =
+BEGIN
+  RETURN RgScalarWalk (d, TRUE)
+END RgNumElem ;
 
 PROCEDURE RgDeclNumeric (RO nm: UTF) : BOOL =
 VAR
@@ -13443,6 +13546,10 @@ VAR i : I64 ;
 BEGIN
   IF e.kind = Ast.NInt OR e.kind = Ast.NReal THEN RETURN TRUE END ;
   IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN RETURN RgDeclNumeric (e.au) END ;
+  (* an element or field the callee declares a number: `s.families[i].n
+     + u.dl[i]' (GfScalarCopy, refused in five of twelve declaration
+     orders -- those that walked Build before it was typed) *)
+  IF e.kind = Ast.NDesignator THEN RETURN RgNumElem (e) END ;
   (* an operand that is arithmetic of its own, or a scalar builtin:
      `ip * 10 + d', `ORD (c) - ORD ('0')' (Json's ParseNumber read as a
      string built in the frame, and every parsed node as frame storage) *)
@@ -14363,6 +14470,20 @@ END RgVarWrites ;
    the checker cannot read gives ---- *)
 PROCEDURE RgVarGives (pr: ProcInfo ; k: I64) : BOOL ;
 
+(* does the designator's path pass a slice, grid or pointer before its
+   last step, by the types the typed tree recorded: then what it names is
+   storage the root's copy does not hold *)
+PROCEDURE RgPathRef (d: PTR Ast.Node) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO d.nkids - 2 DO
+    IF d.kids[i] IS SOME sl THEN
+      IF RgRefTy (Ast.TypeAt (sl.id)) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END RgPathRef ;
+
 PROCEDURE RgGivesWalk (k: Ast.Kid ; RO nm: UTF ; RO mod: UTF) : BOOL =
 VAR
   i, j : I64 ;
@@ -14627,10 +14748,16 @@ BEGIN
                          names[0] + x' is refused (the second review's gen
                          N4, 2026-10-26).  A value pointer's target is
                          refused by CheckArg; a value record's field is
-                         the frame's own copy *)
+                         the frame's own copy -- unless the path passes a
+                         slice or pointer inside the record, `st.instr[0].
+                         model' with st a value record: the element is the
+                         caller's (soundfuzz on oneflux's PpV1 with VAR
+                         dropped from st, a use-after-free; 2026-10-26) *)
                       IF grp.f1 AND ar.kind = Ast.NDesignator AND ar.nkids > 0 AND
-                         Text.Eq (ScopeMode (ar.au), ModeVal) AND RgRefTy (ScopeType (ar.au)) AND
-                         (Text.StartsWith (t, 'SLICE OF ') OR Text.StartsWith (t, 'GRID ')) THEN
+                         Text.Eq (ScopeMode (ar.au), ModeVal) AND
+                         (RgRefTy (ScopeType (ar.au)) OR (RgPathRef (ar) AND RgVarGives (pr, k))) AND
+                         (Text.StartsWith (t, 'SLICE OF ') OR Text.StartsWith (t, 'GRID ') OR
+                          Text.Eq (t, UtfTy)) THEN
                         RgNote (ar, 'frame', Cat (Cat ('a VAR argument in the storage value parameter ', ar.au),
                           ' leads to: the callee gives it a value built in this frame'))
                       END ;
@@ -15893,8 +16020,13 @@ BEGIN
         (* a store into a component carries too: `r.s := a + b ;
            RETURN r' answers the frame string in r -- but not for seed 3,
            where only the answer ITSELF being read-only counts: a list
-           of views of an RO string (Text.Split) is a writable list *)
-        IF lh.kind = Ast.NDesignator AND (lh.nkids = 0 OR seed # 3) AND NOT OlInSet (lh.au, fs, nf) THEN
+           of views of an RO string (Text.Split) is a writable list --
+           nor into an element the callee declares a scalar: whatever
+           the right side names, `r[i] := s.at[i]' with r a SLICE OF I64
+           stores a number (Seq.I64sOf, read untyped in another module,
+           answered its argument's storage: cp-kernel's Series.Build) *)
+        IF lh.kind = Ast.NDesignator AND (lh.nkids = 0 OR seed # 3) AND NOT OlInSet (lh.au, fs, nf)
+           AND NOT RgScalarElem (lh) THEN
           IF OlMentions (s.kids[1], mod, fs, nf, seed) THEN
             IF nf < LEN (fs) THEN fs[nf] := Text.Keep (pool, lh.au) ; nf := nf + 1 ; grew := TRUE ELSE ret := TRUE END
           END
