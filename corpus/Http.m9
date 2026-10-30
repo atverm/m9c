@@ -120,7 +120,13 @@ PROCEDURE GetText (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
    writes itself (Host, Accept-Encoding: identity, Connection: close,
    and Content-Length whenever there is a body or the method is not
    GET or HEAD); `respHeaders` are the response's lines as received,
-   status line excluded, and Header picks one out by name.  One string
+   status line excluded, and Header picks one out by name.  A `Host:`
+   line among `headers` (the name in any case) REPLACES the one this
+   module would write from the URL and goes out in its place, first
+   after the request line; the connection still goes to the URL's host
+   and port -- a client on loopback asking as a public name, which the
+   server's host map then judges (since 2026-10-30, zarrm9's mcpd; until
+   then it went out as a second Host line).  One string
    rather than a SLICE OF STR (which Text.Split answers) because it
    is the shape a caller reads from a file or writes with `+`, it
    needs no pool to build, and it crosses to a C caller as one slice
@@ -734,6 +740,33 @@ BEGIN
   IF c.fd < 0 THEN RAISE TransportError ('connect failed') END
 END OpenConn ;
 
+(* the line of `extra' whose name is Host, any case: its offset, its
+   length without the line end in n; -1 when there is none *)
+PROCEDURE ExtraHost (RO extra: STR ; VAR n: I64) : I64 =
+VAR k, i : I64 ;
+BEGIN
+  n := 0 ;
+  k := 0 ;
+  WHILE k < LEN (extra) DO
+    i := k ;
+    WHILE i < LEN (extra) AND I64 (extra[i]) # 10 DO i := i + 1 END ;
+    IF i - k >= 5 THEN
+      IF (extra[k] = 'h' OR extra[k] = 'H') AND (extra[k + 1] = 'o' OR extra[k + 1] = 'O') AND
+         (extra[k + 2] = 's' OR extra[k + 2] = 'S') AND (extra[k + 3] = 't' OR extra[k + 3] = 'T') AND
+         extra[k + 4] = ':' THEN
+        n := i - k ;
+        IF I64 (extra[i - 1]) = 13 THEN n := n - 1 END ;
+        RETURN k
+      END
+    END ;
+    k := i + 1
+  END ;
+  RETURN -1
+EXCEPT
+| IndexError : RETURN -1
+| ValueRange : RETURN -1
+END ExtraHost ;
+
 PROCEDURE Once (VAR pool: POOL ; VAR c: Conn ; RO rq: Req ;
                 VAR sink: SLICE OF BYTE ; VAR rs: Resp)
   RAISES TransportError, Io.IOError, ValueRange, IndexError =
@@ -747,6 +780,7 @@ VAR
   n, ln, clen, want, got, held, sunk, i, k : I64 ;
   chunked, first, opened, noBody, ended, done : BOOL ;
   http11, connClose, connKeep : BOOL ;
+  hk, hn : I64 ;
 BEGIN
   rs.status := 0 ; rs.bytes := 0 ; rs.loc := '' ; rs.setCookie := '' ;
   rs.hdrs := '' ; rs.text := '' ; rs.keepable := FALSE ;
@@ -760,8 +794,15 @@ BEGIN
     DynStr.Append (req, rq.path) ;
     DynStr.Append (req, ' HTTP/1.1') ;
     CrLf (req) ;
-    DynStr.Append (req, 'Host: ') ;
-    DynStr.Append (req, rq.host) ;
+    (* the caller's own Host line, when it gives one, in place of the
+       URL's (the definition) *)
+    hk := ExtraHost (rq.extra, hn) ;
+    IF hk >= 0 THEN
+      DynStr.Append (req, SLICE (rq.extra, hk, hn))
+    ELSE
+      DynStr.Append (req, 'Host: ') ;
+      DynStr.Append (req, rq.host)
+    END ;
     CrLf (req) ;
     (* identity BY NAME: a server that decided to gzip would hand back
        bytes this module does not decode, and the failure would look
@@ -794,7 +835,7 @@ BEGIN
       WHILE i < LEN (rq.extra) AND I64 (rq.extra[i]) # 10 DO i := i + 1 END ;
       n := i - k ;
       IF n > 0 AND I64 (rq.extra[i - 1]) = 13 THEN n := n - 1 END ;
-      IF n > 0 THEN
+      IF n > 0 AND k # hk THEN
         DynStr.Append (req, SLICE (rq.extra, k, n)) ;
         CrLf (req)
       END ;

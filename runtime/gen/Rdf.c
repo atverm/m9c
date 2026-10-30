@@ -2244,7 +2244,7 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
       m9t4to = m9_sub_i64 (g->n, INT64_C(1), err);
       if (err->exc) goto L_ret;
       if (j <= m9t4to) for (;;) {
-        bool m9t6 = ({ bool m9t5 = (!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))); if (m9t5) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s) m9a77 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s;   if (err->exc) goto L_ret; { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a78 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;   if (err->exc) goto L_ret; m9t5 = (Rdf_SameTerm (&m9a77, &m9a78, err)); } } } m9t5; });
+        bool m9t6 = ({ bool m9t5 = (!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))); if (m9t5) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a77 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a78 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; m9t5 = (Rdf_SameTerm (&(*m9a77), &(*m9a78), err)); } } } m9t5; });
         if (err->exc) goto L_ret;
         if (m9t6) {
           if (firstPred) {
@@ -2277,7 +2277,7 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
           m9t7to = m9_sub_i64 (g->n, INT64_C(1), err);
           if (err->exc) goto L_ret;
           if (k <= m9t7to) for (;;) {
-            bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = (!(*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err))); if (m9t8) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s) m9a82 = (*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s;   if (err->exc) goto L_ret; { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a83 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;   if (err->exc) goto L_ret; m9t8 = (Rdf_SameTerm (&m9a82, &m9a83, err)); } } } m9t8; }); if (m9t9) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p) m9a84 = (*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p;   if (err->exc) goto L_ret; { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p) m9a85 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p;   if (err->exc) goto L_ret; m9t9 = (Rdf_SameTerm (&m9a84, &m9a85, err)); } } } m9t9; });
+            bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = (!(*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err))); if (m9t8) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a82 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a83 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; m9t8 = (Rdf_SameTerm (&(*m9a82), &(*m9a83), err)); } } } m9t8; }); if (m9t9) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a84 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a85 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) goto L_ret; m9t9 = (Rdf_SameTerm (&(*m9a84), &(*m9a85), err)); } } } m9t9; });
             if (err->exc) goto L_ret;
             if (m9t10) {
               DynStr_Append (&(body), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s54, 3 }), err);
@@ -8136,12 +8136,9 @@ static void Rdf_RemoveTerm (Rdf_Ctx *c, m9_pool *c_pool, m9_sl_CHAR term, m9_sta
   err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
-  { __typeof__((*c)) m9a290 = (*c);
-    if (err->exc) goto L_ret;
-  { __typeof__(k) m9v = Rdf_FindTerm (&m9a290, term, err);
+  { __typeof__(k) m9v = Rdf_FindTerm (&((*c)), term, err);
     if (err->exc) goto L_ret;
     k = m9v;
-  }
   }
   if ((k < INT64_C(0))) {
     goto L_ret;
@@ -8232,9 +8229,9 @@ static int64_t Rdf_DefState (Rdf_Defining *df, m9_sl_CHAR term, m9_state *err)
   m9t1to = m9_sub_i64 ((*df).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err))) m9a291 = (*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err))) m9a290 = (*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a291, term, err);
+    bool m9t2 = Text_Eq (m9a290, term, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -8269,9 +8266,9 @@ static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, 
   m9t1to = m9_sub_i64 ((*df).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err))) m9a292 = (*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err))) m9a291 = (*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a292, term, err);
+    bool m9t2 = Text_Eq (m9a291, term, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       (*(int64_t *) m9_at ((*df).state.p, i, (*df).state.len, sizeof (int64_t), err)) = st;
@@ -8702,11 +8699,11 @@ L_dn_m9t3: ;
     m9t5to = m9_sub_i64 ((names).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (j <= m9t5to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a293 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a292 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a294 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a293 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      bool m9t6 = Rdf_StrLess (m9a293, m9a294, err);
+      bool m9t6 = Rdf_StrLess (m9a292, m9a293, err);
       if (err->exc) goto L_ret;
       if (m9t6) {
         { __typeof__(t) m9v = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
@@ -8758,24 +8755,21 @@ static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_
   }
   { Json_Node * lc = local;
   if (lc != NULL) {
-    bool m9t3 = ({ bool m9t2 = Rdf_Has (lc, value, err); if (m9t2) { { __typeof__((*df)) m9a295 = (*df);   if (err->exc) goto L_ret; m9t2 = ((Rdf_DefState (&m9a295, value, err) != INT64_C(1))); } } m9t2; });
+    bool m9t2 = (Rdf_Has (lc, value, err) && (Rdf_DefState (&((*df)), value, err) != INT64_C(1)));
     if (err->exc) goto L_ret;
-    if (m9t3) {
+    if (m9t2) {
       Rdf_CreateTerm (pool, c, c_pool, lc, value, df, df_pool, err);
       if (err->exc) goto L_ret;
     }
   } }
-  { __typeof__((*c)) m9a296 = (*c);
-    if (err->exc) goto L_ret;
-  { __typeof__(k) m9v = Rdf_FindTerm (&m9a296, value, err);
+  { __typeof__(k) m9v = Rdf_FindTerm (&((*c)), value, err);
     if (err->exc) goto L_ret;
     k = m9v;
   }
-  }
   if ((vocab && (k >= INT64_C(0)))) {
-    bool m9t4 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull;
+    bool m9t3 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull;
     if (err->exc) goto L_ret;
-    if (m9t4) {
+    if (m9t3) {
       (*nul) = true;
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -8791,48 +8785,45 @@ static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_
     colon = m9v;
   }
   if ((colon >= INT64_C(0))) {
-    { __typeof__(prefix) m9v = ({ __auto_type m9t5 = value; int64_t m9t5a = INT64_C(0), m9t5n = colon; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+    { __typeof__(prefix) m9v = ({ __auto_type m9t4 = value; int64_t m9t4a = INT64_C(0), m9t4n = colon; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
       if (err->exc) goto L_ret;
       prefix = m9v;
     }
-    { __typeof__(suffix) m9v = ({ __auto_type m9t6 = value; int64_t m9t6a = m9_add_i64 (colon, INT64_C(1), err), m9t6n = m9_sub_i64 (m9_sub_i64 ((value).len, colon, err), INT64_C(1), err); int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+    { __typeof__(suffix) m9v = ({ __auto_type m9t5 = value; int64_t m9t5a = m9_add_i64 (colon, INT64_C(1), err), m9t5n = m9_sub_i64 (m9_sub_i64 ((value).len, colon, err), INT64_C(1), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
       if (err->exc) goto L_ret;
       suffix = m9v;
     }
-    bool m9t7 = (Text_Eq (prefix, ((m9_sl_CHAR){ (uint32_t *) m9s290, 1 }), err) || Text_StartsWith (suffix, ((m9_sl_CHAR){ (uint32_t *) m9s291, 2 }), err));
+    bool m9t6 = (Text_Eq (prefix, ((m9_sl_CHAR){ (uint32_t *) m9s290, 1 }), err) || Text_StartsWith (suffix, ((m9_sl_CHAR){ (uint32_t *) m9s291, 2 }), err));
     if (err->exc) goto L_ret;
-    if (m9t7) {
+    if (m9t6) {
       err->res = m9res;
       m9ret = value;
       goto L_ret;
     }
     { Json_Node * lc = local;
     if (lc != NULL) {
-      bool m9t9 = ({ bool m9t8 = Rdf_Has (lc, prefix, err); if (m9t8) { { __typeof__((*df)) m9a297 = (*df);   if (err->exc) goto L_ret; m9t8 = ((Rdf_DefState (&m9a297, prefix, err) != INT64_C(1))); } } m9t8; });
+      bool m9t7 = (Rdf_Has (lc, prefix, err) && (Rdf_DefState (&((*df)), prefix, err) != INT64_C(1)));
       if (err->exc) goto L_ret;
-      if (m9t9) {
+      if (m9t7) {
         Rdf_CreateTerm (pool, c, c_pool, lc, prefix, df, df_pool, err);
         if (err->exc) goto L_ret;
       }
     } }
-    { __typeof__((*c)) m9a298 = (*c);
-      if (err->exc) goto L_ret;
-    { __typeof__(k) m9v = Rdf_FindTerm (&m9a298, prefix, err);
+    { __typeof__(k) m9v = Rdf_FindTerm (&((*c)), prefix, err);
       if (err->exc) goto L_ret;
       k = m9v;
     }
-    }
-    bool m9t10 = ((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull));
+    bool m9t8 = ((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull));
     if (err->exc) goto L_ret;
-    if (m9t10) {
+    if (m9t8) {
       err->res = m9res;
       m9ret = m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, suffix, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    bool m9t11 = Rdf_IsAbsolute (value, err);
+    bool m9t9 = Rdf_IsAbsolute (value, err);
     if (err->exc) goto L_ret;
-    if (m9t11) {
+    if (m9t9) {
       err->res = m9res;
       m9ret = value;
       goto L_ret;
@@ -8887,12 +8878,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
   m9_sl_CHAR s = {0}; (void) s;
   m9_sl_CHAR prefix = {0}; (void) prefix;
   bool nul = false; (void) nul;
-  { __typeof__((*df)) m9a299 = (*df);
-    if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(st) m9v = Rdf_DefState (&m9a299, term, err);
+  { __typeof__(st) m9v = Rdf_DefState (&((*df)), term, err);
     if (err->exc) goto L_hdl_m9t1;
     st = m9v;
-  }
   }
   if ((st == INT64_C(1))) {
     goto L_ret;
@@ -8930,7 +8918,7 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
   d.hasLang = false;
   d.reverse = false;
   d.isNull = false;
-  bool m9t6 = ({ bool m9t5 = Json_IsNull (value, err); if (!m9t5) { m9t5 = ((({ bool m9t4 = (Rdf_IsObj (value, err) && Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s296, 3 }), err)); if (m9t4) { { __typeof__(Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 }), err)) m9a300 = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t4 = (Json_IsNull (m9a300, err)); } } m9t4; }))); } m9t5; });
+  bool m9t6 = ({ bool m9t5 = Json_IsNull (value, err); if (!m9t5) { m9t5 = ((({ bool m9t4 = (Rdf_IsObj (value, err) && Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s296, 3 }), err)); if (m9t4) { { __typeof__(Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 }), err)) m9a294 = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t4 = (Json_IsNull (m9a294, err)); } } m9t4; }))); } m9t5; });
   if (err->exc) goto L_hdl_m9t1;
   if (m9t6) {
     d.isNull = true;
@@ -8977,9 +8965,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s302, 20 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a301 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a295 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a301, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a295, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -9014,9 +9002,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s310, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a302 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a296 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a302, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a296, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -9045,9 +9033,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
         bool m9t18 = (Rdf_IsStr (tv, err) && ((Json_StrIs (tv, ((m9_sl_CHAR){ (uint32_t *) m9s314, 4 }), err) || Json_StrIs (tv, ((m9_sl_CHAR){ (uint32_t *) m9s315, 6 }), err))));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t18) {
-          { __typeof__(Rdf_JStr (tv, err)) m9a303 = Rdf_JStr (tv, err);
+          { __typeof__(Rdf_JStr (tv, err)) m9a297 = Rdf_JStr (tv, err);
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(d.container) m9v = Text_Keep (pool, m9a303, err);
+          { __typeof__(d.container) m9v = Text_Keep (pool, m9a297, err);
             if (err->exc) goto L_hdl_m9t1;
             d.container = m9v;
           }
@@ -9064,7 +9052,7 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  bool m9t20 = ({ bool m9t19 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s317, 3 }), err); if (m9t19) { { __typeof__(Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s318, 3 }), err)) m9a304 = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s318, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t19 = ((!Json_StrIs (m9a304, term, err))); } } m9t19; });
+  bool m9t20 = ({ bool m9t19 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s317, 3 }), err); if (m9t19) { { __typeof__(Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s318, 3 }), err)) m9a298 = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s318, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t19 = ((!Json_StrIs (m9a298, term, err))); } } m9t19; });
   if (err->exc) goto L_hdl_m9t1;
   if (m9t20) {
     { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s319, 3 }), err);
@@ -9077,9 +9065,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s320, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a305 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a299 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a305, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a299, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -9120,19 +9108,16 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
         Rdf_CreateTerm (pool, c, c_pool, local, prefix, df, df_pool, err);
         if (err->exc) goto L_hdl_m9t1;
       }
-      { __typeof__((*c)) m9a306 = (*c);
-        if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(k) m9v = Rdf_FindTerm (&m9a306, prefix, err);
+      { __typeof__(k) m9v = Rdf_FindTerm (&((*c)), prefix, err);
         if (err->exc) goto L_hdl_m9t1;
         k = m9v;
-      }
       }
       bool m9t26 = ((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t26) {
-        { __typeof__(m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __auto_type m9t27 = term; int64_t m9t27a = m9_add_i64 (colon, INT64_C(1), err), m9t27n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; }), err)) m9a307 = m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __auto_type m9t27 = term; int64_t m9t27a = m9_add_i64 (colon, INT64_C(1), err), m9t27n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; }), err);
+        { __typeof__(m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __auto_type m9t27 = term; int64_t m9t27a = m9_add_i64 (colon, INT64_C(1), err), m9t27n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; }), err)) m9a300 = m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __auto_type m9t27 = term; int64_t m9t27a = m9_add_i64 (colon, INT64_C(1), err), m9t27n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; }), err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a307, err);
+        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a300, err);
           if (err->exc) goto L_hdl_m9t1;
           d.iri = m9v;
         }
@@ -9142,9 +9127,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       }
     } else {
       if ((*c).hasVocab) {
-        { __typeof__(m9_cat (err->res, (*c).vocab, term, err)) m9a308 = m9_cat (err->res, (*c).vocab, term, err);
+        { __typeof__(m9_cat (err->res, (*c).vocab, term, err)) m9a301 = m9_cat (err->res, (*c).vocab, term, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a308, err);
+        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a301, err);
           if (err->exc) goto L_hdl_m9t1;
           d.iri = m9v;
         }
@@ -9199,11 +9184,11 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       if (err->exc) goto L_hdl_m9t1;
       if (m9t33) {
         d.hasLang = true;
-        { __typeof__(Rdf_JStr (tv, err)) m9a309 = Rdf_JStr (tv, err);
+        { __typeof__(Rdf_JStr (tv, err)) m9a302 = Rdf_JStr (tv, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Text_Lower (m9a309, err)) m9a310 = Text_Lower (m9a309, err);
+        { __typeof__(Text_Lower (m9a302, err)) m9a303 = Text_Lower (m9a302, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.lang) m9v = Text_Keep (pool, m9a310, err);
+        { __typeof__(d.lang) m9v = Text_Keep (pool, m9a303, err);
           if (err->exc) goto L_hdl_m9t1;
           d.lang = m9v;
         }
@@ -9300,9 +9285,9 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
       bool m9t7 = Rdf_IsStr (item, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t7) {
-        { __typeof__(Rdf_JStr (item, err)) m9a311 = Rdf_JStr (item, err);
+        { __typeof__(Rdf_JStr (item, err)) m9a304 = Rdf_JStr (item, err);
           if (err->exc) goto L_hdl_m9t1;
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s339, 27 }), m9a311, err);
+        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s339, 27 }), m9a304, err);
         if (err->exc) goto L_hdl_m9t1;
         }
     } else {
@@ -9340,9 +9325,9 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
               }
             } else {
               if (((result.base).len > INT64_C(0))) {
-                { __typeof__(Rdf_Resolve (result.base, s, err)) m9a312 = Rdf_Resolve (result.base, s, err);
+                { __typeof__(Rdf_Resolve (result.base, s, err)) m9a305 = Rdf_Resolve (result.base, s, err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(result.base) m9v = Text_Keep (pool, m9a312, err);
+                { __typeof__(result.base) m9v = Text_Keep (pool, m9a305, err);
                   if (err->exc) goto L_hdl_m9t1;
                   result.base = m9v;
                 }
@@ -9368,13 +9353,13 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
         if (m9t14) {
           result.hasVocab = false;
         } else {
-          bool m9t17 = ({ bool m9t16 = Rdf_IsStr (v, err); if (m9t16) { { __typeof__(Rdf_JStr (v, err)) m9a313 = Rdf_JStr (v, err);   if (err->exc) goto L_hdl_m9t1; m9t16 = ((({ bool m9t15 = Rdf_IsAbsolute (m9a313, err); if (!m9t15) { { __typeof__(Rdf_JStr (v, err)) m9a314 = Rdf_JStr (v, err);   if (err->exc) goto L_hdl_m9t1; m9t15 = (Rdf_IsBlankId (m9a314, err)); } } m9t15; }))); } } m9t16; });
+          bool m9t17 = ({ bool m9t16 = Rdf_IsStr (v, err); if (m9t16) { { __typeof__(Rdf_JStr (v, err)) m9a306 = Rdf_JStr (v, err);   if (err->exc) goto L_hdl_m9t1; m9t16 = ((({ bool m9t15 = Rdf_IsAbsolute (m9a306, err); if (!m9t15) { { __typeof__(Rdf_JStr (v, err)) m9a307 = Rdf_JStr (v, err);   if (err->exc) goto L_hdl_m9t1; m9t15 = (Rdf_IsBlankId (m9a307, err)); } } m9t15; }))); } } m9t16; });
           if (err->exc) goto L_hdl_m9t1;
           if (m9t17) {
             result.hasVocab = true;
-            { __typeof__(Rdf_JStr (v, err)) m9a315 = Rdf_JStr (v, err);
+            { __typeof__(Rdf_JStr (v, err)) m9a308 = Rdf_JStr (v, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(result.vocab) m9v = Text_Keep (pool, m9a315, err);
+            { __typeof__(result.vocab) m9v = Text_Keep (pool, m9a308, err);
               if (err->exc) goto L_hdl_m9t1;
               result.vocab = m9v;
             }
@@ -9400,11 +9385,11 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
           if (err->exc) goto L_hdl_m9t1;
           if (m9t20) {
             result.hasLang = true;
-            { __typeof__(Rdf_JStr (v, err)) m9a316 = Rdf_JStr (v, err);
+            { __typeof__(Rdf_JStr (v, err)) m9a309 = Rdf_JStr (v, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Text_Lower (m9a316, err)) m9a317 = Text_Lower (m9a316, err);
+            { __typeof__(Text_Lower (m9a309, err)) m9a310 = Text_Lower (m9a309, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(result.lang) m9v = Text_Keep (pool, m9a317, err);
+            { __typeof__(result.lang) m9v = Text_Keep (pool, m9a310, err);
               if (err->exc) goto L_hdl_m9t1;
               result.lang = m9v;
             }
@@ -9433,14 +9418,14 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
       m9t21to = m9_sub_i64 ((names).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
       if (k <= m9t21to) for (;;) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a318 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a311 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_hdl_m9t1;
-        bool m9t24 = (!(({ bool m9t23 = ({ bool m9t22 = Text_Eq (m9a318, ((m9_sl_CHAR){ (uint32_t *) m9s351, 5 }), err); if (!m9t22) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a319 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t22 = (Text_Eq (m9a319, ((m9_sl_CHAR){ (uint32_t *) m9s352, 6 }), err)); } } m9t22; }); if (!m9t23) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a320 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t23 = (Text_Eq (m9a320, ((m9_sl_CHAR){ (uint32_t *) m9s353, 9 }), err)); } } m9t23; })));
+        bool m9t24 = (!(({ bool m9t23 = ({ bool m9t22 = Text_Eq (m9a311, ((m9_sl_CHAR){ (uint32_t *) m9s351, 5 }), err); if (!m9t22) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a312 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t22 = (Text_Eq (m9a312, ((m9_sl_CHAR){ (uint32_t *) m9s352, 6 }), err)); } } m9t22; }); if (!m9t23) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a313 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t23 = (Text_Eq (m9a313, ((m9_sl_CHAR){ (uint32_t *) m9s353, 9 }), err)); } } m9t23; })));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t24) {
-          { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a321 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
+          { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a314 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
             if (err->exc) goto L_hdl_m9t1;
-          Rdf_CreateTerm (pool, &(result), err->res, item, m9a321, &(df), err->res, err);
+          Rdf_CreateTerm (pool, &(result), err->res, item, m9a314, &(df), err->res, err);
           if (err->exc) goto L_hdl_m9t1;
           }
         } }
@@ -9516,9 +9501,9 @@ static Json_Node * Rdf_Arrayified (m9_pool *pool, Json_Node * v, m9_state *err)
     m9t4to = m9_sub_i64 (Rdf_Items (v, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Json_Item (v, i, err)) m9a322 = Json_Item (v, i, err);
+      { __typeof__(Json_Item (v, i, err)) m9a315 = Json_Item (v, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(c) m9v = Json_CloneIn (pool, m9a322, err);
+      { __typeof__(c) m9v = Json_CloneIn (pool, m9a315, err);
         if (err->exc) goto L_hdl_m9t1;
         c = m9v;
       }
@@ -9601,9 +9586,9 @@ static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl
     m9t4to = m9_sub_i64 (Rdf_Items (v, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Json_Item (v, i, err)) m9a323 = Json_Item (v, i, err);
+      { __typeof__(Json_Item (v, i, err)) m9a316 = Json_Item (v, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(c) m9v = Json_CloneIn (pool, m9a323, err);
+      { __typeof__(c) m9v = Json_CloneIn (pool, m9a316, err);
         if (err->exc) goto L_hdl_m9t1;
         c = m9v;
       }
@@ -9724,18 +9709,15 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
   Json_Node * s = NULL; (void) s;
   Rdf_Defining df = {0}; (void) df;
   bool nul = false; (void) nul;
-  { __typeof__((*c)) m9a324 = (*c);
-    if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(k) m9v = Rdf_FindTerm (&m9a324, activeProp, err);
+  { __typeof__(k) m9v = Rdf_FindTerm (&((*c)), activeProp, err);
     if (err->exc) goto L_hdl_m9t1;
     k = m9v;
-  }
   }
   { __typeof__(o) m9v = Json_NewObjIn (pool, err);
     if (err->exc) goto L_hdl_m9t1;
     o = m9v;
   }
-  bool m9t5 = (({ bool m9t4 = (k >= INT64_C(0)); if (m9t4) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a325 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t4 = ((({ bool m9t3 = Text_Eq (m9a325, ((m9_sl_CHAR){ (uint32_t *) m9s358, 3 }), err); if (!m9t3) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a326 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t3 = (Text_Eq (m9a326, ((m9_sl_CHAR){ (uint32_t *) m9s359, 6 }), err)); } } m9t3; }))); } } m9t4; }) && Rdf_IsStr (value, err));
+  bool m9t5 = (({ bool m9t4 = (k >= INT64_C(0)); if (m9t4) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a317 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t4 = ((({ bool m9t3 = Text_Eq (m9a317, ((m9_sl_CHAR){ (uint32_t *) m9s358, 3 }), err); if (!m9t3) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a318 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t3 = (Text_Eq (m9a318, ((m9_sl_CHAR){ (uint32_t *) m9s359, 6 }), err)); } } m9t3; }))); } } m9t4; }) && Rdf_IsStr (value, err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t5) {
     { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(1), err);
@@ -9747,15 +9729,15 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
       df.state = m9v;
     }
     df.n = INT64_C(0);
-    { __typeof__(Rdf_JStr (value, err)) m9a327 = Rdf_JStr (value, err);
+    { __typeof__(Rdf_JStr (value, err)) m9a319 = Rdf_JStr (value, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a328 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a320 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Text_Eq (m9a328, ((m9_sl_CHAR){ (uint32_t *) m9s360, 6 }), err)) m9a329 = Text_Eq (m9a328, ((m9_sl_CHAR){ (uint32_t *) m9s360, 6 }), err);
+    { __typeof__(Text_Eq (m9a320, ((m9_sl_CHAR){ (uint32_t *) m9s360, 6 }), err)) m9a321 = Text_Eq (m9a320, ((m9_sl_CHAR){ (uint32_t *) m9s360, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_ExpandIri (pool, c, c_pool, m9a327, true, m9a329, NULL, &(df), err->res, &(nul), err)) m9a330 = Rdf_ExpandIri (pool, c, c_pool, m9a327, true, m9a329, NULL, &(df), err->res, &(nul), err);
+    { __typeof__(Rdf_ExpandIri (pool, c, c_pool, m9a319, true, m9a321, NULL, &(df), err->res, &(nul), err)) m9a322 = Rdf_ExpandIri (pool, c, c_pool, m9a319, true, m9a321, NULL, &(df), err->res, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a330, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a322, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -9771,12 +9753,12 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
   }
   Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s362, 6 }), value, err);
   if (err->exc) goto L_hdl_m9t1;
-  bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ((k >= INT64_C(0)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap).len > INT64_C(0))); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a331 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t6 = ((!Text_Eq (m9a331, ((m9_sl_CHAR){ (uint32_t *) m9s363, 3 }), err))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a332 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t7 = ((!Text_Eq (m9a332, ((m9_sl_CHAR){ (uint32_t *) m9s364, 6 }), err))); } } m9t7; });
+  bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ((k >= INT64_C(0)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap).len > INT64_C(0))); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a323 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t6 = ((!Text_Eq (m9a323, ((m9_sl_CHAR){ (uint32_t *) m9s363, 3 }), err))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a324 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t7 = ((!Text_Eq (m9a324, ((m9_sl_CHAR){ (uint32_t *) m9s364, 6 }), err))); } } m9t7; });
   if (err->exc) goto L_hdl_m9t1;
   if (m9t8) {
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a333 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a325 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a333, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a325, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -9793,9 +9775,9 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
         bool m9t11 = (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang).len > INT64_C(0));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t11) {
-          { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a334 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
+          { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a326 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(s) m9v = Json_NewStrIn (pool, m9a334, err);
+          { __typeof__(s) m9v = Json_NewStrIn (pool, m9a326, err);
             if (err->exc) goto L_hdl_m9t1;
             s = m9v;
           }
@@ -9911,7 +9893,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         k = m9v;
       }
     }
-    { __typeof__(listCtx) m9v = ({ bool m9t8 = ((hasProp && Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s370, 5 }), err))); if (!m9t8) { m9t8 = ((({ bool m9t7 = (k >= INT64_C(0)); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a335 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t7 = (Text_Eq (m9a335, ((m9_sl_CHAR){ (uint32_t *) m9s371, 5 }), err)); } } m9t7; }))); } m9t8; });
+    { __typeof__(listCtx) m9v = ({ bool m9t8 = ((hasProp && Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s370, 5 }), err))); if (!m9t8) { m9t8 = ((({ bool m9t7 = (k >= INT64_C(0)); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a327 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t7 = (Text_Eq (m9a327, ((m9_sl_CHAR){ (uint32_t *) m9s371, 5 }), err)); } } m9t7; }))); } m9t8; });
       if (err->exc) goto L_hdl_m9t1;
       listCtx = m9v;
     }
@@ -9937,9 +9919,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           m9t12to = m9_sub_i64 (Rdf_Items (x, err), INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
           if (j <= m9t12to) for (;;) {
-            { __typeof__(Json_Item (x, j, err)) m9a336 = Json_Item (x, j, err);
+            { __typeof__(Json_Item (x, j, err)) m9a328 = Json_Item (x, j, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(item) m9v = Json_CloneIn (pool, m9a336, err);
+            { __typeof__(item) m9v = Json_CloneIn (pool, m9a328, err);
               if (err->exc) goto L_hdl_m9t1;
               item = m9v;
             }
@@ -9965,9 +9947,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
   bool m9t13 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s373, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t13) {
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s374, 8 }), err)) m9a337 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s374, 8 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s374, 8 }), err)) m9a329 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s374, 8 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(c) m9v = Rdf_ProcessContext (pool, st, st_pool, &(c), m9a337, err);
+    { __typeof__(c) m9v = Rdf_ProcessContext (pool, st, st_pool, &(c), m9a329, err);
       if (err->exc) goto L_hdl_m9t1;
       c = m9v;
     }
@@ -10039,11 +10021,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s380, 17 }), (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_hdl_m9t1;
             }
-            { __typeof__(Rdf_JStr (value, err)) m9a338 = Rdf_JStr (value, err);
+            { __typeof__(Rdf_JStr (value, err)) m9a330 = Rdf_JStr (value, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a338, true, false, NULL, &(df), err->res, &(nul), err)) m9a339 = Rdf_ExpandIri (pool, &(c), err->res, m9a338, true, false, NULL, &(df), err->res, &(nul), err);
+            { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a330, true, false, NULL, &(df), err->res, &(nul), err)) m9a331 = Rdf_ExpandIri (pool, &(c), err->res, m9a330, true, false, NULL, &(df), err->res, &(nul), err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(s) m9v = Json_NewStrIn (pool, m9a339, err);
+            { __typeof__(s) m9v = Json_NewStrIn (pool, m9a331, err);
               if (err->exc) goto L_hdl_m9t1;
               s = m9v;
             }
@@ -10058,11 +10040,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               bool m9t23 = Rdf_IsStr (value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (m9t23) {
-                { __typeof__(Rdf_JStr (value, err)) m9a340 = Rdf_JStr (value, err);
+                { __typeof__(Rdf_JStr (value, err)) m9a332 = Rdf_JStr (value, err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a340, true, true, NULL, &(df), err->res, &(nul), err)) m9a341 = Rdf_ExpandIri (pool, &(c), err->res, m9a340, true, true, NULL, &(df), err->res, &(nul), err);
+                { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a332, true, true, NULL, &(df), err->res, &(nul), err)) m9a333 = Rdf_ExpandIri (pool, &(c), err->res, m9a332, true, true, NULL, &(df), err->res, &(nul), err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(s) m9v = Json_NewStrIn (pool, m9a341, err);
+                { __typeof__(s) m9v = Json_NewStrIn (pool, m9a333, err);
                   if (err->exc) goto L_hdl_m9t1;
                   s = m9v;
                 }
@@ -10083,21 +10065,21 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   m9t25to = m9_sub_i64 (Rdf_Items (value, err), INT64_C(1), err);
                   if (err->exc) goto L_hdl_m9t1;
                   if (j <= m9t25to) for (;;) {
-                    { __typeof__(Json_Item (value, j, err)) m9a342 = Json_Item (value, j, err);
+                    { __typeof__(Json_Item (value, j, err)) m9a334 = Json_Item (value, j, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    bool m9t26 = (!Rdf_IsStr (m9a342, err));
+                    bool m9t26 = (!Rdf_IsStr (m9a334, err));
                     if (err->exc) goto L_hdl_m9t1;
                     if (m9t26) {
                       Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s384, 18 }), (m9_sl_CHAR){ NULL, 0 }, err);
                       if (err->exc) goto L_hdl_m9t1;
                     } }
-                    { __typeof__(Json_Item (value, j, err)) m9a343 = Json_Item (value, j, err);
+                    { __typeof__(Json_Item (value, j, err)) m9a335 = Json_Item (value, j, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_JStr (m9a343, err)) m9a344 = Rdf_JStr (m9a343, err);
+                    { __typeof__(Rdf_JStr (m9a335, err)) m9a336 = Rdf_JStr (m9a335, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a344, true, true, NULL, &(df), err->res, &(nul), err)) m9a345 = Rdf_ExpandIri (pool, &(c), err->res, m9a344, true, true, NULL, &(df), err->res, &(nul), err);
+                    { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a336, true, true, NULL, &(df), err->res, &(nul), err)) m9a337 = Rdf_ExpandIri (pool, &(c), err->res, m9a336, true, true, NULL, &(df), err->res, &(nul), err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a345, err);
+                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a337, err);
                       if (err->exc) goto L_hdl_m9t1;
                       s = m9v;
                     }
@@ -10158,11 +10140,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s395, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              { __typeof__(Rdf_JStr (value, err)) m9a346 = Rdf_JStr (value, err);
+              { __typeof__(Rdf_JStr (value, err)) m9a338 = Rdf_JStr (value, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Text_Lower (m9a346, err)) m9a347 = Text_Lower (m9a346, err);
+              { __typeof__(Text_Lower (m9a338, err)) m9a339 = Text_Lower (m9a338, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a347, err);
+              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a339, err);
                 if (err->exc) goto L_hdl_m9t1;
                 s = m9v;
               }
@@ -10206,9 +10188,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                     m9t38to = m9_sub_i64 (Rdf_Items (x, err), INT64_C(1), err);
                     if (err->exc) goto L_hdl_m9t1;
                     if (j <= m9t38to) for (;;) {
-                      { __typeof__(Json_Item (x, j, err)) m9a348 = Json_Item (x, j, err);
+                      { __typeof__(Json_Item (x, j, err)) m9a340 = Json_Item (x, j, err);
                         if (err->exc) goto L_hdl_m9t1;
-                      bool m9t39 = Rdf_IsListObj (m9a348, err);
+                      bool m9t39 = Rdf_IsListObj (m9a340, err);
                       if (err->exc) goto L_hdl_m9t1;
                       if (m9t39) {
                         Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s403, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
@@ -10273,13 +10255,13 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   m9t44to = m9_sub_i64 ((inames).len, INT64_C(1), err);
                   if (err->exc) goto L_hdl_m9t1;
                   if (j <= m9t44to) for (;;) {
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a349 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a341 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a350 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a342 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_JGet (inner, m9a350, err)) m9a351 = Rdf_JGet (inner, m9a350, err);
+                    { __typeof__(Rdf_JGet (inner, m9a342, err)) m9a343 = Rdf_JGet (inner, m9a342, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    Rdf_AddTo (pool, &(result), &((*pool)), m9a349, m9a351, err);
+                    Rdf_AddTo (pool, &(result), &((*pool)), m9a341, m9a343, err);
                     if (err->exc) goto L_hdl_m9t1;
                     }
                     }
@@ -10297,9 +10279,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 m9t45to = m9_sub_i64 ((inames).len, INT64_C(1), err);
                 if (err->exc) goto L_hdl_m9t1;
                 if (j <= m9t45to) for (;;) {
-                  { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a352 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                  { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a344 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                     if (err->exc) goto L_hdl_m9t1;
-                  bool m9t46 = (!Text_Eq (m9a352, ((m9_sl_CHAR){ (uint32_t *) m9s413, 8 }), err));
+                  bool m9t46 = (!Text_Eq (m9a344, ((m9_sl_CHAR){ (uint32_t *) m9s413, 8 }), err));
                   if (err->exc) goto L_hdl_m9t1;
                   if (m9t46) {
                     { Json_Node * rm = Json_Field (result, ((m9_sl_CHAR){ (uint32_t *) m9s414, 8 }), err);
@@ -10314,9 +10296,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                       Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s415, 8 }), &(rev), &((*pool)), err);
                       if (err->exc) goto L_hdl_m9t1;
                     } }
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a353 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a345 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(ev) m9v = Rdf_JGet (x, m9a353, err);
+                    { __typeof__(ev) m9v = Rdf_JGet (x, m9a345, err);
                       if (err->exc) goto L_hdl_m9t1;
                       ev = m9v;
                     }
@@ -10336,9 +10318,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                         Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s416, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
                         if (err->exc) goto L_hdl_m9t1;
                       }
-                      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a354 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a346 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                         if (err->exc) goto L_hdl_m9t1;
-                      Rdf_AddTo (pool, &(rev), &((*pool)), m9a354, item, err);
+                      Rdf_AddTo (pool, &(rev), &((*pool)), m9a346, item, err);
                       if (err->exc) goto L_hdl_m9t1;
                       }
                       if ((uint64_t) m9t47to - (uint64_t) k < (uint64_t) 1) break;
@@ -10379,11 +10361,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           m9t50to = m9_sub_i64 ((inames).len, INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
           if (j <= m9t50to) for (;;) {
-            { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a355 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a347 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Rdf_JGet (value, m9a355, err)) m9a356 = Rdf_JGet (value, m9a355, err);
+            { __typeof__(Rdf_JGet (value, m9a347, err)) m9a348 = Rdf_JGet (value, m9a347, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a356, err);
+            { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a348, err);
               if (err->exc) goto L_hdl_m9t1;
               arr = m9v;
             }
@@ -10410,11 +10392,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               }
               Rdf_SetKey (pool, &(langObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s419, 6 }), item, err);
               if (err->exc) goto L_hdl_m9t1;
-              { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a357 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+              { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a349 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Text_Lower (m9a357, err)) m9a358 = Text_Lower (m9a357, err);
+              { __typeof__(Text_Lower (m9a349, err)) m9a350 = Text_Lower (m9a349, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a358, err);
+              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a350, err);
                 if (err->exc) goto L_hdl_m9t1;
                 s = m9v;
               }
@@ -10459,9 +10441,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 m9t55to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
                 if (err->exc) goto L_hdl_m9t1;
                 if (n <= m9t55to) for (;;) {
-                  { __typeof__(Json_Item (arr, n, err)) m9a359 = Json_Item (arr, n, err);
+                  { __typeof__(Json_Item (arr, n, err)) m9a351 = Json_Item (arr, n, err);
                     if (err->exc) goto L_hdl_m9t1;
-                  { __typeof__(item) m9v = Json_CloneIn (pool, m9a359, err);
+                  { __typeof__(item) m9v = Json_CloneIn (pool, m9a351, err);
                     if (err->exc) goto L_hdl_m9t1;
                     item = m9v;
                   }
@@ -10469,9 +10451,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   bool m9t56 = (!Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s422, 6 }), err));
                   if (err->exc) goto L_hdl_m9t1;
                   if (m9t56) {
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a360 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a352 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a360, err);
+                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a352, err);
                       if (err->exc) goto L_hdl_m9t1;
                       s = m9v;
                     }
@@ -10598,18 +10580,18 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
       Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s437, 20 }), (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s438, 6 }), err)) m9a361 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s438, 6 }), err);
+    { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s438, 6 }), err)) m9a353 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s438, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    bool m9t66 = Json_IsNull (m9a361, err);
+    bool m9t66 = Json_IsNull (m9a353, err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t66) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     } }
-    { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s439, 6 }), err)) m9a362 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s439, 6 }), err);
+    { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s439, 6 }), err)) m9a354 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s439, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    bool m9t67 = ((!Rdf_IsStr (m9a362, err)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s440, 9 }), err));
+    bool m9t67 = ((!Rdf_IsStr (m9a354, err)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s440, 9 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t67) {
       Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s441, 29 }), (m9_sl_CHAR){ NULL, 0 }, err);
@@ -10618,9 +10600,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
     bool m9t68 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s442, 5 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t68) {
-      { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s443, 5 }), err)) m9a363 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s443, 5 }), err);
+      { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s443, 5 }), err)) m9a355 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s443, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      bool m9t70 = ({ bool m9t69 = (!Rdf_IsStr (m9a363, err)); if (!m9t69) { { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s444, 5 }), err)) m9a364 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s444, 5 }), err);   if (err->exc) goto L_hdl_m9t1; { __typeof__(Rdf_JStr (m9a364, err)) m9a365 = Rdf_JStr (m9a364, err);   if (err->exc) goto L_hdl_m9t1; m9t69 = ((!Rdf_IsAbsolute (m9a365, err))); } } } m9t69; });
+      bool m9t70 = ({ bool m9t69 = (!Rdf_IsStr (m9a355, err)); if (!m9t69) { { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s444, 5 }), err)) m9a356 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s444, 5 }), err);   if (err->exc) goto L_hdl_m9t1; { __typeof__(Rdf_JStr (m9a356, err)) m9a357 = Rdf_JStr (m9a356, err);   if (err->exc) goto L_hdl_m9t1; m9t69 = ((!Rdf_IsAbsolute (m9a357, err))); } } } m9t69; });
       if (err->exc) goto L_hdl_m9t1;
       if (m9t70) {
         Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s445, 19 }), (m9_sl_CHAR){ NULL, 0 }, err);
@@ -10628,12 +10610,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
       } }
     }
   } else {
-    bool m9t72 = ({ bool m9t71 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s446, 5 }), err); if (m9t71) { { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s447, 5 }), err)) m9a366 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s447, 5 }), err);   if (err->exc) goto L_hdl_m9t1; m9t71 = ((!Rdf_IsArr (m9a366, err))); } } m9t71; });
+    bool m9t72 = ({ bool m9t71 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s446, 5 }), err); if (m9t71) { { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s447, 5 }), err)) m9a358 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s447, 5 }), err);   if (err->exc) goto L_hdl_m9t1; m9t71 = ((!Rdf_IsArr (m9a358, err))); } } m9t71; });
     if (err->exc) goto L_hdl_m9t1;
     if (m9t72) {
-      { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 5 }), err)) m9a367 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 5 }), err);
+      { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 5 }), err)) m9a359 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a367, err);
+      { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a359, err);
         if (err->exc) goto L_hdl_m9t1;
         arr = m9v;
       }
@@ -10748,9 +10730,9 @@ static m9_sl_CHAR Rdf_BlankFor (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  { __typeof__(({ __auto_type m9t1 = id; int64_t m9t1a = INT64_C(2), m9t1n = m9_sub_i64 ((id).len, INT64_C(2), err); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a368 = ({ __auto_type m9t1 = id; int64_t m9t1a = INT64_C(2), m9t1n = m9_sub_i64 ((id).len, INT64_C(2), err); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
+  { __typeof__(({ __auto_type m9t1 = id; int64_t m9t1a = INT64_C(2), m9t1n = m9_sub_i64 ((id).len, INT64_C(2), err); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a360 = ({ __auto_type m9t1 = id; int64_t m9t1a = INT64_C(2), m9t1n = m9_sub_i64 ((id).len, INT64_C(2), err); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
     if (err->exc) goto L_ret;
-  m9ret = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s465, 2 }), Rdf_Labelled (pool, &((*st).r), st_pool, m9a368, err), err);
+  m9ret = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s465, 2 }), Rdf_Labelled (pool, &((*st).r), st_pool, m9a360, err), err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -10810,9 +10792,9 @@ static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool
   m9t1to = m9_sub_i64 ((*nm).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_CHAR), err))) m9a369 = (*(m9_sl_CHAR *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_CHAR), err))) m9a361 = (*(m9_sl_CHAR *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a369, id, err);
+    bool m9t2 = Text_Eq (m9a361, id, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -10907,11 +10889,11 @@ static bool Rdf_SameNode (Json_Node * a, Json_Node * b, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  { __typeof__(Json_CompactSorted (a, err)) m9a370 = Json_CompactSorted (a, err);
+  { __typeof__(Json_CompactSorted (a, err)) m9a362 = Json_CompactSorted (a, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Json_CompactSorted (b, err)) m9a371 = Json_CompactSorted (b, err);
+  { __typeof__(Json_CompactSorted (b, err)) m9a363 = Json_CompactSorted (b, err);
     if (err->exc) goto L_hdl_m9t1;
-  m9ret = Text_Eq (m9a370, m9a371, err);
+  m9ret = Text_Eq (m9a362, m9a363, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   }
@@ -10979,9 +10961,9 @@ static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool,
   m9t3to = m9_sub_i64 (Rdf_Items (a, err), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   if (i <= m9t3to) for (;;) {
-    { __typeof__(Json_Item (a, i, err)) m9a372 = Json_Item (a, i, err);
+    { __typeof__(Json_Item (a, i, err)) m9a364 = Json_Item (a, i, err);
       if (err->exc) goto L_hdl_m9t1;
-    bool m9t4 = Rdf_SameNode (m9a372, v, err);
+    bool m9t4 = Rdf_SameNode (m9a364, v, err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
       goto L_ret;
@@ -11090,9 +11072,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     m9t4to = m9_sub_i64 (Rdf_Items (element, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Json_Item (element, i, err)) m9a373 = Json_Item (element, i, err);
+      { __typeof__(Json_Item (element, i, err)) m9a365 = Json_Item (element, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a373, subject, prop, reverse, list, err);
+      Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a365, subject, prop, reverse, list, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
@@ -11142,9 +11124,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     }
     Json_Set (&(listObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s472, 5 }), &(arr), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s473, 5 }), err)) m9a374 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s473, 5 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s473, 5 }), err)) m9a366 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s473, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a374, subject, prop, reverse, listObj, err);
+    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a366, subject, prop, reverse, listObj, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     { Json_Node * l = list;
@@ -11167,9 +11149,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
   bool m9t8 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s475, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t8) {
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err)) m9a375 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err)) m9a367 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(id) m9v = Rdf_JStr (m9a375, err);
+    { __typeof__(id) m9v = Rdf_JStr (m9a367, err);
       if (err->exc) goto L_hdl_m9t1;
       id = m9v;
     }
@@ -11249,9 +11231,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     m9t11to = m9_sub_i64 (Rdf_Items (types, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t11to) for (;;) {
-      { __typeof__(Json_Item (types, i, err)) m9a376 = Json_Item (types, i, err);
+      { __typeof__(Json_Item (types, i, err)) m9a368 = Json_Item (types, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_AddUnique (pool, &(node), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s481, 5 }), m9a376, err);
+      Rdf_AddUnique (pool, &(node), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s481, 5 }), m9a368, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       if ((uint64_t) m9t11to - (uint64_t) i < (uint64_t) 1) break;
@@ -11274,9 +11256,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     m9t13to = m9_sub_i64 ((inames).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t13to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a377 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a369 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(arr) m9v = Rdf_JGet (inner, m9a377, err);
+      { __typeof__(arr) m9v = Rdf_JGet (inner, m9a369, err);
         if (err->exc) goto L_hdl_m9t1;
         arr = m9v;
       }
@@ -11286,11 +11268,11 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       m9t14to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
       if (j <= m9t14to) for (;;) {
-        { __typeof__(Json_Item (arr, j, err)) m9a378 = Json_Item (arr, j, err);
+        { __typeof__(Json_Item (arr, j, err)) m9a370 = Json_Item (arr, j, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a379 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a371 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_hdl_m9t1;
-        Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a378, id, m9a379, true, NULL, err);
+        Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a370, id, m9a371, true, NULL, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
@@ -11340,9 +11322,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         m9t19to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
         if (j <= m9t19to) for (;;) {
-          { __typeof__(Json_Item (arr, j, err)) m9a380 = Json_Item (arr, j, err);
+          { __typeof__(Json_Item (arr, j, err)) m9a372 = Json_Item (arr, j, err);
             if (err->exc) goto L_hdl_m9t1;
-          Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a380, id, k, false, NULL, err);
+          Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a372, id, k, false, NULL, err);
           if (err->exc) goto L_hdl_m9t1;
           }
           if ((uint64_t) m9t19to - (uint64_t) j < (uint64_t) 1) break;
@@ -11478,9 +11460,9 @@ static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
   }
   exp_ = INT64_C(0);
   if ((e >= INT64_C(0))) {
-    { __typeof__(({ __auto_type m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a381 = ({ __auto_type m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+    { __typeof__(({ __auto_type m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a373 = ({ __auto_type m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(exp_) m9v = Rdf_IntOf (m9a381, err);
+    { __typeof__(exp_) m9v = Rdf_IntOf (m9a373, err);
       if (err->exc) goto L_hdl_m9t1;
       exp_ = m9v;
     }
@@ -11604,9 +11586,9 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   bool m9t3 = (Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s500, 3 }), err) && (!Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s501, 6 }), err)));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err)) m9a382 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err);
+    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err)) m9a374 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_JStr (m9a382, err);
+    { __typeof__(s) m9v = Rdf_JStr (m9a374, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -11615,9 +11597,9 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
       err->res = m9res;
-      { __typeof__(({ __auto_type m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a383 = ({ __auto_type m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+      { __typeof__(({ __auto_type m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a375 = ({ __auto_type m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Rdf_BlankT (m9a383, err);
+      m9ret = Rdf_BlankT (m9a375, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
@@ -11644,9 +11626,9 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   bool m9t7 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s504, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
-    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s505, 5 }), err)) m9a384 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s505, 5 }), err);
+    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s505, 5 }), err)) m9a376 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s505, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(dt) m9v = Rdf_JStr (m9a384, err);
+    { __typeof__(dt) m9v = Rdf_JStr (m9a376, err);
       if (err->exc) goto L_hdl_m9t1;
       dt = m9v;
     }
@@ -11683,7 +11665,7 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
         s = m9v;
       }
       m9_mark m9t11 = m9_pool_mark (err->res);
-      bool m9t13 = ({ bool m9t12 = (((Text_FindChar (s, 46u, err) >= INT64_C(0)) || (Text_FindChar (s, 101u, err) >= INT64_C(0))) || (Text_FindChar (s, 69u, err) >= INT64_C(0))); if (!m9t12) { { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), err)) m9a385 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), err);   if (err->exc) goto L_hdl_m9t1; m9t12 = (Text_Eq (dt, m9a385, err)); } } m9t12; });
+      bool m9t13 = ({ bool m9t12 = (((Text_FindChar (s, 46u, err) >= INT64_C(0)) || (Text_FindChar (s, 101u, err) >= INT64_C(0))) || (Text_FindChar (s, 69u, err) >= INT64_C(0))); if (!m9t12) { { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), err)) m9a377 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), err);   if (err->exc) goto L_hdl_m9t1; m9t12 = (Text_Eq (dt, m9a377, err)); } } m9t12; });
       if (err->exc) goto L_hdl_m9t1;
       m9_pool_release (err->res, m9t11);
       if (m9t13) {
@@ -11694,11 +11676,11 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
           }
         }
         err->res = m9res;
-        { __typeof__(Json_AsF64 (v, err)) m9a386 = Json_AsF64 (v, err);
+        { __typeof__(Json_AsF64 (v, err)) m9a378 = Json_AsF64 (v, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Rdf_CanonDouble (m9a386, err)) m9a387 = Rdf_CanonDouble (m9a386, err);
+        { __typeof__(Rdf_CanonDouble (m9a378, err)) m9a379 = Rdf_CanonDouble (m9a378, err);
           if (err->exc) goto L_hdl_m9t1;
-        m9ret = Rdf_LitT (m9a387, (m9_sl_CHAR){ NULL, 0 }, dt, err);
+        m9ret = Rdf_LitT (m9a379, (m9_sl_CHAR){ NULL, 0 }, dt, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
@@ -11711,11 +11693,11 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
         }
       }
       err->res = m9res;
-      { __typeof__(Json_AsI64 (v, err)) m9a388 = Json_AsI64 (v, err);
+      { __typeof__(Json_AsI64 (v, err)) m9a380 = Json_AsI64 (v, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Fmt_I64Str (m9a388, err)) m9a389 = Fmt_I64Str (m9a388, err);
+      { __typeof__(Fmt_I64Str (m9a380, err)) m9a381 = Fmt_I64Str (m9a380, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Rdf_LitT (m9a389, (m9_sl_CHAR){ NULL, 0 }, dt, err);
+      m9ret = Rdf_LitT (m9a381, (m9_sl_CHAR){ NULL, 0 }, dt, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -11732,11 +11714,11 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
       if (err->exc) goto L_hdl_m9t1;
       if (m9t15) {
         err->res = m9res;
-        { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err)) m9a390 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err);
+        { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err)) m9a382 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Rdf_JStr (m9a390, err)) m9a391 = Rdf_JStr (m9a390, err);
+        { __typeof__(Rdf_JStr (m9a382, err)) m9a383 = Rdf_JStr (m9a382, err);
           if (err->exc) goto L_hdl_m9t1;
-        m9ret = Rdf_LitT (s, m9a391, (m9_sl_CHAR){ NULL, 0 }, err);
+        m9ret = Rdf_LitT (s, m9a383, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
@@ -11805,16 +11787,16 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   }
   if ((n == INT64_C(0))) {
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), err)) m9a392 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), err)) m9a384 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    m9ret = Rdf_IriT (m9a392, err);
+    m9ret = Rdf_IriT (m9a384, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     goto L_ret;
   }
-  { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a393 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+  { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a385 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(head) m9v = Rdf_BlankT (m9a393, err);
+  { __typeof__(head) m9v = Rdf_BlankT (m9a385, err);
     if (err->exc) goto L_hdl_m9t1;
     head = m9v;
   }
@@ -11826,36 +11808,36 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   if (err->exc) goto L_hdl_m9t1;
   if (i <= m9t3to) for (;;) {
     if ((i > INT64_C(0))) {
-      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a394 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a386 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(cell) m9v = Rdf_BlankT (m9a394, err);
+      { __typeof__(cell) m9v = Rdf_BlankT (m9a386, err);
         if (err->exc) goto L_hdl_m9t1;
         cell = m9v;
       }
       }
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 }), err)) m9a395 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 }), err);
+      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 }), err)) m9a387 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_IriT (m9a395, err)) m9a396 = Rdf_IriT (m9a395, err);
+      { __typeof__(Rdf_IriT (m9a387, err)) m9a388 = Rdf_IriT (m9a387, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_Add (pool, g, g_pool, &(prev), &m9a396, &(cell), err);
+      Rdf_Add (pool, g, g_pool, &(prev), &m9a388, &(cell), err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
       prev = cell;
     }
-    { __typeof__(Json_Item (items, i, err)) m9a397 = Json_Item (items, i, err);
+    { __typeof__(Json_Item (items, i, err)) m9a389 = Json_Item (items, i, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(o) m9v = Rdf_ObjectToTerm (pool, st, st_pool, m9a397, &(ok), err);
+    { __typeof__(o) m9v = Rdf_ObjectToTerm (pool, st, st_pool, m9a389, &(ok), err);
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
     }
     if (ok) {
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s517, 5 }), err)) m9a398 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s517, 5 }), err);
+      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s517, 5 }), err)) m9a390 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s517, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_IriT (m9a398, err)) m9a399 = Rdf_IriT (m9a398, err);
+      { __typeof__(Rdf_IriT (m9a390, err)) m9a391 = Rdf_IriT (m9a390, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_Add (pool, g, g_pool, &(prev), &m9a399, &(o), err);
+      Rdf_Add (pool, g, g_pool, &(prev), &m9a391, &(o), err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -11863,15 +11845,15 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
     if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), err)) m9a400 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), err)) m9a392 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Rdf_IriT (m9a400, err)) m9a401 = Rdf_IriT (m9a400, err);
+  { __typeof__(Rdf_IriT (m9a392, err)) m9a393 = Rdf_IriT (m9a392, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err)) m9a402 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err)) m9a394 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Rdf_IriT (m9a402, err)) m9a403 = Rdf_IriT (m9a402, err);
+  { __typeof__(Rdf_IriT (m9a394, err)) m9a395 = Rdf_IriT (m9a394, err);
     if (err->exc) goto L_hdl_m9t1;
-  Rdf_Add (pool, g, g_pool, &(prev), &m9a401, &m9a403, err);
+  Rdf_Add (pool, g, g_pool, &(prev), &m9a393, &m9a395, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   }
@@ -11935,7 +11917,7 @@ static int64_t Rdf_RefCount (Rdf_Graph * g, m9_sl_CHAR id, m9_state *err)
   m9t1to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a404 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a404, id, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a396 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a396, id, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
@@ -11982,15 +11964,15 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *r
   m9t1to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a405 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a405, id, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a397 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a397, id, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
       m9_mark m9t4 = m9_pool_mark (err->res);
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a406 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a398 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
         if (err->exc) goto L_ret;
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s522, 5 }), err)) m9a407 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s522, 5 }), err);
+      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s522, 5 }), err)) m9a399 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s522, 5 }), err);
         if (err->exc) goto L_ret;
-      bool m9t5 = Text_Eq (m9a406, m9a407, err);
+      bool m9t5 = Text_Eq (m9a398, m9a399, err);
       if (err->exc) goto L_ret;
       m9_pool_release (err->res, m9t4);
       if (m9t5) {
@@ -12001,11 +11983,11 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *r
         (*first) = i;
       } else {
         m9_mark m9t6 = m9_pool_mark (err->res);
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a408 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a400 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
           if (err->exc) goto L_ret;
-        { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s523, 4 }), err)) m9a409 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s523, 4 }), err);
+        { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s523, 4 }), err)) m9a401 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s523, 4 }), err);
           if (err->exc) goto L_ret;
-        bool m9t7 = Text_Eq (m9a408, m9a409, err);
+        bool m9t7 = Text_Eq (m9a400, m9a401, err);
         if (err->exc) goto L_ret;
         m9_pool_release (err->res, m9t6);
         if (m9t7) {
@@ -12016,11 +11998,11 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *r
           (*rest) = i;
       } else {
         m9_mark m9t8 = m9_pool_mark (err->res);
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a410 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a402 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
           if (err->exc) goto L_ret;
-        { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s524, 4 }), err)) m9a411 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s524, 4 }), err);
+        { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s524, 4 }), err)) m9a403 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s524, 4 }), err);
           if (err->exc) goto L_ret;
-        bool m9t10 = ({ bool m9t9 = (Text_Eq (m9a410, m9a411, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)); if (m9t9) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a412 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_ret; { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s525, 4 }), err)) m9a413 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s525, 4 }), err);   if (err->exc) goto L_ret; m9t9 = (Text_Eq (m9a412, m9a413, err)); } } } m9t9; });
+        bool m9t10 = ({ bool m9t9 = (Text_Eq (m9a402, m9a403, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)); if (m9t9) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a404 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_ret; { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s525, 4 }), err)) m9a405 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s525, 4 }), err);   if (err->exc) goto L_ret; m9t9 = (Text_Eq (m9a404, m9a405, err)); } } } m9t9; });
         if (err->exc) goto L_ret;
         m9_pool_release (err->res, m9t8);
         if (m9t10) {
@@ -12070,9 +12052,9 @@ static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term *t, m9_state *err)
   } break;
   case Rdf_Kind_Blank:
   {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s527, 2 }), (*t).value, err)) m9a414 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s527, 2 }), (*t).value, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s527, 2 }), (*t).value, err)) m9a406 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s527, 2 }), (*t).value, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a414, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a406, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -12173,9 +12155,9 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
       if (err->exc) goto L_hdl_m9t1;
       n = m9v;
     }
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o) m9a415 = (*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o) m9a407 = (*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(item) m9v = Rdf_TermObj (pool, &m9a415, err);
+    { __typeof__(item) m9v = Rdf_TermObj (pool, &m9a407, err);
       if (err->exc) goto L_hdl_m9t1;
       item = m9v;
     }
@@ -12183,7 +12165,7 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
     Json_Add (&(arr), &((*pool)), &(item), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     m9_mark m9t4 = m9_pool_mark (err->res);
-    bool m9t6 = ({ bool m9t5 = (((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t5) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a416 = (*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_hdl_m9t1; { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), err)) m9a417 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t5 = (Text_Eq (m9a416, m9a417, err)); } } } m9t5; });
+    bool m9t6 = ({ bool m9t5 = (((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t5) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a408 = (*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_hdl_m9t1; { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), err)) m9a409 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t5 = (Text_Eq (m9a408, m9a409, err)); } } } m9t5; });
     if (err->exc) goto L_hdl_m9t1;
     m9_pool_release (err->res, m9t4);
     if (m9t6) {
@@ -12270,7 +12252,7 @@ static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx *c, m9_sl_CHAR iri, bool vocab, m9_sta
     m9t1to = m9_sub_i64 ((*c).n, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t1to) for (;;) {
-      bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a418 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a418, iri, err)); } } m9t2; });
+      bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a410 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a410, iri, err)); } } m9t2; });
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
@@ -12292,7 +12274,7 @@ static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx *c, m9_sl_CHAR iri, bool vocab, m9_sta
   m9t4to = m9_sub_i64 ((*c).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t4to) for (;;) {
-    bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ({ bool m9t5 = ((((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len > bestLen)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len < (iri).len)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a419 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t5 = (Text_StartsWith (iri, m9a419, err)); } } m9t5; }); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a420 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;   if (err->exc) goto L_ret; m9t6 = ((Text_FindChar (m9a420, 58u, err) < INT64_C(0))); } } m9t6; }); if (m9t7) { { __typeof__((*(uint32_t *) m9_at (({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).p, m9_sub_i64 (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len, INT64_C(1), err), ({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint32_t), err))) m9a421 = (*(uint32_t *) m9_at (({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).p, m9_sub_i64 (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len, INT64_C(1), err), ({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t7 = ((Text_FindChar (((m9_sl_CHAR){ (uint32_t *) m9s534, 7 }), m9a421, err) >= INT64_C(0))); } } m9t7; });
+    bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ({ bool m9t5 = ((((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len > bestLen)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len < (iri).len)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a411 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t5 = (Text_StartsWith (iri, m9a411, err)); } } m9t5; }); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a412 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;   if (err->exc) goto L_ret; m9t6 = ((Text_FindChar (m9a412, 58u, err) < INT64_C(0))); } } m9t6; }); if (m9t7) { { __typeof__((*(uint32_t *) m9_at (({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).p, m9_sub_i64 (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len, INT64_C(1), err), ({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint32_t), err))) m9a413 = (*(uint32_t *) m9_at (({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).p, m9_sub_i64 (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len, INT64_C(1), err), ({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t7 = ((Text_FindChar (((m9_sl_CHAR){ (uint32_t *) m9s534, 7 }), m9a413, err) >= INT64_C(0))); } } m9t7; });
     if (err->exc) goto L_ret;
     if (m9t8) {
       best = i;
@@ -12361,16 +12343,16 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     }
     { __typeof__(i) m9t4to;
     i = INT64_C(0);
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s537, 5 }), err)) m9a422 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s537, 5 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s537, 5 }), err)) m9a414 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s537, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    m9t4to = m9_sub_i64 (Rdf_Items (m9a422, err), INT64_C(1), err);
+    m9t4to = m9_sub_i64 (Rdf_Items (m9a414, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err)) m9a423 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err)) m9a415 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Json_Item (m9a423, i, err)) m9a424 = Json_Item (m9a423, i, err);
+      { __typeof__(Json_Item (m9a415, i, err)) m9a416 = Json_Item (m9a415, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(item) m9v = Rdf_CompactValue (pool, c, k, m9a424, err);
+      { __typeof__(item) m9v = Rdf_CompactValue (pool, c, k, m9a416, err);
         if (err->exc) goto L_hdl_m9t1;
         item = m9v;
       }
@@ -12382,7 +12364,7 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       i += 1;
     } }
     }
-    bool m9t6 = ({ bool m9t5 = (k >= INT64_C(0)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a425 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t5 = (Text_Eq (m9a425, ((m9_sl_CHAR){ (uint32_t *) m9s539, 5 }), err)); } } m9t5; });
+    bool m9t6 = ({ bool m9t5 = (k >= INT64_C(0)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a417 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t5 = (Text_Eq (m9a417, ((m9_sl_CHAR){ (uint32_t *) m9s539, 5 }), err)); } } m9t5; });
     if (err->exc) goto L_hdl_m9t1;
     if (m9t6) {
       err->res = m9res;
@@ -12402,9 +12384,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   bool m9t7 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s541, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err)) m9a426 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err)) m9a418 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(id) m9v = Rdf_JStr (m9a426, err);
+    { __typeof__(id) m9v = Rdf_JStr (m9a418, err);
       if (err->exc) goto L_hdl_m9t1;
       id = m9v;
     }
@@ -12413,9 +12395,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) goto L_hdl_m9t1;
     if (m9t8) {
       err->res = m9res;
-      { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a427 = Rdf_CompactIri (c, id, false, err);
+      { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a419 = Rdf_CompactIri (c, id, false, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a427, err);
+      m9ret = Json_NewStrIn (pool, m9a419, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
@@ -12424,9 +12406,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) goto L_hdl_m9t1;
     if (m9t9) {
       err->res = m9res;
-      { __typeof__(Rdf_CompactIri (c, id, true, err)) m9a428 = Rdf_CompactIri (c, id, true, err);
+      { __typeof__(Rdf_CompactIri (c, id, true, err)) m9a420 = Rdf_CompactIri (c, id, true, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a428, err);
+      m9ret = Json_NewStrIn (pool, m9a420, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
@@ -12435,9 +12417,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a429 = Rdf_CompactIri (c, id, false, err);
+    { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a421 = Rdf_CompactIri (c, id, false, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a429, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a421, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -12451,22 +12433,22 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   bool m9t10 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s546, 9 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t10) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s547, 9 }), err)) m9a430 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s547, 9 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s547, 9 }), err)) m9a422 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s547, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(lg) m9v = Rdf_JStr (m9a430, err);
+    { __typeof__(lg) m9v = Rdf_JStr (m9a422, err);
       if (err->exc) goto L_hdl_m9t1;
       lg = m9v;
     }
     }
-    bool m9t12 = ({ bool m9t11 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t11) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a431 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) goto L_hdl_m9t1; m9t11 = (Text_Eq (m9a431, lg, err)); } } m9t11; });
+    bool m9t12 = ({ bool m9t11 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t11) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a423 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) goto L_hdl_m9t1; m9t11 = (Text_Eq (m9a423, lg, err)); } } m9t11; });
     if (err->exc) goto L_hdl_m9t1;
     if (m9t12) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err)) m9a432 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err)) m9a424 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a432, err)) m9a433 = Rdf_JStr (m9a432, err);
+      { __typeof__(Rdf_JStr (m9a424, err)) m9a425 = Rdf_JStr (m9a424, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a433, err);
+      m9ret = Json_NewStrIn (pool, m9a425, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -12476,11 +12458,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) goto L_hdl_m9t1;
     if (m9t13) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), err)) m9a434 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), err)) m9a426 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a434, err)) m9a435 = Rdf_JStr (m9a434, err);
+      { __typeof__(Rdf_JStr (m9a426, err)) m9a427 = Rdf_JStr (m9a426, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a435, err);
+      m9ret = Json_NewStrIn (pool, m9a427, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -12490,9 +12472,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s550, 6 }), err)) m9a436 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s550, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s550, 6 }), err)) m9a428 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s550, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s551, 6 }), m9a436, err);
+    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s551, 6 }), m9a428, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(s) m9v = Json_NewStrIn (pool, lg, err);
@@ -12508,9 +12490,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   bool m9t14 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s553, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t14) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s554, 5 }), err)) m9a437 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s554, 5 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s554, 5 }), err)) m9a429 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s554, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(dt) m9v = Rdf_JStr (m9a437, err);
+    { __typeof__(dt) m9v = Rdf_JStr (m9a429, err);
       if (err->exc) goto L_hdl_m9t1;
       dt = m9v;
     }
@@ -12519,11 +12501,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) goto L_hdl_m9t1;
     if (m9t15) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err)) m9a438 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err)) m9a430 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a438, err)) m9a439 = Rdf_JStr (m9a438, err);
+      { __typeof__(Rdf_JStr (m9a430, err)) m9a431 = Rdf_JStr (m9a430, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a439, err);
+      m9ret = Json_NewStrIn (pool, m9a431, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -12533,14 +12515,14 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s556, 6 }), err)) m9a440 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s556, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s556, 6 }), err)) m9a432 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s556, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s557, 6 }), m9a440, err);
+    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s557, 6 }), m9a432, err);
     if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_CompactIri (c, dt, true, err)) m9a441 = Rdf_CompactIri (c, dt, true, err);
+    { __typeof__(Rdf_CompactIri (c, dt, true, err)) m9a433 = Rdf_CompactIri (c, dt, true, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a441, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a433, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -12555,11 +12537,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   if (err->exc) goto L_hdl_m9t1;
   if (m9t16) {
     err->res = m9res;
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err)) m9a442 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err)) m9a434 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_JStr (m9a442, err)) m9a443 = Rdf_JStr (m9a442, err);
+    { __typeof__(Rdf_JStr (m9a434, err)) m9a435 = Rdf_JStr (m9a434, err);
       if (err->exc) goto L_hdl_m9t1;
-    m9ret = Json_NewStrIn (pool, m9a443, err);
+    m9ret = Json_NewStrIn (pool, m9a435, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     }
@@ -12569,9 +12551,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) goto L_hdl_m9t1;
     o = m9v;
   }
-  { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), err)) m9a444 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), err);
+  { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), err)) m9a436 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s561, 6 }), m9a444, err);
+  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s561, 6 }), m9a436, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   err->res = m9res;
@@ -12623,12 +12605,12 @@ static int64_t Rdf_PropTerm (Rdf_Ctx *c, m9_sl_CHAR iri, bool isList, m9_state *
   m9t1to = m9_sub_i64 ((*c).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a445 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a445, iri, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a437 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a437, iri, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a446 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;
+      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a438 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;
         if (err->exc) goto L_ret;
-      bool m9t4 = (isList == Text_Eq (m9a446, ((m9_sl_CHAR){ (uint32_t *) m9s562, 5 }), err));
+      bool m9t4 = (isList == Text_Eq (m9a438, ((m9_sl_CHAR){ (uint32_t *) m9s562, 5 }), err));
       if (err->exc) goto L_ret;
       if (m9t4) {
         err->res = m9res;
@@ -12699,12 +12681,12 @@ static int64_t Rdf_LocalStart (m9_sl_CHAR iri, m9_state *err)
     i = m9v;
   }
   for (;;) {
-    bool m9t2 = ({ bool m9t1 = (i >= INT64_C(0)); if (m9t1) { { __typeof__((*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err))) m9a447 = (*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t1 = (Rdf_NcChar (m9a447, err)); } } m9t1; });
+    bool m9t2 = ({ bool m9t1 = (i >= INT64_C(0)); if (m9t1) { { __typeof__((*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err))) m9a439 = (*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t1 = (Rdf_NcChar (m9a439, err)); } } m9t1; });
     if (err->exc) goto L_ret;
     if (!(m9t2)) break;
-    { __typeof__((*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err))) m9a448 = (*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err));
+    { __typeof__((*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err))) m9a440 = (*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err));
       if (err->exc) goto L_ret;
-    bool m9t3 = Rdf_NcStart (m9a448, err);
+    bool m9t3 = Rdf_NcStart (m9a440, err);
     if (err->exc) goto L_ret;
     if (m9t3) {
       best = i;

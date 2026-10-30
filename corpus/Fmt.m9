@@ -78,8 +78,10 @@ PROCEDURE FixedPadUtf (v: F64 ; width, decimals: I64) : UTF RAISES ValueRange ;
   (* decimals in 0..MaxDecimals, else ValueRange; printf's %.*f to
      the character -- the double's own decimal expansion rounded half
      to even, every magnitude (1e308 prints its 309 digits).  A value
-     that rounds to zero keeps its '-' (-0.001 is -0.00, as printf);
-     negative ZERO prints without one, the sign bit is not consulted.
+     that rounds to zero keeps its '-' (-0.001 is -0.00, as printf),
+     and so does negative ZERO: -0.0 is -0.00, the sign bit read as
+     printf, Python and Fortran read it (since 2026-10-30, a port's
+     M10; until then -0.0 printed 0.00).
      NaN prints 'nan', the infinities 'inf' and '-inf'.  Exact since
      2026-10-10; it scaled in F64 until then and disagreed with printf
      on 0.71% of values, 1e300 raised.  The digits are the C library's
@@ -111,10 +113,10 @@ PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
      the exponent is negative, and no leading zeros -- 3.14e-5 and
      3.14e5.
 
-     Zero prints as 0.00e0, and NEGATIVE zero prints without the
-     sign, as Fixed already does: neither consults the sign bit.
-     printf disagrees on that one value and the driver excludes it
-     rather than pretending they agree.
+     Zero prints as 0.00e0, and NEGATIVE zero as -0.00e0, the sign bit
+     read as Fixed reads it -- printf's answer, so the driver compares
+     zeros like any other value (since 2026-10-30; until then neither
+     consulted the sign bit and the driver left zero out).
 
      The digits are printf's %.*e to the character, as Fixed's are
      %.*f's: exact, from the double's integer mantissa and exponent,
@@ -1001,6 +1003,19 @@ BEGIN
   RETURN TRUE
 END Parts ;
 
+(* v's sign bit: -0.0 is negative, as Short, C's printf, Python and
+   Fortran print it, so Fixed and Sci keep the sign of a zero (a port's
+   M10, 2026-10-30: they wrote 0.000 for -0.0 since 2026-09) *)
+PROCEDURE SignBit (v: F64) : BOOL =
+VAR
+  b : SLICE OF BYTE ;
+  scratch : POOL ;
+BEGIN
+  b := NEW (scratch, BYTE, 8) ;
+  F64.ToBytesLE (v, b) ;
+  RETURN I64 (b[7]) >= 128
+END SignBit ;
+
 (* the digits of Fixed, once, as octets: ds the decimal digits with at
    least decimals + 1 of them, or special one of nan, inf, -inf *)
 PROCEDURE FixedParts (v: F64 ; decimals: I64 ; VAR ds: UTF ; VAR special: UTF)
@@ -1057,7 +1072,7 @@ BEGIN
   FixedParts (v, decimals, ds, special) ;
   IF LEN (OCTETS (special)) > 0 THEN RETURN special END ;
   s := '' ;
-  IF v < 0.0 THEN s := '-' END ;
+  IF SignBit (v) THEN s := '-' END ;
   IF decimals = 0 THEN RETURN s + ds END ;
   n := LEN (OCTETS (ds)) ;
   RETURN s + SLICE (ds, 0, n - decimals) + '.' + SLICE (ds, n - decimals, decimals)
@@ -1128,7 +1143,7 @@ BEGIN
   IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
 
   s := '' ;
-  IF v < 0.0 THEN s := '-' END ;
+  IF SignBit (v) THEN s := '-' END ;
   IF NOT Parts (v, f, e) THEN
     k := 0 ;
     nn := 0

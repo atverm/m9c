@@ -147,6 +147,70 @@ validity bytes at all.  Both were measured against pyarrow, and
 the first cost an 8-byte passport error on two string columns
 the last time this was written.
 
+### TYPE Reader
+
+opaque; lives in a POOL
+
+### Open (VAR pool: POOL ; RO KEPT src: SLICE OF BYTE) : PTR Reader IN pool RAISES Faults.BadArg, ValueRange
+
+the schema: the stream's first message.  `src' is the whole
+stream, read where it lies until the last batch is read.
+
+### NFields (r: PTR Reader) : I64
+
+_(documented with the group below)_
+
+### FieldName (r: PTR Reader ; i: I64) : STR RAISES IndexError
+
+_(documented with the group below)_
+
+### FieldType (r: PTR Reader ; i: I64) : I64 RAISES IndexError
+
+one of the Ty constants above
+
+### FieldTz (r: PTR Reader ; i: I64) : STR RAISES IndexError
+
+a timestamp column's time zone as the schema spells it, 'UTC' or
+'+01:00'; '' for a naive timestamp and for any other column
+
+### MetaOf (r: PTR Reader ; RO key: STR) : STR
+
+the schema's custom_metadata value for key, '' when absent
+
+### Next (VAR r: PTR Reader) : BOOL RAISES Faults.BadArg, ValueRange
+
+the next record batch, FALSE at the end of the stream (its
+zero-length marker, or the bytes running out where a message
+would start)
+
+### Rows (r: PTR Reader) : I64
+
+the current batch's row count; 0 before the first Next
+
+### Nulls (r: PTR Reader ; i: I64) : I64 RAISES IndexError
+
+column i's null count in the current batch
+
+### IsNull (r: PTR Reader ; i, row: I64) : BOOL RAISES IndexError
+
+_(documented with the group below)_
+
+### GetF64 (VAR pool: POOL ; r: PTR Reader ; i: I64) : SLICE OF F64 RAISES Faults.BadArg, IndexError
+
+a float32 or float64 column of the current batch, float32 widened
+exactly; a null is NaN.  Any other column is BadArg.
+
+### GetI64 (VAR pool: POOL ; r: PTR Reader ; i: I64) : SLICE OF I64 RAISES Faults.BadArg, IndexError
+
+an integer or timestamp column (nanoseconds since the epoch); a
+null is 0 -- ask IsNull.  Any other column is BadArg.
+
+### GetStr (VAR pool: POOL ; r: PTR Reader ; i, row: I64) : STR RAISES Faults.BadArg, IndexError, ValueRange
+
+one cell of a string column, decoded from UTF-8 (ValueRange for
+bytes that are not UTF-8); a null is ''.  Any other column is
+BadArg.
+
 libzstd's one-shot compressor, as Parquet's czstd binds it: each
 call makes and frees its own context, so any number of threads may
 call it at once.  An error is a size_t near 2 ** 64, which I64 ()
@@ -159,5 +223,9 @@ units of distinct names over the same two symbols.
 _(undocumented)_
 
 ### ZstdBound (n: C.SizeT) : C.SizeT [REENTRANT]
+
+_(undocumented)_
+
+### ZstdDecompress (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT) : C.SizeT [REENTRANT]
 
 _(undocumented)_

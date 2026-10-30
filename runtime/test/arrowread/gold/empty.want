@@ -1,0 +1,97 @@
+fields 5
+f 0 f 5 
+f 1 g 4 
+f 2 n 2 
+f 3 s 6 
+f 4 t 7 UTC
+m passport=
+m über=
+m absent=
+b 4
+c 0 1
+v 0 0 1.25
+v 0 1 null
+v 0 2 nan
+v 0 3 -2.0
+c 1 1
+v 1 0 null
+v 1 1 2.5
+v 1 2 nan
+v 1 3 0.0
+c 2 2
+v 2 0 null
+v 2 1 -3
+v 2 2 4
+v 2 3 null
+c 3 1
+v 3 0 
+v 3 1 null
+v 3 2 Lindcove
+v 3 3 Křešice
+c 4 2
+v 4 0 null
+v 4 1 1700000000000000000
+v 4 2 5
+v 4 3 null
+b 0
+c 0 0
+c 1 0
+c 2 0
+c 3 0
+c 4 0
+b 10
+c 0 9
+v 0 0 null
+v 0 1 null
+v 0 2 null
+v 0 3 null
+v 0 4 null
+v 0 5 null
+v 0 6 null
+v 0 7 null
+v 0 8 null
+v 0 9 9.0
+c 1 0
+v 1 0 1.0
+v 1 1 1.0
+v 1 2 1.0
+v 1 3 1.0
+v 1 4 1.0
+v 1 5 1.0
+v 1 6 1.0
+v 1 7 1.0
+v 1 8 1.0
+v 1 9 1.0
+c 2 0
+v 2 0 0
+v 2 1 1
+v 2 2 2
+v 2 3 3
+v 2 4 4
+v 2 5 5
+v 2 6 6
+v 2 7 7
+v 2 8 8
+v 2 9 9
+c 3 0
+v 3 0 x0
+v 3 1 x1
+v 3 2 x2
+v 3 3 x3
+v 3 4 x4
+v 3 5 x5
+v 3 6 x6
+v 3 7 x7
+v 3 8 x8
+v 3 9 x9
+c 4 0
+v 4 0 0
+v 4 1 1
+v 4 2 2
+v 4 3 3
+v 4 4 4
+v 4 5 5
+v 4 6 6
+v 4 7 7
+v 4 8 8
+v 4 9 9

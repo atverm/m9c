@@ -128,6 +128,71 @@ PROCEDURE NBytes (t: PTR Table) : I64 ;
      the first cost an 8-byte passport error on two string columns
      the last time this was written.                                 *)
 
+(* ---- READING a stream (2026-10-30; zarrm9's mcpd reads zpd's
+   `format=arrow' answers, Alex: "pyarrow readers as well") ----
+
+   Any number of record batches after the schema, each read when Next
+   is asked, uncompressed or ZSTD (the BodyCompression above, the -1
+   length included).  The columns read are the subset written: int8 to
+   int64, float32 and float64, UTF-8 strings and timestamps in
+   nanoseconds -- WITH a time zone too, which FieldTz answers ('' for
+   a naive one).  NULLS ARE READ: a column's validity bitmap answers
+   IsNull, a null float reads as NaN, a null integer as 0 and a null
+   string as ''.  Refused by name, never half-read: a big-endian
+   stream, a dictionary batch or a dictionary-encoded column, a nested
+   column, an unsigned integer, a half float, a timestamp in another
+   unit, large strings, and LZ4.  pyarrow is the oracle
+   (runtime/test/arrowread.py), as it is for the writer.
+
+   Each batch's buffers are copied, or decompressed, into the reader's
+   own pool and stay there: a reader of a long stream holds every batch
+   it has read.  What the getters answer is the caller's, in its pool. *)
+
+TYPE
+  Reader ;                               (* opaque; lives in a POOL *)
+
+PROCEDURE Open (VAR pool: POOL ; RO KEPT src: SLICE OF BYTE)
+  : PTR Reader IN pool
+  RAISES Faults.BadArg, ValueRange ;
+  (* the schema: the stream's first message.  `src' is the whole
+     stream, read where it lies until the last batch is read. *)
+
+PROCEDURE NFields (r: PTR Reader) : I64 ;
+PROCEDURE FieldName (r: PTR Reader ; i: I64) : STR RAISES IndexError ;
+PROCEDURE FieldType (r: PTR Reader ; i: I64) : I64 RAISES IndexError ;
+  (* one of the Ty constants above *)
+PROCEDURE FieldTz (r: PTR Reader ; i: I64) : STR RAISES IndexError ;
+  (* a timestamp column's time zone as the schema spells it, 'UTC' or
+     '+01:00'; '' for a naive timestamp and for any other column *)
+PROCEDURE MetaOf (r: PTR Reader ; RO key: STR) : STR ;
+  (* the schema's custom_metadata value for key, '' when absent *)
+
+PROCEDURE Next (VAR r: PTR Reader) : BOOL
+  RAISES Faults.BadArg, ValueRange ;
+  (* the next record batch, FALSE at the end of the stream (its
+     zero-length marker, or the bytes running out where a message
+     would start) *)
+
+PROCEDURE Rows (r: PTR Reader) : I64 ;
+  (* the current batch's row count; 0 before the first Next *)
+PROCEDURE Nulls (r: PTR Reader ; i: I64) : I64 RAISES IndexError ;
+  (* column i's null count in the current batch *)
+PROCEDURE IsNull (r: PTR Reader ; i, row: I64) : BOOL RAISES IndexError ;
+
+PROCEDURE GetF64 (VAR pool: POOL ; r: PTR Reader ; i: I64) : SLICE OF F64
+  RAISES Faults.BadArg, IndexError ;
+  (* a float32 or float64 column of the current batch, float32 widened
+     exactly; a null is NaN.  Any other column is BadArg. *)
+PROCEDURE GetI64 (VAR pool: POOL ; r: PTR Reader ; i: I64) : SLICE OF I64
+  RAISES Faults.BadArg, IndexError ;
+  (* an integer or timestamp column (nanoseconds since the epoch); a
+     null is 0 -- ask IsNull.  Any other column is BadArg. *)
+PROCEDURE GetStr (VAR pool: POOL ; r: PTR Reader ; i, row: I64) : STR
+  RAISES Faults.BadArg, IndexError, ValueRange ;
+  (* one cell of a string column, decoded from UTF-8 (ValueRange for
+     bytes that are not UTF-8); a null is ''.  Any other column is
+     BadArg. *)
+
 END Arrow.
 
 
@@ -147,6 +212,10 @@ PROCEDURE ZstdCompress = "ZSTD_compress"
 PROCEDURE ZstdBound = "ZSTD_compressBound" (n: C.SizeT) : C.SizeT
   [REENTRANT] ;
 
+PROCEDURE ZstdDecompress = "ZSTD_decompress"
+  (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT) : C.SizeT
+  [REENTRANT] ;
+
 END carrowz.
 
 
@@ -154,7 +223,7 @@ UNSAFE IMPLEMENTATION MODULE Arrow ;
 
 (* UNSAFE for one reason: ADR at the libzstd boundary.  Grep ADR. *)
 
-FROM carrowz IMPORT ZstdCompress, ZstdBound ;
+FROM carrowz IMPORT ZstdCompress, ZstdBound, ZstdDecompress ;
 
 IMPORT Faults ;
 
@@ -994,5 +1063,456 @@ BEGIN
 EXCEPT
 | IndexError : RAISE Faults.BadArg ('arrow: a buffer outgrew its layout')
 END StreamCodec ;
+
+
+(* ---- READING (2026-10-30) ----
+
+   THE FLATBUFFER, READ.  A table starts with a signed 32-bit offset
+   BACK to its vtable (table - offset); the vtable is u16 its own size,
+   u16 the table's, then one u16 per field: the field's offset in the
+   table, 0 when absent.  A string, vector or sub-table field holds a
+   u32 offset FORWARD from where it is written.  A vector is u32 its
+   length and then its elements; a vector of tables holds offsets, a
+   vector of structs the structs themselves.  The field numbers are
+   Message.fbs and Schema.fbs's, written at each use. *)
+
+TYPE
+  Bytes = SLICE OF BYTE ;
+  Bufs = SLICE OF Bytes ;
+
+  Reader = RECORD
+    RO src : SLICE OF BYTE ;
+    pos, nf, nm, rows : I64 ;
+    fname, ftz, mk, mv : SLICE OF STR ;
+    fty, nulls : SLICE OF I64 ;
+    valid, offs, data : Bufs ;
+    ended : BOOL ;
+  END ;
+
+CONST
+  MsgSchema = 1 ;                        (* MessageHeader union *)
+  MsgDict = 2 ;
+  MsgBatch = 3 ;
+
+(* k little-endian bytes at `at' as an unsigned number (k <= 7), or as
+   a two's complement one when signed -- an 8-byte value is always
+   read signed, the negative ones through their complement so the sum
+   stays inside I64 *)
+PROCEDURE GetLE (RO b: SLICE OF BYTE ; at, k: I64 ; signed: BOOL) : I64
+  RAISES IndexError =
+VAR i, v : I64 ;
+BEGIN
+  IF (signed OR k = 8) AND I64 (b[at + k - 1]) >= 128 THEN
+    v := 0 ;
+    FOR i := k - 1 TO 0 BY -1 DO v := v * 256 + (255 - I64 (b[at + i])) END ;
+    RETURN -v - 1
+  END ;
+  v := 0 ;
+  FOR i := k - 1 TO 0 BY -1 DO v := v * 256 + I64 (b[at + i]) END ;
+  RETURN v
+EXCEPT
+| ValueRange : RAISE IndexError
+| Overflow : RAISE IndexError
+END GetLE ;
+
+(* field `id' of the table at `tbl': its position, or -1 when absent *)
+PROCEDURE FbField (RO m: SLICE OF BYTE ; tbl, id: I64) : I64 RAISES IndexError =
+VAR vt, vsize, o : I64 ;
+BEGIN
+  vt := tbl - GetLE (m, tbl, 4, TRUE) ;
+  vsize := GetLE (m, vt, 2, FALSE) ;
+  IF 4 + 2 * id + 2 > vsize THEN RETURN -1 END ;
+  o := GetLE (m, vt + 4 + 2 * id, 2, FALSE) ;
+  IF o = 0 THEN RETURN -1 END ;
+  RETURN tbl + o
+END FbField ;
+
+(* where the offset at `at' points *)
+PROCEDURE FbRef (RO m: SLICE OF BYTE ; at: I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN at + GetLE (m, at, 4, FALSE)
+END FbRef ;
+
+(* a scalar field, or dflt when absent *)
+PROCEDURE FbInt (RO m: SLICE OF BYTE ; tbl, id, k: I64 ; signed: BOOL ; dflt: I64) : I64
+  RAISES IndexError =
+VAR at : I64 ;
+BEGIN
+  at := FbField (m, tbl, id) ;
+  IF at < 0 THEN RETURN dflt END ;
+  RETURN GetLE (m, at, k, signed)
+END FbInt ;
+
+(* a string field, decoded; '' when absent *)
+PROCEDURE FbStr (VAR pool: POOL ; RO m: SLICE OF BYTE ; tbl, id: I64) : STR
+  RAISES IndexError, ValueRange =
+VAR at, n : I64 ;
+BEGIN
+  at := FbField (m, tbl, id) ;
+  IF at < 0 THEN RETURN '' END ;
+  at := FbRef (m, at) ;
+  n := GetLE (m, at, 4, FALSE) ;
+  RETURN DynStr.FromUtf8 (pool, SLICE (m, at + 4, n))
+END FbStr ;
+
+(* a vector field: its first element's position, its length in n;
+   -1 and 0 when absent *)
+PROCEDURE FbVec (RO m: SLICE OF BYTE ; tbl, id: I64 ; VAR n: I64) : I64
+  RAISES IndexError =
+VAR at : I64 ;
+BEGIN
+  n := 0 ;
+  at := FbField (m, tbl, id) ;
+  IF at < 0 THEN RETURN -1 END ;
+  at := FbRef (m, at) ;
+  n := GetLE (m, at, 4, FALSE) ;
+  RETURN at + 4
+END FbVec ;
+
+(* the next message: its metadata in meta, its body in body; FALSE at
+   the end-of-stream marker or where the bytes run out *)
+PROCEDURE NextMsg (VAR r: PTR Reader ; VAR meta: SLICE OF BYTE ;
+                   VAR body: SLICE OF BYTE ; VAR kind: I64) : BOOL
+  RAISES Faults.BadArg =
+VAR len, root, hdr, blen : I64 ;
+BEGIN
+  IF r.pos + 4 > LEN (r.src) THEN RETURN FALSE END ;
+  len := GetLE (r.src, r.pos, 4, TRUE) ;
+  r.pos := r.pos + 4 ;
+  IF len = -1 THEN                       (* the continuation marker *)
+    IF r.pos + 4 > LEN (r.src) THEN RETURN FALSE END ;
+    len := GetLE (r.src, r.pos, 4, TRUE) ;
+    r.pos := r.pos + 4
+  END ;
+  IF len = 0 THEN RETURN FALSE END ;
+  IF len < 0 OR r.pos + len > LEN (r.src) THEN
+    RAISE Faults.BadArg ('arrow: a message runs past the stream')
+  END ;
+  meta := SLICE (r.src, r.pos, len) ;
+  r.pos := r.pos + len ;
+  root := GetLE (meta, 0, 4, FALSE) ;
+  kind := FbInt (meta, root, 1, 1, FALSE, 0) ;      (* Message.header_type *)
+  blen := FbInt (meta, root, 3, 8, TRUE, 0) ;       (* Message.bodyLength *)
+  IF blen < 0 OR r.pos + blen > LEN (r.src) THEN
+    RAISE Faults.BadArg ('arrow: a message body runs past the stream')
+  END ;
+  body := SLICE (r.src, r.pos, blen) ;
+  r.pos := r.pos + blen ;
+  hdr := FbField (meta, root, 2) ;
+  IF hdr < 0 THEN RAISE Faults.BadArg ('arrow: a message without its header') END ;
+  RETURN TRUE
+EXCEPT
+| IndexError : RAISE Faults.BadArg ('arrow: a message is cut short')
+END NextMsg ;
+
+(* the message header table: Message.header *)
+PROCEDURE Header (RO meta: SLICE OF BYTE) : I64 RAISES IndexError =
+BEGIN
+  RETURN FbRef (meta, FbField (meta, GetLE (meta, 0, 4, FALSE), 2))
+END Header ;
+
+(* one Field of the schema into slot i, or BadArg naming what this
+   reader does not read *)
+PROCEDURE SchemaField (VAR pool: POOL ; VAR r: PTR Reader ; RO m: SLICE OF BYTE ;
+                       f, i: I64)
+  RAISES Faults.BadArg, IndexError, ValueRange =
+VAR
+  tt, ty, bits, prec, unit, nkids : I64 ;
+  name : STR ;
+BEGIN
+  name := FbStr (pool, m, f, 0) ;                    (* Field.name *)
+  IF FbField (m, f, 4) >= 0 THEN                     (* Field.dictionary *)
+    RAISE Faults.BadArg ('arrow: column ' + name + ' is dictionary-encoded, which is not read')
+  END ;
+  IF FbVec (m, f, 5, nkids) >= 0 AND nkids > 0 THEN  (* Field.children *)
+    RAISE Faults.BadArg ('arrow: column ' + name + ' is nested, which is not read')
+  END ;
+  tt := FbInt (m, f, 2, 1, FALSE, 0) ;               (* Field.type_type *)
+  ty := FbRef (m, FbField (m, f, 3)) ;               (* Field.type *)
+  r.ftz[i] := '' ;
+  IF tt = 2 THEN                                     (* Int *)
+    bits := FbInt (m, ty, 0, 4, TRUE, 0) ;
+    IF FbInt (m, ty, 1, 1, FALSE, 0) = 0 THEN
+      RAISE Faults.BadArg ('arrow: column ' + name + ' is an unsigned integer, which is not read')
+    END ;
+    IF bits = 8 THEN r.fty[i] := TyI8
+    ELSIF bits = 16 THEN r.fty[i] := TyI16
+    ELSIF bits = 32 THEN r.fty[i] := TyI32
+    ELSIF bits = 64 THEN r.fty[i] := TyI64
+    ELSE RAISE Faults.BadArg ('arrow: column ' + name + ' has an integer width this reader does not know')
+    END
+  ELSIF tt = 3 THEN                                  (* FloatingPoint *)
+    prec := FbInt (m, ty, 0, 2, TRUE, 0) ;
+    IF prec = 1 THEN r.fty[i] := TyF32
+    ELSIF prec = 2 THEN r.fty[i] := TyF64
+    ELSE RAISE Faults.BadArg ('arrow: column ' + name + ' is a half float, which is not read')
+    END
+  ELSIF tt = 5 THEN                                  (* Utf8 *)
+    r.fty[i] := TyStr
+  ELSIF tt = 10 THEN                                 (* Timestamp *)
+    unit := FbInt (m, ty, 0, 2, TRUE, 0) ;
+    IF unit # 3 THEN
+      RAISE Faults.BadArg ('arrow: column ' + name + ' is a timestamp not in nanoseconds, which is not read')
+    END ;
+    r.fty[i] := TyTsNs ;
+    r.ftz[i] := FbStr (pool, m, ty, 1)
+  ELSE
+    RAISE Faults.BadArg ('arrow: column ' + name + ' has a type this reader does not read')
+  END ;
+  r.fname[i] := name
+END SchemaField ;
+
+PROCEDURE Open (VAR pool: POOL ; RO KEPT src: SLICE OF BYTE)
+  : PTR Reader IN pool
+  RAISES Faults.BadArg, ValueRange =
+VAR
+  r : PTR Reader IN pool ;
+  meta, body : SLICE OF BYTE ;
+  kind, sc, fv, n, mvec, nmeta, i, kv : I64 ;
+BEGIN
+  r := NEW (pool, Reader) ;
+  r.src := src ;
+  r.pos := 0 ;
+  r.rows := 0 ;
+  r.ended := FALSE ;
+  IF NOT NextMsg (r, meta, body, kind) OR kind # MsgSchema THEN
+    RAISE Faults.BadArg ('arrow: the stream does not start with a schema')
+  END ;
+  sc := Header (meta) ;
+  IF FbInt (meta, sc, 0, 2, TRUE, 0) # 0 THEN        (* Schema.endianness *)
+    RAISE Faults.BadArg ('arrow: a big-endian stream is not read')
+  END ;
+  fv := FbVec (meta, sc, 1, n) ;                     (* Schema.fields *)
+  r.nf := n ;
+  r.fname := NEW (pool, STR, n) ;
+  r.ftz := NEW (pool, STR, n) ;
+  r.fty := NEW (pool, I64, n) ;
+  r.nulls := NEW (pool, I64, n) ;
+  r.valid := NEW (pool, Bytes, n) ;
+  r.offs := NEW (pool, Bytes, n) ;
+  r.data := NEW (pool, Bytes, n) ;
+  FOR i := 0 TO n - 1 DO
+    SchemaField (pool, r, meta, FbRef (meta, fv + 4 * i), i)
+  END ;
+  mvec := FbVec (meta, sc, 2, nmeta) ;               (* Schema.custom_metadata *)
+  r.nm := nmeta ;
+  r.mk := NEW (pool, STR, nmeta) ;
+  r.mv := NEW (pool, STR, nmeta) ;
+  FOR i := 0 TO nmeta - 1 DO
+    kv := FbRef (meta, mvec + 4 * i) ;
+    r.mk[i] := FbStr (pool, meta, kv, 0) ;           (* KeyValue.key *)
+    r.mv[i] := FbStr (pool, meta, kv, 1)             (* KeyValue.value *)
+  END ;
+  RETURN r
+EXCEPT
+| IndexError : RAISE Faults.BadArg ('arrow: the schema is cut short')
+END Open ;
+
+PROCEDURE NFields (r: PTR Reader) : I64 =
+BEGIN
+  RETURN r.nf
+END NFields ;
+
+PROCEDURE FieldName (r: PTR Reader ; i: I64) : STR RAISES IndexError =
+BEGIN
+  RETURN r.fname[i]
+END FieldName ;
+
+PROCEDURE FieldType (r: PTR Reader ; i: I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN r.fty[i]
+END FieldType ;
+
+PROCEDURE FieldTz (r: PTR Reader ; i: I64) : STR RAISES IndexError =
+BEGIN
+  RETURN r.ftz[i]
+END FieldTz ;
+
+PROCEDURE MetaOf (r: PTR Reader ; RO key: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO r.nm - 1 DO
+    IF DynStr.Eq (r.mk[i], key) THEN RETURN r.mv[i] END
+  END ;
+  RETURN ''
+END MetaOf ;
+
+(* buffer (off, len) of a batch's body, as its own bytes in the
+   reader's pool: copied, or -- under ZSTD -- its 8-byte uncompressed
+   length and one frame decompressed, or the bytes after a length of
+   -1 as they were *)
+PROCEDURE Buf (VAR r: PTR Reader ; RO body: SLICE OF BYTE ; off, len: I64 ; zstd: BOOL)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, IndexError =
+VAR
+  out, z : SLICE OF BYTE ;
+  ulen, got, i : I64 ;
+BEGIN
+  IF len = 0 THEN RETURN NEW (r, BYTE, 0) END ;
+  IF off < 0 OR len < 0 OR off + len > LEN (body) THEN
+    RAISE Faults.BadArg ('arrow: a buffer runs past its batch')
+  END ;
+  IF NOT zstd THEN
+    out := NEW (r, BYTE, len) ;
+    FOR i := 0 TO len - 1 DO out[i] := body[off + i] END ;
+    RETURN out
+  END ;
+  ulen := GetLE (body, off, 8, TRUE) ;
+  IF ulen = -1 THEN
+    out := NEW (r, BYTE, len - 8) ;
+    FOR i := 0 TO len - 9 DO out[i] := body[off + 8 + i] END ;
+    RETURN out
+  END ;
+  IF ulen < 0 THEN RAISE Faults.BadArg ('arrow: a buffer says a negative length') END ;
+  out := NEW (r, BYTE, ulen) ;
+  IF ulen = 0 THEN RETURN out END ;
+  z := SLICE (body, off + 8, len - 8) ;
+  got := I64 (ZstdDecompress (ADR (out), C.SizeT (ulen), ADR (z), C.SizeT (len - 8))) ;
+  IF got # ulen THEN RAISE Faults.BadArg ('arrow: libzstd refused a buffer') END ;
+  RETURN out
+EXCEPT
+| ValueRange : RAISE Faults.BadArg ('arrow: libzstd refused a buffer')
+END Buf ;
+
+PROCEDURE Next (VAR r: PTR Reader) : BOOL
+  RAISES Faults.BadArg, ValueRange =
+VAR
+  meta, body : SLICE OF BYTE ;
+  kind, rb, nodes, nn, bufs, nb, comp, b, j, k, nbuf, bo, bl : I64 ;
+  zstd : BOOL ;
+BEGIN
+  IF r.ended THEN RETURN FALSE END ;
+  IF NOT NextMsg (r, meta, body, kind) THEN
+    r.ended := TRUE ;
+    r.rows := 0 ;
+    RETURN FALSE
+  END ;
+  IF kind = MsgDict THEN RAISE Faults.BadArg ('arrow: a dictionary batch is not read') END ;
+  IF kind # MsgBatch THEN RAISE Faults.BadArg ('arrow: a message that is no record batch') END ;
+  rb := Header (meta) ;
+  r.rows := FbInt (meta, rb, 0, 8, TRUE, 0) ;        (* RecordBatch.length *)
+  nodes := FbVec (meta, rb, 1, nn) ;                 (* RecordBatch.nodes *)
+  bufs := FbVec (meta, rb, 2, nb) ;                  (* RecordBatch.buffers *)
+  zstd := FALSE ;
+  comp := FbField (meta, rb, 3) ;                    (* RecordBatch.compression *)
+  IF comp >= 0 THEN
+    comp := FbRef (meta, comp) ;
+    IF FbInt (meta, comp, 0, 1, TRUE, 0) = 1 THEN zstd := TRUE    (* BodyCompression.codec *)
+    ELSE RAISE Faults.BadArg ('arrow: an LZ4 batch is not read')
+    END
+  END ;
+  IF nn # r.nf THEN RAISE Faults.BadArg ("arrow: a batch whose columns are not the schema's") END ;
+  nbuf := 0 ;
+  FOR j := 0 TO r.nf - 1 DO
+    IF r.fty[j] = TyStr THEN nbuf := nbuf + 3 ELSE nbuf := nbuf + 2 END
+  END ;
+  IF nb # nbuf THEN RAISE Faults.BadArg ("arrow: a batch whose buffers are not the schema's") END ;
+  b := 0 ;
+  FOR j := 0 TO r.nf - 1 DO
+    (* FieldNode: length, null_count, 16 bytes; Buffer: offset, length *)
+    IF GetLE (meta, nodes + 16 * j, 8, TRUE) # r.rows THEN
+      RAISE Faults.BadArg ("arrow: a column whose length is not the batch's")
+    END ;
+    r.nulls[j] := GetLE (meta, nodes + 16 * j + 8, 8, TRUE) ;
+    FOR k := 0 TO 2 DO
+      IF k < 2 OR r.fty[j] = TyStr THEN
+        bo := GetLE (meta, bufs + 16 * b, 8, TRUE) ;
+        bl := GetLE (meta, bufs + 16 * b + 8, 8, TRUE) ;
+        IF k = 0 THEN r.valid[j] := Buf (r, body, bo, bl, zstd)
+        ELSIF k = 1 AND r.fty[j] = TyStr THEN r.offs[j] := Buf (r, body, bo, bl, zstd)
+        ELSE r.data[j] := Buf (r, body, bo, bl, zstd)
+        END ;
+        b := b + 1
+      END
+    END
+  END ;
+  RETURN TRUE
+EXCEPT
+| IndexError : RAISE Faults.BadArg ('arrow: a record batch is cut short')
+END Next ;
+
+PROCEDURE Rows (r: PTR Reader) : I64 =
+BEGIN
+  RETURN r.rows
+END Rows ;
+
+PROCEDURE Nulls (r: PTR Reader ; i: I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN r.nulls[i]
+END Nulls ;
+
+PROCEDURE IsNull (r: PTR Reader ; i, row: I64) : BOOL RAISES IndexError =
+VAR v, k : I64 ;
+BEGIN
+  IF row < 0 OR row >= r.rows THEN RAISE IndexError END ;
+  IF r.nulls[i] = 0 OR LEN (r.valid[i]) = 0 THEN RETURN FALSE END ;
+  v := I64 (r.valid[i][row DIV 8]) ;
+  FOR k := 1 TO row MOD 8 DO v := v DIV 2 END ;
+  RETURN v MOD 2 = 0
+EXCEPT
+| ValueRange : RAISE IndexError
+END IsNull ;
+
+PROCEDURE GetF64 (VAR pool: POOL ; r: PTR Reader ; i: I64) : SLICE OF F64
+  RAISES Faults.BadArg, IndexError =
+VAR
+  out : SLICE OF F64 ;
+  k : I64 ;
+BEGIN
+  IF r.fty[i] # TyF64 AND r.fty[i] # TyF32 THEN
+    RAISE Faults.BadArg ('arrow: column ' + r.fname[i] + ' is not a float column')
+  END ;
+  out := NEW (pool, F64, r.rows) ;
+  FOR k := 0 TO r.rows - 1 DO
+    IF IsNull (r, i, k) THEN out[k] := NaN
+    ELSIF r.fty[i] = TyF64 THEN out[k] := F64.FromBytesLE (SLICE (r.data[i], 8 * k, 8))
+    ELSE out[k] := F64 (F32.FromBytesLE (SLICE (r.data[i], 4 * k, 4)))
+    END
+  END ;
+  RETURN out
+EXCEPT
+| ValueRange : RAISE Faults.BadArg ('arrow: column ' + r.fname[i] + ' holds a value F64 cannot')
+END GetF64 ;
+
+(* the width of an integer or timestamp column's cells *)
+PROCEDURE IntWidth (ty: I64) : I64 =
+BEGIN
+  IF ty = TyI8 THEN RETURN 1 END ;
+  IF ty = TyI16 THEN RETURN 2 END ;
+  IF ty = TyI32 THEN RETURN 4 END ;
+  IF ty = TyI64 OR ty = TyTsNs THEN RETURN 8 END ;
+  RETURN 0
+END IntWidth ;
+
+PROCEDURE GetI64 (VAR pool: POOL ; r: PTR Reader ; i: I64) : SLICE OF I64
+  RAISES Faults.BadArg, IndexError =
+VAR
+  out : SLICE OF I64 ;
+  k, w : I64 ;
+BEGIN
+  w := IntWidth (r.fty[i]) ;
+  IF w = 0 THEN RAISE Faults.BadArg ('arrow: column ' + r.fname[i] + ' is not an integer or timestamp column') END ;
+  out := NEW (pool, I64, r.rows) ;
+  FOR k := 0 TO r.rows - 1 DO
+    IF IsNull (r, i, k) THEN out[k] := 0
+    ELSE out[k] := GetLE (r.data[i], w * k, w, TRUE)
+    END
+  END ;
+  RETURN out
+END GetI64 ;
+
+PROCEDURE GetStr (VAR pool: POOL ; r: PTR Reader ; i, row: I64) : STR
+  RAISES Faults.BadArg, IndexError, ValueRange =
+VAR a, b : I64 ;
+BEGIN
+  IF r.fty[i] # TyStr THEN RAISE Faults.BadArg ('arrow: column ' + r.fname[i] + ' is not a string column') END ;
+  IF IsNull (r, i, row) THEN RETURN '' END ;
+  a := GetLE (r.offs[i], 4 * row, 4, TRUE) ;
+  b := GetLE (r.offs[i], 4 * row + 4, 4, TRUE) ;
+  IF a < 0 OR b < a OR b > LEN (r.data[i]) THEN
+    RAISE Faults.BadArg ('arrow: column ' + r.fname[i] + ' has offsets past its data')
+  END ;
+  RETURN DynStr.FromUtf8 (pool, SLICE (r.data[i], a, b - a))
+END GetStr ;
 
 END Arrow.

@@ -55,4 +55,6 @@
 # module variable (CLAUDE.md's owed entry, written as a repro the day the
 # ownership probe went through the owed list): RStr keeps its POOL
 # parameter's copy in its VAR parameter, and the pool is the caller's local.
-R5PeriodPool
+# REFUSED 2026-10-30 (off the list): Sem.PoolInto, the caller judges a
+# callee that stores what it allocates in a POOL parameter into a VAR one
+# (decision 83).  The list is empty again.

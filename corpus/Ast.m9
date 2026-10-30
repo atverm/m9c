@@ -155,6 +155,14 @@ PROCEDURE TyStrAt (id: I64) : UTF ;
    (decision 81).  FALSE where none was recorded *)
 PROCEDURE SetNoWrites (id: I64) ;
 PROCEDURE NoWritesAt (id: I64) : BOOL ;
+
+(* an argument list whose callee, and all it calls, is proved to write
+   nothing but its own by-value bindings, and whose arguments run no
+   call that writes (Sem.NothingWritten): the generator may pass any RO
+   aggregate argument by its address there, behind a pointer or in a
+   slice included (decision 82).  FALSE where none was recorded *)
+PROCEDURE SetReadsOnly (id: I64) ;
+PROCEDURE ReadsOnlyAt (id: I64) : BOOL ;
   (* NONE is a legal child: absence with a position *)
 
 PROCEDURE FoldInt (k: Kid ; VAR v: I64) : BOOL ;
@@ -182,6 +190,7 @@ VAR
                                    UTF since 2026-10-23, Sem and Gen
                                    both reading them so *)
   nows   : SLICE OF BOOL ;      (* SetNoWrites, by the argument list's id *)
+  rdos   : SLICE OF BOOL ;      (* SetReadsOnly, likewise *)
   typool : POOL ;
 
 PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
@@ -294,6 +303,28 @@ BEGIN
   IF id >= 0 AND id < LEN (nows) THEN RETURN nows[id] END ;
   RETURN FALSE
 END NoWritesAt ;
+
+PROCEDURE SetReadsOnly (id: I64) =
+VAR
+  grown : SLICE OF BOOL ;
+  i, n : I64 ;
+BEGIN
+  IF id < 0 THEN RETURN END ;
+  IF id >= LEN (rdos) THEN
+    n := 2 * LEN (rdos) ;
+    IF n < id + 4096 THEN n := id + 4096 END ;
+    grown := NEW (typool, BOOL, n) ;
+    FOR i := 0 TO LEN (rdos) - 1 DO grown[i] := rdos[i] END ;
+    rdos := grown
+  END ;
+  rdos[id] := TRUE
+END SetReadsOnly ;
+
+PROCEDURE ReadsOnlyAt (id: I64) : BOOL =
+BEGIN
+  IF id >= 0 AND id < LEN (rdos) THEN RETURN rdos[id] END ;
+  RETURN FALSE
+END ReadsOnlyAt ;
 
 PROCEDURE Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid) =
 VAR

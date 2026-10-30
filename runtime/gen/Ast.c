@@ -5,6 +5,7 @@ static int64_t nextId;
 static m9_sl_Ast_Nodep tys;
 static m9_sl_m9_sl_UTF8 tstr;
 static m9_sl_BOOL nows;
+static m9_sl_BOOL rdos;
 static m9_pool typool;
 static m9_pool m9mframe = {0};
 
@@ -546,6 +547,80 @@ bool Ast_NoWritesAt (int64_t id, m9_state *err)
   if (((id >= INT64_C(0)) && (id < (nows).len))) {
     err->res = m9res;
     m9ret = (*(bool *) m9_at (nows.p, id, nows.len, sizeof (bool), err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+void Ast_SetReadsOnly (int64_t id, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_BOOL grown = {0}; (void) grown;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  if ((id < INT64_C(0))) {
+    goto L_ret;
+  }
+  if ((id >= (rdos).len)) {
+    { __typeof__(n) m9v = m9_mul_i64 (INT64_C(2), (rdos).len, err);
+      if (err->exc) goto L_ret;
+      n = m9v;
+    }
+    bool m9t1 = (n < m9_add_i64 (id, INT64_C(4096), err));
+    if (err->exc) goto L_ret;
+    if (m9t1) {
+      { __typeof__(n) m9v = m9_add_i64 (id, INT64_C(4096), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
+    }
+    { __typeof__(grown) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(typool), n, err);
+      if (err->exc) goto L_ret;
+      grown = m9v;
+    }
+    { __typeof__(i) m9t2to;
+    i = INT64_C(0);
+    m9t2to = m9_sub_i64 ((rdos).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    if (i <= m9t2to) for (;;) {
+      { __typeof__((*(bool *) m9_at (grown.p, i, grown.len, sizeof (bool), err))) m9v = (*(bool *) m9_at (rdos.p, i, rdos.len, sizeof (bool), err));
+        if (err->exc) goto L_ret;
+        (*(bool *) m9_at (grown.p, i, grown.len, sizeof (bool), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
+    } }
+    rdos = grown;
+  }
+  (*(bool *) m9_at (rdos.p, id, rdos.len, sizeof (bool), err)) = true;
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+bool Ast_ReadsOnlyAt (int64_t id, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  if (((id >= INT64_C(0)) && (id < (rdos).len))) {
+    err->res = m9res;
+    m9ret = (*(bool *) m9_at (rdos.p, id, rdos.len, sizeof (bool), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }

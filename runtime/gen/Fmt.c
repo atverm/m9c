@@ -99,6 +99,7 @@ static bool Fmt_BigAnyBelow (Fmt_Big *a, int64_t k, m9_state *err);
 static int64_t Fmt_BigDivSmall (Fmt_Big *a, int64_t m, m9_state *err);
 static m9_sl_CHAR Fmt_BigDec (Fmt_Big *a, m9_state *err);
 static bool Fmt_Parts (double v, int64_t *f, int64_t *e, m9_state *err);
+static bool Fmt_SignBit (double v, m9_state *err);
 static void Fmt_FixedParts (double v, int64_t decimals, m9_sl_UTF8 *ds, m9_sl_UTF8 *special, m9_state *err);
 static int64_t Fmt_Scaled (int64_t f, int64_t e, int64_t p, m9_state *err);
 static uint32_t Fmt_Cc (m9_sl_BYTE o, int64_t i, m9_state *err);
@@ -448,7 +449,9 @@ m9_sl_UTF8 Fmt_FixedUtf (double v, int64_t decimals, m9_state *err)
     goto L_ret;
   }
   s = ((m9_sl_UTF8){ NULL, 0 });
-  if ((v < 0.0)) {
+  bool m9t6 = Fmt_SignBit (v, err);
+  if (err->exc) goto L_ret;
+  if (m9t6) {
     s = ((m9_sl_UTF8){ (uint8_t *) m9s11, 1 });
   }
   if ((decimals == INT64_C(0))) {
@@ -559,12 +562,14 @@ m9_sl_CHAR Fmt_Sci (double v, int64_t decimals, m9_state *err)
     goto L_ret;
   }
   s = (m9_sl_CHAR){ NULL, 0 };
-  if ((v < 0.0)) {
-    s = ((m9_sl_CHAR){ (uint32_t *) m9s16, 1 });
-  }
-  bool m9t6 = (!Fmt_Parts (v, &(f), &(e), err));
+  bool m9t6 = Fmt_SignBit (v, err);
   if (err->exc) goto L_ret;
   if (m9t6) {
+    s = ((m9_sl_CHAR){ (uint32_t *) m9s16, 1 });
+  }
+  bool m9t7 = (!Fmt_Parts (v, &(f), &(e), err));
+  if (err->exc) goto L_ret;
+  if (m9t7) {
     k = INT64_C(0);
     nn = INT64_C(0);
   } else {
@@ -640,7 +645,7 @@ m9_sl_CHAR Fmt_Sci (double v, int64_t decimals, m9_state *err)
     }
   }
   err->res = m9res;
-  m9ret = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, s, ({ __auto_type m9t7 = ds; int64_t m9t7a = INT64_C(0), m9t7n = INT64_C(1); int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; }), err), ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), err), ({ __auto_type m9t8 = ds; int64_t m9t8a = INT64_C(1), m9t8n = decimals; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; }), err), ((m9_sl_CHAR){ (uint32_t *) m9s19, 1 }), err), Fmt_I64Str (k, err), err);
+  m9ret = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, s, ({ __auto_type m9t8 = ds; int64_t m9t8a = INT64_C(0), m9t8n = INT64_C(1); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; }), err), ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), err), ({ __auto_type m9t9 = ds; int64_t m9t9a = INT64_C(1), m9t9n = decimals; int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; }), err), ((m9_sl_CHAR){ (uint32_t *) m9s19, 1 }), err), Fmt_I64Str (k, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -3195,6 +3200,32 @@ static bool Fmt_Parts (double v, int64_t *f, int64_t *e, m9_state *err)
   }
   err->res = m9res;
   m9ret = true;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return m9ret;
+}
+
+static bool Fmt_SignBit (double v, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  m9_sl_BYTE b = {0}; (void) b;
+  m9_pool scratch = {0}; (void) scratch;
+  { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
+  m9_f64_to_le (v, b, err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = ((int64_t)((*(uint8_t *) m9_at (b.p, INT64_C(7), b.len, sizeof (uint8_t), err))) >= INT64_C(128));
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;

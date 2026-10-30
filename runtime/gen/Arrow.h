@@ -8,11 +8,13 @@
 void Arrow_m9init (m9_state *err);
 
 typedef struct Arrow_Table Arrow_Table;
+typedef struct Arrow_Reader Arrow_Reader;
 typedef struct Arrow_Col Arrow_Col;
 typedef struct Arrow_Kv Arrow_Kv;
 typedef struct Arrow_Table Arrow_Table;
 typedef struct Arrow_Fb Arrow_Fb;
 typedef struct Arrow_Packed Arrow_Packed;
+typedef struct Arrow_Reader Arrow_Reader;
 
 #define Arrow_TyI8 INT64_C(0)
 #define Arrow_TyI16 INT64_C(1)
@@ -26,6 +28,9 @@ typedef struct Arrow_Packed Arrow_Packed;
 #define Arrow_CodecZstd INT64_C(1)
 #define Arrow_FbFixed INT64_C(8192)
 #define Arrow_FbPerCol INT64_C(512)
+#define Arrow_MsgSchema INT64_C(1)
+#define Arrow_MsgDict INT64_C(2)
+#define Arrow_MsgBatch INT64_C(3)
 
 #ifndef M9SL_m9_arr_16_int64_t
 #define M9SL_m9_arr_16_int64_t
@@ -34,6 +39,10 @@ typedef struct { int64_t v[16]; } m9_arr_16_int64_t;
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_BYTE
+#define M9SL_m9_sl_m9_sl_BYTE
+typedef struct { m9_sl_BYTE *p; int64_t len; } m9_sl_m9_sl_BYTE;
 #endif
 #ifndef M9SL_m9_sl_Arrow_Packed
 #define M9SL_m9_sl_Arrow_Packed
@@ -49,5 +58,18 @@ void Arrow_AddStr (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR 
 m9_sl_BYTE Arrow_Stream (m9_pool *pool, Arrow_Table * t, m9_state *err);
 m9_sl_BYTE Arrow_StreamCodec (m9_pool *pool, Arrow_Table * t, int64_t codec, int64_t level, m9_state *err);
 int64_t Arrow_NBytes (Arrow_Table * t, m9_state *err);
+Arrow_Reader * Arrow_Open (m9_pool *pool, m9_sl_BYTE src, m9_state *err);
+int64_t Arrow_NFields (Arrow_Reader * r, m9_state *err);
+m9_sl_CHAR Arrow_FieldName (Arrow_Reader * r, int64_t i, m9_state *err);
+int64_t Arrow_FieldType (Arrow_Reader * r, int64_t i, m9_state *err);
+m9_sl_CHAR Arrow_FieldTz (Arrow_Reader * r, int64_t i, m9_state *err);
+m9_sl_CHAR Arrow_MetaOf (Arrow_Reader * r, m9_sl_CHAR key, m9_state *err);
+bool Arrow_Next (Arrow_Reader * *r, m9_pool *r_pool, m9_state *err);
+int64_t Arrow_Rows (Arrow_Reader * r, m9_state *err);
+int64_t Arrow_Nulls (Arrow_Reader * r, int64_t i, m9_state *err);
+bool Arrow_IsNull (Arrow_Reader * r, int64_t i, int64_t row, m9_state *err);
+m9_sl_F64 Arrow_GetF64 (m9_pool *pool, Arrow_Reader * r, int64_t i, m9_state *err);
+m9_sl_I64 Arrow_GetI64 (m9_pool *pool, Arrow_Reader * r, int64_t i, m9_state *err);
+m9_sl_CHAR Arrow_GetStr (m9_pool *pool, Arrow_Reader * r, int64_t i, int64_t row, m9_state *err);
 
 #endif

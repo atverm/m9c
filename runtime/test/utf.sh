@@ -99,16 +99,23 @@ done
 # one octet buffer, SameCi byte by byte; Once's ViewIn is the tool's
 # since 2026-10-25), kept as a diff
 # so that what the hands did stays readable.  The tool's review list for
-# the two is held with its positions, which pins the tool's output where
-# the hands go; the patched sources check clean under the flag and run
-# HttpTest and TimeTest switched.
+# the two is held WITHOUT its positions, as the batches' lists are: an
+# edit above a listed line moved it and turned the gate red three times
+# in two days (2026-10-30, Http's Host line); the hand diffs are context
+# patches and follow a moved line by themselves.  M9_UTF_RECORD=1 writes
+# the tool's list, positions and all, as the new expect/review-http.txt.
+# The patched sources check clean under the flag and run HttpTest and
+# TimeTest switched.
 cp "$SRC/Http.m9" "$SRC/HttpServer.m9" "$W/in/"
 "$M9C" --run "$TOOL" --m9c="$M9C" --out="$W/out" "$W/in/Http.m9" "$W/in/HttpServer.m9" 2> "$W/tool2.err" ||
   { echo "utf: the tool failed on Http:"; cat "$W/tool2.err"; exit 1; }
 grep ': review: ' "$W/tool2.err" | sed "s#$W/in/##" > "$W/review-http.txt"
-cmp -s "$W/review-http.txt" "$F/expect/review-http.txt" || {
-  echo "utf: Http's review list differs from expect/review-http.txt (< expected, > the tool):"
-  diff "$F/expect/review-http.txt" "$W/review-http.txt" | sed 's/^/    /'; exit 1; }
+[ -n "${M9_UTF_RECORD:-}" ] && cp "$W/review-http.txt" "$F/expect/review-http.txt"
+sed -E 's/:[0-9]+:[0-9]+:/:/' "$W/review-http.txt" > "$W/review-http.np"
+sed -E 's/:[0-9]+:[0-9]+:/:/' "$F/expect/review-http.txt" > "$W/expect-http.np"
+cmp -s "$W/review-http.np" "$W/expect-http.np" || {
+  echo "utf: Http's review list differs from expect/review-http.txt (< expected, > the tool; positions aside):"
+  diff "$W/expect-http.np" "$W/review-http.np" | sed 's/^/    /'; exit 1; }
 for f in Http HttpServer; do
   if [ -f "$F/expect/$f.hand.diff" ]; then
     ( cd "$W/out" && patch -s -N "$f.m9" < "$F/expect/$f.hand.diff" ) ||

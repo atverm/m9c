@@ -140,6 +140,8 @@ void Ast_SetTyStr (int64_t id, m9_sl_UTF8 t, m9_state *err);
 m9_sl_UTF8 Ast_TyStrAt (int64_t id, m9_state *err);
 void Ast_SetNoWrites (int64_t id, m9_state *err);
 bool Ast_NoWritesAt (int64_t id, m9_state *err);
+void Ast_SetReadsOnly (int64_t id, m9_state *err);
+bool Ast_ReadsOnlyAt (int64_t id, m9_state *err);
 bool Ast_FoldInt (Ast_Node * k, int64_t *v, m9_state *err);
 int64_t Ast_IntText (int64_t v, m9_arr_24_uint32_t *buf, m9_state *err);
 

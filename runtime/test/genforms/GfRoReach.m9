@@ -1,0 +1,89 @@
+MODULE GfRoReach ;
+
+(* WANT: ptr 7 slice 30 arr 4 alias 2 argcall 5 range IndexError *)
+
+(* An RO record passed by its address WHEREVER it is -- behind a
+   pointer, in a slice reached through a VAR parameter, an array
+   element whose index is checked -- when the callee writes nothing but
+   its own by-value bindings and the arguments run no call that writes
+   (decision 82, a port's M5: PFTs behind `pars: PTR Par.Params',
+   individuals in a patch's slice through a VAR).  A program reads what
+   it did: a callee that writes the same storage through a pointer it
+   is handed sees the value at the call; an argument whose own call
+   writes the record is read as it was before that call; an index out
+   of range still raises. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  R = RECORD n : I64 ; pad : ARRAY 100 OF I64 END ;
+  Pars = RECORD a : R ; b : R END ;
+  PP = PTR Pars ;
+  Rs = SLICE OF R ;
+  Patch = RECORD ind : Rs END ;
+
+(* a pure reader: locals and a value parameter only *)
+PROCEDURE Get (RO r: R ; i: I64) : I64 =
+VAR s, j : I64 ;
+BEGIN
+  s := r.n ;
+  FOR j := 0 TO i DO s := s + r.pad[j] END ;
+  i := 0 ;
+  RETURN s
+END Get ;
+
+(* writes through the pointer it is handed: the RO argument is copied *)
+PROCEDURE PokeV (RO r: R ; VAR q: PP) : I64 =
+BEGIN
+  q.a.n := 99 ;
+  RETURN r.n
+END PokeV ;
+
+(* writes the record its caller lends in the same call *)
+PROCEDURE Bump (VAR q: PP) : I64 =
+BEGIN
+  q.a.n := q.a.n + 100 ;
+  RETURN 0
+END Bump ;
+
+PROCEDURE Sum2 (RO r: R ; k: I64) : I64 =
+BEGIN
+  RETURN r.n + k
+END Sum2 ;
+
+PROCEDURE ViaVar (VAR pt: Patch ; i: I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN Get (pt.ind[i], 0)
+END ViaVar ;
+
+PROCEDURE Run () RAISES IndexError =
+VAR
+  pool : POOL ;
+  p : PP ;
+  pt : Patch ;
+  arr : ARRAY 3 OF R ;
+  i : I64 ;
+BEGIN
+  p := NEW (pool, Pars) ;
+  p.a.n := 7 ;
+  Io.Write ('ptr ' + Fmt.I64Str (Get (p.a, 0))) ;
+  pt.ind := NEW (pool, R, 3) ;
+  pt.ind[2].n := 30 ;
+  Io.Write (' slice ' + Fmt.I64Str (ViaVar (pt, 2))) ;
+  i := 1 ;
+  arr[1].n := 4 ;
+  Io.Write (' arr ' + Fmt.I64Str (Get (arr[i], 0))) ;
+  p.a.n := 2 ;
+  Io.Write (' alias ' + Fmt.I64Str (PokeV (p.a, p))) ;
+  p.a.n := 5 ;
+  Io.Write (' argcall ' + Fmt.I64Str (Sum2 (p.a, Bump (p)))) ;
+  i := 7 ;
+  Io.Write (' range ') ;
+  Io.WriteLine (Fmt.I64Str (Get (arr[i], 0)))
+END Run ;
+
+BEGIN
+  Run ()
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError')
+END GfRoReach.

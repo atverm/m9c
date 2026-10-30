@@ -207,7 +207,6 @@ int main (void)
         x = ((double) (int64_t) (st % 2000000000u) - 1000000000.0)
             * pow (10.0, (double) ((int) (st % 61) - 36));
         d = (int) (st % 18);
-        if (x == 0.0) continue;      /* printf signs a negative zero */
         to_c (Fmt_Fixed (x, d, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
         snprintf (ref, sizeof ref, "%.*f", d, x);
@@ -305,7 +304,6 @@ int main (void)
         x = ((double) (int64_t) (st % 2000000001u) - 1000000000.0)
             * pow (10.0, (double) ((int) (st % 121) - 60));
         d = (int) (st % 18);
-        if (x == 0.0) continue;      /* printf signs a negative zero */
         to_c (Fmt_Sci (x, d, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
         snprintf (ref, sizeof ref, "%.*e", d, x);

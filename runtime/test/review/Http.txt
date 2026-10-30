@@ -1,11 +1,11 @@
-REVIEW Http -- 72 procedures with a body, 58 of them functions; 25 headings in a DEFINITION
+REVIEW Http -- 73 procedures with a body, 59 of them functions; 25 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              58
-  assignments                                   491
-  arguments                                     641
-  RETURN values                                 127
-  operands of a comparison or an operator       524
+  functions answering on every path              59
+  assignments                                   499
+  arguments                                     645
+  RETURN values                                 131
+  operands of a comparison or an operator       555
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -35,8 +35,8 @@ TRUSTED -- outside what the checker can see
 COUNTED -- how much there was to check
   CASE statements                                 0
   RAISE statements                               30
-  handlers                                       13
+  handlers                                       15
   NEW in the frame                                0
   NEW in a named pool                            13
   calls of a STR form with a UTF twin             4   Io.AppendFileBytes -> Io.AppendFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf, Io.AppendFileBytes -> Io.AppendFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf
-  STR subscripts, writes and LEN                156   len line, len name, len name, index line[i], index name[i], len line, +150 more
+  STR subscripts, writes and LEN                169   len line, len name, len name, index line[i], index name[i], len line, +163 more

@@ -1,11 +1,11 @@
-REVIEW Ast -- 18 procedures with a body, 10 of them functions; 16 headings in a DEFINITION
+REVIEW Ast -- 20 procedures with a body, 11 of them functions; 18 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              10
-  assignments                                    75
+  functions answering on every path              11
+  assignments                                    81
   arguments                                      30
-  RETURN values                                  41
-  operands of a comparison or an operator       101
+  RETURN values                                  43
+  operands of a comparison or an operator       110
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -21,7 +21,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          0
   [SHARABLE] records                              0
-  module variables                                4   nextId, tys, tstr, nows
+  module variables                                5   nextId, tys, tstr, nows, rdos
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -37,6 +37,6 @@ COUNTED -- how much there was to check
   RAISE statements                                0
   handlers                                        6
   NEW in the frame                                0
-  NEW in a named pool                             6
+  NEW in a named pool                             7
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  4   len lit, index lit[i], len t, index t[0]

@@ -105,7 +105,12 @@ BEGIN
   Check.EqStr (t, 'I64PadUtf blanks', STR (Fmt.I64PadUtf (7, 4, FALSE)), Fmt.I64Pad (7, 4, FALSE)) ;
   Check.EqStr (t, 'I64PadUtf wider than width', STR (Fmt.I64PadUtf (123456, 3, TRUE)), '123456') ;
   Check.EqStr (t, 'FixedPadUtf = FixedPad', STR (Fmt.FixedPadUtf (3.14159, 9, 2)), Fmt.FixedPad (3.14159, 9, 2)) ;
-  Check.EqStrs (t, 'Sci = printf %.*e, the exponent short', sci, Check.GoldStrs (t, gold, 'sci.want'))
+  Check.EqStrs (t, 'Sci = printf %.*e, the exponent short', sci, Check.GoldStrs (t, gold, 'sci.want')) ;
+  (* the sign of a zero, as printf, Python and Fortran write it (a
+     port's M10, 2026-10-30): -0.0 is not 0.0 *)
+  Check.EqStr (t, 'Fixed keeps the sign of -0.0', Fmt.Fixed (-0.0, 3), '-0.000') ;
+  Check.EqStr (t, 'Sci keeps the sign of -0.0', Fmt.Sci (-0.0, 3), '-0.000e0') ;
+  Check.EqStr (t, 'Fixed: a negative that rounds to zero keeps its sign', Fmt.Fixed (-0.0004, 3), '-0.000')
 EXCEPT
 | ValueRange : Check.That (t, 'Fixed or Sci refused a golden value', FALSE)
 | IndexError : Check.That (t, 'the format golden lines differ in length', FALSE)

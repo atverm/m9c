@@ -2338,7 +2338,6 @@ int64_t m9_fmt_fixed (double v, int64_t decimals, void *buf, int64_t cap)
   if (!m9_fmt_fast () || decimals < 0 || decimals > 17 || cap < 1) return -1;
   n = m9_fmt_special (v, b, cap);
   if (n >= 0) return n;
-  if (v == 0.0) v = 0.0;                       /* -0.0: no sign, as Fmt */
   n = snprintf (b, (size_t) cap, "%.*f", (int) decimals, v);
   if (n < 0 || n >= cap) return -1;
   return n;
@@ -2354,7 +2353,6 @@ int64_t m9_fmt_sci (double v, int64_t decimals, void *buf, int64_t cap)
   if (!m9_fmt_fast () || decimals < 0 || decimals > 17 || cap < 1) return -1;
   n = m9_fmt_special (v, b, cap);
   if (n >= 0) return n;
-  if (v == 0.0) v = 0.0;
   n = snprintf (t, sizeof t, "%.*e", (int) decimals, v);
   if (n < 0 || n >= (int64_t) sizeof t) return -1;
   /* d.ddde+XX -> d.ddde-X: the mantissa as printed, the exponent as

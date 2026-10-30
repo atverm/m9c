@@ -153,6 +153,18 @@ ck "PUT with no body still says Content-Length: 0" \
 ck "DELETE reaches the server as DELETE" \
    "DELETE|0|||" "$($R DELETE "$U/reflect" | tail -1)"
 
+# a Host line among the caller's headers replaces the URL's, any case
+# (zarrm9's mcpd asks a loopback server as a public name, 2026-10-30)
+# (the URL's host goes out without its port, as it always has; RFC 9112
+# wants a port that is not the default -- owed)
+HP=${U#http://} ; HP=${HP%%[:/]*}
+ck "without a Host line, the URL's host goes out, once" \
+   "1|$HP" "$($R GET "$U/host" | tail -1)"
+ck "a caller's Host line replaces it: exactly one, the caller's" \
+   "1|example.org" "$($R GET "$U/host" '' 'Host: example.org' | tail -1)"
+ck "and the name in any case" \
+   "1|zarr.icos-cp.eu" "$($R GET "$U/host" '' 'X-A: 1' 'host: zarr.icos-cp.eu' | tail -1)"
+
 ck "GET through Request is the same GET" \
    "status 200 chars 1500" "$($R GET "$U/plain" | head -1)"
 

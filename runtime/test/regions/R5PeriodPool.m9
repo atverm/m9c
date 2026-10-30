@@ -1,6 +1,6 @@
 MODULE R5PeriodPool ;
-(* OWED (regions.owed): a pool's storage handed back through VAR
-   parameters into module state is not followed.  RStr keeps a copy of
+(* REFUSED since 2026-10-30 (decision 83; owed until then): a pool's
+   storage handed back through VAR parameters into module state.  RStr keeps a copy of
    s in its POOL parameter and hands it back through VAR dst; Retrieve
    passes a module variable's field for dst; Period passes its own LOCAL
    pool, which dies when it returns, and the module body prints the

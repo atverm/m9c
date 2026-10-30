@@ -4912,6 +4912,18 @@ BEGIN
     IF al.kids[k] IS SOME a THEN
       IF a.kind # Ast.NDesignator THEN RETURN FALSE END ;
       m := ScopeMode (a.au) ;
+      (* decision 82: the callee writes nothing but its own by-value
+         bindings and the arguments run no call that writes
+         (Sem.NothingWritten, NrArgs) -- nothing can change the storage
+         under its reads, wherever it is: behind a pointer, in a slice,
+         through a VAR parameter.  Not a constant: its table is const
+         data, the parameter a plain pointer *)
+      IF Ast.ReadsOnlyAt (al.id) AND Text.FindChar (a.au, '.') < 0 AND
+         MFind (aggT, a.au) < 0 AND
+         (Text.Eq (m, 'r') OR Text.Eq (m, 'p') OR Text.Eq (m, 'l') OR
+          Text.Eq (m, 'v')) THEN
+        RETURN TRUE
+      END ;
       (* a module variable too, when the checker proved the callee and
          all it calls write no module state (Sem.NoStateWrite, decision
          81): nothing can then change it under the callee's reads.
@@ -5026,6 +5038,27 @@ BEGIN
   END
 END LowerHoist ;
 
+(* LowerHoist's twin for an RO aggregate passed by its address whose
+   designator raises (decision 82): the temporary is the ADDRESS, and
+   the lowered name the temporary dereferenced, so the call's `&' makes
+   it the temporary again --
+   a local array's element `F (a[i])' was copied for its index's check *)
+PROCEDURE LowerHoistAddr (ak: Ast.Kid ; ind: I64 ; VAR n: I64) =
+VAR
+  e, tmp, at : UTF ;
+BEGIN
+  IF ak IS SOME a THEN
+    at := '?' ;
+    e := S3 ('&(', DES (a, at), ')') ;
+    nhoist := nhoist + 1 ;
+    tmp := S2 ('m9a', ItoA (nhoist)) ;
+    Line (KPbuf, ind, S6 ('{ __typeof__(', e, ') ', tmp, ' = ', S2 (e, ';'))) ;
+    Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+    n := n + 1 ;
+    MAdd (lowered, IrKey (a.id, 0), NONE, Text.Keep (gpool, S3 ('(*', tmp, ')')))
+  END
+END LowerHoistAddr ;
+
 PROCEDURE LowerCall (dn: Ast.Kid ; argl: Ast.Kid ; ind: I64 ; VAR n: I64) =
 VAR k : I64 ;
 BEGIN
@@ -5036,7 +5069,13 @@ BEGIN
         (* an RO aggregate that may not be passed by its address is
            copied here, as a raising argument is guarded *)
         IF ExprRaises (al.kids[k]) OR RoCopy (dn, argl, k) THEN
-          LowerHoist (al.kids[k], IrArgWant (dn, argl, k), ind, n)
+          IF IrArgRo (dn, k) AND RoDirect (dn, argl, k) THEN
+            (* it raises -- an index -- and goes by its address: the
+               address is what is computed first, checks and all *)
+            LowerHoistAddr (al.kids[k], ind, n)
+          ELSE
+            LowerHoist (al.kids[k], IrArgWant (dn, argl, k), ind, n)
+          END
         END
       END
     END

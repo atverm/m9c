@@ -187,6 +187,9 @@ type
     function ParamViewBearing (d, e: TNode; const modn: string): Boolean;
     function ParamSelBeyond (d, e: TNode; const modn: string): Boolean;
     function HandsBackDeep (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
+    function PoolValue (k: TNode; const pn: string): Boolean;
+    function PintoWalk (k: TNode; const cn, pn, modn: string): Boolean;
+    function PoolInto (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
     function HandsBackFrom (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
     function RoExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
     function RoEvidence (k, d: TNode; const modn: string): Boolean;
@@ -1745,6 +1748,107 @@ begin
     src := ParamNameAt (pr.body, j);
     if (cn <> '') and (src <> '') then
       Result := CarrierEvidence (pr.body.kids[4], cn, pr.body, pr.modName, 0, src, True);
+  end;
+  if Result then AnsPut (key, 'yes')
+  else AnsPut (key, 'no');
+end;
+
+{ decision 83: does the callee store what it allocates in its J-th
+  parameter, a POOL, into its I-th, a VAR one?  Mirrors Sem.PoolInto,
+  Sem.PintoWalk and Sem.PoolValue (the owed R5PeriodPool). }
+function TSem.PoolValue (k: TNode; const pn: string): Boolean;
+var a : Integer; x : TNode;
+begin
+  Result := False;
+  if (k = nil) or (k.kind <> nkCallExpr) or (k.kids[1] = nil) then Exit;
+  for a := 0 to High (k.kids[1].kids) do
+  begin
+    x := k.kids[1].kids[a];
+    if (x <> nil) and (x.kind = nkDesignator) and (Length (x.kids) = 0) and (x.a = pn) then
+      Exit (True);
+  end;
+end;
+
+function IsPoolTy (t: TNode): Boolean;
+begin
+  Result := (t <> nil) and (t.kind = nkQualident) and (t.a = 'POOL') and (t.b = '');
+end;
+
+function TSem.PintoWalk (k: TNode; const cn, pn, modn: string): Boolean;
+var
+  i, a, b, g, j, n : Integer;
+  pr : TProcInfo;
+  al, pl, grp, xa, xb : TNode;
+  pa, va : array of Integer;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if k.kind = nkAssign then
+  begin
+    if (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) and (k.kids[0].a = cn) and
+       PoolValue (k.kids[1], pn) then
+      Exit (True);
+  end
+  else if ((k.kind = nkCallStmt) or (k.kind = nkCallExpr)) and (k.kids[0] <> nil) and
+          (k.kids[0].kind = nkDesignator) and (k.kids[1] <> nil) then
+  begin
+    if ProcNamed (modn, CallName (k.kids[0]), pr) and (pr.foreign = '') and
+       (pr.node <> nil) and (pr.node.kids[0] <> nil) then
+    begin
+      al := k.kids[1];
+      pl := pr.node.kids[0];
+      n := Length (al.kids);
+      SetLength (pa, n + 1);
+      SetLength (va, n + 1);
+      a := 0;
+      for g := 0 to High (pl.kids) do
+      begin
+        grp := pl.kids[g];
+        if (grp = nil) or (grp.kids[0] = nil) then continue;
+        for j := 0 to High (grp.kids[0].kids) do
+        begin
+          if a < n then
+          begin
+            if IsPoolTy (grp.kids[1]) then pa[a] := 1
+            else if grp.f1 then va[a] := 1;
+          end;
+          Inc (a);
+        end;
+      end;
+      for a := 0 to n - 1 do
+        if pa[a] = 1 then
+        begin
+          xa := al.kids[a];
+          if (xa <> nil) and (xa.kind = nkDesignator) and (Length (xa.kids) = 0) and (xa.a = pn) then
+            for b := 0 to n - 1 do
+              if va[b] = 1 then
+              begin
+                xb := al.kids[b];
+                if (xb <> nil) and (xb.kind = nkDesignator) and (xb.a = cn) and
+                   PoolInto (pr.modName + '.' + pr.name, pr, b, a) then
+                  Exit (True);
+              end;
+        end;
+    end;
+  end;
+  for i := 0 to High (k.kids) do
+    if PintoWalk (k.kids[i], cn, pn, modn) then Exit (True);
+end;
+
+function TSem.PoolInto (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
+var key, cn, pn : string;
+begin
+  Result := False;
+  if i = j then Exit;
+  key := 'pinto ' + qual + '#' + IntToStr (i) + '#' + IntToStr (j);
+  if AnsGet (key, Result) then Exit;
+  AnsPut (key, 'busy');
+  if (pr.body <> nil) and (Length (pr.body.kids) > 4) then
+  begin
+    cn := VarParamAt (pr.body, i);
+    pn := ParamNameAt (pr.body, j);
+    if (cn <> '') and (pn <> '') then
+      Result := PintoWalk (pr.body.kids[4], cn, pn, pr.modName);
   end;
   if Result then AnsPut (key, 'yes')
   else AnsPut (key, 'no');
@@ -6556,6 +6660,10 @@ var
     ptn, sty : TNode;                { a call through a procedure value }
     tmod : string;                   { the module that declares its type }
     haveHead : Boolean;
+    pa2, va2 : array of Integer;     { decision 83's check }
+    a2, b2, n2 : Integer;
+    m2 : string;
+    xa2, xb2 : TNode;
 
     procedure Arity (want: Integer);
     begin
@@ -7301,6 +7409,53 @@ var
             Inc (k);
           end;
         end;
+      { decision 83: a callee that stores what it allocates in a POOL
+        parameter into a VAR one, handed a pool local to this procedure
+        and storage that outlives its frame (mirrors Sem.PoolIntoCheck) }
+      if (pr.foreign = '') and (pr.node <> nil) and (pr.node.kids[0] <> nil) and (argl <> nil) then
+      begin
+        n2 := Length (argl.kids);
+        SetLength (pa2, n2 + 1);
+        SetLength (va2, n2 + 1);
+        for a2 := 0 to n2 do begin pa2[a2] := 0; va2[a2] := 0; end;
+        a2 := 0;
+        for g := 0 to High (pr.node.kids[0].kids) do
+        begin
+          grp := pr.node.kids[0].kids[g];
+          if (grp = nil) or (grp.kids[0] = nil) then continue;
+          for j := 0 to High (grp.kids[0].kids) do
+          begin
+            if a2 < n2 then
+            begin
+              if IsPoolTy (grp.kids[1]) then pa2[a2] := 1
+              else if grp.f1 then va2[a2] := 1;
+            end;
+            Inc (a2);
+          end;
+        end;
+        for a2 := 0 to n2 - 1 do
+          if pa2[a2] = 1 then
+          begin
+            xa2 := argl.kids[a2];
+            if (xa2 <> nil) and (xa2.kind = nkDesignator) and (Length (xa2.kids) = 0) and
+               (ScopeMode (xa2.a) = 'l') then
+              for b2 := 0 to n2 - 1 do
+                if va2[b2] = 1 then
+                begin
+                  xb2 := argl.kids[b2];
+                  if (xb2 <> nil) and (xb2.kind = nkDesignator) then
+                  begin
+                    m2 := ScopeMode (xb2.a);
+                    if ((m2 = 'm') or (m2 = 'v') or (m2 = 'o') or (Pos ('.', xb2.a) > 0)) and
+                       PoolInto (pr.modName + '.' + pr.name, pr, b2, a2) then
+                      ErrN (site, ctx, 'a call of ' + name + ' stores what it allocates in pool ' +
+                        xa2.a + ' into ' + xb2.a + ', which outlives it: ' + xa2.a +
+                        ' is local to this procedure and its storage dies at its END -- pass a pool that lives as long as ' +
+                        xb2.a + ' (par 4.3)');
+                  end;
+                end;
+          end;
+      end;
       { par 4.2: a name moved into an OWN parameter is not also lent
         in the same call (mirrors Sem.CallType; the review's C7) }
       k := 0;

@@ -3371,6 +3371,8 @@ END FrameCore ;
 PROCEDURE LookupProc (RO callee: UTF ; VAR found: BOOL) : ProcInfo ;
 PROCEDURE DesigName (d: PTR Ast.Node) : UTF ;
 PROCEDURE NoStateWrite (RO qual: UTF ; m: I64 ; body: Ast.Kid) : BOOL ;
+PROCEDURE NothingWritten (RO qual: UTF ; m: I64 ; body: Ast.Kid) : BOOL ;
+PROCEDURE NrArgs (m: I64 ; k: Ast.Kid) : BOOL ;
 
 (* ---- does a procedure ANSWER frame storage?  A summary of its body,
    memoised per Module.Proc, because the signature cannot say: a
@@ -4334,6 +4336,142 @@ BEGIN
   IF res THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
   RETURN res
 END HandsBackDeep ;
+
+(* DOES A CALLEE STORE ITS POOL PARAMETER'S STORAGE INTO ITS VAR
+   PARAMETER?  (decision 83, the owed R5PeriodPool: oneflux's PeriodPool,
+   a heap-use-after-free under ASan.)  `RStr (pool, s, VAR dst)' doing
+   `dst := Text.Keep (pool, s)', called by `Retrieve (pool, VAR st)' with
+   `st.instr[0].model', called by Period with its own LOCAL pool and the
+   module variable st: the copy lives in a pool that dies at Period's
+   END, and st keeps it.  The hand-back (HandsBackFrom) asks whether a
+   callee hands back an ARGUMENT, never whether it stores what it
+   allocates in a POOL parameter; this is that question.  Evidence: an
+   assignment whose target is rooted at the I-th parameter and whose
+   value is `NEW (pool, ...)' or a call that takes the pool as an
+   argument (`Text.Keep (pool, s)', `UTF (pool, s)' -- the reason to
+   pass a pool is to answer in it); or a call handing the pool and an
+   I-rooted designator on to a callee that does the same.  Memo
+   'pinto', a cycle FALSE.  The refusal is the caller's, where both
+   lifetimes are known (PoolIntoCheck). *)
+PROCEDURE PoolInto (RO qual: UTF ; pr: ProcInfo ; i, j: I64) : BOOL ;
+
+(* the value e is storage allocated in the pool named pn *)
+PROCEDURE PoolValue (k: Ast.Kid ; RO pn: UTF) : BOOL =
+VAR a : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[1] IS SOME al THEN
+        FOR a := 0 TO al.nkids - 1 DO
+          IF al.kids[a] IS SOME x THEN
+            IF x.kind = Ast.NDesignator AND x.nkids = 0 AND Text.Eq (x.au, pn) THEN
+              RETURN TRUE
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END PoolValue ;
+
+PROCEDURE PintoWalk (k: Ast.Kid ; RO cn: UTF ; RO pn: UTF ; RO mod: UTF) : BOOL =
+VAR
+  i, a, b, g, j, n : I64 ;
+  pr : ProcInfo ;
+  found : BOOL ;
+  pa, va : SLICE OF I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NAssign THEN
+      IF e.kids[0] IS SOME l THEN
+        IF l.kind = Ast.NDesignator AND Text.Eq (l.au, cn) THEN
+          IF PoolValue (e.kids[1], pn) THEN RETURN TRUE END
+        END
+      END
+    ELSIF e.kind = Ast.NCallStmt OR e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        IF dn.kind = Ast.NDesignator THEN
+          pr := ProcNamed (mod, DesigName (dn), found) ;
+          IF found AND Text.BLen (pr.foreign) = 0 THEN
+            IF pr.node IS SOME pd THEN
+              IF pd.kids[0] IS SOME pl THEN
+                IF e.kids[1] IS SOME al THEN
+                  (* the callee's POOL parameters and its other VAR ones *)
+                  n := al.nkids ;
+                  pa := NEW (I64, n + 1) ;
+                  va := NEW (I64, n + 1) ;
+                  a := 0 ;
+                  FOR g := 0 TO pl.nkids - 1 DO
+                    IF pl.kids[g] IS SOME grp THEN
+                      IF grp.kids[0] IS SOME ids THEN
+                        FOR j := 0 TO ids.nkids - 1 DO
+                          IF a < n THEN
+                            IF PoolParam (grp.kids[1]) THEN pa[a] := 1
+                            ELSIF grp.f1 THEN va[a] := 1
+                            END
+                          END ;
+                          a := a + 1
+                        END
+                      END
+                    END
+                  END ;
+                  FOR a := 0 TO n - 1 DO
+                    IF pa[a] = 1 THEN
+                      IF al.kids[a] IS SOME xa THEN
+                        IF xa.kind = Ast.NDesignator AND xa.nkids = 0 AND Text.Eq (xa.au, pn) THEN
+                          FOR b := 0 TO n - 1 DO
+                            IF va[b] = 1 THEN
+                              IF al.kids[b] IS SOME xb THEN
+                                IF xb.kind = Ast.NDesignator AND Text.Eq (xb.au, cn) THEN
+                                  IF PoolInto (Qualify (pr.modName, pr.name), pr, b, a) THEN
+                                    RETURN TRUE
+                                  END
+                                END
+                              END
+                            END
+                          END
+                        END
+                      END
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END ;
+    FOR i := 0 TO e.nkids - 1 DO
+      IF PintoWalk (e.kids[i], cn, pn, mod) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END PintoWalk ;
+
+PROCEDURE PoolInto (RO qual: UTF ; pr: ProcInfo ; i, j: I64) : BOOL =
+VAR
+  n : I64 ;
+  key, cn, pn : UTF ;
+  res : BOOL ;
+BEGIN
+  IF i = j THEN RETURN FALSE END ;
+  key := Text.Keep (pool, S5 ('pinto ', qual, '#', ItoA (i), Cat ('#', ItoA (j)))) ;
+  n := AnsFind (key) ;
+  IF n >= 0 THEN RETURN AnsYes (n) END ;
+  AnsSet (key, 'busy') ;
+  res := FALSE ;
+  IF pr.body IS SOME d THEN
+    cn := VarParamAt (d, i) ;
+    pn := ParamNameAt (d, j) ;
+    IF Text.BLen (cn) > 0 AND Text.BLen (pn) > 0 AND d.nkids > 4 THEN
+      res := PintoWalk (d.kids[4], cn, pn, pr.modName)
+    END
+  END ;
+  IF res THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
+  RETURN res
+END PoolInto ;
+
 
 (* does the callee answer a VIEW of its J-th parameter -- a slice or
    grid whose RETURN is that parameter, a component of it, a local
@@ -8879,6 +9017,71 @@ BEGIN
   RETURN NONE
 END RecordNamed ;
 
+(* decision 83, the caller's half: a call whose callee stores what it
+   allocates in a POOL parameter into a VAR parameter (PoolInto), handed
+   a pool LOCAL to this procedure for the one and, for the other,
+   storage that outlives this frame -- a module variable, a VAR or OWN
+   parameter's -- keeps a pointer into a pool that dies at this
+   procedure's END. *)
+PROCEDURE PoolIntoCheck (site: PTR Ast.Node ; RO ctx: UTF ; RO name: UTF ;
+                         pr: ProcInfo ; pd: PTR Ast.Node ; argl: Ast.Kid) =
+VAR
+  a, b, g, j, n : I64 ;
+  pa, va : SLICE OF I64 ;
+  m : UTF ;
+BEGIN
+  IF Text.BLen (pr.foreign) > 0 THEN RETURN END ;
+  IF argl IS SOME al THEN
+    IF pd.kids[0] IS SOME pl THEN
+      n := al.nkids ;
+      pa := NEW (I64, n + 1) ;
+      va := NEW (I64, n + 1) ;
+      a := 0 ;
+      FOR g := 0 TO pl.nkids - 1 DO
+        IF pl.kids[g] IS SOME grp THEN
+          IF grp.kids[0] IS SOME ids THEN
+            FOR j := 0 TO ids.nkids - 1 DO
+              IF a < n THEN
+                IF PoolParam (grp.kids[1]) THEN pa[a] := 1
+                ELSIF grp.f1 THEN va[a] := 1
+                END
+              END ;
+              a := a + 1
+            END
+          END
+        END
+      END ;
+      FOR a := 0 TO n - 1 DO
+        IF pa[a] = 1 THEN
+          IF al.kids[a] IS SOME xa THEN
+            IF xa.kind = Ast.NDesignator AND xa.nkids = 0 AND
+               Text.Eq (ScopeMode (xa.au), ModeLocal) THEN
+              FOR b := 0 TO n - 1 DO
+                IF va[b] = 1 THEN
+                  IF al.kids[b] IS SOME xb THEN
+                    IF xb.kind = Ast.NDesignator THEN
+                      m := ScopeMode (xb.au) ;
+                      IF Text.Eq (m, ModeModule) OR Text.Eq (m, ModeVar) OR
+                         Text.Eq (m, ModeOwn) OR Text.FindChar (xb.au, '.') > 0 THEN
+                        IF PoolInto (Qualify (pr.modName, pr.name), pr, b, a) THEN
+                          ErrN (site, ctx, S5 ('a call of ', name, ' stores what it allocates in pool ',
+                            xa.au, S5 (' into ', xb.au, ', which outlives it: ', xa.au,
+                            Cat (' is local to this procedure and its storage dies at its END -- pass a pool that lives as long as ',
+                                 Cat (xb.au, ' (par 4.3)')))))
+                        END
+                      END
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+END PoolIntoCheck ;
+
 PROCEDURE CallType (dn: Ast.Kid ; argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: UTF) : UTF =
 VAR
@@ -9290,9 +9493,17 @@ BEGIN
         IF argl IS SOME alr THEN
           IF NoStateWrite (Qualify (pr.modName, pr.name), FindMod (pr.modName), pr.body) THEN
             Ast.SetNoWrites (alr.id)
+          END ;
+          (* decision 82: a callee that writes nothing but its own
+             by-value bindings, its arguments running no call that
+             writes -- any RO argument may go by its address *)
+          IF NothingWritten (Qualify (pr.modName, pr.name), FindMod (pr.modName), pr.body) AND
+             NrArgs (FindMod (curMod), argl) THEN
+            Ast.SetReadsOnly (alr.id)
           END
         END
       END ;
+      PoolIntoCheck (site, ctx, name, pr, pn, argl) ;
       (* par 4.2: a name moved into an OWN parameter is not also lent
          in the same call (2026-10-21, the compiler review's C7): `Use
          (p, p)' with the first OWN handed the callee one object to
@@ -11174,6 +11385,297 @@ BEGIN
   IF ok THEN AnsSet (key, 'y') ELSE AnsSet (key, 'n') END ;
   RETURN ok
 END NoStateWrite ;
+
+(* DOES A PROCEDURE WRITE NOTHING IT DID NOT DECLARE?  Decision 82, the
+   rest of a port's M5: an RO aggregate behind a pointer, in a slice or
+   reached through a VAR parameter was copied at every call, because a
+   callee might write that storage by another path.  A callee that
+   writes nothing but its own by-value bindings -- a local VAR or a
+   value parameter, rebound, or its inline storage (array elements,
+   record fields, never through a pointer or a slice) -- cannot, and
+   neither can anything it calls when they are so proved.  TRUE only
+   then: a VAR or OWN argument it passes must be such a binding and the
+   callee proved too; NEW only into a local pool, the frame or OWN;
+   COPY into such a binding; no DISPOSE, THREAD, WAIT or SIGNAL; no
+   procedure value, no callee without a body, a foreign C procedure
+   only when every parameter is a scalar by value; a builtin only when
+   known pure.  Memo 'r:<qual>'; a cycle answers FALSE. *)
+
+(* the declared type of a by-value binding nm of proc -- a local VAR,
+   or a parameter with no VAR, OWN or RO -- with found; NONE and not
+   found for anything else *)
+PROCEDURE NrBinding (proc: PTR Ast.Node ; RO nm: UTF ; VAR found: BOOL) : Ast.Kid =
+VAR a, b, g, j : I64 ;
+BEGIN
+  found := FALSE ;
+  IF proc.kids[0] IS SOME pl THEN
+    FOR g := 0 TO pl.nkids - 1 DO
+      IF pl.kids[g] IS SOME grp THEN
+        IF grp.kids[0] IS SOME ids THEN
+          FOR j := 0 TO ids.nkids - 1 DO
+            IF ids.kids[j] IS SOME id THEN
+              IF Text.Eq (id.au, nm) THEN
+                IF grp.f1 OR grp.f2 OR grp.f3 THEN RETURN NONE END ;
+                found := TRUE ;
+                RETURN grp.kids[1]
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  IF proc.nkids > 4 THEN
+    IF proc.kids[4] IS SOME bd THEN
+      FOR a := 0 TO bd.nkids - 1 DO
+        IF bd.kids[a] IS SOME sect THEN
+          IF sect.kind = Ast.NVarSection THEN
+            FOR b := 0 TO sect.nkids - 1 DO
+              IF sect.kids[b] IS SOME vd THEN
+                IF vd.kids[0] IS SOME ids2 THEN
+                  FOR j := 0 TO ids2.nkids - 1 DO
+                    IF ids2.kids[j] IS SOME id2 THEN
+                      IF Text.Eq (id2.au, nm) THEN
+                        found := TRUE ;
+                        RETURN vd.kids[1]
+                      END
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END NrBinding ;
+
+(* d's selectors stay in the binding's own storage: an index of an
+   ARRAY, a field of a RECORD, from the declared type t; never a
+   pointer, a slice or a grid *)
+PROCEDURE NrInline (t: Ast.Kid ; d: PTR Ast.Node) : BOOL =
+VAR
+  i : I64 ;
+  cur : Ast.Kid ;
+BEGIN
+  cur := t ;
+  FOR i := 0 TO d.nkids - 1 DO
+    IF ResolveType (cur) IS SOME rn THEN
+      IF d.kids[i] IS SOME sel THEN
+        IF sel.kind = Ast.NSelIndex AND rn.kind = Ast.NArrayType THEN
+          cur := rn.kids[1]
+        ELSIF sel.kind = Ast.NSelField AND rn.kind = Ast.NRecordType THEN
+          cur := FieldTypeOf (rn, sel.au)
+        ELSE
+          RETURN FALSE
+        END
+      ELSE
+        RETURN FALSE
+      END
+    ELSE
+      RETURN FALSE
+    END
+  END ;
+  RETURN TRUE
+END NrInline ;
+
+(* a write through d, in proc, lands in proc's own by-value storage *)
+PROCEDURE NrOwn (proc: PTR Ast.Node ; d: PTR Ast.Node) : BOOL =
+VAR
+  t : Ast.Kid ;
+  found : BOOL ;
+BEGIN
+  IF Text.FindChar (d.au, '.') > 0 THEN RETURN FALSE END ;
+  t := NrBinding (proc, d.au, found) ;
+  IF NOT found THEN RETURN FALSE END ;
+  IF d.nkids = 0 THEN RETURN TRUE END ;
+  RETURN NrInline (t, d)
+END NrOwn ;
+
+(* a foreign C procedure whose every parameter is a scalar by value:
+   it cannot reach M9 storage *)
+PROCEDURE NrScalarForeign (pd: PTR Ast.Node) : BOOL =
+VAR g : I64 ;
+BEGIN
+  IF pd.kids[0] IS SOME pl THEN
+    FOR g := 0 TO pl.nkids - 1 DO
+      IF pl.kids[g] IS SOME grp THEN
+        IF grp.f1 OR grp.f2 THEN RETURN FALSE END ;
+        IF grp.kids[1] IS SOME ty THEN
+          IF ty.kind # Ast.NQualident THEN RETURN FALSE END ;
+          IF Text.BLen (ty.bu) = 0 THEN
+            IF NOT IsBuiltinTy (ty.au) THEN RETURN FALSE END
+          ELSIF NOT (Text.Eq (ty.au, 'C') AND
+                     (Text.Eq (ty.bu, 'Int') OR Text.Eq (ty.bu, 'SizeT') OR
+                      Text.Eq (ty.bu, 'SSizeT') OR Text.Eq (ty.bu, 'Double') OR
+                      Text.Eq (ty.bu, 'Float'))) THEN
+            RETURN FALSE
+          END
+        ELSE
+          RETURN FALSE
+        END
+      END
+    END
+  END ;
+  RETURN TRUE
+END NrScalarForeign ;
+
+PROCEDURE NrCall (m: I64 ; proc: PTR Ast.Node ; cn: PTR Ast.Node ; args: Ast.Kid) : BOOL =
+VAR
+  callee, om, canon : UTF ;
+  found, bound : BOOL ;
+  pr : ProcInfo ;
+  t : Ast.Kid ;
+  g, j, k : I64 ;
+BEGIN
+  callee := DesigName (cn) ;
+  IF Text.Eq (callee, 'DISPOSE') THEN RETURN FALSE END ;
+  IF Text.Eq (callee, 'NEW') OR Text.Eq (callee, 'COPY') THEN
+    IF args IS SOME al THEN
+      IF al.nkids > 0 THEN
+        IF al.kids[0] IS SOME a0 THEN
+          IF a0.kind # Ast.NDesignator THEN RETURN FALSE END ;
+          IF Text.Eq (callee, 'COPY') THEN RETURN NrOwn (proc, a0) END ;
+          (* NEW's first: the frame's type, OWN, or a local pool *)
+          IF Text.FindChar (a0.au, '.') > 0 OR a0.nkids > 0 THEN RETURN FALSE END ;
+          IF NwModVar (m, a0.au) THEN RETURN FALSE END ;
+          t := NrBinding (proc, a0.au, bound) ;
+          IF NOT bound AND DeclaresName (SOME (proc), a0.au) THEN RETURN FALSE END
+        END
+      END
+    END ;
+    RETURN TRUE
+  END ;
+  pr := ProcNamed (mods[m].name, callee, found) ;
+  IF NOT found THEN
+    IF RecordNamed (callee, om, canon) IS SOME rn THEN RETURN TRUE END ;
+    RETURN NwPureBuiltin (callee)
+  END ;
+  IF pr.node IS SOME pd THEN
+    IF pd.kids[0] IS SOME pl THEN
+      IF args IS SOME al2 THEN
+        k := 0 ;
+        FOR g := 0 TO pl.nkids - 1 DO
+          IF pl.kids[g] IS SOME grp THEN
+            IF grp.kids[0] IS SOME ids THEN
+              FOR j := 0 TO ids.nkids - 1 DO
+                IF (grp.f1 OR grp.f2) AND k < al2.nkids THEN
+                  IF al2.kids[k] IS SOME ak THEN
+                    IF ak.kind # Ast.NDesignator THEN RETURN FALSE END ;
+                    IF NOT NrOwn (proc, ak) THEN RETURN FALSE END
+                  END
+                END ;
+                k := k + 1
+              END
+            END
+          END
+        END
+      END
+    END ;
+    IF Text.BLen (pr.foreign) > 0 THEN RETURN NrScalarForeign (pd) END
+  ELSE
+    RETURN FALSE
+  END ;
+  RETURN NothingWritten (Qualify (pr.modName, pr.name), FindMod (pr.modName), pr.body)
+END NrCall ;
+
+PROCEDURE NrWalk (m: I64 ; proc: PTR Ast.Node ; k: Ast.Kid) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NAssign THEN
+      IF n.kids[0] IS SOME l THEN
+        IF l.kind # Ast.NDesignator THEN RETURN FALSE END ;
+        IF NOT NrOwn (proc, l) THEN RETURN FALSE END
+      END
+    ELSIF n.kind = Ast.NDispose OR n.kind = Ast.NThread OR
+          n.kind = Ast.NWait OR n.kind = Ast.NSignal THEN
+      RETURN FALSE
+    ELSIF n.kind = Ast.NCallStmt OR n.kind = Ast.NCallExpr THEN
+      IF n.kids[0] IS SOME cn THEN
+        IF cn.kind # Ast.NDesignator THEN RETURN FALSE END ;
+        IF NOT NrCall (m, proc, cn, n.kids[1]) THEN RETURN FALSE END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF NOT NrWalk (m, proc, n.kids[i]) THEN RETURN FALSE END
+    END
+  END ;
+  RETURN TRUE
+END NrWalk ;
+
+PROCEDURE NothingWritten (RO qual: UTF ; m: I64 ; body: Ast.Kid) : BOOL =
+VAR
+  i : I64 ;
+  key : UTF ;
+  ok : BOOL ;
+BEGIN
+  key := Text.Keep (pool, Cat ('r:', qual)) ;
+  i := AnsFind (key) ;
+  IF i >= 0 THEN RETURN Text.Eq (ansState[i], 'y') END ;
+  AnsSet (key, 'busy') ;
+  ok := FALSE ;
+  IF m >= 0 THEN
+    IF body IS SOME pd THEN
+      IF pd.kind = Ast.NProcDecl THEN ok := NrWalk (m, pd, pd.kids[4]) END
+    END
+  END ;
+  IF ok THEN AnsSet (key, 'y') ELSE AnsSet (key, 'n') END ;
+  RETURN ok
+END NothingWritten ;
+
+(* the calls an argument list runs, before its callee: each must write
+   nothing either, or a write in one argument could change what another
+   lends by address -- `F (p.r, G (p))' with G writing p.r read the value
+   before G while it was copied *)
+PROCEDURE NrArgs (m: I64 ; k: Ast.Kid) : BOOL =
+VAR
+  i, g : I64 ;
+  callee, om, canon : UTF ;
+  found : BOOL ;
+  pr : ProcInfo ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NCallExpr THEN
+      IF n.kids[0] IS SOME cn THEN
+        IF cn.kind # Ast.NDesignator THEN RETURN FALSE END ;
+        callee := DesigName (cn) ;
+        IF Text.Eq (callee, 'NEW') OR Text.Eq (callee, 'DISPOSE') OR
+           Text.Eq (callee, 'COPY') THEN
+          RETURN FALSE
+        END ;
+        pr := ProcNamed (mods[m].name, callee, found) ;
+        IF NOT found THEN
+          IF RecordNamed (callee, om, canon) IS SOME rn THEN
+          ELSIF NOT NwPureBuiltin (callee) THEN
+            RETURN FALSE
+          END
+        ELSIF pr.node IS SOME pd THEN
+          IF pd.kids[0] IS SOME pl THEN
+            FOR g := 0 TO pl.nkids - 1 DO
+              IF pl.kids[g] IS SOME grp THEN
+                IF grp.f1 OR grp.f2 THEN RETURN FALSE END
+              END
+            END
+          END ;
+          IF Text.BLen (pr.foreign) > 0 THEN
+            IF NOT NrScalarForeign (pd) THEN RETURN FALSE END
+          ELSIF NOT NothingWritten (Qualify (pr.modName, pr.name), FindMod (pr.modName), pr.body) THEN
+            RETURN FALSE
+          END
+        ELSE
+          RETURN FALSE
+        END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF NOT NrArgs (m, n.kids[i]) THEN RETURN FALSE END
+    END
+  END ;
+  RETURN TRUE
+END NrArgs ;
 
 PROCEDURE NoteThreadWrite (line: I64 ; RO name: UTF ; RO sw: UTF) =
 VAR

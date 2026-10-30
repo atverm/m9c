@@ -120,10 +120,10 @@ instead, which is what SciPad is for.  So: 'e', a '-' only when
 the exponent is negative, and no leading zeros -- 3.14e-5 and
 3.14e5.
 
-Zero prints as 0.00e0, and NEGATIVE zero prints without the
-sign, as Fixed already does: neither consults the sign bit.
-printf disagrees on that one value and the driver excludes it
-rather than pretending they agree.
+Zero prints as 0.00e0, and NEGATIVE zero as -0.00e0, the sign bit
+read as Fixed reads it -- printf's answer, so the driver compares
+zeros like any other value (since 2026-10-30; until then neither
+consulted the sign bit and the driver left zero out).
 
 The digits are printf's %.*e to the character, as Fixed's are
 %.*f's: exact, from the double's integer mantissa and exponent,

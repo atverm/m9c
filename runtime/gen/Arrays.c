@@ -923,9 +923,9 @@ m9_sl_F64 Arrays_NanSumAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a8 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
+    { __typeof__(&((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)))) m9a8 = &((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)));
       if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_SumOf (&m9a8, err);
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_SumOf (&(*m9a8), err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -967,9 +967,9 @@ m9_sl_F64 Arrays_NanMeanAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a9 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
+    { __typeof__(&((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)))) m9a9 = &((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)));
       if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MeanOf (&m9a9, err);
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MeanOf (&(*m9a9), err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -1011,9 +1011,9 @@ m9_sl_F64 Arrays_NanMinAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a10 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
+    { __typeof__(&((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)))) m9a10 = &((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)));
       if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MinOf (&m9a10, err);
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MinOf (&(*m9a10), err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -1055,9 +1055,9 @@ m9_sl_F64 Arrays_NanMaxAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a11 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
+    { __typeof__(&((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)))) m9a11 = &((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)));
       if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MaxOf (&m9a11, err);
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MaxOf (&(*m9a11), err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;

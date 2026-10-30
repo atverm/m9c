@@ -477,9 +477,17 @@ _(undocumented)_
 
 ### SetNoWrites (id: I64)
 
-_(documented with the group below)_
+_(undocumented)_
 
 ### NoWritesAt (id: I64) : BOOL
+
+_(undocumented)_
+
+### SetReadsOnly (id: I64)
+
+_(documented with the group below)_
+
+### ReadsOnlyAt (id: I64) : BOOL
 
 NONE is a legal child: absence with a position
 

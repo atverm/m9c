@@ -238,6 +238,13 @@ class H(BaseHTTPRequestHandler):
             self._raw(b"HTTP/1.1 200 OK\r\n"
                       b"Content-Length: %d\r\n"
                       b"Connection: close\r\n" % len(got), got)
+        elif p == "/host":
+            # every Host line as it arrived: their count, then the values
+            hs = self.headers.get_all("Host") or []
+            got = ("%d|%s" % (len(hs), ",".join(hs))).encode()
+            self._raw(b"HTTP/1.1 200 OK\r\n"
+                      b"Content-Length: %d\r\n"
+                      b"Connection: close\r\n" % len(got), got)
         elif p == "/utf8":
             got = "café — été".encode("utf-8")
             self._raw(b"HTTP/1.1 200 OK\r\n"

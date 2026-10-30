@@ -1,0 +1,76 @@
+MODULE ArrowRead ;
+
+(* ArrowRead FILE.arrows -- what Arrow.m9's READER finds in a stream, as
+   the text runtime/test/arrowread.py has pyarrow write for the same
+   bytes (see there): the fields, three metadata keys, then every batch,
+   its columns' null counts and every cell.  A refusal prints `refused'
+   and its message.  arrowread.sh compares the two. *)
+
+IMPORT Io, Fmt, Arrow, Faults ;
+
+CONST
+  Keys = ['passport', 'über', 'absent'] ;
+
+VAR
+  pool : POOL ;
+  src : SLICE OF BYTE ;
+  r : PTR Arrow.Reader IN pool ;
+
+PROCEDURE Batch (VAR p: POOL ; r: PTR Arrow.Reader)
+  RAISES Faults.BadArg, IndexError, ValueRange =
+VAR
+  i, k, ty : I64 ;
+  fs : SLICE OF F64 ;
+  is : SLICE OF I64 ;
+  v : STR ;
+BEGIN
+  Io.WriteLine ('b ' + Fmt.I64Str (Arrow.Rows (r))) ;
+  FOR i := 0 TO Arrow.NFields (r) - 1 DO
+    Io.WriteLine ('c ' + Fmt.I64Str (i) + ' ' + Fmt.I64Str (Arrow.Nulls (r, i))) ;
+    ty := Arrow.FieldType (r, i) ;
+    IF ty = Arrow.TyF32 OR ty = Arrow.TyF64 THEN
+      fs := Arrow.GetF64 (p, r, i)
+    ELSIF ty # Arrow.TyStr THEN
+      is := Arrow.GetI64 (p, r, i)
+    END ;
+    FOR k := 0 TO Arrow.Rows (r) - 1 DO
+      IF Arrow.IsNull (r, i, k) THEN
+        v := 'null'
+      ELSIF ty = Arrow.TyF32 OR ty = Arrow.TyF64 THEN
+        v := Fmt.Short (fs[k])
+      ELSIF ty = Arrow.TyStr THEN
+        v := Arrow.GetStr (p, r, i, k)
+      ELSE
+        v := Fmt.I64Str (is[k])
+      END ;
+      Io.WriteLine ('v ' + Fmt.I64Str (i) + ' ' + Fmt.I64Str (k) + ' ' + v)
+    END
+  END
+END Batch ;
+
+PROCEDURE Run (RO path: STR) RAISES Io.IOError, IndexError, ValueRange =
+VAR
+  i : I64 ;
+BEGIN
+  src := Io.ReadFileBytes (pool, path) ;
+  r := Arrow.Open (pool, src) ;
+  Io.WriteLine ('fields ' + Fmt.I64Str (Arrow.NFields (r))) ;
+  FOR i := 0 TO Arrow.NFields (r) - 1 DO
+    Io.WriteLine ('f ' + Fmt.I64Str (i) + ' ' + Arrow.FieldName (r, i) + ' '
+                  + Fmt.I64Str (Arrow.FieldType (r, i)) + ' ' + Arrow.FieldTz (r, i))
+  END ;
+  FOR i := 0 TO LEN (Keys) - 1 DO
+    Io.WriteLine ('m ' + Keys[i] + '=' + Arrow.MetaOf (r, Keys[i]))
+  END ;
+  WHILE Arrow.Next (r) DO Batch (pool, r) END
+EXCEPT
+| Faults.BadArg (m) : Io.WriteLine ('refused ' + m)
+END Run ;
+
+BEGIN
+  Run (Io.Arg (pool, 1))
+EXCEPT
+| Io.IOError (m) : Io.WriteLine ('cannot read: ' + m)
+| IndexError : Io.WriteLine ('IndexError')
+| ValueRange : Io.WriteLine ('ValueRange')
+END ArrowRead.

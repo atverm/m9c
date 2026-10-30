@@ -207,6 +207,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `an allocation in pool scratch escapes its pool, which dies with this frame (par 4.3)` | the RETURN rule for a name declared IN a local pool, applied by SHAPE: a pool-less name holding an allocation made in a local pool, or a view of one, answers storage that is freed when the frame exits; a STR alone is re-homed at exit (par 4.3) | answer frame storage (NEW (T), rule 1) or allocate in a pool the caller hands in | `pool-escape-by-shape` |
 | `pool-interior pointer escapes its pool` | PTR T IN pool cannot outlive its pool, and this pool dies with the frame | take the pool as a VAR parameter so the caller owns it, or return by value (docs/pools.md) | `pool-escape-on-return` |
 | `an allocation in pool scratch escapes its pool, which dies with this frame (par 4.3)` | a call whose callee takes a POOL and answers a pointer-bearing value (a slice, a pointer, a record holding one) answers INTO that pool, as the parameter promises; handed a LOCAL pool, the answer dies with the frame, and here it is returned or stored where the frame's end would be read -- a string answer is exempt, being copied out at exit | give the callee a pool that outlives the use -- the caller's, through a VAR pool parameter of your own -- or build the answer in the frame (NEW with no pool) and let the frame rules re-home it; copying a scratch-pool answer into a KEPT parameter is the same escape | `pool-escape-via-callee` |
+| `a call of Fill stores what it allocates in pool p into g, which outlives it: p is local to this procedure and its storage dies at its END -- pass a pool that lives as long as g (par 4.3)` | the callee keeps what it allocates in its POOL parameter in its VAR parameter (directly or through a further call), so the variable points into that pool; a pool local to the caller dies at the caller's END while the variable lives on -- oneflux's PeriodPool, a use after free accepted until 2026-10-30 | hand the call a pool that lives as long as the variable -- the caller's own POOL parameter or a module pool -- or keep the result in a local of the same procedure | `pool-into-var-outlives` |
 | `an allocation in pool p, the caller's, may die before module variable last is read (par 4.3)` | an allocation in a POOL parameter -- the caller's pool, perhaps a local that dies when the caller returns -- is kept in a module variable (par 4.3) | allocate it in the module's own pool (VAR mpool : POOL ; NEW (mpool, T)) or in HEAP, or copy a string: Text.Keep (mpool, s) | `pool-param-into-module` |
 | `an allocation in pool scratch dies with this frame; it cannot be stored through v, which outlives it (par 4.3)` | an allocation in a LOCAL pool, or a name declared IN one, dies with the frame and is neither re-homed nor adopted at exit, so it may not be stored through a reference parameter, in a module variable, through KEPT, or in a name declared IN a pool that outlives the frame (par 4.3) | allocate in the pool the destination lives in, or in the frame (NEW (T)) so that the store adopts it | `pool-ptr-via-var` |
 | `argument 1 of Grow: the pool of u is not known here, and the callee may allocate in it -- u is bound from the value parameter h -- take it as VAR, so its pool comes with it (par 4.3)` | a binder bound from a VALUE parameter (IF h.next IS SOME u) is handed to a VAR pointer parameter: the callee may allocate in the binder pool, which is the value parameter pool, and nobody named that one (par 4.3) | take the parameter VAR (VAR h: PTR Node), so its pool comes with it; or copy the binder into a local declared IN the pool it lives in | `pool-root-binder` |
@@ -5121,6 +5122,55 @@ BEGIN RETURN s + '' END AsText ;
 PROCEDURE F (RO s: STR) : SLICE OF BYTE RAISES ValueRange =
 VAR scratch : POOL ;
 BEGIN RETURN Octets (scratch, s) END F ;
+BEGIN
+END m.
+```
+
+### pool-into-var-outlives
+
+`a call of Fill stores what it allocates in pool p into g, which outlives it: p is local to this procedure and its storage dies at its END -- pass a pool that lives as long as g (par 4.3)`
+
+```
+(* A callee that stores what it allocates in its POOL parameter into its
+   VAR parameter, handed a pool local to the caller and a variable that
+   outlives the caller's frame: the variable keeps a pointer into a pool
+   that dies at the caller's END -- oneflux's PeriodPool, a
+   heap-use-after-free under ASan, accepted until 2026-10-30
+   (regions/R5PeriodPool).  Legal forms first: a local pool filling a
+   local, a module pool filling a module variable. *)
+MODULE m ;
+VAR
+  g : STR ;
+  mp : POOL ;
+PROCEDURE Copy (VAR pool: POOL ; RO s: STR) : STR =
+VAR
+  r : STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, CHAR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO r[i] := s[i] END ;
+  RETURN r
+END Copy ;
+PROCEDURE Fill (VAR pool: POOL ; VAR dst: STR) =
+BEGIN
+  dst := Copy (pool, 'x')
+END Fill ;
+PROCEDURE Local () =
+VAR
+  p : POOL ;
+  s : STR ;
+BEGIN
+  Fill (p, s)
+END Local ;
+PROCEDURE Module () =
+BEGIN
+  Fill (mp, g)
+END Module ;
+PROCEDURE Bad () =
+VAR p : POOL ;
+BEGIN
+  Fill (p, g)
+END Bad ;
 BEGIN
 END m.
 ```

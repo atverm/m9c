@@ -337,7 +337,8 @@ CONST
     'exception-written-through',
     'array-count-no-value',
     'record-inline',
-    'record-extension'
+    'record-extension',
+    'pool-into-var-outlives'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -642,7 +643,8 @@ CONST
     'an EXCEPTION is raised and handled, never stored into: it has no storage to index or select',
     "an array's count is fixed when the program is compiled; a CONST divisor of 0 or a value past MAX (I64) gives it none (par 2.2)",
     "the generator builds a record from its TYPE declaration, by name; a RECORD written as a variable's, field's or element's type had none and was `type kind unsupported yet' until 2026-10-30",
-    "type extension is specified with IS tests and type guards (par 2.2, par 8) and not built: the generator knew no field of a base until 2026-10-30, when the checker began to refuse it"
+    "type extension is specified with IS tests and type guards (par 2.2, par 8) and not built: the generator knew no field of a base until 2026-10-30, when the checker began to refuse it",
+    "the callee keeps what it allocates in its POOL parameter in its VAR parameter (directly or through a further call), so the variable points into that pool; a pool local to the caller dies at the caller's END while the variable lives on -- oneflux's PeriodPool, a use after free accepted until 2026-10-30"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -947,7 +949,8 @@ CONST
     'declare a variable for the data, and RAISE the exception with it as its payload',
     'give the divisor a CONST other than 0, or count fewer elements',
     'declare the record as a TYPE, TYPE Inner = RECORD b : I64 END, and write Inner where the RECORD was',
-    "write the base's fields into the record itself, or hold the base as a field: RECORD base : Base ; a1 : I64 END"
+    "write the base's fields into the record itself, or hold the base as a field: RECORD base : Base ; a1 : I64 END",
+    "hand the call a pool that lives as long as the variable -- the caller's own POOL parameter or a module pool -- or keep the result in a local of the same procedure"
   ] ;
 
 VAR
