@@ -27,6 +27,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign ALL to I64` | ALL is the axis-keeping marker for VIEW and has no value outside one | use ALL only as a VIEW argument; a whole-axis loop is FOR i := 0 TO LEN (g, k) - 1 | `all-outside-a-view` |
 | `G expects 1 argument(s), got 2` | the call passes a different number of arguments from the declaration | read the signature in docs/modules/<M>.md; every parameter is positional and required | `arity-mismatch` |
 | `an ARRAY's count is an integer literal, a CONST or an enumeration, or + - * DIV MOD over them, not ORD ('a') (par 2.2)` | an array's count is fixed when the program is compiled, from integer literals, integer CONSTs and enumerations under + - * DIV MOD; a call, a zero divisor or a CHAR or real CONST is none of those (par 2.2) | write the count as a CONST of its value (CONST Width = 97), or use a SLICE when it is known only at run time | `array-count-form` |
+| `an ARRAY's count has no value: N DIV Z divides by 0 or passes MAX (I64) (par 2.2)` | an array's count is fixed when the program is compiled; a CONST divisor of 0 or a value past MAX (I64) gives it none (par 2.2) | give the divisor a CONST other than 0, or count fewer elements | `array-count-no-value` |
 | `an ARRAY holds at least one element; its count is -3` | an ARRAY's count folds to a constant below 1; until 2026-10-22 the generator refused it as `array count form unsupported yet' (par 2.2.1) | give the count as a constant of at least 1, or use a SLICE when the length is known only at run time | `array-count-not-positive` |
 | `an ARRAY m.Colour OF is indexed by a m.Colour value, not an integer literal` | an ARRAY indexed by an enumeration is indexed BY THE TYPE -- its subscript is a member of that enumeration, and its length is the member count -- so an integer subscript (or a value of some other type) is refused; the compiler proves a[Colour.Red] is in range precisely because a Colour is always one of the members | write the member: a[Colour.Red], not a[0]; that is what makes the array bounds-checked at compile time, with no runtime check and no ordinal to keep in step with the type | `array-enum-index-int` |
 | `cannot assign to P -- P is a PROCEDURE, not a variable` | the target of := names a procedure; a procedure is a declaration, not storage -- until 2026-10-22 a bare one was refused as an unknown name and a qualified one reached the C compiler (par 3 rule 7) | call it (P ()), or hold a procedure value in a variable of procedure type: VAR a : OPT Act ; a := SOME (P) | `assign-to-procedure` |
@@ -77,6 +78,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `unknown member: Hue.Nope -- Hue declares no such member` | the name after the type is none of its members -- a typo, or a member of another enumeration; until 2026-10-22 the checker passed it and the C compiler refused an undeclared identifier (par 3 rule 7) | write a member the type lists (Hue.Warm), or add the member to the type | `enum-member-unknown` |
 | `Bad is an EXCEPTION, not a type` | an EXCEPTION names something raised and handled, and has no values; until 2026-10-22 a variable, field or result of one compiled to C that declared it of the exception descriptor (par 5) | declare a RECORD with the fields the exception carries and bind them in the handler: | Bad (c) : info.code := c | `exception-as-type` |
 | `a field of exception Bad is m.Pair: a payload is integers, reals, BOOL, CHAR, enumerations and strings -- pass what the handler needs of it` | an EXCEPTION field is a record, a pointer or a case record with a payload: the payload travels in slots for integers, reals and strings, and an enumeration goes as its tag (par 5) | carry the fields the handler needs (the code, the name, the position), not the record itself | `exception-field-record` |
+| `cannot assign through IndexError -- IndexError is an EXCEPTION, not a variable` | an EXCEPTION is raised and handled, never stored into: it has no storage to index or select | declare a variable for the data, and RAISE the exception with it as its payload | `exception-written-through` |
 | `EXIT across a FINALLY would skip its cleanup: leave the protected block first, or move the loop inside it (par 5)` | EXIT would leave its loop from inside a block with a FINALLY that the loop is outside of, skipping the cleanup | leave the protected block first (set a flag and test it after the block), or put the loop inside the block | `exit-across-finally` |
 | `EXIT outside a loop: EXIT leaves the innermost LOOP, WHILE or FOR (par 5)` | EXIT leaves the innermost LOOP, WHILE or FOR, and this one is in none of them | end the WHILE or FOR by its condition, or wrap the work in a LOOP | `exit-outside-loop` |
 | `a frame allocation dies with this frame; it cannot be stored in module variable Lib.box` | another module's variable outlives this procedure as the module's own do: a frame value stored there would dangle (par 4.3, decision 28) | allocate where the exporter lives: NEW (HEAP, T), a pool the exporter owns, or assign from the module body | `export-var-frame-ptr` |
@@ -127,6 +129,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot write through g, which holds the RO parameter v (line 13) (par 2.4)` | a grid laid over read-only storage (an RO parameter, a literal, a CONST, a marked name) is a VIEW of it and carries decision 33's mark: a write through the grid writes the read-only storage | copy the storage first (NEW and a loop), or keep the grid RO: declare the parameter RO and only read through it | `grid-of-ro-written` |
 | `GRID needs a slice, not I64` | GRID (s, n0, ..., nR) was given something that is not a SLICE OF T as its storage (par 2.2.1): the grid's element type is the slice's | hand GRID a SLICE OF T: an array goes through SLICE (a, 0, LEN (a)) into a variable first | `grid-of-slice` |
 | `cannot assign GRID 3 OF F64 to GRID 2 OF F64` | GRID 3 OF F64 and GRID 2 OF F64 are different types; rank is in the type, shape in the value | declare the matching rank, or take a VIEW that drops an axis | `grid-rank-is-part-of-the-type` |
+| `a GRID's rank is a number from 1 to 32, not 0 (par 2.2.1)` | a GRID's rank is part of its type and says how many subscripts it takes; 0 takes none and a rank past 32 is no grid anyone writes (par 2.2.1) | write the rank as a number from 1 to 32 | `grid-rank-range` |
 | `a GRID 3 needs 3 subscripts, not 2` | every axis must be subscripted; a GRID is not a nested array | g[i, j, k] for a GRID 3; VIEW (g, i, ALL, ALL) to select a plane | `grid-subscript-arity` |
 | `unhandled RAISES Bad from call to Boom -- add it to this procedure's RAISES, or handle it: EXCEPT \| Bad : ...` | a call raising an exception comes AFTER the block whose handler names it; a block catches only for its own guarded sequence, and until 2026-10-21 the checker counted a handler anywhere in the procedure as catching everywhere (par 5) | move the call inside the block, give it a block of its own with the handler, or add the exception to the RAISES | `handled-only-inside` |
 | `unhandled RAISES Bad from RAISE -- add it to this procedure's RAISES, or handle it: EXCEPT \| Bad : ...` | a handler's own body raises the exception it handles, or another; the body is outside the block it handles for, and until 2026-10-21 the flat handled set counted the re-raise as caught (par 5) | catch it in an enclosing block, add it to the procedure's RAISES, or recover in the handler without raising | `handled-reraise` |
@@ -166,6 +169,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `integer literal 40000 does not fit I16` | an integer literal adapts to the width it is stored into, and this one is outside that width's range -- until 2026-09-27 it compiled and the C conversion wrapped it (I16 := 40000 stored -25536) | use a wider type, or the value you meant; a computed value that may not fit converts explicitly with I16 (x) RAISES ValueRange (par 2.1) | `literal-does-not-fit` |
 | `argument 1 of Up: a string literal can be lent only to an RO parameter` | a string literal is passed to a by-value STR (or SLICE) parameter that is not RO; such a parameter can be written through, a literal is read-only data, and until 2026-10-01 this was accepted and a callee that wrote died with SIGSEGV (museum/write-through-literal.m9) | declare the parameter RO if the procedure only reads it -- every STR parameter that is not written should say so; if it does write, pass a variable (par 2.4) | `literal-to-writable-slice` |
 | `a local CONST may not shadow a module CONST: Tag` | a procedure declares a CONST with the same name as one the module already declares | rename one of them.  Which would win depends on lookup order, and the map answers the first hit, so the shadow is refused rather than resolved (docs/frame-pools.md) | `local-const-shadow` |
+| `m is a module, not a value -- name what it declares: m.X` | a module is a namespace, not a value: what it declares is named through it, Io.WriteLine | name what the module declares, Io.X | `module-as-value` |
 | `use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 35 (par 4.2)` | a module variable moved in the module body (handed to an OWN parameter or a THREAD, DISPOSEd) is used again -- the body tracks ownership as a procedure does (par 4.2) | give it a fresh value after the move (p := NEW (OWN, T)), or move it once; a POOL allocation is lent to a thread, not moved | `module-body-use-after-move` |
 | `module Other is named and not imported: write IMPORT Other` | the same refusal; the probe holds what must stay LEGAL before it -- an implementation naming a module only its definition imports, a module naming itself, a local variable that has a module's name | IMPORT the module the last procedure names | `module-import-allowed-forms` |
 | `unknown name: Lib.Nosuch -- Lib declares no such name` | a qualified name Mod.X names a module the checker has loaded and a member it does not declare -- no procedure, type, constant, exception or exported variable X; a module NOT loaded stays soft (that is a missing import, said elsewhere) | spell the member as the module declares it (m9c --json MODULE lists them), or import the module that has it | `module-member-unknown` |
@@ -225,12 +229,13 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `unhandled RAISES ValueRange from call to Check -- add it to this procedure's RAISES, or handle it: EXCEPT \| ValueRange : ...` | a call that can raise stands in an IF, ELSIF or WHILE condition, a CASE selector or a FOR bound, and nothing declares or handles what it raises -- counted there since 2026-10-11, as everywhere else (par 5) | add the exception to the procedure's RAISES, or handle it in an EXCEPT arm, as for any other call | `raises-in-condition` |
 | `p is read before it is assigned: a PTR that is not OPT has no value until it is given one -- assign it on every path first (par 4)` | a local of a pointer type that is not OPT is read on a path where nothing gave it a value -- an IF without the assignment in every arm, a loop that may not run, a handler reached before the assignment, a flag the checker cannot follow; until 2026-10-21 it was NULL and the read a SIGSEGV (par 4) | give it a value before the branch, or on every arm; an arm that cannot give one ends in RAISE or RETURN; where a flag guards the read, give the pointer its value where the flag is set false too, or make it OPT and read it through IS SOME | `read-before-assigned` |
 | `Row expects 2 argument(s), got 1` | a record aggregate Row (...) gives fewer or more values than the record has fields; it is positional and every field must be given (report par 2.2.4, 2026-10-05) | give every field, in declaration order: Row (code, text) | `record-aggregate-arity` |
-| `Ext: an aggregate of an extended record is not built` | a record aggregate names an extended record (RECORD (Base) ...): its base fields would have to come first, which the first cut of the aggregate does not do | declare a variable of the extended type and set its fields one by one | `record-aggregate-extended` |
 | `field 1 of Row: cannot give SLICE OF CHAR where I64 is expected` | a value of a record aggregate does not have its field type -- often two fields given in the wrong order, which is what a positional aggregate cannot otherwise notice when the types differ | give each field a value of its type, in declaration order; the message names the field by position | `record-aggregate-field-type` |
 | `a RECORD takes one attribute, [SHARABLE] (par 6), not [SHARE]` | a RECORD takes one attribute, [SHARABLE]; another name is a typo, not an attribute anything reads (par 6) | write [SHARABLE], or drop the attribute | `record-attribute-unknown` |
 | `a record CONST is not exported yet: Ok` | a record CONST is declared in a DEFINITION: like a constant table it is not exported yet | declare the record CONST in the implementation, or export a procedure that answers it | `record-const-exported` |
 | `field 1 of C is not a literal: a CONST holds literals` | a field of a record CONST is not a literal: a CONST record is read-only data in the program, so its fields are literals (or NaN), as the elements of a constant table are | write the literal itself, or build the value in a statement (r := Row (N, ...)), where any expression of the field type goes | `record-const-not-literal` |
 | `cannot write the CONST E` | a field of a record CONST, or the whole of it, is assigned: it is read-only data | copy it to a variable (r := E) and change the copy | `record-const-written` |
+| `type extension, RECORD (E0) ..., is not in the language yet: give the fields one by one (par 2.2)` | type extension is specified with IS tests and type guards (par 2.2, par 8) and not built: the generator knew no field of a base until 2026-10-30, when the checker began to refuse it | write the base's fields into the record itself, or hold the base as a field: RECORD base : Base ; a1 : I64 END | `record-extension` |
+| `a RECORD is a TYPE of its own: declare it, TYPE T = RECORD ... END, and use its name (par 2.2)` | the generator builds a record from its TYPE declaration, by name; a RECORD written as a variable's, field's or element's type had none and was `type kind unsupported yet' until 2026-10-30 | declare the record as a TYPE, TYPE Inner = RECORD b : I64 END, and write Inner where the RECORD was | `record-inline` |
 | `undeclared retention: borrowed o (carried by spec) reaches module state` | a borrowed parameter reaches module state through a record that carries it -- here a field of a field of a local record, stored whole in a module variable; storing the borrow into the local alone, at any depth through records held by value, is legal | declare KEPT o, or store a copy that outlives the call: Text.Keep (pool, s) into a module pool | `region-inline-field` |
 | `function result discarded: G returns I64` | a function's result was not used; M9 does not let a value fall on the floor | assign it, or make the procedure proper if the result is not wanted | `result-discarded` |
 | `retention: borrowed x stored into r` *(ledger, not an error)* | NOT an error: the P3 ledger noting that a borrowed parameter was stored beyond the frame | nothing to fix; it is measured against the kill-gate (docs/p3-ledger.md) | `retention-ledgered` |
@@ -269,6 +274,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `THREAD (Lib.Work): the target must be a procedure of this module, not Lib's -- start it from a procedure declared here (par 6)` | the same refusal where a BINDER of the module's name exists elsewhere in the procedure -- an IS SOME, a CASE arm, a handler -- and the qualified name is outside the statements that binder covers; until 2026-10-08 the shadow test was by subtree and such a name passed as the binder's | IMPORT the module, or rename the binder; a binder is in scope only in the THEN, the arm or the handler that binds it | `thread-target-elsewhere` |
 | `is not total (missing R)` | CASE over a CASE RECORD must name every variant of the selector's own type | add the missing arm; there is no ELSE for variants (par 8) | `totality-uses-selector-type` |
 | `type H refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2)` | a type is a pointer to itself, or two names are each other: there is no record for the recursion to stop at, and until 2026-10-21 --check followed the names until it ran out of stack or for ever (par 2.2) | point to a RECORD that holds the pointer back: P = PTR R ; R = RECORD p : P END | `type-alias-cycle` |
+| `I64 is a type, not a value -- a value of it is written I64 (x)` | a type names a set of values, not one: it is read as a value only through a conversion or as the argument of MAX or SizeOf | convert a value, I64 (x), or ask MAX (I64) for the type | `type-as-value` |
 | `a TYPE declared in a procedure is not in the language yet: declare Pt at module level` | a TYPE among a procedure's declarations: the grammar allows it and nothing implements it; until 2026-10-22 the generator refused its first use as an unsupported selector (par 3 rule 7) | move the TYPE to the module level | `type-in-procedure` |
 | `type Bad refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2)` | a record, array, slice, grid or procedure type holds itself -- by value, as an element, as a parameter -- with no pointer to a record between: it would have no size, and until 2026-10-21 it reached cc as an incomplete type (par 2.2) | hold it through a pointer: RECORD inner : PTR Bad END, OPT PTR where it may be absent | `type-refers-to-itself` |
 | `type H0 refers to itself other than through a pointer to a record` | a ring of type names too long for the walk that looks for one: a cycle of more than a hundred names was taken for none, and the generator crashed on it | break the ring with a PTR to a RECORD, as for a short one | `type-ring-long` |
@@ -278,6 +284,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `unknown exception: NoSuchExc` | a RAISE, a RAISES clause or a handler cites an exception name found nowhere -- not declared locally, not predeclared (Overflow/IndexError/OutOfMemory/ValueRange), and not declared in any loaded module | declare the EXCEPTION, or qualify it into the module that owns it (Json.ParseError); an imported exception is reached as Module.Name, never bare -- the checker now refuses what the generator could not emit | `unknown-exception` |
 | `unknown procedure: Writeline -- did you mean WriteLine?` | a procedure is called by a name that differs from a declared one only in CASE (Writeline for WriteLine); names are case-sensitive, and since 2026-10-05 the refusal names the procedure that was meant | write the name as declared -- the message says which: names are case-sensitive | `unknown-procedure-case` |
 | `unknown procedure: Prnt -- did you mean Print?` | the name is one or two edits from a procedure the module declares -- a typo; the checker names the nearest, case aside, the first so near in declaration order | write the name the hint gives, if it is the one meant | `unknown-procedure-near` |
+| `unknown name: w` | the name before the selector is declared nowhere this module can see: no variable, parameter, CONST, type or imported module (par 3 rule 7) | declare the variable, or IMPORT the module whose name it is | `unknown-root-selector` |
 | `unknown type: Lib.Dstring -- Lib declares no such type` | a declaration names a type as Module.Name, the module is imported and loaded, and it declares no type or opaque of that name -- a typo, most often in case (DynStr.Dstring for DynStr.DString), since names are case-sensitive | spell it as the module declares it (m9c --json Module lists every name); an unknown type is otherwise SOFT and never diagnosed, because a bare name found nowhere may only be a missing IMPORT -- but a known module lacking the name is not softness, and until 2026-09-15 this rode through --check to surface as cc's `unknown type name Module_Name', the M9 line gone | `unknown-type-in-known-module` |
 | `use of s after it was DISPOSEd` | the name was DISPOSEd on an earlier line and is dead | do not read it; re-assign to bring it back to life (par 4.2) | `use-after-dispose` |
 | `use of s after it was moved` | assigning a bare owned pointer to another name MOVES it; the source is dead | use the destination; if both must live, that is a SHARED handle | `use-after-move-assign` |
@@ -559,6 +566,28 @@ TYPE
   C = ARRAY 2 * N - (N MOD 3) OF I64 ;
   D = ARRAY Colour OF I64 ;
   E = ARRAY ORD ('a') OF I64 ;
+BEGIN
+END m.
+```
+
+### array-count-no-value
+
+`an ARRAY's count has no value: N DIV Z divides by 0 or passes MAX (I64) (par 2.2)`
+
+```
+(* A count over CONSTs that has no value: a CONST divisor of 0, or a
+   product past MAX (I64).  The checker kept no CONST values until
+   decision 78, and the generator refused these as `array count form
+   unsupported' (2026-10-30).  Legal forms first: a CONST, an
+   expression over CONSTs that folds. *)
+MODULE m ;
+CONST
+  N = 4 ;
+  Z = 0 ;
+TYPE
+  A = ARRAY N OF I64 ;
+  B = ARRAY N * 2 - 1 OF I64 ;
+  C = ARRAY N DIV Z OF I64 ;
 BEGIN
 END m.
 ```
@@ -1786,6 +1815,25 @@ BEGIN
 END m.
 ```
 
+### exception-written-through
+
+`cannot assign through IndexError -- IndexError is an EXCEPTION, not a variable`
+
+```
+(* An exception's name written through as if it were an array.
+   Accepted and refused by the generator as `unknown name' (the fuzz
+   review's N13, until 2026-10-30).  Legal forms first: the exception
+   raised and handled. *)
+MODULE m ;
+VAR a : ARRAY 3 OF I64 ;
+BEGIN
+  a[0] := 1 ;
+  IndexError[0] := 1
+EXCEPT
+| IndexError : a[1] := 2
+END m.
+```
+
 ### exit-across-finally
 
 `EXIT across a FINALLY would skip its cleanup: leave the protected block first, or move the loop inside it (par 5)`
@@ -2952,6 +3000,25 @@ VAR a : GRID 2 OF F64 ; b : GRID 3 OF F64 ;
 BEGIN a := b END m.
 ```
 
+### grid-rank-range
+
+`a GRID's rank is a number from 1 to 32, not 0 (par 2.2.1)`
+
+```
+(* A GRID's rank from 1 to 32.  GRID 18446744073709551615 OF F64 stopped
+   the compiler with `m9: unhandled Overflow' and no position, and GRID
+   0 has no axis to index (the fuzz review's N8, until 2026-10-30).
+   Legal forms first: rank 1, 2 and 32. *)
+MODULE m ;
+VAR
+  a : GRID 1 OF F64 ;
+  b : GRID 2 OF F64 ;
+  c : GRID 32 OF I64 ;
+  z : GRID 0 OF F64 ;
+BEGIN
+END m.
+```
+
 ### grid-subscript-arity
 
 `a GRID 3 needs 3 subscripts, not 2`
@@ -3990,6 +4057,24 @@ END P ;
 
 BEGIN
   P ()
+END m.
+```
+
+### module-as-value
+
+`m is a module, not a value -- name what it declares: m.X`
+
+```
+(* A module named where a value is read: `IF Io = 3', `Io.Halt (Io)',
+   here the module's own name.  Accepted and refused by the generator
+   as `unknown name' (the fuzz review's N13, until 2026-10-30).  Legal
+   forms first: what the module declares, by its name. *)
+MODULE m ;
+CONST K = 3 ;
+VAR x : I64 ;
+BEGIN
+  x := m.K ;
+  IF m = 3 THEN x := 1 END
 END m.
 ```
 
@@ -5634,25 +5719,6 @@ BEGIN
 END m.
 ```
 
-### record-aggregate-extended
-
-`Ext: an aggregate of an extended record is not built`
-
-```
-MODULE m ;
-TYPE
-  Base = RECORD
-    a : I64 ;
-  END ;
-  Ext = RECORD (Base)
-    b : I64 ;
-  END ;
-VAR x : Ext ;
-BEGIN
-  x := Ext (1, 2)
-END m.
-```
-
 ### record-aggregate-field-type
 
 `field 1 of Row: cannot give SLICE OF CHAR where I64 is expected`
@@ -5732,6 +5798,48 @@ CONST
   E = Row (1, 'a') ;
 BEGIN
   E.code := 2
+END m.
+```
+
+### record-extension
+
+`type extension, RECORD (E0) ..., is not in the language yet: give the fields one by one (par 2.2)`
+
+```
+(* Type extension is specified (par 2.2, with IS tests and type guards,
+   par 8) and not built.  The checker accepted RECORD (Base) and the
+   generator knew no field of the base: `e.a0' on an extension of an
+   extension was `unknown record field' (the fuzz review's ext3, until
+   2026-10-30).  Legal form first: the base held as a field. *)
+MODULE m ;
+TYPE
+  E0 = RECORD a0 : I64 END ;
+  Held = RECORD base : E0 ; a1 : I64 END ;
+  E1 = RECORD (E0) a1 : I64 END ;
+BEGIN
+END m.
+```
+
+### record-inline
+
+`a RECORD is a TYPE of its own: declare it, TYPE T = RECORD ... END, and use its name (par 2.2)`
+
+```
+(* A RECORD is declared as a TYPE and used by its name.  Written
+   inline, as a variable's or a field's type, the checker accepted it
+   and the generator refused it as `type kind unsupported yet' (the
+   fuzz review's InlineRec and InlineRecField, until 2026-10-30).
+   Legal forms first: a named record, a field of a named record type,
+   a slice of one. *)
+MODULE m ;
+TYPE
+  Inner = RECORD b : I64 END ;
+  Outer = RECORD a : Inner END ;
+VAR
+  r : Outer ;
+  s : SLICE OF Inner ;
+  x : RECORD a : I64 END ;
+BEGIN
 END m.
 ```
 
@@ -6910,6 +7018,24 @@ BEGIN
 END m.
 ```
 
+### type-as-value
+
+`I64 is a type, not a value -- a value of it is written I64 (x)`
+
+```
+(* A type named where a value is read.  Accepted and refused by the
+   generator as `unknown name: I64' (the fuzz review's N13, until
+   2026-10-30).  Legal forms first: the type as MAX's
+   argument and in SizeOf. *)
+MODULE m ;
+VAR x, y : I64 ;
+BEGIN
+  x := MAX (I64) ;
+  y := SizeOf (I64) ;
+  x := I64
+END m.
+```
+
 ### type-in-procedure
 
 `a TYPE declared in a procedure is not in the language yet: declare Pt at module level`
@@ -7182,6 +7308,29 @@ END Print ;
 BEGIN
   Print (1) ;
   Prnt (2)
+END m.
+```
+
+### unknown-root-selector
+
+`unknown name: w`
+
+```
+(* A name declared nowhere, with a selector: `w.n', `w[0]', read or
+   written.  The bare name was refused; with a selector it reached the
+   generator as `unknown name' (the fuzz review's N13, until
+   2026-10-30).  Legal forms first: a local record's field, an array's
+   element. *)
+MODULE m ;
+TYPE R = RECORD n : I64 END ;
+VAR
+  r : R ;
+  a : ARRAY 3 OF I64 ;
+  x : I64 ;
+BEGIN
+  r.n := 1 ;
+  a[0] := r.n ;
+  x := w.n
 END m.
 ```
 

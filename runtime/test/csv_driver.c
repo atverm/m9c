@@ -89,7 +89,7 @@ int main (void)
            "NaN,-0.5\n", g);
     fclose (g);
     o = Csv_Defaults (&e);
-    w = Csv_Open (&pool, S (FX), o, &e);
+    w = Csv_Open (&pool, S (FX), &o, &e);
     ok ("f64 fixture opens", !e.exc && Csv_Rows (w, &e) == 3);
     Csv_SetReal64 (&w, &pool,0, &e);
     Csv_SetReal64 (&w, &pool,1, &e);
@@ -106,7 +106,7 @@ int main (void)
         ((double *) d.p)[0] != ((double *) d.p)[1]);
     /* and the SAME file through the float32 kind cannot tell them
        apart, which is what makes the new kind worth having */
-    w = Csv_Open (&pool, S (FX), o, &e);
+    w = Csv_Open (&pool, S (FX), &o, &e);
     Csv_SetReal (&w, &pool,1, &e);
     Csv_Parse (&pool, &w, &pool, &e);
     f = Csv_ColF32 (w, 1, &e);
@@ -124,7 +124,7 @@ int main (void)
       size_t n = fread (raw, 1, sizeof raw, h);
       m9_sl_BYTE src = { raw, (int64_t) n };
       fclose (h);
-      w = Csv_OpenBytes (&pool, src, o, &e);
+      w = Csv_OpenBytes (&pool, src, &o, &e);
       ok ("OpenBytes opens", !e.exc && Csv_Rows (w, &e) == 3
           && Csv_Cols (w, &e) == 2);
       memset (raw, 'X', sizeof raw);
@@ -157,7 +157,7 @@ int main (void)
     fclose (g);
     o = Csv_Defaults (&e);
     o.quoted = true;
-    w = Csv_Open (&pool, S (FX), o, &e);
+    w = Csv_Open (&pool, S (FX), &o, &e);
     ok ("a quoted newline is not a row", !e.exc && Csv_Rows (w, &e) == 2);
     Csv_SetInt (&w, &pool,0, &e);
     Csv_SetText (&w, &pool,1, &e);
@@ -208,7 +208,7 @@ int main (void)
            "12abc\n", g);
     fclose (g);
     o = Csv_Defaults (&e);
-    w = Csv_Open (&pool, S (FX), o, &e);
+    w = Csv_Open (&pool, S (FX), &o, &e);
     Csv_SetReal64 (&w, &pool,0, &e);
     Csv_Parse (&pool, &w, &pool, &e);
     ok ("text fixture parses", !e.exc && Csv_Rows (w, &e) == 11);
@@ -227,7 +227,7 @@ int main (void)
     ok ("an exponent with no digits is NaN", v[9] != v[9]);
     ok ("digits followed by letters are NaN", v[10] != v[10]);
     /* the same rule on the float32 kind, which shares the test */
-    w = Csv_Open (&pool, S (FX), o, &e);
+    w = Csv_Open (&pool, S (FX), &o, &e);
     Csv_SetReal (&w, &pool,0, &e);
     Csv_Parse (&pool, &w, &pool, &e);
     f = Csv_ColF32 (w, 0, &e);
@@ -259,7 +259,7 @@ int main (void)
   opt.utcOffset = SITE_UTC_OFFSET;
 
   clock_gettime (CLOCK_MONOTONIC, &t0);
-  t = Csv_Open (&pool, S (path), opt, &e);
+  t = Csv_Open (&pool, S (path), &opt, &e);
   clock_gettime (CLOCK_MONOTONIC, &t1);
   ok ("Open", !e.exc);
   if (e.exc) { printf ("  raised %s\n", e.exc->name); return 1; }
@@ -400,7 +400,7 @@ int main (void)
 
   /* ---- the refusal ---- */
   {
-    Csv_Open (&pool, S ("/nonexistent/nope.csv"), opt, &e);
+    Csv_Open (&pool, S ("/nonexistent/nope.csv"), &opt, &e);
     ok ("a missing file raises rather than halting", e.exc != NULL);
     e.exc = NULL;
   }

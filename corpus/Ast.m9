@@ -148,6 +148,13 @@ PROCEDURE TypeAt (id: I64) : Kid ;
    '' where none was recorded *)
 PROCEDURE SetTyStr (id: I64 ; RO t: UTF) ;
 PROCEDURE TyStrAt (id: I64) : UTF ;
+
+(* an argument list whose callee, and all it calls, is proved to write no
+   module state (Sem.NoStateWrite): the generator may pass an RO
+   aggregate held in a module variable by its address there
+   (decision 81).  FALSE where none was recorded *)
+PROCEDURE SetNoWrites (id: I64) ;
+PROCEDURE NoWritesAt (id: I64) : BOOL ;
   (* NONE is a legal child: absence with a position *)
 
 PROCEDURE FoldInt (k: Kid ; VAR v: I64) : BOOL ;
@@ -174,6 +181,7 @@ VAR
   tstr   : SLICE OF UTF ;       (* stage 3: expression types, by id;
                                    UTF since 2026-10-23, Sem and Gen
                                    both reading them so *)
+  nows   : SLICE OF BOOL ;      (* SetNoWrites, by the argument list's id *)
   typool : POOL ;
 
 PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
@@ -264,6 +272,28 @@ BEGIN
   IF id >= 0 AND id < LEN (tstr) THEN RETURN tstr[id] END ;
   RETURN ''
 END TyStrAt ;
+
+PROCEDURE SetNoWrites (id: I64) =
+VAR
+  grown : SLICE OF BOOL ;
+  i, n : I64 ;
+BEGIN
+  IF id < 0 THEN RETURN END ;
+  IF id >= LEN (nows) THEN
+    n := 2 * LEN (nows) ;
+    IF n < id + 4096 THEN n := id + 4096 END ;
+    grown := NEW (typool, BOOL, n) ;
+    FOR i := 0 TO LEN (nows) - 1 DO grown[i] := nows[i] END ;
+    nows := grown
+  END ;
+  nows[id] := TRUE
+END SetNoWrites ;
+
+PROCEDURE NoWritesAt (id: I64) : BOOL =
+BEGIN
+  IF id >= 0 AND id < LEN (nows) THEN RETURN nows[id] END ;
+  RETURN FALSE
+END NoWritesAt ;
 
 PROCEDURE Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid) =
 VAR

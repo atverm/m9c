@@ -200,7 +200,7 @@ m9_sl_CHAR Plot_RenderHeat (m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bo
 void Plot_SetHeatRange (double lo, double hi, m9_state *err);
 bool Plot_TaylorXY (double ratio, double corr, double *x, double *y, m9_state *err);
 m9_sl_CHAR Plot_RenderTaylor (m9_sl_CHAR title, m9_gd2_double ratio, m9_gd2_double corr, m9_sl_m9_sl_CHAR cases, m9_sl_m9_sl_CHAR names, m9_state *err);
-m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err);
+m9_sl_CHAR Plot_Chart (Plot_ChartSpec *s, m9_state *err);
 m9_sl_CHAR Plot_MonthName (int64_t m, m9_state *err);
 m9_sl_CHAR Plot_Panels (int64_t cols, int64_t rows, m9_sl_m9_sl_CHAR figures, m9_sl_CHAR title, int64_t width, int64_t height, m9_state *err);
 

@@ -60,10 +60,10 @@ static m9_pool m9mframe = {0};
 static const uint32_t m9s0[26] = { 97u, 120u, 105u, 115u, 32u, 111u, 102u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 32u, 50u, 32u, 105u, 115u, 32u, 48u, 32u, 111u, 114u, 32u, 49u };
 
 static void Arrays_Take (Arrays_Acc *s, double v, m9_state *err);
-static double Arrays_SumOf (Arrays_Acc s, m9_state *err);
-static double Arrays_MeanOf (Arrays_Acc s, m9_state *err);
-static double Arrays_MinOf (Arrays_Acc s, m9_state *err);
-static double Arrays_MaxOf (Arrays_Acc s, m9_state *err);
+static double Arrays_SumOf (Arrays_Acc *s, m9_state *err);
+static double Arrays_MeanOf (Arrays_Acc *s, m9_state *err);
+static double Arrays_MinOf (Arrays_Acc *s, m9_state *err);
+static double Arrays_MaxOf (Arrays_Acc *s, m9_state *err);
 static Arrays_Acc Arrays_Over (m9_sl_F64 a, m9_state *err);
 static m9_sl_F64 Arrays_Binary (m9_sl_F64 a, m9_sl_F64 b, int64_t op, m9_state *err);
 static m9_sl_F64 Arrays_Scalar (m9_sl_F64 a, double k, int64_t op, m9_state *err);
@@ -82,7 +82,7 @@ double Arrays_NanSum (m9_sl_F64 a, m9_state *err)
   err->res = m9res;
   { __typeof__(Arrays_Over (a, err)) m9a1 = Arrays_Over (a, err);
     if (err->exc) goto L_ret;
-  m9ret = Arrays_SumOf (m9a1, err);
+  m9ret = Arrays_SumOf (&m9a1, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -102,7 +102,7 @@ double Arrays_NanMean (m9_sl_F64 a, m9_state *err)
   err->res = m9res;
   { __typeof__(Arrays_Over (a, err)) m9a2 = Arrays_Over (a, err);
     if (err->exc) goto L_ret;
-  m9ret = Arrays_MeanOf (m9a2, err);
+  m9ret = Arrays_MeanOf (&m9a2, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -122,7 +122,7 @@ double Arrays_NanMin (m9_sl_F64 a, m9_state *err)
   err->res = m9res;
   { __typeof__(Arrays_Over (a, err)) m9a3 = Arrays_Over (a, err);
     if (err->exc) goto L_ret;
-  m9ret = Arrays_MinOf (m9a3, err);
+  m9ret = Arrays_MinOf (&m9a3, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -142,7 +142,7 @@ double Arrays_NanMax (m9_sl_F64 a, m9_state *err)
   err->res = m9res;
   { __typeof__(Arrays_Over (a, err)) m9a4 = Arrays_Over (a, err);
     if (err->exc) goto L_ret;
-  m9ret = Arrays_MaxOf (m9a4, err);
+  m9ret = Arrays_MaxOf (&m9a4, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -925,7 +925,7 @@ m9_sl_F64 Arrays_NanSumAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a8 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_SumOf (m9a8, err);
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_SumOf (&m9a8, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -969,7 +969,7 @@ m9_sl_F64 Arrays_NanMeanAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a9 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MeanOf (m9a9, err);
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MeanOf (&m9a9, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -1013,7 +1013,7 @@ m9_sl_F64 Arrays_NanMinAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a10 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MinOf (m9a10, err);
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MinOf (&m9a10, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -1057,7 +1057,7 @@ m9_sl_F64 Arrays_NanMaxAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   if (i <= m9t1to) for (;;) {
     { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a11 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MaxOf (m9a11, err);
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MaxOf (&m9a11, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -1127,7 +1127,7 @@ double Arrays_NanSumGrid (m9_gd2_double g, m9_state *err)
   err->res = m9res;
   { __typeof__(Arrays_Whole (g, err)) m9a12 = Arrays_Whole (g, err);
     if (err->exc) goto L_ret;
-  m9ret = Arrays_SumOf (m9a12, err);
+  m9ret = Arrays_SumOf (&m9a12, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -1147,7 +1147,7 @@ double Arrays_NanMeanGrid (m9_gd2_double g, m9_state *err)
   err->res = m9res;
   { __typeof__(Arrays_Whole (g, err)) m9a13 = Arrays_Whole (g, err);
     if (err->exc) goto L_ret;
-  m9ret = Arrays_MeanOf (m9a13, err);
+  m9ret = Arrays_MeanOf (&m9a13, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -1167,7 +1167,7 @@ double Arrays_NanMinGrid (m9_gd2_double g, m9_state *err)
   err->res = m9res;
   { __typeof__(Arrays_Whole (g, err)) m9a14 = Arrays_Whole (g, err);
     if (err->exc) goto L_ret;
-  m9ret = Arrays_MinOf (m9a14, err);
+  m9ret = Arrays_MinOf (&m9a14, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -1187,7 +1187,7 @@ double Arrays_NanMaxGrid (m9_gd2_double g, m9_state *err)
   err->res = m9res;
   { __typeof__(Arrays_Whole (g, err)) m9a15 = Arrays_Whole (g, err);
     if (err->exc) goto L_ret;
-  m9ret = Arrays_MaxOf (m9a15, err);
+  m9ret = Arrays_MaxOf (&m9a15, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -1263,22 +1263,22 @@ L_ret: ;
   return;
 }
 
-static double Arrays_SumOf (Arrays_Acc s, m9_state *err)
+static double Arrays_SumOf (Arrays_Acc *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  bool m9t1 = (!Math_IsFinite (s.sum, err));
+  bool m9t1 = (!Math_IsFinite ((*s).sum, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = s.sum;
+    m9ret = (*s).sum;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (s.sum + s.comp);
+  m9ret = ((*s).sum + (*s).comp);
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1286,20 +1286,20 @@ L_ret: ;
   return m9ret;
 }
 
-static double Arrays_MeanOf (Arrays_Acc s, m9_state *err)
+static double Arrays_MeanOf (Arrays_Acc *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  if ((s.n == INT64_C(0))) {
+  if (((*s).n == INT64_C(0))) {
     err->res = m9res;
     m9ret = NAN;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (Arrays_SumOf (s, err) / (double)(s.n));
+  m9ret = (Arrays_SumOf (s, err) / (double)((*s).n));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -1308,20 +1308,20 @@ L_ret: ;
   return m9ret;
 }
 
-static double Arrays_MinOf (Arrays_Acc s, m9_state *err)
+static double Arrays_MinOf (Arrays_Acc *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  if ((s.n == INT64_C(0))) {
+  if (((*s).n == INT64_C(0))) {
     err->res = m9res;
     m9ret = NAN;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = s.mn;
+  m9ret = (*s).mn;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1329,20 +1329,20 @@ L_ret: ;
   return m9ret;
 }
 
-static double Arrays_MaxOf (Arrays_Acc s, m9_state *err)
+static double Arrays_MaxOf (Arrays_Acc *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  if ((s.n == INT64_C(0))) {
+  if (((*s).n == INT64_C(0))) {
     err->res = m9res;
     m9ret = NAN;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = s.mx;
+  m9ret = (*s).mx;
   goto L_ret;
 L_ret: ;
   err->res = m9res;

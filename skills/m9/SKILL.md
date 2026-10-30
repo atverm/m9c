@@ -214,8 +214,10 @@ disagree is not evidence.
    ELSIF ...`, which is what an earlier session wrote in a server:
    34 lines, one Append per status, and a reviewer has to read every
    branch to learn there is no logic in any of them.  The CASE reads
-   as the table it is.  A real table -- `SLICE OF RECORD code, text
-   END` filled once and searched -- is also fine and is better when
+   as the table it is.  A real table -- `SLICE OF Row` over a named
+   `TYPE Row = RECORD code : I64 ; text : STR END` (a record is always
+   a TYPE: written inline it is refused), filled once and searched --
+   is also fine and is better when
    the rows come from data.  DynStr is for ACCUMULATING across
    statements; `+` is for composing an expression, and this
    language's reason for existing is the reviewer.  A `+` the
@@ -250,8 +252,10 @@ disagree is not evidence.
 9. **Parameter modes are the borrow checker.**  Value `p: PTR T` is a
    SHARED borrow: readable, NOT writable, and not passable onward as
    VAR.  `VAR` is the mutable handle.  `OWN` moves ownership in.
-   `RO` is a read-only borrow -- and on a RECORD it currently COPIES
-   (a 160-byte record cost one copy per call in a port; ledgered).
+   `RO` is a read-only borrow, and on a RECORD or ARRAY it is passed
+   by reference since 0.25.3 -- a copy only where the callee could
+   write the original (a module variable, storage behind a pointer);
+   up to 0.25.2 it copied at every call.
    A borrow STORED where it outlives the call needs `KEPT` on the
    parameter, and KEPT composes upward: a caller forwarding its own
    borrowed parameter to a KEPT one must say KEPT too.  Since

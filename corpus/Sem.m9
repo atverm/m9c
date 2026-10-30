@@ -246,6 +246,8 @@ TYPE
     cnTypes : SLICE OF UTF ;      (* ... and their LitType, because a
                                      CONST is an untyped literal and
                                      stays one across a module edge *)
+    cnVals : SLICE OF AKid ;      (* ... and their literal, for an
+                                     array count's value (CountValue) *)
     ncns : I64 ;
     exNames : SLICE OF UTF ;      (* EXCEPTION declarations *)
     exDecls : SLICE OF AKid ;     (* ... and their nodes, for a
@@ -312,6 +314,10 @@ VAR
   statL : ARRAY 42 OF I64 ;               (* StatKinds * StatSites lines
                                              of sites passed over *)
   curMod, canonCtx : UTF ;
+  typeArgOk : BOOL ;           (* typing MAX's, MIN's or SizeOf's arguments:
+                                  a bare type there is the argument *)
+  typeTop : BOOL ;             (* the next CheckTypeNode is a TYPE's body:
+                                  a RECORD there is named *)
   curRoot : PTR Ast.Node ;     (* the file CheckFile is checking *)
   scope : SLICE OF Binding ;
   nscope : I64 ;
@@ -1011,6 +1017,45 @@ BEGIN
   RETURN Print.ExprTextUtf (k)
 END ArrayCountForm ;
 
+(* an array count that is a CONST expression, not an enumeration: a
+   literal or an operator, or a name of a CONST (bare or Mod.N) *)
+PROCEDURE CountIsConst (k: Ast.Kid) : BOOL =
+VAR
+  found : BOOL ;
+  t : UTF ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NInt OR e.kind = Ast.NBin OR e.kind = Ast.NUn OR
+       e.kind = Ast.NParen THEN
+      RETURN TRUE
+    END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN RETURN ConstNamed (e.au) END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 1 THEN
+      IF e.kids[0] IS SOME sf THEN
+        IF sf.kind = Ast.NSelField THEN
+          t := ModConstType (e.au, sf.au, found) ;
+          RETURN found
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END CountIsConst ;
+
+(* a GRID's rank: an integer literal from 1 to 32 *)
+PROCEDURE GridRankOk (k: Ast.Kid) : BOOL =
+VAR
+  v : I64 ;
+  ch : BOOL ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NInt AND Ast.ScalarConst (k, v, ch) THEN
+      RETURN NOT ch AND v >= 1 AND v <= 32
+    END
+  END ;
+  RETURN FALSE
+END GridRankOk ;
+
 (* an array count that folds to an integer below 1 *)
 PROCEDURE ArrayCountBad (k: Ast.Kid) : BOOL =
 VAR
@@ -1060,9 +1105,21 @@ PROCEDURE CheckFieldTypes (fs: Ast.Kid ; RO ctx: UTF) ;
 PROCEDURE CheckTypeNode (t: Ast.Kid ; RO ctx: UTF) =
   (* every qualident reachable through PTR, OPT, SHARED, SLICE, ARRAY,
      GRID and the fields of a record, monitor or case record *)
-VAR i : I64 ;
+VAR i, cv : I64 ;
+  top : BOOL ;
 BEGIN
+  top := typeTop ;
+  typeTop := FALSE ;
   IF t IS SOME n THEN
+    (* a RECORD, CASE RECORD or MONITOR RECORD is a TYPE's body and
+       has its name: written inline -- a variable's, a field's, an
+       element's or a parameter's type -- the generator refused it as
+       `type kind unsupported yet' (the fuzz review's InlineRec and
+       InlineRecField, until 2026-10-30) *)
+    IF NOT top AND (n.kind = Ast.NRecordType OR n.kind = Ast.NCaseRecordType OR
+                    n.kind = Ast.NMonitorType) THEN
+      ErrN (n, ctx, 'a RECORD is a TYPE of its own: declare it, TYPE T = RECORD ... END, and use its name (par 2.2)')
+    END ;
     CASE n.kind OF
     | Ast.NQualident :
         IF Text.BLen (n.bu) > 0 AND NOT TypeKnown (n.au, n.bu) THEN
@@ -1111,11 +1168,33 @@ BEGIN
         ELSIF Text.BLen (ArrayCountForm (n.kids[0])) > 0 THEN
           ErrN (n, ctx, S3 ("an ARRAY's count is an integer literal, a CONST or an enumeration, or + - * DIV MOD over them, not ",
             ArrayCountForm (n.kids[0]), ' (par 2.2)'))
+        ELSIF CountIsConst (n.kids[0]) THEN
+          (* a count over CONSTs, now that the checker knows their
+             values (decision 78): one that divides by a CONST of 0 or
+             passes MAX (I64) has none, and one below 1 holds nothing --
+             the generator's `array count form unsupported' until
+             2026-10-30 *)
+          IF NOT CountValue (n.kids[0], '', 0, cv) THEN
+            ErrN (n, ctx, S3 ("an ARRAY's count has no value: ", Print.ExprTextUtf (n.kids[0]),
+              ' divides by 0 or passes MAX (I64) (par 2.2)'))
+          ELSIF cv < 1 THEN
+            ErrN (n, ctx, S3 ('an ARRAY holds at least one element; its count is ',
+              Print.ExprTextUtf (n.kids[0]), Cat (' = ', ItoA (cv))))
+          END
         END ;
         IF IsBareProc (n.kids[1]) THEN
           ErrN (n, ctx, 'a slice or array of procedure values is not in the language yet (par 2.2.3)')
         END
-    | Ast.NGridType : CheckTypeNode (n.kids[1], ctx)
+    | Ast.NGridType :
+        CheckTypeNode (n.kids[1], ctx) ;
+        (* a rank from 1 to 32, written as a number: GRID
+           18446744073709551615 OF F64 stopped the compiler with
+           `m9: unhandled Overflow' and no position (the fuzz review's
+           N8, until 2026-10-30); GRID 0 has no axis to index *)
+        IF NOT GridRankOk (n.kids[0]) THEN
+          ErrN (n, ctx, S3 ("a GRID's rank is a number from 1 to 32, not ",
+            Print.ExprTextUtf (n.kids[0]), ' (par 2.2.1)'))
+        END
     | Ast.NProcType :
         IF n.kids[0] IS SOME pl THEN
           FOR i := 0 TO pl.nkids - 1 DO
@@ -1125,6 +1204,13 @@ BEGIN
         CheckTypeNode (n.kids[1], ctx)
     | Ast.NRecordType :
         (* kids[0] is the extension base, when there is one *)
+        (* type extension is specified and not built (par 2.2): the
+           generator knew no field of a base (`e.a0' on an extension
+           of an extension, the fuzz review's ext3, until 2026-10-30) *)
+        IF n.kids[0] IS SOME THEN
+          ErrN (n, ctx, S3 ('type extension, RECORD (', Print.TypeTextUtf (pool, n.kids[0]),
+            ') ..., is not in the language yet: give the fields one by one (par 2.2)'))
+        END ;
         CheckTypeNode (n.kids[0], ctx) ;
         CheckFieldTypes (n.kids[1], ctx)
     | Ast.NMonitorType : CheckFieldTypes (n.kids[0], ctx)
@@ -1170,6 +1256,7 @@ BEGIN
       ELSIF sect.kind = Ast.NTypeSection THEN
         FOR b := 0 TO sect.nkids - 1 DO
           IF sect.kids[b] IS SOME td THEN
+            typeTop := TRUE ;
             CheckTypeNode (td.kids[0], ctx) ;
             (* the grammar allows a TYPE in a procedure (ProcBody is
                { Declaration } Block) and nothing implements one: the
@@ -1310,11 +1397,18 @@ BEGIN
   mods[m].ntds := mods[m].ntds + 1
 END AddType ;
 
-PROCEDURE AddConst (m: I64 ; RO KEPT n: UTF ; RO KEPT ty: UTF) =
+PROCEDURE AddConst (m: I64 ; RO KEPT n: UTF ; RO KEPT ty: UTF ; KEPT val: Ast.Kid) =
 VAR
   ns, ts : SLICE OF UTF ;
+  vs : SLICE OF AKid ;
   i : I64 ;
 BEGIN
+  IF mods[m].ncns >= LEN (mods[m].cnVals) THEN
+    vs := NEW (pool, AKid, 2 * LEN (mods[m].cnVals) + 16) ;
+    FOR i := 0 TO mods[m].ncns - 1 DO vs[i] := mods[m].cnVals[i] END ;
+    mods[m].cnVals := vs
+  END ;
+  mods[m].cnVals[mods[m].ncns] := val ;
   (* what is remembered is the LitType, not a type: `Par.Pi180` must
      adapt in another module exactly as `Pi180` adapts in its own *)
   IF mods[m].ncns = LEN (mods[m].cnNames) THEN
@@ -1641,7 +1735,7 @@ BEGIN
            does *)
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME cd2 THEN
-            AddConst (m, cd2.au, Text.Keep (pool, LitType (cd2.kids[0])))
+            AddConst (m, cd2.au, Text.Keep (pool, LitType (cd2.kids[0])), cd2.kids[0])
           END
         END
       ELSIF d.kind = Ast.NTypeSection THEN
@@ -2310,9 +2404,79 @@ BEGIN
   RETURN b
 END BoundQual ;
 
-PROCEDURE BoundText (b: Ast.Kid) : UTF =
-VAR mi : I64 ;
+(* the value of an array count: integer literals, CONSTs (bare in the
+   module the type was written in -- canonCtx, else this one -- or
+   Mod.N), under + - * DIV MOD, unary minus and parentheses.  Two
+   array types with counts of one value are one type (Alex, 2026-10-30,
+   a port's report M8: ARRAY N OF F64 with N = 3 was refused where
+   ARRAY 3 OF F64 was expected) *)
+PROCEDURE CountValue (k: Ast.Kid ; RO KEPT m: UTF ; depth: I64 ; VAR v: I64) : BOOL =
+VAR
+  a, b, i, mi : I64 ;
 BEGIN
+  IF depth > 16 THEN RETURN FALSE END ;
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NInt THEN RETURN Ast.FoldInt (k, v) END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      IF Text.BLen (m) = 0 OR Text.Eq (m, curMod) THEN
+        i := ConstAt (e.au) ;
+        IF i >= 0 THEN RETURN CountValue (consts[i].ty, m, depth + 1, v) END
+      END ;
+      IF Text.BLen (m) > 0 THEN mi := FindMod (m) ELSE mi := FindMod (curMod) END ;
+      IF mi >= 0 THEN
+        i := NxFind (mods[mi].cnIx, e.au) ;
+        IF i >= 0 AND i < LEN (mods[mi].cnVals) THEN
+          RETURN CountValue (mods[mi].cnVals[i], mods[mi].name, depth + 1, v)
+        END
+      END ;
+      RETURN FALSE
+    END ;
+    IF e.nkids < 1 THEN RETURN FALSE END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 1 THEN
+      IF e.kids[0] IS SOME sf THEN
+        IF sf.kind = Ast.NSelField THEN
+          mi := FindMod (e.au) ;
+          IF mi >= 0 THEN
+            i := NxFind (mods[mi].cnIx, sf.au) ;
+            IF i >= 0 AND i < LEN (mods[mi].cnVals) THEN
+              RETURN CountValue (mods[mi].cnVals[i], mods[mi].name, depth + 1, v)
+            END
+          END
+        END
+      END ;
+      RETURN FALSE
+    END ;
+    IF e.kind = Ast.NParen THEN RETURN CountValue (e.kids[0], m, depth + 1, v) END ;
+    IF e.kind = Ast.NUn AND Text.Eq (e.au, '-') THEN
+      IF NOT CountValue (e.kids[0], m, depth + 1, a) THEN RETURN FALSE END ;
+      v := 0 - a ;
+      RETURN TRUE
+    END ;
+    IF e.kind = Ast.NBin AND e.nkids = 2 THEN
+      IF NOT CountValue (e.kids[0], m, depth + 1, a) THEN RETURN FALSE END ;
+      IF NOT CountValue (e.kids[1], m, depth + 1, b) THEN RETURN FALSE END ;
+      IF Text.Eq (e.au, '+') THEN v := a + b ; RETURN TRUE END ;
+      IF Text.Eq (e.au, '-') THEN v := a - b ; RETURN TRUE END ;
+      IF Text.Eq (e.au, '*') THEN v := a * b ; RETURN TRUE END ;
+      IF Text.Eq (e.au, 'DIV') OR Text.Eq (e.au, 'MOD') THEN
+        IF b = 0 THEN RETURN FALSE END ;
+        IF b = -1 AND a = -9223372036854775807 - 1 THEN RETURN FALSE END ;
+        IF Text.Eq (e.au, 'DIV') THEN v := a DIV b ELSE v := a MOD b END ;
+        RETURN TRUE
+      END
+    END
+  END ;
+  RETURN FALSE
+EXCEPT
+| Overflow : RETURN FALSE
+END CountValue ;
+
+PROCEDURE BoundText (b: Ast.Kid) : UTF =
+VAR mi, v : I64 ;
+BEGIN
+  (* a count of a value is spelled by it (CountValue); an enumeration
+     or what does not fold, by its name, read where it was written *)
+  IF CountValue (b, canonCtx, 0, v) THEN RETURN ItoA (v) END ;
   IF Text.BLen (canonCtx) > 0 AND NOT Text.Eq (canonCtx, curMod) THEN
     mi := FindMod (canonCtx) ;
     IF mi >= 0 THEN RETURN Print.ExprTextUtf (BoundQual (b, mi)) END
@@ -2577,7 +2741,7 @@ BEGIN
                      cd.au))
             END ;
             CheckAggregate (cd, ctx, 2) ;
-            ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0])))
+            ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0])), cd.kids[0])
           END
         END
       END
@@ -3206,6 +3370,7 @@ END FrameCore ;
    AnswersFrame reads from its body. *)
 PROCEDURE LookupProc (RO callee: UTF ; VAR found: BOOL) : ProcInfo ;
 PROCEDURE DesigName (d: PTR Ast.Node) : UTF ;
+PROCEDURE NoStateWrite (RO qual: UTF ; m: I64 ; body: Ast.Kid) : BOOL ;
 
 (* ---- does a procedure ANSWER frame storage?  A summary of its body,
    memoised per Module.Proc, because the signature cannot say: a
@@ -5542,6 +5707,9 @@ BEGIN
   v := 0 ;
   FOR k := 5 TO i - 1 DO
     IF B (s, k) < 48 OR B (s, k) > 57 THEN RETURN 0 END ;
+    (* past a 32-bit rank, 0, as the Pascal twin's StrToIntDef: the
+       product overflowed, unhandled (the fuzz review's N8) *)
+    IF v > 214748363 THEN RETURN 0 END ;
     v := v * 10 + (B (s, k) - 48)
   END ;
   RETURN v
@@ -6009,7 +6177,7 @@ BEGIN
   nAgg := 0
 END ConstClear ;
 
-PROCEDURE ConstAdd (RO KEPT nm: UTF ; RO KEPT ty: UTF) =
+PROCEDURE ConstAdd (RO KEPT nm: UTF ; RO KEPT ty: UTF ; KEPT val: Ast.Kid) =
 VAR
   nb : SLICE OF Binding ;
   i : I64 ;
@@ -6021,7 +6189,7 @@ BEGIN
   END ;
   consts[nconsts].name := nm ;
   consts[nconsts].mode := ty ;
-  consts[nconsts].ty := NONE ;
+  consts[nconsts].ty := val ;     (* the literal: CountValue *)
   (* the first LIVE entry of a name is the one found; the list is cut
      back (nconsts := svConsts) past a procedure's own CONSTs, so an
      entry the index names may be gone *)
@@ -7175,6 +7343,37 @@ BEGIN
   RETURN FALSE
 END BareNameKnown ;
 
+(* nm, bare, is a CONST: this module's or this procedure's, or a
+   loaded module's (BareNameKnown counts those too) *)
+PROCEDURE ConstNamed (RO nm: UTF) : BOOL =
+VAR
+  mi : I64 ;
+  found : BOOL ;
+  cty : UTF ;
+BEGIN
+  found := FALSE ;
+  cty := ConstType (nm, found) ;
+  IF found THEN RETURN TRUE END ;
+  FOR mi := 0 TO nmods - 1 DO
+    IF NxFind (mods[mi].cnIx, nm) >= 0 THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END ConstNamed ;
+
+(* nm, bare, is an EXCEPTION: predeclared or any loaded module's *)
+PROCEDURE HasExcAny (RO nm: UTF) : BOOL =
+VAR mi : I64 ;
+BEGIN
+  IF Text.Eq (nm, 'Overflow') OR Text.Eq (nm, 'IndexError') OR
+     Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'ValueRange') THEN
+    RETURN TRUE
+  END ;
+  FOR mi := 0 TO nmods - 1 DO
+    IF HasExcIn (mi, nm) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END HasExcAny ;
+
 (* a designator with at most one field selector as the qualident it
    spells, for the type position of a NEW; NONE for anything else *)
 PROCEDURE AsQual (k: Ast.Kid) : Ast.Kid =
@@ -7549,6 +7748,11 @@ BEGIN
         IF e.kids[0] IS SOME o THEN
           IF o.kind = Ast.NDesignator THEN
             res := DesigDeclType (o, ctx) ;
+            (* `x IS SOME p' with no x: the generator's `IS SOME form
+               unsupported' until 2026-10-30 (the fuzz review's N13) *)
+            IF NOT BareNameKnown (o.au) THEN
+              ErrN (o, ctx, Cat ('unknown name: ', o.au))
+            END ;
             IF e.kids[1] IS SOME b THEN
               IF b.kind = Ast.NIsSome AND Text.BLen (b.au) = 0 THEN
                 (* `x IS SOME' / `x IS NONE': a BOOL, nothing bound
@@ -7694,6 +7898,21 @@ BEGIN
            context, scope populated), never in DesigStrType, which
            the signature checks also reach without a scope. *)
         IF e.nkids = 0 AND NOT BareNameKnown (e.au) THEN
+          ErrN (e, ctx, Cat ('unknown name: ', e.au))
+        ELSIF e.nkids = 0 AND Text.BLen (ScopeMode (e.au)) = 0 AND NOT ConstNamed (e.au) THEN
+          (* known, and no value: a module or a type named where a value
+             is read -- `x := I64', `IF Io = 3' reached the generator as
+             `unknown name' (the fuzz review's N13, until 2026-10-30) *)
+          IF FindMod (e.au) >= 0 THEN
+            ErrN (e, ctx, S3 (e.au, ' is a module, not a value -- name what it declares: ', Cat (e.au, '.X')))
+          ELSIF NOT Text.Eq (e.au, 'ALL') AND NOT Text.Eq (e.au, 'HEAP') AND
+                NOT typeArgOk THEN
+            ErrN (e, ctx, S3 (e.au, ' is a type, not a value -- ', S3 ('a value of it is written ', e.au, ' (x)')))
+          END
+        END ;
+        (* a root with selectors that names nothing: `w.n', `w[0]' *)
+        IF e.nkids >= 1 AND NOT BareNameKnown (e.au) AND NOT HasExcAny (e.au) AND
+           NOT ModImports (curRoot, curMod, e.au) THEN
           ErrN (e, ctx, Cat ('unknown name: ', e.au))
         END ;
         (* a member a LOADED module does not declare: Math.Nosuch *)
@@ -8488,14 +8707,22 @@ END IsTagged ;
    the index check wants the enumeration here (docs/enum-plan.md,
    part 2). *)
 PROCEDURE ArrEnumBoundOf (declN: Ast.Kid) : UTF =
-VAR canon : UTF ;
+VAR canon, was : UTF ;
 BEGIN
   IF ResolveType (declN) IS SOME r THEN
     IF r.kind = Ast.NArrayType THEN
       IF r.kids[0] IS SOME b THEN
         IF b.kind = Ast.NDesignator THEN
           canon := '' ;
-          IF b.nkids = 0 THEN canon := CanonQual ('', b.au, 0)
+          (* a bare bound is the module's that declared the array:
+             Guess.ByLandcover = ARRAY Landcover OF BOOL read in a
+             module with a Landcover record of its own was indexed as
+             an integer array (a port's report M9, until 2026-10-30) *)
+          IF b.nkids = 0 THEN
+            was := canonCtx ;
+            IF Text.BLen (ResolvedMod ()) > 0 THEN canonCtx := Text.Keep (pool, ResolvedMod ()) END ;
+            canon := CanonQual ('', b.au, 0) ;
+            canonCtx := was
           ELSIF b.nkids = 1 THEN
             IF b.kids[0] IS SOME sf THEN
               IF sf.kind = Ast.NSelField THEN canon := CanonQual (b.au, sf.au, 0)
@@ -8662,7 +8889,7 @@ VAR
   aNode : SLICE OF AKid ;
   flat : SLICE OF AKid ;
   pr : ProcInfo ;
-  found, isVar, hbBeyond : BOOL ;
+  found, isVar, hbBeyond, roDes : BOOL ;
   fields, dty : Ast.Kid ;
 BEGIN
   name := '' ;
@@ -8672,10 +8899,15 @@ BEGIN
   aTy := NEW (UTF, nargs + 1) ;     (* the frame: its types die with the call *)
   aNode := NEW (pool, AKid, nargs + 1) ;
   IF argl IS SOME al1 THEN
+    (* MAX (I64), SizeOf (T): a type is the argument; LEN refuses one
+       in its own words (probe len-of-type) *)
+    typeArgOk := Text.Eq (name, 'MAX') OR Text.Eq (name, 'SizeOf') OR
+                 Text.Eq (name, 'LEN') ;
     FOR j := 0 TO nargs - 1 DO
       aNode[j] := al1.kids[j] ;
       aTy[j] := ExprType (al1.kids[j], ctx)
-    END
+    END ;
+    typeArgOk := FALSE
   END ;
 
   (* the UTF builtins (docs/utf8-plan.md, U2) *)
@@ -9030,6 +9262,34 @@ BEGIN
                 k := k + 1
               END
             END
+          END
+        END
+      END ;
+      (* decision 81: an RO argument that names storage, when the callee
+         and all it calls provably write no module state -- the generator
+         may then pass one held in a module variable by its address *)
+      roDes := FALSE ;
+      k := 0 ;
+      IF pn.kids[0] IS SOME pl1 THEN
+        FOR g := 0 TO pl1.nkids - 1 DO
+          IF pl1.kids[g] IS SOME grp1 THEN
+            IF grp1.kids[0] IS SOME ids1 THEN
+              FOR j := 0 TO ids1.nkids - 1 DO
+                IF k < nargs AND grp1.f3 THEN
+                  IF aNode[k] IS SOME an1 THEN
+                    IF an1.kind = Ast.NDesignator THEN roDes := TRUE END
+                  END
+                END ;
+                k := k + 1
+              END
+            END
+          END
+        END
+      END ;
+      IF roDes THEN
+        IF argl IS SOME alr THEN
+          IF NoStateWrite (Qualify (pr.modName, pr.name), FindMod (pr.modName), pr.body) THEN
+            Ast.SetNoWrites (alr.id)
           END
         END
       END ;
@@ -9997,7 +10257,12 @@ VAR
 BEGIN
   IF st.kids[0] IS SOME d THEN
     t := DesigStrType (d, FALSE, ctx) ;
-    IF d.nkids > 0 THEN
+    IF Text.BLen (ScopeMode (d.au)) = 0 AND NOT ConstNamed (d.au) AND
+       FindMod (d.au) < 0 THEN
+      (* `DISPOSE (x)' with no x: the generator's `unknown name' until
+         2026-10-30 (the fuzz review's N13) *)
+      ErrN (st, ctx, Cat ('unknown name: ', d.au))
+    ELSIF d.nkids > 0 THEN
       ErrN (st, ctx, S3 ('cannot DISPOSE through a selector of ', d.au,
         Cat (': DISPOSE frees a name that owns its pointer, and ',
              'ownership is not followed into a field (par 4.2)')))
@@ -10757,6 +11022,158 @@ BEGIN
   IF Text.BLen (w) = 0 THEN AnsSet (key, '-') ELSE AnsSet (key, Text.Keep (pool, w)) END ;
   RETURN w
 END StateWrite ;
+
+(* DOES A PROCEDURE PROVABLY WRITE NO MODULE STATE?  The generator's
+   question for an RO aggregate held in a module variable (decision 81):
+   its address may be passed only when nothing the callee runs writes
+   any module variable, or the callee would read the write where it read
+   a copy until then.  StateWrite above answers the THREAD note and
+   says '' for whatever it cannot see -- a procedure value, a callee
+   with no body, a recursive cycle -- which is right for a note and
+   wrong here.  This is its sound twin: TRUE only when every statement
+   is seen and none writes.  A procedure value, a callee without a body
+   (a foreign C procedure aside: it cannot name an M9 variable, and its
+   VAR arguments are read like any call's), a builtin not known pure,
+   THREAD and a cycle all answer FALSE.  Memo 'n:<qual>', 'busy' while
+   walked: a FALSE taken from a cycle is only conservative. *)
+
+(* may a write through d, in procedure proc, reach module state?  Its
+   root is not a parameter, local or binder of proc -- any module's
+   variable, STATEFUL or not, a monitor path included: SwTarget's
+   narrower answer is the THREAD note's, and a program's own module
+   variables were not in it *)
+PROCEDURE NwTarget (proc: PTR Ast.Node ; d: PTR Ast.Node) : BOOL =
+BEGIN
+  IF Text.FindChar (d.au, '.') > 0 THEN RETURN TRUE END ;
+  RETURN NOT DeclaresName (SOME (proc), d.au)
+END NwTarget ;
+
+(* is nm a module-level VAR of module m (a POOL NEW grows, say)?  NEW's
+   first argument is also a TYPE (NEW (T, n)) or OWN, which write
+   nothing *)
+PROCEDURE NwModVar (m: I64 ; RO nm: UTF) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF m < 0 THEN RETURN TRUE END ;
+  FOR i := 0 TO mods[m].nmvs - 1 DO
+    IF Text.Eq (mods[m].mvNames[i], nm) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END NwModVar ;
+
+PROCEDURE NwPureBuiltin (RO nm: UTF) : BOOL =
+BEGIN
+  RETURN IsBuiltinTy (nm) OR Text.Eq (nm, 'LEN') OR Text.Eq (nm, 'ORD') OR
+    Text.Eq (nm, 'CHR') OR Text.Eq (nm, 'MAX') OR Text.Eq (nm, 'SizeOf') OR
+    Text.Eq (nm, 'ByteSize') OR Text.Eq (nm, 'NAME') OR Text.Eq (nm, 'VIEW') OR
+    Text.Eq (nm, 'SLICE') OR Text.Eq (nm, 'GRID') OR Text.Eq (nm, 'OCTETS') OR
+    Text.Eq (nm, 'STR') OR Text.Eq (nm, 'UTF')
+END NwPureBuiltin ;
+
+(* the call cn (args) in procedure proc of module m writes no module state *)
+PROCEDURE NwCall (m: I64 ; proc: PTR Ast.Node ; cn: PTR Ast.Node ; args: Ast.Kid) : BOOL =
+VAR
+  callee, om, canon : UTF ;
+  found : BOOL ;
+  pr : ProcInfo ;
+  g, j, k : I64 ;
+BEGIN
+  callee := DesigName (cn) ;
+  IF Text.Eq (callee, 'NEW') OR Text.Eq (callee, 'DISPOSE') OR Text.Eq (callee, 'COPY') THEN
+    (* the first argument is what they write: a pool, a pointer, a target *)
+    IF args IS SOME al THEN
+      IF al.nkids > 0 THEN
+        IF al.kids[0] IS SOME a0 THEN
+          IF a0.kind # Ast.NDesignator THEN RETURN FALSE END ;
+          IF NwTarget (proc, a0) THEN
+            IF NOT Text.Eq (callee, 'NEW') THEN RETURN FALSE END ;
+            IF Text.FindChar (a0.au, '.') > 0 OR NwModVar (m, a0.au) THEN RETURN FALSE END
+          END
+        END
+      END
+    END ;
+    RETURN TRUE
+  END ;
+  pr := ProcNamed (mods[m].name, callee, found) ;
+  IF NOT found THEN
+    IF RecordNamed (callee, om, canon) IS SOME rn THEN RETURN TRUE END ;
+    RETURN NwPureBuiltin (callee)
+  END ;
+  (* a VAR or OWN argument naming module state is written by the call *)
+  IF pr.node IS SOME pd THEN
+    IF pd.kids[0] IS SOME pl THEN
+      IF args IS SOME al2 THEN
+        k := 0 ;
+        FOR g := 0 TO pl.nkids - 1 DO
+          IF pl.kids[g] IS SOME grp THEN
+            IF grp.kids[0] IS SOME ids THEN
+              FOR j := 0 TO ids.nkids - 1 DO
+                IF (grp.f1 OR grp.f2) AND k < al2.nkids THEN
+                  IF al2.kids[k] IS SOME ak THEN
+                    IF ak.kind # Ast.NDesignator THEN RETURN FALSE END ;
+                    IF NwTarget (proc, ak) THEN RETURN FALSE END
+                  END
+                END ;
+                k := k + 1
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  IF Text.BLen (pr.foreign) > 0 THEN RETURN TRUE END ;
+  RETURN NoStateWrite (Qualify (pr.modName, pr.name), FindMod (pr.modName), pr.body)
+END NwCall ;
+
+PROCEDURE NwWalk (m: I64 ; proc: PTR Ast.Node ; k: Ast.Kid) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NAssign THEN
+      IF n.kids[0] IS SOME l THEN
+        IF l.kind # Ast.NDesignator THEN RETURN FALSE END ;
+        IF NwTarget (proc, l) THEN RETURN FALSE END
+      END
+    ELSIF n.kind = Ast.NDispose THEN
+      IF n.kids[0] IS SOME dd THEN
+        IF dd.kind # Ast.NDesignator THEN RETURN FALSE END ;
+        IF NwTarget (proc, dd) THEN RETURN FALSE END
+      END
+    ELSIF n.kind = Ast.NThread THEN
+      RETURN FALSE
+    ELSIF n.kind = Ast.NCallStmt OR n.kind = Ast.NCallExpr THEN
+      IF n.kids[0] IS SOME cn THEN
+        IF cn.kind # Ast.NDesignator THEN RETURN FALSE END ;
+        IF NOT NwCall (m, proc, cn, n.kids[1]) THEN RETURN FALSE END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF NOT NwWalk (m, proc, n.kids[i]) THEN RETURN FALSE END
+    END
+  END ;
+  RETURN TRUE
+END NwWalk ;
+
+PROCEDURE NoStateWrite (RO qual: UTF ; m: I64 ; body: Ast.Kid) : BOOL =
+VAR
+  i : I64 ;
+  key : UTF ;
+  ok : BOOL ;
+BEGIN
+  key := Text.Keep (pool, Cat ('n:', qual)) ;
+  i := AnsFind (key) ;
+  IF i >= 0 THEN RETURN Text.Eq (ansState[i], 'y') END ;
+  AnsSet (key, 'busy') ;
+  ok := FALSE ;
+  IF m >= 0 THEN
+    IF body IS SOME pd THEN
+      IF pd.kind = Ast.NProcDecl THEN ok := NwWalk (m, pd, pd.kids[4]) END
+    END
+  END ;
+  IF ok THEN AnsSet (key, 'y') ELSE AnsSet (key, 'n') END ;
+  RETURN ok
+END NoStateWrite ;
 
 PROCEDURE NoteThreadWrite (line: I64 ; RO name: UTF ; RO sw: UTF) =
 VAR
@@ -11875,6 +12292,15 @@ BEGIN
       ErrN (lhs, ctx, S3 ('cannot assign to ', lhs.au,
                           S3 (' -- ', lhs.au, ' is a PROCEDURE, not a variable')))
     ELSIF lhs.nkids = 0 AND NOT BareNameKnown (lhs.au) THEN
+      ErrN (lhs, ctx, Cat ('unknown name: ', lhs.au))
+    ELSIF lhs.nkids >= 1 AND Text.BLen (ScopeMode (lhs.au)) = 0 AND HasExcAny (lhs.au) THEN
+      (* `IndexError[0] := 1': the generator's `unknown name' until
+         2026-10-30 (the fuzz review's N13) *)
+      ErrN (lhs, ctx, S3 ('cannot assign through ', lhs.au,
+                          S3 (' -- ', lhs.au, ' is an EXCEPTION, not a variable')))
+    ELSIF lhs.nkids >= 1 AND NOT BareNameKnown (lhs.au) AND
+          NOT ModImports (curRoot, curMod, lhs.au) THEN
+      (* `w.n := 1', `w[0] := 1' with no w *)
       ErrN (lhs, ctx, Cat ('unknown name: ', lhs.au))
     END ;
     IF lhs.nkids = 1 AND Text.BLen (ScopeMode (lhs.au)) = 0 AND FindMod (lhs.au) >= 0 THEN
@@ -18653,7 +19079,7 @@ BEGIN
               FOR k := 0 TO cs.nkids - 1 DO
                 IF cs.kids[k] IS SOME cd THEN
                   ty := ConstType (cd.au, seen) ;
-                  IF NOT seen THEN ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0]))) END
+                  IF NOT seen THEN ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0])), cd.kids[0]) END
                 END
               END
             END
@@ -19070,7 +19496,7 @@ BEGIN
                 ELSE
                   CheckAggregate (cd, u.au, 0)
                 END ;
-                ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0])))
+                ConstAdd (cd.au, Text.Keep (pool, LitType (cd.kids[0])), cd.kids[0])
               END
             END
           END

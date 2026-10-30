@@ -1,0 +1,13 @@
+(* EXPECT: a GRID's rank is a number from 1 to 32, not 0 (par 2.2.1) *)
+(* A GRID's rank from 1 to 32.  GRID 18446744073709551615 OF F64 stopped
+   the compiler with `m9: unhandled Overflow' and no position, and GRID
+   0 has no axis to index (the fuzz review's N8, until 2026-10-30).
+   Legal forms first: rank 1, 2 and 32. *)
+MODULE m ;
+VAR
+  a : GRID 1 OF F64 ;
+  b : GRID 2 OF F64 ;
+  c : GRID 32 OF I64 ;
+  z : GRID 0 OF F64 ;
+BEGIN
+END m.

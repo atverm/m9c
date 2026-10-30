@@ -39,12 +39,12 @@ struct Seq_F64s {
 void Seq_AddStr (m9_pool *pool, Seq_Strs *s, m9_pool *s_pool, m9_sl_CHAR v, m9_state *err);
 void Seq_AddI64 (m9_pool *pool, Seq_I64s *s, m9_pool *s_pool, int64_t v, m9_state *err);
 void Seq_AddF64 (m9_pool *pool, Seq_F64s *s, m9_pool *s_pool, double v, m9_state *err);
-int64_t Seq_LenStrs (Seq_Strs s, m9_state *err);
-int64_t Seq_LenI64s (Seq_I64s s, m9_state *err);
-int64_t Seq_LenF64s (Seq_F64s s, m9_state *err);
-m9_sl_m9_sl_CHAR Seq_StrsOf (m9_pool *pool, Seq_Strs s, m9_state *err);
-m9_sl_I64 Seq_I64sOf (m9_pool *pool, Seq_I64s s, m9_state *err);
-m9_sl_F64 Seq_F64sOf (m9_pool *pool, Seq_F64s s, m9_state *err);
+int64_t Seq_LenStrs (Seq_Strs *s, m9_state *err);
+int64_t Seq_LenI64s (Seq_I64s *s, m9_state *err);
+int64_t Seq_LenF64s (Seq_F64s *s, m9_state *err);
+m9_sl_m9_sl_CHAR Seq_StrsOf (m9_pool *pool, Seq_Strs *s, m9_state *err);
+m9_sl_I64 Seq_I64sOf (m9_pool *pool, Seq_I64s *s, m9_state *err);
+m9_sl_F64 Seq_F64sOf (m9_pool *pool, Seq_F64s *s, m9_state *err);
 m9_sl_m9_sl_CHAR Seq_Copy (m9_pool *pool, m9_sl_m9_sl_CHAR xs, m9_state *err);
 m9_sl_m9_sl_CHAR Seq_Concat (m9_pool *pool, m9_sl_m9_sl_CHAR a, m9_sl_m9_sl_CHAR b, m9_state *err);
 m9_sl_m9_sl_CHAR Seq_Distinct (m9_pool *pool, m9_sl_m9_sl_CHAR xs, m9_state *err);

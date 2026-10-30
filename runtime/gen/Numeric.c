@@ -148,8 +148,8 @@ static void Numeric_Qrsolv (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt
 static void Numeric_Lmpar (int64_t n, int64_t ldr, m9_sl_F64 *r, m9_sl_I64 ipvt, m9_sl_F64 diag, m9_sl_F64 qtb, double delta, double *par, m9_sl_F64 *x, m9_sl_F64 *sdiag, m9_sl_F64 *wa1, m9_sl_F64 *wa2, double rdwarf, double rgiant, m9_state *err);
 static void Numeric_LmStart (m9_pool *pool, Numeric_Lm *s, m9_pool *s_pool, m9_sl_F64 x0, int64_t m, double ftol, double xtol, double gtol, int64_t maxfev, double epsfcn, double factor, m9_state *err);
 static bool Numeric_LmNext (Numeric_Lm *s, m9_pool *s_pool, m9_state *err);
-static Numeric_Fitted Numeric_LmReport (Numeric_Lm s, m9_sl_F64 *x, m9_state *err);
-static bool Numeric_LmCov (Numeric_Lm s, m9_sl_F64 *cov, m9_state *err);
+static Numeric_Fitted Numeric_LmReport (Numeric_Lm *s, m9_sl_F64 *x, m9_state *err);
+static bool Numeric_LmCov (Numeric_Lm *s, m9_sl_F64 *cov, m9_state *err);
 static double Numeric_CcgBasis (int64_t k, double x, int64_t numpoly, m9_state *err);
 static double Numeric_CcgPoly (m9_sl_F64 params, double x, int64_t numpoly, m9_state *err);
 static double Numeric_CcgFunc (m9_sl_F64 params, double x, int64_t numpoly, int64_t numharm, m9_state *err);
@@ -1098,7 +1098,7 @@ Numeric_Fitted Numeric_LeastSq (Numeric_Residuals f, m9_sl_F64 p, m9_sl_F64 *x, 
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
-  m9ret = Numeric_LmReport (s, x, err);
+  m9ret = Numeric_LmReport (&(s), x, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -1171,12 +1171,12 @@ Numeric_Fitted Numeric_CurveFit (Numeric_Fn f, m9_sl_F64 t, m9_sl_F64 y, m9_sl_F
       i += 1;
     } }
   }
-  { __typeof__(r) m9v = Numeric_LmReport (s, params, err);
+  { __typeof__(r) m9v = Numeric_LmReport (&(s), params, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
   if ((m > n)) {
-    { __typeof__(r.covariance) m9v = Numeric_LmCov (s, cov, err);
+    { __typeof__(r.covariance) m9v = Numeric_LmCov (&(s), cov, err);
       if (err->exc) goto L_ret;
       r.covariance = m9v;
     }
@@ -4151,7 +4151,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Numeric_Fitted Numeric_LmReport (Numeric_Lm s, m9_sl_F64 *x, m9_state *err)
+static Numeric_Fitted Numeric_LmReport (Numeric_Lm *s, m9_sl_F64 *x, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4160,17 +4160,17 @@ static Numeric_Fitted Numeric_LmReport (Numeric_Lm s, m9_sl_F64 *x, m9_state *er
   Numeric_Fitted m9ret = {0};
   Numeric_Fitted r = {0}; (void) r;
   int64_t i = 0; (void) i;
-  if ((s.info == INT64_C(0))) {
+  if (((*s).info == INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 72 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 72 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
-  m9t2to = m9_sub_i64 (s.n, INT64_C(1), err);
+  m9t2to = m9_sub_i64 ((*s).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t2to) for (;;) {
-    { __typeof__((*(double *) m9_at ((*x).p, i, (*x).len, sizeof (double), err))) m9v = (*(double *) m9_at (s.x.p, i, s.x.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at ((*x).p, i, (*x).len, sizeof (double), err))) m9v = (*(double *) m9_at ((*s).x.p, i, (*s).x.len, sizeof (double), err));
       if (err->exc) goto L_ret;
       (*(double *) m9_at ((*x).p, i, (*x).len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -4178,20 +4178,20 @@ static Numeric_Fitted Numeric_LmReport (Numeric_Lm s, m9_sl_F64 *x, m9_state *er
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  if ((s.info == INT64_C(5))) {
-    err->i[0] = s.nfev;
+  if (((*s).info == INT64_C(5))) {
+    err->i[0] = (*s).nfev;
     m9_raise (err, &Numeric_NoConverge);
     goto L_ret;
   }
-  r.info = s.info;
-  r.nfev = s.nfev;
+  r.info = (*s).info;
+  r.nfev = (*s).nfev;
   r.cost = 0.0;
   { __typeof__(i) m9t3to;
   i = INT64_C(0);
-  m9t3to = m9_sub_i64 (s.m, INT64_C(1), err);
+  m9t3to = m9_sub_i64 ((*s).m, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t3to) for (;;) {
-    { __typeof__(r.cost) m9v = (r.cost + ((*(double *) m9_at (s.fvec.p, i, s.fvec.len, sizeof (double), err)) * (*(double *) m9_at (s.fvec.p, i, s.fvec.len, sizeof (double), err))));
+    { __typeof__(r.cost) m9v = (r.cost + ((*(double *) m9_at ((*s).fvec.p, i, (*s).fvec.len, sizeof (double), err)) * (*(double *) m9_at ((*s).fvec.p, i, (*s).fvec.len, sizeof (double), err))));
       if (err->exc) goto L_ret;
       r.cost = m9v;
     }
@@ -4209,7 +4209,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Numeric_LmCov (Numeric_Lm s, m9_sl_F64 *cov, m9_state *err)
+static bool Numeric_LmCov (Numeric_Lm *s, m9_sl_F64 *cov, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4225,14 +4225,14 @@ static bool Numeric_LmCov (Numeric_Lm s, m9_sl_F64 *cov, m9_state *err)
   int64_t k = 0; (void) k;
   int64_t row = 0; (void) row;
   double acc = 0; (void) acc;
-  n = s.n;
-  m = s.m;
+  n = (*s).n;
+  m = (*s).m;
   { __typeof__(j) m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (j <= m9t1to) for (;;) {
-    bool m9t2 = ((*(double *) m9_at (s.fjac.p, m9_add_i64 (j, m9_mul_i64 (j, m, err), err), s.fjac.len, sizeof (double), err)) == 0.0);
+    bool m9t2 = ((*(double *) m9_at ((*s).fjac.p, m9_add_i64 (j, m9_mul_i64 (j, m, err), err), (*s).fjac.len, sizeof (double), err)) == 0.0);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -4251,7 +4251,7 @@ static bool Numeric_LmCov (Numeric_Lm s, m9_sl_F64 *cov, m9_state *err)
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (j <= m9t3to) for (;;) {
-    { __typeof__((*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (j, n, err), j, err), inv.len, sizeof (double), err))) m9v = (1.0 / (*(double *) m9_at (s.fjac.p, m9_add_i64 (j, m9_mul_i64 (j, m, err), err), s.fjac.len, sizeof (double), err)));
+    { __typeof__((*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (j, n, err), j, err), inv.len, sizeof (double), err))) m9v = (1.0 / (*(double *) m9_at ((*s).fjac.p, m9_add_i64 (j, m9_mul_i64 (j, m, err), err), (*s).fjac.len, sizeof (double), err)));
       if (err->exc) goto L_ret;
       (*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (j, n, err), j, err), inv.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -4267,14 +4267,14 @@ static bool Numeric_LmCov (Numeric_Lm s, m9_sl_F64 *cov, m9_state *err)
       m9t5to = j;
       if (err->exc) goto L_ret;
       if (k <= m9t5to) for (;;) {
-        { __typeof__(acc) m9v = (acc + ((*(double *) m9_at (s.fjac.p, m9_add_i64 (i, m9_mul_i64 (k, m, err), err), s.fjac.len, sizeof (double), err)) * (*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (k, n, err), j, err), inv.len, sizeof (double), err))));
+        { __typeof__(acc) m9v = (acc + ((*(double *) m9_at ((*s).fjac.p, m9_add_i64 (i, m9_mul_i64 (k, m, err), err), (*s).fjac.len, sizeof (double), err)) * (*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (k, n, err), j, err), inv.len, sizeof (double), err))));
           if (err->exc) goto L_ret;
           acc = m9v;
         }
         if ((uint64_t) m9t5to - (uint64_t) k < (uint64_t) 1) break;
         k += 1;
       } }
-      { __typeof__((*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (i, n, err), j, err), inv.len, sizeof (double), err))) m9v = (- (acc / (*(double *) m9_at (s.fjac.p, m9_add_i64 (i, m9_mul_i64 (i, m, err), err), s.fjac.len, sizeof (double), err))));
+      { __typeof__((*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (i, n, err), j, err), inv.len, sizeof (double), err))) m9v = (- (acc / (*(double *) m9_at ((*s).fjac.p, m9_add_i64 (i, m9_mul_i64 (i, m, err), err), (*s).fjac.len, sizeof (double), err))));
         if (err->exc) goto L_ret;
         (*(double *) m9_at (inv.p, m9_add_i64 (m9_mul_i64 (i, n, err), j, err), inv.len, sizeof (double), err)) = m9v;
         if (err->exc) goto L_ret;
@@ -4294,7 +4294,7 @@ static bool Numeric_LmCov (Numeric_Lm s, m9_sl_F64 *cov, m9_state *err)
   m9t6to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t6to) for (;;) {
-    { __typeof__(row) m9v = m9_sub_i64 ((*(int64_t *) m9_at (s.ipvt.p, i, s.ipvt.len, sizeof (int64_t), err)), INT64_C(1), err);
+    { __typeof__(row) m9v = m9_sub_i64 ((*(int64_t *) m9_at ((*s).ipvt.p, i, (*s).ipvt.len, sizeof (int64_t), err)), INT64_C(1), err);
       if (err->exc) goto L_ret;
       row = m9v;
     }

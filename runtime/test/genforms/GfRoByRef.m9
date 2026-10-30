@@ -1,0 +1,74 @@
+MODULE GfRoByRef ;
+
+(* WANT: both 1 global 2 deep 6.0 field 4.0 ctor 7 *)
+
+(* An RO record or array is passed by reference since 2026-10-30 (a
+   port's report M5), and a program reads what it did when it was a
+   copy: the same variable as RO and as VAR in one call, and a module
+   variable the callee writes, still see the value at the call (both
+   copied); a local passed two levels deep, a field of a local and a
+   constructed value are read through. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  R = RECORD n : I64 ; pad : ARRAY 100 OF I64 END ;
+  V = ARRAY 3 OF F64 ;
+  H = RECORD tag : I64 ; v : V END ;
+
+VAR g : R ;
+
+PROCEDURE Both (RO a: R ; VAR b: R) : I64 =
+BEGIN
+  b.n := 99 ;
+  RETURN a.n
+END Both ;
+
+PROCEDURE Global (RO a: R) : I64 =
+BEGIN
+  g.n := 77 ;
+  RETURN a.n
+END Global ;
+
+PROCEDURE Sum (RO v: V) : F64 =
+BEGIN
+  RETURN v[0] + v[1] + v[2]
+END Sum ;
+
+PROCEDURE Outer (RO v: V) : F64 =
+BEGIN
+  RETURN Sum (v)
+END Outer ;
+
+PROCEDURE Mk (n: I64) : R =
+VAR r : R ;
+BEGIN
+  r.n := n ;
+  RETURN r
+END Mk ;
+
+PROCEDURE Get (RO a: R) : I64 =
+BEGIN
+  RETURN a.n
+END Get ;
+
+PROCEDURE Run () =
+VAR
+  x : R ;
+  v : V ;
+  h : H ;
+BEGIN
+  x.n := 1 ;
+  Io.Write ('both ' + Fmt.I64Str (Both (x, x))) ;
+  g.n := 2 ;
+  Io.Write (' global ' + Fmt.I64Str (Global (g))) ;
+  v[0] := 1.0 ; v[1] := 2.0 ; v[2] := 3.0 ;
+  Io.Write (' deep ' + Fmt.Short (Outer (v))) ;
+  h.v[0] := 4.0 ;
+  Io.Write (' field ' + Fmt.Short (Sum (h.v))) ;
+  Io.WriteLine (' ctor ' + Fmt.I64Str (Get (Mk (7))))
+END Run ;
+
+BEGIN
+  Run ()
+END GfRoByRef.

@@ -144,7 +144,7 @@ L_ret: ;
   return m9ret;
 }
 
-uint32_t Chars_StrI (m9_sl_UTF8 s, int64_t x, Chars_Index ix, m9_state *err)
+uint32_t Chars_StrI (m9_sl_UTF8 s, int64_t x, Chars_Index *ix, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -179,20 +179,20 @@ uint32_t Chars_StrI (m9_sl_UTF8 s, int64_t x, Chars_Index ix, m9_state *err)
     }
     }
   }
-  bool m9t2 = (((ix.octets != Text_BLen (s, err)) || (ix.first != f)) || (ix.last != l));
+  bool m9t2 = ((((*ix).octets != Text_BLen (s, err)) || ((*ix).first != f)) || ((*ix).last != l));
   if (err->exc) goto L_ret;
   if (m9t2) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 50 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 50 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  if (((x < INT64_C(0)) || (x >= ix.count))) {
+  if (((x < INT64_C(0)) || (x >= (*ix).count))) {
     err->i[0] = x;
-    err->i[1] = ix.count;
+    err->i[1] = (*ix).count;
     m9_raise (err, &m9_exc_IndexError);
     goto L_ret;
   }
-  { __typeof__(at) m9v = (*(int64_t *) m9_at (ix.blk.p, m9_div_i64 (x, Chars_Block, err), ix.blk.len, sizeof (int64_t), err));
+  { __typeof__(at) m9v = (*(int64_t *) m9_at ((*ix).blk.p, m9_div_i64 (x, Chars_Block, err), (*ix).blk.len, sizeof (int64_t), err));
     if (err->exc) goto L_ret;
     at = m9v;
   }
@@ -201,7 +201,7 @@ uint32_t Chars_StrI (m9_sl_UTF8 s, int64_t x, Chars_Index ix, m9_state *err)
   m9t4to = m9_sub_i64 (m9_div_i64 (x, INT64_C(32), err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (w <= m9t4to) for (;;) {
-    { __typeof__((*(int64_t *) m9_at (ix.tags.p, w, ix.tags.len, sizeof (int64_t), err))) m9a4 = (*(int64_t *) m9_at (ix.tags.p, w, ix.tags.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at ((*ix).tags.p, w, (*ix).tags.len, sizeof (int64_t), err))) m9a4 = (*(int64_t *) m9_at ((*ix).tags.p, w, (*ix).tags.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
     { __typeof__(at) m9v = m9_add_i64 (m9_add_i64 (at, INT64_C(32), err), Chars_Widths (m9a4, err), err);
       if (err->exc) goto L_ret;
@@ -216,7 +216,7 @@ uint32_t Chars_StrI (m9_sl_UTF8 s, int64_t x, Chars_Index ix, m9_state *err)
     r = m9v;
   }
   if ((r > INT64_C(0))) {
-    { __typeof__((*(int64_t *) m9_at (ix.tags.p, m9_div_i64 (x, INT64_C(32), err), ix.tags.len, sizeof (int64_t), err))) m9a5 = (*(int64_t *) m9_at (ix.tags.p, m9_div_i64 (x, INT64_C(32), err), ix.tags.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at ((*ix).tags.p, m9_div_i64 (x, INT64_C(32), err), (*ix).tags.len, sizeof (int64_t), err))) m9a5 = (*(int64_t *) m9_at ((*ix).tags.p, m9_div_i64 (x, INT64_C(32), err), (*ix).tags.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
     { __typeof__(Chars_FirstTags (m9a5, r, err)) m9a6 = Chars_FirstTags (m9a5, r, err);
       if (err->exc) goto L_ret;

@@ -1,0 +1,16 @@
+(* EXPECT: an ARRAY's count has no value: N DIV Z divides by 0 or passes MAX (I64) (par 2.2) *)
+(* A count over CONSTs that has no value: a CONST divisor of 0, or a
+   product past MAX (I64).  The checker kept no CONST values until
+   decision 78, and the generator refused these as `array count form
+   unsupported' (2026-10-30).  Legal forms first: a CONST, an
+   expression over CONSTs that folds. *)
+MODULE m ;
+CONST
+  N = 4 ;
+  Z = 0 ;
+TYPE
+  A = ARRAY N OF I64 ;
+  B = ARRAY N * 2 - 1 OF I64 ;
+  C = ARRAY N DIV Z OF I64 ;
+BEGIN
+END m.

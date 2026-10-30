@@ -1,0 +1,17 @@
+(* EXPECT: unknown name: w *)
+(* A name declared nowhere, with a selector: `w.n', `w[0]', read or
+   written.  The bare name was refused; with a selector it reached the
+   generator as `unknown name' (the fuzz review's N13, until
+   2026-10-30).  Legal forms first: a local record's field, an array's
+   element. *)
+MODULE m ;
+TYPE R = RECORD n : I64 END ;
+VAR
+  r : R ;
+  a : ARRAY 3 OF I64 ;
+  x : I64 ;
+BEGIN
+  r.n := 1 ;
+  a[0] := r.n ;
+  x := w.n
+END m.

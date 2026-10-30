@@ -105,8 +105,8 @@ void Map_PlateCarree (double lon, double lat, double *x, double *y, m9_state *er
 void Map_PlateCarreeInverse (double x, double y, double *lon, double *lat, m9_state *err);
 Map_Window Map_Globe (m9_state *err);
 Map_Spec Map_Default (m9_state *err);
-bool Map_Range (Map_Scale scale, m9_gd2_double values, double *lo, double *hi, m9_state *err);
-m9_sl_CHAR Map_Render (Map_Spec spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, m9_sl_Map_Marker markers, m9_state *err);
+bool Map_Range (Map_Scale *scale, m9_gd2_double values, double *lo, double *hi, m9_state *err);
+m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, m9_sl_Map_Marker markers, m9_state *err);
 m9_sl_BYTE Map_Warp (m9_pool *pool, m9_sl_BYTE rgb, int64_t w, int64_t h, Map_Unprojection unproj, double lon0, double x0, double x1, double y0_, double y1_, int64_t outW, int64_t outH, m9_state *err);
 int64_t Map_CoastLines (m9_state *err);
 int64_t Map_CoastPoints (m9_state *err);

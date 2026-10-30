@@ -1,0 +1,30 @@
+MODULE BndShape ;
+
+(* one value, one type: ARRAY N OF F64 with N = 3, ARRAY 3 OF F64,
+   ARRAY 2 + 1 OF F64 and BndDef's ARRAY M OF F64 (M = 3) assigned to
+   each other and lent to an RO ARRAY 3 OF F64 (a port's report M8,
+   2026-10-30: refused as two types until then) *)
+
+IMPORT Io, Fmt, BndDef ;
+
+CONST N = 3 ;
+TYPE A = ARRAY N OF F64 ;
+
+VAR
+  a : A ;
+  b : ARRAY 3 OF F64 ;
+  c : ARRAY 2 + 1 OF F64 ;
+  d : ARRAY BndDef.M OF F64 ;
+
+PROCEDURE Sum (RO v: ARRAY 3 OF F64) : F64 =
+BEGIN
+  RETURN v[0] + v[1] + v[2]
+END Sum ;
+
+BEGIN
+  a[0] := 1.0 ; a[1] := 2.0 ; a[2] := 3.0 ;
+  b := a ;
+  c := b ;
+  d := c ;
+  Io.WriteLine (Fmt.Short (Sum (a)) + ' ' + Fmt.Short (Sum (c)) + ' ' + Fmt.Short (Sum (d)))
+END BndShape.

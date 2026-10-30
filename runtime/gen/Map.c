@@ -10544,32 +10544,32 @@ static double Map_Px (double phi, m9_state *err);
 static double Map_Py (double phi, m9_state *err);
 static double Map_Dy (double phi, m9_state *err);
 static bool Map_Finite (double v, m9_state *err);
-static double Map_Shift (Map_Spec spec, double lon, m9_state *err);
-static void Map_ProjectRel (Map_Spec spec, double rel, double lat, double *x, double *y, m9_state *err);
-static void Map_Project (Map_Spec spec, double lon, double lat, double *x, double *y, m9_state *err);
-static void Map_Place (Map_Spec spec, Map_Geo g, double lon, double lat, double *px, double *py, m9_state *err);
-static bool Map_InLon (Map_Window win, double lon, m9_state *err);
-static bool Map_Inside (Map_Window win, double lon, double lat, m9_state *err);
-static double Map_LonSpan (Map_Window win, m9_state *err);
-static void Map_Edge (Map_Spec spec, bool whole, double lon, double lat, double *x, double *y, m9_state *err);
-static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_state *err);
+static double Map_Shift (Map_Spec *spec, double lon, m9_state *err);
+static void Map_ProjectRel (Map_Spec *spec, double rel, double lat, double *x, double *y, m9_state *err);
+static void Map_Project (Map_Spec *spec, double lon, double lat, double *x, double *y, m9_state *err);
+static void Map_Place (Map_Spec *spec, Map_Geo *g, double lon, double lat, double *px, double *py, m9_state *err);
+static bool Map_InLon (Map_Window *win, double lon, m9_state *err);
+static bool Map_Inside (Map_Window *win, double lon, double lat, m9_state *err);
+static double Map_LonSpan (Map_Window *win, m9_state *err);
+static void Map_Edge (Map_Spec *spec, bool whole, double lon, double lat, double *x, double *y, m9_state *err);
+static int64_t Map_Outline (Map_Spec *spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_state *err);
 static void Map_Esc (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err);
 static void Map_Num (DynStr_DString * *d, m9_pool *d_pool, double v, m9_state *err);
 static m9_sl_CHAR Map_Pretty (double v, m9_state *err);
 static void Map_Pt (DynStr_DString * *d, m9_pool *d_pool, bool first, double px, double py, m9_state *err);
 static void Map_Rect (DynStr_DString * *d, m9_pool *d_pool, double x, double y, double w, double h, m9_sl_CHAR fill, m9_state *err);
-static void Map_OutlinePath (DynStr_DString * *d, m9_pool *d_pool, Map_Geo g, m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, m9_state *err);
-static void Map_Image (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_state *err);
-static void Map_Line (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_sl_F64 lons, m9_sl_F64 lats, int64_t n, m9_state *err);
-static void Map_Coast (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_state *err);
-static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_state *err);
-static int64_t Map_Level (Map_Scale scale, double lo, double hi, double v, m9_state *err);
+static void Map_OutlinePath (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, m9_state *err);
+static void Map_Image (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err);
+static void Map_Line (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, int64_t n, m9_state *err);
+static void Map_Coast (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err);
+static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err);
+static int64_t Map_Level (Map_Scale *scale, double lo, double hi, double v, m9_state *err);
 static m9_sl_F64 Map_Edges (m9_sl_F64 centres, m9_sl_CHAR what, m9_state *err);
-static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_sl_F64 lonE, m9_sl_F64 latE, int64_t r, int64_t c0, int64_t c1, m9_sl_CHAR fill, m9_state *err);
-static bool Map_CellShown (Map_Spec spec, double lon0, double lon1, double lat0, double lat1, m9_state *err);
-static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err);
-static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo g, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err);
-static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_sl_Map_Marker markers, m9_state *err);
+static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lonE, m9_sl_F64 latE, int64_t r, int64_t c0, int64_t c1, m9_sl_CHAR fill, m9_state *err);
+static bool Map_CellShown (Map_Spec *spec, double lon0, double lon1, double lat0, double lat1, m9_state *err);
+static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err);
+static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err);
+static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_Map_Marker markers, m9_state *err);
 
 
 void Map_NaturalEarth (double lon, double lat, double *x, double *y, m9_state *err)
@@ -10724,7 +10724,7 @@ L_ret: ;
   return m9ret;
 }
 
-bool Map_Range (Map_Scale scale, m9_gd2_double values, double *lo, double *hi, m9_state *err)
+bool Map_Range (Map_Scale *scale, m9_gd2_double values, double *lo, double *hi, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -10755,7 +10755,7 @@ bool Map_Range (Map_Scale scale, m9_gd2_double values, double *lo, double *hi, m
         if (err->exc) goto L_hdl_m9t1;
         v = m9v;
       }
-      bool m9t5 = (Map_Finite (v, err) && (((!scale.log_) || (v > 0.0))));
+      bool m9t5 = (Map_Finite (v, err) && (((!(*scale).log_) || (v > 0.0))));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t5) {
         (*(double *) m9_at (present.p, n, present.len, sizeof (double), err)) = v;
@@ -10778,14 +10778,14 @@ bool Map_Range (Map_Scale scale, m9_gd2_double values, double *lo, double *hi, m
   }
   { __typeof__(({ __auto_type m9t6 = present; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a1 = ({ __auto_type m9t6 = present; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__((*lo)) m9v = Stats_Percentile (m9a1, scale.low, err);
+  { __typeof__((*lo)) m9v = Stats_Percentile (m9a1, (*scale).low, err);
     if (err->exc) goto L_hdl_m9t1;
     (*lo) = m9v;
   }
   }
   { __typeof__(({ __auto_type m9t7 = present; int64_t m9t7a = INT64_C(0), m9t7n = n; int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; })) m9a2 = ({ __auto_type m9t7 = present; int64_t m9t7a = INT64_C(0), m9t7n = n; int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; });
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__((*hi)) m9v = Stats_Percentile (m9a2, scale.high, err);
+  { __typeof__((*hi)) m9v = Stats_Percentile (m9a2, (*scale).high, err);
     if (err->exc) goto L_hdl_m9t1;
     (*hi) = m9v;
   }
@@ -10812,7 +10812,7 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Map_Render (Map_Spec spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, m9_sl_Map_Marker markers, m9_state *err)
+m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, m9_sl_Map_Marker markers, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -10830,7 +10830,7 @@ m9_sl_CHAR Map_Render (Map_Spec spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_dou
   double lo = 0; (void) lo;
   double hi = 0; (void) hi;
   bool heat = false; (void) heat;
-  if ((spec.width <= INT64_C(0))) {
+  if (((*spec).width <= INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 31 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 31 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
@@ -10914,23 +10914,23 @@ m9_sl_CHAR Map_Render (Map_Spec spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_dou
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  if (((spec.title).len > INT64_C(0))) {
+  if ((((*spec).title).len > INT64_C(0))) {
     g.top = 24.0;
   } else {
     g.top = 0.0;
   }
-  g.w = (double)(spec.width);
+  g.w = (double)((*spec).width);
   g.h = ((g.w * ((g.y1_ - g.y0_))) / ((g.x1 - g.x0)));
   heat = false;
   lo = 0.0;
   hi = 0.0;
   if (((lons).len > INT64_C(0))) {
-    { __typeof__(heat) m9v = Map_Range (spec.scale, values, &(lo), &(hi), err);
+    { __typeof__(heat) m9v = Map_Range (&((*spec).scale), values, &(lo), &(hi), err);
       if (err->exc) goto L_ret;
       heat = m9v;
     }
   }
-  if ((heat || ((spec.credit).len > INT64_C(0)))) {
+  if ((heat || (((*spec).credit).len > INT64_C(0)))) {
     g.bottom = 26.0;
   } else {
     g.bottom = 0.0;
@@ -10980,8 +10980,8 @@ m9_sl_CHAR Map_Render (Map_Spec spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_dou
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s6, 9 }), err);
   if (err->exc) goto L_ret;
-  if (((spec.title).len > INT64_C(0))) {
-    Map_Esc (&(d), &(pool), spec.title, err);
+  if ((((*spec).title).len > INT64_C(0))) {
+    Map_Esc (&(d), &(pool), (*spec).title, err);
     if (err->exc) goto L_ret;
   } else {
     DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s7, 3 }), err);
@@ -10993,47 +10993,47 @@ m9_sl_CHAR Map_Render (Map_Spec spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_dou
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s9, 39 }), err);
   if (err->exc) goto L_ret;
-  Map_OutlinePath (&(d), &(pool), g, xs, ys, n, err);
+  Map_OutlinePath (&(d), &(pool), &(g), xs, ys, n, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s10, 51 }), err);
   if (err->exc) goto L_ret;
-  Map_Image (&(d), &(pool), spec, g, err);
+  Map_Image (&(d), &(pool), spec, &(g), err);
   if (err->exc) goto L_ret;
-  Map_Graticule (&(d), &(pool), spec, g, err);
+  Map_Graticule (&(d), &(pool), spec, &(g), err);
   if (err->exc) goto L_ret;
-  if (spec.coast) {
-    Map_Coast (&(d), &(pool), spec, g, err);
+  if ((*spec).coast) {
+    Map_Coast (&(d), &(pool), spec, &(g), err);
     if (err->exc) goto L_ret;
   }
   if (heat) {
-    Map_Heat (&(d), &(pool), spec, g, lons, lats, values, lo, hi, fills, err);
+    Map_Heat (&(d), &(pool), spec, &(g), lons, lats, values, lo, hi, fills, err);
     if (err->exc) goto L_ret;
   }
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s11, 77 }), err);
   if (err->exc) goto L_ret;
-  Map_OutlinePath (&(d), &(pool), g, xs, ys, n, err);
+  Map_OutlinePath (&(d), &(pool), &(g), xs, ys, n, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s12, 3 }), err);
   if (err->exc) goto L_ret;
-  Map_Markers (&(d), &(pool), spec, g, markers, err);
+  Map_Markers (&(d), &(pool), spec, &(g), markers, err);
   if (err->exc) goto L_ret;
   if (heat) {
-    Map_Legend (&(d), &(pool), g, lo, hi, fills, err);
+    Map_Legend (&(d), &(pool), &(g), lo, hi, fills, err);
     if (err->exc) goto L_ret;
   }
-  if (((spec.title).len > INT64_C(0))) {
+  if ((((*spec).title).len > INT64_C(0))) {
     DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s13, 9 }), err);
     if (err->exc) goto L_ret;
     Map_Num (&(d), &(pool), (g.w / 2.0), err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s14, 75 }), err);
     if (err->exc) goto L_ret;
-    Map_Esc (&(d), &(pool), spec.title, err);
+    Map_Esc (&(d), &(pool), (*spec).title, err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s15, 7 }), err);
     if (err->exc) goto L_ret;
   }
-  if (((spec.credit).len > INT64_C(0))) {
+  if ((((*spec).credit).len > INT64_C(0))) {
     DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s16, 9 }), err);
     if (err->exc) goto L_ret;
     Map_Num (&(d), &(pool), (g.w - 6.0), err);
@@ -11044,7 +11044,7 @@ m9_sl_CHAR Map_Render (Map_Spec spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_dou
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s18, 66 }), err);
     if (err->exc) goto L_ret;
-    Map_Esc (&(d), &(pool), spec.credit, err);
+    Map_Esc (&(d), &(pool), (*spec).credit, err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s19, 7 }), err);
     if (err->exc) goto L_ret;
@@ -11360,7 +11360,7 @@ L_ret: ;
   return m9ret;
 }
 
-static double Map_Shift (Map_Spec spec, double lon, m9_state *err)
+static double Map_Shift (Map_Spec *spec, double lon, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11368,7 +11368,7 @@ static double Map_Shift (Map_Spec spec, double lon, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   double d = 0; (void) d;
-  d = (lon - spec.lon0);
+  d = (lon - (*spec).lon0);
   for (;;) {
     if (!((d > 180.0))) break;
     d = (d - 360.0);
@@ -11386,13 +11386,13 @@ L_ret: ;
   return m9ret;
 }
 
-static void Map_ProjectRel (Map_Spec spec, double rel, double lat, double *x, double *y, m9_state *err)
+static void Map_ProjectRel (Map_Spec *spec, double rel, double lat, double *x, double *y, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { Map_Projection f = spec.proj;
+  { Map_Projection f = (*spec).proj;
   if (f != NULL) {
     f (rel, lat, x, y, err);
     if (err->exc) goto L_ret;
@@ -11407,7 +11407,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Project (Map_Spec spec, double lon, double lat, double *x, double *y, m9_state *err)
+static void Map_Project (Map_Spec *spec, double lon, double lat, double *x, double *y, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11424,7 +11424,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Place (Map_Spec spec, Map_Geo g, double lon, double lat, double *px, double *py, m9_state *err)
+static void Map_Place (Map_Spec *spec, Map_Geo *g, double lon, double lat, double *px, double *py, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11434,15 +11434,15 @@ static void Map_Place (Map_Spec spec, Map_Geo g, double lon, double lat, double 
   double y = 0; (void) y;
   Map_Project (spec, lon, lat, &(x), &(y), err);
   if (err->exc) goto L_ret;
-  (*px) = ((((x - g.x0)) / ((g.x1 - g.x0))) * g.w);
-  (*py) = (g.top + ((((g.y1_ - y)) / ((g.y1_ - g.y0_))) * g.h));
+  (*px) = ((((x - (*g).x0)) / (((*g).x1 - (*g).x0))) * (*g).w);
+  (*py) = ((*g).top + (((((*g).y1_ - y)) / (((*g).y1_ - (*g).y0_))) * (*g).h));
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
 }
 
-static bool Map_InLon (Map_Window win, double lon, m9_state *err)
+static bool Map_InLon (Map_Window *win, double lon, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11459,13 +11459,13 @@ static bool Map_InLon (Map_Window win, double lon, m9_state *err)
     if (!((d < (- 180.0)))) break;
     d = (d + 360.0);
   }
-  if ((win.west <= win.east)) {
+  if (((*win).west <= (*win).east)) {
     err->res = m9res;
-    m9ret = ((d >= win.west) && (d <= win.east));
+    m9ret = ((d >= (*win).west) && (d <= (*win).east));
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((d >= win.west) || (d <= win.east));
+  m9ret = ((d >= (*win).west) || (d <= (*win).east));
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -11473,14 +11473,14 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Map_Inside (Map_Window win, double lon, double lat, m9_state *err)
+static bool Map_Inside (Map_Window *win, double lon, double lat, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  if (((lat < win.south) || (lat > win.north))) {
+  if (((lat < (*win).south) || (lat > (*win).north))) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
@@ -11495,20 +11495,20 @@ L_ret: ;
   return m9ret;
 }
 
-static double Map_LonSpan (Map_Window win, m9_state *err)
+static double Map_LonSpan (Map_Window *win, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  if ((win.west <= win.east)) {
+  if (((*win).west <= (*win).east)) {
     err->res = m9res;
-    m9ret = (win.east - win.west);
+    m9ret = ((*win).east - (*win).west);
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((win.east + 360.0) - win.west);
+  m9ret = (((*win).east + 360.0) - (*win).west);
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -11516,7 +11516,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Map_Edge (Map_Spec spec, bool whole, double lon, double lat, double *x, double *y, m9_state *err)
+static void Map_Edge (Map_Spec *spec, bool whole, double lon, double lat, double *x, double *y, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11535,7 +11535,7 @@ L_ret: ;
   return;
 }
 
-static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_state *err)
+static int64_t Map_Outline (Map_Spec *spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11554,7 +11554,7 @@ static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_stat
   int64_t nlon = 0; (void) nlon;
   int64_t nlat = 0; (void) nlat;
   bool whole = false; (void) whole;
-  { __typeof__(span) m9v = Map_LonSpan (spec.window, err);
+  { __typeof__(span) m9v = Map_LonSpan (&((*spec).window), err);
     if (err->exc) goto L_ret;
     span = m9v;
   }
@@ -11563,7 +11563,7 @@ static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_stat
     span = 360.0;
     west = (- 180.0);
   } else {
-    west = spec.window.west;
+    west = (*spec).window.west;
   }
   { __typeof__(nlon) m9v = m9_add_i64 (m9_i64_f64 ((double)(Math_Floor ((span / 1.0), err)), err), INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -11572,7 +11572,7 @@ static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_stat
   if ((nlon < INT64_C(2))) {
     nlon = INT64_C(2);
   }
-  { __typeof__(nlat) m9v = m9_add_i64 (m9_i64_f64 ((double)(Math_Floor ((((spec.window.north - spec.window.south)) / 1.0), err)), err), INT64_C(1), err);
+  { __typeof__(nlat) m9v = m9_add_i64 (m9_i64_f64 ((double)(Math_Floor (((((*spec).window.north - (*spec).window.south)) / 1.0), err)), err), INT64_C(1), err);
     if (err->exc) goto L_ret;
     nlat = m9v;
   }
@@ -11594,7 +11594,7 @@ static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_stat
   m9t1to = nlon;
   if (k <= m9t1to) for (;;) {
     lon = (west + ((double)(k) * step));
-    Map_Edge (spec, whole, lon, spec.window.south, &(x), &(y), err);
+    Map_Edge (spec, whole, lon, (*spec).window.south, &(x), &(y), err);
     if (err->exc) goto L_ret;
     (*(double *) m9_at ((*xs).p, n, (*xs).len, sizeof (double), err)) = x;
     if (err->exc) goto L_ret;
@@ -11607,12 +11607,12 @@ static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_stat
     if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
-  step = (((spec.window.north - spec.window.south)) / (double)(nlat));
+  step = ((((*spec).window.north - (*spec).window.south)) / (double)(nlat));
   { __typeof__(k) m9t2to;
   k = INT64_C(1);
   m9t2to = nlat;
   if (k <= m9t2to) for (;;) {
-    lat = (spec.window.south + ((double)(k) * step));
+    lat = ((*spec).window.south + ((double)(k) * step));
     Map_Edge (spec, whole, (west + span), lat, &(x), &(y), err);
     if (err->exc) goto L_ret;
     (*(double *) m9_at ((*xs).p, n, (*xs).len, sizeof (double), err)) = x;
@@ -11632,7 +11632,7 @@ static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_stat
   m9t3to = nlon;
   if (k <= m9t3to) for (;;) {
     lon = ((west + span) - ((double)(k) * step));
-    Map_Edge (spec, whole, lon, spec.window.north, &(x), &(y), err);
+    Map_Edge (spec, whole, lon, (*spec).window.north, &(x), &(y), err);
     if (err->exc) goto L_ret;
     (*(double *) m9_at ((*xs).p, n, (*xs).len, sizeof (double), err)) = x;
     if (err->exc) goto L_ret;
@@ -11645,13 +11645,13 @@ static int64_t Map_Outline (Map_Spec spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_stat
     if ((uint64_t) m9t3to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
-  step = (((spec.window.north - spec.window.south)) / (double)(nlat));
+  step = ((((*spec).window.north - (*spec).window.south)) / (double)(nlat));
   { __typeof__(k) m9t4to;
   k = INT64_C(1);
   m9t4to = m9_sub_i64 (nlat, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (k <= m9t4to) for (;;) {
-    lat = (spec.window.north - ((double)(k) * step));
+    lat = ((*spec).window.north - ((double)(k) * step));
     Map_Edge (spec, whole, west, lat, &(x), &(y), err);
     if (err->exc) goto L_ret;
     (*(double *) m9_at ((*xs).p, n, (*xs).len, sizeof (double), err)) = x;
@@ -11843,7 +11843,7 @@ L_ret: ;
   return;
 }
 
-static void Map_OutlinePath (DynStr_DString * *d, m9_pool *d_pool, Map_Geo g, m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, m9_state *err)
+static void Map_OutlinePath (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11857,11 +11857,11 @@ static void Map_OutlinePath (DynStr_DString * *d, m9_pool *d_pool, Map_Geo g, m9
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (k <= m9t1to) for (;;) {
-    { __typeof__(px) m9v = (((((*(double *) m9_at (xs.p, k, xs.len, sizeof (double), err)) - g.x0)) / ((g.x1 - g.x0))) * g.w);
+    { __typeof__(px) m9v = (((((*(double *) m9_at (xs.p, k, xs.len, sizeof (double), err)) - (*g).x0)) / (((*g).x1 - (*g).x0))) * (*g).w);
       if (err->exc) goto L_ret;
       px = m9v;
     }
-    { __typeof__(py) m9v = (g.top + ((((g.y1_ - (*(double *) m9_at (ys.p, k, ys.len, sizeof (double), err)))) / ((g.y1_ - g.y0_))) * g.h));
+    { __typeof__(py) m9v = ((*g).top + (((((*g).y1_ - (*(double *) m9_at (ys.p, k, ys.len, sizeof (double), err)))) / (((*g).y1_ - (*g).y0_))) * (*g).h));
       if (err->exc) goto L_ret;
       py = m9v;
     }
@@ -11879,7 +11879,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Image (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_state *err)
+static void Map_Image (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11889,16 +11889,16 @@ static void Map_Image (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_
   double px1 = 0; (void) px1;
   double py0 = 0; (void) py0;
   double py1 = 0; (void) py1;
-  if (((spec.backdrop.href).len == INT64_C(0))) {
+  if ((((*spec).backdrop.href).len == INT64_C(0))) {
     goto L_ret;
   }
-  px0 = ((((spec.backdrop.x0 - g.x0)) / ((g.x1 - g.x0))) * g.w);
-  px1 = ((((spec.backdrop.x1 - g.x0)) / ((g.x1 - g.x0))) * g.w);
-  py0 = (g.top + ((((g.y1_ - spec.backdrop.y1_)) / ((g.y1_ - g.y0_))) * g.h));
-  py1 = (g.top + ((((g.y1_ - spec.backdrop.y0_)) / ((g.y1_ - g.y0_))) * g.h));
+  px0 = (((((*spec).backdrop.x0 - (*g).x0)) / (((*g).x1 - (*g).x0))) * (*g).w);
+  px1 = (((((*spec).backdrop.x1 - (*g).x0)) / (((*g).x1 - (*g).x0))) * (*g).w);
+  py0 = ((*g).top + (((((*g).y1_ - (*spec).backdrop.y1_)) / (((*g).y1_ - (*g).y0_))) * (*g).h));
+  py1 = ((*g).top + (((((*g).y1_ - (*spec).backdrop.y0_)) / (((*g).y1_ - (*g).y0_))) * (*g).h));
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s33, 13 }), err);
   if (err->exc) goto L_ret;
-  Map_Esc (d, d_pool, spec.backdrop.href, err);
+  Map_Esc (d, d_pool, (*spec).backdrop.href, err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s34, 5 }), err);
   if (err->exc) goto L_ret;
@@ -11925,7 +11925,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Line (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_sl_F64 lons, m9_sl_F64 lats, int64_t n, m9_state *err)
+static void Map_Line (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, int64_t n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11951,7 +11951,7 @@ static void Map_Line (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_G
       if (err->exc) goto L_ret;
     { __typeof__((*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err))) m9a9 = (*(double *) m9_at (lats.p, k, lats.len, sizeof (double), err));
       if (err->exc) goto L_ret;
-    { __typeof__(inside) m9v = Map_Inside (spec.window, m9a8, m9a9, err);
+    { __typeof__(inside) m9v = Map_Inside (&((*spec).window), m9a8, m9a9, err);
       if (err->exc) goto L_ret;
       inside = m9v;
     }
@@ -11996,7 +11996,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Coast (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_state *err)
+static void Map_Coast (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12068,7 +12068,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_state *err)
+static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12080,7 +12080,7 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, 
   int64_t n = 0; (void) n;
   m9_sl_F64 lons = {0}; (void) lons;
   m9_sl_F64 lats = {0}; (void) lats;
-  if ((spec.graticule <= 0.0)) {
+  if (((*spec).graticule <= 0.0)) {
     goto L_ret;
   }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s41, 76 }), err);
@@ -12097,7 +12097,7 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, 
   lon = (- 180.0);
   for (;;) {
     if (!((lon <= 180.0))) break;
-    bool m9t1 = Map_InLon (spec.window, lon, err);
+    bool m9t1 = Map_InLon (&((*spec).window), lon, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
       { __typeof__(k) m9t2to;
@@ -12115,7 +12115,7 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, 
       Map_Line (d, d_pool, spec, g, lons, lats, n, err);
       if (err->exc) goto L_ret;
     }
-    lon = (lon + spec.graticule);
+    lon = (lon + (*spec).graticule);
   }
   n = INT64_C(181);
   { __typeof__(lons) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, n, err);
@@ -12126,10 +12126,10 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, 
     if (err->exc) goto L_ret;
     lats = m9v;
   }
-  lat = ((- 90.0) + spec.graticule);
+  lat = ((- 90.0) + (*spec).graticule);
   for (;;) {
     if (!((lat < 90.0))) break;
-    if (((lat >= spec.window.south) && (lat <= spec.window.north))) {
+    if (((lat >= (*spec).window.south) && (lat <= (*spec).window.north))) {
       { __typeof__(k) m9t3to;
       k = INT64_C(0);
       m9t3to = m9_sub_i64 (n, INT64_C(1), err);
@@ -12145,7 +12145,7 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, 
       Map_Line (d, d_pool, spec, g, lons, lats, n, err);
       if (err->exc) goto L_ret;
     }
-    lat = (lat + spec.graticule);
+    lat = (lat + (*spec).graticule);
   }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s42, 3 }), err);
   if (err->exc) goto L_ret;
@@ -12156,7 +12156,7 @@ L_ret: ;
   return;
 }
 
-static int64_t Map_Level (Map_Scale scale, double lo, double hi, double v, m9_state *err)
+static int64_t Map_Level (Map_Scale *scale, double lo, double hi, double v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12174,7 +12174,7 @@ static int64_t Map_Level (Map_Scale scale, double lo, double hi, double v, m9_st
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  if (scale.log_) {
+  if ((*scale).log_) {
     if ((v <= 0.0)) {
       err->res = m9res;
       m9ret = m9_neg_i64 (INT64_C(1), err);
@@ -12293,7 +12293,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_sl_F64 lonE, m9_sl_F64 latE, int64_t r, int64_t c0, int64_t c1, m9_sl_CHAR fill, m9_state *err)
+static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lonE, m9_sl_F64 latE, int64_t r, int64_t c0, int64_t c1, m9_sl_CHAR fill, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12308,7 +12308,7 @@ static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_G
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 16 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(Fmt_Fixed (spec.scale.alpha, INT64_C(2), err)) m9a14 = Fmt_Fixed (spec.scale.alpha, INT64_C(2), err);
+  { __typeof__(Fmt_Fixed ((*spec).scale.alpha, INT64_C(2), err)) m9a14 = Fmt_Fixed ((*spec).scale.alpha, INT64_C(2), err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a14, err);
   if (err->exc) goto L_ret;
@@ -12319,7 +12319,7 @@ static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_G
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s48, 18 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(Fmt_Fixed (spec.scale.alpha, INT64_C(2), err)) m9a15 = Fmt_Fixed (spec.scale.alpha, INT64_C(2), err);
+  { __typeof__(Fmt_Fixed ((*spec).scale.alpha, INT64_C(2), err)) m9a15 = Fmt_Fixed ((*spec).scale.alpha, INT64_C(2), err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a15, err);
   if (err->exc) goto L_ret;
@@ -12371,7 +12371,7 @@ L_ret: ;
   return;
 }
 
-static bool Map_CellShown (Map_Spec spec, double lon0, double lon1, double lat0, double lat1, m9_state *err)
+static bool Map_CellShown (Map_Spec *spec, double lon0, double lon1, double lat0, double lat1, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12393,13 +12393,13 @@ static bool Map_CellShown (Map_Spec spec, double lon0, double lon1, double lat0,
     m9ret = false;
     goto L_ret;
   }
-  if (((lat1 < spec.window.south) || (lat0 > spec.window.north))) {
+  if (((lat1 < (*spec).window.south) || (lat0 > (*spec).window.north))) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((Map_InLon (spec.window, (0.5 * ((lon0 + lon1))), err) || Map_InLon (spec.window, lon0, err)) || Map_InLon (spec.window, lon1, err));
+  m9ret = ((Map_InLon (&((*spec).window), (0.5 * ((lon0 + lon1))), err) || Map_InLon (&((*spec).window), lon0, err)) || Map_InLon (&((*spec).window), lon1, err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -12408,7 +12408,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err)
+static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12448,7 +12448,7 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_G
     if (c <= m9t2to) for (;;) {
       { __typeof__((*(double *) m9_gat2 (values.p, sizeof (double), values.n[0], values.n[1], values.s[0], values.s[1], r, c, err))) m9a20 = (*(double *) m9_gat2 (values.p, sizeof (double), values.n[0], values.n[1], values.s[0], values.s[1], r, c, err));
         if (err->exc) goto L_ret;
-      { __typeof__(lv) m9v = Map_Level (spec.scale, lo, hi, m9a20, err);
+      { __typeof__(lv) m9v = Map_Level (&((*spec).scale), lo, hi, m9a20, err);
         if (err->exc) goto L_ret;
         lv = m9v;
       }
@@ -12500,7 +12500,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo g, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err)
+static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12511,7 +12511,7 @@ static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo g, double 
   double y = 0; (void) y;
   double w = 0; (void) w;
   x = 10.0;
-  y = ((g.top + g.h) + 5.0);
+  y = (((*g).top + (*g).h) + 5.0);
   w = (160.0 / (double)(Map_Levels));
   { __typeof__(k) m9t1to;
   k = INT64_C(0);
@@ -12565,7 +12565,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Map_Geo g, m9_sl_Map_Marker markers, m9_state *err)
+static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_Map_Marker markers, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12583,7 +12583,7 @@ static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec spec, Ma
       if (err->exc) goto L_ret;
     { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat) m9a33 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lat;
       if (err->exc) goto L_ret;
-    bool m9t2 = Map_Inside (spec.window, m9a32, m9a33, err);
+    bool m9t2 = Map_Inside (&((*spec).window), m9a32, m9a33, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon) m9a34 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).lon;

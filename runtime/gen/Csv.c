@@ -74,7 +74,7 @@ static bool Csv_IsDigit (uint8_t b, m9_state *err);
 static int64_t Csv_CountRows (m9_sl_BYTE b, int64_t from, bool quoted, m9_state *err);
 static int64_t Csv_SkipLines (m9_sl_BYTE b, int64_t skip, m9_state *err);
 static void Csv_Unquote (m9_sl_BYTE b, int64_t *ofs, int64_t *len, m9_state *err);
-static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9_state *err);
+static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options *opt, m9_state *err);
 static float Csv_Pow10F32 (int64_t k, m9_state *err);
 static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
 static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
@@ -109,7 +109,7 @@ L_ret: ;
   return m9ret;
 }
 
-Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state *err)
+Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options *opt, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -130,7 +130,7 @@ L_ret: ;
   return m9ret;
 }
 
-Csv_Table * Csv_OpenBytes (m9_pool *pool, m9_sl_BYTE src, Csv_Options opt, m9_state *err)
+Csv_Table * Csv_OpenBytes (m9_pool *pool, m9_sl_BYTE src, Csv_Options *opt, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1206,7 +1206,7 @@ L_ret: ;
   return;
 }
 
-static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9_state *err)
+static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options *opt, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1223,10 +1223,10 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9
     t = m9v;
   }
   t->buf = buf;
-  t->opt = opt;
-  t->delim = (int64_t)(opt.delimiter);
+  t->opt = (*opt);
+  t->delim = (int64_t)((*opt).delimiter);
   t->parsed = false;
-  { __typeof__(from) m9v = Csv_SkipLines (t->buf, opt.skipLines, err);
+  { __typeof__(from) m9v = Csv_SkipLines (t->buf, (*opt).skipLines, err);
     if (err->exc) goto L_ret;
     from = m9v;
   }
@@ -1254,7 +1254,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9
   }
   if ((i >= (t->buf).len)) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 13 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 13 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
-    err->i[0] = m9_add_i64 (opt.skipLines, INT64_C(1), err);
+    err->i[0] = m9_add_i64 ((*opt).skipLines, INT64_C(1), err);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Csv_ParseError);
     goto L_ret;
@@ -1286,7 +1286,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9
     if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  if (opt.header) {
+  if ((*opt).header) {
     n = INT64_C(0);
     start = from;
     i = from;
@@ -1315,7 +1315,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9
             }
           }
         }
-        if (opt.quoted) {
+        if ((*opt).quoted) {
           Csv_Unquote (t->buf, ({ __typeof__ (&((*(int64_t *) m9_at (t->nameOfs.p, n, t->nameOfs.len, sizeof (int64_t), err)))) m9v = &((*(int64_t *) m9_at (t->nameOfs.p, n, t->nameOfs.len, sizeof (int64_t), err))); if (err->exc) goto L_ret; m9v; }), ({ __typeof__ (&((*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)))) m9v = &((*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err))); if (err->exc) goto L_ret; m9v; }), err);
           if (err->exc) goto L_ret;
         }
@@ -1357,7 +1357,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9
     } }
     t->hdrEnd = from;
   }
-  { __typeof__(t->nrows) m9v = Csv_CountRows (t->buf, t->hdrEnd, opt.quoted, err);
+  { __typeof__(t->nrows) m9v = Csv_CountRows (t->buf, t->hdrEnd, (*opt).quoted, err);
     if (err->exc) goto L_ret;
     t->nrows = m9v;
   }

@@ -28,13 +28,18 @@
 # order CheckFuzz writes them, so a line in the owed list is SEED and
 # the mutation, which survive a renumbering.
 #
-# M9_JOBS sets the parallelism (default: the cores).
+# M9_SOUNDFUZZ_JOBS sets the parallelism, else M9_JOBS, else the cores; CI
+# gives it fewer (tools/ci/lanes.sh: it shares the runner with four lanes).
+# The last line says where the time went (emit, warm: seeds + tests, the
+# mutants); M9_SOUNDFUZZ_TIMES=1 adds the slowest mutants and the seconds
+# by verdict.
 cd "$(dirname "$0")" || exit 1
 HERE=$(pwd)
 
 if [ "$1" = --one ]; then
   # one mutant: $2 its directory.  Writes $2/verdict.
   d=$2
+  s0=$(date +%s)
   f=$(ls "$d"/*.m9)
   b=$(basename "$f")
   what=$(head -1 "$f" | sed 's/^(\* from \(.*\) \*)$/\1/')
@@ -59,6 +64,20 @@ if [ "$1" = --one ]; then
   else
     echo "clean" > "$d/verdict"
   fi
+  echo $(( $(date +%s) - s0 )) > "$d/secs"
+  exit 0
+fi
+
+if [ "$1" = --warm ]; then
+  # one seed into the cache: $2 is seed or test, $3 the file.  Writes
+  # $W/warm/KIND-NAME.out and .st, the exit; the driver reads them.
+  f=$3; o="$W/warm/$2-$(basename "$f" .m9)"
+  st=0
+  case $2 in
+    seed) ( cd "$(dirname "$f")" && $WTMO "$M9C" --run "$(basename "$f")" < /dev/null ) > "$o.out" 2>&1 || st=$? ;;
+    *) ( cd "$ROOT" && $WTMO "$M9C" --run "$f" < /dev/null ) > "$o.out" 2>&1 || st=$? ;;
+  esac
+  echo "$st" > "$o.st"
   exit 0
 fi
 
@@ -69,15 +88,22 @@ RT=$(cd .. && pwd)
 W=$(mktemp -d /tmp/m9soundfuzz.XXXXXX)
 trap 'rm -rf "$W"' EXIT
 
+t0=$(date +%s)
 gcc -std=c11 -O2 -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c" || { echo "soundfuzz: FAIL building m9c"; exit 1; }
 export M9C="$W/m9c"
 export M9RUNTIME="$RT" M9LIBRARY="$ROOT/corpus" M9CACHE="$W/cache"
 export ASAN_OPTIONS=detect_leaks=0:abort_on_error=0
 export UBSAN_OPTIONS=print_stacktrace=1
-TMO=; command -v timeout > /dev/null 2>&1 && TMO="timeout 60"
-export TMO ROOT
+# 30 s: the slowest clean mutant took 8 s on the Mac with every core busy
+# (2026-10-30, M9_SOUNDFUZZ_TIMES=1), but on CI 20 s turned three mutants
+# that finished inside 60 into timeouts (48 -> 51); the 13 the Mac times out
+# deadlock or loop, and at 60 s they cost 783 s of the run
+TMO=; command -v timeout > /dev/null 2>&1 && TMO="timeout 30"
+# a seed's first build compiles its library modules cold: its own bound
+WTMO=; command -v timeout > /dev/null 2>&1 && WTMO="timeout 300"
+export TMO WTMO ROOT W
 OWED="$HERE/soundfuzz.owed"
-JOBS=${M9_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}
+JOBS=${M9_SOUNDFUZZ_JOBS:-${M9_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}}
 
 # a sanitize program sanitize.owed lists fails under the sanitizers by
 # declaration: every mutant of it would read as a finding, so it seeds
@@ -96,31 +122,43 @@ EVERY=${M9_SOUNDFUZZ_EVERY:-10}
   CC=gcc M9CACHE="$W/plain" "$M9C" --run tools/CheckFuzz.m9 --emit="$W/m/t" --every="$EVERY" $tests ) \
   > "$W/emit.log" 2>&1 || { echo "soundfuzz: FAIL emitting mutants"; cat "$W/emit.log"; exit 1; }
 
+t1=$(date +%s)
 export CC="$HERE/lib/sancc"
-# warm the cache with the seeds, one at a time: the library's modules are
-# compiled once here, not raced by the workers, and a seed that is not
-# itself clean would make every mutant of it look like a finding
+# warm the cache with the seeds: the first alone, which compiles the
+# runtime and the modules every seed imports, then the rest in parallel --
+# m9c's cache is safe to race (every file arrives by Rename, and two
+# builds of one key are the same bytes), and one at a time took 154 s of
+# the gate's 565 (2026-10-30).  A seed that is not itself clean would make
+# every mutant of it look like a finding.
+mkdir -p "$W/warm"
+first=$(echo $seeds | awk '{ print $1 }')
+"$HERE/soundfuzz.sh" --warm seed "$first"
+{ for f in $seeds; do [ "$f" = "$first" ] || echo seed "$f"; done
+  for f in $tests; do echo test "$f"; done; } | xargs -P "$JOBS" -n 2 "$HERE/soundfuzz.sh" --warm
+gowed=" $(grep -v '^#' "$HERE/genforms.owed" | awk 'NF { print $1 }' | tr '\n' ' ') "
 for f in $seeds; do
-  st=0
-  ( cd "$(dirname "$f")" && $TMO "$M9C" --run "$(basename "$f")" < /dev/null ) > "$W/seed.out" 2>&1 || st=$?
-  if [ "$st" != 0 ] || grep -q -e 'ERROR: AddressSanitizer' -e 'runtime error:' "$W/seed.out"; then
-    case " $(grep -v '^#' "$HERE/genforms.owed" | awk 'NF { print $1 }' | tr '\n' ' ') " in
+  o="$W/warm/seed-$(basename "$f" .m9)"
+  st=$(cat "$o.st" 2>/dev/null || echo none)
+  if [ "$st" != 0 ] || grep -q -e 'ERROR: AddressSanitizer' -e 'runtime error:' "$o.out"; then
+    case "$gowed" in
       *" $(basename "$f" .m9) "*) continue ;;
     esac
-    echo "soundfuzz: FAIL the seed $(basename "$f") is not clean (exit $st):"; tail -3 "$W/seed.out"; exit 1
+    echo "soundfuzz: FAIL the seed $(basename "$f") is not clean (exit $st):"; tail -3 "$o.out"; exit 1
   fi
 done
 for f in $tests; do
-  st=0
-  ( cd "$ROOT" && $TMO "$M9C" --run "$f" < /dev/null ) > "$W/seed.out" 2>&1 || st=$?
-  if grep -q -e 'ERROR: AddressSanitizer' -e 'runtime error:' "$W/seed.out"; then
-    echo "soundfuzz: FAIL the seed $(basename "$f") is not clean (exit $st):"; tail -3 "$W/seed.out"; exit 1
+  o="$W/warm/test-$(basename "$f" .m9)"
+  st=$(cat "$o.st" 2>/dev/null || echo none)
+  if grep -q -e 'ERROR: AddressSanitizer' -e 'runtime error:' "$o.out"; then
+    echo "soundfuzz: FAIL the seed $(basename "$f") is not clean (exit $st):"; tail -3 "$o.out"; exit 1
   fi
 done
 
+t2=$(date +%s)
 # a directory per mutant; the tests' sample may be empty (a large EVERY)
 ls -d "$W"/m/[0-9]* "$W"/m/t/[0-9]* 2>/dev/null | xargs -P "$JOBS" -n 1 "$HERE/soundfuzz.sh" --one
 
+t3=$(date +%s)
 n=0; nref=0; nclean=0; ntmo=0
 : > "$W/found"
 for d in "$W"/m/[0-9]* "$W"/m/t/[0-9]*; do
@@ -137,6 +175,14 @@ for d in "$W"/m/[0-9]* "$W"/m/t/[0-9]*; do
   esac
 done
 sort -u "$W/found" > "$W/found.s"
+if [ -n "$M9_SOUNDFUZZ_TIMES" ]; then
+  # the slowest mutants and the seconds by verdict (refused mutants write none)
+  for d in "$W"/m/[0-9]* "$W"/m/t/[0-9]*; do
+    [ -f "$d/secs" ] && echo "$(cat "$d/secs") $(cut -c1-60 "$d/verdict") $(basename "$d"/*.m9)"
+  done | sort -rn > "$W/secs"
+  head -15 "$W/secs"
+  awk '{ s[$2] += $1 ; n[$2]++ } END { for (v in s) print "  " v, n[v], "mutants,", s[v], "s" }' "$W/secs"
+fi
 grep -v '^#' "$OWED" | sed '/^$/d' | sort -u > "$W/owed.s"
 fail=0
 new=$(comm -23 "$W/found.s" "$W/owed.s")
@@ -145,4 +191,5 @@ gone=$(comm -13 "$W/found.s" "$W/owed.s")
 [ -z "$gone" ] || { echo "soundfuzz: owed lines no mutant produces now -- remove them:"; echo "$gone" | sed 's/^/  /'; fail=1; }
 nfound=$(wc -l < "$W/found.s" | tr -d ' ')
 echo "soundfuzz: $n mutants of $(echo $seeds $tests | wc -w | tr -d ' ') seeds (the tests' every ${EVERY}th); $nref refused, $nclean clean, $ntmo timeout, $nfound findings ($(wc -l < "$W/owed.s" | tr -d ' ') owed)"
+echo "soundfuzz: emit $((t1 - t0)) s, warm $((t2 - t1)) s, mutants $((t3 - t2)) s ($JOBS jobs)"
 exit $fail

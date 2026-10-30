@@ -128,7 +128,7 @@ static const uint32_t m9s13[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u
 static int64_t AggUse_Sum (m9_sl_I64 xs, m9_state *err);
 static m9_sl_CHAR AggUse_Reason (int64_t code, m9_state *err);
 static m9_sl_CHAR AggUse_Lookup (int64_t code, m9_state *err);
-static m9_sl_CHAR AggUse_Line (AggUse_Status s, m9_state *err);
+static m9_sl_CHAR AggUse_Line (AggUse_Status *s, m9_state *err);
 static double AggUse_Shadow (m9_sl_F64 Primes, m9_state *err);
 static int64_t AggUse_Past (int64_t i, m9_state *err);
 
@@ -232,21 +232,21 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR AggUse_Line (AggUse_Status s, m9_state *err)
+static m9_sl_CHAR AggUse_Line (AggUse_Status *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  if (s.fatal) {
+  if ((*s).fatal) {
     err->res = m9res;
-    m9ret = m9_cat (err->res, m9_cat (err->res, (*Ok).text, ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), s.text, err);
+    m9ret = m9_cat (err->res, m9_cat (err->res, (*Ok).text, ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), (*s).text, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = s.text;
+  m9ret = (*s).text;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -420,10 +420,13 @@ int main (int argc, char **argv)
   }
   Io_WriteI64 (made.code, err);
   if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), AggUse_Line (made, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s11, 3 }), err), AggUse_Line ((*Ok), err), err)) m9a9 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), AggUse_Line (made, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s11, 3 }), err), AggUse_Line ((*Ok), err), err);
+  { __typeof__((*Ok)) m9a9 = (*Ok);
     if (err->exc) goto L_hdl_m9t1;
-  Io_WriteLine (m9a9, err);
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), AggUse_Line (&(made), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s11, 3 }), err), AggUse_Line (&m9a9, err), err)) m9a10 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), AggUse_Line (&(made), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s11, 3 }), err), AggUse_Line (&m9a9, err), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Io_WriteLine (m9a10, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   }
   { __typeof__(n) m9v = AggUse_Past (INT64_C(5), err);
     if (err->exc) goto L_hdl_m9t1;

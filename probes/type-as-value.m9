@@ -1,0 +1,12 @@
+(* EXPECT: I64 is a type, not a value -- a value of it is written I64 (x) *)
+(* A type named where a value is read.  Accepted and refused by the
+   generator as `unknown name: I64' (the fuzz review's N13, until
+   2026-10-30).  Legal forms first: the type as MAX's
+   argument and in SizeOf. *)
+MODULE m ;
+VAR x, y : I64 ;
+BEGIN
+  x := MAX (I64) ;
+  y := SizeOf (I64) ;
+  x := I64
+END m.

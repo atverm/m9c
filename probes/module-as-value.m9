@@ -1,0 +1,12 @@
+(* EXPECT: m is a module, not a value -- name what it declares: m.X *)
+(* A module named where a value is read: `IF Io = 3', `Io.Halt (Io)',
+   here the module's own name.  Accepted and refused by the generator
+   as `unknown name' (the fuzz review's N13, until 2026-10-30).  Legal
+   forms first: what the module declares, by its name. *)
+MODULE m ;
+CONST K = 3 ;
+VAR x : I64 ;
+BEGIN
+  x := m.K ;
+  IF m = 3 THEN x := 1 END
+END m.

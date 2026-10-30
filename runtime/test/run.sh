@@ -181,6 +181,12 @@ export M9CACHE="$RW/cache"
   [ "$("$M9C" --run src/ThreadParen.m9 < /dev/null 2>&1)" = "done 2" ] ||
     { echo "FAIL: ThreadParen, THREAD (W, (j)):";
       "$M9C" --run src/ThreadParen.m9 < /dev/null 2>&1 | grep -v 'm9c: gcc' | head -5; exit 1; }
+  # an imported enumeration-indexed array, its bound's name also a
+  # record of the importer's (2026-10-30, a port's report M9)
+  cp "$FIX/EnumIdxDef.m9" "$FIX/EnumIdxUse.m9" src/
+  [ "$("$M9C" --run src/EnumIdxUse.m9 < /dev/null 2>&1)" = "ok" ] ||
+    { echo "FAIL: EnumIdxUse, an imported ARRAY Cover OF T beside a record Cover:";
+      "$M9C" --run src/EnumIdxUse.m9 < /dev/null 2>&1 | grep -v 'm9c: gcc' | head -5; exit 1; }
   # (a FOR body moving its variable past the bound, the same report's
   # second item, is REFUSED since 2026-10-25: probes
   # for-variable-assigned and for-variable-var-arg, museum

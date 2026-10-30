@@ -65,6 +65,7 @@ type
     opaque : array of string;          { opaque decls in the def }
     cnNames : array of string;         { exported CONSTs ... }
     cnTypes : array of string;         { ... and their LitType }
+    cnVals : array of TNode;           { ... and their literal (Sem.cnVals) }
     exNames : array of string;         { EXCEPTION declarations }
     exDecls : array of TNode;          { ... and their nodes, for a handler's binder types }
     vrNames : array of string;         { the definition's VARs (decision 28) ... }
@@ -102,6 +103,15 @@ type
                                     retained -- the complement is the
                                     overstatement ledger class }
     localConsts : TStringList;             { a procedure's own CONSTs }
+    constVals : TStringList;               { CONST name -> its literal (Objects), beside constMap }
+    typeArgOk : Boolean;               { typing MAX's, MIN's, SizeOf's or
+                                         LEN's arguments (mirrors Sem) }
+    typeTop : Boolean;                 { the next CheckTypeNode is a TYPE's
+                                         body (mirrors Sem) }
+    curRoot : TNode;                   { the file CheckFile is checking
+                                         (Sem's curRoot) }
+    quietTyping : Integer;             { > 0: a pass that types and says
+                                         nothing (ErrN) }
     canonCtx : string;                 { module whose bare type names
                                          are being canonicalized;
                                          '' = the current module }
@@ -209,6 +219,8 @@ type
     function TypeNowhere (const nm: string): Boolean;
     procedure LocalTypes (body: TNode);
     function ArrayCountForm (e: TNode): string;
+    function CountIsConst (e: TNode): Boolean;
+    function ImportedHere (const name: string): Boolean;
     procedure CheckTypeNode (t: TNode; const ctx: string);
     procedure CheckFieldTypes (fs: TNode; const ctx: string);
     procedure CheckVarTypes (holder: TNode; const ctx: string);
@@ -248,6 +260,8 @@ type
     function IsTagged (const canon: string): Boolean;
     function EnumConvType (const name: string): string;
     function BoundText (b: TNode): string;
+    function CountValue (e: TNode; const m: string; depth: Integer; var v: Int64): Boolean;
+    procedure SetConstVal (const nm: string; v: TNode);
     function CanonT (t: TNode; depth: Integer): string;
     function ProcSig (pl, rt: TNode; ro: Boolean; rs: TNode;
                       depth: Integer): string;
@@ -813,6 +827,7 @@ begin
   keptUsed := TStringList.Create; keptUsed.CaseSensitive := True;
   varWritten := TStringList.Create; varWritten.CaseSensitive := True;
   localConsts := TStringList.Create; localConsts.CaseSensitive := True;
+  constVals := TStringList.Create; constVals.CaseSensitive := True;
   tyI64 := TNode.Create (nkQualident);
   tyI64.a := 'I64';
   tyCHAR := TNode.Create (nkQualident);
@@ -835,6 +850,7 @@ begin
   Ledger.Free;
   fromMap.Free;
   constMap.Free;
+  constVals.Free;
   tyI64.Free;
   inherited;
 end;
@@ -2213,6 +2229,7 @@ end;
 procedure TSem.ErrN (n: TNode; const ctx, msg: string);
 var ln, cl : Integer;
 begin
+  if quietTyping > 0 then Exit;
   ln := 0; cl := 0;
   if n <> nil then begin ln := n.line; cl := n.col; end;
   { the type UTF names is spelled UTF: SLICE OF <u8> is nothing a
@@ -2642,6 +2659,34 @@ begin
     (nm = 'OutOfMemory') or (nm = 'ValueRange');
 end;
 
+{ Sem.ModImports (curRoot, curMod, name): does this module, either part,
+  IMPORT name -- an imported module whose definition was not loaded is
+  no unknown name (2026-10-30, checkfuzz's GfJv) }
+function TSem.ImportedHere (const name: string): Boolean;
+var
+  a, b, c : Integer;
+  uu, imp : TNode;
+begin
+  Result := True;
+  if curMod = name then Exit;
+  if curRoot <> nil then
+    for a := 0 to High (curRoot.kids) do
+    begin
+      uu := curRoot.kids[a];
+      if (uu = nil) or (uu.a <> curMod) then Continue;
+      for b := 0 to High (uu.kids) do
+      begin
+        imp := uu.kids[b];
+        if imp = nil then Continue;
+        if (imp.kind = nkFromImport) and (imp.a = name) then Exit;
+        if (imp.kind = nkImportList) and (imp.kids[0] <> nil) then
+          for c := 0 to High (imp.kids[0].kids) do
+            if (imp.kids[0].kids[c] <> nil) and (imp.kids[0].kids[c].a = name) then Exit;
+      end;
+    end;
+  Result := False;
+end;
+
 { Sem.ArrayCountForm: the part of an array count outside its grammar
   (a literal, a name, parentheses, unary minus, + - * DIV MOD, never by
   a literal 0); '' when it is in it (2026-10-29) }
@@ -2692,6 +2737,34 @@ begin
   Result := ExprText (e);
 end;
 
+{ Sem.CountIsConst: a count that is a CONST expression, not an
+  enumeration -- a literal, an operator, a CONST's name }
+function TSem.CountIsConst (e: TNode): Boolean;
+var mi : TModuleInfo; j : Integer;
+begin
+  Result := False;
+  if e = nil then Exit;
+  case e.kind of
+    nkInt, nkBin, nkUn, nkParen : Exit (True);
+    nkDesignator :
+      if Length (e.kids) = 0 then
+      begin
+        if constMap.IndexOfName (e.a) >= 0 then Exit (True);
+        for mi in mods do
+          for j := 0 to High (mi.cnNames) do
+            if mi.cnNames[j] = e.a then Exit (True);
+      end
+      else if (Length (e.kids) = 1) and (e.kids[0] <> nil) and
+              (e.kids[0].kind = nkSelField) then
+      begin
+        mi := FindMod (e.a);
+        if mi <> nil then
+          for j := 0 to High (mi.cnNames) do
+            if mi.cnNames[j] = e.kids[0].a then Exit (True);
+      end;
+  end;
+end;
+
 procedure TSem.CheckTypeNode (t: TNode; const ctx: string);
 { every qualident reachable through PTR, OPT, SHARED, SLICE, ARRAY,
   GRID and the fields of a record, monitor or case record }
@@ -2699,8 +2772,15 @@ var
   i : Integer;
   cv : Int64;
   cch : Boolean;
+  top : Boolean;
 begin
+  top := typeTop;
+  typeTop := False;
   if t = nil then Exit;
+  { a RECORD written inline is refused; a TYPE's body is named (mirrors Sem) }
+  if (not top) and ((t.kind = nkRecordType) or (t.kind = nkCaseRecordType) or
+                    (t.kind = nkMonitorType)) then
+    ErrN (t, ctx, 'a RECORD is a TYPE of its own: declare it, TYPE T = RECORD ... END, and use its name (par 2.2)');
   case t.kind of
     nkQualident :
       begin
@@ -2747,12 +2827,31 @@ begin
             ExprText (t.kids[0]))
         else if ArrayCountForm (t.kids[0]) <> '' then
           ErrN (t, ctx, 'an ARRAY''s count is an integer literal, a CONST or an enumeration, or + - * DIV MOD over them, not ' +
-            ArrayCountForm (t.kids[0]) + ' (par 2.2)');
+            ArrayCountForm (t.kids[0]) + ' (par 2.2)')
+        { a CONST count with no value, or below 1 (mirrors Sem, decision 78) }
+        else if CountIsConst (t.kids[0]) then
+        begin
+          if not CountValue (t.kids[0], '', 0, cv) then
+            ErrN (t, ctx, 'an ARRAY''s count has no value: ' + ExprText (t.kids[0]) +
+              ' divides by 0 or passes MAX (I64) (par 2.2)')
+          else if cv < 1 then
+            ErrN (t, ctx, 'an ARRAY holds at least one element; its count is ' +
+              ExprText (t.kids[0]) + ' = ' + IntToStr (cv));
+        end;
         if IsBareProc (t.kids[1]) then
           ErrN (t, ctx, 'a slice or array of procedure values is not in the language yet (par 2.2.3)');
       end;
     nkGridType :
-      CheckTypeNode (t.kids[1], ctx);
+      begin
+        CheckTypeNode (t.kids[1], ctx);
+        { a rank from 1 to 32, written as a number (mirrors Sem,
+          the fuzz review's N8) }
+        cv := 0; cch := False;
+        if (t.kids[0] = nil) or (t.kids[0].kind <> nkInt) or
+           not ScalarConst (t.kids[0], cv, cch) or cch or (cv < 1) or (cv > 32) then
+          ErrN (t, ctx, 'a GRID''s rank is a number from 1 to 32, not ' +
+            ExprText (t.kids[0]) + ' (par 2.2.1)');
+      end;
     nkProcType :
       begin
         if t.kids[0] <> nil then
@@ -2764,6 +2863,10 @@ begin
     nkRecordType :
       begin
         { kids[0] is the extension base, when there is one }
+        { type extension is specified and not built (mirrors Sem) }
+        if t.kids[0] <> nil then
+          ErrN (t, ctx, 'type extension, RECORD (' + TypeText (t.kids[0]) +
+            ') ..., is not in the language yet: give the fields one by one (par 2.2)');
         CheckTypeNode (t.kids[0], ctx);
         CheckFieldTypes (t.kids[1], ctx);
       end;
@@ -2812,6 +2915,7 @@ begin
         for b := 0 to High (holder.kids[a].kids) do
           if holder.kids[a].kids[b] <> nil then
           begin
+            typeTop := True;
             CheckTypeNode (holder.kids[a].kids[b].kids[0], ctx);
             { nothing implements a TYPE in a procedure (mirrors
               Sem.CheckVarTypes) }
@@ -3054,6 +3158,8 @@ begin
         begin
           SetLength (m.cnNames, Length (m.cnNames) + 1);
           SetLength (m.cnTypes, Length (m.cnTypes) + 1);
+          SetLength (m.cnVals, Length (m.cnVals) + 1);
+          m.cnVals[High (m.cnVals)] := d.kids[j].kids[0];
           m.cnNames[High (m.cnNames)] := d.kids[j].a;
           m.cnTypes[High (m.cnTypes)] := LitType (d.kids[j].kids[0]);
         end;
@@ -3628,7 +3734,10 @@ var mi : TModuleInfo;
     end;
   end;
 
+var cv : Int64;
 begin
+  { a count of a value is spelled by it (mirrors Sem, report M8) }
+  if CountValue (b, canonCtx, 0, cv) then Exit (IntToStr (cv));
   if (canonCtx <> '') and (canonCtx <> curMod) then
   begin
     mi := FindMod (canonCtx);
@@ -3636,6 +3745,83 @@ begin
   end;
   Result := ExprText (b);
 end;
+
+{ Sem.SetConstVal: a CONST's literal beside its LitType in constMap }
+procedure TSem.SetConstVal (const nm: string; v: TNode);
+var i : Integer;
+begin
+  i := constVals.IndexOf (nm);
+  if i < 0 then constVals.AddObject (nm, v)
+  else constVals.Objects[i] := v;
+end;
+
+{ Sem.CountValue: the value of an array count -- literals, CONSTs (bare
+  in m, else this module; or Mod.N), + - * DIV MOD, unary minus,
+  parentheses (Alex, 2026-10-30, report M8) }
+{$PUSH}{$Q+}  { an overflowing count has no value, as in Sem (Overflow) }
+function TSem.CountValue (e: TNode; const m: string; depth: Integer; var v: Int64): Boolean;
+var a, b : Int64; i, j : Integer; mi : TModuleInfo; ch : Boolean;
+begin
+  Result := False;
+  if (e = nil) or (depth > 16) then Exit;
+  try
+    case e.kind of
+      nkInt :
+        begin
+          ch := False;
+          Result := ScalarConst (e, v, ch) and not ch;
+        end;
+      nkDesignator :
+        if Length (e.kids) = 0 then
+        begin
+          if (m = '') or (m = curMod) then
+          begin
+            i := constVals.IndexOf (e.a);
+            if i >= 0 then Exit (CountValue (TNode (constVals.Objects[i]), m, depth + 1, v));
+          end;
+          if m <> '' then mi := FindMod (m) else mi := FindMod (curMod);
+          if mi <> nil then
+            for j := 0 to High (mi.cnNames) do
+              if (mi.cnNames[j] = e.a) and (j <= High (mi.cnVals)) then
+                Exit (CountValue (mi.cnVals[j], mi.name, depth + 1, v));
+        end
+        else if (Length (e.kids) = 1) and (e.kids[0] <> nil) and
+                (e.kids[0].kind = nkSelField) then
+        begin
+          mi := FindMod (e.a);
+          if mi <> nil then
+            for j := 0 to High (mi.cnNames) do
+              if (mi.cnNames[j] = e.kids[0].a) and (j <= High (mi.cnVals)) then
+                Exit (CountValue (mi.cnVals[j], mi.name, depth + 1, v));
+        end;
+      nkParen : Result := CountValue (e.kids[0], m, depth + 1, v);
+      nkUn :
+        if (e.a = '-') and CountValue (e.kids[0], m, depth + 1, a) then
+        begin
+          v := 0 - a;
+          Result := True;
+        end;
+      nkBin :
+        if (Length (e.kids) = 2) and CountValue (e.kids[0], m, depth + 1, a) and
+           CountValue (e.kids[1], m, depth + 1, b) then
+        begin
+          if e.a = '+' then begin v := a + b; Result := True; end
+          else if e.a = '-' then begin v := a - b; Result := True; end
+          else if e.a = '*' then begin v := a * b; Result := True; end
+          else if ((e.a = 'DIV') or (e.a = 'MOD')) and (b <> 0) and
+                  not ((b = -1) and (a = Low (Int64))) then
+          begin
+            { M9's DIV and MOD truncate, as Pascal's do (-7 DIV 2 = -3) }
+            if e.a = 'DIV' then v := a div b else v := a mod b;
+            Result := True;
+          end;
+        end;
+    end;
+  except
+    on EIntOverflow do Result := False;
+  end;
+end;
+{$POP}
 
 function TSem.CanonT (t: TNode; depth: Integer): string;
 var s : string;
@@ -5615,7 +5801,7 @@ var
     the index check wants the enumeration here (docs/enum-plan.md
     part 2). }
   function ArrEnumBoundOf (declN: TNode): string;
-  var r, b : TNode; canon : string;
+  var r, b : TNode; canon, was : string;
   begin
     Result := '';
     r := ResolveType (declN);
@@ -5623,7 +5809,14 @@ var
     b := r.kids[0];
     if (b = nil) or (b.kind <> nkDesignator) then Exit;
     canon := '';
-    if Length (b.kids) = 0 then canon := CanonQual ('', b.a, 0)
+    { a bare bound is the declaring module's (mirrors Sem, report M9) }
+    if Length (b.kids) = 0 then
+    begin
+      was := canonCtx;
+      if resolvedIn <> '' then canonCtx := resolvedIn;
+      canon := CanonQual ('', b.a, 0);
+      canonCtx := was;
+    end
     else if (Length (b.kids) = 1) and (b.kids[0].kind = nkSelField) then
       canon := CanonQual (b.a, b.kids[0].a, 0);
     if IsTagged (canon) then Result := canon;
@@ -5854,6 +6047,30 @@ var
       for j2 := 0 to High (mods[mi2].cnNames) do      { a module CONST }
         if mods[mi2].cnNames[j2] = nm then Exit;
     end;
+    Result := False;
+  end;
+
+  { Sem.ConstNamed: nm, bare, is a CONST (here, or a loaded module's) }
+  function ConstNamed (const nm: string): Boolean;
+  var mi2, j2 : Integer;
+  begin
+    Result := True;
+    if constMap.IndexOfName (nm) >= 0 then Exit;
+    for mi2 := 0 to High (mods) do
+      for j2 := 0 to High (mods[mi2].cnNames) do
+        if mods[mi2].cnNames[j2] = nm then Exit;
+    Result := False;
+  end;
+
+  { Sem.HasExcAny: nm, bare, is an EXCEPTION, predeclared or loaded }
+  function HasExcAny (const nm: string): Boolean;
+  var mi2 : Integer;
+  begin
+    Result := True;
+    if (nm = 'Overflow') or (nm = 'IndexError') or
+       (nm = 'OutOfMemory') or (nm = 'ValueRange') then Exit;
+    for mi2 := 0 to High (mods) do
+      if mods[mi2].HasExc (nm) then Exit;
     Result := False;
   end;
 
@@ -6446,11 +6663,15 @@ var
     if argl <> nil then nargs := Length (argl.kids);
     SetLength (aTy, nargs);
     SetLength (aNode, nargs);
+    { MAX (I64), SizeOf (T): a type is the argument; LEN refuses one in
+      its own words (mirrors Sem) }
+    typeArgOk := (name = 'MAX') or (name = 'SizeOf') or (name = 'LEN');
     for j := 0 to nargs - 1 do
     begin
       aNode[j] := argl.kids[j];
       aTy[j] := ExprType (argl.kids[j]);
     end;
+    typeArgOk := False;
     { the UTF builtins (docs/utf8-plan.md, U2; mirrors Sem.UtfConvType):
       UTF (b) of octets validates them, ValueRange when they are not
       UTF-8; the others cannot fail }
@@ -7633,6 +7854,9 @@ var
           begin
             NoteUse (e.kids[0]);
             res := DesigDeclType (e.kids[0], True);
+            { `x IS SOME p' with no x (mirrors Sem, the fuzz review's N13) }
+            if not BareNameKnown (e.kids[0].a) then
+              ErrN (e.kids[0], ctx, 'unknown name: ' + e.kids[0].a);
             if (e.kids[1].kind = nkIsSome) and (e.kids[1].a = '') then
             begin
               { `x IS SOME' / `x IS NONE': a BOOL, nothing bound (mirrors Sem) }
@@ -7754,6 +7978,20 @@ var
             value context, scope populated), never in DesigStrType,
             which the signature checks also call without a scope. }
           if (Length (e.kids) = 0) and not BareNameKnown (e.a) then
+            ErrN (e, ctx, 'unknown name: ' + e.a)
+          { known, and no value: a module or a type read as a value
+            (mirrors Sem, the fuzz review's N13) }
+          else if (Length (e.kids) = 0) and (ScopeMode (e.a) = '') and
+                  not ConstNamed (e.a) then
+          begin
+            if FindMod (e.a) <> nil then
+              ErrN (e, ctx, e.a + ' is a module, not a value -- name what it declares: ' + e.a + '.X')
+            else if (e.a <> 'ALL') and (e.a <> 'HEAP') and not typeArgOk then
+              ErrN (e, ctx, e.a + ' is a type, not a value -- a value of it is written ' + e.a + ' (x)');
+          end;
+          { a root with selectors that names nothing: `w.n', `w[0]' }
+          if (Length (e.kids) >= 1) and not BareNameKnown (e.a) and
+             not HasExcAny (e.a) and not ImportedHere (e.a) then
             ErrN (e, ctx, 'unknown name: ' + e.a);
           { a member a LOADED module does not declare: Math.Nosuch }
           { "not a name in scope" -- a binder from an operand of unknown
@@ -8251,6 +8489,14 @@ var
             ErrN (st.kids[0], ctx, 'cannot assign to ' + st.kids[0].a + ' -- ' +
               st.kids[0].a + ' is a PROCEDURE, not a variable')
           else if (Length (st.kids[0].kids) = 0) and not BareNameKnown (st.kids[0].a) then
+            ErrN (st.kids[0], ctx, 'unknown name: ' + st.kids[0].a)
+          { an exception or an unknown root written through (mirrors Sem) }
+          else if (Length (st.kids[0].kids) >= 1) and (ScopeMode (st.kids[0].a) = '') and
+                  HasExcAny (st.kids[0].a) then
+            ErrN (st.kids[0], ctx, 'cannot assign through ' + st.kids[0].a + ' -- ' +
+              st.kids[0].a + ' is an EXCEPTION, not a variable')
+          else if (Length (st.kids[0].kids) >= 1) and not BareNameKnown (st.kids[0].a) and
+                  not ImportedHere (st.kids[0].a) then
             ErrN (st.kids[0], ctx, 'unknown name: ' + st.kids[0].a);
           if (Length (st.kids[0].kids) = 1) and (ScopeMode (st.kids[0].a) = '') and
              (FindMod (st.kids[0].a) <> nil) and (st.kids[0].kids[0] <> nil) and
@@ -8776,14 +9022,24 @@ var
           if raised.Values[nmk] = '' then
             raised.Values[nmk] := 'RAISE';
           CheckRaisePayload (st.kids[0], st.kids[1]);
+          { the payload was typed and diagnosed by CheckRaisePayload;
+            this pass is Sem's WalkArgs, which records calls and says
+            nothing -- an unknown name in the payload was reported
+            twice here (checkfuzz, 2026-10-30) }
+          Inc (quietTyping);
           if st.kids[1] <> nil then
             for j := 0 to High (st.kids[1].kids) do
               ExprType (st.kids[1].kids[j]);
+          Dec (quietTyping);
         end;
       nkDispose :
         begin
           DesigStrType (st.kids[0], False);
-          if Length (st.kids[0].kids) > 0 then
+          { `DISPOSE (x)' with no x (mirrors Sem, the fuzz review's N13) }
+          if (ScopeMode (st.kids[0].a) = '') and not ConstNamed (st.kids[0].a) and
+             (FindMod (st.kids[0].a) = nil) then
+            ErrN (st, ctx, 'unknown name: ' + st.kids[0].a)
+          else if Length (st.kids[0].kids) > 0 then
             ErrN (st, ctx, 'cannot DISPOSE through a selector of ' + st.kids[0].a +
               ': DISPOSE frees a name that owns its pointer, and ' +
               'ownership is not followed into a field (par 4.2)')
@@ -10029,6 +10285,7 @@ var
   end;
 
 begin
+  curRoot := root;
   { a file with no unit (Sem.CheckFile) }
   if Length (root.kids) = 0 then
     ErrN (root, 'file', 'the file holds no unit: a MODULE, DEFINITION MODULE or IMPLEMENTATION MODULE (par 3)');
@@ -10087,8 +10344,11 @@ begin
           for j := 0 to High (d.kids) do
             if (d.kids[j] <> nil) and (d.kids[j].kind = nkConstSection) then
               for k2 := 0 to High (d.kids[j].kids) do
+              begin
                 constMap.Values[d.kids[j].kids[k2].a] :=
                   LitType (d.kids[j].kids[k2].kids[0]);
+                SetConstVal (d.kids[j].kids[k2].a, d.kids[j].kids[k2].kids[0]);
+              end;
       end;
     for i := 0 to High (u.kids) do
       if (u.kids[i] <> nil) and (u.kids[i].kind = nkConstSection) then
@@ -10100,6 +10360,7 @@ begin
             CheckAggregate (u.kids[i].kids[j], u.a, 0);
           constMap.Values[u.kids[i].kids[j].a] :=
             LitType (u.kids[i].kids[j].kids[0]);
+          SetConstVal (u.kids[i].kids[j].a, u.kids[i].kids[j].kids[0]);
         end;
     ModRoSeed (u);
 
@@ -10159,6 +10420,7 @@ begin
             CheckAggregate (p.kids[j].kids[k2], ctx, 2);
             constMap.Values[p.kids[j].kids[k2].a] :=
               LitType (p.kids[j].kids[k2].kids[0]);
+            SetConstVal (p.kids[j].kids[k2].a, p.kids[j].kids[k2].kids[0]);
             localConsts.Add (p.kids[j].kids[k2].a);
           end;
       declared := RaisesSpelled (d);
@@ -10200,8 +10462,12 @@ begin
       RoProcs := RoProcs + 1;
       { the locals go out of scope with the procedure }
       for j := 0 to localConsts.Count - 1 do
+      begin
         if constMap.IndexOfName (localConsts[j]) >= 0 then
           constMap.Delete (constMap.IndexOfName (localConsts[j]));
+        if constVals.IndexOf (localConsts[j]) >= 0 then
+          constVals.Delete (constVals.IndexOf (localConsts[j]));
+      end;
       scope.Free;
     end;
 

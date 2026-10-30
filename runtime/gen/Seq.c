@@ -141,7 +141,7 @@ L_ret: ;
   return;
 }
 
-int64_t Seq_LenStrs (Seq_Strs s, m9_state *err)
+int64_t Seq_LenStrs (Seq_Strs *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -149,7 +149,7 @@ int64_t Seq_LenStrs (Seq_Strs s, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   err->res = m9res;
-  m9ret = s.n;
+  m9ret = (*s).n;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -157,7 +157,7 @@ L_ret: ;
   return m9ret;
 }
 
-int64_t Seq_LenI64s (Seq_I64s s, m9_state *err)
+int64_t Seq_LenI64s (Seq_I64s *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -165,7 +165,7 @@ int64_t Seq_LenI64s (Seq_I64s s, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   err->res = m9res;
-  m9ret = s.n;
+  m9ret = (*s).n;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -173,7 +173,7 @@ L_ret: ;
   return m9ret;
 }
 
-int64_t Seq_LenF64s (Seq_F64s s, m9_state *err)
+int64_t Seq_LenF64s (Seq_F64s *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -181,7 +181,7 @@ int64_t Seq_LenF64s (Seq_F64s s, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   err->res = m9res;
-  m9ret = s.n;
+  m9ret = (*s).n;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -189,7 +189,7 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Seq_StrsOf (m9_pool *pool, Seq_Strs s, m9_state *err)
+m9_sl_m9_sl_CHAR Seq_StrsOf (m9_pool *pool, Seq_Strs *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -198,16 +198,16 @@ m9_sl_m9_sl_CHAR Seq_StrsOf (m9_pool *pool, Seq_Strs s, m9_state *err)
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_sl_m9_sl_CHAR r = {0}; (void) r;
   int64_t i = 0; (void) i;
-  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), s.n, err);
+  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), (*s).n, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 (s.n, INT64_C(1), err);
+  m9t1to = m9_sub_i64 ((*s).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (s.at.p, i, s.at.len, sizeof (m9_sl_CHAR), err))) m9a1 = (*(m9_sl_CHAR *) m9_at (s.at.p, i, s.at.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (m9_sl_CHAR), err))) m9a1 = (*(m9_sl_CHAR *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
     { __typeof__((*(m9_sl_CHAR *) m9_at (r.p, i, r.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a1, err);
       if (err->exc) goto L_ret;
@@ -228,7 +228,7 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_I64 Seq_I64sOf (m9_pool *pool, Seq_I64s s, m9_state *err)
+m9_sl_I64 Seq_I64sOf (m9_pool *pool, Seq_I64s *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -237,16 +237,16 @@ m9_sl_I64 Seq_I64sOf (m9_pool *pool, Seq_I64s s, m9_state *err)
   m9_sl_I64 m9ret = {0};
   m9_sl_I64 r = {0}; (void) r;
   int64_t i = 0; (void) i;
-  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), s.n, err);
+  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), (*s).n, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 (s.n, INT64_C(1), err);
+  m9t1to = m9_sub_i64 ((*s).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(int64_t *) m9_at (r.p, i, r.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (s.at.p, i, s.at.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (r.p, i, r.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       (*(int64_t *) m9_at (r.p, i, r.len, sizeof (int64_t), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -264,7 +264,7 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_F64 Seq_F64sOf (m9_pool *pool, Seq_F64s s, m9_state *err)
+m9_sl_F64 Seq_F64sOf (m9_pool *pool, Seq_F64s *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -273,16 +273,16 @@ m9_sl_F64 Seq_F64sOf (m9_pool *pool, Seq_F64s s, m9_state *err)
   m9_sl_F64 m9ret = {0};
   m9_sl_F64 r = {0}; (void) r;
   int64_t i = 0; (void) i;
-  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_F64, double, &((*pool)), s.n, err);
+  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_F64, double, &((*pool)), (*s).n, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 (s.n, INT64_C(1), err);
+  m9t1to = m9_sub_i64 ((*s).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(double *) m9_at (r.p, i, r.len, sizeof (double), err))) m9v = (*(double *) m9_at (s.at.p, i, s.at.len, sizeof (double), err));
+    { __typeof__((*(double *) m9_at (r.p, i, r.len, sizeof (double), err))) m9v = (*(double *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (double), err));
       if (err->exc) goto L_ret;
       (*(double *) m9_at (r.p, i, r.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;

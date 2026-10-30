@@ -1,0 +1,13 @@
+(* EXPECT: type extension, RECORD (E0) ..., is not in the language yet: give the fields one by one (par 2.2) *)
+(* Type extension is specified (par 2.2, with IS tests and type guards,
+   par 8) and not built.  The checker accepted RECORD (Base) and the
+   generator knew no field of the base: `e.a0' on an extension of an
+   extension was `unknown record field' (the fuzz review's ext3, until
+   2026-10-30).  Legal form first: the base held as a field. *)
+MODULE m ;
+TYPE
+  E0 = RECORD a0 : I64 END ;
+  Held = RECORD base : E0 ; a1 : I64 END ;
+  E1 = RECORD (E0) a1 : I64 END ;
+BEGIN
+END m.

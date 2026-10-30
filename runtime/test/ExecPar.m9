@@ -6,8 +6,11 @@ MODULE ExecPar ;
    the slow child, spawned while the fast one's pipe ends were open,
    inherited them and held echo's output open for its three seconds:
    the review's C repro took 3.0 s in 2 of 5 rounds.  Each echo must
-   come back at once; the slow ones are waited for at the end, so the
-   run takes about three seconds either way. *)
+   come back well before that; the slow ones are waited for at the end,
+   so the run takes about three seconds either way.  The bound is 2 s,
+   between the two: it was 1 s until CI ran its gates in parallel lanes
+   (2026-10-30), where one echo took 1.01 s on a runner with every core
+   busy -- a slow fork, not a held pipe, which is three seconds. *)
 
 IMPORT Io, Fmt, System, Time ;
 
@@ -80,7 +83,7 @@ BEGIN
       IF dt > worst THEN worst := dt END
     END ;
     AwaitAll (g, Rounds) ;
-    IF worst < 1.0 THEN
+    IF worst < 2.0 THEN
       Io.WriteLine ('exec par: every echo beside a sleep came back at once')
     ELSE
       Io.WriteLine ('exec par: an echo beside a sleep took ' + Fmt.Fixed (worst, 2) + ' s')

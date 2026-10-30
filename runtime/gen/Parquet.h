@@ -107,8 +107,8 @@ void Parquet_Write (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err)
 void Parquet_WriteTs (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_state *err);
 void Parquet_WriteX (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_state *err);
 m9_sl_BYTE Parquet_BytesX (m9_pool *pool, Frame_Fr * f, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_state *err);
-void Parquet_WriteOpt (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, Parquet_Options o, m9_state *err);
-m9_sl_BYTE Parquet_BytesOpt (m9_pool *pool, Frame_Fr * f, Parquet_Options o, m9_state *err);
+void Parquet_WriteOpt (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, Parquet_Options *o, m9_state *err);
+m9_sl_BYTE Parquet_BytesOpt (m9_pool *pool, Frame_Fr * f, Parquet_Options *o, m9_state *err);
 Frame_Fr * Parquet_Read (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 

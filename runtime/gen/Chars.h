@@ -27,6 +27,6 @@ struct Chars_Index {
 uint32_t Chars_Str (m9_sl_UTF8 s, int64_t x, m9_state *err);
 int64_t Chars_StrLen (m9_sl_UTF8 s, m9_state *err);
 Chars_Index Chars_IndexStr (m9_sl_UTF8 s, m9_state *err);
-uint32_t Chars_StrI (m9_sl_UTF8 s, int64_t x, Chars_Index ix, m9_state *err);
+uint32_t Chars_StrI (m9_sl_UTF8 s, int64_t x, Chars_Index *ix, m9_state *err);
 
 #endif

@@ -213,7 +213,6 @@ CONST
     'record-aggregate-field-type',
     'record-const-not-literal',
     'record-const-written',
-    'record-aggregate-extended',
     'record-const-exported',
     'unknown-procedure-case',
     'slice-of-call-array',
@@ -330,7 +329,15 @@ CONST
     'kept-pool-param-field',
     'kept-pool-in-pooled-local',
     'thread-record-by-value',
-    'array-count-form'
+    'array-count-form',
+    'grid-rank-range',
+    'unknown-root-selector',
+    'type-as-value',
+    'module-as-value',
+    'exception-written-through',
+    'array-count-no-value',
+    'record-inline',
+    'record-extension'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -511,7 +518,6 @@ CONST
     'a value of a record aggregate does not have its field type -- often two fields given in the wrong order, which is what a positional aggregate cannot otherwise notice when the types differ',
     'a field of a record CONST is not a literal: a CONST record is read-only data in the program, so its fields are literals (or NaN), as the elements of a constant table are',
     'a field of a record CONST, or the whole of it, is assigned: it is read-only data',
-    'a record aggregate names an extended record (RECORD (Base) ...): its base fields would have to come first, which the first cut of the aggregate does not do',
     'a record CONST is declared in a DEFINITION: like a constant table it is not exported yet',
     'a procedure is called by a name that differs from a declared one only in CASE (Writeline for WriteLine); names are case-sensitive, and since 2026-10-05 the refusal names the procedure that was meant',
     'SLICE over an ARRAY that a call answers (or a field of one): an array is a value, held in a temporary that is gone at the end of the statement, and the slice would point into it (par 2.2.1)',
@@ -628,7 +634,15 @@ CONST
     "the POOL field of a VAR parameter handed to a KEPT POOL parameter: the caller's record may be a local whose pool dies first (par 4.1)",
     'the POOL field of a record reached through a local handed to a KEPT POOL parameter: the rule reads the root, a local, which may die with this frame (par 4.1)',
     'a thread is handed a pointer; a target whose first parameter is a RECORD taken by value or RO wants the record itself, which only a VAR parameter reaches through the pointer (par 6)',
-    "an array's count is fixed when the program is compiled, from integer literals, integer CONSTs and enumerations under + - * DIV MOD; a call, a zero divisor or a CHAR or real CONST is none of those (par 2.2)"
+    "an array's count is fixed when the program is compiled, from integer literals, integer CONSTs and enumerations under + - * DIV MOD; a call, a zero divisor or a CHAR or real CONST is none of those (par 2.2)",
+    "a GRID's rank is part of its type and says how many subscripts it takes; 0 takes none and a rank past 32 is no grid anyone writes (par 2.2.1)",
+    'the name before the selector is declared nowhere this module can see: no variable, parameter, CONST, type or imported module (par 3 rule 7)',
+    'a type names a set of values, not one: it is read as a value only through a conversion or as the argument of MAX or SizeOf',
+    'a module is a namespace, not a value: what it declares is named through it, Io.WriteLine',
+    'an EXCEPTION is raised and handled, never stored into: it has no storage to index or select',
+    "an array's count is fixed when the program is compiled; a CONST divisor of 0 or a value past MAX (I64) gives it none (par 2.2)",
+    "the generator builds a record from its TYPE declaration, by name; a RECORD written as a variable's, field's or element's type had none and was `type kind unsupported yet' until 2026-10-30",
+    "type extension is specified with IS tests and type guards (par 2.2, par 8) and not built: the generator knew no field of a base until 2026-10-30, when the checker began to refuse it"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -809,7 +823,6 @@ CONST
     'give each field a value of its type, in declaration order; the message names the field by position',
     'write the literal itself, or build the value in a statement (r := Row (N, ...)), where any expression of the field type goes',
     'copy it to a variable (r := E) and change the copy',
-    'declare a variable of the extended type and set its fields one by one',
     'declare the record CONST in the implementation, or export a procedure that answers it',
     'write the name as declared -- the message says which: names are case-sensitive',
     'assign the answer to a variable first, a := F (x), and slice the variable; a function answering a SLICE OF T can be sliced as it is',
@@ -926,7 +939,15 @@ CONST
     'declare the VAR parameter KEPT, as for any borrow the callee keeps',
     'name the pool through a module variable, or use HEAP or a module pool',
     'declare the parameter VAR, or of the pointer type',
-    'write the count as a CONST of its value (CONST Width = 97), or use a SLICE when it is known only at run time'
+    'write the count as a CONST of its value (CONST Width = 97), or use a SLICE when it is known only at run time',
+    'write the rank as a number from 1 to 32',
+    'declare the variable, or IMPORT the module whose name it is',
+    'convert a value, I64 (x), or ask MAX (I64) for the type',
+    'name what the module declares, Io.X',
+    'declare a variable for the data, and RAISE the exception with it as its payload',
+    'give the divisor a CONST other than 0, or count fewer elements',
+    'declare the record as a TYPE, TYPE Inner = RECORD b : I64 END, and write Inner where the RECORD was',
+    "write the base's fields into the record itself, or hold the base as a field: RECORD base : Base ; a1 : I64 END"
   ] ;
 
 VAR

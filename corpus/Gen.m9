@@ -2611,13 +2611,22 @@ BEGIN
 END StrC ;
 
 (* a record aggregate of literals as a brace initializer, its strings
-   emitted first as <base>_<field> *)
+   emitted first as <base>_<field>; a field that is itself a record
+   constructor nests, its strings <base>_<field>_<field> (the fuzz
+   review's AggConstNested, 2026-10-30: `CONST K = R (S (1), 2)' was
+   "aggregate element unsupported yet") *)
 PROCEDURE RecStrs (e: PTR Ast.Node ; RO base: UTF) =
 VAR f : I64 ;
 BEGIN
   IF e.kids[1] IS SOME al THEN
     FOR f := 0 TO al.nkids - 1 DO
-      IF al.kids[f] IS SOME a THEN StrC (a, S3 (base, '_', ItoA (f))) END
+      IF al.kids[f] IS SOME a THEN
+        IF a.kind = Ast.NCallExpr THEN
+          RecStrs (a, S3 (base, '_', ItoA (f)))
+        ELSE
+          StrC (a, S3 (base, '_', ItoA (f)))
+        END
+      END
     END
   END
 END RecStrs ;
@@ -2632,7 +2641,11 @@ BEGIN
     FOR f := 0 TO al.nkids - 1 DO
       IF al.kids[f] IS SOME a THEN
         IF f > 0 THEN cs := S2 (cs, ', ') END ;
-        cs := S2 (cs, LitC (a, S3 (base, '_', ItoA (f)), what))
+        IF a.kind = Ast.NCallExpr THEN
+          cs := S2 (cs, RecC (a, S3 (base, '_', ItoA (f)), what))
+        ELSE
+          cs := S2 (cs, LitC (a, S3 (base, '_', ItoA (f)), what))
+        END
       END
     END
   END ;
@@ -3816,7 +3829,8 @@ BEGIN
   END ;
   res := CN (d.au) ;
   IF Text.Eq (ScopeMode (d.au), 'v') OR
-     Text.Eq (ScopeMode (d.au), 'o') THEN
+     Text.Eq (ScopeMode (d.au), 'o') OR
+     Text.Eq (ScopeMode (d.au), 'r') THEN
     res := S3 ('(*', CN (d.au), ')')
   END ;
   RETURN DESSel (d, 0, res, tnd, tag)
@@ -4790,6 +4804,149 @@ BEGIN
   RETURN FALSE
 END IrArgParam ;
 
+(* ---- an RO record or array passed by reference (2026-10-29, a port's
+   report M5: a 10 KB record, 10 million calls, 0.84 s RO against 0.006
+   s VAR -- RO copied the record at every call).
+
+   The parameter is a pointer in C (mode 'r'), read as a VAR one is and
+   never written (the checker).  The CALL decides what it points at,
+   so that no program's meaning moves: today's copy was taken at the
+   call, and a callee writing through another name -- a VAR argument of
+   the same storage, a module variable -- did not show through it.  So
+   the original's address is passed only when nothing the callee can
+   reach writes it: the argument's root is a record or array held by
+   value in this frame (a local, a value parameter) or this procedure's
+   own RO aggregate parameter, every selector a field or an array
+   element held inline (no pointer, no slice), and no VAR or OWN
+   argument of the call has the same root.  Otherwise -- a module
+   variable, a VAR parameter, storage behind a pointer, any value that
+   is not a designator -- the argument is copied into a temporary
+   before the statement (LowerHoist) and its address passed: today's
+   cost, today's meaning. *)
+
+(* is t a record or an array, held by value *)
+PROCEDURE IsAggTy (t: Ast.Kid) : BOOL =
+BEGIN
+  IF Resolve (t) IS SOME r THEN
+    RETURN r.kind = Ast.NRecordType OR r.kind = Ast.NArrayType
+  END ;
+  RETURN FALSE
+END IsAggTy ;
+
+(* the parameter group argument k of the call goes to, or NONE *)
+PROCEDURE ArgGroup (dn: Ast.Kid ; k: I64) : Ast.Kid =
+VAR g, j, i : I64 ;
+BEGIN
+  IF dn IS SOME dnode THEN
+    IF dnode.nkids = 0 AND IsBuiltinCall (dnode.au) THEN RETURN NONE END ;
+    IF CalleeHead (dn) IS SOME pn THEN
+      i := 0 ;
+      IF pn.kids[0] IS SOME pl THEN
+        FOR g := 0 TO pl.nkids - 1 DO
+          IF pl.kids[g] IS SOME grp THEN
+            IF grp.kids[0] IS SOME gids THEN
+              FOR j := 0 TO gids.nkids - 1 DO
+                IF i = k THEN RETURN SOME (grp) END ;
+                i := i + 1
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END ArgGroup ;
+
+(* does argument k go to an RO record or array parameter *)
+PROCEDURE IrArgRo (dn: Ast.Kid ; k: I64) : BOOL =
+BEGIN
+  IF ArgGroup (dn, k) IS SOME grp THEN
+    IF dn IS SOME dnode THEN
+      RETURN grp.f3 AND NOT grp.f1 AND NOT grp.f2 AND
+             IsAggTy (HeadType (grp.kids[1], dnode))
+    END
+  END ;
+  RETURN FALSE
+END IrArgRo ;
+
+(* every selector of d a field of a record or an element of an array,
+   both held by value: the storage is d's root's own *)
+PROCEDURE InlinePath (d: PTR Ast.Node) : BOOL =
+VAR
+  i : I64 ;
+  t : Ast.Kid ;
+  tmod : UTF ;
+BEGIN
+  t := ScopeNode (d.au) ;
+  tmod := '' ;
+  FOR i := 0 TO d.nkids - 1 DO
+    NoteMod (t, tmod) ;
+    IF Resolve (t) IS SOME r THEN
+      IF d.kids[i] IS SOME sel THEN
+        IF sel.kind = Ast.NSelField AND r.kind = Ast.NRecordType THEN
+          t := InMod (FieldType (r, sel.au), tmod)
+        ELSIF sel.kind = Ast.NSelIndex AND r.kind = Ast.NArrayType THEN
+          t := InMod (r.kids[1], tmod)
+        ELSE
+          RETURN FALSE
+        END
+      ELSE
+        RETURN FALSE
+      END
+    ELSE
+      RETURN FALSE
+    END
+  END ;
+  RETURN TRUE
+END InlinePath ;
+
+(* may argument k, going to an RO aggregate parameter, be passed by the
+   original's address (the rule above) *)
+PROCEDURE RoDirect (dn: Ast.Kid ; argl: Ast.Kid ; k: I64) : BOOL =
+VAR
+  m : UTF ;
+  j : I64 ;
+BEGIN
+  IF argl IS SOME al THEN
+    IF al.kids[k] IS SOME a THEN
+      IF a.kind # Ast.NDesignator THEN RETURN FALSE END ;
+      m := ScopeMode (a.au) ;
+      (* a module variable too, when the checker proved the callee and
+         all it calls write no module state (Sem.NoStateWrite, decision
+         81): nothing can then change it under the callee's reads.
+         Without the checker's mark it is copied, as before *)
+      IF NOT (Text.Eq (m, 'r') OR Text.Eq (m, 'p') OR
+              (Text.Eq (m, 'l') AND
+               (NOT ModVarRoot (a.au) OR Ast.NoWritesAt (al.id)))) THEN
+        RETURN FALSE
+      END ;
+      IF NOT InlinePath (a) THEN RETURN FALSE END ;
+      FOR j := 0 TO al.nkids - 1 DO
+        IF j # k THEN
+          IF ArgGroup (dn, j) IS SOME gj THEN
+            IF gj.f1 OR gj.f2 THEN
+              IF al.kids[j] IS SOME aj THEN
+                IF aj.kind = Ast.NDesignator AND Text.Eq (aj.au, a.au) THEN
+                  RETURN FALSE
+                END
+              END
+            END
+          END
+        END
+      END ;
+      RETURN TRUE
+    END
+  END ;
+  RETURN FALSE
+END RoDirect ;
+
+(* argument k goes to an RO aggregate parameter and must be copied *)
+PROCEDURE RoCopy (dn: Ast.Kid ; argl: Ast.Kid ; k: I64) : BOOL =
+BEGIN
+  RETURN IrArgRo (dn, k) AND NOT RoDirect (dn, argl, k)
+END RoCopy ;
+
 PROCEDURE IrArgCheck (dn: Ast.Kid ; argl: Ast.Kid ; k: I64 ; generic: BOOL ; line: I64) =
 VAR tree : BOOL ;
 BEGIN
@@ -4876,7 +5033,9 @@ BEGIN
     FOR k := 0 TO al.nkids - 1 DO
       LowerWalk (al.kids[k], ind, n) ;
       IF IrArgGeneric (dn, argl, k) THEN
-        IF ExprRaises (al.kids[k]) THEN
+        (* an RO aggregate that may not be passed by its address is
+           copied here, as a raising argument is guarded *)
+        IF ExprRaises (al.kids[k]) OR RoCopy (dn, argl, k) THEN
           LowerHoist (al.kids[k], IrArgWant (dn, argl, k), ind, n)
         END
       END
@@ -4923,7 +5082,9 @@ BEGIN
           FOR a := 0 TO al.nkids - 1 DO
             n := n + WouldHoist (al.kids[a]) ;
             IF IrArgGeneric (e.kids[0], e.kids[1], a) THEN
-              IF ExprRaises (al.kids[a]) THEN n := n + 1 END
+              IF ExprRaises (al.kids[a]) OR RoCopy (e.kids[0], e.kids[1], a) THEN
+                n := n + 1
+              END
             END
           END
         END
@@ -5810,7 +5971,20 @@ BEGIN
                            this expression was emitted (LowerWalk); its
                            name stands here *)
                         jl := MFind (lowered, IrKey (arg.id, 0)) ;
-                        IF jl >= 0 THEN
+                        IF IrArgRo (dn, k2) THEN
+                          (* by reference: the copy the lowering made,
+                             the caller's own RO pointer, or the
+                             original (RoDirect) *)
+                          IF jl >= 0 THEN
+                            e2 := S2 ('&', lowered.es[jl].t)
+                          ELSIF arg.kind = Ast.NDesignator AND arg.nkids = 0 AND
+                                Text.Eq (ScopeMode (arg.au), 'r') THEN
+                            e2 := CN (arg.au)
+                          ELSE
+                            at := '?' ;
+                            e2 := S3 ('&(', DES (arg, at), ')')
+                          END
+                        ELSIF jl >= 0 THEN
                           e2 := lowered.es[jl].t
                         ELSE
                           e2 := EX (ak, want2) ;
@@ -7480,7 +7654,7 @@ BEGIN
           FOR j := 0 TO ids.nkids - 1 DO
             IF grp.f1 AND PoolParamTy (grp.kids[1]) THEN
               ps := S3 (ps, cty, ' *, m9_pool *, ')   (* rule 2 *)
-            ELSIF grp.f1 OR grp.f2 THEN
+            ELSIF grp.f1 OR grp.f2 OR (grp.f3 AND IsAggTy (grp.kids[1])) THEN
               ps := S3 (ps, cty, ' *, ')
             ELSE
               ps := S3 (ps, cty, ', ')
@@ -7531,6 +7705,7 @@ BEGIN
         IF pln.kids[g] IS SOME grpn THEN
           IF grpn.f1 THEN mode := 'v'
           ELSIF grpn.f2 THEN mode := 'o'
+          ELSIF grpn.f3 AND IsAggTy (grpn.kids[1]) THEN mode := 'r'
           ELSE mode := 'p' END ;
           cty := TyC (grpn.kids[1]) ;
           IF grpn.kids[0] IS SOME pids THEN
@@ -7558,6 +7733,10 @@ BEGIN
                 MAdd (scope, pid.au, grpn.kids[1], mode) ;
                 IF Text.Eq (mode, 'p') THEN
                   sig := S5 (sig, cty, ' ', CN (pid.au), ', ')
+                ELSIF Text.Eq (mode, 'r') THEN
+                  (* an RO record or array: the caller's storage or the
+                     caller's copy, by address (IsAggTy's comment) *)
+                  sig := S5 (sig, cty, ' *', CN (pid.au), ', ')
                 ELSE
                   sig := S5 (sig, cty, ' *', CN (pid.au), ', ') ;
                   (* rule 2 of docs/pool-elision-plan.md: a VAR

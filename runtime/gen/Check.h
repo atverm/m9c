@@ -49,6 +49,6 @@ m9_sl_BOOL Check_GoldBools (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_sta
 m9_sl_m9_sl_CHAR Check_GoldStrs (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state *err);
 double Check_GoldF64 (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state *err);
 int64_t Check_GoldI64 (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state *err);
-int64_t Check_Done (Check_T t, m9_sl_CHAR name, m9_state *err);
+int64_t Check_Done (Check_T *t, m9_sl_CHAR name, m9_state *err);
 
 #endif

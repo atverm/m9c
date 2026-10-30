@@ -1,0 +1,24 @@
+MODULE GfConstNested ;
+
+(* WANT: 1 2 inner 30 outer row 5 b *)
+
+(* A record constructor inside a record CONST, and inside a constant
+   table's rows (the fuzz review's AggConstNested, 2026-10-30): the
+   generator wrote one level of brace initializer and refused the
+   second with "aggregate element unsupported yet".  A string at the
+   nested level is emitted as its own static array like any other. *)
+IMPORT Io, Fmt ;
+
+TYPE
+  S = RECORD a : I64 ; t : STR END ;
+  R = RECORD s : S ; b : I64 ; u : STR END ;
+
+CONST
+  K = R (S (1, 'inner'), 2, 'outer') ;
+  Rows = [R (S (10, 'x'), 20, 'y'), R (S (30, 'row'), 5, 'b')] ;
+
+BEGIN
+  Io.WriteLine (Fmt.I64Str (K.s.a) + ' ' + Fmt.I64Str (K.b) + ' ' + K.s.t + ' '
+                + Fmt.I64Str (Rows[1].s.a) + ' ' + K.u + ' ' + Rows[1].s.t + ' '
+                + Fmt.I64Str (Rows[1].b) + ' ' + Rows[1].u)
+END GfConstNested.

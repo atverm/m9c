@@ -1,0 +1,30 @@
+MODULE EnumIdxUse ;
+
+(* EnumIdxDef.ByCover indexed by an EnumIdxDef.Cover in a module with a
+   RECORD of its own named Cover: the bound's bare name was resolved
+   here, to the record, and every index refused as `index must be an
+   integer' (a port's report M9, until 2026-10-30) *)
+
+IMPORT Io, EnumIdxDef ;
+
+TYPE
+  Cover = RECORD frac : F64 END ;
+  Cell = RECORD
+    lc : Cover ;
+    on : EnumIdxDef.ByCover
+  END ;
+
+VAR
+  c : Cell ;
+  k : EnumIdxDef.Cover ;
+  flags : EnumIdxDef.ByCover ;
+
+BEGIN
+  c.lc.frac := 0.5 ;
+  c.on[EnumIdxDef.Cover.Forest] := TRUE ;
+  k := EnumIdxDef.Cover.Crop ;
+  flags[k] := TRUE ;
+  IF c.on[EnumIdxDef.Cover.Forest] AND flags[k] AND NOT flags[EnumIdxDef.Cover.Urban] THEN
+    Io.WriteLine ('ok')
+  END
+END EnumIdxUse.

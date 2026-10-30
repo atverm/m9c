@@ -33,8 +33,8 @@ to reduce, so the list is meant to shrink.
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
 | **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02) and written by its loop alone (§2.1, since 2026-10-25), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a `RAISE`'s payload held to its `EXCEPTION`'s fields, count and types (§5, since 0.20.0), a `FOR` step a constant other than 0 (§10, since 0.20.0), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a member an enumeration lacks, an assignment to a procedure, an exception used as a type, a selector or LEN the type cannot take and an ARRAY count below 1 (§3 rule 7, since 2026-10-22), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
 | **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6; since 2026-10-11 `m9c --review` LISTS each `THREAD` whose target writes one, not refused); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path -- not followed, so since 2026-10-28 every operation that consumes an owner (`DISPOSE`, an `OWN` argument, `SHARED (x)`, `THREAD` into an `OWN` parameter) refuses a selector (§4.2) --; a pool's storage handed back through a `VAR` parameter into module state (`runtime/test/regions/R5PeriodPool.m9`, in `regions.owed`); a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
-| **Accepted by the checker, refused by the generator** | Two known, both an `ARRAY` count whose value the checker does not know: a divisor that is a `CONST` of 0, and a count past `I64` ("array count form unsupported yet", the error naming the file the count is written in).  Closed on 2026-10-29: `THREAD (P, (x))` with the argument in parentheses ("THREAD form unsupported yet", found 2026-10-28) builds; `THREAD (W, p)` to a worker taking its record by value, which the C compiler refused, is refused by the checker; a count outside its grammar -- `ORD ('a')`, `MAX (I8)`, a literal 0 divisor, a `CHAR` `CONST` -- is refused by the checker; and an array type named `C` is indexed (`Gen.Resolve` took it for the foreign boundary's `C`).  Before them none (`VIEW` over a grid a call answers, the last owed form, builds since 2026-10-25; the generator still refuses two VAR string arguments whose storage lives in two pools, by name).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
-| **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` as COMPUTED (§6: since 2026-10-11 it is DECLARED, `RECORD ... END [SHARABLE]`, and checked at `THREAD`; the `SHARED` count is atomic since 2026-10-18); the pre-registered candidates with their adoption triggers (§9.6) |
+| **Accepted by the checker, refused by the generator** | None known.  Closed on 2026-10-30, the fuzz review's N7 (`docs/review-2026-10-26/fuzz/`): a record constructor inside a record `CONST` or a table row (`AggConstNested`) builds; a `RECORD` written inline as a variable's or a field's type (`InlineRec`, `InlineRecField`: "type kind unsupported yet") is refused by the checker -- a record is a `TYPE` and named; and type extension, whose base fields the generator never knew (`ext3`: "unknown record field"), is refused at its declaration.  Also on 2026-10-30: a count over `CONST`s with no value (a `CONST` divisor of 0, past `MAX (I64)`) or below 1, refused now that the checker keeps `CONST` values; a name declared nowhere with a selector, in `DISPOSE` or before `IS SOME`, a type or module read as a value and an exception written through (N13), each the generator's `unknown name` before; a `GRID` rank past 32, which stopped the compiler (N8).  When the checker sees only an importer, an imported declaration's count is still the generator's to meet, its error naming the file it is in.  Closed on 2026-10-29: `THREAD (P, (x))` with the argument in parentheses ("THREAD form unsupported yet", found 2026-10-28) builds; `THREAD (W, p)` to a worker taking its record by value, which the C compiler refused, is refused by the checker; a count outside its grammar -- `ORD ('a')`, `MAX (I8)`, a literal 0 divisor, a `CHAR` `CONST` -- is refused by the checker; and an array type named `C` is indexed (`Gen.Resolve` took it for the foreign boundary's `C`).  Before them none (`VIEW` over a grid a call answers, the last owed form, builds since 2026-10-25; the generator still refuses two VAR string arguments whose storage lives in two pools, by name).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
+| **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed and refused by name since 2026-10-30 — zero uses exist); `SHARABLE` as COMPUTED (§6: since 2026-10-11 it is DECLARED, `RECORD ... END [SHARABLE]`, and checked at `THREAD`; the `SHARED` count is atomic since 2026-10-18); the pre-registered candidates with their adoption triggers (§9.6) |
 | **Release** | 0.25.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
@@ -318,8 +318,10 @@ SLICE OF T             (* pointer + length + read/write mode; the
 GRID R OF T            (* R-dimensional view: pointer, and per axis
                           an extent and a stride.  Rank in the type,
                           shape in the value.  Par 2.2.1 *)
-RECORD ... END         (* product type *)
-RECORD (Base) ... END  (* Oberon type extension: single, checked *)
+RECORD ... END         (* product type; the body of a TYPE
+                          declaration, used by its name *)
+RECORD (Base) ... END  (* Oberon type extension: specified, not
+                          built -- refused by name *)
 CASE RECORD ... END    (* tagged union; CASE over it must be total *)
 PTR T                  (* non-nil pointer *)
 OPT T                  (* T or NONE; must be guarded before use;
@@ -327,6 +329,13 @@ OPT T                  (* T or NONE; must be guarded before use;
 STR                    (* predeclared alias for SLICE OF CHAR *)
 UTF                    (* predeclared: UTF-8 text, since 2026-10-23 *)
 ```
+
+**A `RECORD` is a `TYPE`** and is used by its name: `TYPE Inner =
+RECORD b : I64 END`, then `a : Inner` as a field, `SLICE OF Inner`,
+`PTR Inner`.  The same goes for `CASE RECORD` and `MONITOR RECORD`.
+Written inline -- `VAR x : RECORD a : I64 END` -- it is refused by the
+checker (since 2026-10-30, probe `record-inline`; the generator, which
+builds a record from its declaration, had refused it).
 
 **An `ARRAY`'s count** is a constant of at least 1: an integer
 literal, a `CONST` naming one (this module's `N` or an imported
@@ -337,14 +346,16 @@ enumeration (`ARRAY Colour OF T`, below).  Nothing else: a call
 `CHAR` or real `CONST` is refused by the checker (since 2026-10-29;
 probe `array-count-form`), and a `SLICE` holds what is known only at
 run time.  Two array types are the
-same type when their element types are and their counts are written
-alike (`ARRAY 4 OF F64` and `ARRAY N OF F64` are two types, `N` being
-4), a name in a count meaning the CONST of the module that wrote it:
-`Shapes.Vec = ARRAY N OF F64` read in an importer is `ARRAY Shapes.N OF
-F64`, the same type as the importer's own `ARRAY Shapes.N OF F64` and
-not its `ARRAY N OF F64` with a CONST `N` of its own (until 2026-10-29
-the checker took those two for one type and the generator gave the
-importer's `Vec` the importer's `N`).
+same type when their element types are and their counts have one
+VALUE: `ARRAY 3 OF F64`, `ARRAY N OF F64` with `N` = 3 and `ARRAY 2 + 1
+OF F64` are one type, and a message spells it `ARRAY 3 OF F64` (since
+2026-10-30; until then the counts were compared as written, and a port
+found `ARRAY N` refused where `ARRAY 3` was expected).  A name in a
+count means the CONST of the module that wrote it: `Shapes.Vec =
+ARRAY N OF F64` read in an importer has Shapes' `N`, whatever `N` the
+importer declares (until 2026-10-29 the generator gave the importer's
+`Vec` the importer's `N`).  An enumeration count is its type, named
+where it was declared.
 
 **`UTF`** (since 2026-10-23, the first stage of the transition to
 UTF-8 text, `docs/utf8-plan.md`) is a predeclared identifier for a
@@ -663,8 +674,9 @@ both generators now place it after the struct.)*
 
 Not in the language yet, each refused by name: a table local to a
 procedure (declare it at module level), a table or record `CONST`
-exported by a DEFINITION, and an aggregate of an EXTENDED record
-(`RECORD (Base) ...`: give its fields one by one). A parameter or a
+exported by a DEFINITION, and an EXTENDED record, aggregate or not
+(`RECORD (Base) ...`: give its fields one by one, or hold the base as a
+field). A parameter or a
 local named like a `CONST` is the parameter or the local; the checker
 used to read it as the constant.
 
@@ -877,6 +889,18 @@ VAR RO view : STR ;                    (* and locals         *)
 read-only binding whose representation the compiler chooses — by value
 for slices and scalars, which are already borrows, by reference for
 records and arrays, where copying is what the mode exists to avoid.
+*(Built 2026-10-30, 0.25.3; until then an `RO` record or array was
+copied at every call -- a port measured 0.84 s for ten million calls
+with a 10 KB record, against 0.006 s `VAR`.  The call passes the
+caller's own storage when nothing the callee can reach writes it --
+the argument held by value in the caller's frame, or the caller's own
+`RO` parameter, and no `VAR` or `OWN` argument of the call on the
+same root; a module variable too when the checker proves the callee,
+and all it calls, write no module state (later the same day) -- and a
+copy made before the call otherwise: a module variable the callee may
+write, storage behind a pointer, any value that is not a designator.
+A program reads what it read before, the copy's snapshot included;
+only the cost moves.)*
 Writing through an `RO` binding is an error whatever its type. A
 variable declared `RO`, like an `RO` field, may be given a new view
 — `view := s` — and nothing may be written through it; what it

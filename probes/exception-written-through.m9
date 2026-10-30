@@ -1,0 +1,13 @@
+(* EXPECT: cannot assign through IndexError -- IndexError is an EXCEPTION, not a variable *)
+(* An exception's name written through as if it were an array.
+   Accepted and refused by the generator as `unknown name' (the fuzz
+   review's N13, until 2026-10-30).  Legal forms first: the exception
+   raised and handled. *)
+MODULE m ;
+VAR a : ARRAY 3 OF I64 ;
+BEGIN
+  a[0] := 1 ;
+  IndexError[0] := 1
+EXCEPT
+| IndexError : a[1] := 2
+END m.

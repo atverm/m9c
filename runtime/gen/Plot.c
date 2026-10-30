@@ -714,25 +714,25 @@ static void Plot_TText (DynStr_DString * *d, m9_pool *d_pool, double x, double y
 static m9_sl_CHAR Plot_Slot (m9_sl_CHAR key, m9_state *err);
 static void Plot_EscC (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err);
 static void Plot_NumC (DynStr_DString * *d, m9_pool *d_pool, double v, m9_state *err);
-static double Plot_Px (Plot_Geo g, double x, m9_state *err);
-static double Plot_Py (Plot_Geo g, double y, m9_state *err);
+static double Plot_Px (Plot_Geo *g, double x, m9_state *err);
+static double Plot_Py (Plot_Geo *g, double y, m9_state *err);
 static void Plot_Span (m9_sl_F64 x, m9_sl_F64 y, double lo, double hi, double *mn, double *mx, bool *seen, m9_state *err);
 static double Plot_NiceStepC (double range, int64_t target, m9_state *err);
 static int64_t Plot_Decimals (double step, m9_state *err);
 static void Plot_LabelC (DynStr_DString * *d, m9_pool *d_pool, double x, double y, m9_sl_CHAR class, m9_sl_CHAR anchor, m9_sl_CHAR t, m9_state *err);
 static void Plot_Rule (DynStr_DString * *d, m9_pool *d_pool, double x1, double y1_, double x2, double y2, m9_sl_CHAR class, m9_state *err);
 static void Plot_Mark (DynStr_DString * *d, m9_pool *d_pool, double x, double y, double r, m9_sl_CHAR key, m9_sl_CHAR class, m9_state *err);
-static int64_t Plot_Legend (DynStr_DString * *d, m9_pool *d_pool, Plot_ChartSpec s, double left, double right, double top, bool draw, m9_state *err);
-static void Plot_YAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, double step, m9_state *err);
-static void Plot_Tick (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, double day, m9_sl_CHAR text, m9_state *err);
-static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_state *err);
-static void Plot_Band (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sl_F64 x, m9_sl_F64 lo, m9_sl_F64 hi, m9_sl_CHAR class, m9_sl_CHAR key, m9_sl_CHAR opacity, m9_state *err);
-static void Plot_Dots (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sl_F64 x, m9_sl_F64 y, m9_sl_CHAR key, m9_state *err);
-static int64_t Plot_Visible (Plot_Geo g, Plot_Trace l, m9_state *err);
-static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_Trace l, double width, m9_state *err);
-static bool Plot_EndOf (Plot_Geo g, Plot_Trace l, double *x, double *y, m9_state *err);
-static bool Plot_EndsFit (Plot_Geo g, Plot_ChartSpec s, m9_state *err);
-static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_ChartSpec s, m9_state *err);
+static int64_t Plot_Legend (DynStr_DString * *d, m9_pool *d_pool, Plot_ChartSpec *s, double left, double right, double top, bool draw, m9_state *err);
+static void Plot_YAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, double step, m9_state *err);
+static void Plot_Tick (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, double day, m9_sl_CHAR text, m9_state *err);
+static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, m9_state *err);
+static void Plot_Band (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, m9_sl_F64 x, m9_sl_F64 lo, m9_sl_F64 hi, m9_sl_CHAR class, m9_sl_CHAR key, m9_sl_CHAR opacity, m9_state *err);
+static void Plot_Dots (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, m9_sl_F64 x, m9_sl_F64 y, m9_sl_CHAR key, m9_state *err);
+static int64_t Plot_Visible (Plot_Geo *g, Plot_Trace *l, m9_state *err);
+static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, Plot_Trace *l, double width, m9_state *err);
+static bool Plot_EndOf (Plot_Geo *g, Plot_Trace *l, double *x, double *y, m9_state *err);
+static bool Plot_EndsFit (Plot_Geo *g, Plot_ChartSpec *s, m9_state *err);
+static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, Plot_ChartSpec *s, m9_state *err);
 static void Plot_Joined (DynStr_DString * *d, m9_pool *d_pool, m9_sl_m9_sl_CHAR names, m9_state *err);
 static void Plot_NumP (DynStr_DString * *d, m9_pool *d_pool, double v, int64_t decimals, m9_state *err);
 static void Plot_Frame (m9_sl_CHAR svg, double *vw, double *vh, int64_t *bodyAt, int64_t *bodyEnd, m9_state *err);
@@ -2721,7 +2721,7 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
+m9_sl_CHAR Plot_Chart (Plot_ChartSpec *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2748,35 +2748,35 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  w = (double)(s.width);
-  h = (double)(s.height);
+  w = (double)((*s).width);
+  h = (double)((*s).height);
   g.width = w;
-  g.x0 = s.x0;
-  g.x1 = s.x1;
+  g.x0 = (*s).x0;
+  g.x1 = (*s).x1;
   if ((!((g.x1 > g.x0)))) {
     g.x1 = (g.x0 + 1.0);
   }
   seen = false;
   mn = 0.0;
   mx = 1.0;
-  if (s.band) {
-    Plot_Span (s.bandX, s.outerLo, g.x0, g.x1, &(mn), &(mx), &(seen), err);
+  if ((*s).band) {
+    Plot_Span ((*s).bandX, (*s).outerLo, g.x0, g.x1, &(mn), &(mx), &(seen), err);
     if (err->exc) goto L_ret;
-    Plot_Span (s.bandX, s.outerHi, g.x0, g.x1, &(mn), &(mx), &(seen), err);
+    Plot_Span ((*s).bandX, (*s).outerHi, g.x0, g.x1, &(mn), &(mx), &(seen), err);
     if (err->exc) goto L_ret;
-    Plot_Span (s.bandX, s.innerLo, g.x0, g.x1, &(mn), &(mx), &(seen), err);
+    Plot_Span ((*s).bandX, (*s).innerLo, g.x0, g.x1, &(mn), &(mx), &(seen), err);
     if (err->exc) goto L_ret;
-    Plot_Span (s.bandX, s.innerHi, g.x0, g.x1, &(mn), &(mx), &(seen), err);
+    Plot_Span ((*s).bandX, (*s).innerHi, g.x0, g.x1, &(mn), &(mx), &(seen), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s.lines).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (((*s).lines).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).x) m9a47 = (*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).x;
+    { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).x) m9a47 = (*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).x;
       if (err->exc) goto L_ret;
-    { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).y) m9a48 = (*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).y;
+    { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).y) m9a48 = (*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).y;
       if (err->exc) goto L_ret;
     Plot_Span (m9a47, m9a48, g.x0, g.x1, &(mn), &(mx), &(seen), err);
     if (err->exc) goto L_ret;
@@ -2785,8 +2785,8 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  if (s.dots) {
-    Plot_Span (s.dotsX, s.dotsY, g.x0, g.x1, &(mn), &(mx), &(seen), err);
+  if ((*s).dots) {
+    Plot_Span ((*s).dotsX, (*s).dotsY, g.x0, g.x1, &(mn), &(mx), &(seen), err);
     if (err->exc) goto L_ret;
   }
   if ((!((mx > mn)))) {
@@ -2811,13 +2811,13 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
   if ((g.bottom < (g.top + 40.0))) {
     g.bottom = (g.top + 40.0);
   }
-  { __typeof__(ends) m9v = Plot_EndsFit (g, s, err);
+  { __typeof__(ends) m9v = Plot_EndsFit (&(g), s, err);
     if (err->exc) goto L_ret;
     ends = m9v;
   }
   if (ends) {
     g.right = (w - 52.0);
-    { __typeof__(ends) m9v = Plot_EndsFit (g, s, err);
+    { __typeof__(ends) m9v = Plot_EndsFit (&(g), s, err);
       if (err->exc) goto L_ret;
       ends = m9v;
     }
@@ -2827,35 +2827,35 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
   }
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s162, 75 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(d), &(pool), s.width, err);
+  DynStr_AppendI64 (&(d), &(pool), (*s).width, err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(pool), 32u, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(d), &(pool), s.height, err);
+  DynStr_AppendI64 (&(d), &(pool), (*s).height, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s163, 9 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(d), &(pool), s.width, err);
+  DynStr_AppendI64 (&(d), &(pool), (*s).width, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s164, 10 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(d), &(pool), s.height, err);
+  DynStr_AppendI64 (&(d), &(pool), (*s).height, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s165, 62 }), err);
   if (err->exc) goto L_ret;
-  Plot_EscC (&(d), &(pool), s.unit, err);
+  Plot_EscC (&(d), &(pool), (*s).unit, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s166, 14 }), err);
   if (err->exc) goto L_ret;
-  Plot_Joined (&(d), &(pool), s.hoverNames, err);
+  Plot_Joined (&(d), &(pool), (*s).hoverNames, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s167, 13 }), err);
   if (err->exc) goto L_ret;
-  Plot_Joined (&(d), &(pool), s.hoverKeys, err);
+  Plot_Joined (&(d), &(pool), (*s).hoverKeys, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s168, 9 }), err);
   if (err->exc) goto L_ret;
-  Plot_EscC (&(d), &(pool), s.title, err);
+  Plot_EscC (&(d), &(pool), (*s).title, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s169, 8 }), err);
   if (err->exc) goto L_ret;
@@ -2864,23 +2864,23 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
   DynStr_Append (&(d), &(pool), m9a49, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_AppendI64 (&(d), &(pool), s.width, err);
+  DynStr_AppendI64 (&(d), &(pool), (*s).width, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s172, 10 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(d), &(pool), s.height, err);
+  DynStr_AppendI64 (&(d), &(pool), (*s).height, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s173, 3 }), err);
   if (err->exc) goto L_ret;
-  Plot_LabelC (&(d), &(pool), g.left, 24.0, ((m9_sl_CHAR){ (uint32_t *) m9s174, 8 }), (m9_sl_CHAR){ NULL, 0 }, s.title, err);
+  Plot_LabelC (&(d), &(pool), g.left, 24.0, ((m9_sl_CHAR){ (uint32_t *) m9s174, 8 }), (m9_sl_CHAR){ NULL, 0 }, (*s).title, err);
   if (err->exc) goto L_ret;
   { __typeof__(rows) m9v = Plot_Legend (&(d), &(pool), s, g.left, (w - 18.0), 50.0, true, err);
     if (err->exc) goto L_ret;
     rows = m9v;
   }
-  Plot_YAxis (&(d), &(pool), g, step, err);
+  Plot_YAxis (&(d), &(pool), &(g), step, err);
   if (err->exc) goto L_ret;
-  Plot_XAxis (&(d), &(pool), g, err);
+  Plot_XAxis (&(d), &(pool), &(g), err);
   if (err->exc) goto L_ret;
   mid = (((g.top + g.bottom)) / 2.0);
   { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s175, 30 }), Plot_CInk2, err), ((m9_sl_CHAR){ (uint32_t *) m9s176, 48 }), err)) m9a50 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s175, 30 }), Plot_CInk2, err), ((m9_sl_CHAR){ (uint32_t *) m9s176, 48 }), err);
@@ -2896,7 +2896,7 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s178, 3 }), err);
   if (err->exc) goto L_ret;
-  Plot_EscC (&(d), &(pool), s.ylabel, err);
+  Plot_EscC (&(d), &(pool), (*s).ylabel, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s179, 7 }), err);
   if (err->exc) goto L_ret;
@@ -2918,26 +2918,26 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s184, 43 }), err);
   if (err->exc) goto L_ret;
-  if (s.dots) {
-    Plot_Dots (&(d), &(pool), g, s.dotsX, s.dotsY, s.dotsKey, err);
+  if ((*s).dots) {
+    Plot_Dots (&(d), &(pool), &(g), (*s).dotsX, (*s).dotsY, (*s).dotsKey, err);
     if (err->exc) goto L_ret;
   }
-  if (s.band) {
-    Plot_Band (&(d), &(pool), g, s.bandX, s.outerLo, s.outerHi, ((m9_sl_CHAR){ (uint32_t *) m9s185, 8 }), s.bandKey, ((m9_sl_CHAR){ (uint32_t *) m9s186, 3 }), err);
+  if ((*s).band) {
+    Plot_Band (&(d), &(pool), &(g), (*s).bandX, (*s).outerLo, (*s).outerHi, ((m9_sl_CHAR){ (uint32_t *) m9s185, 8 }), (*s).bandKey, ((m9_sl_CHAR){ (uint32_t *) m9s186, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_Band (&(d), &(pool), g, s.bandX, s.innerLo, s.innerHi, ((m9_sl_CHAR){ (uint32_t *) m9s187, 8 }), s.bandKey, ((m9_sl_CHAR){ (uint32_t *) m9s188, 4 }), err);
+    Plot_Band (&(d), &(pool), &(g), (*s).bandX, (*s).innerLo, (*s).innerHi, ((m9_sl_CHAR){ (uint32_t *) m9s187, 8 }), (*s).bandKey, ((m9_sl_CHAR){ (uint32_t *) m9s188, 4 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
-  m9t2to = m9_sub_i64 ((s.lines).len, INT64_C(1), err);
+  m9t2to = m9_sub_i64 (((*s).lines).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t2to) for (;;) {
-    { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err))) m9a51 = (*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err));
+    { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err))) m9a51 = (*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).width) m9a52 = (*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).width;
+    { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).width) m9a52 = (*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).width;
       if (err->exc) goto L_ret;
-    Plot_Curve (&(d), &(pool), g, m9a51, m9a52, err);
+    Plot_Curve (&(d), &(pool), &(g), &m9a51, m9a52, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -2970,20 +2970,20 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
   if (ends) {
     { __typeof__(i) m9t3to;
     i = INT64_C(0);
-    m9t3to = m9_sub_i64 ((s.lines).len, INT64_C(1), err);
+    m9t3to = m9_sub_i64 (((*s).lines).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t3to) for (;;) {
       ex = 0.0;
       ey = 0.0;
-      bool m9t5 = ({ bool m9t4 = (((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).short_).len > INT64_C(0)); if (m9t4) { { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err))) m9a54 = (*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err));   if (err->exc) goto L_ret; m9t4 = (Plot_EndOf (g, m9a54, &(ex), &(ey), err)); } } m9t4; });
+      bool m9t5 = ({ bool m9t4 = (((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).short_).len > INT64_C(0)); if (m9t4) { { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err))) m9a54 = (*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err));   if (err->exc) goto L_ret; m9t4 = (Plot_EndOf (&(g), &m9a54, &(ex), &(ey), err)); } } m9t4; });
       if (err->exc) goto L_ret;
       if (m9t5) {
-        { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).key) m9a55 = (*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).key;
+        { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).key) m9a55 = (*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).key;
           if (err->exc) goto L_ret;
         Plot_Mark (&(d), &(pool), ex, ey, 4.0, m9a55, ((m9_sl_CHAR){ (uint32_t *) m9s196, 6 }), err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).short_) m9a56 = (*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).short_;
+        { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).short_) m9a56 = (*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).short_;
           if (err->exc) goto L_ret;
         Plot_LabelC (&(d), &(pool), (ex + 8.0), (ey + 4.0), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, m9a56, err);
         if (err->exc) goto L_ret;
@@ -2997,7 +2997,7 @@ m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err)
     Plot_LabelC (&(d), &(pool), (((g.left + g.right)) / 2.0), (((g.top + g.bottom)) / 2.0), ((m9_sl_CHAR){ (uint32_t *) m9s197, 8 }), ((m9_sl_CHAR){ (uint32_t *) m9s198, 6 }), ((m9_sl_CHAR){ (uint32_t *) m9s199, 22 }), err);
     if (err->exc) goto L_ret;
   }
-  Plot_Hover (&(d), &(pool), g, s, err);
+  Plot_Hover (&(d), &(pool), &(g), s, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s200, 6 }), err);
   if (err->exc) goto L_ret;
@@ -4379,7 +4379,7 @@ L_ret: ;
   return;
 }
 
-static double Plot_Px (Plot_Geo g, double x, m9_state *err)
+static double Plot_Px (Plot_Geo *g, double x, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4387,7 +4387,7 @@ static double Plot_Px (Plot_Geo g, double x, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = (g.left + ((((x - g.x0)) / ((g.x1 - g.x0))) * ((g.right - g.left))));
+  m9ret = ((*g).left + ((((x - (*g).x0)) / (((*g).x1 - (*g).x0))) * (((*g).right - (*g).left))));
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -4395,7 +4395,7 @@ L_ret: ;
   return m9ret;
 }
 
-static double Plot_Py (Plot_Geo g, double y, m9_state *err)
+static double Plot_Py (Plot_Geo *g, double y, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4403,7 +4403,7 @@ static double Plot_Py (Plot_Geo g, double y, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = (g.bottom - ((((y - g.y0_)) / ((g.y1_ - g.y0_))) * ((g.bottom - g.top))));
+  m9ret = ((*g).bottom - ((((y - (*g).y0_)) / (((*g).y1_ - (*g).y0_))) * (((*g).bottom - (*g).top))));
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -4703,7 +4703,7 @@ L_ret: ;
   return;
 }
 
-static int64_t Plot_Legend (DynStr_DString * *d, m9_pool *d_pool, Plot_ChartSpec s, double left, double right, double top, bool draw, m9_state *err)
+static int64_t Plot_Legend (DynStr_DString * *d, m9_pool *d_pool, Plot_ChartSpec *s, double left, double right, double top, bool draw, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4723,7 +4723,7 @@ static int64_t Plot_Legend (DynStr_DString * *d, m9_pool *d_pool, Plot_ChartSpec
   x = left;
   y = top;
   rows = INT64_C(1);
-  { __typeof__(n) m9v = m9_add_i64 ((s.lines).len, INT64_C(3), err);
+  { __typeof__(n) m9v = m9_add_i64 (((*s).lines).len, INT64_C(3), err);
     if (err->exc) goto L_ret;
     n = m9v;
   }
@@ -4736,46 +4736,46 @@ static int64_t Plot_Legend (DynStr_DString * *d, m9_pool *d_pool, Plot_ChartSpec
     key = (m9_sl_CHAR){ NULL, 0 };
     kind = INT64_C(0);
     if ((i == INT64_C(0))) {
-      if (((s.lines).len > INT64_C(0))) {
-        { __typeof__(label) m9v = (*(Plot_Trace *) m9_at (s.lines.p, INT64_C(0), s.lines.len, sizeof (Plot_Trace), err)).label;
+      if ((((*s).lines).len > INT64_C(0))) {
+        { __typeof__(label) m9v = (*(Plot_Trace *) m9_at ((*s).lines.p, INT64_C(0), (*s).lines.len, sizeof (Plot_Trace), err)).label;
           if (err->exc) goto L_ret;
           label = m9v;
         }
-        { __typeof__(key) m9v = (*(Plot_Trace *) m9_at (s.lines.p, INT64_C(0), s.lines.len, sizeof (Plot_Trace), err)).key;
+        { __typeof__(key) m9v = (*(Plot_Trace *) m9_at ((*s).lines.p, INT64_C(0), (*s).lines.len, sizeof (Plot_Trace), err)).key;
           if (err->exc) goto L_ret;
           key = m9v;
         }
       }
     } else {
       if ((i == INT64_C(1))) {
-        if (s.band) {
-          label = s.innerLabel;
-          key = s.bandKey;
+        if ((*s).band) {
+          label = (*s).innerLabel;
+          key = (*s).bandKey;
           kind = INT64_C(1);
         }
     } else {
       if ((i == INT64_C(2))) {
-        if (s.band) {
-          label = s.outerLabel;
-          key = s.bandKey;
+        if ((*s).band) {
+          label = (*s).outerLabel;
+          key = (*s).bandKey;
           kind = INT64_C(2);
         }
     } else {
       if ((i == INT64_C(3))) {
-        if (s.dots) {
-          label = s.dotsLabel;
-          key = s.dotsKey;
+        if ((*s).dots) {
+          label = (*s).dotsLabel;
+          key = (*s).dotsKey;
           kind = INT64_C(3);
         }
     } else {
-      bool m9t2 = (m9_sub_i64 (i, INT64_C(3), err) < (s.lines).len);
+      bool m9t2 = (m9_sub_i64 (i, INT64_C(3), err) < ((*s).lines).len);
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__(label) m9v = (*(Plot_Trace *) m9_at (s.lines.p, m9_sub_i64 (i, INT64_C(3), err), s.lines.len, sizeof (Plot_Trace), err)).label;
+        { __typeof__(label) m9v = (*(Plot_Trace *) m9_at ((*s).lines.p, m9_sub_i64 (i, INT64_C(3), err), (*s).lines.len, sizeof (Plot_Trace), err)).label;
           if (err->exc) goto L_ret;
           label = m9v;
         }
-        { __typeof__(key) m9v = (*(Plot_Trace *) m9_at (s.lines.p, m9_sub_i64 (i, INT64_C(3), err), s.lines.len, sizeof (Plot_Trace), err)).key;
+        { __typeof__(key) m9v = (*(Plot_Trace *) m9_at ((*s).lines.p, m9_sub_i64 (i, INT64_C(3), err), (*s).lines.len, sizeof (Plot_Trace), err)).key;
           if (err->exc) goto L_ret;
           key = m9v;
         }
@@ -4791,7 +4791,7 @@ static int64_t Plot_Legend (DynStr_DString * *d, m9_pool *d_pool, Plot_ChartSpec
         }
       }
       if (draw) {
-        bool m9t3 = (((kind == INT64_C(0)) && (i >= INT64_C(4))) && (!(((*(Plot_Trace *) m9_at (s.lines.p, m9_sub_i64 (i, INT64_C(3), err), s.lines.len, sizeof (Plot_Trace), err)).width > 0.0))));
+        bool m9t3 = (((kind == INT64_C(0)) && (i >= INT64_C(4))) && (!(((*(Plot_Trace *) m9_at ((*s).lines.p, m9_sub_i64 (i, INT64_C(3), err), (*s).lines.len, sizeof (Plot_Trace), err)).width > 0.0))));
         if (err->exc) goto L_ret;
         if (m9t3) {
           Plot_Mark (d, d_pool, (x + 11.0), (y - 4.0), 2.8, key, ((m9_sl_CHAR){ (uint32_t *) m9s317, 7 }), err);
@@ -4812,10 +4812,10 @@ static int64_t Plot_Legend (DynStr_DString * *d, m9_pool *d_pool, Plot_ChartSpec
             }
             DynStr_AppendChar (d, d_pool, 34u, err);
             if (err->exc) goto L_ret;
-            bool m9t4 = ((i >= INT64_C(4)) && (((*(Plot_Trace *) m9_at (s.lines.p, m9_sub_i64 (i, INT64_C(3), err), s.lines.len, sizeof (Plot_Trace), err)).dash).len > INT64_C(0)));
+            bool m9t4 = ((i >= INT64_C(4)) && (((*(Plot_Trace *) m9_at ((*s).lines.p, m9_sub_i64 (i, INT64_C(3), err), (*s).lines.len, sizeof (Plot_Trace), err)).dash).len > INT64_C(0)));
             if (err->exc) goto L_ret;
             if (m9t4) {
-              { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s321, 19 }), (*(Plot_Trace *) m9_at (s.lines.p, m9_sub_i64 (i, INT64_C(3), err), s.lines.len, sizeof (Plot_Trace), err)).dash, err), ((m9_sl_CHAR){ (uint32_t *) m9s322, 1 }), err)) m9a83 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s321, 19 }), (*(Plot_Trace *) m9_at (s.lines.p, m9_sub_i64 (i, INT64_C(3), err), s.lines.len, sizeof (Plot_Trace), err)).dash, err), ((m9_sl_CHAR){ (uint32_t *) m9s322, 1 }), err);
+              { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s321, 19 }), (*(Plot_Trace *) m9_at ((*s).lines.p, m9_sub_i64 (i, INT64_C(3), err), (*s).lines.len, sizeof (Plot_Trace), err)).dash, err), ((m9_sl_CHAR){ (uint32_t *) m9s322, 1 }), err)) m9a83 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s321, 19 }), (*(Plot_Trace *) m9_at ((*s).lines.p, m9_sub_i64 (i, INT64_C(3), err), (*s).lines.len, sizeof (Plot_Trace), err)).dash, err), ((m9_sl_CHAR){ (uint32_t *) m9s322, 1 }), err);
                 if (err->exc) goto L_ret;
               DynStr_Append (d, d_pool, m9a83, err);
               if (err->exc) goto L_ret;
@@ -4910,7 +4910,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Plot_YAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, double step, m9_state *err)
+static void Plot_YAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, double step, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4924,22 +4924,22 @@ static void Plot_YAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, double
     if (err->exc) goto L_ret;
     dec = m9v;
   }
-  { __typeof__(v) m9v = (Math_Ceil ((g.y0_ / step), err) * step);
+  { __typeof__(v) m9v = (Math_Ceil (((*g).y0_ / step), err) * step);
     if (err->exc) goto L_ret;
     v = m9v;
   }
   guard = INT64_C(0);
   for (;;) {
-    if (!(((v <= g.y1_) && (guard < INT64_C(64))))) break;
+    if (!(((v <= (*g).y1_) && (guard < INT64_C(64))))) break;
     { __typeof__(y) m9v = Plot_Py (g, v, err);
       if (err->exc) goto L_ret;
       y = m9v;
     }
-    Plot_Rule (d, d_pool, g.left, y, g.right, y, ((m9_sl_CHAR){ (uint32_t *) m9s342, 7 }), err);
+    Plot_Rule (d, d_pool, (*g).left, y, (*g).right, y, ((m9_sl_CHAR){ (uint32_t *) m9s342, 7 }), err);
     if (err->exc) goto L_ret;
     { __typeof__(Fmt_Fixed (v, dec, err)) m9a88 = Fmt_Fixed (v, dec, err);
       if (err->exc) goto L_ret;
-    Plot_LabelC (d, d_pool, (g.left - 8.0), (y + 4.0), ((m9_sl_CHAR){ (uint32_t *) m9s343, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s344, 3 }), m9a88, err);
+    Plot_LabelC (d, d_pool, ((*g).left - 8.0), (y + 4.0), ((m9_sl_CHAR){ (uint32_t *) m9s343, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s344, 3 }), m9a88, err);
     if (err->exc) goto L_ret;
     }
     v = (v + step);
@@ -4955,7 +4955,7 @@ L_ret: ;
   return;
 }
 
-static void Plot_Tick (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, double day, m9_sl_CHAR text, m9_state *err)
+static void Plot_Tick (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, double day, m9_sl_CHAR text, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4963,23 +4963,23 @@ static void Plot_Tick (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, double 
   err->res = &m9frame;
   double x = 0; (void) x;
   double half = 0; (void) half;
-  if (((day < g.x0) || (day > g.x1))) {
+  if (((day < (*g).x0) || (day > (*g).x1))) {
     goto L_ret;
   }
   { __typeof__(x) m9v = Plot_Px (g, day, err);
     if (err->exc) goto L_ret;
     x = m9v;
   }
-  Plot_Rule (d, d_pool, x, g.top, x, g.bottom, ((m9_sl_CHAR){ (uint32_t *) m9s345, 7 }), err);
+  Plot_Rule (d, d_pool, x, (*g).top, x, (*g).bottom, ((m9_sl_CHAR){ (uint32_t *) m9s345, 7 }), err);
   if (err->exc) goto L_ret;
-  Plot_Rule (d, d_pool, x, g.bottom, x, (g.bottom + 5.0), ((m9_sl_CHAR){ (uint32_t *) m9s346, 7 }), err);
+  Plot_Rule (d, d_pool, x, (*g).bottom, x, ((*g).bottom + 5.0), ((m9_sl_CHAR){ (uint32_t *) m9s346, 7 }), err);
   if (err->exc) goto L_ret;
   half = ((Plot_CharW * (double)((text).len)) / 2.0);
-  if (((x + half) > (g.width - 2.0))) {
-    Plot_LabelC (d, d_pool, (g.width - 2.0), (g.bottom + 19.0), ((m9_sl_CHAR){ (uint32_t *) m9s347, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s348, 3 }), text, err);
+  if (((x + half) > ((*g).width - 2.0))) {
+    Plot_LabelC (d, d_pool, ((*g).width - 2.0), ((*g).bottom + 19.0), ((m9_sl_CHAR){ (uint32_t *) m9s347, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s348, 3 }), text, err);
     if (err->exc) goto L_ret;
   } else {
-    Plot_LabelC (d, d_pool, x, (g.bottom + 19.0), ((m9_sl_CHAR){ (uint32_t *) m9s349, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s350, 6 }), text, err);
+    Plot_LabelC (d, d_pool, x, ((*g).bottom + 19.0), ((m9_sl_CHAR){ (uint32_t *) m9s349, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s350, 6 }), text, err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -4989,7 +4989,7 @@ L_ret: ;
   return;
 }
 
-static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_state *err)
+static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5009,25 +5009,25 @@ static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sta
   int64_t last = 0; (void) last;
   int64_t day = 0; (void) day;
   int64_t guard = 0; (void) guard;
-  span = (g.x1 - g.x0);
+  span = ((*g).x1 - (*g).x0);
   y = INT64_C(0);
   m = INT64_C(0);
   dd = INT64_C(0);
   y1_ = INT64_C(0);
   m1 = INT64_C(0);
   d1 = INT64_C(0);
-  { __typeof__(m9_i64_f64 ((double)(Math_Floor (g.x0, err)), err)) m9a89 = m9_i64_f64 ((double)(Math_Floor (g.x0, err)), err);
+  { __typeof__(m9_i64_f64 ((double)(Math_Floor ((*g).x0, err)), err)) m9a89 = m9_i64_f64 ((double)(Math_Floor ((*g).x0, err)), err);
     if (err->exc) goto L_ret;
   Time_CivilFromDays (m9a89, &(y), &(m), &(dd), err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_i64_f64 ((double)(Math_Ceil (g.x1, err)), err)) m9a90 = m9_i64_f64 ((double)(Math_Ceil (g.x1, err)), err);
+  { __typeof__(m9_i64_f64 ((double)(Math_Ceil ((*g).x1, err)), err)) m9a90 = m9_i64_f64 ((double)(Math_Ceil ((*g).x1, err)), err);
     if (err->exc) goto L_ret;
   Time_CivilFromDays (m9a90, &(y1_), &(m1), &(d1), err);
   if (err->exc) goto L_ret;
   }
   if ((span > 1170.0)) {
-    room = (((g.right - g.left)) / 56.0);
+    room = ((((*g).right - (*g).left)) / 56.0);
     step = INT64_C(1);
     for (;;) {
       bool m9t1 = (((double)(m9_sub_i64 (y1_, y, err)) / (double)(step)) > room);
@@ -5075,7 +5075,7 @@ static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sta
     }
   } else {
     if ((span > 62.0)) {
-      room = (((g.right - g.left)) / 76.0);
+      room = ((((*g).right - (*g).left)) / 76.0);
       { __typeof__(first) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (y, INT64_C(12), err), m, err), INT64_C(1), err);
         if (err->exc) goto L_ret;
         first = m9v;
@@ -5142,7 +5142,7 @@ static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sta
         }
       }
   } else {
-    room = (((g.right - g.left)) / 60.0);
+    room = ((((*g).right - (*g).left)) / 60.0);
     step = INT64_C(1);
     for (;;) {
       if (!(((span / (double)(step)) > room))) break;
@@ -5158,7 +5158,7 @@ static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sta
         }
       } }
     }
-    { __typeof__(day) m9v = m9_i64_f64 ((double)(Math_Ceil (g.x0, err)), err);
+    { __typeof__(day) m9v = m9_i64_f64 ((double)(Math_Ceil ((*g).x0, err)), err);
       if (err->exc) goto L_ret;
       day = m9v;
     }
@@ -5173,7 +5173,7 @@ static void Plot_XAxis (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sta
     }
     guard = INT64_C(0);
     for (;;) {
-      if (!((((double)(day) <= g.x1) && (guard < INT64_C(64))))) break;
+      if (!((((double)(day) <= (*g).x1) && (guard < INT64_C(64))))) break;
       Time_CivilFromDays (day, &(y), &(m), &(dd), err);
       if (err->exc) goto L_ret;
       { __typeof__(m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (dd, err), ((m9_sl_CHAR){ (uint32_t *) m9s352, 1 }), err), Plot_MonthName (m, err), err)) m9a99 = m9_cat (err->res, m9_cat (err->res, Fmt_I64Str (dd, err), ((m9_sl_CHAR){ (uint32_t *) m9s352, 1 }), err), Plot_MonthName (m, err), err);
@@ -5198,7 +5198,7 @@ L_ret: ;
   return;
 }
 
-static void Plot_Band (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sl_F64 x, m9_sl_F64 lo, m9_sl_F64 hi, m9_sl_CHAR class, m9_sl_CHAR key, m9_sl_CHAR opacity, m9_state *err)
+static void Plot_Band (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, m9_sl_F64 x, m9_sl_F64 lo, m9_sl_F64 hi, m9_sl_CHAR class, m9_sl_CHAR key, m9_sl_CHAR opacity, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5307,7 +5307,7 @@ L_ret: ;
   return;
 }
 
-static void Plot_Dots (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sl_F64 x, m9_sl_F64 y, m9_sl_CHAR key, m9_state *err)
+static void Plot_Dots (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, m9_sl_F64 x, m9_sl_F64 y, m9_sl_CHAR key, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5320,11 +5320,11 @@ static void Plot_Dots (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sl_F
   int64_t cy = 0; (void) cy;
   int64_t a = 0; (void) a;
   m9_sl_BOOL hit = {0}; (void) hit;
-  { __typeof__(w) m9v = m9_add_i64 (m9_i64_f64 ((double)((g.right - g.left)), err), INT64_C(1), err);
+  { __typeof__(w) m9v = m9_add_i64 (m9_i64_f64 ((double)(((*g).right - (*g).left)), err), INT64_C(1), err);
     if (err->exc) goto L_ret;
     w = m9v;
   }
-  { __typeof__(h) m9v = m9_add_i64 (m9_i64_f64 ((double)((g.bottom - g.top)), err), INT64_C(1), err);
+  { __typeof__(h) m9v = m9_add_i64 (m9_i64_f64 ((double)(((*g).bottom - (*g).top)), err), INT64_C(1), err);
     if (err->exc) goto L_ret;
     h = m9v;
   }
@@ -5340,19 +5340,19 @@ static void Plot_Dots (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sl_F
   m9t1to = m9_sub_i64 ((x).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = ((((((*(double *) m9_at (y.p, i, y.len, sizeof (double), err)) == (*(double *) m9_at (y.p, i, y.len, sizeof (double), err))) && ((*(double *) m9_at (x.p, i, x.len, sizeof (double), err)) >= g.x0)) && ((*(double *) m9_at (x.p, i, x.len, sizeof (double), err)) <= g.x1)) && ((*(double *) m9_at (y.p, i, y.len, sizeof (double), err)) >= g.y0_)) && ((*(double *) m9_at (y.p, i, y.len, sizeof (double), err)) <= g.y1_));
+    bool m9t2 = ((((((*(double *) m9_at (y.p, i, y.len, sizeof (double), err)) == (*(double *) m9_at (y.p, i, y.len, sizeof (double), err))) && ((*(double *) m9_at (x.p, i, x.len, sizeof (double), err)) >= (*g).x0)) && ((*(double *) m9_at (x.p, i, x.len, sizeof (double), err)) <= (*g).x1)) && ((*(double *) m9_at (y.p, i, y.len, sizeof (double), err)) >= (*g).y0_)) && ((*(double *) m9_at (y.p, i, y.len, sizeof (double), err)) <= (*g).y1_));
     if (err->exc) goto L_ret;
     if (m9t2) {
       { __typeof__((*(double *) m9_at (x.p, i, x.len, sizeof (double), err))) m9a109 = (*(double *) m9_at (x.p, i, x.len, sizeof (double), err));
         if (err->exc) goto L_ret;
-      { __typeof__(cx) m9v = m9_i64_f64 ((double)((Plot_Px (g, m9a109, err) - g.left)), err);
+      { __typeof__(cx) m9v = m9_i64_f64 ((double)((Plot_Px (g, m9a109, err) - (*g).left)), err);
         if (err->exc) goto L_ret;
         cx = m9v;
       }
       }
       { __typeof__((*(double *) m9_at (y.p, i, y.len, sizeof (double), err))) m9a110 = (*(double *) m9_at (y.p, i, y.len, sizeof (double), err));
         if (err->exc) goto L_ret;
-      { __typeof__(cy) m9v = m9_i64_f64 ((double)((Plot_Py (g, m9a110, err) - g.top)), err);
+      { __typeof__(cy) m9v = m9_i64_f64 ((double)((Plot_Py (g, m9a110, err) - (*g).top)), err);
         if (err->exc) goto L_ret;
         cy = m9v;
       }
@@ -5393,11 +5393,11 @@ static void Plot_Dots (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, m9_sl_F
         }
         DynStr_AppendChar (d, d_pool, 77u, err);
         if (err->exc) goto L_ret;
-        Plot_NumC (d, d_pool, ((g.left + (double)(cx)) + 0.5), err);
+        Plot_NumC (d, d_pool, (((*g).left + (double)(cx)) + 0.5), err);
         if (err->exc) goto L_ret;
         DynStr_AppendChar (d, d_pool, 32u, err);
         if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (m9_i64_f64 ((double)(g.top), err), a, err)) m9a112 = m9_add_i64 (m9_i64_f64 ((double)(g.top), err), a, err);
+        { __typeof__(m9_add_i64 (m9_i64_f64 ((double)((*g).top), err), a, err)) m9a112 = m9_add_i64 (m9_i64_f64 ((double)((*g).top), err), a, err);
           if (err->exc) goto L_ret;
         DynStr_AppendI64 (d, d_pool, m9a112, err);
         if (err->exc) goto L_ret;
@@ -5428,7 +5428,7 @@ L_ret: ;
   return;
 }
 
-static int64_t Plot_Visible (Plot_Geo g, Plot_Trace l, m9_state *err)
+static int64_t Plot_Visible (Plot_Geo *g, Plot_Trace *l, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5440,10 +5440,10 @@ static int64_t Plot_Visible (Plot_Geo g, Plot_Trace l, m9_state *err)
   n = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((l.x).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (((*l).x).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = ((((*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err)) == (*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err))) && ((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err)) >= g.x0)) && ((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err)) <= g.x1));
+    bool m9t2 = ((((*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err)) == (*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err))) && ((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err)) >= (*g).x0)) && ((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err)) <= (*g).x1));
     if (err->exc) goto L_ret;
     if (m9t2) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
@@ -5463,7 +5463,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_Trace l, double width, m9_state *err)
+static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, Plot_Trace *l, double width, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5474,13 +5474,13 @@ static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_T
   bool pen = false; (void) pen;
   bool marks = false; (void) marks;
   bool alone = false; (void) alone;
-  n = (l.x).len;
-  { __typeof__(marks) m9v = (l.marks && (Plot_Visible (g, l, err) <= Plot_MaxMarks));
+  n = ((*l).x).len;
+  { __typeof__(marks) m9v = ((*l).marks && (Plot_Visible (g, l, err) <= Plot_MaxMarks));
     if (err->exc) goto L_ret;
     marks = m9v;
   }
   if ((width > 0.0)) {
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s363, 26 }), l.key, err), ((m9_sl_CHAR){ (uint32_t *) m9s364, 22 }), err), Plot_Slot (l.key, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s365, 63 }), err)) m9a114 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s363, 26 }), l.key, err), ((m9_sl_CHAR){ (uint32_t *) m9s364, 22 }), err), Plot_Slot (l.key, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s365, 63 }), err);
+    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s363, 26 }), (*l).key, err), ((m9_sl_CHAR){ (uint32_t *) m9s364, 22 }), err), Plot_Slot ((*l).key, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s365, 63 }), err)) m9a114 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s363, 26 }), (*l).key, err), ((m9_sl_CHAR){ (uint32_t *) m9s364, 22 }), err), Plot_Slot ((*l).key, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s365, 63 }), err);
       if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, m9a114, err);
     if (err->exc) goto L_ret;
@@ -5489,8 +5489,8 @@ static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_T
     if (err->exc) goto L_ret;
     DynStr_AppendChar (d, d_pool, 34u, err);
     if (err->exc) goto L_ret;
-    if (((l.dash).len > INT64_C(0))) {
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s366, 19 }), l.dash, err), ((m9_sl_CHAR){ (uint32_t *) m9s367, 1 }), err)) m9a115 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s366, 19 }), l.dash, err), ((m9_sl_CHAR){ (uint32_t *) m9s367, 1 }), err);
+    if ((((*l).dash).len > INT64_C(0))) {
+      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s366, 19 }), (*l).dash, err), ((m9_sl_CHAR){ (uint32_t *) m9s367, 1 }), err)) m9a115 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s366, 19 }), (*l).dash, err), ((m9_sl_CHAR){ (uint32_t *) m9s367, 1 }), err);
         if (err->exc) goto L_ret;
       DynStr_Append (d, d_pool, m9a115, err);
       if (err->exc) goto L_ret;
@@ -5504,7 +5504,7 @@ static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_T
     m9t1to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t1to) for (;;) {
-      bool m9t2 = ((*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err)) == (*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err)));
+      bool m9t2 = ((*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err)) == (*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err)));
       if (err->exc) goto L_ret;
       if (m9t2) {
         if (pen) {
@@ -5514,7 +5514,7 @@ static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_T
           DynStr_AppendChar (d, d_pool, 77u, err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err))) m9a116 = (*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err));
+        { __typeof__((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err))) m9a116 = (*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err));
           if (err->exc) goto L_ret;
         { __typeof__(Plot_Px (g, m9a116, err)) m9a117 = Plot_Px (g, m9a116, err);
           if (err->exc) goto L_ret;
@@ -5524,7 +5524,7 @@ static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_T
         }
         DynStr_AppendChar (d, d_pool, 32u, err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err))) m9a118 = (*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err));
+        { __typeof__((*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err))) m9a118 = (*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err));
           if (err->exc) goto L_ret;
         { __typeof__(Plot_Py (g, m9a118, err)) m9a119 = Plot_Py (g, m9a118, err);
           if (err->exc) goto L_ret;
@@ -5547,23 +5547,23 @@ static void Plot_Curve (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_T
   m9t3to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t3to) for (;;) {
-    bool m9t4 = ((((*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err)) == (*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err))) && ((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err)) >= g.x0)) && ((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err)) <= g.x1));
+    bool m9t4 = ((((*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err)) == (*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err))) && ((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err)) >= (*g).x0)) && ((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err)) <= (*g).x1));
     if (err->exc) goto L_ret;
     if (m9t4) {
-      { __typeof__(alone) m9v = ((((i == INT64_C(0)) || ((*(double *) m9_at (l.y.p, m9_sub_i64 (i, INT64_C(1), err), l.y.len, sizeof (double), err)) != (*(double *) m9_at (l.y.p, m9_sub_i64 (i, INT64_C(1), err), l.y.len, sizeof (double), err))))) && (((i == m9_sub_i64 (n, INT64_C(1), err)) || ((*(double *) m9_at (l.y.p, m9_add_i64 (i, INT64_C(1), err), l.y.len, sizeof (double), err)) != (*(double *) m9_at (l.y.p, m9_add_i64 (i, INT64_C(1), err), l.y.len, sizeof (double), err))))));
+      { __typeof__(alone) m9v = ((((i == INT64_C(0)) || ((*(double *) m9_at ((*l).y.p, m9_sub_i64 (i, INT64_C(1), err), (*l).y.len, sizeof (double), err)) != (*(double *) m9_at ((*l).y.p, m9_sub_i64 (i, INT64_C(1), err), (*l).y.len, sizeof (double), err))))) && (((i == m9_sub_i64 (n, INT64_C(1), err)) || ((*(double *) m9_at ((*l).y.p, m9_add_i64 (i, INT64_C(1), err), (*l).y.len, sizeof (double), err)) != (*(double *) m9_at ((*l).y.p, m9_add_i64 (i, INT64_C(1), err), (*l).y.len, sizeof (double), err))))));
         if (err->exc) goto L_ret;
         alone = m9v;
       }
       if (((marks || alone) || (!((width > 0.0))))) {
-        { __typeof__((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err))) m9a120 = (*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err));
+        { __typeof__((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err))) m9a120 = (*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err));
           if (err->exc) goto L_ret;
         { __typeof__(Plot_Px (g, m9a120, err)) m9a121 = Plot_Px (g, m9a120, err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err))) m9a122 = (*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err));
+        { __typeof__((*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err))) m9a122 = (*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err));
           if (err->exc) goto L_ret;
         { __typeof__(Plot_Py (g, m9a122, err)) m9a123 = Plot_Py (g, m9a122, err);
           if (err->exc) goto L_ret;
-        Plot_Mark (d, d_pool, m9a121, m9a123, 2.8, l.key, ((m9_sl_CHAR){ (uint32_t *) m9s370, 7 }), err);
+        Plot_Mark (d, d_pool, m9a121, m9a123, 2.8, (*l).key, ((m9_sl_CHAR){ (uint32_t *) m9s370, 7 }), err);
         if (err->exc) goto L_ret;
         }
         }
@@ -5581,7 +5581,7 @@ L_ret: ;
   return;
 }
 
-static bool Plot_EndOf (Plot_Geo g, Plot_Trace l, double *x, double *y, m9_state *err)
+static bool Plot_EndOf (Plot_Geo *g, Plot_Trace *l, double *x, double *y, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5590,21 +5590,21 @@ static bool Plot_EndOf (Plot_Geo g, Plot_Trace l, double *x, double *y, m9_state
   bool m9ret = false;
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
-  i = m9_sub_i64 ((l.x).len, INT64_C(1), err);
+  i = m9_sub_i64 (((*l).x).len, INT64_C(1), err);
   m9t1to = INT64_C(0);
   if (err->exc) goto L_ret;
   if (i >= m9t1to) for (;;) {
-    bool m9t2 = ((((*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err)) == (*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err))) && ((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err)) >= g.x0)) && ((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err)) <= g.x1));
+    bool m9t2 = ((((*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err)) == (*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err))) && ((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err)) >= (*g).x0)) && ((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err)) <= (*g).x1));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__((*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err))) m9a124 = (*(double *) m9_at (l.x.p, i, l.x.len, sizeof (double), err));
+      { __typeof__((*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err))) m9a124 = (*(double *) m9_at ((*l).x.p, i, (*l).x.len, sizeof (double), err));
         if (err->exc) goto L_ret;
       { __typeof__((*x)) m9v = Plot_Px (g, m9a124, err);
         if (err->exc) goto L_ret;
         (*x) = m9v;
       }
       }
-      { __typeof__((*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err))) m9a125 = (*(double *) m9_at (l.y.p, i, l.y.len, sizeof (double), err));
+      { __typeof__((*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err))) m9a125 = (*(double *) m9_at ((*l).y.p, i, (*l).y.len, sizeof (double), err));
         if (err->exc) goto L_ret;
       { __typeof__((*y)) m9v = Plot_Py (g, m9a125, err);
         if (err->exc) goto L_ret;
@@ -5627,7 +5627,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Plot_EndsFit (Plot_Geo g, Plot_ChartSpec s, m9_state *err)
+static bool Plot_EndsFit (Plot_Geo *g, Plot_ChartSpec *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5644,10 +5644,10 @@ static bool Plot_EndsFit (Plot_Geo g, Plot_ChartSpec s, m9_state *err)
   n = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s.lines).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (((*s).lines).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = (((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err)).short_).len > INT64_C(0));
+    bool m9t2 = (((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err)).short_).len > INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t2) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
@@ -5656,16 +5656,16 @@ static bool Plot_EndsFit (Plot_Geo g, Plot_ChartSpec s, m9_state *err)
       }
       xi = 0.0;
       yi = 0.0;
-      { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err))) m9a126 = (*(Plot_Trace *) m9_at (s.lines.p, i, s.lines.len, sizeof (Plot_Trace), err));
+      { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err))) m9a126 = (*(Plot_Trace *) m9_at ((*s).lines.p, i, (*s).lines.len, sizeof (Plot_Trace), err));
         if (err->exc) goto L_ret;
-      bool m9t3 = (!Plot_EndOf (g, m9a126, &(xi), &(yi), err));
+      bool m9t3 = (!Plot_EndOf (g, &m9a126, &(xi), &(yi), err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
       } }
-      if ((xi < (g.right - 40.0))) {
+      if ((xi < ((*g).right - 40.0))) {
         err->res = m9res;
         m9ret = false;
         goto L_ret;
@@ -5675,14 +5675,14 @@ static bool Plot_EndsFit (Plot_Geo g, Plot_ChartSpec s, m9_state *err)
       m9t4to = m9_sub_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
       if (j <= m9t4to) for (;;) {
-        bool m9t5 = (((*(Plot_Trace *) m9_at (s.lines.p, j, s.lines.len, sizeof (Plot_Trace), err)).short_).len > INT64_C(0));
+        bool m9t5 = (((*(Plot_Trace *) m9_at ((*s).lines.p, j, (*s).lines.len, sizeof (Plot_Trace), err)).short_).len > INT64_C(0));
         if (err->exc) goto L_ret;
         if (m9t5) {
           xj = 0.0;
           yj = 0.0;
-          { __typeof__((*(Plot_Trace *) m9_at (s.lines.p, j, s.lines.len, sizeof (Plot_Trace), err))) m9a127 = (*(Plot_Trace *) m9_at (s.lines.p, j, s.lines.len, sizeof (Plot_Trace), err));
+          { __typeof__((*(Plot_Trace *) m9_at ((*s).lines.p, j, (*s).lines.len, sizeof (Plot_Trace), err))) m9a127 = (*(Plot_Trace *) m9_at ((*s).lines.p, j, (*s).lines.len, sizeof (Plot_Trace), err));
             if (err->exc) goto L_ret;
-          bool m9t6 = (Plot_EndOf (g, m9a127, &(xj), &(yj), err) && (Math_Fabs ((yi - yj), err) < 14.0));
+          bool m9t6 = (Plot_EndOf (g, &m9a127, &(xj), &(yj), err) && (Math_Fabs ((yi - yj), err) < 14.0));
           if (err->exc) goto L_ret;
           if (m9t6) {
             err->res = m9res;
@@ -5706,7 +5706,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_ChartSpec s, m9_state *err)
+static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo *g, Plot_ChartSpec *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5718,8 +5718,8 @@ static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_C
   int64_t cols = 0; (void) cols;
   double a = 0; (void) a;
   double b = 0; (void) b;
-  n = (s.hoverX).len;
-  cols = (s.hoverNames).len;
+  n = ((*s).hoverX).len;
+  cols = ((*s).hoverNames).len;
   if (((n == INT64_C(0)) || (cols == INT64_C(0)))) {
     goto L_ret;
   }
@@ -5728,11 +5728,11 @@ static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_C
   DynStr_Append (d, d_pool, m9a128, err);
   if (err->exc) goto L_ret;
   }
-  Plot_NumC (d, d_pool, g.top, err);
+  Plot_NumC (d, d_pool, (*g).top, err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s373, 6 }), err);
   if (err->exc) goto L_ret;
-  Plot_NumC (d, d_pool, g.bottom, err);
+  Plot_NumC (d, d_pool, (*g).bottom, err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s374, 22 }), err);
   if (err->exc) goto L_ret;
@@ -5741,32 +5741,32 @@ static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_C
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = (((*(double *) m9_at (s.hoverX.p, i, s.hoverX.len, sizeof (double), err)) >= g.x0) && ((*(double *) m9_at (s.hoverX.p, i, s.hoverX.len, sizeof (double), err)) <= g.x1));
+    bool m9t2 = (((*(double *) m9_at ((*s).hoverX.p, i, (*s).hoverX.len, sizeof (double), err)) >= (*g).x0) && ((*(double *) m9_at ((*s).hoverX.p, i, (*s).hoverX.len, sizeof (double), err)) <= (*g).x1));
     if (err->exc) goto L_ret;
     if (m9t2) {
       if ((i > INT64_C(0))) {
-        { __typeof__(a) m9v = ((((*(double *) m9_at (s.hoverX.p, m9_sub_i64 (i, INT64_C(1), err), s.hoverX.len, sizeof (double), err)) + (*(double *) m9_at (s.hoverX.p, i, s.hoverX.len, sizeof (double), err)))) / 2.0);
+        { __typeof__(a) m9v = ((((*(double *) m9_at ((*s).hoverX.p, m9_sub_i64 (i, INT64_C(1), err), (*s).hoverX.len, sizeof (double), err)) + (*(double *) m9_at ((*s).hoverX.p, i, (*s).hoverX.len, sizeof (double), err)))) / 2.0);
           if (err->exc) goto L_ret;
           a = m9v;
         }
       } else {
-        a = g.x0;
+        a = (*g).x0;
       }
       bool m9t3 = (i < m9_sub_i64 (n, INT64_C(1), err));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__(b) m9v = ((((*(double *) m9_at (s.hoverX.p, i, s.hoverX.len, sizeof (double), err)) + (*(double *) m9_at (s.hoverX.p, m9_add_i64 (i, INT64_C(1), err), s.hoverX.len, sizeof (double), err)))) / 2.0);
+        { __typeof__(b) m9v = ((((*(double *) m9_at ((*s).hoverX.p, i, (*s).hoverX.len, sizeof (double), err)) + (*(double *) m9_at ((*s).hoverX.p, m9_add_i64 (i, INT64_C(1), err), (*s).hoverX.len, sizeof (double), err)))) / 2.0);
           if (err->exc) goto L_ret;
           b = m9v;
         }
       } else {
-        b = g.x1;
+        b = (*g).x1;
       }
-      if ((a < g.x0)) {
-        a = g.x0;
+      if ((a < (*g).x0)) {
+        a = (*g).x0;
       }
-      if ((b > g.x1)) {
-        b = g.x1;
+      if ((b > (*g).x1)) {
+        b = (*g).x1;
       }
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s375, 43 }), err);
       if (err->exc) goto L_ret;
@@ -5777,7 +5777,7 @@ static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_C
       }
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s376, 5 }), err);
       if (err->exc) goto L_ret;
-      Plot_NumC (d, d_pool, g.top, err);
+      Plot_NumC (d, d_pool, (*g).top, err);
       if (err->exc) goto L_ret;
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s377, 9 }), err);
       if (err->exc) goto L_ret;
@@ -5788,11 +5788,11 @@ static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_C
       }
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s378, 10 }), err);
       if (err->exc) goto L_ret;
-      Plot_NumC (d, d_pool, (g.bottom - g.top), err);
+      Plot_NumC (d, d_pool, ((*g).bottom - (*g).top), err);
       if (err->exc) goto L_ret;
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s379, 10 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(double *) m9_at (s.hoverX.p, i, s.hoverX.len, sizeof (double), err))) m9a131 = (*(double *) m9_at (s.hoverX.p, i, s.hoverX.len, sizeof (double), err));
+      { __typeof__((*(double *) m9_at ((*s).hoverX.p, i, (*s).hoverX.len, sizeof (double), err))) m9a131 = (*(double *) m9_at ((*s).hoverX.p, i, (*s).hoverX.len, sizeof (double), err));
         if (err->exc) goto L_ret;
       { __typeof__(Plot_Px (g, m9a131, err)) m9a132 = Plot_Px (g, m9a131, err);
         if (err->exc) goto L_ret;
@@ -5802,7 +5802,7 @@ static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_C
       }
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s380, 10 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (s.hoverHead.p, i, s.hoverHead.len, sizeof (m9_sl_CHAR), err))) m9a133 = (*(m9_sl_CHAR *) m9_at (s.hoverHead.p, i, s.hoverHead.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at ((*s).hoverHead.p, i, (*s).hoverHead.len, sizeof (m9_sl_CHAR), err))) m9a133 = (*(m9_sl_CHAR *) m9_at ((*s).hoverHead.p, i, (*s).hoverHead.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
       Plot_EscC (d, d_pool, m9a133, err);
       if (err->exc) goto L_ret;
@@ -5818,7 +5818,7 @@ static void Plot_Hover (DynStr_DString * *d, m9_pool *d_pool, Plot_Geo g, Plot_C
           DynStr_AppendChar (d, d_pool, 124u, err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (s.hoverVals.p, m9_add_i64 (m9_mul_i64 (i, cols, err), j, err), s.hoverVals.len, sizeof (m9_sl_CHAR), err))) m9a134 = (*(m9_sl_CHAR *) m9_at (s.hoverVals.p, m9_add_i64 (m9_mul_i64 (i, cols, err), j, err), s.hoverVals.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at ((*s).hoverVals.p, m9_add_i64 (m9_mul_i64 (i, cols, err), j, err), (*s).hoverVals.len, sizeof (m9_sl_CHAR), err))) m9a134 = (*(m9_sl_CHAR *) m9_at ((*s).hoverVals.p, m9_add_i64 (m9_mul_i64 (i, cols, err), j, err), (*s).hoverVals.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
         Plot_EscC (d, d_pool, m9a134, err);
         if (err->exc) goto L_ret;

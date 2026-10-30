@@ -40,8 +40,8 @@ extern const m9_exc HttpServer_Frozen;
 #define HttpServer_ChunkLineMax INT64_C(1024)
 #define HttpServer_Huge INT64_C(1000000000000000)
 
-typedef m9_sl_CHAR (*HttpServer_Producer) (HttpServer_Request, int64_t, m9_state *err);
-typedef HttpServer_Response (*HttpServer_Handler) (HttpServer_Request, m9_state *err);
+typedef m9_sl_CHAR (*HttpServer_Producer) (HttpServer_Request *, int64_t, m9_state *err);
+typedef HttpServer_Response (*HttpServer_Handler) (HttpServer_Request *, m9_state *err);
 #ifndef M9SL_m9_arr_1024_int64_t
 #define M9SL_m9_arr_1024_int64_t
 typedef struct { int64_t v[1024]; } m9_arr_1024_int64_t;
@@ -145,14 +145,14 @@ m9_sl_CHAR HttpServer_RouteType (HttpServer_Router * r, int64_t i, m9_state *err
 m9_sl_CHAR HttpServer_RouteSummary (HttpServer_Router * r, int64_t i, m9_state *err);
 void HttpServer_Stop (m9_state *err);
 HttpServer_Config HttpServer_Defaults (m9_state *err);
-int64_t HttpServer_Run (HttpServer_Config cfg, HttpServer_Router * r, HttpServer_Stats *st, m9_state *err);
+int64_t HttpServer_Run (HttpServer_Config *cfg, HttpServer_Router * r, HttpServer_Stats *st, m9_state *err);
 HttpServer_Response HttpServer_Reply (int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR text, m9_state *err);
 HttpServer_Response HttpServer_ReplyBytes (int64_t status, m9_sl_CHAR ctype, m9_sl_BYTE data, m9_state *err);
 HttpServer_Response HttpServer_ReplyFile (m9_sl_CHAR path, m9_sl_CHAR ctype, m9_state *err);
 HttpServer_Response HttpServer_ReplyStream (int64_t status, m9_sl_CHAR ctype, HttpServer_Producer p, m9_state *err);
 m9_sl_CHAR HttpServer_TypeOf (m9_sl_CHAR path, m9_state *err);
-HttpServer_Response HttpServer_WithHeader (HttpServer_Response resp, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err);
-m9_sl_CHAR HttpServer_Header (HttpServer_Request req, m9_sl_CHAR name, m9_state *err);
+HttpServer_Response HttpServer_WithHeader (HttpServer_Response *resp, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err);
+m9_sl_CHAR HttpServer_Header (HttpServer_Request *req, m9_sl_CHAR name, m9_state *err);
 void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests, m9_state *err);
 
 #endif

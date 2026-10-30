@@ -68,7 +68,7 @@ static int64_t Arrow_Pow256 (int64_t k, m9_state *err);
 static void Arrow_PutLE (m9_sl_BYTE *u, int64_t at, int64_t v, int64_t k, m9_state *err);
 static int64_t Arrow_Pad8 (int64_t n, m9_state *err);
 static int64_t Arrow_Width (int64_t ty, m9_state *err);
-static int64_t Arrow_Used (Arrow_Fb f, m9_state *err);
+static int64_t Arrow_Used (Arrow_Fb *f, m9_state *err);
 static void Arrow_Room (Arrow_Fb *f, m9_pool *f_pool, int64_t n, m9_state *err);
 static void Arrow_Pad (Arrow_Fb *f, m9_pool *f_pool, int64_t n, m9_state *err);
 static void Arrow_Prep (Arrow_Fb *f, m9_pool *f_pool, int64_t size, int64_t add, m9_state *err);
@@ -890,7 +890,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Arrow_Used (Arrow_Fb f, m9_state *err)
+static int64_t Arrow_Used (Arrow_Fb *f, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -898,7 +898,7 @@ static int64_t Arrow_Used (Arrow_Fb f, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   err->res = m9res;
-  m9ret = m9_sub_i64 ((f.b).len, f.head, err);
+  m9ret = m9_sub_i64 (((*f).b).len, (*f).head, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -969,14 +969,17 @@ static void Arrow_Prep (Arrow_Fb *f, m9_pool *f_pool, int64_t size, int64_t add,
   if ((size > (*f).minAlign)) {
     (*f).minAlign = size;
   }
-  { __typeof__(r) m9v = m9_mod_i64 ((m9_add_i64 (Arrow_Used ((*f), err), add, err)), size, err);
+  { __typeof__((*f)) m9a11 = (*f);
+    if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = m9_mod_i64 ((m9_add_i64 (Arrow_Used (&m9a11, err), add, err)), size, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
+  }
   if ((r != INT64_C(0))) {
-    { __typeof__(m9_sub_i64 (size, r, err)) m9a11 = m9_sub_i64 (size, r, err);
+    { __typeof__(m9_sub_i64 (size, r, err)) m9a12 = m9_sub_i64 (size, r, err);
       if (err->exc) goto L_ret;
-    Arrow_Pad (f, f_pool, m9a11, err);
+    Arrow_Pad (f, f_pool, m9a12, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -1113,10 +1116,13 @@ static void Arrow_Ref (Arrow_Fb *f, m9_pool *f_pool, int64_t off, m9_state *err)
   err->res = &m9frame;
   Arrow_Prep (f, f_pool, INT64_C(4), INT64_C(0), err);
   if (err->exc) goto L_ret;
-  { __typeof__(m9_add_i64 (m9_sub_i64 (Arrow_Used ((*f), err), off, err), INT64_C(4), err)) m9a12 = m9_add_i64 (m9_sub_i64 (Arrow_Used ((*f), err), off, err), INT64_C(4), err);
+  { __typeof__((*f)) m9a13 = (*f);
     if (err->exc) goto L_ret;
-  Arrow_Raw (f, f_pool, m9a12, INT64_C(4), err);
+  { __typeof__(m9_add_i64 (m9_sub_i64 (Arrow_Used (&m9a13, err), off, err), INT64_C(4), err)) m9a14 = m9_add_i64 (m9_sub_i64 (Arrow_Used (&m9a13, err), off, err), INT64_C(4), err);
+    if (err->exc) goto L_ret;
+  Arrow_Raw (f, f_pool, m9a14, INT64_C(4), err);
   if (err->exc) goto L_ret;
+  }
   }
 L_ret: ;
   err->res = m9res;
@@ -1140,9 +1146,9 @@ static int64_t Arrow_Str (m9_pool *pool, Arrow_Fb *f, m9_pool *f_pool, m9_sl_CHA
     u = m9v;
   }
   n = (u).len;
-  { __typeof__(m9_add_i64 (n, INT64_C(1), err)) m9a13 = m9_add_i64 (n, INT64_C(1), err);
+  { __typeof__(m9_add_i64 (n, INT64_C(1), err)) m9a15 = m9_add_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  Arrow_Prep (f, f_pool, INT64_C(4), m9a13, err);
+  Arrow_Prep (f, f_pool, INT64_C(4), m9a15, err);
   if (err->exc) goto L_ret;
   }
   Arrow_Pad (f, f_pool, INT64_C(1), err);
@@ -1169,8 +1175,11 @@ static int64_t Arrow_Str (m9_pool *pool, Arrow_Fb *f, m9_pool *f_pool, m9_sl_CHA
   Arrow_Put32 (f, f_pool, n, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a16 = (*f);
+    if (err->exc) goto L_ret;
+  m9ret = Arrow_Used (&m9a16, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1197,9 +1206,12 @@ static void Arrow_Start (Arrow_Fb *f, m9_pool *f_pool, int64_t nfields, m9_state
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__((*f).objStart) m9v = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a17 = (*f);
+    if (err->exc) goto L_ret;
+  { __typeof__((*f).objStart) m9v = Arrow_Used (&m9a17, err);
     if (err->exc) goto L_ret;
     (*f).objStart = m9v;
+  }
   }
 L_ret: ;
   err->res = m9res;
@@ -1214,10 +1226,13 @@ static void Arrow_Slot (Arrow_Fb *f, m9_pool *f_pool, int64_t i, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__((*(int64_t *) m9_at ((*f).vt.v, i, INT64_C(16), sizeof (int64_t), err))) m9v = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a18 = (*f);
+    if (err->exc) goto L_ret;
+  { __typeof__((*(int64_t *) m9_at ((*f).vt.v, i, INT64_C(16), sizeof (int64_t), err))) m9v = Arrow_Used (&m9a18, err);
     if (err->exc) goto L_ret;
     (*(int64_t *) m9_at ((*f).vt.v, i, INT64_C(16), sizeof (int64_t), err)) = m9v;
     if (err->exc) goto L_ret;
+  }
   }
 L_ret: ;
   err->res = m9res;
@@ -1239,9 +1254,12 @@ static int64_t Arrow_End (Arrow_Fb *f, m9_pool *f_pool, m9_state *err)
   int64_t d = 0; (void) d;
   Arrow_Put32 (f, f_pool, INT64_C(0), err);
   if (err->exc) goto L_ret;
-  { __typeof__(tloc) m9v = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a19 = (*f);
+    if (err->exc) goto L_ret;
+  { __typeof__(tloc) m9v = Arrow_Used (&m9a19, err);
     if (err->exc) goto L_ret;
     tloc = m9v;
+  }
   }
   { __typeof__(i) m9t1to;
   i = m9_sub_i64 ((*f).nvt, INT64_C(1), err);
@@ -1254,28 +1272,31 @@ static int64_t Arrow_End (Arrow_Fb *f, m9_pool *f_pool, m9_state *err)
       Arrow_Put16 (f, f_pool, INT64_C(0), err);
       if (err->exc) goto L_ret;
     } else {
-      { __typeof__(m9_sub_i64 (tloc, (*(int64_t *) m9_at ((*f).vt.v, i, INT64_C(16), sizeof (int64_t), err)), err)) m9a14 = m9_sub_i64 (tloc, (*(int64_t *) m9_at ((*f).vt.v, i, INT64_C(16), sizeof (int64_t), err)), err);
+      { __typeof__(m9_sub_i64 (tloc, (*(int64_t *) m9_at ((*f).vt.v, i, INT64_C(16), sizeof (int64_t), err)), err)) m9a20 = m9_sub_i64 (tloc, (*(int64_t *) m9_at ((*f).vt.v, i, INT64_C(16), sizeof (int64_t), err)), err);
         if (err->exc) goto L_ret;
-      Arrow_Put16 (f, f_pool, m9a14, err);
+      Arrow_Put16 (f, f_pool, m9a20, err);
       if (err->exc) goto L_ret;
       }
     }
     if ((uint64_t) i - (uint64_t) m9t1to < (uint64_t) 1) break;
     i += -1;
   } }
-  { __typeof__(m9_sub_i64 (tloc, (*f).objStart, err)) m9a15 = m9_sub_i64 (tloc, (*f).objStart, err);
+  { __typeof__(m9_sub_i64 (tloc, (*f).objStart, err)) m9a21 = m9_sub_i64 (tloc, (*f).objStart, err);
     if (err->exc) goto L_ret;
-  Arrow_Put16 (f, f_pool, m9a15, err);
+  Arrow_Put16 (f, f_pool, m9a21, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_mul_i64 ((m9_add_i64 ((*f).nvt, INT64_C(2), err)), INT64_C(2), err)) m9a16 = m9_mul_i64 ((m9_add_i64 ((*f).nvt, INT64_C(2), err)), INT64_C(2), err);
+  { __typeof__(m9_mul_i64 ((m9_add_i64 ((*f).nvt, INT64_C(2), err)), INT64_C(2), err)) m9a22 = m9_mul_i64 ((m9_add_i64 ((*f).nvt, INT64_C(2), err)), INT64_C(2), err);
     if (err->exc) goto L_ret;
-  Arrow_Put16 (f, f_pool, m9a16, err);
+  Arrow_Put16 (f, f_pool, m9a22, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(vloc) m9v = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a23 = (*f);
+    if (err->exc) goto L_ret;
+  { __typeof__(vloc) m9v = Arrow_Used (&m9a23, err);
     if (err->exc) goto L_ret;
     vloc = m9v;
+  }
   }
   { __typeof__(d) m9v = m9_sub_i64 (vloc, tloc, err);
     if (err->exc) goto L_ret;
@@ -1401,9 +1422,9 @@ static int64_t Arrow_TypeTable (Arrow_Fb *f, m9_pool *f_pool, int64_t ty, m9_sta
   if (err->exc) goto L_ret;
   Arrow_Slot (f, f_pool, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  { __typeof__(m9_mul_i64 (Arrow_Width (ty, err), INT64_C(8), err)) m9a17 = m9_mul_i64 (Arrow_Width (ty, err), INT64_C(8), err);
+  { __typeof__(m9_mul_i64 (Arrow_Width (ty, err), INT64_C(8), err)) m9a24 = m9_mul_i64 (Arrow_Width (ty, err), INT64_C(8), err);
     if (err->exc) goto L_ret;
-  Arrow_Put32 (f, f_pool, m9a17, err);
+  Arrow_Put32 (f, f_pool, m9a24, err);
   if (err->exc) goto L_ret;
   }
   Arrow_Slot (f, f_pool, INT64_C(0), err);
@@ -1441,9 +1462,12 @@ static int64_t Arrow_FieldTable (m9_pool *pool, Arrow_Fb *f, m9_pool *f_pool, m9
   if (err->exc) goto L_ret;
   Arrow_Put32 (f, f_pool, INT64_C(0), err);
   if (err->exc) goto L_ret;
-  { __typeof__(kids) m9v = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a25 = (*f);
+    if (err->exc) goto L_ret;
+  { __typeof__(kids) m9v = Arrow_Used (&m9a25, err);
     if (err->exc) goto L_ret;
     kids = m9v;
+  }
   }
   Arrow_Start (f, f_pool, INT64_C(6), err);
   if (err->exc) goto L_ret;
@@ -1455,9 +1479,9 @@ static int64_t Arrow_FieldTable (m9_pool *pool, Arrow_Fb *f, m9_pool *f_pool, m9
   if (err->exc) goto L_ret;
   Arrow_Slot (f, f_pool, INT64_C(3), err);
   if (err->exc) goto L_ret;
-  { __typeof__(Arrow_TypeTag (ty, err)) m9a18 = Arrow_TypeTag (ty, err);
+  { __typeof__(Arrow_TypeTag (ty, err)) m9a26 = Arrow_TypeTag (ty, err);
     if (err->exc) goto L_ret;
-  Arrow_Put8 (f, f_pool, m9a18, err);
+  Arrow_Put8 (f, f_pool, m9a26, err);
   if (err->exc) goto L_ret;
   }
   Arrow_Slot (f, f_pool, INT64_C(2), err);
@@ -1527,9 +1551,9 @@ static int64_t Arrow_Vector (Arrow_Fb *f, m9_pool *f_pool, m9_sl_I64 offs, int64
   err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
-  { __typeof__(m9_mul_i64 (INT64_C(4), n, err)) m9a19 = m9_mul_i64 (INT64_C(4), n, err);
+  { __typeof__(m9_mul_i64 (INT64_C(4), n, err)) m9a27 = m9_mul_i64 (INT64_C(4), n, err);
     if (err->exc) goto L_ret;
-  Arrow_Prep (f, f_pool, INT64_C(4), m9a19, err);
+  Arrow_Prep (f, f_pool, INT64_C(4), m9a27, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(i) m9t1to;
@@ -1537,9 +1561,9 @@ static int64_t Arrow_Vector (Arrow_Fb *f, m9_pool *f_pool, m9_sl_I64 offs, int64
   m9t1to = INT64_C(0);
   if (err->exc) goto L_ret;
   if (i >= m9t1to) for (;;) {
-    { __typeof__((*(int64_t *) m9_at (offs.p, i, offs.len, sizeof (int64_t), err))) m9a20 = (*(int64_t *) m9_at (offs.p, i, offs.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (offs.p, i, offs.len, sizeof (int64_t), err))) m9a28 = (*(int64_t *) m9_at (offs.p, i, offs.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    Arrow_Ref (f, f_pool, m9a20, err);
+    Arrow_Ref (f, f_pool, m9a28, err);
     if (err->exc) goto L_ret;
     }
     if ((uint64_t) i - (uint64_t) m9t1to < (uint64_t) 1) break;
@@ -1548,8 +1572,11 @@ static int64_t Arrow_Vector (Arrow_Fb *f, m9_pool *f_pool, m9_sl_I64 offs, int64
   Arrow_Put32 (f, f_pool, n, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a29 = (*f);
+    if (err->exc) goto L_ret;
+  m9ret = Arrow_Used (&m9a29, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1685,14 +1712,14 @@ static int64_t Arrow_BatchMsg (Arrow_Fb *f, m9_pool *f_pool, Arrow_Table * t, m9
       bc = m9v;
     }
   }
-  { __typeof__(m9_mul_i64 (INT64_C(16), t->ncol, err)) m9a21 = m9_mul_i64 (INT64_C(16), t->ncol, err);
+  { __typeof__(m9_mul_i64 (INT64_C(16), t->ncol, err)) m9a30 = m9_mul_i64 (INT64_C(16), t->ncol, err);
     if (err->exc) goto L_ret;
-  Arrow_Prep (f, f_pool, INT64_C(4), m9a21, err);
+  Arrow_Prep (f, f_pool, INT64_C(4), m9a30, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_mul_i64 (INT64_C(16), t->ncol, err)) m9a22 = m9_mul_i64 (INT64_C(16), t->ncol, err);
+  { __typeof__(m9_mul_i64 (INT64_C(16), t->ncol, err)) m9a31 = m9_mul_i64 (INT64_C(16), t->ncol, err);
     if (err->exc) goto L_ret;
-  Arrow_Prep (f, f_pool, INT64_C(8), m9a22, err);
+  Arrow_Prep (f, f_pool, INT64_C(8), m9a31, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(i) m9t1to;
@@ -1709,18 +1736,21 @@ static int64_t Arrow_BatchMsg (Arrow_Fb *f, m9_pool *f_pool, Arrow_Table * t, m9
   } }
   Arrow_Put32 (f, f_pool, t->ncol, err);
   if (err->exc) goto L_ret;
-  { __typeof__(nodes) m9v = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a32 = (*f);
+    if (err->exc) goto L_ret;
+  { __typeof__(nodes) m9v = Arrow_Used (&m9a32, err);
     if (err->exc) goto L_ret;
     nodes = m9v;
   }
-  { __typeof__(m9_mul_i64 (INT64_C(16), nbuf, err)) m9a23 = m9_mul_i64 (INT64_C(16), nbuf, err);
+  }
+  { __typeof__(m9_mul_i64 (INT64_C(16), nbuf, err)) m9a33 = m9_mul_i64 (INT64_C(16), nbuf, err);
     if (err->exc) goto L_ret;
-  Arrow_Prep (f, f_pool, INT64_C(4), m9a23, err);
+  Arrow_Prep (f, f_pool, INT64_C(4), m9a33, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_mul_i64 (INT64_C(16), nbuf, err)) m9a24 = m9_mul_i64 (INT64_C(16), nbuf, err);
+  { __typeof__(m9_mul_i64 (INT64_C(16), nbuf, err)) m9a34 = m9_mul_i64 (INT64_C(16), nbuf, err);
     if (err->exc) goto L_ret;
-  Arrow_Prep (f, f_pool, INT64_C(8), m9a24, err);
+  Arrow_Prep (f, f_pool, INT64_C(8), m9a34, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(i) m9t2to;
@@ -1728,14 +1758,14 @@ static int64_t Arrow_BatchMsg (Arrow_Fb *f, m9_pool *f_pool, Arrow_Table * t, m9
   m9t2to = INT64_C(0);
   if (err->exc) goto L_ret;
   if (i >= m9t2to) for (;;) {
-    { __typeof__((*(int64_t *) m9_at (bufLen.p, i, bufLen.len, sizeof (int64_t), err))) m9a25 = (*(int64_t *) m9_at (bufLen.p, i, bufLen.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (bufLen.p, i, bufLen.len, sizeof (int64_t), err))) m9a35 = (*(int64_t *) m9_at (bufLen.p, i, bufLen.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    Arrow_Put64 (f, f_pool, m9a25, err);
+    Arrow_Put64 (f, f_pool, m9a35, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__((*(int64_t *) m9_at (bufOff.p, i, bufOff.len, sizeof (int64_t), err))) m9a26 = (*(int64_t *) m9_at (bufOff.p, i, bufOff.len, sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at (bufOff.p, i, bufOff.len, sizeof (int64_t), err))) m9a36 = (*(int64_t *) m9_at (bufOff.p, i, bufOff.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    Arrow_Put64 (f, f_pool, m9a26, err);
+    Arrow_Put64 (f, f_pool, m9a36, err);
     if (err->exc) goto L_ret;
     }
     if ((uint64_t) i - (uint64_t) m9t2to < (uint64_t) 1) break;
@@ -1743,9 +1773,12 @@ static int64_t Arrow_BatchMsg (Arrow_Fb *f, m9_pool *f_pool, Arrow_Table * t, m9
   } }
   Arrow_Put32 (f, f_pool, nbuf, err);
   if (err->exc) goto L_ret;
-  { __typeof__(bufs) m9v = Arrow_Used ((*f), err);
+  { __typeof__((*f)) m9a37 = (*f);
+    if (err->exc) goto L_ret;
+  { __typeof__(bufs) m9v = Arrow_Used (&m9a37, err);
     if (err->exc) goto L_ret;
     bufs = m9v;
+  }
   }
   if ((codec == Arrow_CodecZstd)) {
     Arrow_Start (f, f_pool, INT64_C(4), err);
@@ -1912,9 +1945,9 @@ static void Arrow_PutMark (m9_sl_BYTE *u, int64_t at, int64_t len, m9_state *err
   err->res = &m9frame;
   Arrow_PutLE (u, at, INT64_C(4294967295), INT64_C(4), err);
   if (err->exc) goto L_ret;
-  { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a27 = m9_add_i64 (at, INT64_C(4), err);
+  { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a38 = m9_add_i64 (at, INT64_C(4), err);
     if (err->exc) goto L_ret;
-  Arrow_PutLE (u, m9a27, len, INT64_C(4), err);
+  Arrow_PutLE (u, m9a38, len, INT64_C(4), err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1991,7 +2024,7 @@ static m9_sl_BYTE Arrow_Framed (m9_pool *pool, Arrow_Table * t, m9_sl_I64 bufOff
   }
   Arrow_Finish (&(f), err->res, sRoot, err);
   if (err->exc) goto L_ret;
-  { __typeof__(sLen) m9v = Arrow_Used (f, err);
+  { __typeof__(sLen) m9v = Arrow_Used (&(f), err);
     if (err->exc) goto L_ret;
     sLen = m9v;
   }
@@ -2026,7 +2059,7 @@ static m9_sl_BYTE Arrow_Framed (m9_pool *pool, Arrow_Table * t, m9_sl_I64 bufOff
   }
   Arrow_Finish (&(f), err->res, bRoot, err);
   if (err->exc) goto L_ret;
-  { __typeof__(bLen) m9v = Arrow_Used (f, err);
+  { __typeof__(bLen) m9v = Arrow_Used (&(f), err);
     if (err->exc) goto L_ret;
     bLen = m9v;
   }
@@ -2076,9 +2109,9 @@ static m9_sl_BYTE Arrow_Framed (m9_pool *pool, Arrow_Table * t, m9_sl_I64 bufOff
     if (err->exc) goto L_ret;
     (*pos) = m9v;
   }
-  { __typeof__(m9_add_i64 ((*pos), bodyLen, err)) m9a28 = m9_add_i64 ((*pos), bodyLen, err);
+  { __typeof__(m9_add_i64 ((*pos), bodyLen, err)) m9a39 = m9_add_i64 ((*pos), bodyLen, err);
     if (err->exc) goto L_ret;
-  Arrow_PutMark (&(u), m9a28, INT64_C(0), err);
+  Arrow_PutMark (&(u), m9a39, INT64_C(0), err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -2115,11 +2148,11 @@ static m9_sl_BYTE Arrow_RawOf (m9_pool *pool, Arrow_Col * cc, int64_t rows, int6
     i = INT64_C(0);
     m9t1to = rows;
     if (i <= m9t1to) for (;;) {
-      { __typeof__(m9_mul_i64 (INT64_C(4), i, err)) m9a29 = m9_mul_i64 (INT64_C(4), i, err);
+      { __typeof__(m9_mul_i64 (INT64_C(4), i, err)) m9a40 = m9_mul_i64 (INT64_C(4), i, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(int64_t *) m9_at (cc->soff.p, i, cc->soff.len, sizeof (int64_t), err))) m9a30 = (*(int64_t *) m9_at (cc->soff.p, i, cc->soff.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (cc->soff.p, i, cc->soff.len, sizeof (int64_t), err))) m9a41 = (*(int64_t *) m9_at (cc->soff.p, i, cc->soff.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      Arrow_PutLE (&(u), m9a29, m9a30, INT64_C(4), err);
+      Arrow_PutLE (&(u), m9a40, m9a41, INT64_C(4), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -2167,11 +2200,11 @@ static m9_sl_BYTE Arrow_RawOf (m9_pool *pool, Arrow_Col * cc, int64_t rows, int6
     m9t6to = m9_sub_i64 (rows, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t6to) for (;;) {
-      { __typeof__(m9_mul_i64 (w, i, err)) m9a31 = m9_mul_i64 (w, i, err);
+      { __typeof__(m9_mul_i64 (w, i, err)) m9a42 = m9_mul_i64 (w, i, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(int64_t *) m9_at (cc->iv.p, i, cc->iv.len, sizeof (int64_t), err))) m9a32 = (*(int64_t *) m9_at (cc->iv.p, i, cc->iv.len, sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at (cc->iv.p, i, cc->iv.len, sizeof (int64_t), err))) m9a43 = (*(int64_t *) m9_at (cc->iv.p, i, cc->iv.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      Arrow_PutLE (&(u), m9a31, m9a32, w, err);
+      Arrow_PutLE (&(u), m9a42, m9a43, w, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -2250,9 +2283,9 @@ static m9_sl_BYTE Arrow_Pack (m9_pool *pool, Arrow_Col * cc, int64_t rows, int64
       if (err->exc) goto L_ret;
       out = m9v;
     }
-    { __typeof__(m9_neg_i64 (INT64_C(1), err)) m9a33 = m9_neg_i64 (INT64_C(1), err);
+    { __typeof__(m9_neg_i64 (INT64_C(1), err)) m9a44 = m9_neg_i64 (INT64_C(1), err);
       if (err->exc) goto L_ret;
-    Arrow_PutLE (&(out), INT64_C(0), m9a33, INT64_C(8), err);
+    Arrow_PutLE (&(out), INT64_C(0), m9a44, INT64_C(8), err);
     if (err->exc) goto L_ret;
     }
     { __typeof__(i) m9t2to;

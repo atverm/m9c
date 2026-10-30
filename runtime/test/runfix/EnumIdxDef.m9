@@ -1,0 +1,13 @@
+DEFINITION MODULE EnumIdxDef ;
+
+(* an array type indexed by an enumeration, exported *)
+
+TYPE
+  Cover = (Urban, Crop, Forest) ;
+  ByCover = ARRAY Cover OF BOOL ;
+
+END EnumIdxDef.
+
+
+IMPLEMENTATION MODULE EnumIdxDef ;
+END EnumIdxDef.

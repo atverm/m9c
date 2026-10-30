@@ -150,16 +150,30 @@ for p in BndClash BndClash2; do
   if ( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -o "$p" "$p.m9" >"$BND/$p.txt" 2>&1 ); then
     echo "FAIL: $p built: an importer's ARRAY N taken for BndDef's"; exit 1
   fi
-  grep -q "body: cannot assign ARRAY .*BndDef\.N OF" "$BND/$p.txt" || {
-    echo "FAIL: $p was not refused by the checker naming BndDef.N"; cat "$BND/$p.txt"; exit 1; }
+  # by value since 2026-10-30 (report M8): BndDef's 4 against this 9
+  grep -q "body: cannot assign ARRAY \(4 OF F64 to ARRAY 9\|8 OF I32 to ARRAY 18\) OF" "$BND/$p.txt" || {
+    echo "FAIL: $p was not refused by the checker naming both counts"; cat "$BND/$p.txt"; exit 1; }
 done
+# ONE VALUE, ONE TYPE (2026-10-30, a port's report M8): ARRAY N with N
+# = 3, ARRAY 3 and ARRAY 2 + 1 are one type -- the checker compared the
+# counts as written, and refused ARRAY N where ARRAY 3 was expected
+( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -o BndShape BndShape.m9 >"$BND/shape.txt" 2>&1 ) || {
+  echo "FAIL: BndShape does not build"; tail -8 "$BND/shape.txt"; exit 1; }
+[ "$("$BND/BndShape")" = "6.0 6.0 6.0" ] || { echo "FAIL: BndShape printed the wrong thing"; "$BND/BndShape"; exit 1; }
 # a generator error in an imported declaration names the EXPORTER's
-# file (Gen.ErrModAt): BndZeroUse.m9:9 until 2026-10-29
+# file (Gen.ErrModAt): BndZeroUse.m9:9 until 2026-10-29.  Compiling
+# BndZero itself, the checker refuses the count (decision 78); compiling
+# only the importer, the definition's declarations are not checked
+# again and the generator meets it
 ( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" BndZeroUse.m9 >"$BND/zero.txt" 2>&1 ) &&
   { echo "FAIL: BndZeroUse generated: a count dividing by a CONST of 0"; exit 1; }
 grep -q "BndZero\.m9:9: gen: array count form unsupported yet" "$BND/zero.txt" &&
   ! grep -q "BndZeroUse\.m9:9:" "$BND/zero.txt" || {
   echo "FAIL: the generator error in BndZero was not named BndZero.m9:9"; cat "$BND/zero.txt"; exit 1; }
+( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --check BndZero.m9 >"$BND/zero2.txt" 2>&1 ) &&
+  { echo "FAIL: BndZero accepted: a count dividing by a CONST of 0"; exit 1; }
+grep -q "BndZero\.m9:9:[0-9]*: .*count has no value: N DIV Z" "$BND/zero2.txt" || {
+  echo "FAIL: BndZero not refused for its count"; cat "$BND/zero2.txt"; exit 1; }
 rm -rf "$BND"
 echo "m9c: an exported array's CONST count is the exporter's, read whole, through a field, in an expression"
 

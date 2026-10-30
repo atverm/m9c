@@ -1,0 +1,82 @@
+MODULE GfRoModVar ;
+
+(* WANT: pure 5 direct 2 helper 3 value 4 deep 6 sum 15 *)
+
+(* An RO record held in a MODULE VARIABLE is passed by its address
+   since 2026-10-30 when the checker proves the callee, and all it
+   calls, write no module state (decision 81); otherwise it is copied
+   at the call, as every module variable was under decision 79.  A
+   program reads what it did: a callee that writes the variable itself,
+   through a helper, or through a procedure value it is handed still
+   sees the value at the call; a pure one, and a pure chain two deep,
+   read the original. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  R = RECORD n : I64 ; pad : ARRAY 100 OF I64 END ;
+  Act = PROCEDURE () ;
+
+VAR g : R ;
+
+PROCEDURE Pure (RO a: R) : I64 =
+BEGIN
+  RETURN a.n
+END Pure ;
+
+PROCEDURE Direct (RO a: R) : I64 =
+BEGIN
+  g.n := 70 ;
+  RETURN a.n
+END Direct ;
+
+PROCEDURE Bump () =
+BEGIN
+  g.n := g.n + 100
+END Bump ;
+
+PROCEDURE Helper (RO a: R) : I64 =
+BEGIN
+  Bump () ;
+  RETURN a.n
+END Helper ;
+
+PROCEDURE ByValue (RO a: R ; f: Act) : I64 =
+BEGIN
+  f () ;
+  RETURN a.n
+END ByValue ;
+
+PROCEDURE Inner (RO a: R) : I64 =
+BEGIN
+  RETURN a.n + a.pad[99]
+END Inner ;
+
+PROCEDURE Deep (RO a: R) : I64 =
+BEGIN
+  RETURN Inner (a)
+END Deep ;
+
+PROCEDURE Total (RO a: R) : I64 =
+VAR i, s : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 0 TO 4 DO s := s + a.pad[i] END ;
+  RETURN s
+END Total ;
+
+BEGIN
+  g.n := 5 ;
+  Io.Write ('pure ' + Fmt.I64Str (Pure (g))) ;
+  g.n := 2 ;
+  Io.Write (' direct ' + Fmt.I64Str (Direct (g))) ;
+  g.n := 3 ;
+  Io.Write (' helper ' + Fmt.I64Str (Helper (g))) ;
+  g.n := 4 ;
+  Io.Write (' value ' + Fmt.I64Str (ByValue (g, Bump))) ;
+  g.n := 5 ;
+  g.pad[99] := 1 ;
+  Io.Write (' deep ' + Fmt.I64Str (Deep (g))) ;
+  g.pad[0] := 1 ; g.pad[1] := 2 ; g.pad[2] := 3 ; g.pad[3] := 4 ; g.pad[4] := 5 ;
+  Io.WriteLine (' sum ' + Fmt.I64Str (Total (g)))
+END GfRoModVar.

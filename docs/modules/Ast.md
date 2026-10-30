@@ -469,9 +469,17 @@ _(undocumented)_
 
 ### SetTyStr (id: I64 ; RO t: UTF)
 
-_(documented with the group below)_
+_(undocumented)_
 
 ### TyStrAt (id: I64) : UTF
+
+_(undocumented)_
+
+### SetNoWrites (id: I64)
+
+_(documented with the group below)_
+
+### NoWritesAt (id: I64) : BOOL
 
 NONE is a legal child: absence with a position
 

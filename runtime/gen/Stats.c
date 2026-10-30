@@ -156,7 +156,7 @@ static int64_t Stats_Bin (double x, int64_t bins, double lo, double hi, m9_state
 static double Stats_Inf (m9_state *err);
 static void Stats_Plus (Stats_Comp *s, double v, m9_state *err);
 static void Stats_Shift (Stats_Win *w, double v, int64_t by, m9_state *err);
-static double Stats_SumNow (Stats_Win w, m9_state *err);
+static double Stats_SumNow (Stats_Win *w, m9_state *err);
 static void Stats_RollOk (m9_sl_F64 xs, int64_t window, m9_state *err);
 static m9_sl_F64 Stats_Slide (m9_sl_F64 xs, int64_t window, bool mean, m9_state *err);
 static m9_sl_F64 Stats_Extreme (m9_sl_F64 xs, int64_t window, bool wantMax, m9_state *err);
@@ -3110,15 +3110,15 @@ L_ret: ;
   return;
 }
 
-static double Stats_SumNow (Stats_Win w, m9_state *err)
+static double Stats_SumNow (Stats_Win *w, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  if ((w.pinf > INT64_C(0))) {
-    if ((w.ninf > INT64_C(0))) {
+  if (((*w).pinf > INT64_C(0))) {
+    if (((*w).ninf > INT64_C(0))) {
       err->res = m9res;
       m9ret = NAN;
       goto L_ret;
@@ -3128,14 +3128,14 @@ static double Stats_SumNow (Stats_Win w, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  if ((w.ninf > INT64_C(0))) {
+  if (((*w).ninf > INT64_C(0))) {
     err->res = m9res;
     m9ret = (- Stats_Inf (err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (w.s.sum + w.s.comp);
+  m9ret = ((*w).s.sum + (*w).s.comp);
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -3212,7 +3212,7 @@ static m9_sl_F64 Stats_Slide (m9_sl_F64 xs, int64_t window, bool mean, m9_state 
     bool m9t2 = (i >= m9_sub_i64 (window, INT64_C(1), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(v) m9v = Stats_SumNow (w, err);
+      { __typeof__(v) m9v = Stats_SumNow (&(w), err);
         if (err->exc) goto L_ret;
         v = m9v;
       }

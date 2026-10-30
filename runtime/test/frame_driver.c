@@ -54,7 +54,7 @@ int main (void)
   /* read the sample the declared way: no inference anywhere */
   Csv_Options o = Csv_Defaults (&e);
   o.missing = -9999.0f; o.hasMissing = true; o.quoted = true;
-  Csv_Table *t = Csv_Open (&pool, S ("frame_sample.csv"), o, &e);
+  Csv_Table *t = Csv_Open (&pool, S ("frame_sample.csv"), &o, &e);
   ok ("csv opens", e.exc == NULL && t);
   if (e.exc) { printf ("exc %s\n", e.exc->name); return 1; }
   Csv_SetStamp (&t, &pool, 0, 0 /* StampYmdHm */, &e);
@@ -155,7 +155,7 @@ int main (void)
   {
     Csv_Options o2 = Csv_Defaults (&e);
     o2.quoted = true;
-    Csv_Table *t2 = Csv_Open (&pool, S ("/tmp/frame_rt.csv"), o2, &e);
+    Csv_Table *t2 = Csv_Open (&pool, S ("/tmp/frame_rt.csv"), &o2, &e);
     Csv_SetInt (&t2, &pool, 0, &e);       /* TIMESTAMP went out as epoch */
     Csv_SetReal (&t2, &pool, 1, &e);
     Csv_SetReal (&t2, &pool, 2, &e);
