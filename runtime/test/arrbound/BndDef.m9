@@ -1,0 +1,49 @@
+DEFINITION MODULE BndDef ;
+
+(* exported ARRAY types whose count is a CONST of this module, read in
+   an importer: a bare CONST, nested, an enumeration, an expression,
+   a record field; M is declared BELOW the type that uses it *)
+
+CONST N = 4 ;
+TYPE
+  Vec = ARRAY N OF F64 ;
+  Mat = ARRAY N OF ARRAY M OF I64 ;
+  Colour = (Red, Green, Blue) ;
+  Paint = ARRAY Colour OF F64 ;
+  Twice = ARRAY 2 * N OF I32 ;
+  Rec = RECORD
+    tag : I64 ;
+    v : ARRAY N OF F64 ;
+    m : Mat
+  END ;
+CONST M = 3 ;
+
+PROCEDURE Sum (RO v: Vec) : F64 ;
+PROCEDURE Fill (VAR r: Rec) ;
+
+END BndDef.
+
+
+IMPLEMENTATION MODULE BndDef ;
+
+PROCEDURE Sum (RO v: Vec) : F64 =
+VAR
+  i : I64 ;
+  s : F64 ;
+BEGIN
+  s := 0.0 ;
+  FOR i := 0 TO N - 1 DO s := s + v[i] END ;
+  RETURN s
+END Sum ;
+
+PROCEDURE Fill (VAR r: Rec) =
+VAR i, j : I64 ;
+BEGIN
+  r.tag := 7 ;
+  FOR i := 0 TO N - 1 DO
+    r.v[i] := F64 (i) ;
+    FOR j := 0 TO M - 1 DO r.m[i][j] := i * 10 + j END
+  END
+END Fill ;
+
+END BndDef.

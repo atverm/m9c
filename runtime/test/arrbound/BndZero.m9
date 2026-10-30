@@ -1,0 +1,15 @@
+DEFINITION MODULE BndZero ;
+
+(* a count the checker accepts and the generator cannot fold: a divisor
+   that is a CONST of 0 (the checker knows a CONST's type, not its
+   value).  Its error belongs to THIS file, line 9 *)
+
+CONST N = 4 ;
+      Z = 0 ;
+TYPE Bad = ARRAY N DIV Z OF I64 ;
+
+END BndZero.
+
+
+IMPLEMENTATION MODULE BndZero ;
+END BndZero.

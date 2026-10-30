@@ -408,16 +408,29 @@ PROCEDURE GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ;
                     n, width: I64) : SLICE OF STR
   RAISES Error, Faults.SizeError, ValueRange ;
   (* the reverse of PutChars: an n x width char matrix, each row
-     answered as a STR with trailing NULs and blanks removed *)
+     answered as a STR with trailing NULs and blanks removed.
+
+     A char variable of ANY rank is read as rows of `width` octets:
+     width is its last extent, and its rows are the product of the
+     others -- `datetime(time, strlen)' is time rows, a rank-1
+     `qc_flag(time)' is ONE row of time characters, a scalar one row
+     of one.  A rank-1 variable may also be read as rows of one
+     character each (width 1).  n may be fewer rows than the variable
+     holds (the first n); any other n or width is Faults.SizeError
+     (rows held, rows asked) or (last extent, width).  Until
+     2026-10-29 the start and count were always two long: a rank-1
+     variable read as one row answered its FIRST character, and a
+     rank-3 one read past the arrays. *)
 
 PROCEDURE GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ;
                    out: SLICE OF BYTE)
   RAISES Error, Faults.SizeError, ValueRange ;
   (* the same matrix in BLOCKS and as OCTETS: `n` rows from `row`,
-     into a buffer the caller sized at n * width.  GetChars answers
-     STRs and therefore holds the whole variable twice, which a
-     400,000-row identifier column cannot afford; this is the form
-     for a caller that walks the rows and keeps nothing. *)
+     into a buffer the caller sized at n * width, the rows as GetChars
+     counts them.  GetChars answers STRs and therefore holds the whole
+     variable twice, which a 400,000-row identifier column cannot
+     afford; this is the form for a caller that walks the rows and
+     keeps nothing. *)
 
 PROCEDURE PutF32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
@@ -1223,21 +1236,11 @@ PROCEDURE GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ;
 VAR
   scratch : POOL ;
   raw : SLICE OF BYTE ;
-  s, c : SLICE OF U64 ;
-  st, ct : SLICE OF I64 ;
   out : SLICE OF STR ;
   i, k : I64 ;
 BEGIN
   raw := NEW (scratch, BYTE, n * width) ;
-  st := NEW (scratch, I64, 2) ;
-  ct := NEW (scratch, I64, 2) ;
-  st[0] := 0 ; st[1] := 0 ;
-  ct[0] := n ; ct[1] := width ;
-  s := Extents (st) ;
-  c := Extents (ct) ;
-  Check ('nc_get_vara_text',
-    I64 (NcGetVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
-                        ADR (c), ADR (raw)))) ;
+  GetText (f, varid, 0, n, width, raw) ;
   out := NEW (pool, STR, n) ;
   FOR i := 0 TO n - 1 DO
     k := width ;
@@ -1256,18 +1259,73 @@ PROCEDURE GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ;
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
-  st, ct : SLICE OF I64 ;
+  st, ct, shape : SLICE OF I64 ;
+  blk : SLICE OF BYTE ;
+  rank, rows, r, q, i : I64 ;
 BEGIN
   IF LEN (out) # n * width THEN RAISE Faults.SizeError (LEN (out), n * width) END ;
-  st := NEW (scratch, I64, 2) ;
-  ct := NEW (scratch, I64, 2) ;
-  st[0] := row ; st[1] := 0 ;
-  ct[0] := n ; ct[1] := width ;
-  s := Extents (st) ;
-  c := Extents (ct) ;
-  Check ('nc_get_vara_text',
-    I64 (NcGetVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
-                        ADR (c), ADR (out))))
+  (* the rows the variable holds, as the definition counts them: width
+     its last extent and the rows the product of the others; a rank-1
+     variable also as rows of one character; a scalar one row of one *)
+  shape := VarShape (f, varid) ;
+  rank := LEN (shape) ;
+  IF rank = 0 THEN
+    IF width # 1 THEN RAISE Faults.SizeError (1, width) END ;
+    rows := 1
+  ELSIF shape[rank - 1] = width THEN
+    rows := 1 ;
+    FOR i := 0 TO rank - 2 DO rows := rows * shape[i] END
+  ELSIF rank = 1 AND width = 1 THEN
+    rows := shape[0]
+  ELSE
+    RAISE Faults.SizeError (shape[rank - 1], width)
+  END ;
+  IF row < 0 OR n < 0 OR row + n > rows THEN RAISE Faults.SizeError (rows, row + n) END ;
+  IF n = 0 THEN RETURN END ;
+  (* the start and count are as long as the variable's rank: netCDF
+     reads that many, and two of them answered a rank-1 variable's
+     first character and read past the arrays of a rank-3 one *)
+  IF rank = 0 THEN
+    st := NEW (scratch, I64, 1) ;
+    ct := NEW (scratch, I64, 1) ;
+    st[0] := 0 ; ct[0] := 1
+  ELSE
+    st := NEW (scratch, I64, rank) ;
+    ct := NEW (scratch, I64, rank)
+  END ;
+  IF rank = 1 THEN
+    st[0] := row * width ; ct[0] := n * width
+  ELSIF rank = 2 THEN
+    st[0] := row ; st[1] := 0 ;
+    ct[0] := n ; ct[1] := width
+  END ;
+  IF rank <= 2 THEN
+    s := Extents (st) ;
+    c := Extents (ct) ;
+    Check ('nc_get_vara_text',
+      I64 (NcGetVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
+                          ADR (c), ADR (out)))) ;
+    RETURN
+  END ;
+  (* rank 3 and up: a block of rows need not be one hyperslab, so one
+     row at a time, its outer indices from its number, the last axis
+     varying fastest as in the file *)
+  FOR r := 0 TO n - 1 DO
+    q := row + r ;
+    FOR i := rank - 2 TO 0 BY -1 DO
+      st[i] := q MOD shape[i] ;
+      q := q DIV shape[i] ;
+      ct[i] := 1
+    END ;
+    st[rank - 1] := 0 ;
+    ct[rank - 1] := width ;
+    s := Extents (st) ;
+    c := Extents (ct) ;
+    blk := SLICE (out, r * width, width) ;
+    Check ('nc_get_vara_text',
+      I64 (NcGetVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
+                          ADR (c), ADR (blk))))
+  END
 END GetText ;
 
 PROCEDURE Zeros (n: I64) : SLICE OF I64 =

@@ -26,6 +26,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `Pair expects 2 argument(s), got 1` | a record type named like a call with one value: since 2026-10-05 Pair (...) is the record AGGREGATE, every field in order, and one value does not fill a record of two -- there is no conversion to a record | give every field (Pair (x, y)); conversions are for numeric widths and CHAR | `alias-nonscalar-conversion` |
 | `cannot assign ALL to I64` | ALL is the axis-keeping marker for VIEW and has no value outside one | use ALL only as a VIEW argument; a whole-axis loop is FOR i := 0 TO LEN (g, k) - 1 | `all-outside-a-view` |
 | `G expects 1 argument(s), got 2` | the call passes a different number of arguments from the declaration | read the signature in docs/modules/<M>.md; every parameter is positional and required | `arity-mismatch` |
+| `an ARRAY's count is an integer literal, a CONST or an enumeration, or + - * DIV MOD over them, not ORD ('a') (par 2.2)` | an array's count is fixed when the program is compiled, from integer literals, integer CONSTs and enumerations under + - * DIV MOD; a call, a zero divisor or a CHAR or real CONST is none of those (par 2.2) | write the count as a CONST of its value (CONST Width = 97), or use a SLICE when it is known only at run time | `array-count-form` |
 | `an ARRAY holds at least one element; its count is -3` | an ARRAY's count folds to a constant below 1; until 2026-10-22 the generator refused it as `array count form unsupported yet' (par 2.2.1) | give the count as a constant of at least 1, or use a SLICE when the length is known only at run time | `array-count-not-positive` |
 | `an ARRAY m.Colour OF is indexed by a m.Colour value, not an integer literal` | an ARRAY indexed by an enumeration is indexed BY THE TYPE -- its subscript is a member of that enumeration, and its length is the member count -- so an integer subscript (or a value of some other type) is refused; the compiler proves a[Colour.Red] is in range precisely because a Colour is always one of the members | write the member: a[Colour.Red], not a[0]; that is what makes the array bounds-checked at compile time, with no runtime check and no ordinal to keep in step with the type | `array-enum-index-int` |
 | `cannot assign to P -- P is a PROCEDURE, not a variable` | the target of := names a procedure; a procedure is a declaration, not storage -- until 2026-10-22 a bare one was refused as an unknown name and a qualified one reached the C compiler (par 3 rule 7) | call it (P ()), or hold a procedure value in a variable of procedure type: VAR a : OPT Act ; a := SOME (P) | `assign-to-procedure` |
@@ -68,6 +69,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot DISPOSE the module variable g in a procedure` | a procedure DISPOSEs a module variable: the module owns it, and nothing in the procedure shows that no other name still holds what it points to | DISPOSE it in the module body, or keep the owned value in a local or an OWN parameter | `dispose-module-variable` |
 | `cannot DISPOSE r: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2)` | DISPOSE of a local that nothing in the procedure gives an owned pointer -- only a copy of a field, a pool or a frame allocation reaches it -- so freeing it may free what another name still owns (par 4.2) | DISPOSE the name that took NEW (OWN, T) or the OWN parameter that was moved in; a copy of a field owns nothing | `dispose-not-owned` |
 | `the pool owns p; free the pool` | PTR T IN pool is carved from a pool and the pool frees it as a whole | never DISPOSE a pool-interior pointer; free the pool (par 4.3, docs/pools.md) | `dispose-pool-interior` |
+| `cannot DISPOSE p: nothing here gives it an owned pointer` | DISPOSE of the answer of a call through a procedure value: which body runs is unknown, so the answer may be one of its reference arguments, owned elsewhere (par 4.2) | free the owner the argument came from; a procedure type whose parameters carry no reference answers an object of its own | `dispose-procval-answer` |
 | `cannot DISPOSE through a selector of b: DISPOSE frees a name that owns its pointer, and ownership is not followed into a field (par 4.2)` | DISPOSE through a selector: ownership moved into a record field is not followed there, so the checker cannot see a second DISPOSE of the same object (par 4.2) | keep the owned pointer in a local or an OWN parameter and DISPOSE that name; a pointer moved into a field is not freed by DISPOSE | `dispose-through-field` |
 | `DIV is integer division` | DIV and MOD are integer operators | use / for floats; Math.Fmod for a float remainder | `div-on-float` |
 | `unhandled RAISES ValueRange from Colour conversion` | an integer-to-enumeration conversion, Colour (i) or Mod.Type (i), can turn an integer that names no member into a value, so it RAISES ValueRange -- and a procedure that converts without declaring or handling that failure is refused, the same as I64 (x) on a value that might not fit | add RAISES ValueRange to the signature, or handle it with EXCEPT; the conversion is the checked inverse of ORD, and the exhaustive RAISES accounting reaches it like every other narrowing | `enum-conversion-no-raises` |
@@ -143,6 +145,13 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `argument 1 of Note: borrowed msg is kept by the callee -- declare KEPT msg (par 4.1)` | a borrowed parameter is passed to a parameter the callee declares KEPT, so the caller is retaining it too | declare the caller's own parameter KEPT as well -- the declaration composes upward, exactly as RAISES does (par 4.1, docs/retention.md) | `kept-borrow-arg` |
 | `argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1); give it storage that outlives the call: a string through Text.Keep (pool, s), an allocation through NEW (pool, T)` | a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument | build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1) | `kept-concat-arg` |
 | `argument 2 of Keep: borrowed v is kept by the callee -- declare KEPT v (par 4.1)` | a PROCEDURE is declared inside another procedure's body; the grammar parses it (par 10) and neither checker nor generator supports it -- until 2026-10-08 the first call of it was `unknown procedure' | declare the procedure at module level and hand it what it used of the enclosing procedure as parameters | `kept-constructor-arg` |
+| `argument 1 of Grow: borrowed p is kept by the callee -- declare KEPT p (par 4.1)` | a POOL parameter handed on to a KEPT one: this procedure's caller may have passed a local pool, so the keeping is a retention this procedure declares too (par 4.1) | declare the POOL parameter KEPT, as the callee does | `kept-pool-forward` |
+| `argument 1 of FwdKept: a KEPT parameter cannot take the pool scratch -- it dies with this frame` | a local pool handed to a KEPT POOL parameter that forwards it to another: refused at the first KEPT parameter, however far down the keeping is (par 4.1) | give the first KEPT parameter HEAP or a module's pool | `kept-pool-forward-local` |
+| `argument 1 of Grow: a KEPT parameter cannot take the pool n.pool -- it dies with this frame` | the POOL field of a record reached through a local handed to a KEPT POOL parameter: the rule reads the root, a local, which may die with this frame (par 4.1) | name the pool through a module variable, or use HEAP or a module pool | `kept-pool-in-pooled-local` |
+| `argument 1 of Grow: a KEPT parameter cannot take the pool scratch -- it dies with this frame (par 4.1); give it a pool that outlives the call: HEAP, a module's pool, or a POOL parameter declared KEPT` | a local pool handed to a KEPT POOL parameter: the callee keeps what it allocates there past the call, and the pool dies with this frame (par 4.1) | allocate in HEAP or a module's pool (VAR mpool : POOL), or hand on a POOL parameter declared KEPT | `kept-pool-local` |
+| `argument 1 of Grow: a KEPT parameter cannot take the pool r.pool -- it dies with this frame` | the POOL field of a local record handed to a KEPT POOL parameter: the record and its pool die with this frame (par 4.1) | use a module variable's pool field, or a module pool | `kept-pool-local-field` |
+| `argument 1 of Grow: a KEPT parameter cannot take the pool h.pool -- it dies when h is disposed` | the POOL field of an owned object handed to a KEPT POOL parameter: DISPOSE frees the pool while the callee's state still points into it (par 4.1) | keep what outlives the object in a module pool; use the object's pool only for what dies with it | `kept-pool-owned-field` |
+| `argument 1 of Grow: borrowed o is kept by the callee -- declare KEPT o (par 4.1)` | the POOL field of a VAR parameter handed to a KEPT POOL parameter: the caller's record may be a local whose pool dies first (par 4.1) | declare the VAR parameter KEPT, as for any borrow the callee keeps | `kept-pool-param-field` |
 | `undeclared retention: borrowed p reaches module state -- declare KEPT p (par 4.1)` | a RECORD handed by value whose fields hold references (a STR, a slice, a pointer) is stored in module state, through a VAR parameter or into the answer; since 2026-10-08 a record value counts as the references it holds | declare the parameter KEPT; a record of scalars needs nothing | `kept-record-value` |
 | `undeclared retention: borrowed msg reaches module state -- declare KEPT msg (par 4.1)` | a borrowed parameter is stored somewhere that outlives the call -- module state, the caller's storage, or the answer -- and the signature does not say so | declare the parameter KEPT so every caller can see the retention, or copy the bytes instead of keeping the borrow (par 4.1, docs/retention.md) | `kept-undeclared` |
 | `undeclared retention: borrowed msg (carried by p) reaches module state -- declare KEPT msg (par 4.1)` | a callee answers a VIEW of its argument (the splitter shape, parts[n] := SLICE (s, a, b) ; RETURN parts) and the caller stores that answer where it outlives the frame; since 2026-10-18 the answer CARRIES the borrow, so the retention is the caller to declare and the callee says no KEPT (par 4.1) | declare the parameter KEPT in the procedure that keeps the answer, or keep a copy (Text.Keep) instead of the view | `kept-via-answer` |
@@ -181,6 +190,12 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `OPT value used without IS SOME guard` | an OPT field was read without IS SOME; OPT is traced through fields, not only names | IF r.f IS SOME p THEN ... END, and use p inside (par 2.2) | `opt-through-field` |
 | `argument 1 of Use: p is moved into an OWN parameter and lent as argument 2 of the same call (par 4.2)` | one call hands the same object to an OWN parameter, which may DISPOSE it, and as another argument the callee reads; until 2026-10-21 it compiled and was a use after free (par 4.2) | read what the callee needs out of it before the call, or move it in a separate call after the one that reads it | `own-and-lent` |
 | `cannot move the module variable g into an OWN parameter in a procedure` | a procedure moves a module variable into an OWN parameter, which may free it, while the module body reads it after the call | move it in the module body, or keep the owned value in a local | `own-module-variable` |
+| `argument 1 of Eat: cannot move r into an OWN parameter: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2)` | a name that owns nothing -- a borrowed answer, a copy -- moved into an OWN parameter: the callee frees what the owner still holds (par 4.2) | move the owner itself, or make the object the callee frees with NEW (OWN, T) | `own-move-borrowed-answer` |
+| `argument 1 of Eat: cannot move p into an OWN parameter: nothing here gives it an owned pointer` | the answer of a call through a procedure value moved into an OWN parameter: it may be one of its reference arguments, owned elsewhere (par 4.2) | move the owner the argument came from; a procedure type whose parameters carry no reference answers an object of its own | `own-move-procval-answer` |
+| `argument 1 of Eat: cannot move through a selector of a into an OWN parameter` | an array element moved into an OWN parameter: as through a field, the element still names what the callee frees (par 4.2) | keep the owned pointer in a local or an OWN parameter and move that name; an element is read through, not moved out of | `own-move-through-element` |
+| `argument 1 of Eat: cannot move through a selector of b into an OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)` | a field moved into an OWN parameter: ownership is not followed into a field, so the field still names what the callee frees, and a second move frees it again (par 4.2) | keep the owned pointer in a local or an OWN parameter and move that name; a pointer in a field is read through it, not moved out of it | `own-move-through-field` |
+| `argument 1 of Eat: cannot move through a selector of h into an OWN parameter` | a field reached through a pointer moved into an OWN parameter: the object still names what the callee frees (par 4.2) | move the whole owner (an OWN parameter of the object), or keep the field and read through it | `own-move-through-pointer` |
+| `argument 1 of Eat: cannot move through a selector of b into an OWN parameter` | a field of a VAR parameter moved into an OWN parameter: the caller's record still names what the callee frees (par 4.2) | take the owned pointer as an OWN parameter of this procedure, or leave it in the record and read through it | `own-move-through-var-field` |
 | `unhandled RAISES Overflow from RAISE -- add it to this procedure's RAISES, or handle it: EXCEPT \| Overflow : ...` | the module declares an EXCEPTION named like a predeclared one -- Overflow, IndexError, OutOfMemory -- and raises it undeclared; until 2026-10-21 the exemption of the predeclared three was by bare name and covered it (par 5) | declare it in the RAISES or handle it; or rename the module's exception so it does not read as the predeclared one | `own-overflow-checked` |
 | `cannot pass SLICE OF CHAR where I64 is expected` | a parameter (or a local) has the name of a module CONST and is used as the parameter it is; the refusal shown is an ordinary type error, and the point is that the checker now reads the name as the PARAMETER -- until 2026-10-01 it read it as the constant, so the type error went unseen and the generated C used the parameter | nothing to change in a correct program; give the parameter another name if the shadowing confuses the reader | `param-shadows-const` |
 | `d is declared IN scratch but allocated in p (par 4.3)` | the IN clause of a declaration is the pool rule 2 hands to every callee that grows the object, so it must be the pool the object was allocated in; a buffer grown in the declared pool while the head lives in another dies at the wrong time (par 4.3) | declare the variable IN the pool it is allocated in, or allocate it in the pool it is declared in | `pool-clause-disagrees` |
@@ -234,6 +249,9 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot write through t, which holds the RO parameter r (line 26) (par 2.4)` | a RECORD (or pointer) copied from read-only storage -- an RO parameter, an RO answer, an RO field -- is written THROUGH: through a slice or a pointer one of its fields holds; since 2026-10-08 the copy carries the mark, and the refusal is for a write that lands beyond the copy (writing a field of the copy itself stays legal) | copy the field's storage before writing through it (NEW and a loop), or write the copy's own fields only | `ro-record-copy-written` |
 | `argument 1 of Fill: the RO parameter xs can be lent only to an RO parameter` | an RO parameter, or something reached through one, is passed on to a parameter that is not RO; the callee could write what this procedure promised its own caller not to | declare the callee's parameter RO if it only reads; otherwise this procedure is a mutator too, and its own parameter is not RO (par 2.4) | `ro-relent-writable` |
 | `argument 1 of Fill: the RO variable view can be lent only to an RO parameter` | a VAR RO variable is handed to a SLICE or GRID parameter that is not RO, where the callee could write through it | make the parameter RO, or hand over a writable copy (par 2.4) | `ro-variable-lent-writable` |
+| `SHARED cannot consume p: nothing here gives it an owned pointer` | SHARED (x) of a name that owns nothing: the handle's last DISPOSE frees what the owner still holds (par 4.2) | make the handle from the owner itself, or from NEW (OWN, T) | `shared-borrowed-answer` |
+| `use of q after it was consumed by SHARED` | a name used after SHARED consumed it, the argument written in parentheses (par 4.2) | use the handle SHARED answered, not the name it consumed | `shared-paren-move` |
+| `SHARED cannot consume through a selector of b: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)` | SHARED (x) of a field or an element: SHARED consumes an owned pointer, and the field still names what the last handle frees (par 4.2) | make the handle from a local or an OWN parameter that owns the pointer: SHARED (q), parentheses or not | `shared-through-field` |
 | `signature differs from definition` | the IMPLEMENTATION's procedure heading is not the DEFINITION's, printed canonically (modes, types, RAISES all count) | copy the definition's heading exactly; the IMPLEMENTATION adds only '=' | `signature-differs-from-definition` |
 | `a SLICE of an array no variable holds: the array is gone at the end of the statement -- name it first: a := F (...) ; SLICE (a, ...)` | SLICE over an ARRAY that a call answers (or a field of one): an array is a value, held in a temporary that is gone at the end of the statement, and the slice would point into it (par 2.2.1) | assign the answer to a variable first, a := F (x), and slice the variable; a function answering a SLICE OF T can be sliced as it is | `slice-of-call-array` |
 | `THREAD (Grow): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock` | a THREAD target calls a procedure value and hands it the shared record or a part of it: what the value does there is unseen, and it may allocate in the record pool both threads use | hand the procedure value only what is read out of the record, or give the worker a POOL of its own | `thread-alloc-through-value` |
@@ -242,7 +260,12 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `the value moved in holds a SHARED handle to` | a value moved into a THREAD holds a SHARED handle to a record that is neither a MONITOR nor [SHARABLE]: the starting thread may still hold the other handle and write the same record | mark the record [SHARABLE] if the threads write disjoint parts of it, make it a MONITOR, or hand the worker a copy | `thread-moved-shared-field` |
 | `use of p after it was moved into a THREAD running Work` | a bare owned pointer handed to a THREAD is MOVED: the thread owns it now, and reading or writing it in the caller is a race the language refuses by construction | hand the thread a record it may share -- a MONITOR, or a pool value both sides may read -- or do not touch the owned value again after the THREAD (par 6, par 4.2) | `thread-moves-its-argument` |
 | `THREAD (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE]` | a THREAD is handed a record it does not own -- a pool pointer, a VAR parameter, a module variable -- so both threads hold it, and the record is neither a MONITOR nor marked [SHARABLE] (par 6) | if the threads' writes to the record are disjoint -- a band each, dealt out by a monitor field -- end its declaration END [SHARABLE]; else put what they share in a MONITOR, or move an owned value in | `thread-not-sharable` |
+| `THREAD (Work): cannot move borrowed p into its OWN parameter (par 4.2)` | a borrowed name handed to a THREAD whose target takes its parameter OWN: the target frees what the lender still holds (par 4.2) | take the parameter OWN in this procedure too, or give the target a value parameter | `thread-own-borrow` |
+| `THREAD (Work): cannot move p into its OWN parameter: nothing here gives it an owned pointer` | a name that owns nothing handed to a THREAD whose target takes its parameter OWN: the target frees what the owner still holds (par 4.2) | hand the thread the owner itself, or an object made with NEW (OWN, T) | `thread-own-borrowed-answer` |
+| `THREAD (Work): cannot move through a selector of b into its OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)` | a field or an element handed to a THREAD whose target takes its parameter OWN: the target frees it while the field still names it (par 4.2) | hand the thread a local or an OWN parameter that owns the pointer, or give the target a value parameter to lend to | `thread-own-through-field` |
+| `use of q after it was moved into a THREAD running Work` | a name used after a THREAD took it, the argument written in parentheses (par 4.2) | do not use a name after handing it to a thread; read what is needed before | `thread-paren-move` |
 | `THREAD (Own): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock` | one record handed to several threads in a loop, and the target allocates in its POOL field: the field is shared, not the worker own, and the pool takes no lock | hand each thread its own record (an element of a slice of jobs), or give each worker a POOL of its own | `thread-pool-field-in-loop` |
+| `THREAD (Work): the target takes its m.Job by value, and a thread is handed PTR m.Job` | a thread is handed a pointer; a target whose first parameter is a RECORD taken by value or RO wants the record itself, which only a VAR parameter reaches through the pointer (par 6) | declare the parameter VAR, or of the pointer type | `thread-record-by-value` |
 | `THREAD (Lib.Work): the target must be a procedure of this module, not Lib's -- start it from a procedure declared here (par 6)` | the same refusal where a BINDER of the module's name exists elsewhere in the procedure -- an IS SOME, a CASE arm, a handler -- and the qualified name is outside the statements that binder covers; until 2026-10-08 the shadow test was by subtree and such a name passed as the binder's | IMPORT the module, or rename the binder; a binder is in scope only in the THEN, the arm or the handler that binds it | `thread-target-elsewhere` |
 | `is not total (missing R)` | CASE over a CASE RECORD must name every variant of the selector's own type | add the missing arm; there is no ELSE for variants (par 8) | `totality-uses-selector-type` |
 | `type H refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2)` | a type is a pointer to itself, or two names are each other: there is no record for the recursion to stop at, and until 2026-10-21 --check followed the names until it ran out of stack or for ever (par 2.2) | point to a RECORD that holds the pointer back: P = PTR R ; R = RECORD p : P END | `type-alias-cycle` |
@@ -514,6 +537,29 @@ MODULE m ;
 VAR x : I64 ;
 PROCEDURE G (a: I64) = BEGIN x := a END G ;
 PROCEDURE F () = BEGIN G (1, 2) END F ;
+END m.
+```
+
+### array-count-form
+
+`an ARRAY's count is an integer literal, a CONST or an enumeration, or + - * DIV MOD over them, not ORD ('a') (par 2.2)`
+
+```
+(* A count the generator cannot fold: a call (ORD, MAX, LEN, SIZE,
+   ABS), a literal 0 divisor, a CHAR or real CONST.  Accepted here and
+   refused by the generator as `array count form unsupported yet'
+   until 2026-10-29.  Legal forms first: a literal, a CONST, an
+   expression over them, an enumeration. *)
+MODULE m ;
+CONST N = 4 ;
+TYPE
+  Colour = (Red, Green, Blue) ;
+  A = ARRAY 3 OF I64 ;
+  B = ARRAY N OF I64 ;
+  C = ARRAY 2 * N - (N MOD 3) OF I64 ;
+  D = ARRAY Colour OF I64 ;
+  E = ARRAY ORD ('a') OF I64 ;
+BEGIN
 END m.
 ```
 
@@ -1554,6 +1600,41 @@ MODULE m ;
 TYPE R = RECORD v : I64 END ;
 PROCEDURE F () = VAR pool : POOL ; p : PTR R IN pool ;
 BEGIN p := NEW (pool, R) ; DISPOSE (p) END F ;
+END m.
+```
+
+### dispose-procval-answer
+
+`cannot DISPOSE p: nothing here gives it an owned pointer`
+
+```
+(* A call through a procedure value was taken at its word, its answer
+   owned: `p := fn (h) ; DISPOSE (p)' with fn answering h's field freed
+   what the field still held, a heap-use-after-free at the next read of
+   h.c (2026-10-28).  Nothing is known of which body runs, so its answer
+   is judged by the region walk's sound default: it may be any argument
+   a parameter of its type can carry.  Legal forms first: a procedure
+   value whose parameters carry no reference answers an object of its
+   own. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  H = RECORD c : PTR T END ;
+  MakeT = PROCEDURE (n: I64) : PTR T ;
+  GetT = PROCEDURE (h: PTR H) : PTR T ;
+PROCEDURE Legal (mk: MakeT) =
+VAR p : PTR T ;
+BEGIN
+  p := mk (3) ;
+  DISPOSE (p)
+END Legal ;
+PROCEDURE Free (fn: GetT ; h: PTR H) =
+VAR p : PTR T ;
+BEGIN
+  p := fn (h) ;
+  DISPOSE (p)
+END Free ;
+BEGIN
 END m.
 ```
 
@@ -3326,6 +3407,261 @@ BEGIN
 END m.
 ```
 
+### kept-pool-forward
+
+`argument 1 of Grow: borrowed p is kept by the callee -- declare KEPT p (par 4.1)`
+
+```
+(* kept-pool-local one call away: a POOL parameter handed on to a KEPT
+   one is a retention its own caller must hear of, or `Fwd (scratch)'
+   reaches Grow's module variable through it -- KEPT composes upward
+   for a pool as for a reference (2026-10-28).  Legal forms first: the
+   forwarder declares KEPT. *)
+MODULE m ;
+TYPE Cell = RECORD v : I64 END ;
+VAR last : OPT PTR Cell ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE FwdKept (VAR KEPT p: POOL) =
+BEGIN
+  Grow (p)
+END FwdKept ;
+PROCEDURE Fwd (VAR p: POOL) =
+BEGIN
+  Grow (p)
+END Fwd ;
+BEGIN
+END m.
+```
+
+### kept-pool-forward-local
+
+`argument 1 of FwdKept: a KEPT parameter cannot take the pool scratch -- it dies with this frame`
+
+```
+(* kept-pool-local through a KEPT forwarder: the local pool is refused
+   where it is handed to the first KEPT parameter, however many calls
+   down the keeping happens (2026-10-28).  Legal forms first: the
+   forwarder given the module's pool. *)
+MODULE m ;
+TYPE Cell = RECORD v : I64 END ;
+VAR
+  last : OPT PTR Cell ;
+  mpool : POOL ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE FwdKept (VAR KEPT p: POOL) =
+BEGIN
+  Grow (p)
+END FwdKept ;
+PROCEDURE Legal () =
+BEGIN
+  FwdKept (mpool)
+END Legal ;
+PROCEDURE Fill () =
+VAR scratch : POOL ;
+BEGIN
+  FwdKept (scratch)
+END Fill ;
+BEGIN
+END m.
+```
+
+### kept-pool-in-pooled-local
+
+`argument 1 of Grow: a KEPT parameter cannot take the pool n.pool -- it dies with this frame`
+
+```
+(* kept-pool-local-field with the record in a LOCAL pool: `n : PTR Hold
+   IN scratch', its pool field handed to a KEPT parameter -- an alias of
+   storage the frame's pool frees (2026-10-28).  The rule reads the
+   root, a local, and goes no further: a record in the MODULE's pool
+   reached through a local is refused the same way, conservatively --
+   name the module variable instead. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+VAR last : OPT PTR Cell ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Fill () =
+VAR
+  scratch : POOL ;
+  n : PTR Hold IN scratch ;
+BEGIN
+  n := NEW (scratch, Hold) ;
+  Grow (n.pool)
+END Fill ;
+BEGIN
+END m.
+```
+
+### kept-pool-local
+
+`argument 1 of Grow: a KEPT parameter cannot take the pool scratch -- it dies with this frame (par 4.1); give it a pool that outlives the call: HEAP, a module's pool, or a POOL parameter declared KEPT`
+
+```
+(* `VAR KEPT p: POOL' is the callee's word that it keeps what it
+   allocates there past the call -- the region walk reads such a pool
+   as the module's -- and the caller's side of that word was never
+   read: `Grow (scratch)' with a local pool was accepted by 0.25.1, the
+   module variable left pointing into a freed block, which the next
+   local pool reused (Keeper's 42 read back as 99, 2026-10-28).  KEPT's
+   rule for a reference, applied to the pool by its designator's root.
+   Legal forms first: HEAP, the module's pool, a pool field of a
+   module variable, and a KEPT pool parameter handed on. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+VAR
+  last : OPT PTR Cell ;
+  mpool : POOL ;
+  mh : Hold ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Fwd (VAR KEPT p: POOL) =
+BEGIN
+  Grow (p)
+END Fwd ;
+PROCEDURE Legal () =
+BEGIN
+  Grow (HEAP) ;
+  Grow (mpool) ;
+  Grow (mh.pool) ;
+  Fwd (mpool)
+END Legal ;
+PROCEDURE Fill () =
+VAR scratch : POOL ;
+BEGIN
+  Grow (scratch)
+END Fill ;
+BEGIN
+END m.
+```
+
+### kept-pool-local-field
+
+`argument 1 of Grow: a KEPT parameter cannot take the pool r.pool -- it dies with this frame`
+
+```
+(* kept-pool-local with the pool a FIELD of a local record: the record,
+   and its pool, die with this frame (2026-10-28).  Legal forms first:
+   the same field of a module variable. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+VAR
+  last : OPT PTR Cell ;
+  mh : Hold ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Legal () =
+BEGIN
+  Grow (mh.pool)
+END Legal ;
+PROCEDURE Fill () =
+VAR r : Hold ;
+BEGIN
+  Grow (r.pool)
+END Fill ;
+BEGIN
+END m.
+```
+
+### kept-pool-owned-field
+
+`argument 1 of Grow: a KEPT parameter cannot take the pool h.pool -- it dies when h is disposed`
+
+```
+(* kept-pool-local with the pool a field of an OWNED object: its
+   DISPOSE frees the pool (par 4.3), and the module variable Grow keeps
+   points into it (2026-10-28).  Legal forms first: the owned object's
+   pool used for an allocation that dies with it. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL ; c : OPT PTR Cell END ;
+VAR last : OPT PTR Cell ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Legal () =
+VAR h : PTR Hold ; c : PTR Cell ;
+BEGIN
+  h := NEW (OWN, Hold) ;
+  c := NEW (h.pool, Cell) ;
+  h.c := SOME (c) ;
+  DISPOSE (h)
+END Legal ;
+PROCEDURE Fill () =
+VAR h : PTR Hold ;
+BEGIN
+  h := NEW (OWN, Hold) ;
+  Grow (h.pool) ;
+  DISPOSE (h)
+END Fill ;
+BEGIN
+END m.
+```
+
+### kept-pool-param-field
+
+`argument 1 of Grow: borrowed o is kept by the callee -- declare KEPT o (par 4.1)`
+
+```
+(* kept-pool-forward with the pool a field of a VAR parameter: the
+   caller's record may be a local whose pool dies with the caller's
+   frame, so handing o.pool to a KEPT parameter is a retention of o
+   (2026-10-28).  Legal forms first: o declared KEPT. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+VAR last : OPT PTR Cell ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE FillKept (VAR KEPT o: Hold) =
+BEGIN
+  Grow (o.pool)
+END FillKept ;
+PROCEDURE Fill (VAR o: Hold) =
+BEGIN
+  Grow (o.pool)
+END Fill ;
+BEGIN
+END m.
+```
+
 ### kept-record-value
 
 `undeclared retention: borrowed p reaches module state -- declare KEPT p (par 4.1)`
@@ -4322,6 +4658,235 @@ BEGIN
   g := NEW (OWN, R) ;
   h := NEW (OWN, R) ;
   Eat (h)
+END m.
+```
+
+### own-move-borrowed-answer
+
+`argument 1 of Eat: cannot move r into an OWN parameter: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2)`
+
+```
+(* DISPOSE asked whether a name can own what it points to; the other
+   operations that consume an owner did not: `r := Id (q) ; Eat (r)'
+   freed what q held, refused as `DISPOSE (r)' was (2026-10-28).  Legal
+   forms first: a call that makes the object it answers, moved in. *)
+MODULE m ;
+TYPE T = RECORD v : I64 END ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Id (a: PTR T) : PTR T =
+BEGIN
+  RETURN a
+END Id ;
+PROCEDURE Make () : PTR T =
+VAR q : PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  RETURN q
+END Make ;
+PROCEDURE Legal () =
+VAR r : PTR T ;
+BEGIN
+  r := Make () ;
+  Eat (r)
+END Legal ;
+PROCEDURE Free (q: PTR T) =
+VAR r : PTR T ;
+BEGIN
+  r := Id (q) ;
+  Eat (r)
+END Free ;
+BEGIN
+END m.
+```
+
+### own-move-procval-answer
+
+`argument 1 of Eat: cannot move p into an OWN parameter: nothing here gives it an owned pointer`
+
+```
+(* dispose-procval-answer with an OWN argument for the DISPOSE: a
+   procedure value answering h's field, the answer moved into Eat,
+   which freed what h.c still held (2026-10-28).  Legal forms first: a
+   procedure value with no reference parameter, its answer moved in. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  H = RECORD c : PTR T END ;
+  MakeT = PROCEDURE (n: I64) : PTR T ;
+  GetT = PROCEDURE (h: PTR H) : PTR T ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Legal (mk: MakeT) =
+VAR p : PTR T ;
+BEGIN
+  p := mk (1) ;
+  Eat (p)
+END Legal ;
+PROCEDURE Free (fn: GetT ; h: PTR H) =
+VAR p : PTR T ;
+BEGIN
+  p := fn (h) ;
+  Eat (p)
+END Free ;
+BEGIN
+END m.
+```
+
+### own-move-through-element
+
+`argument 1 of Eat: cannot move through a selector of a into an OWN parameter`
+
+```
+(* own-move-through-field with an ELEMENT: `Eat (a[0])' left a[0]
+   holding what Eat freed (2026-10-28).  Legal forms first: an owned
+   pointer stored into an element and read through it. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  Two = ARRAY 2 OF PTR T ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Legal () : I64 =
+VAR q : PTR T ; a : Two ;
+BEGIN
+  q := NEW (OWN, T) ;
+  a[0] := q ;
+  RETURN a[0].v
+END Legal ;
+PROCEDURE Out () =
+VAR q : PTR T ; a : Two ;
+BEGIN
+  q := NEW (OWN, T) ;
+  a[0] := q ;
+  Eat (a[0])
+END Out ;
+BEGIN
+END m.
+```
+
+### own-move-through-field
+
+`argument 1 of Eat: cannot move through a selector of b into an OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)`
+
+```
+(* An owned pointer moved into a record field was moved OUT of it into
+   an OWN parameter as often as the program liked (2026-10-28):
+   `Eat (b.p) ; Eat (b.p)' freed one object twice, accepted by 0.25.1,
+   because the OWN argument rule looked at a bare name only, where
+   DISPOSE refused any selector.  A move takes a name.  Legal forms
+   first: a move INTO a field, a read through it, a whole owned name
+   moved. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Legal () : I64 =
+VAR q, r : PTR T ; b : B ; k : I64 ;
+BEGIN
+  q := NEW (OWN, T) ;
+  r := NEW (OWN, T) ;
+  b.p := q ;
+  k := b.p.v ;
+  Eat (r) ;
+  RETURN k
+END Legal ;
+PROCEDURE Twice () =
+VAR q : PTR T ; b : B ;
+BEGIN
+  q := NEW (OWN, T) ;
+  b.p := q ;
+  Eat (b.p) ;
+  Eat (b.p)
+END Twice ;
+BEGIN
+END m.
+```
+
+### own-move-through-pointer
+
+`argument 1 of Eat: cannot move through a selector of h into an OWN parameter`
+
+```
+(* own-move-through-field through an owned POINTER: `Eat (h.p)' freed
+   the object h's field still names (2026-10-28).  Legal forms first:
+   the owner moved whole, its field read. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  H = RECORD p : PTR T END ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE EatH (OWN h: PTR H) =
+BEGIN
+  DISPOSE (h)
+END EatH ;
+PROCEDURE Legal () : I64 =
+VAR q : PTR T ; h : PTR H ; k : I64 ;
+BEGIN
+  q := NEW (OWN, T) ;
+  h := NEW (OWN, H) ;
+  h.p := q ;
+  k := h.p.v ;
+  EatH (h) ;
+  RETURN k
+END Legal ;
+PROCEDURE Out () =
+VAR q : PTR T ; h : PTR H ;
+BEGIN
+  q := NEW (OWN, T) ;
+  h := NEW (OWN, H) ;
+  h.p := q ;
+  Eat (h.p) ;
+  DISPOSE (h)
+END Out ;
+BEGIN
+END m.
+```
+
+### own-move-through-var-field
+
+`argument 1 of Eat: cannot move through a selector of b into an OWN parameter`
+
+```
+(* own-move-through-field through a VAR parameter: `Steal (VAR b: B)'
+   moving b.p into Eat freed what the CALLER's record still held -- no
+   use in this procedure shows it (2026-10-28).  Legal forms first: the
+   VAR record's field read, and replaced by a fresh owned pointer. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Legal (VAR b: B) : I64 =
+VAR q : PTR T ; k : I64 ;
+BEGIN
+  k := b.p.v ;
+  q := NEW (OWN, T) ;
+  q.v := k ;
+  b.p := q ;
+  RETURN k
+END Legal ;
+PROCEDURE Steal (VAR b: B) =
+BEGIN
+  Eat (b.p)
+END Steal ;
+BEGIN
 END m.
 ```
 
@@ -5672,6 +6237,104 @@ BEGIN
 END m.
 ```
 
+### shared-borrowed-answer
+
+`SHARED cannot consume p: nothing here gives it an owned pointer`
+
+```
+(* own-move-borrowed-answer with SHARED for the move: `p := Id (q) ; s
+   := SHARED (p) ; DISPOSE (s)' freed q's object through the handle
+   (2026-10-28).  Legal forms first: an owned allocation made SHARED. *)
+MODULE m ;
+TYPE T = RECORD v : I64 END ;
+PROCEDURE Id (a: PTR T) : PTR T =
+BEGIN
+  RETURN a
+END Id ;
+PROCEDURE Legal () =
+VAR p : PTR T ; s : SHARED PTR T ;
+BEGIN
+  p := NEW (OWN, T) ;
+  s := SHARED (p) ;
+  DISPOSE (s)
+END Legal ;
+PROCEDURE Free (q: PTR T) =
+VAR p : PTR T ; s : SHARED PTR T ;
+BEGIN
+  p := Id (q) ;
+  s := SHARED (p) ;
+  DISPOSE (s)
+END Free ;
+BEGIN
+END m.
+```
+
+### shared-paren-move
+
+`use of q after it was consumed by SHARED`
+
+```
+(* `s := SHARED ((q))' consumed q without the M9 checker marking it,
+   since it looked at SHARED's argument without its parentheses and the
+   Pascal twin under them (2026-10-28): the two disagreed, and the M9
+   one let `q.v' read what the handle's DISPOSE freed.  Legal forms
+   first: the parenthesised SHARED, q not used after. *)
+MODULE m ;
+TYPE T = RECORD v : I64 END ;
+PROCEDURE Legal () =
+VAR q : PTR T ; s : SHARED PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  q.v := 1 ;
+  s := SHARED ((q)) ;
+  DISPOSE (s)
+END Legal ;
+PROCEDURE After () : I64 =
+VAR q : PTR T ; s : SHARED PTR T ; k : I64 ;
+BEGIN
+  q := NEW (OWN, T) ;
+  s := SHARED ((q)) ;
+  k := q.v ;
+  DISPOSE (s) ;
+  RETURN k
+END After ;
+BEGIN
+END m.
+```
+
+### shared-through-field
+
+`SHARED cannot consume through a selector of b: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)`
+
+```
+(* SHARED (x) consumes an owned pointer as DISPOSE and an OWN argument
+   do, and it too took a field: `s := SHARED ((b.p)) ; DISPOSE (s)'
+   freed what b.p still held (2026-10-28) -- the parentheses as well,
+   which the Pascal twin looked under and the M9 one did not.  Legal
+   forms first: a whole owned name made SHARED, parenthesised. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Legal () =
+VAR q : PTR T ; s : SHARED PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  s := SHARED ((q)) ;
+  DISPOSE (s)
+END Legal ;
+PROCEDURE Out () =
+VAR q : PTR T ; b : B ; s : SHARED PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  b.p := q ;
+  s := SHARED ((b.p)) ;
+  DISPOSE (s)
+END Out ;
+BEGIN
+END m.
+```
+
 ### signature-differs-from-definition
 
 `signature differs from definition`
@@ -5930,6 +6593,148 @@ BEGIN
 END m.
 ```
 
+### thread-own-borrow
+
+`THREAD (Work): cannot move borrowed p into its OWN parameter (par 4.2)`
+
+```
+(* thread-own-through-field with a BORROW: `THREAD (Work, p)', p a
+   value parameter, was a lend, and Work's DISPOSE freed the caller's
+   object (2026-10-28) -- the call `Work (p)' was refused all along.
+   Legal forms first: the borrow lent to a target that takes a value. *)
+MODULE m ;
+TYPE T = RECORD v : I64 END [SHARABLE] ;
+PROCEDURE Work (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Work ;
+PROCEDURE Look (p: PTR T) =
+VAR k : I64 ;
+BEGIN
+  k := p.v
+END Look ;
+PROCEDURE Legal (p: PTR T) =
+BEGIN
+  THREAD (Look, p)
+END Legal ;
+PROCEDURE Start (p: PTR T) =
+BEGIN
+  THREAD (Work, p)
+END Start ;
+BEGIN
+END m.
+```
+
+### thread-own-borrowed-answer
+
+`THREAD (Work): cannot move p into its OWN parameter: nothing here gives it an owned pointer`
+
+```
+(* own-move-borrowed-answer with a THREAD for the move: the target
+   takes its argument OWN and frees it, and `p := Id (q)' owned nothing
+   to give (2026-10-28).  Legal forms first: an owned allocation handed
+   to the thread. *)
+MODULE m ;
+TYPE T = RECORD v : I64 END [SHARABLE] ;
+PROCEDURE Work (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Work ;
+PROCEDURE Id (a: PTR T) : PTR T =
+BEGIN
+  RETURN a
+END Id ;
+PROCEDURE Legal () =
+VAR p : PTR T ;
+BEGIN
+  p := NEW (OWN, T) ;
+  THREAD (Work, p)
+END Legal ;
+PROCEDURE Start (q: PTR T) =
+VAR p : PTR T ;
+BEGIN
+  p := Id (q) ;
+  THREAD (Work, p)
+END Start ;
+BEGIN
+END m.
+```
+
+### thread-own-through-field
+
+`THREAD (Work): cannot move through a selector of b into its OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2)`
+
+```
+(* A THREAD whose target takes its argument OWN frees it: handed a
+   field, `THREAD (Work, b.p)', it was read as a LEND (only a bare
+   owned name moved), and Work's DISPOSE freed what this thread still
+   held through b.p (2026-10-28).  Legal forms first: a field LENT to a
+   target that takes a value, a whole owned name moved in. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END [SHARABLE] ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Work (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Work ;
+PROCEDURE Look (p: PTR T) =
+VAR k : I64 ;
+BEGIN
+  k := p.v
+END Look ;
+PROCEDURE Legal (b: B) =
+VAR q : PTR T ;
+BEGIN
+  THREAD (Look, b.p) ;
+  q := NEW (OWN, T) ;
+  THREAD (Work, q)
+END Legal ;
+PROCEDURE Out () =
+VAR q : PTR T ; b : B ;
+BEGIN
+  q := NEW (OWN, T) ;
+  b.p := q ;
+  THREAD (Work, b.p)
+END Out ;
+BEGIN
+END m.
+```
+
+### thread-paren-move
+
+`use of q after it was moved into a THREAD running Work`
+
+```
+(* `THREAD (Work, (q))': parenthesised, the owned name was not seen as
+   moved by the M9 checker, where the Pascal twin looked under the
+   parentheses for SHARED and neither did for THREAD (2026-10-28).
+   Legal forms first: the bare hand-off.  The parenthesised one was
+   refused by the generator ("THREAD form unsupported yet") whether or
+   not q is used after, until 2026-10-29 (runfix/ThreadParen). *)
+MODULE m ;
+TYPE T = RECORD v : I64 END [SHARABLE] ;
+PROCEDURE Work (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Work ;
+PROCEDURE Legal () =
+VAR q : PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  THREAD (Work, q)
+END Legal ;
+PROCEDURE After () : I64 =
+VAR q : PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  THREAD (Work, (q)) ;
+  RETURN q.v
+END After ;
+BEGIN
+END m.
+```
+
 ### thread-pool-field-in-loop
 
 `THREAD (Own): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock`
@@ -5994,6 +6799,44 @@ BEGIN
   END
 EXCEPT
 | IndexError : i := 0
+END m.
+```
+
+### thread-record-by-value
+
+`THREAD (Work): the target takes its m.Job by value, and a thread is handed PTR m.Job`
+
+```
+(* A thread is handed a pointer; a target whose parameter is a RECORD
+   reaches it only through VAR, which C passes as the pointer.  A value
+   or RO parameter takes the record itself: accepted by both checkers
+   until 2026-10-29, and the C compiler refused the thread's thunk (the
+   second review's N7, soundfuzz.owed).  Legal forms first: a VAR
+   record and a pointer parameter, each handed a pool pointer. *)
+MODULE m ;
+TYPE Job = RECORD id : I64 END [SHARABLE] ;
+VAR
+  pool : POOL ;
+  q : PTR Job IN pool ;
+PROCEDURE ByVar (VAR j: Job) =
+BEGIN
+  j.id := 1
+END ByVar ;
+PROCEDURE ByPtr (j: PTR Job) =
+VAR n : I64 ;
+BEGIN
+  n := j.id
+END ByPtr ;
+PROCEDURE Work (j: Job) =
+VAR n : I64 ;
+BEGIN
+  n := j.id
+END Work ;
+BEGIN
+  q := NEW (pool, Job) ;
+  THREAD (ByVar, q) ;
+  THREAD (ByPtr, q) ;
+  THREAD (Work, q)
 END m.
 ```
 

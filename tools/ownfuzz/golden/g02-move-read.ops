@@ -1,0 +1,3 @@
+NEW o1
+MOVE o2 o1
+READ o2

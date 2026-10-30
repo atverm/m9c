@@ -1,0 +1,26 @@
+MODULE R4CopyHead ;
+(* R4FieldRowsAlias through the other field, one level: the head the
+   copy took is the caller's literal-backed slice, an element of it
+   replaced.  Accepted by 0.25.1 *)
+IMPORT Io ;
+TYPE
+  Strs = SLICE OF STR ;
+  Table = RECORD head : Strs ; rows : SLICE OF Strs END ;
+PROCEDURE Fill (VAR pool: POOL ; RO other: Table) RAISES IndexError =
+VAR fl : Table ;
+BEGIN
+  fl.head := NEW (pool, STR, 1) ;
+  fl := other ;
+  fl.head[0] := 'z'
+END Fill ;
+VAR
+  pool : POOL ;
+  t : Table ;
+BEGIN
+  t.head := NEW (pool, STR, 1) ;
+  t.head[0] := 'q' ;
+  Fill (pool, t) ;
+  Io.WriteLine (t.head[0])
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END R4CopyHead.

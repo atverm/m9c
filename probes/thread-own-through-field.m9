@@ -1,0 +1,35 @@
+(* EXPECT: THREAD (Work): cannot move through a selector of b into its OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2) *)
+(* A THREAD whose target takes its argument OWN frees it: handed a
+   field, `THREAD (Work, b.p)', it was read as a LEND (only a bare
+   owned name moved), and Work's DISPOSE freed what this thread still
+   held through b.p (2026-10-28).  Legal forms first: a field LENT to a
+   target that takes a value, a whole owned name moved in. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END [SHARABLE] ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Work (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Work ;
+PROCEDURE Look (p: PTR T) =
+VAR k : I64 ;
+BEGIN
+  k := p.v
+END Look ;
+PROCEDURE Legal (b: B) =
+VAR q : PTR T ;
+BEGIN
+  THREAD (Look, b.p) ;
+  q := NEW (OWN, T) ;
+  THREAD (Work, q)
+END Legal ;
+PROCEDURE Out () =
+VAR q : PTR T ; b : B ;
+BEGIN
+  q := NEW (OWN, T) ;
+  b.p := q ;
+  THREAD (Work, b.p)
+END Out ;
+BEGIN
+END m.

@@ -7,7 +7,10 @@
 # 2026-10-26 the second review's (R2*), each accepted by 0.25.0 and
 # unsafe, each to be refused BY THE REGION JUDGEMENT (its text), and
 # the third review's ownership repros (R3Own*), refused by the owner
-# walk beside it, whose text ends the same way.
+# walk beside it, whose text ends the same way; and since 2026-10-28 the
+# ownership probe's field and procedure-value copies (R5Own*), held to
+# the owner walk's text too, so that par 4.2's refusal of the move
+# through a selector is not what keeps them out.
 #
 #   a program in regions.owed must still pass --check AND still fail
 #   under the sanitizers -- an owed line whose program is refused now,
@@ -61,7 +64,7 @@ for f in regions/*.m9; do
     # judgement's own refusal: any refusal used to pass, and 9 of the
     # first review's are refused by an older analysis's text alone
     case $name in
-    R2*|R3Own*|R4*) grep -q ', regions)' "$W/$name.check" ||
+    R2*|R3Own*|R4*|R5Own*) grep -q ', regions)' "$W/$name.check" ||
            { bad "$name is refused, but not by the region judgement:"; sed 's/^/    /' "$W/$name.check" | head -2; } ;;
     esac
   fi

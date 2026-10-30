@@ -76,6 +76,7 @@ int main (void)
     VALUE1 (Atan, atan, x);
     VALUE1 (Floor, floor, x);
     VALUE1 (Ceil, ceil, x);
+    VALUE1 (Round, round, x);
     VALUE1 (Abs, fabs, x);
     VALUE1 (Fabs, fabs, x);
     if (x > 0.0)
@@ -219,6 +220,52 @@ int main (void)
     e3.exc = NULL;
     Math_Min (nan (""), 1.0, &e3);
     ok ("Min of NaN raises ValueRange", e3.exc == &m9_exc_ValueRange);
+  }
+
+  /* Round and Trunc (2026-10-29): Round is libm's round, a half away
+     from zero, at the halves the sweep never meets; Trunc is I64 (x),
+     toward zero, refusing what I64 cannot hold; the F32 twins the
+     same at their width */
+  {
+    m9_state e4 = {0};
+    double half[8] = { 0.5, -0.5, 1.5, -1.5, 2.5, -2.5, 0.49999999999999994, -0.0 };
+    double want[8] = { 1.0, -1.0, 2.0, -2.0, 3.0, -3.0, 0.0, -0.0 };
+    for (i = 0; i < 8; i++)
+    {
+      double got = Math_Round (half[i], &e4);
+      ok ("Round of a half is away from zero, libm's bits",
+          !e4.exc && same (got, want[i]) && same (got, round (half[i])));
+    }
+    ok ("RoundF32 is roundf", Math_RoundF32 (2.5f, &e4) == 3.0f &&
+        Math_RoundF32 (-0.5f, &e4) == roundf (-0.5f) && !e4.exc);
+    ok ("Trunc is toward zero",
+        Math_Trunc (2.7, &e4) == 2 && Math_Trunc (-2.7, &e4) == -2 &&
+        Math_Trunc (-0.5, &e4) == 0 && Math_Trunc (1e18, &e4) == 1000000000000000000LL);
+    ok ("TruncF32 is toward zero",
+        Math_TruncF32 (-3.75f, &e4) == -3 && Math_TruncF32 (3.75f, &e4) == 3);
+    ok ("Round, Trunc and the twins raised nothing", e4.exc == NULL);
+    {
+      double bad[4] = { nan (""), INFINITY, -INFINITY, 1e300 };
+      for (i = 0; i < 4; i++)
+      {
+        e4.exc = NULL;
+        (void) Math_Trunc (bad[i], &e4);
+        ok ("Trunc of NaN, an infinity or beyond I64 raises ValueRange",
+            e4.exc == &m9_exc_ValueRange);
+      }
+      e4.exc = NULL;
+      (void) Math_TruncF32 (nanf (""), &e4);
+      ok ("TruncF32 of NaN raises ValueRange", e4.exc == &m9_exc_ValueRange);
+      e4.exc = NULL;
+      (void) Math_Round (nan (""), &e4);
+      ok ("Round of NaN raises ValueRange", e4.exc == &m9_exc_ValueRange);
+      e4.exc = NULL;
+      (void) Math_RoundF32 (nanf (""), &e4);
+      ok ("RoundF32 of NaN raises ValueRange", e4.exc == &m9_exc_ValueRange);
+      e4.exc = NULL;
+      ok ("Round of an infinity is the infinity",
+          Math_Round (INFINITY, &e4) == INFINITY && !e4.exc);
+    }
   }
 
   printf (failed ? "FAIL (%d of %d checks)\n" : "PASS (%d checks)\n",

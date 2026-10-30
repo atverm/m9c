@@ -1,0 +1,28 @@
+(* EXPECT: argument 1 of Eat: cannot move through a selector of b into an OWN parameter *)
+(* own-move-through-field through a VAR parameter: `Steal (VAR b: B)'
+   moving b.p into Eat freed what the CALLER's record still held -- no
+   use in this procedure shows it (2026-10-28).  Legal forms first: the
+   VAR record's field read, and replaced by a fresh owned pointer. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Legal (VAR b: B) : I64 =
+VAR q : PTR T ; k : I64 ;
+BEGIN
+  k := b.p.v ;
+  q := NEW (OWN, T) ;
+  q.v := k ;
+  b.p := q ;
+  RETURN k
+END Legal ;
+PROCEDURE Steal (VAR b: B) =
+BEGIN
+  Eat (b.p)
+END Steal ;
+BEGIN
+END m.

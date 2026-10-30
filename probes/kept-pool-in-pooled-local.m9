@@ -1,0 +1,28 @@
+(* EXPECT: argument 1 of Grow: a KEPT parameter cannot take the pool n.pool -- it dies with this frame *)
+(* kept-pool-local-field with the record in a LOCAL pool: `n : PTR Hold
+   IN scratch', its pool field handed to a KEPT parameter -- an alias of
+   storage the frame's pool frees (2026-10-28).  The rule reads the
+   root, a local, and goes no further: a record in the MODULE's pool
+   reached through a local is refused the same way, conservatively --
+   name the module variable instead. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+VAR last : OPT PTR Cell ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Fill () =
+VAR
+  scratch : POOL ;
+  n : PTR Hold IN scratch ;
+BEGIN
+  n := NEW (scratch, Hold) ;
+  Grow (n.pool)
+END Fill ;
+BEGIN
+END m.

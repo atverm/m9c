@@ -1,0 +1,15 @@
+MODULE BndClash2 ;
+
+(* refused: the same with the name inside an expression, BndDef's
+   ARRAY 2 * N (8) against this module's ARRAY 2 * N (18) *)
+
+IMPORT BndDef ;
+
+CONST N = 9 ;
+TYPE T2 = ARRAY 2 * N OF I32 ;
+VAR
+  a : T2 ;
+  t : BndDef.Twice ;
+BEGIN
+  a := t
+END BndClash2.

@@ -1,0 +1,8 @@
+verdict: unsafe
+reason: GIVEFIELD frees #1 a second time
+output: 
+trace:
+  o1 = #1
+  b.p = #1
+  GIVEFIELD: #1 freed
+  GIVEFIELD frees #1 a second time

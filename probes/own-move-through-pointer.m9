@@ -1,0 +1,37 @@
+(* EXPECT: argument 1 of Eat: cannot move through a selector of h into an OWN parameter *)
+(* own-move-through-field through an owned POINTER: `Eat (h.p)' freed
+   the object h's field still names (2026-10-28).  Legal forms first:
+   the owner moved whole, its field read. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  H = RECORD p : PTR T END ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE EatH (OWN h: PTR H) =
+BEGIN
+  DISPOSE (h)
+END EatH ;
+PROCEDURE Legal () : I64 =
+VAR q : PTR T ; h : PTR H ; k : I64 ;
+BEGIN
+  q := NEW (OWN, T) ;
+  h := NEW (OWN, H) ;
+  h.p := q ;
+  k := h.p.v ;
+  EatH (h) ;
+  RETURN k
+END Legal ;
+PROCEDURE Out () =
+VAR q : PTR T ; h : PTR H ;
+BEGIN
+  q := NEW (OWN, T) ;
+  h := NEW (OWN, H) ;
+  h.p := q ;
+  Eat (h.p) ;
+  DISPOSE (h)
+END Out ;
+BEGIN
+END m.

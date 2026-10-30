@@ -1,0 +1,28 @@
+(* EXPECT: use of q after it was moved into a THREAD running Work *)
+(* `THREAD (Work, (q))': parenthesised, the owned name was not seen as
+   moved by the M9 checker, where the Pascal twin looked under the
+   parentheses for SHARED and neither did for THREAD (2026-10-28).
+   Legal forms first: the bare hand-off.  The parenthesised one was
+   refused by the generator ("THREAD form unsupported yet") whether or
+   not q is used after, until 2026-10-29 (runfix/ThreadParen). *)
+MODULE m ;
+TYPE T = RECORD v : I64 END [SHARABLE] ;
+PROCEDURE Work (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Work ;
+PROCEDURE Legal () =
+VAR q : PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  THREAD (Work, q)
+END Legal ;
+PROCEDURE After () : I64 =
+VAR q : PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  THREAD (Work, (q)) ;
+  RETURN q.v
+END After ;
+BEGIN
+END m.

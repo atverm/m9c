@@ -1,0 +1,12 @@
+MODULE BndZeroUse ;
+
+(* BndZero.Bad declared here: the generator's error is BndZero.m9:9,
+   which until 2026-10-29 was printed as BndZeroUse.m9:9 -- the
+   importer's file with the exporter's line *)
+
+IMPORT BndZero ;
+
+VAR b : BndZero.Bad ;
+
+BEGIN
+END BndZeroUse.

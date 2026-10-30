@@ -1,0 +1,6 @@
+# P2: a copy of the field outlives its release
+NEW o1
+STORE o1
+LOAD a1
+GIVEFIELD
+READ a1

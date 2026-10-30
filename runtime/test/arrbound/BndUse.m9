@@ -1,0 +1,54 @@
+MODULE BndUse ;
+
+(* every exported array of BndDef and BndMid declared, filled and
+   measured here, beside a CONST N of this module's own that must not
+   be confused with BndDef.N; a field of BndDef.Rec assigned to and
+   from a BndDef.Vec and an array of this module's spelled BndDef.N *)
+
+IMPORT Io, Fmt, BndDef, BndMid ;
+
+CONST N = 9 ;
+TYPE
+  Own = ARRAY N OF I64 ;
+  Mine = ARRAY BndDef.N OF F64 ;
+  Holder = RECORD
+    w : BndDef.Vec ;
+    p : BndDef.Paint
+  END ;
+VAR
+  v : BndDef.Vec ;
+  m : BndDef.Mat ;
+  t : BndDef.Twice ;
+  r : BndDef.Rec ;
+  h : Holder ;
+  a : Mine ;
+  o : Own ;
+  w : BndMid.W ;
+  k : BndMid.Ks ;
+  kk : BndMid.Kk ;
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO BndDef.N - 1 DO v[i] := F64 (i) END ;
+  m[3][2] := 32 ;
+  t[7] := 70 ;
+  BndDef.Fill (r) ;
+  h.w := r.v ;
+  h.p[BndDef.Colour.Blue] := 2.5 ;
+  a := v ;
+  r.v := a ;
+  v := r.v ;
+  o[8] := 1 ;
+  w[3] := 1.5 ;
+  FOR i := 0 TO BndMid.K - 1 DO k[i] := i END ;
+  Io.WriteLine (Fmt.Short (BndDef.Sum (v)) + ' ' + Fmt.I64Str (m[3][2]) + ' ' +
+                Fmt.I64Str (I64 (t[7])) + ' ' + Fmt.I64Str (r.m[3][2]) + ' ' +
+                Fmt.Short (BndDef.Sum (h.w)) + ' ' + Fmt.Short (h.p[BndDef.Colour.Blue]) + ' ' +
+                Fmt.Short (BndDef.Sum (a)))
+  ;
+  Io.WriteLine (Fmt.I64Str (LEN (v)) + ' ' + Fmt.I64Str (LEN (m)) + ' ' +
+                Fmt.I64Str (LEN (m[0])) + ' ' + Fmt.I64Str (LEN (t)) + ' ' +
+                Fmt.I64Str (LEN (h.p)) + ' ' + Fmt.I64Str (LEN (o)) + ' ' +
+                Fmt.I64Str (LEN (w)) + ' ' + Fmt.I64Str (LEN (k)) + ' ' +
+                Fmt.I64Str (LEN (kk)) + ' ' + Fmt.I64Str (LEN (BndMid.tw)) + ' ' +
+                Fmt.I64Str (I64 (BndMid.tw[9])) + ' ' + Fmt.I64Str (BndMid.Total (k)))
+END BndUse.

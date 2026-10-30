@@ -2010,10 +2010,6 @@ m9_sl_m9_sl_CHAR NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid,
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE raw = {0}; (void) raw;
-  m9_sl_U64 s = {0}; (void) s;
-  m9_sl_U64 c = {0}; (void) c;
-  m9_sl_I64 st = {0}; (void) st;
-  m9_sl_I64 ct = {0}; (void) ct;
   m9_sl_m9_sl_CHAR out = {0}; (void) out;
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
@@ -2021,63 +2017,36 @@ m9_sl_m9_sl_CHAR NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid,
     if (err->exc) goto L_ret;
     raw = m9v;
   }
-  { __typeof__(st) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), INT64_C(2), err);
-    if (err->exc) goto L_ret;
-    st = m9v;
-  }
-  { __typeof__(ct) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), INT64_C(2), err);
-    if (err->exc) goto L_ret;
-    ct = m9v;
-  }
-  (*(int64_t *) m9_at (st.p, INT64_C(0), st.len, sizeof (int64_t), err)) = INT64_C(0);
+  NetCDF_GetText (f, varid, INT64_C(0), n, width, raw, err);
   if (err->exc) goto L_ret;
-  (*(int64_t *) m9_at (st.p, INT64_C(1), st.len, sizeof (int64_t), err)) = INT64_C(0);
-  if (err->exc) goto L_ret;
-  (*(int64_t *) m9_at (ct.p, INT64_C(0), ct.len, sizeof (int64_t), err)) = n;
-  if (err->exc) goto L_ret;
-  (*(int64_t *) m9_at (ct.p, INT64_C(1), ct.len, sizeof (int64_t), err)) = width;
-  if (err->exc) goto L_ret;
-  { __typeof__(s) m9v = NetCDF_Extents (st, err);
-    if (err->exc) goto L_ret;
-    s = m9v;
-  }
-  { __typeof__(c) m9v = NetCDF_Extents (ct, err);
-    if (err->exc) goto L_ret;
-    c = m9v;
-  }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(raw).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a63 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(raw).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
-    if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s55, 16 }), m9a63, err);
-  if (err->exc) goto L_ret;
-  }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), n, err);
     if (err->exc) goto L_ret;
     out = m9v;
   }
-  { __typeof__(i) m9t6to;
+  { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t6to = m9_sub_i64 (n, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t6to) for (;;) {
+  if (i <= m9t1to) for (;;) {
     k = width;
     for (;;) {
-      bool m9t7 = ((k > INT64_C(0)) && ((((int64_t)((*(uint8_t *) m9_at (raw.p, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (i, width, err), k, err), INT64_C(1), err), raw.len, sizeof (uint8_t), err))) == INT64_C(0)) || ((int64_t)((*(uint8_t *) m9_at (raw.p, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (i, width, err), k, err), INT64_C(1), err), raw.len, sizeof (uint8_t), err))) == INT64_C(32)))));
+      bool m9t2 = ((k > INT64_C(0)) && ((((int64_t)((*(uint8_t *) m9_at (raw.p, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (i, width, err), k, err), INT64_C(1), err), raw.len, sizeof (uint8_t), err))) == INT64_C(0)) || ((int64_t)((*(uint8_t *) m9_at (raw.p, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (i, width, err), k, err), INT64_C(1), err), raw.len, sizeof (uint8_t), err))) == INT64_C(32)))));
       if (err->exc) goto L_ret;
-      if (!(m9t7)) break;
+      if (!(m9t2)) break;
       { __typeof__(k) m9v = m9_sub_i64 (k, INT64_C(1), err);
         if (err->exc) goto L_ret;
         k = m9v;
       }
     }
-    { __typeof__(({ __auto_type m9t8 = raw; int64_t m9t8a = m9_mul_i64 (i, width, err), m9t8n = k; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9a64 = ({ __auto_type m9t8 = raw; int64_t m9t8a = m9_mul_i64 (i, width, err), m9t8n = k; int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
+    { __typeof__(({ __auto_type m9t3 = raw; int64_t m9t3a = m9_mul_i64 (i, width, err), m9t3n = k; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a63 = ({ __auto_type m9t3 = raw; int64_t m9t3a = m9_mul_i64 (i, width, err), m9t3n = k; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_Chars (pool, m9a64, err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_Chars (pool, m9a63, err);
       if (err->exc) goto L_ret;
       (*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
-    if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   err->res = m9res;
@@ -2102,6 +2071,13 @@ void NetCDF_GetText (NetCDF_File * f, int64_t varid, int64_t row, int64_t n, int
   m9_sl_U64 c = {0}; (void) c;
   m9_sl_I64 st = {0}; (void) st;
   m9_sl_I64 ct = {0}; (void) ct;
+  m9_sl_I64 shape = {0}; (void) shape;
+  m9_sl_BYTE blk = {0}; (void) blk;
+  int64_t rank = 0; (void) rank;
+  int64_t rows = 0; (void) rows;
+  int64_t r = 0; (void) r;
+  int64_t q = 0; (void) q;
+  int64_t i = 0; (void) i;
   bool m9t1 = ((out).len != m9_mul_i64 (n, width, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -2110,35 +2086,172 @@ void NetCDF_GetText (NetCDF_File * f, int64_t varid, int64_t row, int64_t n, int
     m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
-  { __typeof__(st) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), INT64_C(2), err);
+  { __typeof__(shape) m9v = NetCDF_VarShape (f, varid, err);
     if (err->exc) goto L_ret;
-    st = m9v;
+    shape = m9v;
   }
-  { __typeof__(ct) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), INT64_C(2), err);
+  rank = (shape).len;
+  if ((rank == INT64_C(0))) {
+    if ((width != INT64_C(1))) {
+      err->i[0] = INT64_C(1);
+      err->i[1] = width;
+      m9_raise (err, &Faults_SizeError);
+      goto L_ret;
+    }
+    rows = INT64_C(1);
+  } else {
+    bool m9t2 = ((*(int64_t *) m9_at (shape.p, m9_sub_i64 (rank, INT64_C(1), err), shape.len, sizeof (int64_t), err)) == width);
     if (err->exc) goto L_ret;
-    ct = m9v;
+    if (m9t2) {
+      rows = INT64_C(1);
+      { __typeof__(i) m9t3to;
+      i = INT64_C(0);
+      m9t3to = m9_sub_i64 (rank, INT64_C(2), err);
+      if (err->exc) goto L_ret;
+      if (i <= m9t3to) for (;;) {
+        { __typeof__(rows) m9v = m9_mul_i64 (rows, (*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)), err);
+          if (err->exc) goto L_ret;
+          rows = m9v;
+        }
+        if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+        i += 1;
+      } }
+  } else {
+    if (((rank == INT64_C(1)) && (width == INT64_C(1)))) {
+      { __typeof__(rows) m9v = (*(int64_t *) m9_at (shape.p, INT64_C(0), shape.len, sizeof (int64_t), err));
+        if (err->exc) goto L_ret;
+        rows = m9v;
+      }
+  } else {
+    err->i[0] = (*(int64_t *) m9_at (shape.p, m9_sub_i64 (rank, INT64_C(1), err), shape.len, sizeof (int64_t), err));
+    err->i[1] = width;
+    m9_raise (err, &Faults_SizeError);
+    goto L_ret;
+  } } }
+  bool m9t4 = (((row < INT64_C(0)) || (n < INT64_C(0))) || (m9_add_i64 (row, n, err) > rows));
+  if (err->exc) goto L_ret;
+  if (m9t4) {
+    err->i[0] = rows;
+    err->i[1] = m9_add_i64 (row, n, err);
+    m9_raise (err, &Faults_SizeError);
+    goto L_ret;
   }
-  (*(int64_t *) m9_at (st.p, INT64_C(0), st.len, sizeof (int64_t), err)) = row;
-  if (err->exc) goto L_ret;
-  (*(int64_t *) m9_at (st.p, INT64_C(1), st.len, sizeof (int64_t), err)) = INT64_C(0);
-  if (err->exc) goto L_ret;
-  (*(int64_t *) m9_at (ct.p, INT64_C(0), ct.len, sizeof (int64_t), err)) = n;
-  if (err->exc) goto L_ret;
-  (*(int64_t *) m9_at (ct.p, INT64_C(1), ct.len, sizeof (int64_t), err)) = width;
-  if (err->exc) goto L_ret;
-  { __typeof__(s) m9v = NetCDF_Extents (st, err);
+  if ((n == INT64_C(0))) {
+    goto L_ret;
+  }
+  if ((rank == INT64_C(0))) {
+    { __typeof__(st) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      st = m9v;
+    }
+    { __typeof__(ct) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      ct = m9v;
+    }
+    (*(int64_t *) m9_at (st.p, INT64_C(0), st.len, sizeof (int64_t), err)) = INT64_C(0);
     if (err->exc) goto L_ret;
-    s = m9v;
-  }
-  { __typeof__(c) m9v = NetCDF_Extents (ct, err);
+    (*(int64_t *) m9_at (ct.p, INT64_C(0), ct.len, sizeof (int64_t), err)) = INT64_C(1);
     if (err->exc) goto L_ret;
-    c = m9v;
+  } else {
+    { __typeof__(st) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), rank, err);
+      if (err->exc) goto L_ret;
+      st = m9v;
+    }
+    { __typeof__(ct) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), rank, err);
+      if (err->exc) goto L_ret;
+      ct = m9v;
+    }
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t2 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(s).p)); __auto_type m9_fam9t5 = (((void *)(c).p)); __auto_type m9_fam9t6 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6)) m9_gv = nc_get_vara_text (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); m9_gv; }))) m9a65 = (int64_t)(({ __auto_type m9_fam9t2 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(s).p)); __auto_type m9_fam9t5 = (((void *)(c).p)); __auto_type m9_fam9t6 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6)) m9_gv = nc_get_vara_text (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); m9_gv; }));
+  if ((rank == INT64_C(1))) {
+    { __typeof__((*(int64_t *) m9_at (st.p, INT64_C(0), st.len, sizeof (int64_t), err))) m9v = m9_mul_i64 (row, width, err);
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (st.p, INT64_C(0), st.len, sizeof (int64_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+    { __typeof__((*(int64_t *) m9_at (ct.p, INT64_C(0), ct.len, sizeof (int64_t), err))) m9v = m9_mul_i64 (n, width, err);
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (ct.p, INT64_C(0), ct.len, sizeof (int64_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  } else {
+    if ((rank == INT64_C(2))) {
+      (*(int64_t *) m9_at (st.p, INT64_C(0), st.len, sizeof (int64_t), err)) = row;
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (st.p, INT64_C(1), st.len, sizeof (int64_t), err)) = INT64_C(0);
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (ct.p, INT64_C(0), ct.len, sizeof (int64_t), err)) = n;
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (ct.p, INT64_C(1), ct.len, sizeof (int64_t), err)) = width;
+      if (err->exc) goto L_ret;
+  } }
+  if ((rank <= INT64_C(2))) {
+    { __typeof__(s) m9v = NetCDF_Extents (st, err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
+    { __typeof__(c) m9v = NetCDF_Extents (ct, err);
+      if (err->exc) goto L_ret;
+      c = m9v;
+    }
+    { __typeof__((int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(s).p)); __auto_type m9_fam9t8 = (((void *)(c).p)); __auto_type m9_fam9t9 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9)) m9_gv = nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9); m9_mon_leave (m9_gm); m9_gv; }))) m9a64 = (int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(s).p)); __auto_type m9_fam9t8 = (((void *)(c).p)); __auto_type m9_fam9t9 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9)) m9_gv = nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9); m9_mon_leave (m9_gm); m9_gv; }));
+      if (err->exc) goto L_ret;
+    NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s55, 16 }), m9a64, err);
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s56, 16 }), m9a65, err);
+    }
+    goto L_ret;
+  }
+  { __typeof__(r) m9t10to;
+  r = INT64_C(0);
+  m9t10to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  }
+  if (r <= m9t10to) for (;;) {
+    { __typeof__(q) m9v = m9_add_i64 (row, r, err);
+      if (err->exc) goto L_ret;
+      q = m9v;
+    }
+    { __typeof__(i) m9t11to;
+    i = m9_sub_i64 (rank, INT64_C(2), err);
+    m9t11to = INT64_C(0);
+    if (err->exc) goto L_ret;
+    if (i >= m9t11to) for (;;) {
+      { __typeof__((*(int64_t *) m9_at (st.p, i, st.len, sizeof (int64_t), err))) m9v = m9_mod_i64 (q, (*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)), err);
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (st.p, i, st.len, sizeof (int64_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(q) m9v = m9_div_i64 (q, (*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)), err);
+        if (err->exc) goto L_ret;
+        q = m9v;
+      }
+      (*(int64_t *) m9_at (ct.p, i, ct.len, sizeof (int64_t), err)) = INT64_C(1);
+      if (err->exc) goto L_ret;
+      if ((uint64_t) i - (uint64_t) m9t11to < (uint64_t) 1) break;
+      i += -1;
+    } }
+    (*(int64_t *) m9_at (st.p, m9_sub_i64 (rank, INT64_C(1), err), st.len, sizeof (int64_t), err)) = INT64_C(0);
+    if (err->exc) goto L_ret;
+    (*(int64_t *) m9_at (ct.p, m9_sub_i64 (rank, INT64_C(1), err), ct.len, sizeof (int64_t), err)) = width;
+    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = NetCDF_Extents (st, err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
+    { __typeof__(c) m9v = NetCDF_Extents (ct, err);
+      if (err->exc) goto L_ret;
+      c = m9v;
+    }
+    { __typeof__(blk) m9v = ({ __auto_type m9t12 = out; int64_t m9t12a = m9_mul_i64 (r, width, err), m9t12n = width; int64_t m9t12o = m9_chk_slice (m9t12a, m9t12n, m9t12.len, err); (__typeof__(m9t12)){ m9t12.p + m9t12o, err->exc ? 0 : m9t12n }; });
+      if (err->exc) goto L_ret;
+      blk = m9v;
+    }
+    { __typeof__((int64_t)(({ __auto_type m9_fam9t13 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t14 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t15 = (((void *)(s).p)); __auto_type m9_fam9t16 = (((void *)(c).p)); __auto_type m9_fam9t17 = (((void *)(blk).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17)) m9_gv = nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }))) m9a65 = (int64_t)(({ __auto_type m9_fam9t13 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t14 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t15 = (((void *)(s).p)); __auto_type m9_fam9t16 = (((void *)(c).p)); __auto_type m9_fam9t17 = (((void *)(blk).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17)) m9_gv = nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }));
+      if (err->exc) goto L_ret;
+    NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s56, 16 }), m9a65, err);
+    if (err->exc) goto L_ret;
+    }
+    if ((uint64_t) m9t10to - (uint64_t) r < (uint64_t) 1) break;
+    r += 1;
+  } }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);

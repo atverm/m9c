@@ -1,0 +1,43 @@
+MODULE GfFieldRows ;
+
+(* WANT: 3b TIMESTAMP *)
+
+(* oneflux's RoLentRec (item 27's record half, 2026-10-27): GfReturnRows
+   with the rows in a field of a local record, the record RETURNed.  The
+   depth scan followed bare names only, so fl.rows[0][m-1] fell to the
+   flow walk's one contents set; a field path of a local record held by
+   value is followed now. *)
+(* SAFE: the write replaces a slot of a fresh row; the lent text is only read *)
+IMPORT Io, Fmt ;
+TYPE
+  Strs = SLICE OF STR ;
+  Table = RECORD head : Strs ; rows : SLICE OF Strs END ;
+PROCEDURE Fill (VAR pool: POOL ; RO stamps: Strs ; m: I64) : Table RAISES IndexError =
+VAR
+  fl : Table ;
+  row : Strs ;
+  r, i : I64 ;
+BEGIN
+  fl.head := NEW (pool, STR, 1) ;
+  fl.head[0] := 'TIMESTAMP' ;
+  fl.rows := NEW (pool, Strs, LEN (stamps)) ;
+  FOR r := 0 TO LEN (stamps) - 1 DO
+    row := NEW (pool, STR, m) ;
+    FOR i := 0 TO m - 1 DO row[i] := stamps[r] END ;
+    fl.rows[r] := row
+  END ;
+  fl.rows[0][m - 1] := Fmt.I64Str (m) ;
+  RETURN fl
+END Fill ;
+VAR
+  pool : POOL ;
+  s : Strs ;
+  t : Table ;
+BEGIN
+  s := NEW (pool, STR, 2) ;
+  s[0] := 'a' ; s[1] := 'b' ;
+  t := Fill (pool, s, 3) ;
+  Io.WriteLine (t.rows[0][2] + t.rows[1][0] + ' ' + t.head[0])
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END GfFieldRows.

@@ -1,0 +1,33 @@
+(* EXPECT: argument 1 of Grow: a KEPT parameter cannot take the pool h.pool -- it dies when h is disposed *)
+(* kept-pool-local with the pool a field of an OWNED object: its
+   DISPOSE frees the pool (par 4.3), and the module variable Grow keeps
+   points into it (2026-10-28).  Legal forms first: the owned object's
+   pool used for an allocation that dies with it. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL ; c : OPT PTR Cell END ;
+VAR last : OPT PTR Cell ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Legal () =
+VAR h : PTR Hold ; c : PTR Cell ;
+BEGIN
+  h := NEW (OWN, Hold) ;
+  c := NEW (h.pool, Cell) ;
+  h.c := SOME (c) ;
+  DISPOSE (h)
+END Legal ;
+PROCEDURE Fill () =
+VAR h : PTR Hold ;
+BEGIN
+  h := NEW (OWN, Hold) ;
+  Grow (h.pool) ;
+  DISPOSE (h)
+END Fill ;
+BEGIN
+END m.

@@ -1,0 +1,7 @@
+verdict: safe
+reason: 
+output: total 1
+trace:
+  last = #1 in HEAP
+  return: scratch freed
+  body read last #1

@@ -1,0 +1,30 @@
+MODULE R4CopyLoop ;
+(* R4FieldRowsAlias's bypass: the write at the top of a loop body, the
+   whole copy of the RO record at its end -- the second turn writes into
+   the caller's literal.  Accepted by 0.25.1 *)
+IMPORT Io ;
+TYPE
+  Strs = SLICE OF STR ;
+  Table = RECORD head : Strs ; rows : SLICE OF Strs END ;
+PROCEDURE Fill (VAR pool: POOL ; RO other: Table ; n: I64) RAISES IndexError =
+VAR fl : Table ; i : I64 ;
+BEGIN
+  fl.rows := NEW (pool, Strs, 1) ;
+  fl.rows[0] := NEW (pool, STR, 1) ;
+  FOR i := 1 TO n DO
+    fl.rows[0][0] := 'y' ;
+    fl := other
+  END
+END Fill ;
+VAR
+  pool : POOL ;
+  t : Table ;
+BEGIN
+  t.rows := NEW (pool, Strs, 1) ;
+  t.rows[0] := NEW (pool, STR, 1) ;
+  t.rows[0][0] := 'q' ;
+  Fill (pool, t, 2) ;
+  Io.WriteLine (t.rows[0][0])
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END R4CopyLoop.

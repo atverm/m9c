@@ -420,15 +420,28 @@ _(undocumented)_
 ### GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ; n, width: I64) : SLICE OF STR RAISES Error, Faults.SizeError, ValueRange
 
 the reverse of PutChars: an n x width char matrix, each row
-answered as a STR with trailing NULs and blanks removed
+answered as a STR with trailing NULs and blanks removed.
+
+A char variable of ANY rank is read as rows of `width` octets:
+width is its last extent, and its rows are the product of the
+others -- `datetime(time, strlen)' is time rows, a rank-1
+`qc_flag(time)' is ONE row of time characters, a scalar one row
+of one.  A rank-1 variable may also be read as rows of one
+character each (width 1).  n may be fewer rows than the variable
+holds (the first n); any other n or width is Faults.SizeError
+(rows held, rows asked) or (last extent, width).  Until
+2026-10-29 the start and count were always two long: a rank-1
+variable read as one row answered its FIRST character, and a
+rank-3 one read past the arrays.
 
 ### GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ; out: SLICE OF BYTE) RAISES Error, Faults.SizeError, ValueRange
 
 the same matrix in BLOCKS and as OCTETS: `n` rows from `row`,
-into a buffer the caller sized at n * width.  GetChars answers
-STRs and therefore holds the whole variable twice, which a
-400,000-row identifier column cannot afford; this is the form
-for a caller that walks the rows and keeps nothing.
+into a buffer the caller sized at n * width, the rows as GetChars
+counts them.  GetChars answers STRs and therefore holds the whole
+variable twice, which a 400,000-row identifier column cannot
+afford; this is the form for a caller that walks the rows and
+keeps nothing.
 
 ### PutF32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO data: SLICE OF F32) RAISES Error, Faults.SizeError, ValueRange
 

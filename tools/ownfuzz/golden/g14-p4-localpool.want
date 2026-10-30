@@ -1,0 +1,7 @@
+verdict: unsafe
+reason: body reads last reads freed #1
+output: 
+trace:
+  last = #1 in scratch
+  return: scratch freed
+  body reads last reads freed #1

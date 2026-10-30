@@ -1,0 +1,31 @@
+MODULE R5OwnSelfBorrow ;
+(* Found by the ownership fuzzer (2026-10-28), shrunk from 7 operations
+   to 4: an owner kept in module state, then given its own borrowed
+   answer -- `a1 := Id (a1)' -- and disposed.  The owner walk read the
+   assignment as a NEW object for a1 and dropped the old one's escape,
+   so the DISPOSE was accepted and the module body read g freed: a
+   heap-use-after-free under ASan with develop a5d415af and with the
+   three fixes alike.  A value holding the owner's own bit may be its
+   object, and keeps what the walk knew of it. *)
+IMPORT Io, Fmt ;
+TYPE T = RECORD v : I64 END ;
+VAR g : OPT PTR T ;
+PROCEDURE Id (a: PTR T) : PTR T =
+BEGIN
+  RETURN a
+END Id ;
+PROCEDURE Go () =
+VAR a1 : PTR T ;
+BEGIN
+  a1 := NEW (OWN, T) ;
+  a1.v := 1 ;
+  g := SOME (a1) ;
+  a1 := Id (a1) ;
+  DISPOSE (a1)
+END Go ;
+BEGIN
+  Go () ;
+  IF g IS SOME x THEN Io.WriteLine ('g ' + Fmt.I64Str (x.v)) END
+EXCEPT
+| Io.IOError (m) : RETURN
+END R5OwnSelfBorrow.

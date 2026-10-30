@@ -30,13 +30,13 @@ IMPORT Text ;
 CONST
   NLat = 4 ;
   NLon = 5 ;
-  Sections = 3 ;   (* Write, Read, Texts, each counted at its end *)
+  Sections = 4 ;   (* Write, Read, Texts, Chars, each counted at its end *)
 
 VAR
   t : Check.T ;
   pool : POOL ;
   data : SLICE OF F64 ;
-  gridPath, textPath : STR ;   (* per run: two runs at once write two files *)
+  gridPath, textPath, charPath : STR ;   (* per run: two runs at once write two files *)
   ran : I64 ;                  (* sections that reached their end *)
 
 PROCEDURE Fill () =
@@ -49,6 +49,14 @@ BEGIN
     END
   END
 END Fill ;
+
+PROCEDURE One (a: I64) : SLICE OF I64 =
+VAR s : SLICE OF I64 ;
+BEGIN
+  s := NEW (pool, I64, 1) ;
+  s[0] := a ;
+  RETURN s
+END One ;
 
 PROCEDURE Two (a, b: I64) : SLICE OF I64 =
 VAR s : SLICE OF I64 ;
@@ -266,13 +274,87 @@ BEGIN
   ran := ran + 1
 END Texts ;
 
+(* char VARIABLES of rank 1, 2 and 3 read back (2026-10-29): GetChars
+   and GetText built a start and a count two long whatever the rank, so
+   an ObsPack file's rank-1 `qc_flag(time)' read as one row answered its
+   first character, and a rank-3 variable read past the arrays *)
+PROCEDURE Chars () RAISES NetCDF.Error, ValueRange, Faults.SizeError, IndexError =
+VAR
+  f : PTR NetCDF.File IN pool ;
+  d1, d2, d3 : SLICE OF I64 ;
+  dt, dn, ds, vflag, vname, vcode, i, j, want : I64 ;
+  rows : SLICE OF STR ;
+  buf : SLICE OF BYTE ;
+  refused : BOOL ;
+BEGIN
+  f := NetCDF.Create4 (pool, charPath, TRUE) ;
+  dt := NetCDF.DefDim (f, 'time', 5) ;
+  dn := NetCDF.DefDim (f, 'site', 2) ;
+  ds := NetCDF.DefDim (f, 'strlen', 4) ;
+  d1 := NEW (pool, I64, 1) ;
+  d1[0] := dt ;
+  vflag := NetCDF.DefVar (f, 'qc_flag', NetCDF.TypeChar, d1) ;
+  d2 := NEW (pool, I64, 2) ;
+  d2[0] := dt ; d2[1] := ds ;
+  vname := NetCDF.DefVar (f, 'name', NetCDF.TypeChar, d2) ;
+  d3 := NEW (pool, I64, 3) ;
+  d3[0] := dt ; d3[1] := dn ; d3[2] := ds ;
+  vcode := NetCDF.DefVar (f, 'code', NetCDF.TypeChar, d3) ;
+  NetCDF.EndDef (f) ;
+  NetCDF.PutChars (f, vflag, One (0), One (5), 'UUNUU') ;
+  FOR i := 0 TO 4 DO
+    NetCDF.PutChars (f, vname, Two (i, 0), Two (1, 4), 'n' + Fmt.I64Str (i)) ;
+    FOR j := 0 TO 1 DO
+      NetCDF.PutChars (f, vcode, Three (i, j, 0), Three (1, 1, 4), 'c' + Fmt.I64Str (i) + Fmt.I64Str (j))
+    END
+  END ;
+  NetCDF.Close (f) ;
+  f := NetCDF.Open (pool, charPath) ;
+  rows := NetCDF.GetChars (pool, f, vflag, 1, 5) ;
+  Check.EqStr (t, 'GetChars: a rank-1 char variable is ONE row of its length (was its first character)',
+               rows[0], 'UUNUU') ;
+  rows := NetCDF.GetChars (pool, f, vflag, 5, 1) ;
+  Check.EqStr (t, 'GetChars: and still rows of one character, width 1', rows[2], 'N') ;
+  rows := NetCDF.GetChars (pool, f, vname, 5, 4) ;
+  Check.EqStr (t, 'GetChars: rank 2, the last row', rows[4], 'n4') ;
+  rows := NetCDF.GetChars (pool, f, vname, 2, 4) ;
+  Check.EqI64 (t, 'GetChars: rank 2, the first n rows', LEN (rows), 2) ;
+  rows := NetCDF.GetChars (pool, f, vcode, 10, 4) ;
+  Check.EqStr (t, 'GetChars: rank 3, row (1, 1) is row 3', rows[3], 'c11') ;
+  Check.EqStr (t, 'GetChars: rank 3, the last row', rows[9], 'c41') ;
+  buf := NEW (pool, BYTE, 16) ;
+  NetCDF.GetText (f, vcode, 3, 4, 4, buf) ;
+  want := ORD ('3') ;
+  Check.EqI64 (t, 'GetText: rank 3, a block of rows from row 3 across a site boundary (c30 last)',
+               I64 (buf[13]), want) ;
+  refused := FALSE ;
+  BEGIN
+    rows := NetCDF.GetChars (pool, f, vname, 5, 3)
+  EXCEPT
+  | Faults.SizeError (got, w) : refused := got = 4 AND w = 3
+  END ;
+  Check.That (t, 'GetChars: a width other than the last extent is SizeError (4, 3)', refused) ;
+  refused := FALSE ;
+  BEGIN
+    rows := NetCDF.GetChars (pool, f, vname, 6, 4)
+  EXCEPT
+  | Faults.SizeError (got, w) : refused := got = 5 AND w = 6
+  END ;
+  Check.That (t, 'GetChars: more rows than the variable holds is SizeError (5, 6)', refused) ;
+  NetCDF.Close (f) ;
+  Check.That (t, 'the char file removed', Io.Remove (charPath)) ;
+  ran := ran + 1
+END Chars ;
+
 BEGIN
   gridPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-grid.nc') ;
   textPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-text.nc') ;
+  charPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-char.nc') ;
   Fill () ;
   Write () ;
   Read () ;
   Texts () ;
+  Chars () ;
   (* a section cut short did not count itself: a smaller PASS would
      hide the checks that did not run *)
   Check.EqI64 (t, 'every section ran to its end', ran, Sections) ;
@@ -286,5 +368,8 @@ EXCEPT
     Io.Halt (Check.Done (t, 'NetCDF'))
 | ValueRange :
     Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'NetCDF'))
+| IndexError (i, n) :
+    Check.That (t, 'no IndexError escapes', FALSE) ;
     Io.Halt (Check.Done (t, 'NetCDF'))
 END NetCDFTest.

@@ -1,10 +1,10 @@
-REVIEW Math -- 59 procedures with a body, 57 of them functions; 53 headings in a DEFINITION
+REVIEW Math -- 63 procedures with a body, 61 of them functions; 57 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              57
+  functions answering on every path              61
   assignments                                     0
-  arguments                                     144
-  RETURN values                                  64
+  arguments                                     150
+  RETURN values                                  68
   operands of a comparison or an operator        29
   CASE labels                                     0
   THREAD arguments                                0
@@ -25,9 +25,9 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    2   cmath, cmathf
-  foreign procedures                             40
+  foreign procedures                             42
     of them [SERIAL]                              0
-    of them [REENTRANT]                          40
+    of them [REENTRANT]                          42
   THREADs writing STATEFUL state                  0
   ADR sites (C reading or writing M9 storage)     0
     of them filling a descriptor ([FRESH])        0

@@ -1,0 +1,38 @@
+MODULE R4FieldRowsRo ;
+(* GfFieldRows with the write one level deeper, into a character of the
+   text the RO parameter lends -- refused through the field path as
+   through a bare name *)
+IMPORT Io, Fmt ;
+TYPE
+  Strs = SLICE OF STR ;
+  Table = RECORD head : Strs ; rows : SLICE OF Strs END ;
+PROCEDURE Fill (VAR pool: POOL ; RO stamps: Strs ; m: I64) : Table RAISES IndexError =
+VAR
+  fl : Table ;
+  row : Strs ;
+  r, i : I64 ;
+BEGIN
+  fl.head := NEW (pool, STR, 1) ;
+  fl.head[0] := 'TIMESTAMP' ;
+  fl.rows := NEW (pool, Strs, LEN (stamps)) ;
+  FOR r := 0 TO LEN (stamps) - 1 DO
+    row := NEW (pool, STR, m) ;
+    FOR i := 0 TO m - 1 DO row[i] := stamps[r] END ;
+    fl.rows[r] := row
+  END ;
+  fl.rows[0][m - 1] := Fmt.I64Str (m) ;
+  fl.rows[1][0][0] := 'X' ;
+  RETURN fl
+END Fill ;
+VAR
+  pool : POOL ;
+  s : Strs ;
+  t : Table ;
+BEGIN
+  s := NEW (pool, STR, 2) ;
+  s[0] := 'a' ; s[1] := 'b' ;
+  t := Fill (pool, s, 3) ;
+  Io.WriteLine (t.rows[0][2] + t.rows[1][0])
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END R4FieldRowsRo.

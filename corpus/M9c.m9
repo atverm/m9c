@@ -221,7 +221,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.25.1' ;
+  Version = '0.25.2' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -662,6 +662,21 @@ BEGIN
   path := '' ;
   RETURN ''
 END FindModule ;
+
+(* the file a generator error's line is in: main, or the definition of
+   the imported module the generator read it from (Gen.ErrModAt).
+   Until 2026-10-29 every error named main, so an imported type's line
+   was printed under the importer's name *)
+PROCEDURE ErrFile (RO m: UTF ; RO main: UTF) : UTF =
+VAR
+  path, src : UTF ;
+  ok, trusted : BOOL ;
+BEGIN
+  IF Text.BLen (m) = 0 THEN RETURN main END ;
+  src := FindModule (m, path, ok, trusted) ;
+  IF ok THEN RETURN path END ;
+  RETURN Suffix (m, '.m9')
+END ErrFile ;
 
 PROCEDURE IsLoaded (RO name: UTF) : BOOL =
 VAR i : I64 ;
@@ -4130,7 +4145,7 @@ BEGIN
            then cost one inside the tutorial *)
         i := 0 ;
         WHILE i < Gen.Errs () AND i < 8 DO
-          DiagN (Cat (main, ':'), Gen.ErrLineAt (i), ': gen: ',
+          DiagN (Cat (ErrFile (Gen.ErrModAt (i), main), ':'), Gen.ErrLineAt (i), ': gen: ',
                  Gen.ErrMsgAt (i)) ;
           i := i + 1
         END ;

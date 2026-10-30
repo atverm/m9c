@@ -15,7 +15,7 @@ cd "$(dirname "$0")"
 . ./lib/mods.sh
 M9CNEW=$(mktemp -d)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
-    -Wno-unused-parameter -Wno-unused-function \
+    -Wno-unused-parameter -Wno-unused-function $CLANGWARN \
     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
 M9C=$M9CNEW/m9c
 RT=$(cd .. && pwd)

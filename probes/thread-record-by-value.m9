@@ -1,0 +1,32 @@
+(* EXPECT: THREAD (Work): the target takes its m.Job by value, and a thread is handed PTR m.Job *)
+(* A thread is handed a pointer; a target whose parameter is a RECORD
+   reaches it only through VAR, which C passes as the pointer.  A value
+   or RO parameter takes the record itself: accepted by both checkers
+   until 2026-10-29, and the C compiler refused the thread's thunk (the
+   second review's N7, soundfuzz.owed).  Legal forms first: a VAR
+   record and a pointer parameter, each handed a pool pointer. *)
+MODULE m ;
+TYPE Job = RECORD id : I64 END [SHARABLE] ;
+VAR
+  pool : POOL ;
+  q : PTR Job IN pool ;
+PROCEDURE ByVar (VAR j: Job) =
+BEGIN
+  j.id := 1
+END ByVar ;
+PROCEDURE ByPtr (j: PTR Job) =
+VAR n : I64 ;
+BEGIN
+  n := j.id
+END ByPtr ;
+PROCEDURE Work (j: Job) =
+VAR n : I64 ;
+BEGIN
+  n := j.id
+END Work ;
+BEGIN
+  q := NEW (pool, Job) ;
+  THREAD (ByVar, q) ;
+  THREAD (ByPtr, q) ;
+  THREAD (Work, q)
+END m.

@@ -17,6 +17,7 @@ extern double atan (double);
 extern double atan2 (double, double);
 extern double floor (double);
 extern double ceil (double);
+extern double round (double);
 extern double fabs (double);
 extern double erf (double);
 extern double erfc (double);
@@ -37,6 +38,7 @@ extern float atanf (float);
 extern float atan2f (float, float);
 extern float floorf (float);
 extern float ceilf (float);
+extern float roundf (float);
 extern float erff (float);
 extern float erfcf (float);
 extern float fabsf (float);
@@ -541,6 +543,42 @@ L_ret: ;
   return m9ret;
 }
 
+double Math_Round (double x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  Math_Arg (x, err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = Math_Ans ((double)(round (((double)(x)))), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Math_Trunc (double x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  err->res = m9res;
+  m9ret = m9_i64_f64 ((double)(x), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 double Math_Fmod (double x, double y, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -983,6 +1021,42 @@ float Math_CeilF32 (float x, m9_state *err)
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = Math_AnsF32 ((float)(ceilf (((float)(x)))), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+float Math_RoundF32 (float x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  float m9ret = 0;
+  Math_ArgF32 (x, err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = Math_AnsF32 ((float)(roundf (((float)(x)))), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Math_TruncF32 (float x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  err->res = m9res;
+  m9ret = m9_i64_f64 ((double)(x), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;

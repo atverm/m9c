@@ -1,0 +1,30 @@
+MODULE R5OwnFieldCopyThread ;
+(* R5OwnFieldCopy with a THREAD for the move: the target takes its
+   argument OWN and frees it, and `r', copied from the field before, is
+   read after the thread starts (2026-10-28).  Accepted by develop
+   a5d415af; a use after free only when the worker runs first -- a race,
+   and it ran clean under ASan the one time it was run, so this holds
+   the refusal, not a measured fault. *)
+IMPORT Io, Fmt ;
+TYPE
+  T = RECORD v : I64 END [SHARABLE] ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Work (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Work ;
+PROCEDURE Go () : I64 =
+VAR q, r : PTR T ; b : B ;
+BEGIN
+  q := NEW (OWN, T) ;
+  q.v := 10 ;
+  b.p := q ;
+  r := b.p ;
+  THREAD (Work, b.p) ;
+  RETURN r.v
+END Go ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (Go ()))
+EXCEPT
+| Io.IOError (m) : RETURN
+END R5OwnFieldCopyThread.

@@ -1,0 +1,36 @@
+(* EXPECT: argument 1 of Eat: cannot move through a selector of b into an OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2) *)
+(* An owned pointer moved into a record field was moved OUT of it into
+   an OWN parameter as often as the program liked (2026-10-28):
+   `Eat (b.p) ; Eat (b.p)' freed one object twice, accepted by 0.25.1,
+   because the OWN argument rule looked at a bare name only, where
+   DISPOSE refused any selector.  A move takes a name.  Legal forms
+   first: a move INTO a field, a read through it, a whole owned name
+   moved. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Legal () : I64 =
+VAR q, r : PTR T ; b : B ; k : I64 ;
+BEGIN
+  q := NEW (OWN, T) ;
+  r := NEW (OWN, T) ;
+  b.p := q ;
+  k := b.p.v ;
+  Eat (r) ;
+  RETURN k
+END Legal ;
+PROCEDURE Twice () =
+VAR q : PTR T ; b : B ;
+BEGIN
+  q := NEW (OWN, T) ;
+  b.p := q ;
+  Eat (b.p) ;
+  Eat (b.p)
+END Twice ;
+BEGIN
+END m.

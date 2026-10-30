@@ -1,0 +1,26 @@
+(* EXPECT: SHARED cannot consume p: nothing here gives it an owned pointer *)
+(* own-move-borrowed-answer with SHARED for the move: `p := Id (q) ; s
+   := SHARED (p) ; DISPOSE (s)' freed q's object through the handle
+   (2026-10-28).  Legal forms first: an owned allocation made SHARED. *)
+MODULE m ;
+TYPE T = RECORD v : I64 END ;
+PROCEDURE Id (a: PTR T) : PTR T =
+BEGIN
+  RETURN a
+END Id ;
+PROCEDURE Legal () =
+VAR p : PTR T ; s : SHARED PTR T ;
+BEGIN
+  p := NEW (OWN, T) ;
+  s := SHARED (p) ;
+  DISPOSE (s)
+END Legal ;
+PROCEDURE Free (q: PTR T) =
+VAR p : PTR T ; s : SHARED PTR T ;
+BEGIN
+  p := Id (q) ;
+  s := SHARED (p) ;
+  DISPOSE (s)
+END Free ;
+BEGIN
+END m.

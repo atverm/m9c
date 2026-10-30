@@ -115,6 +115,7 @@ m9_sl_UTF8 Gen_CText (m9_state *err);
 int64_t Gen_Errs (m9_state *err);
 int64_t Gen_ErrLineAt (int64_t i, m9_state *err);
 m9_sl_UTF8 Gen_ErrMsgAt (int64_t i, m9_state *err);
+m9_sl_UTF8 Gen_ErrModAt (int64_t i, m9_state *err);
 void Gen_SetIrCheck (bool on, m9_state *err);
 void Gen_SetStrUtf (bool on, m9_state *err);
 m9_sl_UTF8 Gen_IrReport (m9_state *err);

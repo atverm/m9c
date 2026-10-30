@@ -1,0 +1,40 @@
+MODULE R5OwnProcVal ;
+(* A pointer copied out of an owned object's field THROUGH A PROCEDURE
+   VALUE, the owner disposed, the copy read: the call through the value
+   was taken at its word as answering an object of its own, so the copy
+   kept nothing of h, and the read after DISPOSE (h) -- whose pool held
+   the cell -- was accepted by 0.25.1, a heap-use-after-free under ASan
+   (2026-10-28).  The direct call `r := GetC (h)' was refused all along.
+   A procedure value answers what a parameter of its type can carry. *)
+IMPORT Io, Fmt ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Holder = RECORD pool : POOL ; c : OPT PTR Cell END ;
+  GetT = PROCEDURE (h: PTR Holder) : OPT PTR Cell ;
+PROCEDURE Rd (r: OPT PTR Cell) : I64 =
+BEGIN
+  IF r IS SOME c THEN RETURN c.v END ;
+  RETURN 0
+END Rd ;
+PROCEDURE GetC (h: PTR Holder) : OPT PTR Cell =
+BEGIN
+  RETURN h.c
+END GetC ;
+PROCEDURE Go () : I64 =
+VAR h : PTR Holder ; c : PTR Cell ; r : OPT PTR Cell ; f : OPT GetT ;
+BEGIN
+  f := SOME (GetC) ;
+  h := NEW (OWN, Holder) ;
+  c := NEW (h.pool, Cell) ;
+  c.v := 41 ;
+  h.c := SOME (c) ;
+  r := NONE ;
+  IF f IS SOME fn THEN r := fn (h) END ;
+  DISPOSE (h) ;
+  RETURN Rd (r)
+END Go ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (Go ()))
+EXCEPT
+| Io.IOError (m) : RETURN
+END R5OwnProcVal.

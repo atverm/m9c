@@ -1,0 +1,5 @@
+# a borrowed answer moved into an OWN parameter
+NEW o1
+BORROW a1 o1
+GIVE a1
+READ o1

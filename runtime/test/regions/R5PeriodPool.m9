@@ -1,0 +1,37 @@
+MODULE R5PeriodPool ;
+(* OWED (regions.owed): a pool's storage handed back through VAR
+   parameters into module state is not followed.  RStr keeps a copy of
+   s in its POOL parameter and hands it back through VAR dst; Retrieve
+   passes a module variable's field for dst; Period passes its own LOCAL
+   pool, which dies when it returns, and the module body prints the
+   field: a heap-use-after-free under ASan, accepted by every compiler
+   to date.  The region walk's hand-back asks whether a callee hands
+   back an ARGUMENT, not whether it stores what is in its POOL parameter
+   into its VAR parameter -- that summary does not exist.  Written as a
+   repro on 2026-10-28 from the owed entry's description; the KEPT rule
+   for a POOL of that day does not reach it, since no parameter here is
+   KEPT. *)
+IMPORT Io, Text ;
+TYPE
+  Instr = RECORD model : STR END ;
+  St = RECORD instr : ARRAY 1 OF Instr END ;
+VAR st : St ;
+PROCEDURE RStr (VAR pool: POOL ; RO s: STR ; VAR dst: STR) =
+BEGIN
+  dst := Text.Keep (pool, s)
+END RStr ;
+PROCEDURE Retrieve (VAR pool: POOL ; VAR s: St) =
+BEGIN
+  RStr (pool, 'model-a', s.instr[0].model)
+END Retrieve ;
+PROCEDURE Period () =
+VAR ppool : POOL ;
+BEGIN
+  Retrieve (ppool, st)
+END Period ;
+BEGIN
+  Period () ;
+  Io.WriteLine (st.instr[0].model)
+EXCEPT
+| Io.IOError (m) : RETURN
+END R5PeriodPool.

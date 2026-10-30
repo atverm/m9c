@@ -170,6 +170,8 @@ type
     function OctetsArg (e: TNode): TNode;
     function ViewArgOf (vc: TNode; j: Integer): Boolean;
     function PtrBearing (t: TNode; depth: Integer): Boolean;
+    function CarriesPtr (t: TNode; depth: Integer): Boolean;
+    function ParamCarriesPtr (d: TNode; const modn: string; j: Integer): Boolean;
     function ParamSelType (d, e: TNode; const modn: string;
                            out beyond, known: Boolean): TNode;
     function ParamViewBearing (d, e: TNode; const modn: string): Boolean;
@@ -206,6 +208,7 @@ type
     function ExcNotType (const nm: string): Boolean;
     function TypeNowhere (const nm: string): Boolean;
     procedure LocalTypes (body: TNode);
+    function ArrayCountForm (e: TNode): string;
     procedure CheckTypeNode (t: TNode; const ctx: string);
     procedure CheckFieldTypes (fs: TNode; const ctx: string);
     procedure CheckVarTypes (holder: TNode; const ctx: string);
@@ -244,6 +247,7 @@ type
     function AllPayloadless (n: TNode): Boolean;
     function IsTagged (const canon: string): Boolean;
     function EnumConvType (const name: string): string;
+    function BoundText (b: TNode): string;
     function CanonT (t: TNode; depth: Integer): string;
     function ProcSig (pl, rt: TNode; ro: Boolean; rs: TNode;
                       depth: Integer): string;
@@ -1462,6 +1466,70 @@ end;
 
 { can a value of this type carry a pointer?  Gen.HasPtr's twin;
   mirrors Sem.PtrBearing }
+{ can a value of type T hold a POINTER: PtrBearing's walk, a slice or a
+  grid counting only by its element (mirrors Sem.CarriesPtr, 2026-10-28) }
+function TSem.CarriesPtr (t: TNode; depth: Integer): Boolean;
+var
+  r, fs, g, arm, afs, ag : TNode;
+  i, j : Integer;
+begin
+  Result := False;
+  if depth > 8 then Exit;
+  r := ResolveType (t);
+  if r = nil then Exit;
+  case r.kind of
+    nkPtrType, nkSharedType : Result := True;
+    nkOptType, nkSliceType : Result := CarriesPtr (r.kids[0], depth + 1);
+    nkArrayType, nkGridType : Result := CarriesPtr (r.kids[1], depth + 1);
+    nkRecordType, nkMonitorType :
+      begin
+        if r.kind = nkMonitorType then fs := r.kids[0] else fs := r.kids[1];
+        if fs = nil then Exit;
+        for i := 0 to High (fs.kids) do
+        begin
+          g := fs.kids[i];
+          if (g <> nil) and CarriesPtr (g.kids[1], depth + 1) then Exit (True);
+        end;
+      end;
+    nkCaseRecordType :
+      for i := 0 to High (r.kids) do
+      begin
+        arm := r.kids[i];
+        if arm = nil then continue;
+        afs := arm.kids[0];
+        if afs = nil then continue;
+        for j := 0 to High (afs.kids) do
+        begin
+          ag := afs.kids[j];
+          if (ag <> nil) and CarriesPtr (ag.kids[1], depth + 1) then Exit (True);
+        end;
+      end;
+  end;
+end;
+
+{ can the J-th parameter of D, of module MODN, hold a pointer?  Mirrors
+  Sem.ParamCarriesPtr }
+function TSem.ParamCarriesPtr (d: TNode; const modn: string; j: Integer): Boolean;
+var g, k : Integer; was : string;
+begin
+  Result := False;
+  k := 0;
+  if d.kids[0] = nil then Exit;
+  for g := 0 to High (d.kids[0].kids) do
+    if (d.kids[0].kids[g] <> nil) and (d.kids[0].kids[g].kids[0] <> nil) then
+    begin
+      if j < k + Length (d.kids[0].kids[g].kids[0].kids) then
+      begin
+        was := canonCtx;
+        canonCtx := modn;
+        Result := CarriesPtr (d.kids[0].kids[g].kids[1], 0);
+        canonCtx := was;
+        Exit;
+      end;
+      Inc (k, Length (d.kids[0].kids[g].kids[0].kids));
+    end;
+end;
+
 function TSem.PtrBearing (t: TNode; depth: Integer): Boolean;
 var
   r, fs, g, arm, afs, ag : TNode;
@@ -1803,7 +1871,10 @@ begin
       while (j < n) and not Result do
       begin
         nm := ParamNameAt (pr.body, j);
-        if (nm <> '') and not ParamOwnAt (pr.body, j) then
+        { only a parameter that can hold a pointer can BE the pointer
+          answered (mirrors Sem.AnswersBorrowAny, 2026-10-28) }
+        if (nm <> '') and not ParamOwnAt (pr.body, j) and
+           ParamCarriesPtr (pr.body, pr.modName, j) then
           Result := ViewEvidence (pr.body.kids[4], pr.body, pr.modName, nm) or
                     ReturnBorrows (pr.body.kids[4], nm);
         Inc (j);
@@ -2571,6 +2642,56 @@ begin
     (nm = 'OutOfMemory') or (nm = 'ValueRange');
 end;
 
+{ Sem.ArrayCountForm: the part of an array count outside its grammar
+  (a literal, a name, parentheses, unary minus, + - * DIV MOD, never by
+  a literal 0); '' when it is in it (2026-10-29) }
+function TSem.ArrayCountForm (e: TNode): string;
+var v : Int64; ch : Boolean; r : string; mi : TModuleInfo; j : Integer;
+begin
+  Result := '';
+  if e = nil then Exit (ExprText (e));
+  case e.kind of
+    nkInt : Exit ('');
+    nkDesignator :
+      begin
+        { a CONST named is an integer one (mirrors Sem) }
+        if Length (e.kids) = 0 then
+        begin
+          if (constMap.IndexOfName (e.a) >= 0) and (constMap.Values[e.a] <> '<int>') then
+            Exit (ExprText (e));
+          Exit ('');
+        end;
+        if (Length (e.kids) = 1) and (e.kids[0] <> nil) and
+           (e.kids[0].kind = nkSelField) then
+        begin
+          mi := FindMod (e.a);
+          if mi <> nil then
+            for j := 0 to High (mi.cnNames) do
+              if (mi.cnNames[j] = e.kids[0].a) and (mi.cnTypes[j] <> '<int>') then
+                Exit (ExprText (e));
+          Exit ('');
+        end;
+        Exit (ExprText (e));
+      end;
+    nkParen : Exit (ArrayCountForm (e.kids[0]));
+    nkUn : if e.a = '-' then Exit (ArrayCountForm (e.kids[0]));
+    nkBin :
+      if (Length (e.kids) = 2) and ((e.a = '+') or (e.a = '-') or (e.a = '*') or
+         (e.a = 'DIV') or (e.a = 'MOD')) then
+      begin
+        r := ArrayCountForm (e.kids[0]);
+        if r <> '' then Exit (r);
+        r := ArrayCountForm (e.kids[1]);
+        if r <> '' then Exit (r);
+        if ((e.a = 'DIV') or (e.a = 'MOD')) and
+           ScalarConst (e.kids[1], v, ch) and not ch and (v = 0) then
+          Exit (ExprText (e));
+        Exit ('');
+      end;
+  end;
+  Result := ExprText (e);
+end;
+
 procedure TSem.CheckTypeNode (t: TNode; const ctx: string);
 { every qualident reachable through PTR, OPT, SHARED, SLICE, ARRAY,
   GRID and the fields of a record, monitor or case record }
@@ -2623,7 +2744,10 @@ begin
         cv := 1; cch := False;
         if ScalarConst (t.kids[0], cv, cch) and not cch and (cv < 1) then
           ErrN (t, ctx, 'an ARRAY holds at least one element; its count is ' +
-            ExprText (t.kids[0]));
+            ExprText (t.kids[0]))
+        else if ArrayCountForm (t.kids[0]) <> '' then
+          ErrN (t, ctx, 'an ARRAY''s count is an integer literal, a CONST or an enumeration, or + - * DIV MOD over them, not ' +
+            ArrayCountForm (t.kids[0]) + ' (par 2.2)');
         if IsBareProc (t.kids[1]) then
           ErrN (t, ctx, 'a slice or array of procedure values is not in the language yet (par 2.2.3)');
       end;
@@ -3467,6 +3591,52 @@ begin
   Result := (r <> nil) and (r.kind = nkProcType);
 end;
 
+{ Sem.BoundText: an array bound read in the declaration of another
+  module, its bare names that module declares -- a CONST, a type -- as
+  `Mod.N', through parentheses and operators (Sem.BoundQual).  The
+  synthetic nodes are never freed, as QualifiedIn's are not. }
+function TSem.BoundText (b: TNode): string;
+var mi : TModuleInfo;
+
+  function Qual (e: TNode): TNode;
+  var d, sf : TNode; j : Integer; found : Boolean;
+  begin
+    Result := e;
+    if e = nil then Exit;
+    if (e.kind = nkDesignator) and (Length (e.kids) = 0) then
+    begin
+      found := mi.FindType (e.a) <> nil;
+      for j := 0 to High (mi.cnNames) do
+        if mi.cnNames[j] = e.a then found := True;
+      if not found then Exit;
+      d := TNode.Create (nkDesignator);
+      d.line := e.line; d.col := e.col;
+      d.a := canonCtx;
+      sf := TNode.Create (nkSelField);
+      sf.line := e.line; sf.col := e.col;
+      sf.a := e.a;
+      d.Add (sf);
+      Exit (d);
+    end;
+    if (e.kind = nkParen) or (e.kind = nkUn) or (e.kind = nkBin) then
+    begin
+      d := TNode.Create (e.kind);
+      d.line := e.line; d.col := e.col;
+      d.a := e.a;
+      for j := 0 to High (e.kids) do d.Add (Qual (e.kids[j]));
+      Exit (d);
+    end;
+  end;
+
+begin
+  if (canonCtx <> '') and (canonCtx <> curMod) then
+  begin
+    mi := FindMod (canonCtx);
+    if mi <> nil then Exit (ExprText (Qual (b)));
+  end;
+  Result := ExprText (b);
+end;
+
 function TSem.CanonT (t: TNode; depth: Integer): string;
 var s : string;
 begin
@@ -3523,7 +3693,7 @@ begin
       begin
         s := CanonT (t.kids[1], depth + 1);
         if s <> '' then
-          Result := 'ARRAY ' + ExprText (t.kids[0]) + ' OF ' + s;
+          Result := 'ARRAY ' + BoundText (t.kids[0]) + ' OF ' + s;
       end;
     nkGridType :
       begin
@@ -4676,8 +4846,32 @@ var
 
   { DISPOSE frees only a name that may OWN what it holds (mirrors
     Sem.OwnFedSeed, 2026-10-10) }
+  { is the callee DN a procedure value -- a parameter or an IS SOME
+    binder of a procedure type?  0 when not; 1 when no parameter of the
+    type can carry a reference; 2 when one can.  Mirrors Sem.ProcValKind
+    (2026-10-28). }
+  function ProcValKind (dn: TNode): Integer;
+  var sty, ptn, pl : TNode; g : Integer; was : string;
+  begin
+    Result := 0;
+    if Length (dn.kids) > 0 then Exit;
+    sty := ScopeType (dn.a);
+    if sty = nil then Exit;
+    ptn := ResolveType (sty);
+    if (ptn = nil) or (ptn.kind <> nkProcType) then Exit;
+    Result := 1;
+    was := canonCtx;
+    if resolvedIn <> '' then canonCtx := resolvedIn;
+    pl := ptn.kids[0];
+    if pl <> nil then
+      for g := 0 to High (pl.kids) do
+        if (pl.kids[g] <> nil) and PtrBearing (pl.kids[g].kids[1], 0) then
+          Result := 2;
+    canonCtx := was;
+  end;
+
   function OwnFedBy (r: TNode): Boolean;
-  var pr : TProcInfo;
+  var pr : TProcInfo; pvk : Integer;
   begin
     Result := False;
     while (r <> nil) and (r.kind = nkParen) do r := r.kids[0];
@@ -4690,15 +4884,31 @@ var
     else if r.kind = nkCallExpr then
     begin
       { a call's answer owns, unless the callee answers what it was
-        lent (Sem.OwnFedBy) }
+        lent (Sem.OwnFedBy); a procedure value answers what a parameter
+        of its type can carry (Sem.ProcValKind, 2026-10-28) }
       Result := True;
       if (r.kids[0] <> nil) and (r.kids[0].kind = nkDesignator) then
+      begin
+        pvk := ProcValKind (r.kids[0]);
+        if pvk > 0 then Exit (pvk = 1);
         if LookupProcInfo (CallName (r.kids[0]), pr) and (pr.foreign = '') then
           Result := not AnswersBorrowAny (pr.modName + '.' + pr.name, pr);
+      end;
     end
     else if (r.kind = nkDesignator) and (Length (r.kids) = 0) then
       Result := (ScopeMode (r.a) = 'o') or (OwnedCandKind (r.a) = 2) or
                 (ownFed.IndexOf (r.a) >= 0);
+  end;
+
+  { a name that cannot own what it points to: DISPOSE's refusal, asked
+    by every operation that consumes an owner.  Mirrors Sem.OwnsNothing
+    (2026-10-28). }
+  function OwnsNothing (const nm: string): Boolean;
+  begin
+    Result := ((ScopeMode (nm) = 'l') or (ownModule and (ScopeMode (nm) = 'm'))) and
+              (OwnedCandKind (nm) = 1) and
+              (fval.IndexOf (nm) < 0) and
+              (ownFed.IndexOf (nm) < 0);
   end;
 
   function OwnFedWalk (e: TNode): Boolean;
@@ -6055,6 +6265,39 @@ var
       EscTarget (aroot, '<call>');
   end;
 
+  { par 4.1 for a POOL handed to a KEPT parameter: KeptRoot's rule
+    applied to the pool by the root of its designator.  HEAP and a
+    module's pools outlive the callee's state; a pool reached from a
+    parameter is a borrow the caller declares KEPT in turn; a local
+    pool, or a pool field of a local, a binder or an owned object, is
+    refused.  Mirrors Sem.KeptPool (2026-10-28). }
+  procedure KeptPool (site: TNode; const ctx, name: string; k: Integer;
+                      an: TNode);
+  var a : TNode; amode, why : string;
+  begin
+    a := StripParens (an);
+    if (a = nil) or (a.kind <> nkDesignator) then Exit;
+    if (a.a = 'HEAP') and (Length (a.kids) = 0) then Exit;
+    amode := ScopeMode (a.a);
+    if (amode = '') or (amode = 'm') then Exit;
+    if (amode = 'p') or (amode = 'v') or (amode = 'r') then
+    begin
+      KeptRoot (site, ctx, name, k, a.a);
+      Exit;
+    end;
+    if (amode = 'o') or (OwnedCandKind (a.a) > 0) then
+      why := 'it dies when ' + a.a + ' is disposed'
+    else if amode = 'b' then
+      why := 'where it lives is not known here'
+    else
+      why := 'it dies with this frame';
+    ErrN (site, ctx, Format (
+      'argument %d of %s: a KEPT parameter cannot take the pool %s -- %s' +
+      ' (par 4.1); give it a pool that outlives the call: HEAP, a module''s' +
+      ' pool, or a POOL parameter declared KEPT',
+      [k + 1, name, DesigName (a), why]));
+  end;
+
   { does this designator's declared base type resolve to a pointer? }
   function BaseIsPtr (d: TNode): Boolean;
   var res : TNode;
@@ -6718,6 +6961,16 @@ var
               if (grp.f1 or grp.f2) and (aNode[k].kind = nkDesignator)
                  and (varParams.IndexOf (aNode[k].a) >= 0) then
                 varWritten.Add (aNode[k].a);
+              { a move takes a name, as DISPOSE does: ownership is not
+                followed into a field or an element (mirrors Sem.CheckArg,
+                2026-10-28) }
+              if grp.f2 and (aNode[k].kind = nkDesignator) and
+                 (Length (aNode[k].kids) > 0) then
+                ErrN (site, ctx, Format (
+                  'argument %d of %s: cannot move through a selector of %s into ' +
+                  'an OWN parameter: a move takes a name that owns its pointer, and ' +
+                  'ownership is not followed into a field or an element (par 4.2)',
+                  [k + 1, name, aNode[k].a]));
               { an OWN parameter MOVES its argument (par 4.2) }
               if grp.f2 and (aNode[k].kind = nkDesignator) and
                  (Length (aNode[k].kids) = 0) then
@@ -6743,6 +6996,12 @@ var
                     'argument %d of %s: cannot move the module variable %s into an OWN parameter in a procedure: ' +
                     'the module owns it, and its body reads it after the call -- move it in the module body, or keep the owned value in a local (par 4.2)',
                     [k + 1, name, aNode[k].a]))
+                else if OwnsNothing (aNode[k].a) then
+                  ErrN (site, ctx, Format (
+                    'argument %d of %s: cannot move %s into an OWN parameter: ' +
+                    'nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in ' +
+                    'or a call that does not answer what it was lent does (par 4.2)',
+                    [k + 1, name, aNode[k].a]))
                 else
                 begin
                   ares := ResolveType (ScopeType (aNode[k].a));
@@ -6765,7 +7024,9 @@ var
                 (frame storage, par 2.3) is refused outright, and a
                 borrow is a retention the CALLER must declare in
                 turn. }
-              if grp.f4 then
+              if grp.f4 and (pTy = 'POOL') then
+                KeptPool (site, ctx, name, k, aNode[k])
+              else if grp.f4 then
               begin
                 { a concatenation, a frame allocation, or a name
                   holding either }
@@ -7226,6 +7487,12 @@ var
           if StartsWithS (t, 'PTR ') then Result := 'SHARED ' + t;
           { SHARED consumes the owned pointer (par 4.2) }
           inr := StripParens (e.kids[0]);
+          { a name, as DISPOSE takes one (mirrors Sem, 2026-10-28) }
+          if (inr <> nil) and (inr.kind = nkDesignator) and
+             (Length (inr.kids) > 0) and StartsWithS (t, 'PTR ') then
+            ErrN (e, ctx, 'SHARED cannot consume through a selector of ' + inr.a +
+              ': a move takes a name that owns its pointer, and ownership is not ' +
+              'followed into a field or an element (par 4.2)');
           if (inr <> nil) and (inr.kind = nkDesignator) and
              (Length (inr.kids) = 0) and StartsWithS (t, 'PTR ') then
           begin
@@ -7238,6 +7505,10 @@ var
                 frame: only NEW (OWN, T) can become SHARED }
               ErrN (e, ctx, 'SHARED needs an OWN allocation; ' +
                 inr.a + ' lives in the frame (par 4.2)')
+            else if OwnsNothing (inr.a) then
+              ErrN (e, ctx, 'SHARED cannot consume ' + inr.a +
+                ': nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in ' +
+                'or a call that does not answer what it was lent does (par 4.2)')
             else if OwnedCandKind (inr.a) = 1 then
               OwnMark (inr.a, 'consumed by SHARED', e);
           end;
@@ -7949,6 +8220,9 @@ var
     labelsVariant, hasElse, beyond, haveSelVi : Boolean;
     headOk : Boolean;                { FOR IN: the head refused nothing }
     tmoved : Boolean;                { THREAD: its argument was moved }
+    townT : Boolean;                 { THREAD: the target's parameter is OWN }
+    tvarT : Boolean;                 { ... and VAR }
+    targ : TNode;                    { THREAD: the argument under its parentheses }
     sw : string;                     { THREAD: the type it shares }
     vi, selVi : TVariantInfo;
     haveVi : Boolean;
@@ -8579,35 +8853,79 @@ var
                 ' to a thread -- it dies with this frame; allocate it' +
                 ' with OWN (par 4.3)');
             tpTy := '';
+            townT := False;
+            tvarT := False;
             if LookupProcInfo (tname, tpr) then
             begin
               canonCtx := tpr.modName;
               tpl := tpr.node.kids[0];
               if (tpl <> nil) and (Length (tpl.kids) > 0) then
+              begin
                 tpTy := CanonT (tpl.kids[0].kids[1], 0);
+                townT := tpl.kids[0].f2;
+                tvarT := tpl.kids[0].f1;
+              end;
               canonCtx := '';
+            end;
+            { a target whose parameter is OWN takes its argument as a
+              call to an OWN parameter does (mirrors Sem.ThreadOwnArg,
+              2026-10-28) }
+            targ := StripParens (st.kids[1]);
+            if townT and (targ <> nil) and (targ.kind = nkDesignator) then
+            begin
+              tamode := ScopeMode (targ.a);
+              if Length (targ.kids) > 0 then
+                ErrN (st, ctx, 'THREAD (' + tname + '): cannot move through a selector of ' + targ.a +
+                  ' into its OWN parameter: a move takes a name that owns its pointer, and ' +
+                  'ownership is not followed into a field or an element (par 4.2)')
+              else if (tamode = 'p') or (tamode = 'v') or (tamode = 'b') or (tamode = 'r') then
+                ErrN (st, ctx, 'THREAD (' + tname + '): cannot move borrowed ' + targ.a +
+                  ' into its OWN parameter (par 4.2)')
+              else if (tamode = 'm') and not ownModule and
+                      (ResolveType (ScopeType (targ.a)) <> nil) and
+                      (((ResolveType (ScopeType (targ.a)).kind = nkPtrType) and
+                        (ResolveType (ScopeType (targ.a)).kids[1] = nil)) or
+                       (ResolveType (ScopeType (targ.a)).kind = nkSharedType)) then
+                ErrN (st, ctx, 'THREAD (' + tname + '): cannot move the module variable ' + targ.a +
+                  ' into its OWN parameter in a procedure: the module owns it, and its body reads it after the call -- move it in the module body, or keep the owned value in a local (par 4.2)')
+              else if OwnsNothing (targ.a) then
+                ErrN (st, ctx, 'THREAD (' + tname + '): cannot move ' + targ.a +
+                  ' into its OWN parameter: nothing here gives it an owned pointer -- only NEW (OWN, T), ' +
+                  'an owned name moved in or a call that does not answer what it was lent does (par 4.2)')
+              else
+              begin
+                tares := ResolveType (ScopeType (targ.a));
+                if (tares <> nil) and (tares.kind = nkPtrType) and (tares.kids[1] <> nil) then
+                  ErrN (st, ctx, 'THREAD (' + tname + '): the pool owns ' + targ.a + ' (par 4.3)');
+              end;
             end;
             if (tpTy <> '') and (taTy <> '') then
               if not (Compat (tpTy, taTy) or Compat ('PTR ' + tpTy, taTy) or
                       Compat ('SHARED PTR ' + tpTy, taTy)) then
                 ErrN (st, ctx, Format (
                   'THREAD (%s): cannot pass %s where %s is expected',
-                  [tname, TyName (taTy), TyName (tpTy)]));
-            if (st.kids[1].kind = nkDesignator) and
-               (Length (st.kids[1].kids) = 0) then
+                  [tname, TyName (taTy), TyName (tpTy)]))
+              { the pointer reaches the record only through a VAR
+                parameter (mirrors Sem.CheckThread, 2026-10-29) }
+              else if not tvarT and not Compat (tpTy, taTy) then
+                ErrN (st, ctx, 'THREAD (' + tname + '): the target takes its ' +
+                  TyName (tpTy) + ' by value, and a thread is handed ' + TyName (taTy) +
+                  ' -- declare the parameter VAR, or of type ' + TyName (taTy) + ' (par 6)');
+            if (targ <> nil) and (targ.kind = nkDesignator) and
+               (Length (targ.kids) = 0) then
             begin
-              tamode := ScopeMode (st.kids[1].a);
+              tamode := ScopeMode (targ.a);
               if not ((tamode = 'p') or (tamode = 'v') or
                       (tamode = 'b') or (tamode = 'r')) then
               begin
-                tares := ResolveType (ScopeType (st.kids[1].a));
+                tares := ResolveType (ScopeType (targ.a));
                 if (tares <> nil) and (tares.kind = nkPtrType) and
                    (tares.kids[1] = nil) and
-                   (OwnedCandKind (st.kids[1].a) > 0) and
-                   (fval.IndexOf (st.kids[1].a) < 0) and
-                   (pval.IndexOf (st.kids[1].a) < 0) then
+                   (OwnedCandKind (targ.a) > 0) and
+                   (fval.IndexOf (targ.a) < 0) and
+                   (pval.IndexOf (targ.a) < 0) then
                 begin
-                  OwnMark (st.kids[1].a,
+                  OwnMark (targ.a,
                     'moved into a THREAD running ' + tname, st);
                   tmoved := True;
                 end;

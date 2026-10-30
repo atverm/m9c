@@ -1,0 +1,29 @@
+(* EXPECT: cannot DISPOSE p: nothing here gives it an owned pointer *)
+(* A call through a procedure value was taken at its word, its answer
+   owned: `p := fn (h) ; DISPOSE (p)' with fn answering h's field freed
+   what the field still held, a heap-use-after-free at the next read of
+   h.c (2026-10-28).  Nothing is known of which body runs, so its answer
+   is judged by the region walk's sound default: it may be any argument
+   a parameter of its type can carry.  Legal forms first: a procedure
+   value whose parameters carry no reference answers an object of its
+   own. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  H = RECORD c : PTR T END ;
+  MakeT = PROCEDURE (n: I64) : PTR T ;
+  GetT = PROCEDURE (h: PTR H) : PTR T ;
+PROCEDURE Legal (mk: MakeT) =
+VAR p : PTR T ;
+BEGIN
+  p := mk (3) ;
+  DISPOSE (p)
+END Legal ;
+PROCEDURE Free (fn: GetT ; h: PTR H) =
+VAR p : PTR T ;
+BEGIN
+  p := fn (h) ;
+  DISPOSE (p)
+END Free ;
+BEGIN
+END m.

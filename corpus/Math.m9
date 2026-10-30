@@ -124,6 +124,18 @@ PROCEDURE Ceil (x: F64) : F64 RAISES ValueRange ;
      checked and raises ValueRange of its own.  Two steps, both
      visible, rather than one step that can surprise.               *)
 
+PROCEDURE Round (x: F64) : F64 RAISES ValueRange ;
+  (* the nearest integer, a half AWAY from zero: Round (2.5) = 3.0,
+     Round (-2.5) = -3.0 (C round, Fortran ANINT).  Not Python's
+     round, which takes a half to the even neighbour.  F64 like Floor
+     and Ceil; I64 (Round (x)) for an integer.                       *)
+
+PROCEDURE Trunc (x: F64) : I64 RAISES ValueRange ;
+  (* toward zero, as an integer: I64 (x) under a name, Trunc (-2.7)
+     = -2.  ValueRange for a NaN, an infinity or a value beyond I64
+     (museum/trunc-nan.m9).  The one rounding answering I64: what the
+     report long named TRUNC, which no compiler had (2026-10-29).   *)
+
 PROCEDURE Fmod (x, y: F64) : F64 RAISES ValueRange ;
   (* the remainder of x/y with the sign of x, which is what Fortran
      MOD and C fmod both compute -- not the floor-based modulus.  A
@@ -179,6 +191,8 @@ PROCEDURE AtanF32 (x: F32) : F32 RAISES ValueRange ;
 PROCEDURE Atan2F32 (y, x: F32) : F32 RAISES ValueRange ;
 PROCEDURE FloorF32 (x: F32) : F32 RAISES ValueRange ;
 PROCEDURE CeilF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE RoundF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE TruncF32 (x: F32) : I64 RAISES ValueRange ;
 PROCEDURE FmodF32 (x, y: F32) : F32 RAISES ValueRange ;
 PROCEDURE HypotF32 (x, y: F32) : F32 RAISES ValueRange, Overflow ;
 PROCEDURE ErfF32 (x: F32) : F32 RAISES ValueRange ;
@@ -215,6 +229,7 @@ PROCEDURE CAtan2 = "atan2" (y: C.Double ; x: C.Double) : C.Double
   [REENTRANT] ;
 PROCEDURE CFloor = "floor" (x: C.Double) : C.Double  [REENTRANT] ;
 PROCEDURE CCeil  = "ceil"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CRound = "round" (x: C.Double) : C.Double  [REENTRANT] ;
 PROCEDURE CFabs  = "fabs"  (x: C.Double) : C.Double  [REENTRANT] ;
 PROCEDURE CErf   = "erf"   (x: C.Double) : C.Double  [REENTRANT] ;
 PROCEDURE CErfc  = "erfc"  (x: C.Double) : C.Double  [REENTRANT] ;
@@ -250,6 +265,7 @@ PROCEDURE CAtan2F32 = "atan2f" (y: C.Float ; x: C.Float) : C.Float
   [REENTRANT] ;
 PROCEDURE CFloorF32 = "floorf" (x: C.Float) : C.Float  [REENTRANT] ;
 PROCEDURE CCeilF32  = "ceilf"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CRoundF32 = "roundf" (x: C.Float) : C.Float  [REENTRANT] ;
 PROCEDURE CErfF32   = "erff"   (x: C.Float) : C.Float  [REENTRANT] ;
 PROCEDURE CErfcF32  = "erfcf"  (x: C.Float) : C.Float  [REENTRANT] ;
 PROCEDURE CFabsF32  = "fabsf"  (x: C.Float) : C.Float  [REENTRANT] ;
@@ -263,12 +279,12 @@ IMPLEMENTATION MODULE Math ;
 
 FROM cmath IMPORT CSqrt, CLog, CLog10, CLog2, CExp, CPow, CSin, CCos,
                   CTan, CAsin, CAcos, CAtan, CAtan2, CFloor, CCeil,
-                  CFabs, CHypot, CFmod, CErf, CErfc ;
+                  CRound, CFabs, CHypot, CFmod, CErf, CErfc ;
 
 FROM cmathf IMPORT CSqrtF32, CLogF32, CLog10F32, CLog2F32, CExpF32,
                    CPowF32, CSinF32, CCosF32, CTanF32, CAsinF32,
                    CAcosF32, CAtanF32, CAtan2F32, CFloorF32,
-                   CCeilF32, CFabsF32, CHypotF32, CFmodF32,
+                   CCeilF32, CRoundF32, CFabsF32, CHypotF32, CFmodF32,
                    CErfF32, CErfcF32 ;
 
 (* The three tests every answer goes through, written once.
@@ -463,6 +479,17 @@ BEGIN
   Arg (x) ;
   RETURN Ans (F64 (CCeil (C.Double (x))))
 END Ceil ;
+
+PROCEDURE Round (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CRound (C.Double (x))))
+END Round ;
+
+PROCEDURE Trunc (x: F64) : I64 RAISES ValueRange =
+BEGIN
+  RETURN I64 (x)
+END Trunc ;
 
 PROCEDURE Hypot (x, y: F64) : F64 RAISES ValueRange, Overflow =
 BEGIN
@@ -665,6 +692,17 @@ BEGIN
   ArgF32 (x) ;
   RETURN AnsF32 (F32 (CCeilF32 (C.Float (x))))
 END CeilF32 ;
+
+PROCEDURE RoundF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CRoundF32 (C.Float (x))))
+END RoundF32 ;
+
+PROCEDURE TruncF32 (x: F32) : I64 RAISES ValueRange =
+BEGIN
+  RETURN I64 (x)
+END TruncF32 ;
 
 PROCEDURE HypotF32 (x, y: F32) : F32 RAISES ValueRange, Overflow =
 BEGIN

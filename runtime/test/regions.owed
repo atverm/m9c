@@ -45,3 +45,14 @@
 # flow-sensitive walk copies a name's contents when it is stored, not
 # what is stored through either name later; the depth scan, flow-
 # insensitive and both ways across the pair, sees it).
+# 2026-10-27: an RO RECORD parameter copied whole (`fl := other`), then written
+# through a slice it holds into the caller's storage: the copy's tracked
+# fields keep their earlier state, so the read-only mark never reaches them.
+# REFUSED 2026-10-29 (off the list): a whole copy of read-only storage marks
+# the copy's tracked fields read-only; R4CopyBranch, R4CopyLoop,
+# R4CopyElem, R4CopyOfField, R4CopyHead refused before they were added.
+# 2026-10-28: a pool's storage handed back through VAR parameters into a
+# module variable (CLAUDE.md's owed entry, written as a repro the day the
+# ownership probe went through the owed list): RStr keeps its POOL
+# parameter's copy in its VAR parameter, and the pool is the caller's local.
+R5PeriodPool

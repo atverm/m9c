@@ -1,0 +1,28 @@
+MODULE R4CopyOfField ;
+(* R4FieldRowsAlias with the record copied out of a FIELD of an RO
+   record parameter, then written through two levels.  Accepted by
+   0.25.1 *)
+IMPORT Io ;
+TYPE
+  Strs = SLICE OF STR ;
+  Table = RECORD head : Strs ; rows : SLICE OF Strs END ;
+  Holder = RECORD t : Table END ;
+PROCEDURE Fill (VAR pool: POOL ; RO h: Holder) RAISES IndexError =
+VAR fl : Table ;
+BEGIN
+  fl.rows := NEW (pool, Strs, 1) ;
+  fl := h.t ;
+  fl.rows[0][0] := 'y'
+END Fill ;
+VAR
+  pool : POOL ;
+  h : Holder ;
+BEGIN
+  h.t.rows := NEW (pool, Strs, 1) ;
+  h.t.rows[0] := NEW (pool, STR, 1) ;
+  h.t.rows[0][0] := 'q' ;
+  Fill (pool, h) ;
+  Io.WriteLine (h.t.rows[0][0])
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END R4CopyOfField.

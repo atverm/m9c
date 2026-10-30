@@ -1,0 +1,27 @@
+(* EXPECT: SHARED cannot consume through a selector of b: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2) *)
+(* SHARED (x) consumes an owned pointer as DISPOSE and an OWN argument
+   do, and it too took a field: `s := SHARED ((b.p)) ; DISPOSE (s)'
+   freed what b.p still held (2026-10-28) -- the parentheses as well,
+   which the Pascal twin looked under and the M9 one did not.  Legal
+   forms first: a whole owned name made SHARED, parenthesised. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Legal () =
+VAR q : PTR T ; s : SHARED PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  s := SHARED ((q)) ;
+  DISPOSE (s)
+END Legal ;
+PROCEDURE Out () =
+VAR q : PTR T ; b : B ; s : SHARED PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  b.p := q ;
+  s := SHARED ((b.p)) ;
+  DISPOSE (s)
+END Out ;
+BEGIN
+END m.

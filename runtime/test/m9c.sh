@@ -126,6 +126,43 @@ grep -q 'zstd' "$FAR/nb.txt" || {
 rm -rf "$FAR"
 echo "m9c: a unit reached through an implementation links its library when it is there, and only then"
 
+# AN ARRAY TYPE EXPORTED WITH A CONST COUNT (2026-10-29).  An importer
+# read BndDef's `Vec = ARRAY N OF F64' with N looked up among ITS OWN
+# constants: none, and the generator said `array count form
+# unsupported'; one of the same name, and Vec silently had the
+# importer's length.  The checker spelled the same type `ARRAY N' read
+# whole and `ARRAY BndDef.N' through a record's field, and refused
+# the assignment of one to the other.  And a count over CONST names,
+# ARRAY 2 * N, was refused even at home.  BndUse holds every exported
+# form beside a CONST N of its own; BndClash/BndClash2 must be refused
+# by the checker, not by the C compiler.
+BND=/tmp/m9c-arrbound
+rm -rf "$BND"; mkdir -p "$BND"
+cp arrbound/*.m9 "$BND/"
+for p in BndUse BndHome; do
+  ( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -o "$p" "$p.m9" >"$BND/$p.txt" 2>&1 ) || {
+    echo "FAIL: $p does not build"; tail -8 "$BND/$p.txt"; exit 1; }
+done
+[ "$("$BND/BndUse")" = "6.0 32 70 32 6.0 2.5 6.0
+4 4 3 8 3 9 4 5 15 10 99 10" ] || { echo "FAIL: BndUse printed the wrong thing"; "$BND/BndUse"; exit 1; }
+[ "$("$BND/BndHome")" = "8 70 13 12" ] || { echo "FAIL: BndHome printed the wrong thing"; "$BND/BndHome"; exit 1; }
+for p in BndClash BndClash2; do
+  if ( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -o "$p" "$p.m9" >"$BND/$p.txt" 2>&1 ); then
+    echo "FAIL: $p built: an importer's ARRAY N taken for BndDef's"; exit 1
+  fi
+  grep -q "body: cannot assign ARRAY .*BndDef\.N OF" "$BND/$p.txt" || {
+    echo "FAIL: $p was not refused by the checker naming BndDef.N"; cat "$BND/$p.txt"; exit 1; }
+done
+# a generator error in an imported declaration names the EXPORTER's
+# file (Gen.ErrModAt): BndZeroUse.m9:9 until 2026-10-29
+( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" BndZeroUse.m9 >"$BND/zero.txt" 2>&1 ) &&
+  { echo "FAIL: BndZeroUse generated: a count dividing by a CONST of 0"; exit 1; }
+grep -q "BndZero\.m9:9: gen: array count form unsupported yet" "$BND/zero.txt" &&
+  ! grep -q "BndZeroUse\.m9:9:" "$BND/zero.txt" || {
+  echo "FAIL: the generator error in BndZero was not named BndZero.m9:9"; cat "$BND/zero.txt"; exit 1; }
+rm -rf "$BND"
+echo "m9c: an exported array's CONST count is the exporter's, read whole, through a field, in an expression"
+
 # the point of connecting Sem: a compiler that translates what it
 # knows to be wrong is a translator.  A program with a semantic error
 # must produce diagnostics on stderr, NO output files, and exit 1.

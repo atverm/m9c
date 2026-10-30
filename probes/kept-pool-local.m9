@@ -1,0 +1,42 @@
+(* EXPECT: argument 1 of Grow: a KEPT parameter cannot take the pool scratch -- it dies with this frame (par 4.1); give it a pool that outlives the call: HEAP, a module's pool, or a POOL parameter declared KEPT *)
+(* `VAR KEPT p: POOL' is the callee's word that it keeps what it
+   allocates there past the call -- the region walk reads such a pool
+   as the module's -- and the caller's side of that word was never
+   read: `Grow (scratch)' with a local pool was accepted by 0.25.1, the
+   module variable left pointing into a freed block, which the next
+   local pool reused (Keeper's 42 read back as 99, 2026-10-28).  KEPT's
+   rule for a reference, applied to the pool by its designator's root.
+   Legal forms first: HEAP, the module's pool, a pool field of a
+   module variable, and a KEPT pool parameter handed on. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+VAR
+  last : OPT PTR Cell ;
+  mpool : POOL ;
+  mh : Hold ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Fwd (VAR KEPT p: POOL) =
+BEGIN
+  Grow (p)
+END Fwd ;
+PROCEDURE Legal () =
+BEGIN
+  Grow (HEAP) ;
+  Grow (mpool) ;
+  Grow (mh.pool) ;
+  Fwd (mpool)
+END Legal ;
+PROCEDURE Fill () =
+VAR scratch : POOL ;
+BEGIN
+  Grow (scratch)
+END Fill ;
+BEGIN
+END m.

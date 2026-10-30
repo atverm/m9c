@@ -1,0 +1,28 @@
+(* EXPECT: argument 1 of Grow: a KEPT parameter cannot take the pool r.pool -- it dies with this frame *)
+(* kept-pool-local with the pool a FIELD of a local record: the record,
+   and its pool, die with this frame (2026-10-28).  Legal forms first:
+   the same field of a module variable. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+VAR
+  last : OPT PTR Cell ;
+  mh : Hold ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Legal () =
+BEGIN
+  Grow (mh.pool)
+END Legal ;
+PROCEDURE Fill () =
+VAR r : Hold ;
+BEGIN
+  Grow (r.pool)
+END Fill ;
+BEGIN
+END m.

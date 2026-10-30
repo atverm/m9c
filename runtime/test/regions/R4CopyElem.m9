@@ -1,0 +1,31 @@
+MODULE R4CopyElem ;
+(* R4FieldRowsAlias one level up: after the whole copy of the RO record,
+   an ELEMENT of its rows replaced -- the caller's slice written.
+   Accepted by 0.25.1 (without KEPT on r it refused a retention, never
+   the write) *)
+IMPORT Io ;
+TYPE
+  Strs = SLICE OF STR ;
+  Table = RECORD head : Strs ; rows : SLICE OF Strs END ;
+PROCEDURE Fill (VAR pool: POOL ; RO other: Table ; RO KEPT r: Strs) RAISES IndexError =
+VAR fl : Table ;
+BEGIN
+  fl.rows := NEW (pool, Strs, 1) ;
+  fl := other ;
+  fl.rows[0] := r
+END Fill ;
+VAR
+  pool : POOL ;
+  t : Table ;
+  s : Strs ;
+BEGIN
+  t.rows := NEW (pool, Strs, 1) ;
+  t.rows[0] := NEW (pool, STR, 1) ;
+  t.rows[0][0] := 'q' ;
+  s := NEW (pool, STR, 1) ;
+  s[0] := 'z' ;
+  Fill (pool, t, s) ;
+  Io.WriteLine (t.rows[0][0])
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END R4CopyElem.

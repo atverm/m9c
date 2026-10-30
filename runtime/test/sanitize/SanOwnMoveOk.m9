@@ -1,0 +1,116 @@
+MODULE SanOwnMoveOk ;
+
+(* WANT: own moves: field 7 element 8 pointer 9 shared 10 lent 11 moved 3 *)
+
+(* The legal side of par 4.2's rule that a move takes a name
+   (2026-10-28): an owned pointer moved INTO a field, an element and an
+   owned object's field, read through each; a whole owned name made
+   SHARED under parentheses; a field LENT to a value parameter; whole
+   names moved into OWN parameters.  Each free happens exactly once,
+   under the M9_ASAN arenas and ASan, and the fields are read before
+   anything that frees. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+  H = RECORD p : PTR T END ;
+  Two = ARRAY 2 OF PTR T ;
+
+VAR
+  out : STR ;
+  moved : I64 ;
+
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  moved := moved + 1 ;
+  DISPOSE (p)
+END Eat ;
+
+PROCEDURE EatH (OWN h: PTR H) =
+BEGIN
+  moved := moved + 1 ;
+  DISPOSE (h)
+END EatH ;
+
+PROCEDURE Look (p: PTR T) : I64 =
+BEGIN
+  RETURN p.v
+END Look ;
+
+PROCEDURE Mk (n: I64) : PTR T =
+VAR q : PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  q.v := n ;
+  RETURN q
+END Mk ;
+
+PROCEDURE Field () : I64 =
+VAR b : B ; q : PTR T ;
+BEGIN
+  q := Mk (7) ;
+  b.p := q ;
+  RETURN b.p.v
+END Field ;
+
+PROCEDURE Element () : I64 =
+VAR a : Two ; q : PTR T ;
+BEGIN
+  q := Mk (8) ;
+  a[1] := q ;
+  RETURN a[1].v
+END Element ;
+
+PROCEDURE Pointer () : I64 =
+VAR h : PTR H ; q : PTR T ; k : I64 ;
+BEGIN
+  h := NEW (OWN, H) ;
+  q := Mk (9) ;
+  h.p := q ;
+  k := h.p.v ;
+  EatH (h) ;
+  RETURN k
+END Pointer ;
+
+PROCEDURE Shared () : I64 =
+VAR q : PTR T ; s : SHARED PTR T ; k : I64 ;
+BEGIN
+  q := Mk (10) ;
+  s := SHARED ((q)) ;
+  k := s.v ;
+  DISPOSE (s) ;
+  RETURN k
+END Shared ;
+
+PROCEDURE Lent () : I64 =
+VAR b : B ; q : PTR T ;
+BEGIN
+  q := Mk (11) ;
+  b.p := q ;
+  RETURN Look (b.p)
+END Lent ;
+
+PROCEDURE Whole () =
+VAR q, r : PTR T ;
+BEGIN
+  q := Mk (1) ;
+  r := q ;
+  Eat (r) ;
+  q := Mk (2) ;
+  Eat (q)
+END Whole ;
+
+BEGIN
+  moved := 0 ;
+  out := 'own moves: field ' + Fmt.I64Str (Field ()) ;
+  out := out + ' element ' + Fmt.I64Str (Element ()) ;
+  out := out + ' pointer ' + Fmt.I64Str (Pointer ()) ;
+  out := out + ' shared ' + Fmt.I64Str (Shared ()) ;
+  out := out + ' lent ' + Fmt.I64Str (Lent ()) ;
+  Whole () ;
+  Io.WriteLine (out + ' moved ' + Fmt.I64Str (moved))
+EXCEPT
+| Io.IOError (m) : RETURN
+END SanOwnMoveOk.

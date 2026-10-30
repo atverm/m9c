@@ -1,0 +1,28 @@
+(* EXPECT: argument 1 of Eat: cannot move through a selector of a into an OWN parameter *)
+(* own-move-through-field with an ELEMENT: `Eat (a[0])' left a[0]
+   holding what Eat freed (2026-10-28).  Legal forms first: an owned
+   pointer stored into an element and read through it. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  Two = ARRAY 2 OF PTR T ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Legal () : I64 =
+VAR q : PTR T ; a : Two ;
+BEGIN
+  q := NEW (OWN, T) ;
+  a[0] := q ;
+  RETURN a[0].v
+END Legal ;
+PROCEDURE Out () =
+VAR q : PTR T ; a : Two ;
+BEGIN
+  q := NEW (OWN, T) ;
+  a[0] := q ;
+  Eat (a[0])
+END Out ;
+BEGIN
+END m.

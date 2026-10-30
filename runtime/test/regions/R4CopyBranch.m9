@@ -1,0 +1,32 @@
+MODULE R4CopyBranch ;
+(* R4FieldRowsAlias's bypass: the copy's field given storage of its own
+   on ONE branch only, then written through two levels -- when the
+   branch is not taken the write lands in the caller's literal.
+   Accepted by 0.25.1 (RoRefreshed takes any store for a refresh) *)
+IMPORT Io ;
+TYPE
+  Strs = SLICE OF STR ;
+  Table = RECORD head : Strs ; rows : SLICE OF Strs END ;
+PROCEDURE Fill (VAR pool: POOL ; RO other: Table ; b: BOOL) RAISES IndexError =
+VAR fl : Table ;
+BEGIN
+  fl.rows := NEW (pool, Strs, 1) ;
+  fl := other ;
+  IF b THEN
+    fl.rows := NEW (pool, Strs, 1) ;
+    fl.rows[0] := NEW (pool, STR, 1)
+  END ;
+  fl.rows[0][0] := 'y'
+END Fill ;
+VAR
+  pool : POOL ;
+  t : Table ;
+BEGIN
+  t.rows := NEW (pool, Strs, 1) ;
+  t.rows[0] := NEW (pool, STR, 1) ;
+  t.rows[0][0] := 'q' ;
+  Fill (pool, t, FALSE) ;
+  Io.WriteLine (t.rows[0][0])
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END R4CopyBranch.

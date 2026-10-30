@@ -1,0 +1,47 @@
+MODULE GoldenG07KeptpoolHeap ;
+(* from ownfuzz/ir.py *)
+IMPORT Io, Fmt ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+  Cell = RECORD v : I64 END ;
+VAR
+  g : OPT PTR T ;
+  last : OPT PTR Cell ;
+  mpool : POOL ;
+  total : I64 ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Id (a: PTR T) : PTR T =
+BEGIN
+  RETURN a
+END Id ;
+PROCEDURE Grow (VAR KEPT p: POOL ; n: I64) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  c.v := n ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE Go () =
+VAR
+  o1, o2, a1, a2 : PTR T ;
+  b : B ;
+  scratch : POOL ;
+  k : I64 ;
+BEGIN
+  k := 0 ;
+  Grow (HEAP, 1) ;
+  total := k
+END Go ;
+BEGIN
+  total := 0 ;
+  Go () ;
+  IF g IS SOME x THEN total := total + x.v END ;
+  IF last IS SOME c THEN total := total + c.v END ;
+  Io.WriteLine ('total ' + Fmt.I64Str (total))
+EXCEPT
+| Io.IOError (m) : RETURN
+END GoldenG07KeptpoolHeap.

@@ -1,0 +1,30 @@
+MODULE R5OwnFieldCopy ;
+(* A pointer copied out of a field, then the field moved into an OWN
+   parameter, which freed it, and the copy read: accepted by 0.25.1, a
+   heap-use-after-free under ASan (2026-10-28, the ownership probe's
+   P2).  The move itself is refused by par 4.2's OWN rule; the read of
+   the copy by the owner walk, on its own: a move through a selector
+   kills every owner stored into the root's components. *)
+IMPORT Io, Fmt ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Go () : I64 =
+VAR q, r : PTR T ; b : B ;
+BEGIN
+  q := NEW (OWN, T) ;
+  q.v := 7 ;
+  b.p := q ;
+  r := b.p ;
+  Eat (b.p) ;
+  RETURN r.v
+END Go ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (Go ()))
+EXCEPT
+| Io.IOError (m) : RETURN
+END R5OwnFieldCopy.

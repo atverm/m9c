@@ -1,0 +1,5 @@
+# P1: moved out of the field twice
+NEW o1
+STORE o1
+GIVEFIELD
+GIVEFIELD

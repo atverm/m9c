@@ -1,0 +1,40 @@
+MODULE GfReturnRows ;
+
+(* WANT: 3b *)
+
+(* oneflux's RoLent (its item 27, 2026-10-27): rows of strings an RO
+   parameter lends, a fresh string put in one row through the outer
+   slice, the rows RETURNed.  The RETURN made the depth scan give the name
+   up, and the flow walk's one contents set read the write as one into
+   the lent text.  A returned name stays followed. *)
+(* SAFE: the write replaces a slot of a fresh row; the lent text is only read *)
+IMPORT Io, Fmt ;
+TYPE
+  Strs = SLICE OF STR ;
+PROCEDURE Fill (VAR pool: POOL ; RO stamps: Strs ; m: I64) : SLICE OF Strs RAISES IndexError =
+VAR
+  rows : SLICE OF Strs ;
+  row : Strs ;
+  r, i : I64 ;
+BEGIN
+  rows := NEW (pool, Strs, LEN (stamps)) ;
+  FOR r := 0 TO LEN (stamps) - 1 DO
+    row := NEW (pool, STR, m) ;
+    FOR i := 0 TO m - 1 DO row[i] := stamps[r] END ;
+    rows[r] := row
+  END ;
+  rows[0][m - 1] := Fmt.I64Str (m) ;
+  RETURN rows
+END Fill ;
+VAR
+  pool : POOL ;
+  s : Strs ;
+  t : SLICE OF Strs ;
+BEGIN
+  s := NEW (pool, STR, 2) ;
+  s[0] := 'a' ; s[1] := 'b' ;
+  t := Fill (pool, s, 3) ;
+  Io.WriteLine (t[0][2] + t[1][0])
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END GfReturnRows.

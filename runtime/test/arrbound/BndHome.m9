@@ -1,0 +1,21 @@
+MODULE BndHome ;
+
+(* an array count that is an expression over this module's CONSTs:
+   `array count form unsupported' until 2026-10-29, the folder taking
+   literals only *)
+
+IMPORT Io, Fmt ;
+
+CONST N = 4 ;
+TYPE
+  Twice = ARRAY 2 * N OF I32 ;
+  Odd = ARRAY (N + 1) * 3 - N DIV 2 OF I64 ;
+VAR
+  t : Twice ;
+  d : Odd ;
+BEGIN
+  t[7] := 70 ;
+  d[12] := 12 ;
+  Io.WriteLine (Fmt.I64Str (LEN (t)) + ' ' + Fmt.I64Str (I64 (t[7])) + ' ' +
+                Fmt.I64Str (LEN (d)) + ' ' + Fmt.I64Str (d[12]))
+END BndHome.

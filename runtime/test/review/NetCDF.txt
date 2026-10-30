@@ -2,10 +2,10 @@ REVIEW NetCDF -- 65 procedures with a body, 35 of them functions; 56 headings in
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              35
-  assignments                                   154
-  arguments                                     504
+  assignments                                   167
+  arguments                                     512
   RETURN values                                  36
-  operands of a comparison or an operator        83
+  operands of a comparison or an operator       112
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -34,7 +34,7 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               12
+  RAISE statements                               15
   handlers                                        2
   NEW in the frame                                6
   NEW in a named pool                            27

@@ -1,0 +1,80 @@
+MODULE SanKeptPoolOk ;
+
+(* WANT: kept pools: heap 1 module 2 field 3 forwarded 4 churned 1 2 3 4 *)
+
+(* The legal side of 2026-10-28's KEPT rule for a POOL: what a KEPT
+   pool parameter keeps lives in a pool that outlives the module state
+   holding it -- HEAP, a module's pool, a module variable's pool field,
+   and a KEPT parameter handed on.  After every call a LOCAL pool is
+   made and written, the churn that turned a kept cell's 42 into 99
+   when the pool was the caller's local one; under the M9_ASAN arenas
+   a freed block is poisoned, so a read of one traps. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+  CellRef = OPT PTR Cell ;
+  Cells = SLICE OF CellRef ;
+
+VAR
+  kept : Cells ;
+  nkept : I64 ;
+  mpool : POOL ;
+  mh : Hold ;
+  out : STR ;
+
+PROCEDURE Grow (VAR KEPT p: POOL ; n: I64) RAISES IndexError =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  c.v := n ;
+  kept[nkept] := SOME (c) ;
+  nkept := nkept + 1
+END Grow ;
+
+PROCEDURE Fwd (VAR KEPT p: POOL ; n: I64) RAISES IndexError =
+BEGIN
+  Grow (p, n)
+END Fwd ;
+
+PROCEDURE At (i: I64) : I64 RAISES IndexError =
+BEGIN
+  IF kept[i] IS SOME c THEN RETURN c.v END ;
+  RETURN 0
+END At ;
+
+PROCEDURE Churn () : I64 =
+VAR
+  other : POOL ;
+  c : PTR Cell IN other ;
+BEGIN
+  c := NEW (other, Cell) ;
+  c.v := 99 ;
+  RETURN c.v
+END Churn ;
+
+VAR k, i : I64 ;
+
+BEGIN
+  kept := NEW (mpool, CellRef, 4) ;
+  nkept := 0 ;
+  Grow (HEAP, 1) ;
+  k := Churn () ;
+  out := 'kept pools: heap ' + Fmt.I64Str (At (0)) ;
+  Grow (mpool, 2) ;
+  k := Churn () ;
+  out := out + ' module ' + Fmt.I64Str (At (1)) ;
+  Grow (mh.pool, 3) ;
+  k := Churn () ;
+  out := out + ' field ' + Fmt.I64Str (At (2)) ;
+  Fwd (mpool, 4) ;
+  k := Churn () ;
+  out := out + ' forwarded ' + Fmt.I64Str (At (3)) + ' churned' ;
+  FOR i := 0 TO 3 DO out := out + ' ' + Fmt.I64Str (At (i)) END ;
+  Io.WriteLine (out)
+EXCEPT
+| IndexError (a, b) : RETURN
+| Io.IOError (m) : RETURN
+END SanKeptPoolOk.

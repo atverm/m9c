@@ -1,0 +1,17 @@
+MODULE BndClash ;
+
+(* refused: BndDef.Vec is ARRAY BndDef.N (4) OF F64; this module's
+   ARRAY N (9) OF F64 is spelled the same in the declaring modules.
+   0.25.1 accepted the assignment (both canonicalised `ARRAY N OF F64')
+   and the C compiler refused it *)
+
+IMPORT BndDef ;
+
+CONST N = 9 ;
+TYPE T2 = ARRAY N OF F64 ;
+VAR
+  a : T2 ;
+  v : BndDef.Vec ;
+BEGIN
+  a := v
+END BndClash.

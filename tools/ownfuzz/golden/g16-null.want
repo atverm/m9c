@@ -1,0 +1,5 @@
+verdict: unsafe
+reason: READ o2 follows NULL
+output: 
+trace:
+  READ o2 follows NULL

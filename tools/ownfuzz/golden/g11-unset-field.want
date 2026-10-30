@@ -1,0 +1,5 @@
+verdict: raises
+reason: b.p is unset: IndexError
+output: raised
+trace:
+  b.p is unset: IndexError

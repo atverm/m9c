@@ -1,0 +1,9 @@
+verdict: unsafe
+reason: READ a1 reads freed #1
+output: 
+trace:
+  o1 = #1
+  b.p = #1
+  a1 = #1
+  GIVEFIELD: #1 freed
+  READ a1 reads freed #1

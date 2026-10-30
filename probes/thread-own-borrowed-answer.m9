@@ -1,0 +1,29 @@
+(* EXPECT: THREAD (Work): cannot move p into its OWN parameter: nothing here gives it an owned pointer *)
+(* own-move-borrowed-answer with a THREAD for the move: the target
+   takes its argument OWN and frees it, and `p := Id (q)' owned nothing
+   to give (2026-10-28).  Legal forms first: an owned allocation handed
+   to the thread. *)
+MODULE m ;
+TYPE T = RECORD v : I64 END [SHARABLE] ;
+PROCEDURE Work (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Work ;
+PROCEDURE Id (a: PTR T) : PTR T =
+BEGIN
+  RETURN a
+END Id ;
+PROCEDURE Legal () =
+VAR p : PTR T ;
+BEGIN
+  p := NEW (OWN, T) ;
+  THREAD (Work, p)
+END Legal ;
+PROCEDURE Start (q: PTR T) =
+VAR p : PTR T ;
+BEGIN
+  p := Id (q) ;
+  THREAD (Work, p)
+END Start ;
+BEGIN
+END m.

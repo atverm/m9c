@@ -76,7 +76,17 @@ deps_of () {
   esac
 }
 
-CFLAGS="-std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter"
+# clang warns by default about two forms the generated C uses on
+# purpose (a parenthesised comparison, a FOR variable assigned to
+# itself); build.sh turns them off, after -Wall, and so must every gcc
+# line with -Werror here -- on macOS `gcc' is clang unless a real one is
+# first on PATH, and the self-installer's bootstrap failed with 20
+# errors (2026-10-29, report M3).  Asked of the compiler, not the OS: a
+# real gcc on a Mac takes no -Wno-self-assign.
+CLANGWARN=""
+gcc --version 2>/dev/null | grep -qi clang &&
+  CLANGWARN="-Wno-parentheses-equality -Wno-self-assign"
+CFLAGS="-std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter $CLANGWARN"
 TOOLC="DynStr DynUtf Lex Ast Parse Text Print Sem Gen"
 
 # build a gendump from one stage's sources

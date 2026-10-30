@@ -1,0 +1,46 @@
+MODULE ThreadParen ;
+
+(* THREAD's argument under parentheses, once and twice: accepted by
+   both checkers, `THREAD form unsupported yet' in the generator until
+   2026-10-29 (decision 74's find).  Each worker counts itself done in
+   the monitor; the body waits for both (the serialtest shape). *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Done = MONITOR RECORD
+    n : I64 ;
+  END ;
+  Job = RECORD
+    d : Done ;
+  END [SHARABLE] ;
+
+PROCEDURE Finish (VAR d: Done) =
+BEGIN
+  d.n := d.n + 1 ;
+  SIGNAL (d)
+END Finish ;
+
+PROCEDURE Await (VAR d: Done) : I64 =
+BEGIN
+  WHILE d.n < 2 DO
+    WAIT (d)
+  END ;
+  RETURN d.n
+END Await ;
+
+PROCEDURE Worker (VAR j: Job) =
+BEGIN
+  Finish (j.d)
+END Worker ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+
+BEGIN
+  j := NEW (pool, Job) ;
+  THREAD (Worker, (j)) ;
+  THREAD (Worker, ((j))) ;
+  Io.WriteLine ('done ' + Fmt.I64Str (Await (j.d)))
+END ThreadParen.

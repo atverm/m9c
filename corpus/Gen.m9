@@ -57,6 +57,9 @@ PROCEDURE ErrMsgAt (i: I64) : UTF ;
      corpus, and then cost one INSIDE the tutorial.  i in
      0 .. MIN (Errs (), 8) - 1; msgs may be '' where a site has no
      wording yet.                                                    *)
+PROCEDURE ErrModAt (i: I64) : UTF ;
+  (* the module whose source error i's line is in: '' for the module
+     being emitted, else an imported definition's name (2026-10-29) *)
 
 PROCEDURE SetIrCheck (on: BOOL) ;
 PROCEDURE SetStrUtf (on: BOOL) ;
@@ -653,16 +656,78 @@ VAR
   errLines : ARRAY 8 OF I64 ;
   errMsgs  : ARRAY 8 OF UTF ;   (* literals or gpool-composed: both
                                    outlive the report *)
+  errMods  : ARRAY 8 OF UTF ;   (* the module whose source the line is
+                                   in, '' for the one being emitted *)
+  (* which definition a node came from, by its number: a parse numbers
+     its nodes in one run (Ast.NewNode), so each registered definition
+     is a span of ids, and so are the nodes RegisterExtern makes for it
+     (QualArr's copies).  Until 2026-10-29 an error on an imported
+     type's node printed the importer's file with the exporter's line
+     (`UseShapes.m9:7' for Shapes.m9:7, decision 75's find) *)
+  origLo, origHi : SLICE OF I64 ;
+  origMod : SLICE OF UTF ;
+  norig : I64 ;
 
 PROCEDURE Err2 (line: I64 ; RO msg: UTF) =
   (* the message is copied: callers compose it in their frame *)
 BEGIN
   IF nerrV < MaxErrs THEN
     errLines[nerrV] := line ;
-    errMsgs[nerrV] := Text.Keep (gpool, msg)
+    errMsgs[nerrV] := Text.Keep (gpool, msg) ;
+    errMods[nerrV] := ''
   END ;
   nerrV := nerrV + 1
 END Err2 ;
+
+(* the definition node id was read from, or '' *)
+PROCEDURE OriginOf (id: I64) : UTF =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO norig - 1 DO
+    IF id >= origLo[i] AND id <= origHi[i] THEN RETURN origMod[i] END
+  END ;
+  RETURN ''
+END OriginOf ;
+
+PROCEDURE NoteOrigin (lo, hi: I64 ; RO KEPT m: UTF) =
+VAR
+  nl, nh : SLICE OF I64 ;
+  nm : SLICE OF UTF ;
+  i : I64 ;
+BEGIN
+  IF hi < lo THEN RETURN END ;
+  IF norig = LEN (origLo) THEN
+    nl := NEW (gpool, I64, 2 * norig + 8) ;
+    nh := NEW (gpool, I64, 2 * norig + 8) ;
+    nm := NEW (gpool, UTF, 2 * norig + 8) ;
+    FOR i := 0 TO norig - 1 DO
+      nl[i] := origLo[i] ; nh[i] := origHi[i] ; nm[i] := origMod[i]
+    END ;
+    origLo := nl ; origHi := nh ; origMod := nm
+  END ;
+  origLo[norig] := lo ;
+  origHi[norig] := hi ;
+  origMod[norig] := m ;
+  norig := norig + 1
+END NoteOrigin ;
+
+(* the span of ids under a definition's tree *)
+PROCEDURE IdSpan (k: Ast.Kid ; VAR lo, hi: I64) =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.id < lo THEN lo := n.id END ;
+    IF n.id > hi THEN hi := n.id END ;
+    FOR i := 0 TO n.nkids - 1 DO IdSpan (n.kids[i], lo, hi) END
+  END
+END IdSpan ;
+
+(* an error at a node: its line, in the module it was read from *)
+PROCEDURE ErrAt (n: PTR Ast.Node ; RO msg: UTF) =
+BEGIN
+  Err2 (n.line, msg) ;
+  IF nerrV - 1 < MaxErrs THEN errMods[nerrV - 1] := OriginOf (n.id) END
+END ErrAt ;
 
 PROCEDURE ErrLineAt (i: I64) : I64 =
 BEGIN
@@ -675,6 +740,12 @@ BEGIN
   IF i < 0 OR i >= MaxErrs THEN RETURN '' END ;
   RETURN errMsgs[i]
 END ErrMsgAt ;
+
+PROCEDURE ErrModAt (i: I64) : UTF =
+BEGIN
+  IF i < 0 OR i >= MaxErrs THEN RETURN '' END ;
+  RETURN errMods[i]
+END ErrModAt ;
 
 PROCEDURE Setup () =
 VAR
@@ -1002,8 +1073,12 @@ BEGIN
     END ;
     IF cur IS SOME n THEN
       IF n.kind # Ast.NQualident THEN RETURN cur END ;
+      (* C.Int and the like, the foreign boundary's types: always with
+         a member.  A bare C is a program's type -- `TYPE C = A' was
+         left unresolved, and `c[k]' was `index into a non-array
+         unsupported yet' until 2026-10-29 (report M7) *)
       IF IsBuiltin (n.au) OR Text.Eq (n.au, 'POOL') OR
-         Text.Eq (n.au, 'C') THEN
+         (Text.Eq (n.au, 'C') AND Text.BLen (n.bu) > 0) THEN
         RETURN cur
       END ;
       IF depth >= 8 THEN RETURN cur END ;
@@ -1061,6 +1136,66 @@ BEGIN
   RETURN NONE
 END ArrEnumBoundNode ;
 
+(* the value of an integer constant expression whose names are CONSTs
+   -- Ast.FoldInt's literals, parentheses, unary minus and + - * DIV
+   MOD, and a name followed to its value: bare, in module m ('' this
+   one), or Mod.N, whose value's bare names are Mod's.  Until
+   2026-10-29 an array bound folded literals only, so ARRAY 2 * N OF T
+   was `array count form unsupported' even in the module declaring N *)
+PROCEDURE FoldIn (k: Ast.Kid ; RO KEPT m: UTF ; depth: I64 ; VAR v: I64) : BOOL =
+VAR
+  a, b, ci : I64 ;
+BEGIN
+  IF depth > 16 THEN RETURN FALSE END ;
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NInt THEN RETURN Ast.FoldInt (k, v) END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      IF Text.BLen (m) = 0 THEN
+        ci := MFind (consts, e.au) ;
+        IF ci >= 0 THEN RETURN FoldIn (consts.es[ci].v, m, depth + 1, v) END
+      ELSE
+        ci := MFind (extConsts, S3 (m, '.', e.au)) ;
+        IF ci >= 0 THEN RETURN FoldIn (extConsts.es[ci].v, m, depth + 1, v) END
+      END ;
+      RETURN FALSE
+    END ;
+    IF e.nkids < 1 THEN RETURN FALSE END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 1 THEN
+      IF e.kids[0] IS SOME sf THEN
+        IF sf.kind = Ast.NSelField THEN
+          ci := MFind (extConsts, S3 (e.au, '.', sf.au)) ;
+          IF ci >= 0 THEN
+            RETURN FoldIn (extConsts.es[ci].v, Text.Keep (gpool, e.au), depth + 1, v)
+          END
+        END
+      END ;
+      RETURN FALSE
+    END ;
+    IF e.kind = Ast.NParen THEN RETURN FoldIn (e.kids[0], m, depth + 1, v) END ;
+    IF e.kind = Ast.NUn AND Text.Eq (e.au, '-') THEN
+      IF NOT FoldIn (e.kids[0], m, depth + 1, a) THEN RETURN FALSE END ;
+      v := 0 - a ;
+      RETURN TRUE
+    END ;
+    IF e.kind = Ast.NBin AND e.nkids = 2 THEN
+      IF NOT FoldIn (e.kids[0], m, depth + 1, a) THEN RETURN FALSE END ;
+      IF NOT FoldIn (e.kids[1], m, depth + 1, b) THEN RETURN FALSE END ;
+      IF Text.Eq (e.au, '+') THEN v := a + b ; RETURN TRUE END ;
+      IF Text.Eq (e.au, '-') THEN v := a - b ; RETURN TRUE END ;
+      IF Text.Eq (e.au, '*') THEN v := a * b ; RETURN TRUE END ;
+      IF Text.Eq (e.au, 'DIV') OR Text.Eq (e.au, 'MOD') THEN
+        IF b = 0 THEN RETURN FALSE END ;
+        IF b = -1 AND a = -9223372036854775807 - 1 THEN RETURN FALSE END ;
+        IF Text.Eq (e.au, 'DIV') THEN v := a DIV b ELSE v := a MOD b END ;
+        RETURN TRUE
+      END
+    END
+  END ;
+  RETURN FALSE
+EXCEPT
+| Overflow : RETURN FALSE
+END FoldIn ;
+
 PROCEDURE ArrCount (e: PTR Ast.Node) : UTF =
 VAR
   ci, v : I64 ;
@@ -1101,7 +1236,12 @@ BEGIN
   IF Ast.ScalarConst (src, v, ch) THEN
     IF NOT ch AND v > 0 THEN RETURN ItoA (v) END
   END ;
-  Err2 (e.line, 'array count form unsupported yet') ;
+  (* an expression over CONST names: ARRAY 2 * N OF T, ARRAY Mod.N +
+     1 OF T, a CONST whose value is one *)
+  IF FoldIn (SOME (e), '', 0, v) THEN
+    IF v > 0 THEN RETURN ItoA (v) END
+  END ;
+  ErrAt (e, 'array count form unsupported yet') ;
   RETURN '0'
 END ArrCount ;
 
@@ -1219,6 +1359,15 @@ BEGIN
   RETURN FALSE
 END IsAdaptive ;
 
+(* an expression under any parentheses, as Sem.ParenCore reads it *)
+PROCEDURE ParenCore (k: Ast.Kid) : Ast.Kid =
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NParen THEN RETURN ParenCore (e.kids[0]) END
+  END ;
+  RETURN k
+END ParenCore ;
+
 PROCEDURE IsNegLit (e: PTR Ast.Node ; kind: I64) : BOOL =
 BEGIN
   IF e.kind = Ast.NUn AND Text.Eq (e.au, '-') THEN
@@ -1277,7 +1426,7 @@ BEGIN
           IF Text.Eq (n.au, 'C') THEN
             s := CMap (n.bu) ;
             IF Text.BLen (s) = 0 THEN
-              Err2 (n.line, S2 ('unknown C type: C.', n.bu))
+              ErrAt (n, S2 ('unknown C type: C.', n.bu))
             END ;
             RETURN s
           END ;
@@ -1293,7 +1442,7 @@ BEGIN
           IF MFind (extMods, n.au) >= 0 THEN
             RETURN S3 (CP (n.au), '_', n.bu)
           END ;
-          Err2 (n.line, S2 ('unknown name: ', S3 (n.au, '.', n.bu))) ;
+          ErrAt (n, S2 ('unknown name: ', S3 (n.au, '.', n.bu))) ;
           RETURN 'void'
         END ;
         IF Text.Eq (n.au, 'POOL') THEN RETURN 'm9_pool' END ;
@@ -1336,7 +1485,7 @@ BEGIN
             RETURN TyC (n.kids[0])
           END
         END ;
-        Err2 (n.line, 'dereference of a non-pointer unsupported yet') ;
+        ErrAt (n, 'dereference of a non-pointer unsupported yet') ;
         RETURN 'void'
     | Ast.NSliceType :
         RETURN SliceTy (n.kids[0])
@@ -1386,7 +1535,7 @@ BEGIN
         END ;
         RETURN 'void'
     ELSE
-      Err2 (n.line, 'type kind unsupported yet') ;
+      ErrAt (n, 'type kind unsupported yet') ;
       RETURN 'void'
     END
   END ;
@@ -1745,8 +1894,10 @@ BEGIN
     IF e.kind = Ast.NDesignator AND e.nkids = 0 AND
        MFind (extConsts, S3 (m, '.', e.au)) >= 0 THEN
       d := Ast.NewNode (gpool, Ast.NDesignator, e.line, e.col) ;
+      d.id := e.id ;
       Ast.SetA (gpool, d, m) ;
       sf := Ast.NewNode (gpool, Ast.NSelField, e.line, e.col) ;
+      sf.id := e.id ;
       Ast.SetA (gpool, sf, e.au) ;
       Ast.Add (gpool, d, SOME (sf)) ;
       RETURN SOME (d)
@@ -1766,6 +1917,7 @@ BEGIN
          NOT Text.Eq (tn.au, 'STR') AND NOT Text.Eq (tn.au, 'UTF') AND
          NOT Text.Eq (tn.au, 'POOL') THEN
         n := Ast.NewNode (gpool, Ast.NQualident, tn.line, tn.col) ;
+        n.id := tn.id ;
         Ast.SetA (gpool, n, modName) ;
         Ast.SetB (gpool, n, tn.au) ;
         RETURN SOME (n)
@@ -1773,6 +1925,7 @@ BEGIN
     ELSIF tn.kind = Ast.NPtrType OR tn.kind = Ast.NOptType OR
           tn.kind = Ast.NSharedType OR tn.kind = Ast.NSliceType THEN
       n := Ast.NewNode (gpool, tn.kind, tn.line, tn.col) ;
+      n.id := tn.id ;
       IF tn.nkids > 0 THEN
         Ast.Add (gpool, n, QualIn (tn.kids[0], modName))
       END ;
@@ -1781,6 +1934,7 @@ BEGIN
     ELSIF (tn.kind = Ast.NArrayType OR tn.kind = Ast.NGridType) AND
           tn.nkids >= 2 THEN
       n := Ast.NewNode (gpool, tn.kind, tn.line, tn.col) ;
+      n.id := tn.id ;
       b := tn.kids[0] ;
       IF tn.kind = Ast.NArrayType THEN b := QualBound (b, modName) END ;
       Ast.Add (gpool, n, b) ;
@@ -1790,6 +1944,75 @@ BEGIN
   END ;
   RETURN t
 END QualIn ;
+
+(* does definition u declare a CONST or a TYPE named nm? *)
+PROCEDURE DeclaresIn (u: PTR Ast.Node ; RO nm: UTF) : BOOL =
+VAR i, j : I64 ;
+BEGIN
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME d THEN
+      IF d.kind = Ast.NTypeSection OR d.kind = Ast.NConstSection THEN
+        FOR j := 0 TO d.nkids - 1 DO
+          IF d.kids[j] IS SOME cd THEN
+            IF Text.Eq (cd.au, nm) THEN RETURN TRUE END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END DeclaresIn ;
+
+(* an array bound written in definition u, as an importer reads it:
+   every bare name in it that u declares -- a CONST, an enumeration --
+   as `u.N', through parentheses and operators; anything else as it
+   is *)
+PROCEDURE QualExpr (KEPT b: Ast.Kid ; KEPT u: PTR Ast.Node) : Ast.Kid =
+VAR
+  d, sf : PTR Ast.Node IN gpool ;
+  i : I64 ;
+BEGIN
+  IF b IS SOME e THEN
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      IF DeclaresIn (u, e.au) THEN
+        d := Ast.NewNode (gpool, Ast.NDesignator, e.line, e.col) ;
+        d.id := e.id ;
+        Ast.SetA (gpool, d, u.au) ;
+        sf := Ast.NewNode (gpool, Ast.NSelField, e.line, e.col) ;
+        sf.id := e.id ;
+        Ast.SetA (gpool, sf, e.au) ;
+        Ast.Add (gpool, d, SOME (sf)) ;
+        RETURN SOME (d)
+      END
+    ELSIF e.kind = Ast.NParen OR e.kind = Ast.NUn OR e.kind = Ast.NBin THEN
+      d := Ast.NewNode (gpool, e.kind, e.line, e.col) ;
+      d.id := e.id ;
+      Ast.SetA (gpool, d, e.au) ;
+      FOR i := 0 TO e.nkids - 1 DO Ast.Add (gpool, d, QualExpr (e.kids[i], u)) END ;
+      RETURN SOME (d)
+    END
+  END ;
+  RETURN b
+END QualExpr ;
+
+(* an exported TYPE's declaration as an importer reads it: an ARRAY's
+   bound qualified (QualExpr), through nested arrays; every other node
+   the declaration's own, so a record, an enumeration or an alias is
+   the node it was *)
+PROCEDURE QualArr (KEPT t: Ast.Kid ; KEPT u: PTR Ast.Node) : Ast.Kid =
+VAR n : PTR Ast.Node IN gpool ;
+BEGIN
+  IF t IS SOME tn THEN
+    IF tn.kind = Ast.NArrayType AND tn.nkids >= 2 THEN
+      n := Ast.NewNode (gpool, tn.kind, tn.line, tn.col) ;
+      n.id := tn.id ;
+      Ast.Add (gpool, n, QualExpr (tn.kids[0], u)) ;
+      Ast.Add (gpool, n, QualArr (tn.kids[1], u)) ;
+      RETURN SOME (n)
+    END
+  END ;
+  RETURN t
+END QualArr ;
 
 (* the module a qualified type name points into, noted while a
    designator walks a foreign aggregate, so that its component types
@@ -2369,7 +2592,7 @@ BEGIN
   END ;
   IF IsNegLit (e, Ast.NInt) THEN RETURN S3 ('INT64_C(-', NegLitText (e), ')') END ;
   IF IsNegLit (e, Ast.NReal) THEN RETURN S3 ('(-', NegLitText (e), ')') END ;
-  Err2 (e.line, S2 ('aggregate element unsupported yet: ', what)) ;
+  ErrAt (e, S2 ('aggregate element unsupported yet: ', what)) ;
   RETURN '0'
 END LitC ;
 
@@ -2617,10 +2840,15 @@ BEGIN
 END LoadUnit ;
 
 PROCEDURE RegisterExtern (KEPT u: PTR Ast.Node ; addInclude: BOOL) =
-VAR i, j, k : I64 ;
+VAR i, j, k, lo, hi : I64 ;
 BEGIN
   Setup () ;
   IF u.kind # Ast.NDefinition THEN RETURN END ;
+  (* an error on one of these nodes is in u's source (ErrAt) *)
+  lo := u.id ;
+  hi := u.id ;
+  IdSpan (SOME (u), lo, hi) ;
+  NoteOrigin (lo, hi, Text.Keep (gpool, u.au)) ;
   IF Text.BLen (u.bu) > 0 THEN
     FOR i := 0 TO u.nkids - 1 DO
       IF u.kids[i] IS SOME d THEN
@@ -2650,18 +2878,29 @@ BEGIN
             MAdd (extExcs, xd.au, xd.kids[0], u.au)
           END
         END
-      ELSIF d.kind = Ast.NTypeSection THEN
-        FOR j := 0 TO d.nkids - 1 DO
-          IF d.kids[j] IS SOME td THEN
-            IF td.kids[0] IS SOME tb THEN
-              MAdd (extTypes, Text.Keep (gpool, S3 (u.au, '.', td.au)), SOME (tb), '')
-            END
-          END
-        END
       ELSIF d.kind = Ast.NConstSection THEN
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME cd THEN
             MAdd (extConsts, Text.Keep (gpool, S3 (u.au, '.', cd.au)), cd.kids[0], '')
+          END
+        END
+      END
+    END
+  END ;
+  (* types and variables after every CONST: an array bound in them
+     that is a bare CONST of u is qualified (QualIn), and the CONST
+     may be declared below the TYPE.  An exported TYPE was registered
+     as written until 2026-10-29, so an importer's `VAR v : Shapes.Vec'
+     with Vec = ARRAY N OF F64 looked N up among its own constants and
+     was `array count form unsupported' *)
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME d THEN
+      IF d.kind = Ast.NTypeSection THEN
+        FOR j := 0 TO d.nkids - 1 DO
+          IF d.kids[j] IS SOME td THEN
+            IF td.kids[0] IS SOME tb THEN
+              MAdd (extTypes, Text.Keep (gpool, S3 (u.au, '.', td.au)), QualArr (SOME (tb), u), '')
+            END
           END
         END
       ELSIF d.kind = Ast.NVarSection THEN
@@ -2673,7 +2912,7 @@ BEGIN
             IF vd.kids[0] IS SOME vids THEN
               FOR k := 0 TO vids.nkids - 1 DO
                 IF vids.kids[k] IS SOME vid THEN
-                  MAdd (extVars, Text.Keep (gpool, S3 (u.au, '.', vid.au)), QualIn (vd.kids[1], u.au), '')
+                  MAdd (extVars, Text.Keep (gpool, S3 (u.au, '.', vid.au)), QualIn (QualArr (vd.kids[1], u), u.au), '')
                 END
               END
             END
@@ -3322,7 +3561,7 @@ BEGIN
             IF Resolve (px) IS SOME inner THEN
               IF inner.kind # Ast.NRecordType AND
                  inner.kind # Ast.NMonitorType THEN
-                Err2 (d.line,
+                ErrAt (d,
                   'selection through a non-record unsupported yet') ;
                 RETURN '0'
               END ;
@@ -3336,7 +3575,7 @@ BEGIN
               res := S3 (res, '->', CN (sel.au)) ;
               tnd := Checked (sel, InMod (FieldType (inner, sel.au), tmod))
             ELSE
-              Err2 (d.line, 'field base type unresolvable') ;
+              ErrAt (d, 'field base type unresolvable') ;
               RETURN '0'
             END
           ELSIF r.kind = Ast.NRecordType OR
@@ -3344,14 +3583,14 @@ BEGIN
             res := S3 (res, '.', CN (sel.au)) ;
             tnd := Checked (sel, InMod (FieldType (r, sel.au), tmod))
           ELSE
-            Err2 (d.line,
+            ErrAt (d,
               'selection through a non-record unsupported yet') ;
             RETURN '0'
           END ;
           fldOk := FALSE ;
           IF tnd IS SOME t1 THEN fldOk := TRUE END ;
           IF NOT fldOk THEN
-            Err2 (d.line, S2 ('unknown record field: ', sel.au)) ;
+            ErrAt (d, S2 ('unknown record field: ', sel.au)) ;
             RETURN '0'
           END
         ELSIF sel.kind = Ast.NSelIndex THEN
@@ -3448,14 +3687,14 @@ BEGIN
               tnd := Checked (sel, InMod (r.kids[1], tmod))
             END
           ELSE
-            Err2 (d.line, 'index into a non-array unsupported yet') ;
+            ErrAt (d, 'index into a non-array unsupported yet') ;
             RETURN '0'
           END
           END
         END
       END
     ELSE
-      Err2 (d.line, 'selector form unsupported yet') ;
+      ErrAt (d, 'selector form unsupported yet') ;
       RETURN '0'
     END ;
     viaSel := TRUE
@@ -3572,7 +3811,7 @@ BEGIN
       tag := 'POOL' ;
       RETURN 'm9_heap'
     END ;
-    Err2 (d.line, S2 ('unknown name: ', d.au)) ;
+    ErrAt (d, S2 ('unknown name: ', d.au)) ;
     RETURN '0'
   END ;
   res := CN (d.au) ;
@@ -3784,7 +4023,7 @@ BEGIN
           END ;
           RETURN S3 (res, r, '; })')
         END ;
-        Err2 (e.line, "selection from this call's answer unsupported yet") ;
+        ErrAt (e, "selection from this call's answer unsupported yet") ;
         RETURN '0'
     | Ast.NNewExpr :
         sh := NewShape (e, tyk, ext0) ;
@@ -3884,7 +4123,7 @@ BEGIN
           DynUtf.Append (d2, S2 (w, 'r; })')) ;
           RETURN DynUtf.ViewIn (gpool, d2)
         END ;
-        Err2 (e.line, 'GRID of an expression that is not a slice designator') ;
+        ErrAt (e, 'GRID of an expression that is not a slice designator') ;
         RETURN '0'
     | Ast.NSliceOf3 :
         lt := TagOfExpr (e.kids[0]) ;
@@ -3945,7 +4184,7 @@ BEGIN
           END ;
           IF inr IS SOME inn THEN
             IF inn.kind # Ast.NArrayType THEN
-              Err2 (e.line, 'SLICE() of non-slice unsupported yet') ;
+              ErrAt (e, 'SLICE() of non-slice unsupported yet') ;
               RETURN '0'
             END ;
             a1 := EX (e.kids[1], '') ;
@@ -3979,11 +4218,11 @@ BEGIN
             DynUtf.Append (d2, 'n }; })') ;
             RETURN DynUtf.ViewIn (gpool, d2)
           ELSE
-            Err2 (e.line, 'SLICE() argument form unsupported yet') ;
+            ErrAt (e, 'SLICE() argument form unsupported yet') ;
             RETURN '0'
           END
         ELSE
-          Err2 (e.line, 'SLICE() argument form unsupported yet') ;
+          ErrAt (e, 'SLICE() argument form unsupported yet') ;
           RETURN '0'
         END
     | Ast.NIs :
@@ -3999,7 +4238,7 @@ BEGIN
             END
           END
         END ;
-        Err2 (e.line, 'IS with a binder is the whole condition of an IF, ELSIF or WHILE') ;
+        ErrAt (e, 'IS with a binder is the whole condition of an IF, ELSIF or WHILE') ;
         RETURN '0'
     | Ast.NBin :
         lt := TagOfExpr (e.kids[0]) ;
@@ -4088,7 +4327,7 @@ BEGIN
              and the integer arm would emit checked 64-bit adds over
              doubles: a program that runs and answers wrong. *)
           IF Text.Eq (lt, '?') THEN
-            Err2 (e.line,
+            ErrAt (e,
               'arithmetic on an operand of unresolved type') ;
             RETURN '0'
           END ;
@@ -4143,7 +4382,7 @@ BEGIN
           RETURN l
         END
     ELSE
-      Err2 (e.line, 'expression kind unsupported yet') ;
+      ErrAt (e, 'expression kind unsupported yet') ;
       RETURN '0'
     END
   END ;
@@ -5688,7 +5927,7 @@ BEGIN
   END ;
   desc := ExcRef (qual, nm, fields) ;
   IF Text.BLen (desc) = 0 THEN
-    Err2 (h.line, S2 ('unknown exception in handler: ', nm)) ;
+    ErrAt (h, S2 ('unknown exception in handler: ', nm)) ;
     RETURN
   END ;
   cond := S2 ('err->exc == &', desc) ;
@@ -5699,7 +5938,7 @@ BEGIN
       IF Text.BLen (qx.bu) > 0 THEN desc := ExcRef (qx.au, qx.bu, fx)
       ELSE desc := ExcRef ('', qx.au, fx) END ;
       IF Text.BLen (desc) = 0 THEN
-        Err2 (h.line, S2 ('unknown exception in handler: ', qx.au)) ;
+        ErrAt (h, S2 ('unknown exception in handler: ', qx.au)) ;
         RETURN
       END ;
       cond := S4 ('(', cond, ' || err->exc == &', S2 (desc, ')'))
@@ -5772,7 +6011,7 @@ BEGIN
                       cond := S5 (cond, ' && ', slot, ' == INT64_C(',
                         S2 (arg.au, ')'))
                     ELSE
-                      Err2 (h.line,
+                      ErrAt (h,
                         'handler payload form unsupported yet')
                     END
                   END
@@ -5784,7 +6023,7 @@ BEGIN
         END
       END
     ELSE
-      Err2 (h.line, 'handler payload form unsupported yet')
+      ErrAt (h, 'handler payload form unsupported yet')
     END
   END ;
   Line (KPbuf, ind, S3 ('if (', cond, ') {')) ;
@@ -6214,7 +6453,7 @@ BEGIN
               FOR j := 2 TO st.nkids - 1 DO
                 IF st.kids[j] IS SOME tail THEN
                   IF tail.kind = Ast.NElsif THEN
-                    Err2 (st.line, 'ELSIF after IS SOME unsupported yet')
+                    ErrAt (st, 'ELSIF after IS SOME unsupported yet')
                   ELSE
                     Line (KPbuf, ind, '} else {') ;
                     EmitSeq (tail.kids[0], ind + 1)
@@ -6224,7 +6463,7 @@ BEGIN
               Line (KPbuf, ind, '} }') ;
               scope.n := savedScope
             ELSE
-              Err2 (st.line, 'IS SOME form unsupported yet')
+              ErrAt (st, 'IS SOME form unsupported yet')
             END
           END ;
           RETURN
@@ -6326,7 +6565,7 @@ BEGIN
               scope.n := savedScope ;
               Line (KPbuf, ind, '}')
             ELSE
-              Err2 (st.line, 'IS SOME form unsupported yet')
+              ErrAt (st, 'IS SOME form unsupported yet')
             END
           END ;
           RETURN
@@ -6422,7 +6661,7 @@ BEGIN
              checker has refused a step that is not a constant (par 10) *)
           IF Text.BLen (stp) = 0 THEN stp := StepC (st.kids[2]) END ;
           IF Text.BLen (stp) = 0 THEN
-            Err2 (st.line, 'FOR BY step form unsupported yet') ;
+            ErrAt (st, 'FOR BY step form unsupported yet') ;
             stp := '1'
           END
         END ;
@@ -6517,10 +6756,10 @@ BEGIN
         Line (KPbuf, ind, '}')
     | Ast.NExit :
         IF loopDepth = 0 THEN
-          Err2 (st.line, 'EXIT outside a loop')
+          ErrAt (st, 'EXIT outside a loop')
         END ;
         IF finDepth > 0 THEN
-          Err2 (st.line,
+          ErrAt (st,
             'EXIT across FINALLY refused (it would skip the cleanup)')
         END ;
         IF inSwitch > 0 THEN
@@ -6555,7 +6794,7 @@ BEGIN
              labels to it *)
           EmitCaseScalar (st, w, ind)
         ELSE
-          Err2 (st.line, 'CASE over this selector unsupported yet')
+          ErrAt (st, 'CASE over this selector unsupported yet')
         END ;
         FOR kh := 1 TO h0 DO Line (KPbuf, ind, '}') END
     (* ---- par 6: the monitor statements ----
@@ -6574,14 +6813,14 @@ BEGIN
         END ;
         IF vtN IS SOME mn THEN
           IF mn.kind # Ast.NMonitorType THEN
-            Err2 (st.line, 'WAIT/SIGNAL needs a monitor designator')
+            ErrAt (st, 'WAIT/SIGNAL needs a monitor designator')
           ELSIF st.kind = Ast.NWait THEN
             Line (KPbuf, ind, S3 ('m9_mon_wait (&(', l, ').m9mon);'))
           ELSE
             Line (KPbuf, ind, S3 ('m9_mon_signal (&(', l, ').m9mon);'))
           END
         ELSE
-          Err2 (st.line, 'WAIT/SIGNAL needs a monitor designator')
+          ErrAt (st, 'WAIT/SIGNAL needs a monitor designator')
         END
 
     (* THREAD (P, arg).  ONE TRAMPOLINE PER PROCEDURE, not per site.
@@ -6594,14 +6833,17 @@ BEGIN
         tg := '?' ;
         IF st.kids[0] IS SOME pn THEN
           IF pn.kind # Ast.NDesignator THEN
-            Err2 (st.line, 'THREAD target form unsupported yet')
+            ErrAt (st, 'THREAD target form unsupported yet')
           ELSE
             bname := Text.Keep (gpool, pn.au) ;
             l := '0' ;
             vd := NONE ;
             vtN := NONE ;
             thrPool := 'NULL' ;
-            IF st.kids[1] IS SOME az THEN
+            (* under parentheses as bare: `THREAD (P, (x))', accepted by
+               both checkers (CheckThread's ParenCore), was `THREAD form
+               unsupported yet' here until 2026-10-29 *)
+            IF ParenCore (st.kids[1]) IS SOME az THEN
               l := DES (az, tg) ;
               vd := DesigDecl (az) ;
               vtN := Resolve (vd) ;
@@ -6620,7 +6862,7 @@ BEGIN
                  character beats importing Text for it *)
               IF an.kind # Ast.NMonitorType AND
                  NOT (Text.BLen (w) > 0 AND B (w, Text.BLen (w) - 1) = ORD ('*')) THEN
-                Err2 (st.line,
+                ErrAt (st,
                   'THREAD argument must be pointer-shaped or a monitor')
               ELSE
                 IF MFind (thrSeen, bname) < 0 THEN
@@ -6689,11 +6931,11 @@ BEGIN
                 IF ExprRaises (st.kids[1]) THEN Line (KPbuf, ind, '}') END
               END
             ELSE
-              Err2 (st.line, 'THREAD form unsupported yet')
+              ErrAt (st, 'THREAD form unsupported yet')
             END
           END
         ELSE
-          Err2 (st.line, 'THREAD form unsupported yet')
+          ErrAt (st, 'THREAD form unsupported yet')
         END
 
     | Ast.NDispose : EmitDispose (st, ind)
@@ -6722,7 +6964,7 @@ BEGIN
         END ;
         Line (KPbuf, ind, S3 ('goto ', exitLbl, ';'))
     ELSE
-      Err2 (st.line, 'statement kind unsupported yet')
+      ErrAt (st, 'statement kind unsupported yet')
     END
   END
 END EmitStmt ;
@@ -6913,18 +7155,18 @@ BEGIN
                     END
                   END
                 ELSE
-                  Err2 (st.line, 'CASE label form unsupported yet')
+                  ErrAt (st, 'CASE label form unsupported yet')
                 END
               ELSIF lbl.kind = Ast.NLabelRange THEN
                 IF lbl.kids[0] IS SOME lv THEN
                   IF Text.BLen (LabelName (lv)) > 0 AND IsNone (lbl.kids[1]) THEN
                     Line (KPbuf, ind, S4 ('case ', l, LabelName (lv), ':'))
                   ELSE
-                    Err2 (st.line, 'CASE label form unsupported yet')
+                    ErrAt (st, 'CASE label form unsupported yet')
                   END
                 END
               ELSE
-                Err2 (st.line, 'CASE label form unsupported yet')
+                ErrAt (st, 'CASE label form unsupported yet')
               END
             END
           END
@@ -6991,7 +7233,7 @@ BEGIN
                 END
               END ;
               IF Text.BLen (r) = 0 THEN
-                Err2 (st.line, 'CASE label form unsupported yet')
+                ErrAt (st, 'CASE label form unsupported yet')
               ELSE
                 Line (KPbuf, ind, S3 ('case ', r, ':'))
               END
@@ -7010,7 +7252,7 @@ BEGIN
     END
   END ;
   IF NOT hadElse THEN
-    Err2 (st.line,
+    ErrAt (st,
       'scalar CASE without ELSE refused (unmatched-label semantics undecided)')
   END ;
   inSwitch := inSwitch - 1 ;
@@ -7124,7 +7366,7 @@ BEGIN
   END ;
   r := ExcRef (l2, l, fields) ;
   IF Text.BLen (r) = 0 THEN
-    Err2 (st.line, S2 ('RAISE of unknown exception: ', l)) ;
+    ErrAt (st, S2 ('RAISE of unknown exception: ', l)) ;
     RETURN
   END ;
   r := S2 ('&', r) ;
@@ -7159,7 +7401,7 @@ BEGIN
            declaring an exception with six F64 fields and reading the
            emitted code. *)
         IF j2 >= 2 THEN
-          Err2 (st.line,
+          ErrAt (st,
             'exception payload: more than 2 real fields') ;
           RETURN
         END ;
@@ -7167,7 +7409,7 @@ BEGIN
         j2 := j2 + 1
       ELSIF Text.Eq (tg, 'SLICE') THEN
         IF k2 >= 3 THEN
-          Err2 (st.line,
+          ErrAt (st,
             'exception payload: more than 3 slice fields') ;
           RETURN
         END ;
@@ -7181,7 +7423,7 @@ BEGIN
         k2 := k2 + 1
       ELSE
         IF i2 >= 4 THEN
-          Err2 (st.line,
+          ErrAt (st,
             'exception payload: more than 4 integer fields') ;
           RETURN
         END ;
@@ -7305,7 +7547,7 @@ BEGIN
                   IF Resolve (grpn.kids[1]) IS SOME mtn THEN
                     IF mtn.kind = Ast.NMonitorType THEN
                       IF Text.Eq (mode, 'p') THEN
-                        Err2 (grpn.line,
+                        ErrAt (grpn,
                           'a monitor receiver must be VAR')
                       ELSE
                         monPar := CN (pid.au)
@@ -8152,7 +8394,7 @@ BEGIN
         Line (KHdrConsts, 0, S7 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' (', S2 (ItoA (CharVal (e.au)), 'u'), ')'))
       ELSE
-        Err2 (e.line, 'const form unsupported yet')
+        ErrAt (e, 'const form unsupported yet')
       END
     END
   END ;

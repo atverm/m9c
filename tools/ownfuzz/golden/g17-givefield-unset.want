@@ -1,0 +1,6 @@
+verdict: safe
+reason: 
+output: total 0
+trace:
+  GIVEFIELD: NULL, nothing freed
+  return: scratch freed

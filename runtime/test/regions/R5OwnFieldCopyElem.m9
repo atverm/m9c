@@ -1,0 +1,26 @@
+MODULE R5OwnFieldCopyElem ;
+(* R5OwnFieldCopy with an ELEMENT: `r := a[0] ; Eat (a[0]) ; r.v'
+   (2026-10-28) -- accepted by 0.25.1, a heap-use-after-free. *)
+IMPORT Io, Fmt ;
+TYPE
+  T = RECORD v : I64 END ;
+  Two = ARRAY 2 OF PTR T ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Go () : I64 =
+VAR q, r : PTR T ; a : Two ;
+BEGIN
+  q := NEW (OWN, T) ;
+  q.v := 8 ;
+  a[0] := q ;
+  r := a[0] ;
+  Eat (a[0]) ;
+  RETURN r.v
+END Go ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (Go ()))
+EXCEPT
+| Io.IOError (m) : RETURN
+END R5OwnFieldCopyElem.

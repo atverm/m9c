@@ -48,7 +48,7 @@ else
   trap 'rm -rf "$W"' EXIT
 fi
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
-    -Wno-unused-parameter -Wno-unused-function \
+    -Wno-unused-parameter -Wno-unused-function $CLANGWARN \
     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c"
 M9C=$W/m9c
 RT=$(cd .. && pwd)

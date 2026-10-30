@@ -1,0 +1,8 @@
+verdict: unsafe
+reason: READ o1 reads freed #1
+output: 
+trace:
+  o1 = #1
+  a1 = #1
+  GIVE a1: #1 freed
+  READ o1 reads freed #1

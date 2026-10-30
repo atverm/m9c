@@ -175,6 +175,12 @@ export M9CACHE="$RW/cache"
   [ "$("$M9C" --run src/RcUse.m9 < /dev/null 2>&1)" = "root/x 1" ] ||
     { echo "FAIL: RcUse, a module-pool answer kept in module state:";
       "$M9C" --run src/RcUse.m9 < /dev/null 2>&1 | grep -v 'm9c: gcc' | head -5; exit 1; }
+  # THREAD's argument under parentheses (2026-10-29): accepted by both
+  # checkers, `THREAD form unsupported yet' in the generator before
+  cp "$FIX/ThreadParen.m9" src/
+  [ "$("$M9C" --run src/ThreadParen.m9 < /dev/null 2>&1)" = "done 2" ] ||
+    { echo "FAIL: ThreadParen, THREAD (W, (j)):";
+      "$M9C" --run src/ThreadParen.m9 < /dev/null 2>&1 | grep -v 'm9c: gcc' | head -5; exit 1; }
   # (a FOR body moving its variable past the bound, the same report's
   # second item, is REFUSED since 2026-10-25: probes
   # for-variable-assigned and for-variable-var-arg, museum

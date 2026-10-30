@@ -1,0 +1,117 @@
+MODULE SanFieldCopyOk ;
+
+(* WANT: field copies: before 41 direct 42 value 43 made 44 handle 45 *)
+
+(* The legal side of 2026-10-28's two field-copy rules: a pointer copied
+   out of an owned object's field lives as long as the owner, through a
+   direct call and through a procedure value alike; a procedure value
+   whose parameters carry no reference answers an object of its own,
+   which its caller frees; a view through one SHARED handle outlives
+   another handle's DISPOSE.  Each copy is read while its owner lives,
+   under the M9_ASAN arenas and ASan. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  Cell = RECORD v : I64 END ;
+  Holder = RECORD pool : POOL ; c : OPT PTR Cell END ;
+  Store = RECORD pool : POOL ; c : OPT PTR Cell END ;
+  GetT = PROCEDURE (h: PTR Holder) : OPT PTR Cell ;
+  MakeT = PROCEDURE (n: I64) : PTR Cell ;
+
+VAR out : STR ;
+
+PROCEDURE Rd (r: OPT PTR Cell) : I64 =
+BEGIN
+  IF r IS SOME c THEN RETURN c.v END ;
+  RETURN 0
+END Rd ;
+
+PROCEDURE GetC (h: PTR Holder) : OPT PTR Cell =
+BEGIN
+  RETURN h.c
+END GetC ;
+
+PROCEDURE MakeCell (n: I64) : PTR Cell =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (OWN, Cell) ;
+  c.v := n ;
+  RETURN c
+END MakeCell ;
+
+PROCEDURE Mk (n: I64) : PTR Holder =
+VAR h : PTR Holder ; c : PTR Cell ;
+BEGIN
+  h := NEW (OWN, Holder) ;
+  c := NEW (h.pool, Cell) ;
+  c.v := n ;
+  h.c := SOME (c) ;
+  RETURN h
+END Mk ;
+
+PROCEDURE Before () : I64 =
+VAR h : PTR Holder ; r : OPT PTR Cell ; k : I64 ;
+BEGIN
+  h := Mk (41) ;
+  r := h.c ;
+  k := Rd (r) ;
+  DISPOSE (h) ;
+  RETURN k
+END Before ;
+
+PROCEDURE Direct () : I64 =
+VAR h : PTR Holder ; r : OPT PTR Cell ; k : I64 ;
+BEGIN
+  h := Mk (42) ;
+  r := GetC (h) ;
+  k := Rd (r) ;
+  DISPOSE (h) ;
+  RETURN k
+END Direct ;
+
+PROCEDURE Value (fn: GetT) : I64 =
+VAR h : PTR Holder ; r : OPT PTR Cell ; k : I64 ;
+BEGIN
+  h := Mk (43) ;
+  r := fn (h) ;
+  k := Rd (r) ;
+  DISPOSE (h) ;
+  RETURN k
+END Value ;
+
+PROCEDURE Made (mk: MakeT) : I64 =
+VAR p : PTR Cell ; k : I64 ;
+BEGIN
+  p := mk (44) ;
+  k := p.v ;
+  DISPOSE (p) ;
+  RETURN k
+END Made ;
+
+PROCEDURE Handle () : I64 =
+VAR o : PTR Store ; c : PTR Cell ; s, s2 : SHARED PTR Store ; r : OPT PTR Cell ; k : I64 ;
+BEGIN
+  o := NEW (OWN, Store) ;
+  c := NEW (o.pool, Cell) ;
+  c.v := 45 ;
+  o.c := SOME (c) ;
+  s := SHARED (o) ;
+  s2 := s ;
+  r := s.c ;
+  DISPOSE (s) ;
+  k := Rd (r) ;
+  DISPOSE (s2) ;
+  RETURN k
+END Handle ;
+
+BEGIN
+  out := 'field copies: before ' + Fmt.I64Str (Before ()) ;
+  out := out + ' direct ' + Fmt.I64Str (Direct ()) ;
+  out := out + ' value ' + Fmt.I64Str (Value (GetC)) ;
+  out := out + ' made ' + Fmt.I64Str (Made (MakeCell)) ;
+  out := out + ' handle ' + Fmt.I64Str (Handle ()) ;
+  Io.WriteLine (out)
+EXCEPT
+| Io.IOError (m) : RETURN
+END SanFieldCopyOk.

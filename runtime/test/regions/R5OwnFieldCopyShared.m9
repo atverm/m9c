@@ -1,0 +1,28 @@
+MODULE R5OwnFieldCopyShared ;
+(* R5OwnFieldCopy with SHARED for the move: `r := b.p ; s := SHARED
+   (b.p) ; DISPOSE (s) ; r.v' -- the only handle's DISPOSE frees what
+   the copy names.  NOT a hole before 2026-10-28: the owner walk
+   already refused the read (q's bit reached r through the field, and
+   the handle's DISPOSE killed it); held here so that the SHARED variant
+   of the move stays refused by the walk, beside par 4.2's refusal of
+   SHARED through a selector. *)
+IMPORT Io, Fmt ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Go () : I64 =
+VAR q, r : PTR T ; b : B ; s : SHARED PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  q.v := 9 ;
+  b.p := q ;
+  r := b.p ;
+  s := SHARED (b.p) ;
+  DISPOSE (s) ;
+  RETURN r.v
+END Go ;
+BEGIN
+  Io.WriteLine (Fmt.I64Str (Go ()))
+EXCEPT
+| Io.IOError (m) : RETURN
+END R5OwnFieldCopyShared.

@@ -32,8 +32,8 @@ to reduce, so the list is meant to shrink.
 | **Compiler** | `m9c`, self-hosted. Lexer, parser and code generator are written in M9; the three-stage bootstrap is byte-identical at the fixpoint (§9.5) |
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
 | **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02) and written by its loop alone (§2.1, since 2026-10-25), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a `RAISE`'s payload held to its `EXCEPTION`'s fields, count and types (§5, since 0.20.0), a `FOR` step a constant other than 0 (§10, since 0.20.0), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a member an enumeration lacks, an assignment to a procedure, an exception used as a type, a selector or LEN the type cannot take and an ARRAY count below 1 (§3 rule 7, since 2026-10-22), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
-| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6; since 2026-10-11 `m9c --review` LISTS each `THREAD` whose target writes one, not refused); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path, a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
-| **Accepted by the checker, refused by the generator** | None known (`VIEW` over a grid a call answers, the last owed form, builds since 2026-10-25; the generator still refuses two VAR string arguments whose storage lives in two pools, by name).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
+| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6; since 2026-10-11 `m9c --review` LISTS each `THREAD` whose target writes one, not refused); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path -- not followed, so since 2026-10-28 every operation that consumes an owner (`DISPOSE`, an `OWN` argument, `SHARED (x)`, `THREAD` into an `OWN` parameter) refuses a selector (§4.2) --; a pool's storage handed back through a `VAR` parameter into module state (`runtime/test/regions/R5PeriodPool.m9`, in `regions.owed`); a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
+| **Accepted by the checker, refused by the generator** | Two known, both an `ARRAY` count whose value the checker does not know: a divisor that is a `CONST` of 0, and a count past `I64` ("array count form unsupported yet", the error naming the file the count is written in).  Closed on 2026-10-29: `THREAD (P, (x))` with the argument in parentheses ("THREAD form unsupported yet", found 2026-10-28) builds; `THREAD (W, p)` to a worker taking its record by value, which the C compiler refused, is refused by the checker; a count outside its grammar -- `ORD ('a')`, `MAX (I8)`, a literal 0 divisor, a `CHAR` `CONST` -- is refused by the checker; and an array type named `C` is indexed (`Gen.Resolve` took it for the foreign boundary's `C`).  Before them none (`VIEW` over a grid a call answers, the last owed form, builds since 2026-10-25; the generator still refuses two VAR string arguments whose storage lives in two pools, by name).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` as COMPUTED (§6: since 2026-10-11 it is DECLARED, `RECORD ... END [SHARABLE]`, and checked at `THREAD`; the `SHARED` count is atomic since 2026-10-18); the pre-registered candidates with their adoption triggers (§9.6) |
 | **Release** | 0.25.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
@@ -295,10 +295,19 @@ every NaN M9 wrote differed in its bits from the NaN of every oracle
 it was held to. Those spellings are now `NaN`. `0.0 / 0.0` is still
 legal and still answers what the machine says.)*
 
-`TRUNC(f: F64): I64 RAISES ValueRange` — *(Observed failure:
-`Trunc(NaN)` in the fill-value path was a crash in FPC and silent
-INT64_MIN fabrication in numpy; in M9 it is a declared, catchable,
-impossible-to-ignore error.)*
+**Truncation is the conversion**: `I64 (x)` of a real truncates
+toward zero (`I64 (-2.7)` is -2) and `RAISES ValueRange` on a NaN, an
+infinity or a value beyond `I64`, and `Math.Trunc (x)` is the same
+under a name; `Math.Floor`, `Ceil` and `Round` (a half away from zero,
+C's `round`) answer an `F64` and come before it for the other
+directions.
+*(Observed failure: `Trunc(NaN)` in the fill-value path was a crash
+in FPC and silent INT64_MIN fabrication in numpy; in M9 it is a
+declared, catchable, impossible-to-ignore error --
+`museum/trunc-nan.m9`.  Until 2026-10-29 this paragraph named a
+builtin `TRUNC(f: F64): I64` that no compiler had; a port found the
+report behind the compiler (report M2), and `Math.Trunc` and
+`Math.Round` were added the same day.)*
 
 ### 2.2 Composite types
 
@@ -318,6 +327,24 @@ OPT T                  (* T or NONE; must be guarded before use;
 STR                    (* predeclared alias for SLICE OF CHAR *)
 UTF                    (* predeclared: UTF-8 text, since 2026-10-23 *)
 ```
+
+**An `ARRAY`'s count** is a constant of at least 1: an integer
+literal, a `CONST` naming one (this module's `N` or an imported
+`Mod.N`), an expression of those under `+ - * DIV MOD`, unary minus
+and parentheses (`ARRAY 2 * N OF T`, since 2026-10-29), or an
+enumeration (`ARRAY Colour OF T`, below).  Nothing else: a call
+(`ORD ('a')`, `MAX (I8)`, `LEN (Tab)`), a literal 0 divisor or a
+`CHAR` or real `CONST` is refused by the checker (since 2026-10-29;
+probe `array-count-form`), and a `SLICE` holds what is known only at
+run time.  Two array types are the
+same type when their element types are and their counts are written
+alike (`ARRAY 4 OF F64` and `ARRAY N OF F64` are two types, `N` being
+4), a name in a count meaning the CONST of the module that wrote it:
+`Shapes.Vec = ARRAY N OF F64` read in an importer is `ARRAY Shapes.N OF
+F64`, the same type as the importer's own `ARRAY Shapes.N OF F64` and
+not its `ARRAY N OF F64` with a CONST `N` of its own (until 2026-10-29
+the checker took those two for one type and the generator gave the
+importer's `Vec` the importer's `N`).
 
 **`UTF`** (since 2026-10-23, the first stage of the transition to
 UTF-8 text, `docs/utf8-plan.md`) is a predeclared identifier for a
@@ -922,7 +949,13 @@ slice or a pointer a field holds (`t.s[0] := 'X'`) is refused; a field
 given storage that is not read-only is *refreshed*, and writes
 through that field are legal again (`d := c ; d.defs := NEW (pool,
 TermDef, n) ; d.defs[i] := ...`, for the whole procedure, as the mark
-itself is).  An `RO` field and an `RO` answer are held at the CALL
+itself is).  The region walk holds the whole copy flow by flow beside
+it (since 2026-10-29): after `t := r` every field of `t` is read-only
+until it is itself given other storage, so a refresh made only on
+one branch, before the copy, or after the write, does not count
+(`runtime/test/regions/R4Copy*`; until then `fl.rows := NEW (...) ;
+fl := r ; fl.rows[0][0][0] := 'X'` wrote into the caller's literal).
+An `RO` field and an `RO` answer are held at the CALL
 too (since 2026-10-08): lent to a writable slice or grid parameter
 they are refused as an `RO` parameter is.  What this does not yet
 follow: a call that answers a view without saying `RO`.
@@ -1452,6 +1485,21 @@ The judgement is the M9 checker's alone.
   the test helpers forwarding a frame to them), `Parse.PImports` puts
   views of the source into the caller's node. The ledger's retention
   rows went 284 → 434, its `kept-unseen` rows 19 → 18.)*
+- A **`POOL` handed to a `KEPT` parameter** must outlive the state the
+  callee keeps its allocations in -- a `KEPT` pool is the module's to
+  the region judgement (§4) -- so the caller's side of `KEPT` reads the
+  pool by the root of its designator (since 2026-10-28).  `HEAP`, a
+  module's pool and a pool field of a module variable are accepted; a
+  pool reached from a value, `VAR` or `RO` parameter is a retention the
+  caller declares `KEPT` in turn, composing upward as any borrow does;
+  a local pool, a pool field of a local, a pool reached through a
+  binder or through an owned or `SHARED` object is refused: `a KEPT
+  parameter cannot take the pool scratch -- it dies with this frame`.
+  The root is the whole judgement, so a record in a module's pool
+  reached through a local is refused too -- conservatively; name the
+  module variable.  *(0.25.1 read nothing at the caller: `Grow
+  (scratch)` left a module variable in a freed block, which the next
+  local pool reused.)*
 - Retention by **ownership transfer** stays §4.2's: an owned value
   moves.
 
@@ -1515,11 +1563,11 @@ callee's declared keeping does.
 
 These sentences are the discipline. There are no lifetime
 annotations, no named regions in signatures, no borrow syntax. The
-price of that smallness is stated honestly in §9. Still owed, and
-stated: a borrow laundered through a call *result* (`t := F (msg)`
-where `F` answers a view of its argument) is not yet seen — result
-provenance would need a declaration of its own, and none has earned
-its place yet.
+price of that smallness is stated honestly in §9. A borrow laundered
+through a call *result* (`t := F (msg)` where `F` answers a view of its
+argument) is seen since 2026-10-18 by the provenance above, read from
+the callee's body (probe `kept-via-answer`) -- no declaration was
+needed.  *(This paragraph called it owed until 2026-10-28.)*
 
 ### 4.2 Ownership
 
@@ -1586,11 +1634,41 @@ lent: a function answering a pointer parameter that is not `OWN`, a
 component of one or a local carrying one gives a borrow, and `r := Id
 (p) ; DISPOSE (r)` is refused.  *(Since 2026-10-21, the compiler
 review's O4b: it freed p twice, or pool storage when p was in a pool.
-Not followed: a callee answering a further callee's borrowed answer,
-`RETURN Id (a)`.)*  A
+A callee answering a further callee's borrowed answer, `RETURN Id
+(a)`, is followed since 2026-10-25: probe `dispose-borrowed-via-call`.)*  A
 pointer moved into a field is not freed by `DISPOSE`: it stays
 allocated -- a leak the checker accepts, where a double free is what
 it refuses.
+
+**Every operation that consumes an owner asks `DISPOSE`'s two
+questions** (since 2026-10-28).  Four operations end an owner:
+`DISPOSE`, an argument to an `OWN` parameter, `SHARED (x)`, and
+`THREAD (P, x)` when `P`'s parameter is `OWN`.  Each takes a bare name,
+looked at under any parentheses -- a designator with a selector (a
+field, an element, a field reached through a pointer; of a local, a
+parameter or an owned object) is refused, `cannot move through a
+selector of b ... ownership is not followed into a field or an element`
+-- and each takes a name that may own what it points to: a borrow (a
+value, `VAR` or `RO` parameter, a binder) is refused, `cannot move
+borrowed p`, and so is a local that nothing gives an owned pointer,
+`nothing here gives it an owned pointer`.  *(Until then only `DISPOSE`
+asked: `Eat (b.p) ; Eat (b.p)` freed one object twice, `r := Id (q) ;
+Eat (r)` freed q's, `SHARED (b.p)`'s last `DISPOSE` freed what b.p still
+named, and `THREAD (Work, b.p)` or `THREAD (Work, p)` with p borrowed was
+read as a lend while Work freed it -- each accepted by 0.25.1.  The M9
+checker read `SHARED`'s argument without its parentheses and the Pascal
+twin under them; both read them now, and `THREAD`'s.)*
+
+**A call through a procedure value is judged by the sound default**
+(since 2026-10-28), for ownership as for regions: which body runs is
+not known, so its answer may be any argument a parameter of its type
+can carry.  It owns only when no parameter of the procedure type can
+carry a reference -- a pointer, a slice, a grid, or a record, array or
+`OPT` holding one -- and it lives no longer than the owners its
+arguments reach.  *(It was taken at its word as a fresh object: `p :=
+fn (h) ; DISPOSE (p)`, fn answering h's field, freed what the field
+held, and `r := fn (h) ; DISPOSE (h) ; r.c` read h's freed pool -- the
+direct call `GetC (h)` was refused in both.)*
 
 **What is derived from an owned object lives as long as its owner**
 (since 2026-10-26).  A view of a field, an allocation in a `POOL`
@@ -1603,7 +1681,11 @@ owner whose storage was stored where it outlives the procedure is also
 refused: into a module variable, through a parameter's storage, a
 `KEPT` argument, a `THREAD`.  Without the kill, the object only leaks,
 as above.  Moving an owner (`p := o`, `h := SHARED (o)`) moves what
-was derived from it.  Each `SHARED` handle counts on its own: a
+was derived from it.  An operation that consumes through a selector
+(refused above, and judged here on its own) kills every owner that was
+stored into the root's components -- which component holds which is
+not followed -- so a copy taken from any of them, `r := b.p ; Eat (b.p)
+; r.v`, is refused at its use (since 2026-10-28).  Each `SHARED` handle counts on its own: a
 handle stored is a copy of the count, and a view taken through a
 handle that outlives the disposed one lives.  The judgement is flow-
 sensitive and per procedure; a call is read by what its callee's
@@ -1758,7 +1840,10 @@ variable declared `IN p` may not be given an allocation made in
 another named pool (`acc is declared IN scratch but allocated in
 pool`, `pool-clause-disagrees`), since rule 2 reads the clause as
 the truth; a pointer-bearing record handed by VALUE to a callee that
-retains it is still not a retention the checker sees, and is owed.
+retains it is a retention since a record carries what its fields hold
+(§4.1, probe `kept-record-value`; this sentence called it owed until
+2026-10-28), and its caller handing it storage of a local pool is
+refused at a `KEPT` parameter.
 
 **Storage in a local pool is frame storage that nobody rescues**
 (2026-10-01).  `VAR scratch: POOL` dies with the frame as the

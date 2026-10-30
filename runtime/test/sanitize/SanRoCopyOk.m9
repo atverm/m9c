@@ -1,0 +1,63 @@
+MODULE SanRoCopyOk ;
+
+(* WANT: yh q w one *)
+
+(* The legal side of 2026-10-29's whole-copy rule (the R4Copy programs
+   in regions/): an
+   RO record copied whole and its field then given storage of its own
+   is written through that storage; a copy of a record this procedure
+   built is written freely; a copy only read is read.  Each runs under
+   the M9_ASAN arenas and ASan, and the caller's text is unchanged. *)
+
+IMPORT Io ;
+TYPE
+  Strs = SLICE OF STR ;
+  Table = RECORD head : Strs ; rows : SLICE OF Strs END ;
+
+PROCEDURE Refreshed (VAR pool: POOL ; RO other: Table) : Table RAISES IndexError =
+VAR fl : Table ;
+BEGIN
+  fl.rows := NEW (pool, Strs, 1) ;
+  fl := other ;
+  fl.rows := NEW (pool, Strs, 1) ;
+  fl.rows[0] := NEW (pool, STR, 2) ;
+  fl.rows[0][0] := 'y' ;
+  fl.head := NEW (pool, STR, 1) ;
+  fl.head[0] := 'h' ;
+  RETURN fl
+END Refreshed ;
+
+PROCEDURE Built (VAR pool: POOL) : Table RAISES IndexError =
+VAR fl, mine : Table ;
+BEGIN
+  mine.rows := NEW (pool, Strs, 1) ;
+  mine.rows[0] := NEW (pool, STR, 1) ;
+  fl.rows := NEW (pool, Strs, 1) ;
+  fl := mine ;
+  fl.rows[0][0] := 'w' ;
+  RETURN fl
+END Built ;
+
+PROCEDURE ReadOnly (RO other: Table) : I64 =
+VAR fl : Table ;
+BEGIN
+  fl.rows := other.rows ;
+  fl := other ;
+  RETURN LEN (fl.rows)
+END ReadOnly ;
+
+VAR
+  pool : POOL ;
+  t, u, v : Table ;
+BEGIN
+  t.rows := NEW (pool, Strs, 1) ;
+  t.rows[0] := NEW (pool, STR, 1) ;
+  t.rows[0][0] := 'q' ;
+  u := Refreshed (pool, t) ;
+  v := Built (pool) ;
+  IF ReadOnly (t) = 1 THEN
+    Io.WriteLine (u.rows[0][0] + u.head[0] + ' ' + t.rows[0][0] + ' ' + v.rows[0][0] + ' one')
+  END
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END SanRoCopyOk.

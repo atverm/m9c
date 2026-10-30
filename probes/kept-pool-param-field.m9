@@ -1,0 +1,26 @@
+(* EXPECT: argument 1 of Grow: borrowed o is kept by the callee -- declare KEPT o (par 4.1) *)
+(* kept-pool-forward with the pool a field of a VAR parameter: the
+   caller's record may be a local whose pool dies with the caller's
+   frame, so handing o.pool to a KEPT parameter is a retention of o
+   (2026-10-28).  Legal forms first: o declared KEPT. *)
+MODULE m ;
+TYPE
+  Cell = RECORD v : I64 END ;
+  Hold = RECORD pool : POOL END ;
+VAR last : OPT PTR Cell ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE FillKept (VAR KEPT o: Hold) =
+BEGIN
+  Grow (o.pool)
+END FillKept ;
+PROCEDURE Fill (VAR o: Hold) =
+BEGIN
+  Grow (o.pool)
+END Fill ;
+BEGIN
+END m.

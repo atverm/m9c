@@ -1,0 +1,9 @@
+verdict: safe
+reason: 
+output: total 2
+trace:
+  o1 = #1
+  a1 = #1
+  read #1
+  read #1
+  return: scratch freed

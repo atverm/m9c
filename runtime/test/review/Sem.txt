@@ -1,12 +1,12 @@
-REVIEW Sem -- 619 procedures with a body, 423 of them functions; 85 headings in a DEFINITION
+REVIEW Sem -- 635 procedures with a body, 435 of them functions; 87 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             423
-  assignments                                  2570
-  arguments                                   10557
-  RETURN values                                1484
-  operands of a comparison or an operator      3215
-  CASE labels                                   179
+  functions answering on every path             435
+  assignments                                  2631
+  arguments                                   10933
+  RETURN values                                1533
+  operands of a comparison or an operator      3305
+  CASE labels                                   188
   THREAD arguments                                0
   CASE over variants, proved total                0
 
@@ -21,7 +21,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   SHARED (x)                                      0
   THREAD                                          0
   [SHARABLE] records                              0
-  module variables                              206   showName, shown, shownRaises, mods, nmods, impB, +200 more
+  module variables                              207   showName, shown, shownRaises, mods, nmods, impB, +201 more
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -33,7 +33,7 @@ TRUSTED -- outside what the checker can see
     of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
-  CASE statements                                17
+  CASE statements                                18
   RAISE statements                                3
   handlers                                        2
   NEW in the frame                               18

@@ -1,0 +1,31 @@
+(* EXPECT: argument 1 of FwdKept: a KEPT parameter cannot take the pool scratch -- it dies with this frame *)
+(* kept-pool-local through a KEPT forwarder: the local pool is refused
+   where it is handed to the first KEPT parameter, however many calls
+   down the keeping happens (2026-10-28).  Legal forms first: the
+   forwarder given the module's pool. *)
+MODULE m ;
+TYPE Cell = RECORD v : I64 END ;
+VAR
+  last : OPT PTR Cell ;
+  mpool : POOL ;
+PROCEDURE Grow (VAR KEPT p: POOL) =
+VAR c : PTR Cell ;
+BEGIN
+  c := NEW (p, Cell) ;
+  last := SOME (c)
+END Grow ;
+PROCEDURE FwdKept (VAR KEPT p: POOL) =
+BEGIN
+  Grow (p)
+END FwdKept ;
+PROCEDURE Legal () =
+BEGIN
+  FwdKept (mpool)
+END Legal ;
+PROCEDURE Fill () =
+VAR scratch : POOL ;
+BEGIN
+  FwdKept (scratch)
+END Fill ;
+BEGIN
+END m.

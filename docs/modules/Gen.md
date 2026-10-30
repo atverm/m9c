@@ -80,6 +80,11 @@ corpus, and then cost one INSIDE the tutorial.  i in
 0 .. MIN (Errs (), 8) - 1; msgs may be '' where a site has no
 wording yet.
 
+### ErrModAt (i: I64) : UTF
+
+the module whose source error i's line is in: '' for the module
+being emitted, else an imported definition's name (2026-10-29)
+
 ### SetIrCheck (on: BOOL)
 
 _(documented with the group below)_

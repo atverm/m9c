@@ -168,6 +168,20 @@ still F64: the conversion to an integer is I64 (x), which is
 checked and raises ValueRange of its own.  Two steps, both
 visible, rather than one step that can surprise.
 
+### Round (x: F64) : F64 RAISES ValueRange
+
+the nearest integer, a half AWAY from zero: Round (2.5) = 3.0,
+Round (-2.5) = -3.0 (C round, Fortran ANINT).  Not Python's
+round, which takes a half to the even neighbour.  F64 like Floor
+and Ceil; I64 (Round (x)) for an integer.
+
+### Trunc (x: F64) : I64 RAISES ValueRange
+
+toward zero, as an integer: I64 (x) under a name, Trunc (-2.7)
+= -2.  ValueRange for a NaN, an infinity or a value beyond I64
+(museum/trunc-nan.m9).  The one rounding answering I64: what the
+report long named TRUNC, which no compiler had (2026-10-29).
+
 ### Fmod (x, y: F64) : F64 RAISES ValueRange
 
 the remainder of x/y with the sign of x, which is what Fortran
@@ -269,6 +283,14 @@ _(undocumented)_
 
 _(undocumented)_
 
+### RoundF32 (x: F32) : F32 RAISES ValueRange
+
+_(undocumented)_
+
+### TruncF32 (x: F32) : I64 RAISES ValueRange
+
+_(undocumented)_
+
 ### FmodF32 (x, y: F32) : F32 RAISES ValueRange
 
 _(undocumented)_
@@ -362,6 +384,10 @@ _(undocumented)_
 
 _(undocumented)_
 
+### CRound (x: C.Double) : C.Double [REENTRANT]
+
+_(undocumented)_
+
 ### CFabs (x: C.Double) : C.Double [REENTRANT]
 
 _(undocumented)_
@@ -444,6 +470,10 @@ _(undocumented)_
 _(undocumented)_
 
 ### CCeilF32 (x: C.Float) : C.Float [REENTRANT]
+
+_(undocumented)_
+
+### CRoundF32 (x: C.Float) : C.Float [REENTRANT]
 
 _(undocumented)_
 

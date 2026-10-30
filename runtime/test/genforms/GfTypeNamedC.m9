@@ -1,0 +1,44 @@
+MODULE GfTypeNamedC ;
+
+(* WANT: 3.0 2.0 9.0 7.0 4 10.0 *)
+
+(* A type of the program named C (report M7, 2026-10-29): `TYPE C = A'
+   with A an array, then `c[k]' -- the checker accepted it and the
+   generator said `index into a non-array unsupported yet'.  Not the
+   alias: Gen.Resolve stopped at any qualident named C, the foreign
+   boundary's pseudo-module, whose types (C.Int) always have a member.
+   An alias of it, a field and a parameter of it, indexed. *)
+
+IMPORT Io, Fmt ;
+
+TYPE
+  A = ARRAY 4 OF F64 ;
+  C = A ;
+  G = C ;
+  R = RECORD c : C END ;
+
+PROCEDURE Sum (RO v: C) : F64 =
+VAR k : I64 ; s : F64 ;
+BEGIN
+  s := 0.0 ;
+  FOR k := 0 TO 3 DO s := s + v[k] END ;
+  RETURN s
+END Sum ;
+
+VAR
+  a : A ;
+  c : C ;
+  g : G ;
+  r : R ;
+  k : I64 ;
+
+BEGIN
+  FOR k := 0 TO 3 DO c[k] := F64 (k) END ;
+  a := c ;
+  g := c ;
+  g[1] := 9.0 ;
+  r.c := g ;
+  r.c[2] := 7.0 ;
+  Io.WriteLine (Fmt.Short (a[3]) + ' ' + Fmt.Short (c[2]) + ' ' + Fmt.Short (g[1]) + ' ' +
+                Fmt.Short (r.c[2]) + ' ' + Fmt.I64Str (LEN (c)) + ' ' + Fmt.Short (Sum (r.c) - 9.0))
+END GfTypeNamedC.

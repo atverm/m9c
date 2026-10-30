@@ -1,0 +1,29 @@
+(* EXPECT: argument 1 of Eat: cannot move p into an OWN parameter: nothing here gives it an owned pointer *)
+(* dispose-procval-answer with an OWN argument for the DISPOSE: a
+   procedure value answering h's field, the answer moved into Eat,
+   which freed what h.c still held (2026-10-28).  Legal forms first: a
+   procedure value with no reference parameter, its answer moved in. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  H = RECORD c : PTR T END ;
+  MakeT = PROCEDURE (n: I64) : PTR T ;
+  GetT = PROCEDURE (h: PTR H) : PTR T ;
+PROCEDURE Eat (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Legal (mk: MakeT) =
+VAR p : PTR T ;
+BEGIN
+  p := mk (1) ;
+  Eat (p)
+END Legal ;
+PROCEDURE Free (fn: GetT ; h: PTR H) =
+VAR p : PTR T ;
+BEGIN
+  p := fn (h) ;
+  Eat (p)
+END Free ;
+BEGIN
+END m.

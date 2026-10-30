@@ -1,15 +1,19 @@
 #!/bin/sh
 # P5 EXIT: the bootstrap fixpoint.
 #
-#   stage1 = C emitted by the FPC host generator      (runtime/gen)
+#   stage1 = C emitted by the M9 generator built      (runtime/gen)
+#            from the checked-in runtime/gen (lib/gen.sh)
 #   stage2 = C emitted by the M9 generator that was   (runtime/gen2)
 #            compiled from stage1
 #   stage3 = C emitted by the M9 generator that was   (runtime/gen3)
 #            compiled from stage2
 #
-# stage2 == stage1 says the M9 toolchain reproduces the host's output;
-# stage3 == stage2 says it reproduces its OWN, compiled from its own
-# output -- the fixpoint, with the FPC host out of the loop.
+# stage2 == stage1 says the toolchain compiled from runtime/gen writes
+# runtime/gen; stage3 == stage2 says it reproduces its OWN, compiled
+# from its own output -- the fixpoint.  No FPC anywhere: stage1 was the
+# FPC host generator's output until 2026-10-22, when M9Gen.pas was
+# frozen, and this gate said so on stdout until 2026-10-29 (report M4:
+# it read as if a self-install needed FPC).
 # scratch files in a directory of this run's own: fixed /tmp names
 # collided between two checkouts or two gates run at once (the compiler
 # review's tier 3, 2026-10-22)
@@ -29,11 +33,11 @@ rm -rf ../gen2 ../gen3
 # after Grib gained a procedure), and -- the dangerous half -- a
 # stale stage1 with a stale stage2 built from it reports a fixpoint
 # that no longer exists.  An artifact nobody produced in this run is
-# not evidence.  lib/gen.sh makes it: it runs the FPC generator, or
+# not evidence.  lib/gen.sh makes it: it runs the M9 generator, or
 # skips it when its stamp shows ../gen is byte for byte what the
 # generator writes from these sources -- and it never rewrites ../gen
 # under a gate of another lane that is compiling from it.
-echo "stage1: emitting C with the FPC generator ..."
+echo "stage1: emitting C with the M9 generator built from runtime/gen ..."
 . ./lib/gen.sh
 
 echo "stage2: compiling the M9 toolchain from stage1 C ..."
