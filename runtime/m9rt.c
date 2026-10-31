@@ -1133,6 +1133,87 @@ static int m9_argsort (const void *v, int64_t *idx, int64_t n, int isf64)
 int m9_argsort_f64 (const void *v, void *idx, int64_t n) { return m9_argsort (v, (int64_t *) idx, n, 1); }
 int m9_argsort_i64 (const void *v, void *idx, int64_t n) { return m9_argsort (v, (int64_t *) idx, n, 0); }
 
+/* ---- the string argsort (2026-10-31): Sort.Strs, ArgStr and
+   UniqueStrs hand their strings here.  A STR is UTF-8, and UTF-8's
+   byte order is code-point order.  So the order is memcmp's, the
+   shorter first on a common prefix.  The first eight bytes of each
+   string, big-endian and zero-padded, make a key.  The radix sort
+   above orders the keys, stable, with the index as payload.  Then each
+   run of equal keys is sorted by the whole compare: an insertion sort
+   under 32, a merge sort above.  Both are stable, so equal strings
+   stay in index order.  A string with a zero byte in its first eight
+   shares a key with its shorter twin ("a" and "a" with a NUL); the
+   run's compare decides them.  Most compares never leave the key
+   array, so the sort does not chase a string pointer per compare as
+   the merge sort did.  Measured on a million strings of 1 to 12
+   characters: ArgStr 186 -> 24 ms on the M4 and 365 -> 75 on the
+   Xeon. */
+static int m9_utf_cmp (const m9_sl_UTF8 *a, const m9_sl_UTF8 *b)
+{
+  int64_t m = a->len < b->len ? a->len : b->len;
+  int c = m > 0 ? memcmp (a->p, b->p, (size_t) m) : 0;
+  if (c != 0) return c;
+  return (a->len > b->len) - (a->len < b->len);
+}
+
+static uint64_t m9_utf_key (const m9_sl_UTF8 *s)
+{
+  uint64_t k = 0;
+  int64_t i, m = s->len < 8 ? s->len : 8;
+  for (i = 0; i < m; i++) k |= (uint64_t) s->p[i] << (56 - 8 * i);
+  return k;
+}
+
+static void m9_utf_insert (const m9_sl_UTF8 *v, int64_t *idx, int64_t n)
+{
+  int64_t i;
+  for (i = 1; i < n; i++) {
+    int64_t x = idx[i], j = i;
+    while (j > 0 && m9_utf_cmp (&v[idx[j - 1]], &v[x]) > 0) { idx[j] = idx[j - 1]; j--; }
+    idx[j] = x;
+  }
+}
+
+/* m9_utf_merge sorts idx[0..n) with t as scratch of n. */
+static void m9_utf_merge (const m9_sl_UTF8 *v, int64_t *idx, int64_t *t, int64_t n)
+{
+  int64_t mid = n / 2, i = 0, j = mid, k = 0;
+  if (n < 32) { m9_utf_insert (v, idx, n); return; }
+  m9_utf_merge (v, idx, t, mid);
+  m9_utf_merge (v, idx + mid, t, n - mid);
+  if (m9_utf_cmp (&v[idx[mid - 1]], &v[idx[mid]]) <= 0) return;
+  while (i < mid && j < n)
+    t[k++] = m9_utf_cmp (&v[idx[j]], &v[idx[i]]) < 0 ? idx[j++] : idx[i++];
+  while (i < mid) t[k++] = idx[i++];
+  while (j < n) t[k++] = idx[j++];
+  memcpy (idx, t, (size_t) n * 8);
+}
+
+int m9_argsort_utf (const void *v0, void *idx0, int64_t n)
+{
+  const m9_sl_UTF8 *v = (const m9_sl_UTF8 *) v0;
+  int64_t *idx = (int64_t *) idx0, *p, i, j;
+  uint64_t *k, *t, *kr;
+  if (m9_sort_portable ()) return 0;
+  for (i = 0; i < n; i++) idx[i] = i;
+  if (n < 64) { m9_utf_insert (v, idx, n); return 1; }
+  k = malloc ((size_t) n * 16);
+  p = malloc ((size_t) n * 8);
+  if (k == NULL || p == NULL) { free (k); free (p); return 0; }
+  t = k + n;
+  for (i = 0; i < n; i++) k[i] = m9_utf_key (&v[i]);
+  if (m9_radix_u64 (k, t, idx, p, n)) { memcpy (idx, p, (size_t) n * 8); kr = t; } else kr = k;
+  /* Each run of equal keys goes by the whole compare.  p is free now
+     and serves as the merge's scratch. */
+  for (i = 0; i < n; i = j) {
+    for (j = i + 1; j < n && kr[j] == kr[i]; j++) ;
+    if (j - i > 1) m9_utf_merge (v, idx + i, p, j - i);
+  }
+  free (k);
+  free (p);
+  return 1;
+}
+
 /* m9_utf_get decodes a sequence m9_utf_seq accepted (a UTF's are). */
 static uint32_t m9_utf_get (const uint8_t *p, int k)
 {

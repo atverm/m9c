@@ -17,7 +17,7 @@
 
 static const uint8_t M9c_StdLib_d[11] = { 47, 117, 115, 114, 47, 108, 105, 98, 47, 109, 57 };
 #define M9c_StdLib ((m9_sl_UTF8){ (uint8_t *) M9c_StdLib_d, 11 })
-static const uint8_t M9c_Version_d[6] = { 48, 46, 50, 54, 46, 48 };
+static const uint8_t M9c_Version_d[6] = { 48, 46, 50, 54, 46, 49 };
 #define M9c_Version ((m9_sl_UTF8){ (uint8_t *) M9c_Version_d, 6 })
 static const uint8_t M9c_StdInclude_d[15] = { 47, 117, 115, 114, 47, 105, 110, 99, 108, 117, 100, 101, 47, 109, 57 };
 #define M9c_StdInclude ((m9_sl_UTF8){ (uint8_t *) M9c_StdInclude_d, 15 })

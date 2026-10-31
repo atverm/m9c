@@ -228,7 +228,7 @@ CONST
      compiler is the one artifact that cannot read its own package
      version, and a generated file would drag the build system into
      the bootstrap. *)
-  Version = '0.26.0' ;
+  Version = '0.26.1' ;
   (* StdInclude is where its runtime lives, which --help quotes so
      that the example a user copies out of it actually compiles. *)
   StdInclude = '/usr/include/m9' ;
@@ -1545,7 +1545,7 @@ PROCEDURE MakeAll () : BOOL
   RAISES ValueRange, IndexError =
 VAR
   trustDummy : BOOL ;
-  i : I64 ;
+  i, newest, t : I64 ;
   nm, path, src, o : UTF ;
   found, ok, dirty : BOOL ;
 BEGIN
@@ -1567,8 +1567,18 @@ BEGIN
      one is rebuilt anyway.  An exact rule would need a per-module
      import list rather than the flat closure, and the cost of being
      wrong here is a stale object, while the cost of being
-     over-eager is a second of cc. *)
+     over-eager is a second of cc.
+
+     A REBUILD OUTSIDE THIS RUN COUNTS TOO.  dirty sees only what this
+     run rebuilt.  A dependency compiled on its own (`m9c -c Base.m9`,
+     a gate's plain compile) leaves a fresh Base.o, so nothing looked
+     stale and Mid.o kept the old layout.  The LPJ-GUESS port read a
+     record field from the wrong offset and got wrong numbers
+     (2026-10-31).  So a module whose object is older than any object
+     before it in the order is rebuilt as well.  The comparison is in
+     whole seconds, as Older's is. *)
   dirty := FALSE ;
+  newest := -1 ;
   (* An import cycle writes every module's header first (MakeHeader),
      so the compile of one member finds its partner's.  A clean build
      failed on the partner's missing header, and a second one passed
@@ -1603,11 +1613,14 @@ BEGIN
            regenerated only the stale module and failed on a fresh
            one's missing DynStr.h (2026-10-09) *)
         IF Text.BLen (src) >= 0 AND (dirty OR Older (o, path) OR
+                               Io.ModTime (o) < newest OR
                                NOT Io.Exists (Join (outDir, Cat (nm, '.h'))) OR
                                NOT SameMode (Join (outDir, Cat (nm, '.h')))) THEN
           dirty := TRUE ;
           IF NOT MakeDep (nm, path) THEN ok := FALSE END
-        END
+        END ;
+        t := Io.ModTime (o) ;
+        IF t > newest THEN newest := t END
       END
     END
   END ;

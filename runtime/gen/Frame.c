@@ -142,6 +142,7 @@ extern int m9_sort_f64 (void *, int64_t);
 extern int m9_sort_i64 (void *, int64_t);
 extern int m9_argsort_f64 (const void *, void *, int64_t);
 extern int m9_argsort_i64 (const void *, void *, int64_t);
+extern int m9_argsort_utf (const void *, void *, int64_t);
 extern int64_t m9_utf_cpcount_p (const void *, int64_t);
 extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 

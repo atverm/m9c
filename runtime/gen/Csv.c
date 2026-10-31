@@ -79,6 +79,7 @@ static int64_t Csv_SkipLines (m9_sl_BYTE b, int64_t skip, m9_state *err);
 static void Csv_Unquote (m9_sl_BYTE b, int64_t *ofs, int64_t *len, m9_state *err);
 static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options *opt, m9_state *err);
 static float Csv_Pow10F32 (int64_t k, m9_state *err);
+static bool Csv_FastF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, float *r, m9_state *err);
 static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
 static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
 static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_UTF8 w, m9_state *err);
@@ -444,6 +445,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
   Csv_Held h = {0}; (void) h;
   bool inQuote = false; (void) inQuote;
   bool atEnd = false; (void) atEnd;
+  bool known = false; (void) known;
   { __typeof__(c) m9t1to;
   c = INT64_C(0);
   m9t1to = m9_sub_i64 (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ncols, INT64_C(1), err);
@@ -588,24 +590,34 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
         } break;
         case Csv_Kind_Real:
         {
-          k = INT64_C(0);
-          if ((len > INT64_C(0))) {
-            { __typeof__(v) m9v = ({ __auto_type m9t12 = ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf; int64_t m9t12a = ofs, m9t12n = len; int64_t m9t12o = m9_chk_slice (m9t12a, m9t12n, m9t12.len, err); (__typeof__(m9t12)){ m9t12.p + m9t12o, err->exc ? 0 : m9t12n }; });
-              if (err->exc) goto L_ret;
-              v = m9v;
-            }
-            k = (int64_t)(m9_csv_number (((void *)(v).p), ((int64_t)(len))));
-          }
-          bool m9t15 = (((len == INT64_C(0)) || (k == INT64_C(0))) || (((k < INT64_C(0)) && (!Csv_IsNumber (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf, ofs, len, err)))));
+          bool m9t12 = ((len > INT64_C(0)) && Csv_FastF32 (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf, ofs, len, &(f), err));
           if (err->exc) goto L_ret;
-          if (m9t15) {
+          if (m9t12) {
+            known = true;
+          } else {
+            k = INT64_C(0);
+            if ((len > INT64_C(0))) {
+              { __typeof__(v) m9v = ({ __auto_type m9t13 = ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf; int64_t m9t13a = ofs, m9t13n = len; int64_t m9t13o = m9_chk_slice (m9t13a, m9t13n, m9t13.len, err); (__typeof__(m9t13)){ m9t13.p + m9t13o, err->exc ? 0 : m9t13n }; });
+                if (err->exc) goto L_ret;
+                v = m9v;
+              }
+              k = (int64_t)(m9_csv_number (((void *)(v).p), ((int64_t)(len))));
+            }
+            { __typeof__(known) m9v = (!((((len == INT64_C(0)) || (k == INT64_C(0))) || (((k < INT64_C(0)) && (!Csv_IsNumber (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf, ofs, len, err)))))));
+              if (err->exc) goto L_ret;
+              known = m9v;
+            }
+            if (known) {
+              { __typeof__(f) m9v = Csv_FieldF32 (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf, ofs, len, err);
+                if (err->exc) goto L_ret;
+                f = m9v;
+              }
+            }
+          }
+          if ((!known)) {
             (*(float *) m9_at (({ m9_sl_F32 m9g = ((*(m9_sl_F32 *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->fcols.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->fcols.len, sizeof (m9_sl_F32), err))); if (err->exc) goto L_ret; m9g; }).p, row, ({ m9_sl_F32 m9g = ((*(m9_sl_F32 *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->fcols.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->fcols.len, sizeof (m9_sl_F32), err))); if (err->exc) goto L_ret; m9g; }).len, sizeof (float), err)) = NAN;
             if (err->exc) goto L_ret;
           } else {
-            { __typeof__(f) m9v = Csv_FieldF32 (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf, ofs, len, err);
-              if (err->exc) goto L_ret;
-              f = m9v;
-            }
             if (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->opt.hasMissing) {
               if ((f == ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->opt.missing)) {
                 f = NAN;
@@ -941,31 +953,50 @@ static int64_t Csv_CountRows (m9_sl_BYTE b, int64_t from, bool quoted, m9_state 
   bool inQuote = false; (void) inQuote;
   n = INT64_C(0);
   inQuote = false;
-  { __typeof__(i) m9t1to;
-  i = from;
-  m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (i <= m9t1to) for (;;) {
-    bool m9t2 = (quoted && ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(34)));
+  if ((!quoted)) {
+    { __typeof__(i) m9t1to;
+    i = from;
+    m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    if (m9t2) {
-      inQuote = (!inQuote);
-    }
-    bool m9t3 = (((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(10)) && (!inQuote));
-    if (err->exc) goto L_ret;
-    if (m9t3) {
-      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-        n = m9v;
+    if (i <= m9t1to) for (;;) {
+      bool m9t2 = ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(10));
+      if (err->exc) goto L_ret;
+      if (m9t2) {
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
       }
-    }
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
-  } }
-  if (((b).len > from)) {
-    bool m9t4 = ((int64_t)((*(uint8_t *) m9_at (b.p, m9_sub_i64 ((b).len, INT64_C(1), err), b.len, sizeof (uint8_t), err))) != INT64_C(10));
+      if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
+    } }
+  } else {
+    { __typeof__(i) m9t3to;
+    i = from;
+    m9t3to = m9_sub_i64 ((b).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    if (m9t4) {
+    if (i <= m9t3to) for (;;) {
+      bool m9t4 = ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(34));
+      if (err->exc) goto L_ret;
+      if (m9t4) {
+        inQuote = (!inQuote);
+      }
+      bool m9t5 = (((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(10)) && (!inQuote));
+      if (err->exc) goto L_ret;
+      if (m9t5) {
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
+      }
+      if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+      i += 1;
+    } }
+  }
+  if (((b).len > from)) {
+    bool m9t6 = ((int64_t)((*(uint8_t *) m9_at (b.p, m9_sub_i64 ((b).len, INT64_C(1), err), b.len, sizeof (uint8_t), err))) != INT64_C(10));
+    if (err->exc) goto L_ret;
+    if (m9t6) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
         if (err->exc) goto L_ret;
         n = m9v;
@@ -1302,14 +1333,13 @@ L_ret: ;
   return m9ret;
 }
 
-static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
+static bool Csv_FastF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, float *r, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  float m9ret = 0;
-  m9_sl_BYTE v = {0}; (void) v;
+  bool m9ret = false;
   int64_t i = 0; (void) i;
   int64_t stop = 0; (void) stop;
   int64_t c = 0; (void) c;
@@ -1318,8 +1348,6 @@ static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
   int64_t digs = 0; (void) digs;
   bool neg = false; (void) neg;
   bool dot = false; (void) dot;
-  bool hard = false; (void) hard;
-  float r = 0; (void) r;
   i = ofs;
   { __typeof__(stop) m9v = m9_add_i64 (ofs, n, err);
     if (err->exc) goto L_ret;
@@ -1341,7 +1369,6 @@ static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
   k = INT64_C(0);
   digs = INT64_C(0);
   dot = false;
-  hard = false;
   for (;;) {
     if (!((i < stop))) break;
     { __typeof__(c) m9v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
@@ -1350,8 +1377,9 @@ static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
     }
     if (((c >= INT64_C(48)) && (c <= INT64_C(57)))) {
       if ((digs >= INT64_C(7))) {
-        hard = true;
-        break;
+        err->res = m9res;
+        m9ret = false;
+        goto L_ret;
       }
       { __typeof__(mant) m9v = m9_add_i64 (m9_mul_i64 (mant, INT64_C(10), err), (m9_sub_i64 (c, INT64_C(48), err)), err);
         if (err->exc) goto L_ret;
@@ -1370,31 +1398,52 @@ static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
     } else {
       if (((c == INT64_C(46)) && (!dot))) {
         dot = true;
-      } else {
-        hard = true;
-        break;
-      }
-    }
+    } else {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    } }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
       i = m9v;
     }
   }
-  if ((!hard)) {
-    if (((digs > INT64_C(0)) && (k <= INT64_C(10)))) {
-      { __typeof__(r) m9v = ((float)(mant) / Csv_Pow10F32 (k, err));
-        if (err->exc) goto L_ret;
-        r = m9v;
-      }
-      if (neg) {
-        err->res = m9res;
-        m9ret = (- r);
-        goto L_ret;
-      }
-      err->res = m9res;
-      m9ret = r;
-      goto L_ret;
-    }
+  if (((digs == INT64_C(0)) || (k > INT64_C(10)))) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { __typeof__((*r)) m9v = ((float)(mant) / Csv_Pow10F32 (k, err));
+    if (err->exc) goto L_ret;
+    (*r) = m9v;
+  }
+  if (neg) {
+    (*r) = (- (*r));
+  }
+  err->res = m9res;
+  m9ret = true;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  float m9ret = 0;
+  m9_sl_BYTE v = {0}; (void) v;
+  float r = 0; (void) r;
+  bool m9t1 = Csv_FastF32 (b, ofs, n, &(r), err);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = r;
+    goto L_ret;
   }
   { __typeof__(v) m9v = ({ __auto_type m9t2 = b; int64_t m9t2a = ofs, m9t2n = n; int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; });
     if (err->exc) goto L_ret;

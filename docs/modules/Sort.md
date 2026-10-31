@@ -148,7 +148,9 @@ csort binds the LSD radix sorts of runtime/m9rt.c (m9rt.h).  They
 sort a slice's storage, stable, and answer 1 when done and 0 when
 the caller's merge sort must do it.  There is no LINK: the sorts
 are the runtime's.  They are REENTRANT: their scratch comes from
-malloc, and they share no state.
+malloc, and they share no state.  CArgUtf orders a slice of STRs by
+their octets: the radix sort over an eight-byte prefix, then memcmp
+where the prefixes agree.
 
 ### CSortF64 (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT]
 
@@ -163,5 +165,9 @@ _(undocumented)_
 _(undocumented)_
 
 ### CArgI64 (v: C.ConstPtr ; idx: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT]
+
+_(undocumented)_
+
+### CArgUtf (v: C.ConstPtr ; idx: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT]
 
 _(undocumented)_

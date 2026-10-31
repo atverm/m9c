@@ -327,9 +327,14 @@ BEGIN
   RETURN I64 (b) >= 48 AND I64 (b) <= 57
 END IsDigit ;
 
-(* CountRows counts the rows before anything is allocated: one pass
-   over the file to learn a number is cheaper than growing hundreds
-   of columns by doubling. *)
+(* CountRows counts the rows before anything is allocated.  One pass
+   over the file costs less than growing hundreds of columns by
+   doubling.
+
+   The loop splits on quoted.  An unquoted file runs the plain loop: one
+   test per byte and nothing else.  The quote test inside the one loop
+   cost the FLUXNET count 0.17 -> 0.29 s on ct121 (beb6732f, measured
+   2026-10-31).  The split took it back to 0.17 s. *)
 PROCEDURE CountRows (RO b: SLICE OF BYTE ; from: I64 ; quoted: BOOL)
   : I64
   RAISES IndexError =
@@ -339,16 +344,22 @@ VAR
 BEGIN
   n := 0 ;
   inQuote := FALSE ;
-  FOR i := from TO LEN (b) - 1 DO
-    (* a newline INSIDE a quoted field is part of the field, exactly
-       as Parse treats it.  CountRows used to count it here as a row
-       and hand back a row count larger than Parse fills, and the tail
-       rows read as empty text, silently.  78 of the 783 FLUXNET
-       shuttle BADM tables carry a multi-line site description. *)
-    IF quoted AND I64 (b[i]) = 34 THEN inQuote := NOT inQuote END ;
-    IF I64 (b[i]) = 10 AND NOT inQuote THEN n := n + 1 END
+  IF NOT quoted THEN
+    FOR i := from TO LEN (b) - 1 DO
+      IF I64 (b[i]) = 10 THEN n := n + 1 END
+    END
+  ELSE
+    FOR i := from TO LEN (b) - 1 DO
+      (* A newline INSIDE a quoted field belongs to the field, as in
+         Parse.  CountRows once counted it as a row.  The count then
+         exceeded what Parse fills, and the tail rows read as empty
+         text, silently.  78 of the 783 FLUXNET shuttle BADM tables
+         carry a multi-line site description. *)
+      IF I64 (b[i]) = 34 THEN inQuote := NOT inQuote END ;
+      IF I64 (b[i]) = 10 AND NOT inQuote THEN n := n + 1 END
+    END
   END ;
-  (* a file whose last line has no newline still has that line *)
+  (* The last line counts even without its newline. *)
   IF LEN (b) > from THEN
     IF I64 (b[LEN (b) - 1]) # 10 THEN n := n + 1 END
   END ;
@@ -595,30 +606,29 @@ BEGIN
   RETURN 10000000000.0
 END Pow10F32 ;
 
-(* FieldF32 parses one field.
+(* FastF32 is FieldF32's exact path, on its own.  It answers TRUE and
+   sets r for a field [-]ddd[.ddd] with 1 to 7 digits and at most 10
+   of them after the point.  It answers FALSE for anything else, and r
+   keeps its value.
 
-   THE FAST PATH IS NOT AN APPROXIMATION.  For [-]ddd[.ddd] with at
-   most 7 significant digits and at most 10 after the point, the
-   mantissa is below 2^24 and 10^k is exact, so both operands of the
-   division are exactly representable in F32 and IEEE 754 rounds the
-   quotient once, correctly.  That is the same value strtof answers,
-   not a value near it.  The driver proves it by comparing every
-   parsed field against strtof rather than taking the argument on
-   trust.  On the file this was written for, 98.8% of 34 million
-   fields take this path.
+   THE FAST PATH IS NOT AN APPROXIMATION.  Seven digits keep the
+   mantissa below 2^24, so F32 holds it exactly.  Pow10F32 is exact up
+   to 10^10.  IEEE 754 then rounds the quotient once, correctly.  The
+   answer is the value strtof gives, not a value near it.  The driver
+   checks this: csv_driver.c compares all 34.2 million fields of the
+   FLUXNET file against strtof.  On that file 98.8% of the fields
+   take this path.
 
-   Everything else falls through to strtof on a pointer INTO the
-   buffer: exponent notation, longer mantissas, anything with a
-   character the loop does not recognise.  No copy: the buffer carries a
-   zero byte past its end and every field is followed by a delimiter
-   or a newline, either of which stops strtof.                      *)
-PROCEDURE FieldF32 (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64) : F32
+   IsNumber's grammar accepts all of these fields too.  So Parse tries
+   FastF32 first, and asks CNumber and IsNumber only when it declines.
+   This order saves a second scan of each field: the FLUXNET parse went
+   from 0.99 to 0.81 s on ct121 (2026-10-31). *)
+PROCEDURE FastF32 (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64 ; VAR r: F32)
+  : BOOL
   RAISES IndexError =
 VAR
-  v : SLICE OF BYTE ;
   i, stop, c, mant, k, digs : I64 ;
-  neg, dot, hard : BOOL ;
-  r : F32 ;
+  neg, dot : BOOL ;
 BEGIN
   i := ofs ;
   stop := ofs + n ;
@@ -633,37 +643,43 @@ BEGIN
   k := 0 ;
   digs := 0 ;
   dot := FALSE ;
-  hard := FALSE ;
   WHILE i < stop DO
     c := I64 (b[i]) ;
     IF c >= 48 AND c <= 57 THEN
-      (* eight digits is one too many for an exact F32 mantissa.  The
-         exit HERE also keeps mant from overflowing on a field that is
-         all digits. *)
-      IF digs >= 7 THEN
-        hard := TRUE ;
-        EXIT
-      END ;
+      (* An eighth digit is one too many for an exact F32 mantissa.
+         The early RETURN also keeps mant from overflowing on a long
+         run of digits. *)
+      IF digs >= 7 THEN RETURN FALSE END ;
       mant := mant * 10 + (c - 48) ;
       digs := digs + 1 ;
       IF dot THEN k := k + 1 END
+    ELSIF c = 46 AND NOT dot THEN
+      dot := TRUE
     ELSE
-      IF c = 46 AND NOT dot THEN
-        dot := TRUE
-      ELSE
-        hard := TRUE ;
-        EXIT
-      END
+      RETURN FALSE
     END ;
     i := i + 1
   END ;
-  IF NOT hard THEN
-    IF digs > 0 AND k <= 10 THEN
-      r := F32 (mant) / Pow10F32 (k) ;
-      IF neg THEN RETURN -r END ;
-      RETURN r
-    END
-  END ;
+  IF digs = 0 OR k > 10 THEN RETURN FALSE END ;
+  r := F32 (mant) / Pow10F32 (k) ;
+  IF neg THEN r := -r END ;
+  RETURN TRUE
+END FastF32 ;
+
+(* FieldF32 parses one field.  It tries FastF32 first.
+
+   Everything else goes to strtof on a pointer INTO the buffer:
+   exponent notation, longer mantissas, any character the fast loop
+   does not know.  Nothing is copied.  The buffer carries a zero byte
+   past its end, and a delimiter or a newline follows every field.
+   Either one stops strtof. *)
+PROCEDURE FieldF32 (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64) : F32
+  RAISES IndexError =
+VAR
+  v : SLICE OF BYTE ;
+  r : F32 ;
+BEGIN
+  IF FastF32 (b, ofs, n, r) THEN RETURN r END ;
   v := SLICE (b, ofs, n) ;
   RETURN F32 (StrToF32 (ADR (v)))
 END FieldF32 ;
@@ -840,7 +856,7 @@ VAR
   d : F64 ;
   v : SLICE OF BYTE ;
   h : Held ;
-  inQuote, atEnd : BOOL ;
+  inQuote, atEnd, known : BOOL ;
 BEGIN
   FOR c := 0 TO t.ncols - 1 DO
     CASE t.kinds[c] OF
@@ -910,15 +926,23 @@ BEGIN
           END ;
           t.dcols[c][row] := d
         | Real :
-          k := 0 ;
-          IF len > 0 THEN
-            v := SLICE (t.buf, ofs, len) ;
-            k := I64 (CNumber (ADR (v), C.SSizeT (len)))
+          (* FastF32 decides most fields in one scan.  The rest go
+             through the recogniser, then FieldF32. *)
+          IF len > 0 AND FastF32 (t.buf, ofs, len, f) THEN
+            known := TRUE
+          ELSE
+            k := 0 ;
+            IF len > 0 THEN
+              v := SLICE (t.buf, ofs, len) ;
+              k := I64 (CNumber (ADR (v), C.SSizeT (len)))
+            END ;
+            known := NOT (len = 0 OR k = 0
+                          OR (k < 0 AND NOT IsNumber (t.buf, ofs, len))) ;
+            IF known THEN f := FieldF32 (t.buf, ofs, len) END
           END ;
-          IF len = 0 OR k = 0 OR (k < 0 AND NOT IsNumber (t.buf, ofs, len)) THEN
+          IF NOT known THEN
             t.fcols[c][row] := NaN
           ELSE
-            f := FieldF32 (t.buf, ofs, len) ;
             IF t.opt.hasMissing THEN
               IF f = t.opt.missing THEN f := NaN END
             END ;

@@ -60,6 +60,7 @@ extern int m9_sort_f64 (void *, int64_t);
 extern int m9_sort_i64 (void *, int64_t);
 extern int m9_argsort_f64 (const void *, void *, int64_t);
 extern int m9_argsort_i64 (const void *, void *, int64_t);
+extern int m9_argsort_utf (const void *, void *, int64_t);
 
 typedef struct Stats_Comp Stats_Comp;
 struct Stats_Comp {

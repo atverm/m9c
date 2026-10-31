@@ -53,6 +53,7 @@ extern int m9_sort_f64 (void *, int64_t);
 extern int m9_sort_i64 (void *, int64_t);
 extern int m9_argsort_f64 (const void *, void *, int64_t);
 extern int m9_argsort_i64 (const void *, void *, int64_t);
+extern int m9_argsort_utf (const void *, void *, int64_t);
 
 static m9_pool m9mframe = {0};
 
@@ -63,6 +64,7 @@ static void Sort_SortI64 (m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t hi, 
 static bool Sort_StrLess (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err);
 static void Sort_MergeArgStrs (m9_sl_m9_sl_UTF8 v, m9_sl_I64 *idx, m9_sl_I64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
 static void Sort_SortArgStrs (m9_sl_m9_sl_UTF8 v, m9_sl_I64 *idx, m9_sl_I64 *tmp, int64_t lo, int64_t hi, m9_state *err);
+static void Sort_OrderStrs (m9_sl_m9_sl_UTF8 v, m9_sl_I64 *idx, m9_state *err);
 static void Sort_MergeArg (m9_sl_F64 v, m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
 static void Sort_SortArg (m9_sl_F64 v, m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t hi, m9_state *err);
 static void Sort_MergeArgI64 (m9_sl_I64 v, m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
@@ -147,7 +149,6 @@ void Sort_Strs (m9_sl_m9_sl_UTF8 *a, m9_state *err)
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_I64 idx = {0}; (void) idx;
-  m9_sl_I64 tmp = {0}; (void) tmp;
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
   int64_t j = 0; (void) j;
@@ -159,30 +160,16 @@ void Sort_Strs (m9_sl_m9_sl_UTF8 *a, m9_state *err)
     if (err->exc) goto L_ret;
     idx = m9v;
   }
-  { __typeof__(tmp) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), ((*a)).len, err);
-    if (err->exc) goto L_ret;
-    tmp = m9v;
-  }
+  Sort_OrderStrs ((*a), &(idx), err);
+  if (err->exc) goto L_ret;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (((*a)).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) = i;
+    bool m9t2 = ((*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) != i);
     if (err->exc) goto L_ret;
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
-  } }
-  Sort_SortArgStrs ((*a), &(idx), &(tmp), INT64_C(0), ((*a)).len, err);
-  if (err->exc) goto L_ret;
-  { __typeof__(i) m9t2to;
-  i = INT64_C(0);
-  m9t2to = m9_sub_i64 (((*a)).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (i <= m9t2to) for (;;) {
-    bool m9t3 = ((*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) != i);
-    if (err->exc) goto L_ret;
-    if (m9t3) {
+    if (m9t2) {
       { __typeof__(hold) m9v = (*(m9_sl_UTF8 *) m9_at ((*a).p, i, (*a).len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
         hold = m9v;
@@ -212,7 +199,7 @@ void Sort_Strs (m9_sl_m9_sl_UTF8 *a, m9_state *err)
       (*(int64_t *) m9_at (idx.p, k, idx.len, sizeof (int64_t), err)) = k;
       if (err->exc) goto L_ret;
     }
-    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
@@ -322,36 +309,18 @@ void Sort_ArgStr (m9_sl_m9_sl_UTF8 v, m9_sl_I64 *idx, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_pool scratch = {0}; (void) scratch;
-  m9_sl_I64 tmp = {0}; (void) tmp;
-  int64_t i = 0; (void) i;
   if ((((*idx)).len != (v).len)) {
     err->i[0] = ((*idx)).len;
     err->i[1] = (v).len;
     m9_raise (err, &m9_exc_IndexError);
     goto L_ret;
   }
-  { __typeof__(i) m9t1to;
-  i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((v).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (i <= m9t1to) for (;;) {
-    (*(int64_t *) m9_at ((*idx).p, i, (*idx).len, sizeof (int64_t), err)) = i;
-    if (err->exc) goto L_ret;
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
-  } }
-  { __typeof__(tmp) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), (v).len, err);
-    if (err->exc) goto L_ret;
-    tmp = m9v;
-  }
-  Sort_SortArgStrs (v, idx, &(tmp), INT64_C(0), (v).len, err);
+  Sort_OrderStrs (v, idx, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, (*idx).p);
   m9_pool_free (&m9frame);
-  m9_pool_free (&scratch);
   return;
 }
 
@@ -550,7 +519,6 @@ m9_sl_m9_sl_UTF8 Sort_UniqueStrs (m9_sl_m9_sl_UTF8 v, m9_state *err)
   m9_sl_m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_I64 idx = {0}; (void) idx;
-  m9_sl_I64 tmp = {0}; (void) tmp;
   m9_sl_m9_sl_UTF8 out = {0}; (void) out;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
@@ -559,28 +527,14 @@ m9_sl_m9_sl_UTF8 Sort_UniqueStrs (m9_sl_m9_sl_UTF8 v, m9_state *err)
     if (err->exc) goto L_ret;
     idx = m9v;
   }
-  { __typeof__(tmp) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), (v).len, err);
-    if (err->exc) goto L_ret;
-    tmp = m9v;
-  }
+  Sort_OrderStrs (v, &(idx), err);
+  if (err->exc) goto L_ret;
+  n = INT64_C(0);
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((v).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) = i;
-    if (err->exc) goto L_ret;
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
-  } }
-  Sort_SortArgStrs (v, &(idx), &(tmp), INT64_C(0), (v).len, err);
-  if (err->exc) goto L_ret;
-  n = INT64_C(0);
-  { __typeof__(i) m9t2to;
-  i = INT64_C(0);
-  m9t2to = m9_sub_i64 ((v).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (i <= m9t2to) for (;;) {
     if ((i == INT64_C(0))) {
       n = INT64_C(1);
     } else {
@@ -588,15 +542,15 @@ m9_sl_m9_sl_UTF8 Sort_UniqueStrs (m9_sl_m9_sl_UTF8 v, m9_state *err)
         if (err->exc) goto L_ret;
       { __typeof__((*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err))) m9a4 = (*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      bool m9t3 = Sort_StrLess (m9a3, m9a4, err);
+      bool m9t2 = Sort_StrLess (m9a3, m9a4, err);
       if (err->exc) goto L_ret;
-      if (m9t3) {
+      if (m9t2) {
         { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
           if (err->exc) goto L_ret;
           n = m9v;
         }
     } } } }
-    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, n, err);
@@ -605,11 +559,11 @@ m9_sl_m9_sl_UTF8 Sort_UniqueStrs (m9_sl_m9_sl_UTF8 v, m9_state *err)
   }
   n = INT64_C(0);
   last = INT64_C(0);
-  { __typeof__(i) m9t4to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
-  m9t4to = m9_sub_i64 ((v).len, INT64_C(1), err);
+  m9t3to = m9_sub_i64 ((v).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t4to) for (;;) {
+  if (i <= m9t3to) for (;;) {
     if ((i == INT64_C(0))) {
       { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, INT64_C(0), out.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_cat (err->res, (*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at (idx.p, INT64_C(0), idx.len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err)), ((m9_sl_UTF8){ NULL, 0 }), err);
         if (err->exc) goto L_ret;
@@ -622,9 +576,9 @@ m9_sl_m9_sl_UTF8 Sort_UniqueStrs (m9_sl_m9_sl_UTF8 v, m9_state *err)
         if (err->exc) goto L_ret;
       { __typeof__((*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err))) m9a6 = (*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      bool m9t5 = Sort_StrLess (m9a5, m9a6, err);
+      bool m9t4 = Sort_StrLess (m9a5, m9a6, err);
       if (err->exc) goto L_ret;
-      if (m9t5) {
+      if (m9t4) {
         { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_cat (err->res, (*(m9_sl_UTF8 *) m9_at (v.p, (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_UTF8), err)), ((m9_sl_UTF8){ NULL, 0 }), err);
           if (err->exc) goto L_ret;
           (*(m9_sl_UTF8 *) m9_at (out.p, n, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
@@ -639,7 +593,7 @@ m9_sl_m9_sl_UTF8 Sort_UniqueStrs (m9_sl_m9_sl_UTF8 v, m9_state *err)
       if (err->exc) goto L_ret;
       last = m9v;
     }
-    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   err->res = m9res;
@@ -1345,6 +1299,42 @@ L_ret: ;
   m9_adopt_if (&m9frame, m9res, (*idx).p);
   m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sort_OrderStrs (m9_sl_m9_sl_UTF8 v, m9_sl_I64 *idx, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_pool scratch = {0}; (void) scratch;
+  m9_sl_I64 tmp = {0}; (void) tmp;
+  int64_t i = 0; (void) i;
+  if ((((v).len > INT64_C(0)) && ((int64_t)(m9_argsort_utf (((void *)(v).p), ((void *)((*idx)).p), ((int64_t)((v).len)))) == INT64_C(1)))) {
+    goto L_ret;
+  }
+  { __typeof__(i) m9t4to;
+  i = INT64_C(0);
+  m9t4to = m9_sub_i64 ((v).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  if (i <= m9t4to) for (;;) {
+    (*(int64_t *) m9_at ((*idx).p, i, (*idx).len, sizeof (int64_t), err)) = i;
+    if (err->exc) goto L_ret;
+    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
+  } }
+  { __typeof__(tmp) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), (v).len, err);
+    if (err->exc) goto L_ret;
+    tmp = m9v;
+  }
+  Sort_SortArgStrs (v, idx, &(tmp), INT64_C(0), (v).len, err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*idx).p);
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return;
 }
 

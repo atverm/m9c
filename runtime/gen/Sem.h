@@ -13,6 +13,8 @@ typedef struct Sem_NameIx Sem_NameIx;
 typedef struct Sem_ProcInfo Sem_ProcInfo;
 typedef struct Sem_Binding Sem_Binding;
 typedef struct Sem_VariantInfo Sem_VariantInfo;
+typedef struct Sem_AllocEv Sem_AllocEv;
+typedef struct Sem_AllocFr Sem_AllocFr;
 typedef struct Sem_ModuleInfo Sem_ModuleInfo;
 
 #define Sem_StatKinds INT64_C(7)
@@ -39,6 +41,9 @@ static const uint8_t Sem_ModeModule_d[1] = { 109 };
 #define Sem_ModeModule ((m9_sl_UTF8){ (uint8_t *) Sem_ModeModule_d, 1 })
 static const uint8_t Sem_ModeBinder_d[1] = { 98 };
 #define Sem_ModeBinder ((m9_sl_UTF8){ (uint8_t *) Sem_ModeBinder_d, 1 })
+#define Sem_SkAlloc INT64_C(0)
+#define Sem_SkGives INT64_C(1)
+#define Sem_SkWrites INT64_C(2)
 #define Sem_NxMul INT64_C(-7046029254386353131)
 static const uint8_t Sem_UtfTy_d[13] = { 83, 76, 73, 67, 69, 32, 79, 70, 32, 60, 117, 56, 62 };
 #define Sem_UtfTy ((m9_sl_UTF8){ (uint8_t *) Sem_UtfTy_d, 13 })
@@ -96,6 +101,14 @@ typedef struct { int64_t v[42]; } m9_arr_42_int64_t;
 #ifndef M9SL_m9_sl_Sem_Binding
 #define M9SL_m9_sl_Sem_Binding
 typedef struct { Sem_Binding *p; int64_t len; } m9_sl_Sem_Binding;
+#endif
+#ifndef M9SL_m9_sl_Sem_AllocEv
+#define M9SL_m9_sl_Sem_AllocEv
+typedef struct { Sem_AllocEv *p; int64_t len; } m9_sl_Sem_AllocEv;
+#endif
+#ifndef M9SL_m9_sl_Sem_AllocFr
+#define M9SL_m9_sl_Sem_AllocFr
+typedef struct { Sem_AllocFr *p; int64_t len; } m9_sl_Sem_AllocFr;
 #endif
 #ifndef M9SL_m9_arr_13_m9_sl_UTF8
 #define M9SL_m9_arr_13_m9_sl_UTF8

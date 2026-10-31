@@ -1,11 +1,11 @@
-REVIEW Csv -- 39 procedures with a body, 30 of them functions; 26 headings in a DEFINITION
+REVIEW Csv -- 40 procedures with a body, 31 of them functions; 26 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              30
-  assignments                                   181
-  arguments                                     100
-  RETURN values                                  60
-  operands of a comparison or an operator       216
+  functions answering on every path              31
+  assignments                                   182
+  arguments                                     108
+  RETURN values                                  63
+  operands of a comparison or an operator       220
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                4

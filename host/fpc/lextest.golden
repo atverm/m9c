@@ -10,7 +10,7 @@
 ../../corpus/Check.m9                    tokens=3598 errors=0
 ../../corpus/CheckTest.m9                tokens=1261 errors=0
 ../../corpus/Concat.m9                   tokens=223 errors=0
-../../corpus/Csv.m9                      tokens=5698 errors=0
+../../corpus/Csv.m9                      tokens=5802 errors=0
 ../../corpus/CsvTest.m9                  tokens=494 errors=0
 ../../corpus/Delim.m9                    tokens=2439 errors=0
 ../../corpus/Diag.m9                     tokens=3158 errors=0
@@ -32,7 +32,7 @@
 ../../corpus/Hash.m9                     tokens=1487 errors=0
 ../../corpus/HashTest.m9                 tokens=1650 errors=0
 ../../corpus/Hello.m9                    tokens=177 errors=0
-../../corpus/Http.m9                     tokens=14107 errors=0
+../../corpus/Http.m9                     tokens=14406 errors=0
 ../../corpus/HttpServer.m9               tokens=16046 errors=0
 ../../corpus/HttpTest.m9                 tokens=1518 errors=0
 ../../corpus/Io.m9                       tokens=6236 errors=0
@@ -46,7 +46,7 @@
 ../../corpus/LibmGate.m9                 tokens=233 errors=0
 ../../corpus/Logger.m9                   tokens=961 errors=0
 ../../corpus/Lsp.m9                      tokens=2263 errors=0
-../../corpus/M9c.m9                      tokens=21745 errors=0
+../../corpus/M9c.m9                      tokens=21782 errors=0
 ../../corpus/M9elide.m9                  tokens=16072 errors=0
 ../../corpus/M9fmt.m9                    tokens=2463 errors=0
 ../../corpus/Map.m9                      tokens=32170 errors=0
@@ -83,14 +83,14 @@
 ../../corpus/Review.m9                   tokens=4358 errors=0
 ../../corpus/Rsa.m9                      tokens=2215 errors=0
 ../../corpus/RsaTest.m9                  tokens=2400 errors=0
-../../corpus/Sem.m9                      tokens=129146 errors=0
+../../corpus/Sem.m9                      tokens=129775 errors=0
 ../../corpus/Seq.m9                      tokens=1363 errors=0
 ../../corpus/SeqTest.m9                  tokens=833 errors=0
 ../../corpus/ShareUse.m9                 tokens=1285 errors=0
 ../../corpus/Smtp.m9                     tokens=6251 errors=0
 ../../corpus/SmtpTest.m9                 tokens=2246 errors=0
-../../corpus/Sort.m9                     tokens=4431 errors=0
-../../corpus/SortTest.m9                 tokens=1322 errors=0
+../../corpus/Sort.m9                     tokens=4441 errors=0
+../../corpus/SortTest.m9                 tokens=1436 errors=0
 ../../corpus/Sparql.m9                   tokens=1759 errors=0
 ../../corpus/SparqlTest.m9               tokens=1778 errors=0
 ../../corpus/Stats.m9                    tokens=10929 errors=0
@@ -111,7 +111,7 @@
 ../../corpus/ZipTest.m9                  tokens=5013 errors=0
 ../../bench/BinTrees.m9                  tokens=565 errors=0
 ../../bench/Fannkuch.m9                  tokens=491 errors=0
-../../bench/Mandel.m9                    tokens=472 errors=0
+../../bench/Mandel.m9                    tokens=498 errors=0
 ../../bench/ZarrSum.m9                   tokens=347 errors=0
 ../../museum/declared-twice.m9           tokens=101 errors=0
 ../../museum/dispose-borrowed-answer.m9  tokens=80 errors=0

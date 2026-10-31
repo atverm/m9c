@@ -1053,6 +1053,64 @@ M9LIBRARY="$SRC" "$M9C" --make -o diamond Diamond.m9 >dm.txt 2>&1 ||
 [ "$(./diamond)" = "diamond ok" ] ||
   { echo "FAIL: the diamond built but answered wrong"; ./diamond; exit 1; }
 
+# A DEPENDENCY COMPILED OUTSIDE --make STILL REBUILDS ITS IMPORTERS.
+# --make carried a rebuild forward only when it had done the rebuild
+# itself.  The LPJ-GUESS port's gate compiled Soil on its own after a
+# field was added, then --make kept Soilwater.o with the old layout,
+# and four checks read wrong numbers (2026-10-31).  Here Lay gains a
+# field ahead of the one Get reads, Lay is compiled with -c, and the
+# program must still answer 42.  0.26.0 answers 0.  A third --make
+# with nothing changed must keep Get.o: the rule must not rebuild
+# forever.
+printf 'DEFINITION MODULE Lay ;\nTYPE R = RECORD a, b : I64 END ;\nEND Lay.\nIMPLEMENTATION MODULE Lay ;\nEND Lay.\n' > Lay.m9
+cat > Get.m9 <<'M9'
+DEFINITION MODULE Get ;
+IMPORT Lay ;
+PROCEDURE B (RO r: Lay.R) : I64 ;
+END Get.
+
+IMPLEMENTATION MODULE Get ;
+IMPORT Lay ;
+PROCEDURE B (RO r: Lay.R) : I64 =
+BEGIN
+  RETURN r.b
+END B ;
+END Get.
+M9
+cat > LayMain.m9 <<'M9'
+MODULE LayMain ;
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Lay ;
+IMPORT Get ;
+VAR r : Lay.R ;
+BEGIN
+  r.b := 42 ;
+  Io.WriteLine ('b=' + Fmt.I64Str (Get.B (r)))
+END LayMain.
+M9
+rm -f Lay.o Lay.h Get.o Get.h laymain
+M9LIBRARY="$SRC" "$M9C" --make -o laymain LayMain.m9 >lay.txt 2>&1 ||
+  { echo "FAIL: --make could not build LayMain:"; head -5 lay.txt; exit 1; }
+sleep 1
+printf 'DEFINITION MODULE Lay ;\nTYPE R = RECORD z, a, b : I64 END ;\nEND Lay.\nIMPLEMENTATION MODULE Lay ;\nEND Lay.\n' > Lay.m9
+M9LIBRARY="$SRC" "$M9C" -c Lay.m9 >lay.txt 2>&1 ||
+  { echo "FAIL: m9c -c Lay.m9:"; head -5 lay.txt; exit 1; }
+M9LIBRARY="$SRC" "$M9C" --make -o laymain LayMain.m9 >lay.txt 2>&1 ||
+  { echo "FAIL: --make after an outside compile of Lay:"; head -5 lay.txt; exit 1; }
+[ "$(./laymain)" = "b=42" ] ||
+  { echo "FAIL: --make kept Get.o compiled against Lay's old layout: $(./laymain)"; exit 1; }
+t1=$(ls -l --time-style=+%s Get.o 2>/dev/null | awk '{print $6}')
+[ -n "$t1" ] || t1=$(stat -f %m Get.o)
+sleep 1
+M9LIBRARY="$SRC" "$M9C" --make -o laymain LayMain.m9 >lay.txt 2>&1 ||
+  { echo "FAIL: a third --make:"; head -5 lay.txt; exit 1; }
+t2=$(ls -l --time-style=+%s Get.o 2>/dev/null | awk '{print $6}')
+[ -n "$t2" ] || t2=$(stat -f %m Get.o)
+[ "$t1" = "$t2" ] ||
+  { echo "FAIL: a --make with nothing changed rebuilt Get.o"; exit 1; }
+echo "m9c: --make rebuilds an importer after an outside compile of its dependency, and keeps it when nothing moved"
+
 # SizeOf gives the type size (compile-time C sizeof), and ByteSize a
 # slice's data bytes (LEN * element size).  The check is runnable
 # because the values are the contract: 8, 4, 800, 250.  A slice's own

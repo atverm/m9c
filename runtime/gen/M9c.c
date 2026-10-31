@@ -640,7 +640,7 @@ static const uint8_t m9s494[14] = { 88, 68, 71, 95, 67, 65, 67, 72, 69, 95, 72, 
 static const uint8_t m9s495[2] = { 109, 57 };
 static const uint8_t m9s496[4] = { 72, 79, 77, 69 };
 static const uint8_t m9s497[9] = { 46, 99, 97, 99, 104, 101, 47, 109, 57 };
-static const uint8_t m9s498[6] = { 48, 46, 50, 54, 46, 48 };
+static const uint8_t m9s498[6] = { 48, 46, 50, 54, 46, 49 };
 static const uint8_t m9s499[9] = { 32, 115, 101, 99, 116, 105, 111, 110, 115 };
 static const uint8_t m9s500[8] = { 32, 117, 116, 102, 45, 115, 116, 114 };
 static const uint8_t m9s501[6] = { 109, 111, 100, 112, 105, 99 };
@@ -887,7 +887,7 @@ static const uint8_t m9s741[48] = { 32, 32, 111, 110, 108, 121, 32, 45, 73, 44, 
 static const uint8_t m9s742[38] = { 109, 57, 99, 58, 32, 45, 45, 111, 117, 116, 45, 100, 105, 114, 32, 112, 108, 97, 99, 101, 115, 32, 116, 104, 101, 32, 103, 101, 110, 101, 114, 97, 116, 101, 100, 32, 67, 59 };
 static const uint8_t m9s743[56] = { 32, 32, 105, 116, 32, 99, 97, 110, 110, 111, 116, 32, 98, 101, 32, 99, 111, 109, 98, 105, 110, 101, 100, 32, 119, 105, 116, 104, 32, 45, 99, 44, 32, 45, 111, 44, 32, 45, 45, 97, 114, 44, 32, 45, 45, 115, 111, 32, 111, 114, 32, 45, 45, 100, 111, 99 };
 static const uint8_t m9s744[4] = { 109, 57, 99, 32 };
-static const uint8_t m9s745[6] = { 48, 46, 50, 54, 46, 48 };
+static const uint8_t m9s745[6] = { 48, 46, 50, 54, 46, 49 };
 static const uint8_t m9s746[19] = { 109, 57, 99, 58, 32, 110, 111, 32, 115, 111, 117, 114, 99, 101, 32, 102, 105, 108, 101 };
 static const uint8_t m9s747[9] = { 77, 57, 76, 73, 66, 82, 65, 82, 89 };
 static const uint8_t m9s748[1] = { 46 };
@@ -3986,6 +3986,8 @@ static bool M9c_MakeAll (m9_state *err)
   bool m9ret = false;
   bool trustDummy = false; (void) trustDummy;
   int64_t i = 0; (void) i;
+  int64_t newest = 0; (void) newest;
+  int64_t t = 0; (void) t;
   m9_sl_UTF8 nm = {0}; (void) nm;
   m9_sl_UTF8 path = {0}; (void) path;
   m9_sl_UTF8 src = {0}; (void) src;
@@ -3995,6 +3997,10 @@ static bool M9c_MakeAll (m9_state *err)
   bool dirty = false; (void) dirty;
   ok = true;
   dirty = false;
+  { __typeof__(newest) m9v = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    newest = m9v;
+  }
   if (importCycle) {
     { __typeof__(i) m9t1to;
     i = INT64_C(0);
@@ -4052,7 +4058,7 @@ static bool M9c_MakeAll (m9_state *err)
           if (err->exc) goto L_ret;
           o = m9v;
         }
-        bool m9t10 = ({ bool m9t9 = (Text_BLen (src, err) >= INT64_C(0)); if (m9t9) { m9t9 = ((({ bool m9t8 = ({ bool m9t7 = (dirty || M9c_Older (o, path, err)); if (!m9t7) { { __typeof__(M9c_Cat (nm, ((m9_sl_UTF8){ (uint8_t *) m9s148, 2 }), err)) m9a106 = M9c_Cat (nm, ((m9_sl_UTF8){ (uint8_t *) m9s148, 2 }), err);   if (err->exc) goto L_ret; { __typeof__(M9c_Join (outDir, m9a106, err)) m9a107 = M9c_Join (outDir, m9a106, err);   if (err->exc) goto L_ret; m9t7 = ((!Io_ExistsUtf (m9a107, err))); } } } m9t7; }); if (!m9t8) { { __typeof__(M9c_Cat (nm, ((m9_sl_UTF8){ (uint8_t *) m9s149, 2 }), err)) m9a108 = M9c_Cat (nm, ((m9_sl_UTF8){ (uint8_t *) m9s149, 2 }), err);   if (err->exc) goto L_ret; { __typeof__(M9c_Join (outDir, m9a108, err)) m9a109 = M9c_Join (outDir, m9a108, err);   if (err->exc) goto L_ret; m9t8 = ((!M9c_SameMode (m9a109, err))); } } } m9t8; }))); } m9t9; });
+        bool m9t10 = ({ bool m9t9 = (Text_BLen (src, err) >= INT64_C(0)); if (m9t9) { m9t9 = ((({ bool m9t8 = ({ bool m9t7 = ((dirty || M9c_Older (o, path, err)) || (Io_ModTimeUtf (o, err) < newest)); if (!m9t7) { { __typeof__(M9c_Cat (nm, ((m9_sl_UTF8){ (uint8_t *) m9s148, 2 }), err)) m9a106 = M9c_Cat (nm, ((m9_sl_UTF8){ (uint8_t *) m9s148, 2 }), err);   if (err->exc) goto L_ret; { __typeof__(M9c_Join (outDir, m9a106, err)) m9a107 = M9c_Join (outDir, m9a106, err);   if (err->exc) goto L_ret; m9t7 = ((!Io_ExistsUtf (m9a107, err))); } } } m9t7; }); if (!m9t8) { { __typeof__(M9c_Cat (nm, ((m9_sl_UTF8){ (uint8_t *) m9s149, 2 }), err)) m9a108 = M9c_Cat (nm, ((m9_sl_UTF8){ (uint8_t *) m9s149, 2 }), err);   if (err->exc) goto L_ret; { __typeof__(M9c_Join (outDir, m9a108, err)) m9a109 = M9c_Join (outDir, m9a108, err);   if (err->exc) goto L_ret; m9t8 = ((!M9c_SameMode (m9a109, err))); } } } m9t8; }))); } m9t9; });
         if (err->exc) goto L_ret;
         if (m9t10) {
           dirty = true;
@@ -4061,6 +4067,13 @@ static bool M9c_MakeAll (m9_state *err)
           if (m9t11) {
             ok = false;
           }
+        }
+        { __typeof__(t) m9v = Io_ModTimeUtf (o, err);
+          if (err->exc) goto L_ret;
+          t = m9v;
+        }
+        if ((t > newest)) {
+          newest = t;
         }
       }
     }

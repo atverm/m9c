@@ -44,12 +44,16 @@ ldconfig -p 2>/dev/null | grep -q 'libnetcdf\.so' || \
 
 . ./lib/gen.sh
 
-gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o m9c
+# freshm9c builds aside and renames over m9c only when it differs.
+# This gate compiled straight into m9c, and that rewrote the file in
+# place while the m9c gate in another lane ran it: "Text file busy",
+# the first day the gate ran on CI (2026-10-31).  M9C is unset so
+# the gate tests this tree's compiler, as before.
+unset M9C
+. ./lib/freshm9c.sh
 
 REPO=$(cd ../.. && pwd)
 RT=$(cd .. && pwd)
-M9C=$(pwd)/m9c
 W=/tmp/m9tutor-gate
 B=/tmp/m9tutor-build
 EXA="$REPO/docs/tutorial/examples"

@@ -1,11 +1,11 @@
-REVIEW Sem -- 662 procedures with a body, 461 of them functions; 93 headings in a DEFINITION
+REVIEW Sem -- 667 procedures with a body, 464 of them functions; 93 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             461
-  assignments                                  2722
-  arguments                                   11549
-  RETURN values                                1670
-  operands of a comparison or an operator      3510
+  functions answering on every path             464
+  assignments                                  2749
+  arguments                                   11598
+  RETURN values                                1671
+  operands of a comparison or an operator      3531
   CASE labels                                   188
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -14,14 +14,14 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    1   pool
   local pools                                     2   SigOf.scratch, ItoA.scratch
   pool parameters                                 2   RaisesOf, RaisesSpelled
-  KEPT parameters                                93   PushErr, NewMod, NxAdd, NxSet, AddProc, AddType, +87 more
+  KEPT parameters                                94   PushErr, NewMod, NxAdd, NxSet, AddProc, AddType, +88 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
   [SHARABLE] records                              0
-  module variables                              209   showName, shown, shownRaises, mods, nmods, impB, +203 more
+  module variables                              213   showName, shown, shownRaises, mods, nmods, impB, +207 more
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -37,6 +37,6 @@ COUNTED -- how much there was to check
   RAISE statements                                3
   handlers                                        3
   NEW in the frame                               22
-  NEW in a named pool                           160
+  NEW in a named pool                           162
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

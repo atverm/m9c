@@ -1,11 +1,11 @@
-REVIEW Http -- 73 procedures with a body, 59 of them functions; 25 headings in a DEFINITION
+REVIEW Http -- 74 procedures with a body, 59 of them functions; 25 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              59
-  assignments                                   494
-  arguments                                     898
+  assignments                                   503
+  arguments                                     929
   RETURN values                                 131
-  operands of a comparison or an operator       505
+  operands of a comparison or an operator       519
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -34,7 +34,7 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               30
+  RAISE statements                               32
   handlers                                       15
   NEW in the frame                                1
   NEW in a named pool                            11

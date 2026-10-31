@@ -139,7 +139,22 @@ BEGIN
     find[i] := Sort.FindStr (u, probes[i])
   END ;
   Check.EqI64s (t, 'FindStr in the unique strings', find,
-                I64s ('want.find.s'))
+                I64s ('want.find.s')) ;
+  (* The wide set has 300 strings past ASCII, so the runtime's radix
+     path sorts them, not its insertion sort.  Python's sorted() gives
+     code-point order, and Sort must agree. *)
+  v := Strs ('in.s.wide') ;
+  idx := NEW (I64, LEN (v)) ;
+  Sort.ArgStr (v, idx) ;
+  Check.EqI64s (t, 'ArgStr past ASCII, code-point order', idx,
+                I64s ('want.argsort.s.wide')) ;
+  Check.EqStrs (t, 'UniqueStrs past ASCII', Sort.UniqueStrs (v),
+                Strs ('want.unique.s.wide')) ;
+  w := Strs ('in.s.wide') ;
+  Sort.Strs (w) ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    Check.EqStr (t, 'Strs past ASCII in ArgStr order', w[i], v[idx[i]])
+  END
 END Strings ;
 
 (* the refusals *)

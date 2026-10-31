@@ -7,8 +7,9 @@ was written down here -- a cross-host redirect, a RELATIVE redirect
 carrying a Set-Cookie the next request must present, a chunked body on
 both a 302 and a 200, and a body whose only framing is the close.
 
-  usage: httpfix.py <port>
+  usage: httpfix.py <port> [address]
 """
+import socket
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -227,6 +228,14 @@ class H(BaseHTTPRequestHandler):
                       b"Transfer-Encoding: chunked\r\n"
                       b"Connection: close\r\n\r\n0\r\n"
                       % self.server.server_address[1])
+        elif p == "/tohost":
+            # an absolute redirect to another name for this server: the
+            # Host line must follow the target's host and port
+            self._raw(b"HTTP/1.1 302 Found\r\n"
+                      b"Location: http://localhost:%d/host\r\n"
+                      b"Content-Length: 0\r\n"
+                      b"Connection: close\r\n"
+                      % self.server.server_address[1])
         elif p == "/loop":
             self._raw(b"HTTP/1.1 302 Found\r\n"
                       b"Location: /loop\r\n"
@@ -362,5 +371,13 @@ class H(BaseHTTPRequestHandler):
         self.close_connection = True
 
 
+class Server6(HTTPServer):
+    address_family = socket.AF_INET6
+
+
 if __name__ == "__main__":
-    HTTPServer(("127.0.0.1", int(sys.argv[1])), H).serve_forever()
+    # A second argument binds another address: "::1" serves the IPv6
+    # loopback, for the bracketed-host checks.
+    addr = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"
+    cls = Server6 if ":" in addr else HTTPServer
+    cls((addr, int(sys.argv[1])), H).serve_forever()

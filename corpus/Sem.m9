@@ -194,6 +194,8 @@ CONST
   (* binding modes, one letter each, as the oracle spells them *)
   ModeVal = 'p' ; ModeVar = 'v' ; ModeOwn = 'o' ; ModeRo = 'r' ;
   ModeLocal = 'l' ; ModeModule = 'm' ; ModeBinder = 'b' ;
+  (* the callee summaries SumRun walks from its own stack *)
+  SkAlloc = 0 ; SkGives = 1 ; SkWrites = 2 ;
 
 TYPE
   AKid = Ast.Kid ;
@@ -235,6 +237,24 @@ TYPE
     typeName : UTF ;
     variants : SLICE OF UTF ;
     fields : SLICE OF AKid ;      (* fieldseq per variant, or NONE *)
+  END ;
+
+  (* AllocEv is one step of a callee summary's walk of a body:
+     AllocsThrough, RgVarGives or RgVarWrites (SumRun).  A direct step
+     answers YES by itself.  A call step asks summary kind of callee pr
+     for its parameter a. *)
+  AllocEv = RECORD
+    direct : BOOL ;
+    kind : I64 ;
+    pr : ProcInfo ;
+    a : I64 ;
+  END ;
+
+  (* AllocFr is one summary in progress on SumRun's own stack.  Its
+     steps are allocEv[base .. base+n-1], and pos is the next. *)
+  AllocFr = RECORD
+    key : UTF ;
+    base, n, pos : I64 ;
   END ;
 
   ModuleInfo = RECORD
@@ -407,6 +427,10 @@ VAR
   boundMonId : I64 ;               (* the bound monitor's type node, or -1 *)
   allocNoPool : BOOL ;             (* AllocsThrough for a THREAD: a POOL argument is its own pool *)
   allocMon : BOOL ;                (* AllocsThrough of a MONITOR parameter: its POOL fields are carved under its lock *)
+  allocEv : SLICE OF AllocEv ;     (* SumRun's steps, a stack *)
+  nAllocEv : I64 ;
+  allocFr : SLICE OF AllocFr ;     (* SumRun's summaries in progress *)
+  nAllocFr : I64 ;
   boundMon : UTF ;                 (* the bound monitor parameter, or
                                       empty when this procedure is not
                                       bound to one (par 6) *)
@@ -4087,10 +4111,35 @@ BEGIN
   RETURN FALSE
 END UtfPoolField ;
 
+(* AllocPush appends one step to allocEv.  The table grows. *)
+PROCEDURE AllocPush (direct : BOOL ; kind : I64 ; RO KEPT pr : ProcInfo ; a : I64) =
+VAR
+  nb : SLICE OF AllocEv ;
+  k : I64 ;
+BEGIN
+  IF nAllocEv >= LEN (allocEv) THEN
+    nb := NEW (pool, AllocEv, 2 * LEN (allocEv) + 64) ;
+    FOR k := 0 TO nAllocEv - 1 DO nb[k] := allocEv[k] END ;
+    allocEv := nb
+  END ;
+  allocEv[nAllocEv].direct := direct ;
+  allocEv[nAllocEv].kind := kind ;
+  allocEv[nAllocEv].pr := pr ;
+  allocEv[nAllocEv].a := a ;
+  nAllocEv := nAllocEv + 1
+END AllocPush ;
+
+(* AllocWalk lists, in walk order, the steps of body k that may
+   allocate through parameter nm: direct ones, and calls that hand nm
+   on to a callee's VAR parameter.  It stops after the first direct
+   step and answers TRUE then.  Nothing after that step can change the
+   answer.  It does not ask the callees: SumRun does, from its own
+   stack.  A call chain 5,000 deep overflowed m9c's stack when
+   this walk asked them itself (fuzz N3, 2026-10-26). *)
 PROCEDURE AllocWalk (k: Ast.Kid ; RO nm: UTF ; RO mod: UTF) : BOOL =
 VAR
   i, g, j, a : I64 ;
-  cpr : ProcInfo ;
+  cpr, none : ProcInfo ;
   found : BOOL ;
 BEGIN
   IF k IS SOME e THEN
@@ -4100,7 +4149,10 @@ BEGIN
           (* For a THREAD, `NEW (j.wp, T)' is in the worker's own pool
              field, by the type the typed tree recorded for its last
              step.  A THREAD's target is in the checked unit. *)
-          IF NOT ((allocNoPool OR allocMon) AND d.nkids > 0 AND PoolField (d)) THEN RETURN TRUE END
+          IF NOT ((allocNoPool OR allocMon) AND d.nkids > 0 AND PoolField (d)) THEN
+            AllocPush (TRUE, SkAlloc, none, 0) ;
+            RETURN TRUE
+          END
         END
       END
     END ;
@@ -4109,6 +4161,7 @@ BEGIN
        THREAD's own field, or a MONITOR's, carved under its lock. *)
     IF e.kind = Ast.NCallExpr AND Text.Eq (UtfPoolArg (e), nm) AND
        NOT ((allocNoPool OR allocMon) AND UtfPoolField (e)) THEN
+      AllocPush (TRUE, SkAlloc, none, 0) ;
       RETURN TRUE
     END ;
     IF e.kind = Ast.NCallExpr OR e.kind = Ast.NCallStmt THEN
@@ -4129,6 +4182,7 @@ BEGIN
                 IF alv.kids[j] IS SOME av THEN
                   IF av.kind = Ast.NDesignator AND Text.Eq (av.au, nm) AND
                      Text.BLen (Ast.TyStrAt (av.id)) > 0 AND NOT IsBuiltinTy (Ast.TyStrAt (av.id)) THEN
+                    AllocPush (TRUE, SkAlloc, none, 0) ;
                     RETURN TRUE
                   END
                 END
@@ -4151,7 +4205,7 @@ BEGIN
                              NOT ((allocNoPool OR allocMon) AND PoolParam (grp.kids[1])) THEN
                             IF al.kids[a] IS SOME an THEN
                               IF an.kind = Ast.NDesignator AND Text.Eq (an.au, nm) THEN
-                                IF AllocsThrough (cpr, a) THEN RETURN TRUE END
+                                AllocPush (FALSE, SkAlloc, cpr, a)
                               END
                             END
                           END ;
@@ -4174,34 +4228,6 @@ BEGIN
   RETURN FALSE
 END AllocWalk ;
 
-PROCEDURE AllocsThrough (pr: ProcInfo ; j: I64) : BOOL =
-VAR
-  q, key, nm : UTF ;
-  i : I64 ;
-  res, wasMon : BOOL ;
-BEGIN
-  IF allocNoPool THEN
-    q := S4 ('talloc ', Qualify (pr.modName, pr.name), '#', ItoA (j))
-  ELSE
-    q := S4 ('alloc ', Qualify (pr.modName, pr.name), '#', ItoA (j))
-  END ;
-  i := AnsFind (q) ;
-  IF i >= 0 THEN RETURN AnsYes (i) END ;
-  key := Text.Keep (pool, q) ;
-  AnsSet (key, 'busy') ;
-  res := FALSE ;
-  IF pr.body IS SOME d THEN
-    nm := ParamNameAt (d, j) ;
-    IF Text.BLen (nm) > 0 AND d.nkids > 4 THEN
-      wasMon := allocMon ;
-      allocMon := ParamMonitorAt (pr, j) ;
-      res := AllocWalk (d.kids[4], nm, pr.modName) ;
-      allocMon := wasMon
-    END
-  END ;
-  IF res THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
-  RETURN res
-END AllocsThrough ;
 
 (* VarParamAt answers the J-th parameter's name when it is a VAR
    parameter, else ''.  A VAR parameter is the one kind a callee can
@@ -16136,7 +16162,7 @@ END RgParamAt ;
 PROCEDURE RgWritesWalk (k: Ast.Kid ; RO nm: UTF) : BOOL =
 VAR
   i, j : I64 ;
-  pr2 : ProcInfo ;
+  pr2, none : ProcInfo ;
   found : BOOL ;
   pnm, t : UTF ;
   gk : Ast.Kid ;
@@ -16147,7 +16173,7 @@ BEGIN
         IF lh.kind = Ast.NDesignator AND lh.nkids > 0 AND Text.Eq (lh.au, nm) THEN
           FOR i := 0 TO lh.nkids - 1 DO
             IF lh.kids[i] IS SOME sl THEN
-              IF sl.kind = Ast.NSelIndex THEN RETURN TRUE END
+              IF sl.kind = Ast.NSelIndex THEN AllocPush (TRUE, SkWrites, none, 0) ; RETURN TRUE END
             END
           END
         END
@@ -16158,7 +16184,7 @@ BEGIN
         IF e.kids[1] IS SOME al THEN
           IF cd.kind = Ast.NDesignator AND cd.nkids = 0 AND Text.Eq (cd.au, 'COPY') AND al.nkids > 0 THEN
             IF al.kids[0] IS SOME a0 THEN
-              IF a0.kind = Ast.NDesignator AND Text.Eq (a0.au, nm) THEN RETURN TRUE END
+              IF a0.kind = Ast.NDesignator AND Text.Eq (a0.au, nm) THEN AllocPush (TRUE, SkWrites, none, 0) ; RETURN TRUE END
             END
           ELSIF cd.kind = Ast.NDesignator THEN
             found := FALSE ;
@@ -16171,10 +16197,13 @@ BEGIN
                     IF RgParamAt (pr2, j, pnm, gk) THEN
                       IF gk IS SOME gg THEN
                         IF gg.f1 THEN
-                          IF RgVarWrites (pr2, j) THEN RETURN TRUE END
+                          AllocPush (FALSE, SkWrites, pr2, j)
                         ELSIF NOT gg.f3 THEN
                           t := RgCanonIn (pr2, gg.kids[1]) ;
-                          IF Text.StartsWith (t, 'SLICE OF ') OR Text.StartsWith (t, 'GRID ') THEN RETURN TRUE END
+                          IF Text.StartsWith (t, 'SLICE OF ') OR Text.StartsWith (t, 'GRID ') THEN
+                            AllocPush (TRUE, SkWrites, none, 0) ;
+                            RETURN TRUE
+                          END
                         END
                       END
                     END
@@ -16193,26 +16222,6 @@ BEGIN
   RETURN FALSE
 END RgWritesWalk ;
 
-PROCEDURE RgVarWrites (pr: ProcInfo ; k: I64) : BOOL =
-VAR
-  i : I64 ;
-  key, nm : UTF ;
-  gk : Ast.Kid ;
-  r : BOOL ;
-BEGIN
-  IF Text.BLen (pr.foreign) > 0 THEN RETURN FALSE END ;
-  key := Text.Keep (pool, Cat (Cat (Cat ('vw ', Qualify (pr.modName, pr.name)), ' '), ItoA (k))) ;
-  i := AnsFind (key) ;
-  IF i >= 0 THEN RETURN AnsYes (i) END ;
-  AnsSet (key, 'busy') ;
-  r := FALSE ;
-  IF pr.body IS SOME b THEN
-    gk := NONE ;
-    IF RgParamAt (pr, k, nm, gk) THEN r := RgWritesWalk (b.kids[4], nm) END
-  END ;
-  IF r THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
-  RETURN r
-END RgVarWrites ;
 
 (* ---- RgVarGives asks whether a callee gives its VAR parameter k a
    NEW VALUE: assigns it bare, or hands it on as a VAR argument to a
@@ -16243,7 +16252,7 @@ END RgPathRef ;
 PROCEDURE RgGivesWalk (k: Ast.Kid ; RO nm: UTF ; RO mod: UTF) : BOOL =
 VAR
   i, j : I64 ;
-  pr2 : ProcInfo ;
+  pr2, none : ProcInfo ;
   found, builtin : BOOL ;
   pnm : UTF ;
   gk : Ast.Kid ;
@@ -16251,7 +16260,7 @@ BEGIN
   IF k IS SOME e THEN
     IF e.kind = Ast.NAssign THEN
       IF e.kids[0] IS SOME lh THEN
-        IF lh.kind = Ast.NDesignator AND lh.nkids = 0 AND Text.Eq (lh.au, nm) THEN RETURN TRUE END
+        IF lh.kind = Ast.NDesignator AND lh.nkids = 0 AND Text.Eq (lh.au, nm) THEN AllocPush (TRUE, SkGives, none, 0) ; RETURN TRUE END
       END
     END ;
     IF e.kind = Ast.NCallExpr OR e.kind = Ast.NCallStmt THEN
@@ -16268,16 +16277,14 @@ BEGIN
                   pr2 := ProcNamed (mod, DesigName (cd), found)
                 END
               END ;
-              IF NOT found AND NOT builtin THEN RETURN TRUE END ;
+              IF NOT found AND NOT builtin THEN AllocPush (TRUE, SkGives, none, 0) ; RETURN TRUE END ;
               IF builtin THEN found := FALSE END ;
               IF found THEN
                 gk := NONE ;
-                IF NOT RgParamAt (pr2, j, pnm, gk) THEN RETURN TRUE END ;
+                IF NOT RgParamAt (pr2, j, pnm, gk) THEN AllocPush (TRUE, SkGives, none, 0) ; RETURN TRUE END ;
                 IF gk IS SOME gg THEN
-                  IF gg.f2 THEN RETURN TRUE END ;
-                  IF gg.f1 THEN
-                    IF RgVarGives (pr2, j) THEN RETURN TRUE END
-                  END
+                  IF gg.f2 THEN AllocPush (TRUE, SkGives, none, 0) ; RETURN TRUE END ;
+                  IF gg.f1 THEN AllocPush (FALSE, SkGives, pr2, j) END
                 END
               END
             END
@@ -16292,26 +16299,149 @@ BEGIN
   RETURN FALSE
 END RgGivesWalk ;
 
-PROCEDURE RgVarGives (pr: ProcInfo ; k: I64) : BOOL =
-VAR
-  i : I64 ;
-  key, nm : UTF ;
-  gk : Ast.Kid ;
-  r : BOOL ;
+(* ---- SumRun: three callee summaries, walked from the checker's own
+   stack.  AllocsThrough (SkAlloc), RgVarGives (SkGives) and
+   RgVarWrites (SkWrites) each ask a callee about one parameter, and
+   the callee's body asks its own callees.  They recursed through the
+   callee graph, and a call chain 5,000 procedures deep overflowed
+   m9c's stack (fuzz N3, exit 139).  Now a walk only lists a body's
+   steps (AllocWalk, RgGivesWalk, RgWritesWalk), and SumRun asks the
+   callees from allocFr.  It asks the memo in the order the recursion
+   did, so every answer, every busy entry and every redo is the same. ---- *)
+
+(* SumKey answers the memo's name for summary kind of callee pr's
+   parameter j. *)
+PROCEDURE SumKey (kind: I64 ; pr: ProcInfo ; j: I64) : UTF =
 BEGIN
-  IF Text.BLen (pr.foreign) > 0 THEN RETURN FALSE END ;
-  key := Text.Keep (pool, Cat (Cat (Cat ('vg ', Qualify (pr.modName, pr.name)), ' '), ItoA (k))) ;
-  i := AnsFind (key) ;
-  IF i >= 0 THEN RETURN AnsYes (i) END ;
-  AnsSet (key, 'busy') ;
-  r := TRUE ;
-  IF pr.body IS SOME b THEN
-    gk := NONE ;
-    IF RgParamAt (pr, k, nm, gk) THEN r := RgGivesWalk (b.kids[4], nm, pr.modName) END
+  IF kind = SkGives THEN
+    RETURN Cat (Cat (Cat ('vg ', Qualify (pr.modName, pr.name)), ' '), ItoA (j))
+  ELSIF kind = SkWrites THEN
+    RETURN Cat (Cat (Cat ('vw ', Qualify (pr.modName, pr.name)), ' '), ItoA (j))
+  ELSIF allocNoPool THEN
+    RETURN S4 ('talloc ', Qualify (pr.modName, pr.name), '#', ItoA (j))
   END ;
-  IF r THEN AnsSet (key, 'yes') ELSE AnsSet (key, 'no') END ;
-  RETURN r
+  RETURN S4 ('alloc ', Qualify (pr.modName, pr.name), '#', ItoA (j))
+END SumKey ;
+
+(* SumOpen starts summary kind of callee pr's parameter j on allocFr.
+   It marks the memo entry busy and lists the body's steps.  A callee
+   RgVarGives cannot read gives: its frame holds one direct step. *)
+PROCEDURE SumOpen (kind: I64 ; pr: ProcInfo ; j: I64 ; RO q: UTF) =
+VAR
+  nm : UTF ;
+  gk : Ast.Kid ;
+  nf : SLICE OF AllocFr ;
+  none : ProcInfo ;
+  k, base : I64 ;
+  wasMon, stop, read : BOOL ;
+BEGIN
+  IF nAllocFr >= LEN (allocFr) THEN
+    nf := NEW (pool, AllocFr, 2 * LEN (allocFr) + 64) ;
+    FOR k := 0 TO nAllocFr - 1 DO nf[k] := allocFr[k] END ;
+    allocFr := nf
+  END ;
+  allocFr[nAllocFr].key := Text.Keep (pool, q) ;
+  AnsSet (allocFr[nAllocFr].key, 'busy') ;
+  base := nAllocEv ;
+  read := FALSE ;
+  IF pr.body IS SOME d THEN
+    IF kind = SkAlloc THEN
+      nm := ParamNameAt (d, j) ;
+      IF Text.BLen (nm) > 0 AND d.nkids > 4 THEN
+        wasMon := allocMon ;
+        allocMon := ParamMonitorAt (pr, j) ;
+        stop := AllocWalk (d.kids[4], nm, pr.modName) ;
+        allocMon := wasMon
+      END
+    ELSE
+      gk := NONE ;
+      IF RgParamAt (pr, j, nm, gk) THEN
+        read := TRUE ;
+        IF kind = SkGives THEN
+          stop := RgGivesWalk (d.kids[4], nm, pr.modName)
+        ELSE
+          stop := RgWritesWalk (d.kids[4], nm)
+        END
+      END
+    END
+  END ;
+  IF kind = SkGives AND NOT read THEN AllocPush (TRUE, SkGives, none, 0) END ;
+  allocFr[nAllocFr].base := base ;
+  allocFr[nAllocFr].n := nAllocEv - base ;
+  allocFr[nAllocFr].pos := 0 ;
+  nAllocFr := nAllocFr + 1
+END SumOpen ;
+
+(* SumAsk asks summary kind of callee pr's parameter j.  It answers
+   TRUE with the answer in ans when it needs no walk: a foreign callee
+   (RgVarGives and RgVarWrites answer no), or a memo entry.  Otherwise
+   it opens a frame and answers FALSE. *)
+PROCEDURE SumAsk (kind: I64 ; pr: ProcInfo ; j: I64 ; VAR ans: BOOL) : BOOL =
+VAR
+  q : UTF ;
+  i : I64 ;
+BEGIN
+  IF kind # SkAlloc AND Text.BLen (pr.foreign) > 0 THEN ans := FALSE ; RETURN TRUE END ;
+  q := SumKey (kind, pr, j) ;
+  i := AnsFind (q) ;
+  IF i >= 0 THEN ans := AnsYes (i) ; RETURN TRUE END ;
+  SumOpen (kind, pr, j, q) ;
+  RETURN FALSE
+END SumAsk ;
+
+(* SumRun answers summary kind of callee pr's parameter j.  A frame's
+   answer is YES at its first step that is YES, else NO.  The answer
+   ends the frame, and YES ends every frame waiting below it too. *)
+PROCEDURE SumRun (kind: I64 ; pr: ProcInfo ; j: I64) : BOOL =
+VAR
+  t, bottom : I64 ;
+  res, done, ans : BOOL ;
+  ev : AllocEv ;
+BEGIN
+  bottom := nAllocFr ;
+  IF SumAsk (kind, pr, j, ans) THEN RETURN ans END ;
+  res := FALSE ;
+  WHILE nAllocFr > bottom DO
+    t := nAllocFr - 1 ;
+    done := FALSE ;
+    IF allocFr[t].pos >= allocFr[t].n THEN
+      res := FALSE ;
+      done := TRUE
+    ELSE
+      ev := allocEv[allocFr[t].base + allocFr[t].pos] ;
+      allocFr[t].pos := allocFr[t].pos + 1 ;
+      IF ev.direct THEN
+        res := TRUE ;
+        done := TRUE
+      ELSIF SumAsk (ev.kind, ev.pr, ev.a, ans) THEN
+        IF ans THEN res := TRUE ; done := TRUE END
+      END
+    END ;
+    WHILE done DO
+      t := nAllocFr - 1 ;
+      IF res THEN AnsSet (allocFr[t].key, 'yes') ELSE AnsSet (allocFr[t].key, 'no') END ;
+      nAllocEv := allocFr[t].base ;
+      nAllocFr := t ;
+      done := res AND nAllocFr > bottom
+    END
+  END ;
+  RETURN res
+END SumRun ;
+
+PROCEDURE AllocsThrough (pr: ProcInfo ; j: I64) : BOOL =
+BEGIN
+  RETURN SumRun (SkAlloc, pr, j)
+END AllocsThrough ;
+
+PROCEDURE RgVarGives (pr: ProcInfo ; k: I64) : BOOL =
+BEGIN
+  RETURN SumRun (SkGives, pr, k)
 END RgVarGives ;
+
+PROCEDURE RgVarWrites (pr: ProcInfo ; k: I64) : BOOL =
+BEGIN
+  RETURN SumRun (SkWrites, pr, k)
+END RgVarWrites ;
 
 (* RgVarRo asks whether a VAR argument is read-only storage, by the
    state that is its OWN: a bare name's value, or a tracked field's

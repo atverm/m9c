@@ -77,6 +77,29 @@ shape () {   # SHAPE N -> a program on stdout
             for (i = 1; i < n; i++) printf "  ; IF a > %d THEN x := x + 1 ELSE x := x - 1 END\n", i
             print "  ; Io.WriteLine (Fmt.I64Str (x))"; print "END P ;"
             print "BEGIN P (3) END F." }' ;;
+  # The call chains: each procedure hands its VAR parameter to the next.
+  chainvar) awk -v n="$2" 'BEGIN {
+            print "MODULE F ;"
+            for (i = 0; i < n; i++) {
+              printf "PROCEDURE P%d (VAR s : STR) =\nBEGIN\n", i
+              if (i < n - 1) printf "  P%d (s)\n", i + 1 ; else print "  s := s + \047a\047"
+              printf "END P%d ;\n", i }
+            print "VAR g : STR ;"; print "BEGIN"; print "  P0 (g)"; print "END F." }' ;;
+  chaincat) awk -v n="$2" 'BEGIN {
+            print "MODULE F ;"
+            for (i = 0; i < n; i++) {
+              printf "PROCEDURE P%d (VAR s : STR) =\nBEGIN\n  s := s + \047a\047", i
+              if (i < n - 1) printf " ;\n  P%d (s)\n", i + 1 ; else print ""
+              printf "END P%d ;\n", i }
+            print "VAR g : STR ;"; print "BEGIN"; print "  P0 (g)"; print "END F." }' ;;
+  chainptr) awk -v n="$2" 'BEGIN {
+            print "MODULE F ;"; print "TYPE R = RECORD x : I64 END ;"
+            for (i = 0; i < n; i++) {
+              printf "PROCEDURE P%d (VAR p : PTR R) =\nBEGIN\n", i
+              if (i < n - 1) printf "  P%d (p)\n", i + 1 ; else print "  p := NEW (p, R)"
+              printf "END P%d ;\n", i }
+            print "VAR pool : POOL ; g : PTR R IN pool ;"; print "BEGIN"
+            print "  g := NEW (pool, R) ;"; print "  P0 (g)"; print "END F." }' ;;
   esac
 }
 
@@ -111,5 +134,23 @@ for spec in "locals 5000" "procs 2500" "consts 5000" "types 2500" "vars 5000" "f
     fail=1
   fi
 done
+# A DEEP CALL CHAIN (review2 N3, 2026-10-26): AllocsThrough, RgVarGives
+# and RgVarWrites asked each callee from m9c's own stack.  A chain of
+# 5,000 procedures handing a VAR STR on died with exit 139 in 0.26.0, and
+# a VAR PTR chain of 20,000 too.  They walk from SumRun's stack now.  The
+# gate checks each chain once and wants a clean exit, not a time.
+for spec in "chainvar 5000" "chaincat 5000" "chainptr 20000"; do
+  set -- $spec
+  shape "$1" "$2" > "$W/c.m9"
+  st=0
+  M9LIBRARY="$LIB" "$M9C" --check "$W/c.m9" > "$W/out" 2>&1 || st=$?
+  if [ "$st" != 0 ]; then
+    echo "scale: FAIL -- a $1 of $2 procedures: --check exit $st"
+    head -3 "$W/out"
+    fail=1
+  else
+    echo "scale: $1 $2 deep checks clean"
+  fi
+done
 [ "$fail" = 0 ] || exit 1
-echo "scale: --check grows linearly in locals, procedures, constants, types, module variables, a record's fields and a long body"
+echo "scale: --check grows linearly in locals, procedures, constants, types, module variables, a record's fields and a long body, and walks a call chain 20,000 deep"

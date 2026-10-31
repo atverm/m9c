@@ -452,9 +452,14 @@ BEGIN
   IF bwrapOk THEN
     (* The binary is BOUND to a fixed path first.  A workdir that
        itself lives under /tmp would otherwise be shadowed by its
-       own bind: the tutor's recorded trap, met again. *)
+       own bind: the tutor's recorded trap, met again.
+       --unshare-user gives bwrap its mount namespace as root too.  An
+       ordinary user gets one without asking; root in a container
+       without CAP_SYS_ADMIN was refused ("Creating new namespace
+       failed"), and the edit gate failed on CI's lex job once it had
+       bwrap (2026-10-31). *)
     DynStr.Append (cmd,
-      '/out && timeout 15 bwrap --die-with-parent --dev-bind / /') ;
+      '/out && timeout 15 bwrap --unshare-user --die-with-parent --dev-bind / /') ;
     DynStr.Append (cmd,
       ' --bind "$(pwd)" /tmp --chdir /tmp') ;
     DynStr.Append (cmd,

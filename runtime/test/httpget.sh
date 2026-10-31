@@ -156,15 +156,62 @@ ck "DELETE reaches the server as DELETE" \
 
 # A Host line among the caller's headers replaces the URL's, in any
 # case (zarrm9's mcpd asks a loopback server as a public name,
-# 2026-10-30).  The URL's host goes out without its port, as it always
-# has.  RFC 9112 wants a port that is not the default; that is owed.
+# 2026-10-30).  The URL's host goes out with its port, because the
+# port is not http's 80 (RFC 9112 par 3.2).  Until 2026-10-31 the port
+# was left off, and each of the first four checks read "1|127.0.0.1".
+# The four paths that build a request each get one: Request, GetText
+# (and its redirects), and the Client.
 HP=${U#http://} ; HP=${HP%%[:/]*}
-ck "without a Host line, the URL's host goes out, once" \
-   "1|$HP" "$($R GET "$U/host" | tail -1)"
+ck "without a Host line, the URL's host goes out with its port, once" \
+   "1|$HP:$PORT" "$($R GET "$U/host" | tail -1)"
+ck "GetText sends the port too" \
+   "1|$HP:$PORT" "$("$OUT/httpget" text "$U/host" | tail -1)"
+ck "an absolute redirect sends the target's host and port" \
+   "1|localhost:$PORT" "$("$OUT/httpget" text "$U/tohost" | tail -1)"
+ck "and so does a Client" \
+   "status 200 1|$HP:$PORT|kept 0" \
+   "$("$OUT/httpget" session "$U/host" | tr '\n' '|' | sed 's/|$//')"
 ck "a caller's Host line replaces it: exactly one, the caller's" \
    "1|example.org" "$($R GET "$U/host" '' 'Host: example.org' | tail -1)"
 ck "and the name in any case" \
    "1|zarr.icos-cp.eu" "$($R GET "$U/host" '' 'X-A: 1' 'host: zarr.icos-cp.eu' | tail -1)"
+
+# An IPv6 literal: the URL's brackets are not part of the address the
+# resolver is handed, and they go back on in the Host line (RFC 3986
+# par 3.2.2).  Before 2026-10-31 the last colon inside the brackets
+# was taken for the port, and the connect failed.  The fixture runs a
+# second time on ::1.  A machine without an IPv6 loopback skips this
+# by name.
+PORT6=18992
+python3 "$OUT/httpfix.py" $PORT6 ::1 & FIX6=$!
+# The trap must not fail: under set -e, dash exits 1 when an EXIT
+# trap's kill finds a process already gone.
+trap 'kill $FIXPID $FIX6 2>/dev/null || :' EXIT INT TERM
+i=0
+while [ $i -lt 50 ] && kill -0 $FIX6 2>/dev/null; do
+  python3 - "$PORT6" <<'PY' && break
+import socket, sys
+s = socket.socket(socket.AF_INET6)
+s.settimeout(0.2)
+try:
+    s.connect(("::1", int(sys.argv[1])))
+except OSError:
+    sys.exit(1)
+PY
+  i=$((i + 1))
+done
+if kill -0 $FIX6 2>/dev/null && [ $i -lt 50 ]; then
+  ck "an IPv6 host goes out in brackets, with its port" \
+     "1|[::1]:$PORT6" "$("$OUT/httpget" text "http://[::1]:$PORT6/host" | tail -1)"
+  ck "and through Request too" \
+     "1|[::1]:$PORT6" "$($R GET "http://[::1]:$PORT6/host" | tail -1)"
+else
+  echo "  skip IPv6 Host lines: no listener on ::1 here"
+fi
+kill $FIX6 2>/dev/null || :
+trap 'kill $FIXPID 2>/dev/null' EXIT INT TERM
+ck "an IPv6 host without its ] is refused by name" \
+   "transport: an IPv6 host without its ]" "$("$OUT/httpget" text "http://[::1/host" || true)"
 
 ck "GET through Request is the same GET" \
    "status 200 chars 1500" "$($R GET "$U/plain" | head -1)"

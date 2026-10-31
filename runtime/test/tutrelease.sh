@@ -95,10 +95,19 @@ gcc "$W/nc.c" -lnetcdf -o "$W/nc" 2>/dev/null || NETCDF_OK=0
 # whose version is not this tree's fails; and once that version is
 # published the line must go (the release's pointer commit).
 #
-# ON MAIN NOTHING WAITS.  The mirror publishes main and the site is
-# built from it, and a reader on the released package must not be
-# shown a page their compiler contradicts.  GitHub says which branch;
-# M9_TUTRELEASE_STRICT=1 says it by hand.
+# ON MAIN NOTHING WAITS, OUTSIDE A RELEASE.  The mirror publishes main
+# and the site is built from it, and a reader on the released package
+# must not be shown a page their compiler contradicts.  GitHub says
+# which branch; M9_TUTRELEASE_STRICT=1 says it by hand.
+#
+# A RELEASE IS THE EXCEPTION (Alex, 2026-10-31).  Its main push carries
+# a version newer than the latest published one, and the publish
+# follows within the hour.  Strict, main was red for exactly that
+# hour, so CI's mirror job never ran on a release, and the tag needs
+# the mirror commit: 0.26.0's mirror was pushed by hand.  So main
+# excuses the listed waits while this tree's version is newer than
+# the released one.  The pointer commit then drops the lines, and main
+# is strict again.  M9_TUTRELEASE_STRICT=1 still means strict.
 WAITS=${M9_TUTRELEASE_WAITS:-$(pwd)/tutrelease.waits}
 TV=$(sed -n '1s/^m9 (\([^)]*\)).*/\1/p' "$REPO/debian/changelog" | sed 's/-[0-9]*$//')
 RV=$(printf '%s' "$VER" | sed -n 's/.*m9c \([0-9][0-9.]*\).*/\1/p')
@@ -113,6 +122,10 @@ waits_for () {  # waits_for NAME: the version NAME is listed as waiting for, or 
 older () {  # older A B: is version A strictly older than B?
   [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -1)" = "$1" ]
 }
+if [ "$STRICT" = 1 ] && [ "${M9_TUTRELEASE_STRICT:-}" != 1 ] && older "$RV" "$TV"; then
+  STRICT=0
+  echo "tutrelease: main carries $TV and $RV is released: a release is in flight, so the listed waits are excused"
+fi
 nw=0; waited=""; agreed=" "
 disagree () {  # disagree NAME WHAT: excused when NAME waits, the gate's failure otherwise
   v=$(waits_for "$1")

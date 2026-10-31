@@ -655,15 +655,51 @@ BEGIN
     path := SLICE (rest, i, Text.BLen (rest) - i)
   END ;
   colon := -1 ;
-  FOR j := 0 TO Text.BLen (host) - 1 DO
-    IF Text.BIs (host, j, ':') THEN colon := j END
-  END ;
-  IF colon >= 0 THEN
-    port := Digits (SLICE (host, colon + 1, Text.BLen (host) - colon - 1)) ;
-    host := SLICE (host, 0, colon)
+  IF Text.BLen (host) > 0 AND Text.BIs (host, 0, '[') THEN
+    (* An IPv6 literal comes in brackets (RFC 3986 par 3.2.2).  Its own
+       colons are not the port's.  The host answered is the address
+       without the brackets, which is what the resolver takes.
+       HostLine puts them back for the Host header. *)
+    j := 1 ;
+    WHILE j < Text.BLen (host) AND NOT Text.BIs (host, j, ']') DO j := j + 1 END ;
+    IF j >= Text.BLen (host) THEN RAISE TransportError ('an IPv6 host without its ]') END ;
+    IF j + 1 < Text.BLen (host) THEN
+      IF NOT Text.BIs (host, j + 1, ':') THEN RAISE TransportError ('text after an IPv6 host') END ;
+      port := Digits (SLICE (host, j + 2, Text.BLen (host) - j - 2))
+    END ;
+    host := SLICE (host, 1, j - 1)
+  ELSE
+    FOR j := 0 TO Text.BLen (host) - 1 DO
+      IF Text.BIs (host, j, ':') THEN colon := j END
+    END ;
+    IF colon >= 0 THEN
+      port := Digits (SLICE (host, colon + 1, Text.BLen (host) - colon - 1)) ;
+      host := SLICE (host, 0, colon)
+    END
   END ;
   IF Text.BLen (host) = 0 THEN RAISE TransportError ('no host in the URL') END
 END SplitUrl ;
+
+(* HostLine appends the Host header's value for host and port (RFC
+   9112 par 3.2).  The port goes out unless it is the scheme's
+   default: 80 for http, 443 for https.  A host with a colon is an
+   IPv6 address and goes in brackets.  Until 2026-10-31 the port never
+   went out, and a server on 8080 saw a request for port 80. *)
+PROCEDURE HostLine (VAR d: PTR DynStr.DString ; RO host: STR ; port: I64 ;
+                    secure: BOOL) =
+BEGIN
+  IF Text.Find (host, ':') >= 0 THEN
+    DynStr.AppendChar (d, '[') ;
+    DynStr.Append (d, host) ;
+    DynStr.AppendChar (d, ']')
+  ELSE
+    DynStr.Append (d, host)
+  END ;
+  IF (secure AND port # 443) OR (NOT secure AND port # 80) THEN
+    DynStr.AppendChar (d, ':') ;
+    DynStr.AppendI64 (d, port)
+  END
+END HostLine ;
 
 PROCEDURE Cat1 (VAR pool: POOL ; RO a: STR) : STR
   RAISES ValueRange =
@@ -737,6 +773,7 @@ END SendAll ;
 TYPE
   Req = RECORD
     method, host, path, extra, accept, cookie, dest : STR ;
+    port : I64 ;                  (* the URL's, for the Host line *)
     body : SLICE OF BYTE ;
     toFile, toSink, keepHdrs, keep : BOOL ;
     cap : I64 ;
@@ -832,7 +869,7 @@ BEGIN
       DynStr.Append (req, SLICE (rq.extra, hk, hn))
     ELSE
       DynStr.Append (req, 'Host: ') ;
-      DynStr.Append (req, rq.host)
+      HostLine (req, rq.host, rq.port, c.secure)
     END ;
     CrLf (req) ;
     (* This asks for identity BY NAME: a server that decided to gzip
@@ -1072,7 +1109,7 @@ BEGIN
   rq.toSink := FALSE ; rq.keepHdrs := FALSE ; rq.keep := FALSE ;
   rq.cap := cap ;
   FOR hop := 0 TO MaxHop DO
-    rq.host := host ; rq.path := path ; rq.cookie := ck ;
+    rq.host := host ; rq.port := port ; rq.path := path ; rq.cookie := ck ;
     OpenConn (scratch, c, secure, host, port) ;
     Once (pool, c, rq, none, rs) ;
     bytes := rs.bytes ; text := rs.text ;
@@ -1118,7 +1155,7 @@ VAR
   sink, none : SLICE OF BYTE ;
 BEGIN
   bodyLen := 0 ;
-  rq.method := 'GET' ; rq.host := host ; rq.path := path ;
+  rq.method := 'GET' ; rq.host := host ; rq.port := port ; rq.path := path ;
   rq.extra := '' ; rq.accept := '' ; rq.cookie := '' ; rq.dest := '' ;
   rq.body := none ; rq.toFile := FALSE ; rq.toSink := TRUE ;
   rq.keepHdrs := FALSE ; rq.keep := FALSE ; rq.cap := 0 ;
@@ -1169,7 +1206,7 @@ VAR
 BEGIN
   IF Text.BLen (method) = 0 THEN RAISE TransportError ('no method') END ;
   SplitUrl (pool, url, secure, host, port, path) ;
-  rq.method := method ; rq.host := host ; rq.path := path ;
+  rq.method := method ; rq.host := host ; rq.port := port ; rq.path := path ;
   rq.extra := headers ; rq.body := body ;
   rq.accept := '' ; rq.cookie := '' ; rq.dest := '' ;
   rq.toFile := FALSE ; rq.toSink := FALSE ; rq.keepHdrs := TRUE ;
@@ -1754,7 +1791,7 @@ BEGIN
   SplitUrl (pool, url, secure, host, port, path) ;
   now := F64 (NowSec ()) ;
   ck := CookieHeader (cl, secure, host, path, now) ;
-  rq.method := method ; rq.host := host ; rq.path := path ;
+  rq.method := method ; rq.host := host ; rq.port := port ; rq.path := path ;
   rq.extra := ck + headers ;
   rq.body := body ; rq.accept := '' ; rq.cookie := '' ; rq.dest := '' ;
   rq.toFile := FALSE ; rq.toSink := FALSE ; rq.keepHdrs := TRUE ;
@@ -1947,7 +1984,7 @@ BEGIN
   tries := 0 ;
   IF Text.BLen (method) = 0 THEN RAISE TransportError ('no method') END ;
   SplitUrl (pool, url, secure, host, port, path) ;
-  rq.method := method ; rq.host := host ; rq.path := path ;
+  rq.method := method ; rq.host := host ; rq.port := port ; rq.path := path ;
   rq.extra := headers ; rq.body := body ;
   rq.accept := '' ; rq.cookie := '' ; rq.dest := '' ;
   rq.toFile := FALSE ; rq.toSink := FALSE ; rq.keepHdrs := TRUE ;

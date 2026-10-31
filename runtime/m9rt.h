@@ -1305,6 +1305,10 @@ int m9_sort_f64 (void *a, int64_t n);
 int m9_sort_i64 (void *a, int64_t n);
 int m9_argsort_f64 (const void *v, void *idx, int64_t n);
 int m9_argsort_i64 (const void *v, void *idx, int64_t n);
+/* m9_argsort_utf sets idx to the order of v, a slice's storage of
+   STRs, in code-point order (memcmp over the UTF-8 octets), stable.
+   It answers 0 when the caller's merge sort must do it, as above. */
+int m9_argsort_utf (const void *v, void *idx, int64_t n);
 int64_t m9_repr_float (float v, void *b);    /* pyarrow's f32 text */
 /* m9_mtime answers seconds since the epoch, or -1.  It is a
    COMPARISON, not a clock.  m9c asks whether an object is older than
