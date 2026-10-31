@@ -1,7 +1,7 @@
 (* EXPECT: FOR h IN over SHARED handles: index the slice -- a copy of a handle is counted, and the loop would copy it uncounted *)
 (* A SHARED handle is counted: every copy is a share (par 4.1).  The
-   loop's copy into the variable would be one the count does not see,
-   so a slice of handles is gone over by its index.  The legal form
+   loop's copy into the variable would be one the count does not see, so
+   a slice of handles is gone over by its index.  The legal form comes
    first. *)
 MODULE m ;
 TYPE

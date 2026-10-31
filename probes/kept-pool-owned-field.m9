@@ -1,8 +1,8 @@
 (* EXPECT: argument 1 of Grow: a KEPT parameter cannot take the pool h.pool -- it dies when h is disposed *)
-(* kept-pool-local with the pool a field of an OWNED object: its
-   DISPOSE frees the pool (par 4.3), and the module variable Grow keeps
-   points into it (2026-10-28).  Legal forms first: the owned object's
-   pool used for an allocation that dies with it. *)
+(* This is kept-pool-local with the pool a field of an OWNED object.
+   Its DISPOSE frees the pool (par 4.3), and the module variable Grow
+   keeps points into it (2026-10-28).  Legal forms come first: the owned
+   object's pool used for an allocation that dies with it. *)
 MODULE m ;
 TYPE
   Cell = RECORD v : I64 END ;

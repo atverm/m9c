@@ -1,8 +1,8 @@
 MODULE HttpPing ;
 
-(* m9c.sh's link fixture: a program that makes ONE request over plain
-   http, to a loopback port nothing listens on, built by the FLAGLESS
-   m9c line.  Http binds the TLS shim (tls_connect/read/write/close)
+(* HttpPing is m9c.sh's link fixture.  It makes ONE request over plain
+   http, to a loopback port nothing listens on; the FLAGLESS m9c line
+   builds it.  Http binds the TLS shim (tls_connect/read/write/close)
    from every request path, so until 0.12 this referenced four symbols
    the supplied line never provided and failed to link -- against the
    installed 0.11.0 package and the source tree alike (2026-09-28).

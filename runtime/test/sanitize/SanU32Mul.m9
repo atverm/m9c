@@ -5,7 +5,7 @@ MODULE SanU32Mul ;
 (* The compiler review's G2 sibling (2026-10-21): the narrow products
    were computed as `int64_t r = a * b', and U32's (2^32-1)^2 is past
    int64_t -- signed overflow in C, which raised Overflow by luck
-   (UBSan: m9rt.h, "signed integer overflow").  Now through
+   (UBSan: m9rt.h, "signed integer overflow").  It now goes through
    __builtin_mul_overflow; the largest in-range product converts. *)
 
 IMPORT Io, Fmt ;

@@ -1,4 +1,5 @@
-/* sigpipe_driver.c -- a peer that hangs up is an ERROR, not a death.
+/* sigpipe_driver.c shows that a peer that hangs up is an ERROR, not
+   a death.
 
    Writing to a pipe or socket whose reader has gone raises SIGPIPE,
    whose default action kills the process with no error for anyone to
@@ -25,12 +26,12 @@
 int64_t tcp_write (int fd, const void *buf, size_t n);   /* tcpshim */
 
 static int checks = 0, fails = 0;
-/* UNBUFFERED, because the regression this gate exists to catch KILLS
-   THIS PROCESS on the very next write: with a buffered stdout the
-   FAIL line dies in the buffer and the gate reports only signal 13,
-   which is the museum's HALT piece -- a diagnostic that loses a race
-   with its own program's death.  Measured: reverting the fix printed
-   nothing at all before exit 141. */
+/* Output is UNBUFFERED.  The regression this gate exists to catch
+   KILLS THIS PROCESS on the very next write.  With a buffered stdout
+   the FAIL line dies in the buffer, and the gate reports only signal
+   13.  That is the museum's HALT piece: a diagnostic that loses a
+   race with its own program's death.  Measured: reverting the fix
+   printed nothing at all before exit 141. */
 static void ck (bool ok, const char *what)
 {
   checks++;
@@ -50,7 +51,7 @@ int main (int argc, char **argv)
   ck (sigaction (SIGPIPE, NULL, &sa) == 0 && sa.sa_handler == SIG_IGN,
       "m9_args leaves SIGPIPE ignored");
 
-  /* a pipe whose reader has gone: the write must RETURN, not kill */
+  /* A pipe's reader has gone: the write must RETURN, not kill. */
   ck (pipe (pfd) == 0, "pipe");
   close (pfd[0]);
   errno = 0;
@@ -58,7 +59,8 @@ int main (int argc, char **argv)
   ck (w == -1 && errno == EPIPE, "write to a closed pipe answers EPIPE");
   close (pfd[1]);
 
-  /* the shim's own write, over a socket, which is the proxy's path */
+  /* Try the shim's own write, over a socket, which is the proxy's
+     path. */
   ck (socketpair (AF_UNIX, SOCK_STREAM, 0, sv) == 0, "socketpair");
   close (sv[0]);
   errno = 0;

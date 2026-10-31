@@ -1,8 +1,8 @@
 (* EXPECT: argument 1 of Eat: cannot move p into an OWN parameter: nothing here gives it an owned pointer *)
-(* dispose-procval-answer with an OWN argument for the DISPOSE: a
-   procedure value answering h's field, the answer moved into Eat,
-   which freed what h.c still held (2026-10-28).  Legal forms first: a
-   procedure value with no reference parameter, its answer moved in. *)
+(* This is dispose-procval-answer with an OWN argument for the DISPOSE:
+   a procedure value answers h's field, and the answer is moved into
+   Eat, which freed what h.c still held (2026-10-28).  Legal forms come
+   first: a procedure value with no reference parameter, moved in. *)
 MODULE m ;
 TYPE
   T = RECORD v : I64 END ;

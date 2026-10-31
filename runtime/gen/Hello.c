@@ -32,15 +32,15 @@ static m9_pool pool;
 static int64_t i;
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[7] = { 104u, 101u, 108u, 108u, 111u, 44u, 32u };
-static const uint32_t m9s1[5] = { 119u, 111u, 114u, 108u, 100u };
-static const uint32_t m9s2[31] = { 104u, 101u, 108u, 108u, 111u, 58u, 32u, 97u, 110u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 119u, 97u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s3[34] = { 104u, 101u, 108u, 108u, 111u, 58u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 111u, 117u, 116u, 32u, 111u, 102u, 32u, 114u, 97u, 110u, 103u, 101u };
+static const uint8_t m9s0[7] = { 104, 101, 108, 108, 111, 44, 32 };
+static const uint8_t m9s1[5] = { 119, 111, 114, 108, 100 };
+static const uint8_t m9s2[31] = { 104, 101, 108, 108, 111, 58, 32, 97, 110, 32, 97, 114, 103, 117, 109, 101, 110, 116, 32, 119, 97, 115, 32, 110, 111, 116, 32, 116, 101, 120, 116 };
+static const uint8_t m9s3[34] = { 104, 101, 108, 108, 111, 58, 32, 97, 114, 103, 117, 109, 101, 110, 116, 32, 105, 110, 100, 101, 120, 32, 111, 117, 116, 32, 111, 102, 32, 114, 97, 110, 103, 101 };
 
-static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_state *err);
+static void Hello_Greet (m9_pool *pool, m9_sl_UTF8 who, m9_state *err);
 
 
-static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_state *err)
+static void Hello_Greet (m9_pool *pool, m9_sl_UTF8 who, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -51,13 +51,13 @@ static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_state *err)
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s0, 7 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s0, 7 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &((*pool)), who, err);
   if (err->exc) goto L_ret;
   { __typeof__(DynStr_View (d, err)) m9a1 = DynStr_View (d, err);
     if (err->exc) goto L_ret;
-  Io_WriteLine (m9a1, err);
+  Io_WriteLineUtf (m9a1, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(greeted) m9v = m9_add_i64 (greeted, INT64_C(1), err);
@@ -81,7 +81,7 @@ int main (int argc, char **argv)
   bool m9t3 = (Io_ArgCount (err) <= INT64_C(1));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    Hello_Greet (&(pool), ((m9_sl_CHAR){ (uint32_t *) m9s1, 5 }), err);
+    Hello_Greet (&(pool), ((m9_sl_UTF8){ (uint8_t *) m9s1, 5 }), err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
     { __typeof__(i) m9t4to;
@@ -89,7 +89,7 @@ int main (int argc, char **argv)
     m9t4to = m9_sub_i64 (Io_ArgCount (err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Io_Arg (&(pool), i, err)) m9a2 = Io_Arg (&(pool), i, err);
+      { __typeof__(Io_ArgUtf (&(pool), i, err)) m9a2 = Io_ArgUtf (&(pool), i, err);
         if (err->exc) goto L_hdl_m9t1;
       Hello_Greet (&(pool), m9a2, err);
       if (err->exc) goto L_hdl_m9t1;
@@ -100,19 +100,19 @@ int main (int argc, char **argv)
   }
   Io_WriteI64 (greeted, err);
   if (err->exc) goto L_hdl_m9t1;
-  Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
+  Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s2, 31 }), err);
+    Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s2, 31 }), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s3, 34 }), err);
+    Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s3, 34 }), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }

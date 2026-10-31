@@ -1,12 +1,13 @@
 MODULE NbCellsTest ;
 
-(* NbCells, tested in M9 (runtime/test/m9test.sh).  What it holds:
-   every kind comes back as it went -- reals to the BIT, NaN and -0.0
-   included, integers to the extremes, a grid by shape and place, a
-   frame by rows, columns and strings; a name holds one kind at a
-   time and a Put of another kind replaces it; a Get of the wrong kind
-   is WrongType naming both, of nothing Missing; a name that is no
-   identifier is refused before any file is touched.
+(* NbCellsTest tests NbCells in M9 (runtime/test/m9test.sh).  It
+   holds these properties.  Every kind comes back as it went: reals
+   to the BIT, NaN and -0.0 included, integers to the extremes, a
+   grid by shape and place, a frame by rows, columns and strings.  A
+   name holds one kind at a time, and a Put of another kind replaces
+   it.  A Get of the wrong kind is WrongType naming both, and a Get of
+   nothing is Missing.  A name that is no identifier is refused
+   before any file is touched.
 
    It writes into m9data in the working directory (no $M9CELLS is
    set by the gate) and removes what it wrote, the directory last. *)
@@ -144,7 +145,8 @@ EXCEPT
     RETURN TRUE
 END MissingRaised ;
 
-(* the stored kind and the wanted one, as the exception named them *)
+(* WrongTypeSaid answers the stored kind and the wanted one, as the
+   exception named them. *)
 PROCEDURE WrongTypeSaid () : STR
   RAISES NbCells.Missing, Faults.BadArg, Io.IOError, ValueRange =
 VAR
@@ -192,7 +194,7 @@ BEGIN
                NbCells.Kind ('neverStored'), '')
 END Refusals ;
 
-(* what this test wrote, and then the directory *)
+(* Tidy removes what this test wrote, and then the directory. *)
 PROCEDURE Tidy () RAISES ValueRange =
 VAR
   names : SLICE OF STR ;

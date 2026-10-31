@@ -1,12 +1,12 @@
 #!/bin/sh
-# guiexample -- examples/gui/GuiMean.m9 is still a program this tree's
-# compiler accepts, and its build scripts still parse.
+# guiexample checks that examples/gui/GuiMean.m9 is still a program this
+# tree's compiler accepts, and that its build scripts still parse.
 #
-# The example itself needs libui-ng and a display, which CI has neither
-# of; it was run by hand on macOS, on Linux under Xvfb and under wine
-# (examples/gui/README.md says how).  What a gate CAN hold is the M9
-# side: a change to the language or the library that would break the
-# example breaks here first, by name and line.
+# The example itself needs libui-ng and a display, and CI has neither.
+# It was run by hand on macOS, on Linux under Xvfb and under wine
+# (examples/gui/README.md says how).  A gate CAN hold the M9 side.  A
+# change to the language or the library that would break the example
+# breaks here first, by name and line.
 set -e
 cd "$(dirname "$0")"
 

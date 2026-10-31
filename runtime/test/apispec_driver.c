@@ -1,12 +1,12 @@
-/* apispec_driver.c -- the document a service BUILDS.
+/* apispec_driver.c tests the document a service BUILDS.
 
    OpenApi.Document derives its description from an HttpServer.Router
    and so cannot disagree with the server.  ApiSpec is for the other
    kind of service, whose routes are handlers with no table to read
-   back -- the ICOS zarr proxy.  What it must get right instead is
-   the document itself: 3.1 shapes, methods gathered under one path,
-   typed and nullable parameters, and JSON escaping, which the older
-   module explicitly does NOT do.
+   back: the ICOS zarr proxy.  ApiSpec must get the document itself
+   right instead: 3.1 shapes, methods gathered under one path, typed
+   and nullable parameters, and JSON escaping.  The older module
+   explicitly does NOT do JSON escaping.
 
    The expected strings below are written out by hand from the
    OpenAPI 3.1 shape, never read back from the code under test.     */
@@ -15,11 +15,13 @@
 #include <string.h>
 #include "ApiSpec.h"
 
-static m9_sl_CHAR sl (const char *s, uint32_t *buf)
+/* sl copies a C string's bytes into buf.  A C literal is UTF-8
+   already, so no byte is widened. */
+static m9_sl_UTF8 sl (const char *s, uint8_t *buf)
 {
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
+  int64_t n = (int64_t) strlen (s);
+  memcpy (buf, s, (size_t) n);
+  return (m9_sl_UTF8){ buf, n };
 }
 
 static int checks = 0, fails = 0;
@@ -29,25 +31,14 @@ static void ck (bool ok, const char *what)
   if (!ok) { fails++; printf ("FAIL: %s\n", what); }
 }
 
-/* the rendered document as UTF-8 bytes, so a byte comparison is a
-   comparison of what a client would actually receive */
-static char *utf8 (m9_sl_CHAR s, char *out, size_t cap)
+/* utf8 copies the document's bytes into a C string.  The document
+   is UTF-8 already, so a byte comparison compares what a client
+   would actually receive. */
+static char *utf8 (m9_sl_UTF8 s, char *out, size_t cap)
 {
-  size_t o = 0;
-  int64_t i;
-  for (i = 0; i < s.len && o + 4 < cap; i++) {
-    uint32_t c = s.p[i];
-    if (c < 0x80) out[o++] = (char) c;
-    else if (c < 0x800) {
-      out[o++] = (char) (0xC0 | (c >> 6));
-      out[o++] = (char) (0x80 | (c & 0x3F));
-    } else {
-      out[o++] = (char) (0xE0 | (c >> 12));
-      out[o++] = (char) (0x80 | ((c >> 6) & 0x3F));
-      out[o++] = (char) (0x80 | (c & 0x3F));
-    }
-  }
-  out[o] = 0;
+  size_t n = s.len < (int64_t) cap ? (size_t) s.len : cap - 1;
+  if (n > 0) memcpy (out, s.p, n);
+  out[n] = 0;
   return out;
 }
 
@@ -55,9 +46,10 @@ int main (int argc, char **argv)
 {
   m9_state errv = {0}, *err = &errv;
   m9_pool pool = {0};
-  uint32_t b[32][512];   /* ONE buffer per string: the spec keeps
-                            VIEWS (KEPT), so reusing a buffer rewrites a
-                            string the document still points at */
+  uint8_t b[32][512];     /* Use ONE buffer per string.  The spec
+                            keeps VIEWS (KEPT), so reusing a buffer
+                            rewrites a string the document still
+                            points at. */
   char got[8192];
   ApiSpec_Spec *s;
 
@@ -67,8 +59,8 @@ int main (int argc, char **argv)
   s = ApiSpec_NewSpec (sl ("t", b[0]), sl ("1.1", b[1]), err);
   ck (!err->exc, "NewSpec");
 
-  /* an operation with no description and no parameters: both are
-     OMITTED, not emitted empty */
+  /* An operation has no description and no parameters.  Both are
+     OMITTED, not emitted empty. */
   ApiSpec_AddOp (&s, &pool,sl ("GET", b[2]), sl ("/version", b[3]),
                  sl ("Version", b[4]), sl ("", b[5]), 200,
                  sl ("application/json", b[6]), err);
@@ -82,7 +74,7 @@ int main (int argc, char **argv)
   /* escaping: a quote and a backslash must survive as escapes */
   ApiSpec_AddOp (&s, &pool,sl ("GET", b[12]), sl ("/q", b[13]),
                  sl ("Q", b[14]), sl ("a \"b\" \\ c", b[15]), 200,
-                 sl ("application/json", b[15]), err);
+                 sl ("application/json", b[22]), err);
   ApiSpec_AddParam (&s, &pool,sl ("id", b[16]), false, true,
                     0 /* TyStr */, false, sl ("the id", b[17]), err);
   ApiSpec_AddParam (&s, &pool,sl ("n", b[18]), false, false,

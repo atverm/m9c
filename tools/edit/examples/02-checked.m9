@@ -2,7 +2,7 @@ MODULE Checked ;
 
 (* Arithmetic is checked: + - * overflow, DIV/MOD guard zero.  To
    wrap on purpose you must SAY so, with +% -% *%.  Here MAX(I64) +% 1
-   wraps to MIN(I64) -- deliberate, and spelled. *)
+   wraps to MIN(I64), deliberate and spelled. *)
 IMPORT Io ;
 
 VAR

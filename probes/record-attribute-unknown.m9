@@ -1,7 +1,7 @@
 (* EXPECT: a RECORD takes one attribute, [SHARABLE] (par 6), not [SHARE] *)
 (* RECORD ... END takes one attribute, [SHARABLE]: the claim that
    threads may share it (par 6).  Another name is a typo the checker
-   says, not an attribute nobody reads.  The legal form first. *)
+   says, not an attribute nobody reads.  The legal form comes first. *)
 MODULE m ;
 TYPE
   Band = RECORD part : SLICE OF I64 END [SHARABLE] ;

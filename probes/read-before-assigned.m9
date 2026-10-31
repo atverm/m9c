@@ -1,9 +1,9 @@
 (* EXPECT: p is read before it is assigned: a PTR that is not OPT has no value until it is given one -- assign it on every path first (par 4) *)
 (* A local whose type is a pointer that is not OPT has no value until it
-   is given one (since 2026-10-21, the compiler review's C8): `VAR p :
-   PTR Node ; ... p.n' dereferenced NULL.  The legal forms first: given
-   on both arms of an IF, filled by a callee through VAR, an arm that
-   gives nothing but ends in RAISE. *)
+   is given one (since 2026-10-21, the compiler review's C8).  `VAR p :
+   PTR Node ; ... p.n' dereferenced NULL.  The legal forms come first:
+   given on both arms of an IF, filled by a callee through VAR, an arm
+   that gives nothing but ends in RAISE. *)
 MODULE m ;
 EXCEPTION Bad ;
 TYPE Node = RECORD n : I64 END ;

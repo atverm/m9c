@@ -1,8 +1,8 @@
 MODULE R4CopyElem ;
-(* R4FieldRowsAlias one level up: after the whole copy of the RO record,
-   an ELEMENT of its rows replaced -- the caller's slice written.
-   Accepted by 0.25.1 (without KEPT on r it refused a retention, never
-   the write) *)
+(* R4FieldRowsAlias one level up: after the whole copy of the RO
+   record, an ELEMENT of its rows is replaced, so the caller's slice
+   is written.  0.25.1 accepted it (without KEPT on r it refused a
+   retention, never the write). *)
 IMPORT Io ;
 TYPE
   Strs = SLICE OF STR ;

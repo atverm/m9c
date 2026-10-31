@@ -88,7 +88,7 @@ is in `docs/diagnose.md` with its probe):
 | `module M is named and not imported` | `IMPORT M` in THIS unit (an implementation's imports are its own) |
 | `no '=' between two strings` | `Text.Eq (a, b)` |
 | `OPT value used without IS SOME guard` / comparing with NIL | `IF x IS SOME p THEN ... p ... END` -- there is no NIL |
-| `a string literal can be lent only to an RO parameter` | write `RO` on the parameter (every STR the procedure does not write) |
+| `a string literal can be lent only to an RO parameter` | write `RO` on the parameter (a `SLICE OF CHAR` the procedure does not write; a STR is never written) |
 | `a function must RETURN or RAISE on every path` | an ELSE, or a RETURN after the loop; a helper that always raises is not an ending |
 | `a FOR step is a constant` | a literal, a CONST or an expression of them, never 0; a run-time step is a WHILE |
 | `field k of E: cannot give X where Y is expected` (a RAISE) | the payload in the EXCEPTION's field order and types |
@@ -96,6 +96,16 @@ is in `docs/diagnose.md` with its probe):
 **Still not in the language** (route around): no slice literal
 inside an expression (a module-level CONST table, or NEW and fill);
 a `NEW` of an unnamed nested slice type needs a TYPE name first.
+
+**Comments, in .m9 and everywhere else** (Alex, 2026-10-30): start
+every comment sentence with a plain subject and verb; never a clause as
+the subject ("Whether...", "That...", "What... is..."); two short
+sentences rather than one nested one.  Bad: `(* Whether the lock is
+still held here determines if we can skip the flush. *)`  Good: `(* Skip
+the flush if we still hold the lock. The previous writer already
+flushed. *)`  Bad: `(* That we retry without backoff is intentional,
+since the caller throttles. *)`  Good: `(* No backoff here: the caller
+already throttles retries. *)`
 
 **Process rule, before the language**: write `.m9`, `.c`, `.f90` and
 `.py` files with the file tool.  Never through a heredoc or a Python
@@ -175,16 +185,22 @@ disagree is not evidence.
    `+` concatenates two STRINGS into HEAP, and a CHAR joins as one
    code point on either side (`s + c`, `c + s`; since 2026-09-06);
    a NUMBER never does -- `Fmt.I64Str` it first.  Par 2; tutorial
-   2 and 12.  A character beyond ASCII in a literal is written as a
-   CHAR literal (`2082C` is U+2082) and joined with `+`; the generator
-   refuses a non-ASCII string literal.  **A FILE is UTF-8** (from
-   0.19): `Io.ReadFile` decodes it (strictly: a file that is not
-   UTF-8 raises ValueRange) and `Io.WriteFile` encodes every scalar;
-   up to 0.18 they moved one octet per CHAR and `WriteFile` refused a
-   scalar past 255.  A STR that holds OCTETS as CHARs -- an HTTP body
-   -- goes through `Io.WriteFileBytes (path, DynStr.Bytes (pool, s,
-   FALSE))`, never through `WriteFile`, which would encode each octet
-   again.
+   2 and 12.  A literal may hold any character (`'CO₂'`); the hex
+   CHAR literal (`2082C`) is for one you cannot type.
+
+   **A STR is UTF-8 text since 0.26.0** (report par 2.2): it has NO
+   subscript and NO `LEN`, and the checker refuses `s[i]` and
+   `LEN (s)` naming what to write instead.  `Text.BLen (s)` counts
+   bytes, `Text.CpCount (s)` characters; `FOR c IN s` walks the
+   characters (`c : CHAR`); `Text.BAt (s, i)` is the byte at offset i
+   and `Text.BIs (s, i, '/')` tests one against ASCII.  `SLICE (s, at,
+   n)` takes BYTE offsets.  To edit characters in place, hold a `SLICE
+   OF CHAR` (`Text.Chars (s)` decodes, `UTF (cs)` encodes back); a
+   literal fits one.  Bytes are `OCTETS (s)`, a read-only `SLICE OF
+   BYTE`; `UTF (pool, b)` validates bytes into text.  A file, an HTTP
+   request and a path go out as their UTF-8 octets.  A procedure X
+   whose module has XUtf is XUtf now: `m9c --json` shows the live
+   heading.
 
 6. **Build a string with `+` and a CASE that ANSWERS one.**  `+`
    concatenates into `HEAP` (par 2.3) and works on every operand

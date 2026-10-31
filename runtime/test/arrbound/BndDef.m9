@@ -1,8 +1,8 @@
 DEFINITION MODULE BndDef ;
 
-(* exported ARRAY types whose count is a CONST of this module, read in
-   an importer: a bare CONST, nested, an enumeration, an expression,
-   a record field; M is declared BELOW the type that uses it *)
+(* BndDef exports ARRAY types counted by a CONST of this module, read
+   in an importer: a bare CONST, nested, an enumeration, an expression,
+   a record field.  M is declared BELOW the type that uses it. *)
 
 CONST N = 4 ;
 TYPE

@@ -1,9 +1,9 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 STATEFUL DEFINITION MODULE Logger ;
 
-(* Levelled, timestamped, structured logging to stderr.
+(* Logger writes levelled, timestamped, structured logs to stderr.
 
-   Three decisions worth stating, because each is a place logging
+   Three decisions are worth stating, because each is a place logging
    libraries usually go wrong:
 
      It goes to STDERR, always.  A log line in the program's output
@@ -13,8 +13,8 @@ STATEFUL DEFINITION MODULE Logger ;
 
      It NEVER RAISES.  A logger that propagates failure turns a
      diagnostic into a second fault, usually while handling the
-     first.  Timestamp formatting can fail in principle -- an
-     Instant can hold NaN -- so it is handled here and degrades to
+     first.  Timestamp formatting can fail in principle, since an
+     Instant can hold NaN.  So it is handled here and degrades to
      a marker rather than escaping.
 
      Fields are KEY=VALUE on one line, logfmt style, because a log
@@ -35,8 +35,8 @@ CONST
 PROCEDURE SetLevel (level: I64) ;
 PROCEDURE Level () : I64 ;
 PROCEDURE Enabled (level: I64) : BOOL ;
-  (* the threshold, read and written.  A message at a level below
-     the threshold is dropped.
+  (* SetLevel and Level write and read the threshold.  A message at a
+     level below the threshold is dropped.
 
        level -- one of the level constants above, and the ORDER is
                 the point: they increase with severity, so a
@@ -48,9 +48,9 @@ PROCEDURE Enabled (level: I64) : BOOL ;
      rather than being one hidden variable.                        *)
 
 PROCEDURE Msg (level: I64 ; RO text: STR) ;
-  (* the whole line in one call, for the common case.  Threads may
-     call it at once and each line comes out whole; the builder below
-     is NOT for threads -- its line is module state *)
+  (* Msg writes the whole line in one call, for the common case.
+     Threads may call it at once and each line comes out whole.  The
+     builder below is NOT for threads: its line is module state. *)
 
 PROCEDURE Start (level: I64 ; RO text: STR) ;
 PROCEDURE Str (RO key: STR ; RO val: STR) ;
@@ -71,21 +71,24 @@ PROCEDURE Done () ;
    call site follows.                                              *)
 
 PROCEDURE ToSyslog (RO ident: STR ; options: I64 ; facility: I64) ;
-  (* subsequent lines go to the system log under this ident, at a
-     priority derived from the level.  The timestamp and level word
-     are DROPPED from the text, because syslog records both itself
-     and a line carrying two of each is a line nobody can grep.
-     options are Syslog's, ORed: Syslog.Pid is the usual one, and
-     Syslog.Perror keeps the lines on stderr as well, which is what
-     a person wants while developing and a daemon does not. *)
+  (* ToSyslog sends subsequent lines to the system log under this ident,
+     at a priority derived from the level.  The timestamp and level word
+     are DROPPED from the text, because syslog records both itself and a
+     line carrying two of each is a line nobody can grep.  options are
+     Syslog's, ORed: Syslog.Pid is the usual one, and Syslog.Perror
+     keeps the lines on stderr as well, which is what a person wants
+     while developing and a daemon does not. *)
 
 PROCEDURE ToStderr () ;
-  (* back to stderr, timestamp and level restored.  The default. *)
+  (* ToStderr sends lines back to stderr, with timestamp and level
+     restored.  That is the default. *)
 
 END Logger.
 
 
 IMPLEMENTATION MODULE Logger ;
+
+IMPORT Text ;
 
 IMPORT DynStr ;
 IMPORT Fmt ;
@@ -130,8 +133,8 @@ BEGIN
   END
 END LevelName ;
 
-(* the timestamp, or a marker if the clock produced something that
-   has no civil form.  Logging does not get to fail. *)
+(* Stamp answers the timestamp, or a marker if the clock produced
+   something that has no civil form.  Logging does not get to fail. *)
 PROCEDURE Stamp () : STR =
 BEGIN
   RETURN Time.Iso (Time.Now (), 3)
@@ -148,11 +151,11 @@ BEGIN
   DynStr.AppendChar (line, ' ') ;
   DynStr.Append (line, LevelName (level)) ;
   DynStr.AppendChar (line, ' ') ;
-  (* remembered rather than recomputed: Done has to know where the
-     text begins to hand syslog a line without a second timestamp
-     and a second level word in it, and the only moment that offset
-     is known for certain is now *)
-  bodyAt := DynStr.Len (line) ;
+  (* bodyAt is remembered rather than recomputed.  Done has to know
+     where the text begins to hand syslog a line without a second
+     timestamp and a second level word in it.  The only moment that
+     offset is known for certain is now. *)
+  bodyAt := DynStr.BLen (line) ;
   curLevelOfLine := level ;
   DynStr.Append (line, text) ;
   building := TRUE
@@ -205,12 +208,12 @@ BEGIN
   IF NOT building THEN RETURN END ;
   v := DynStr.View (line) ;
   IF toSyslog THEN
-    (* the body only: syslog stamps the time and records the
-       priority itself, so sending our own would put two of each on
-       every line and make the whole log ungreppable *)
+    (* Send the body only: syslog stamps the time and records the
+       priority itself.  Our own would put two of each on every line
+       and make the whole log ungreppable. *)
     Syslog.Send (Syslog.Pri (curFacility,
                              Syslog.FromLoggerLevel (curLevelOfLine)),
-                 SLICE (v, bodyAt, LEN (v) - bodyAt))
+                 SLICE (v, bodyAt, Text.BLen (v) - bodyAt))
   ELSE
     Io.ErrLine (v)
   END ;
@@ -218,10 +221,11 @@ BEGIN
 END Done ;
 
 PROCEDURE Msg (level: I64 ; RO text: STR) =
-  (* in this frame, not the builder: Msg touches no module state but
-     the threshold and the sink, set at startup, so threads may call
-     it at once and each line comes out whole (the runtime locks the
-     stream for the one write) -- HttpServer's access log does *)
+  (* Msg composes in this frame, not the builder.  It touches no
+     module state but the threshold and the sink, set at startup.  So
+     threads may call it at once and each line comes out whole (the
+     runtime locks the stream for the one write).  HttpServer's access
+     log does. *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;

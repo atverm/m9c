@@ -1,8 +1,9 @@
 unit M9Print;
-{ Canonical form.  One layout, deterministic; the roundtrip harness
-  requires print(parse(print(parse(src)))) = print(parse(src)) byte
-  for byte, and re-lexing the printed text must reproduce the source
-  token sequence exactly (comments are not tokens).                  }
+{ M9Print prints the canonical form: one layout, deterministic.  The
+  roundtrip harness requires print(parse(print(parse(src)))) =
+  print(parse(src)) byte for byte.  The printed text, re-lexed, must
+  reproduce the source token sequence exactly (comments are not
+  tokens). }
 {$mode objfpc}{$H+}
 interface
 
@@ -10,8 +11,8 @@ uses SysUtils, M9AST;
 
 function PrintTree (root: TNode): string;
 
-{ canonical fragments, used by the semantic checker to compare
-  definition and implementation signatures as text }
+{ These print canonical fragments, used by the semantic checker to
+  compare definition and implementation signatures as text. }
 function TypeText (n: TNode): string;
 function ParamsText (n: TNode): string;
 function ExprText (n: TNode): string;
@@ -156,8 +157,9 @@ begin
     nkQualident : Result := QualStr (n);
     nkIdent     : Result := n.a;
     nkAggregate : begin
-                    { on one line: the form a diagnostic quotes; a
-                      declaration prints one element to a line }
+                    { Print it on one line: the form a diagnostic
+                      quotes.  A declaration prints one element to a
+                      line. }
                     Result := '[';
                     for i := 0 to High (n.kids) do
                     begin
@@ -265,8 +267,9 @@ begin
       end;
     nkProcType :
       begin
-        { inline, RAISES on the same line: a type is one line where a
-          declaration's heading breaks before its RAISES }
+        { Print it inline, RAISES on the same line.  A type is one
+          line where a declaration's heading breaks before its
+          RAISES. }
         Result := 'PROCEDURE (' + ParamsStr (n.kids[0]) + ')';
         if n.kids[1] <> nil then
           if n.f3 then Result := Result + ' : RO ' + TypeStr (n.kids[1], ind)
@@ -527,8 +530,8 @@ begin
           Result := Result + Sp (ind + 1) + n.kids[i].a + ' = ';
           if (d <> nil) and (d.kind = nkAggregate) then
           begin
-            { a CONST's aggregate, one element to a line, always:
-              mirrors Print.EAggregate }
+            { A CONST's aggregate prints one element to a line,
+              always.  This mirrors Print.EAggregate. }
             Result := Result + '[' + LF;
             for j := 0 to High (d.kids) do
             begin

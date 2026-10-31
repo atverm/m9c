@@ -1,23 +1,30 @@
-(* EXPECT: cannot write through t, which holds the CONST Names *)
-(* FOR t IN s gives t a copy of each element: of a string, a view of
-   the same characters.  Over read-only storage -- a constant table, an
-   RO parameter -- t holds read-only storage as `t := Names[i]' would
-   (par 2.4, decision 33), and a write through it would land in
-   read-only data.  The legal forms first: reading, writing a slice
-   that is not read-only through another name (the mark is the
-   name's for the whole procedure, as decision 33's is). *)
+(* EXPECT: cannot write through t, which holds the RO parameter v *)
+(* FOR t IN s gives t a copy of each element; of a slice of slices, t
+   gets a view of the same characters.  Over read-only storage, such as
+   an RO parameter, t holds read-only storage as `t := v[i]' would (par
+   2.4, decision 33).  A write through it would land in storage the
+   caller lent read-only.  The legal forms come first: reading, and
+   writing a slice that is not read-only through another name.  The mark
+   is the name's for the whole procedure, as decision 33's is.  A
+   constant table of strings is a table of UTF since the switch, and a
+   UTF has no subscript, so the CONST form is gone. *)
 MODULE m ;
-CONST
-  Names = ['ab', 'cd'] ;
+TYPE
+  Line = SLICE OF CHAR ;
+  Rows = SLICE OF Line ;
+PROCEDURE F (RO v: Rows) : I64 RAISES IndexError =
 VAR
-  t, u : STR ;
-  ss : SLICE OF STR ;
+  t, u : Line ;
+  ss : Rows ;
   n : I64 ;
 BEGIN
   n := 0 ;
-  FOR t IN Names DO n := n + LEN (t) END ;
-  ss := NEW (STR, 1) ;
+  FOR t IN v DO n := n + LEN (t) END ;
+  ss := NEW (Line, 1) ;
   ss[0] := NEW (CHAR, 2) ;
   FOR u IN ss DO u[0] := 'X' END ;
-  FOR t IN Names DO t[0] := 'X' END
+  FOR t IN v DO t[0] := 'X' END ;
+  RETURN n
+END F ;
+BEGIN
 END m.

@@ -1,0 +1,181 @@
+# runtime/test/Sabotage.m9 regex reads this list.  Each entry is one
+# small break of a COPY of corpus/Regex.m9 (the default file) that
+# RegexTest must catch.  docs/datalib-plan.md.
+#
+# The form, one entry:
+#
+#   @name what the edit breaks
+#   @file another file        (optional; the default above without it)
+#   @old
+#   the text to replace: it must occur in the file exactly once
+#   @new
+#   the text put in its place
+#   @end
+#
+# A text is the lines between its two markers, joined by newlines, taken
+# exactly: leading spaces count, and no escapes exist.  A text that ends
+# in a newline has one empty line before the next marker.  An empty text
+# has no lines.  A line beginning with # is a comment only outside an
+# entry.
+
+@name an unanchored search that stops at a position with no thread
+@old
+    IF cl.n = 0 AND (matched OR anchored) THEN EXIT END ;
+@new
+    IF cl.n = 0 THEN EXIT END ;
+@end
+
+@name a match that does not cut the threads below it
+@old
+          i := cl.n               (* the threads below this one are cut *)
+@new
+          i := i
+@end
+
+@name no guard on a loop whose body matched nothing
+@old
+    IF null THEN checks[i] := Emit (re, OCheck, slot, 0) END ;
+@new
+@end
+
+@name one copy of a nullable unbounded body
+@old
+  ELSIF null THEN k := 2
+
+@new
+  ELSIF null THEN k := 1
+
+@end
+
+@name a lazy quantifier taken greedily
+@old
+      rep.greedy := NOT lazy ;
+@new
+      rep.greedy := TRUE ;
+@end
+
+# The UTF-8 switch (2026-10-31) moved the anchors' line-feed test from
+# s[pos] = 0AC to Text.BIs (s, pos, 0AC).  The two entries below break
+# the same tests there.
+@name $ without the final line feed
+@old
+  IF kind = AEotNl THEN RETURN pos = n OR (pos = n - 1 AND Text.BIs (s, pos, 0AC)) END ;
+@new
+  IF kind = AEotNl THEN RETURN pos = n END ;
+@end
+
+@name ^ under m only at the start
+@old
+  IF kind = ABol THEN RETURN pos = 0 OR Text.BIs (s, pos - 1, 0AC) END ;
+@new
+  IF kind = ABol THEN RETURN pos = 0 END ;
+@end
+
+@name \b blind to Unicode under u
+@old
+  IF NOT uni THEN RETURN FALSE END ;
+  RETURN InTable (UWordLo
+@new
+  IF TRUE THEN RETURN FALSE END ;
+  RETURN InTable (UWordLo
+@end
+
+@name a negated class closed under case after negating
+@old
+  IF ps.ci THEN SetCaseless (sp, st) END ;
+  SetNormal (st) ;
+  IF neg THEN SetNegate (sp, st) END ;
+@new
+  SetNormal (st) ;
+  IF neg THEN SetNegate (sp, st) END ;
+  IF ps.ci THEN SetCaseless (sp, st) ; SetNormal (st) END ;
+@end
+
+# The UTF-8 switch (2026-10-31) refuses LEN of a STR.  The @new below
+# says Text.BLen (s) where it said LEN (s).
+@name an empty match allowed right after an empty match
+@old
+      advance := m.span[1] = m.span[0] ;
+      pos := m.span[1]
+    ELSE
+      EXIT
+    END
+  END ;
+  RETURN SLICE (all, 0, n)
+@new
+      advance := FALSE ;
+      pos := m.span[1] ;
+      IF m.span[1] = m.span[0] THEN pos := pos + 1 END
+    ELSE
+      EXIT
+    END ;
+    IF pos > Text.BLen (s) THEN EXIT END
+  END ;
+  RETURN SLICE (all, 0, n)
+@end
+
+@name Split without the groups
+@old
+      FOR g := 1 TO re.ngroups DO
+        out[n] := '' ;
+@new
+      FOR g := 1 TO 0 DO
+        out[n] := '' ;
+@end
+
+@name a group in a replacement read one too far
+@old
+        IF m.span[2 * g] >= 0 THEN
+          DynStr.Append (d, SLICE (s, m.span[2 * g], m.span[2 * g + 1] - m.span[2 * g]))
+@new
+        IF m.span[2 * g] >= 0 AND g < re.ngroups THEN
+          DynStr.Append (d, SLICE (s, m.span[2 * g], m.span[2 * g + 1] - m.span[2 * g]))
+@end
+
+@name \s without the vertical tab and form feed
+@old
+      SetAdd (sp, one, 9, 13) ;
+@new
+      SetAdd (sp, one, 9, 10) ;
+      SetAdd (sp, one, 13, 13) ;
+@end
+
+@name {,n} read as {n}
+@old
+  min := 0 ;
+  IF hasLo THEN min := lo END ;
+@new
+  min := hi ;
+  IF hasLo THEN min := lo END ;
+@end
+
+@name a backreference read as an octal escape
+@old
+    Fail (ps, 'a backreference: it needs backtracking, which this engine does not do', at)
+  END ;
+  IF IsAsciiLetter (c) THEN
+@new
+    RETURN CharNode (sp, ps, re, ORD (c) - 48)
+  END ;
+  IF IsAsciiLetter (c) THEN
+@end
+
+# The UTF-8 switch (2026-10-31) refuses LEN of a STR.  The @new below
+# says Text.BLen (s) where it said LEN (s).
+@name the time bound: a search that runs an anchored match from every start
+@old
+PROCEDURE Search (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found =
+BEGIN
+  RETURN Run (re, s, from, FALSE, FALSE, FALSE)
+END Search ;
+@new
+PROCEDURE Search (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found =
+VAR i : I64 ; r : OPT PTR Found ;
+BEGIN
+  FOR i := from TO Text.BLen (s) DO
+    r := Run (re, s, i, TRUE, FALSE, FALSE) ;
+    IF r IS SOME m THEN RETURN r END
+  END ;
+  RETURN NONE
+END Search ;
+@end

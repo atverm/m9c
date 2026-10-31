@@ -1,9 +1,9 @@
 (* EXPECT: an ARRAY's count is an integer literal, a CONST or an enumeration, or + - * DIV MOD over them, not ORD ('a') (par 2.2) *)
-(* A count the generator cannot fold: a call (ORD, MAX, LEN, SIZE,
-   ABS), a literal 0 divisor, a CHAR or real CONST.  Accepted here and
-   refused by the generator as `array count form unsupported yet'
-   until 2026-10-29.  Legal forms first: a literal, a CONST, an
-   expression over them, an enumeration. *)
+(* The generator cannot fold some counts: a call (ORD, MAX, LEN, SIZE,
+   ABS), a literal 0 divisor, a CHAR or real CONST.  The checker
+   accepted them here and the generator refused them as `array count
+   form unsupported yet' until 2026-10-29.  Legal forms come first: a
+   literal, a CONST, an expression over them, an enumeration. *)
 MODULE m ;
 CONST N = 4 ;
 TYPE

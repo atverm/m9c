@@ -1,9 +1,9 @@
 (* EXPECT: cannot write through the VAR parameter acc in a PURE procedure (par 3.2) *)
 MODULE PureWritesVar ;
 
-(* par 3.2: a PURE procedure has no observable effect.  Writing
-   through a caller's VAR binding is observable by the caller, which
-   is the whole point of VAR. *)
+(* Par 3.2 says a PURE procedure has no observable effect.  A write
+   through a caller's VAR binding is observable by the caller, which is
+   the whole point of VAR. *)
 
 PROCEDURE Add (VAR acc: I64 ; x: I64) : I64 [PURE] =
 BEGIN

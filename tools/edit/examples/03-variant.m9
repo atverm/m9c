@@ -1,7 +1,7 @@
 MODULE Shapes ;
 
 (* A CASE RECORD is a tagged union, and CASE over it must cover
-   every arm -- there is no forgotten case and no NIL. *)
+   every arm.  There is no forgotten case and no NIL. *)
 IMPORT Io, Math, Fmt ;
 
 TYPE

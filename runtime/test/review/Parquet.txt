@@ -3,7 +3,7 @@ REVIEW Parquet -- 90 procedures with a body, 41 of them functions; 8 headings in
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              41
   assignments                                   464
-  arguments                                    1235
+  arguments                                    1242
   RETURN values                                  65
   operands of a comparison or an operator       662
   CASE labels                                     0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                       40
   NEW in the frame                                1
   NEW in a named pool                            38
-  calls of a STR form with a UTF twin             3   Io.WriteFileBytes -> Io.WriteFileBytesUtf, Io.ReadFileBytes -> Io.ReadFileBytesUtf, Io.ReadFileBytes -> Io.ReadFileBytesUtf
-  STR subscripts, writes and LEN                 10   len a, len b, len a, index a[i], index b[i], len s, +4 more
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

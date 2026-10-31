@@ -1,19 +1,19 @@
 MODULE M9c ;
 
-(* The compiler, as a program.
+(* M9c is the compiler, as a program.
 
      m9c FILE.m9 [DEP.m9 ...]
 
-   reads FILE.m9, reads each dependency's definitions, and writes
+   It reads FILE.m9, reads each dependency's definitions, and writes
    NAME.h and NAME.c beside the working directory.  Lex, Parse, Ast,
    Print and Gen are all M9; this module is the last piece that made
    them a tool rather than a library, and it is itself compiled by
    the toolchain it completes.
 
-   One module per invocation, deliberately: Gen is STATEFUL and holds
-   exactly one module's registries, so a batch mode would need either
-   a reset path nobody has tested or a second instance the language
-   has no syntax for.  A process is the reset.
+   It compiles one module per invocation, deliberately: Gen is
+   STATEFUL and holds exactly one module's registries, so a batch
+   mode would need either a reset path nobody has tested or a second
+   instance the language has no syntax for.  A process is the reset.
 
    It CHECKS before it generates.  A compiler that translates what it
    knows to be wrong is a translator, and m9c was one until Sem.m9
@@ -24,11 +24,11 @@ MODULE M9c ;
    two different closures.  The checker wants the TRANSITIVE one: a
    cross-module name that has not been loaded is indistinguishable
    from one that does not exist, however far away it lives.  The
-   generator wants only the DIRECT imports, because what it does with
-   a registered unit is emit an #include, and a header that includes
-   its dependencies' dependencies describes somebody else's
-   interface.  Conflating the two put Lex, Print and Text into M9c.h
-   the first time imports were resolved automatically.              *)
+   generator wants only the DIRECT imports, because with a registered
+   unit it emits an #include, and a header that includes its
+   dependencies' dependencies describes somebody else's interface.
+   Conflating the two put Lex, Print and Text into M9c.h the first
+   time imports were resolved automatically. *)
 
 IMPORT Io ;
 IMPORT Text ;
@@ -39,26 +39,26 @@ IMPORT Sem ;
 IMPORT Doc ;
 IMPORT Review ;
 IMPORT Lex ;
-IMPORT DynUtf ;
+IMPORT DynStr ;
 IMPORT System ;
 
 VAR
   pool : POOL ;
   selfTime : I64 ;          (* Older: this binary's mtime, read once *)
   failed : BOOL ;
-  (* THE COMMAND BEING COMPOSED, AS A LIST OF WORDS -- never as one
-     string.  Until 2026-09-06 m9c composed a shell line for Io.Run
-     (system ()), quoting every path, and had to REFUSE a name with a
-     quote in it because no quoting rule covers every shell.  Now the
-     words go to System.Exec as they are: no shell, nothing quoted,
-     nothing to refuse -- and the same code runs on Windows, where
-     the shell is a different program with different rules.  What -v
-     prints is these words joined by spaces, which is a display and
-     not what runs. *)
+  (* words holds THE COMMAND BEING COMPOSED, AS A LIST OF WORDS, never
+     as one string.  Until 2026-09-06 m9c composed a shell line for
+     Io.Run (system ()), quoting every path, and had to REFUSE a name
+     with a quote in it because no quoting rule covers every shell.
+     Now the words go to System.Exec as they are: no shell, nothing
+     quoted, nothing to refuse.  The same code runs on Windows, where
+     the shell is a different program with different rules.  -v
+     prints these words joined by spaces, which is a display and not
+     what runs. *)
   words  : SLICE OF UTF ;
   nwords : I64 ;
 
-  (* what the command line asked for *)
+  (* These fields hold what the command line asked for. *)
   doCompile : BOOL ;      (* -c : hand the C to a C compiler   *)
   exe       : UTF ;       (* -o : link, and call the result this *)
   doLink    : BOOL ;
@@ -71,11 +71,13 @@ VAR
                              library directories *)
   nunsafe   : I64 ;       (* how many such units were refused *)
   ccFrom    : I64 ;       (* first argument after --, or 0      *)
-  (* --ar and --so: the closure as a LIBRARY rather than a program.
-     Same closure, same objects, a different last step -- ar for the
-     archive, cc -shared for the object.
+  (* --ar and --so build the closure as a LIBRARY rather than a
+     program.  They use the same closure and the same objects, with a
+     different last step: ar for the archive, cc -shared for the
+     object.
 
-     WHEN --pic IS ACTUALLY NEEDED, measured rather than assumed.  It
+     This says WHEN --pic IS ACTUALLY NEEDED, measured rather than
+     assumed.  It
      was put here believing every member of a shared object has to be
      built -fPIC, and that is only half true: m9c compiles with -flto,
      so a `-c` object is LTO IR and the code generation happens at
@@ -131,10 +133,10 @@ VAR
                              expression; taken off every diagnostic *)
   shiftPath : UTF ;       (* the file whose parse errors it applies to *)
 
-  (* --run's cache.  Every module's source is hashed as it is parsed,
-     so the key of an object is what it was compiled FROM -- its own
-     text and the text of everything it imports, however far down --
-     and never a modification time.  See RunKeys. *)
+  (* These hold --run's cache.  Every module's source is hashed as it
+     is parsed, so the key of an object is what it was compiled FROM:
+     its own text and the text of everything it imports, however far
+     down.  It is never a modification time.  See RunKeys. *)
   srcNames, srcHashes : SLICE OF UTF ;
   nsrc      : I64 ;
   keys      : SLICE OF UTF ;  (* parallel to order[]: each module's key *)
@@ -143,17 +145,17 @@ VAR
   work      : UTF ;       (* cacheRoot/tmp/PID: this run's scratch *)
   binPath   : UTF ;       (* cacheRoot/bin/NAME-KEY *)
 
-  (* where to look for an imported module's source *)
+  (* dirs lists where to look for an imported module's source. *)
   dirs   : SLICE OF UTF ;
   trusts : SLICE OF BOOL ;  (* dirs[i] came from $M9LIBRARY or the
                                installed library: its units may be
                                UNSAFE / FOR "C" under --no-unsafe *)
   ndirs  : I64 ;
-  (* WHERE THIS COMPILER IS: the directory above the executable's --
-     /usr for /usr/bin/m9c, the unpacked zip for bin\m9c.exe, the
-     source tree for out/m9c -- which is what the installed places
-     are RELATIVE to (see Locate).  Empty when the platform cannot
-     say, and then the constants below are all there is. *)
+  (* prefix holds WHERE THIS COMPILER IS: the directory above the
+     executable's.  That is /usr for /usr/bin/m9c, the unpacked zip for
+     bin\m9c.exe, the source tree for out/m9c.  The installed places
+     are RELATIVE to it (see Locate).  It is empty when the platform
+     cannot say, and then the constants below are all there is. *)
   prefix  : UTF ;
   windows : BOOL ;   (* System.Os: ';' separates $M9LIBRARY, and the
                         C compiler is gcc, bundled or on PATH *)
@@ -161,38 +163,40 @@ VAR
                         is ld64, neither of which takes gcc's or GNU
                         ld's words, and OpenSSL is not the system's
                         (see OsslDir) *)
-  (* module names already loaded, so a diamond is loaded once and a
-     cycle terminates rather than recurring *)
+  (* loaded holds the module names already loaded, so a diamond is
+     loaded once and a cycle terminates rather than recurring. *)
   loaded  : SLICE OF UTF ;
   nloaded : I64 ;
-  (* THE BUILD ORDER, WHICH IS NOT THE LOAD ORDER.  loaded[] is
-     filled PRE-order -- a name is marked before its own imports are
-     walked, which is what makes a cycle terminate -- and reversing
-     pre-order is a topological sort for a TREE and not for a DAG:
-     with A importing B and C, and C importing B, pre-order is
+  (* order holds THE BUILD ORDER, WHICH IS NOT THE LOAD ORDER.
+     loaded[] is filled PRE-order: a name is marked before its own
+     imports are walked, which is what makes a cycle terminate.
+     Reversing pre-order is a topological sort for a TREE and not for
+     a DAG.  With A importing B and C, and C importing B, pre-order is
      A, B, C and the reverse builds C before the B it needs.  Kind is
      imported by nearly everything, so it was marked first and came
      LAST, and `m9c --make -c Sampler.m9` from an empty directory
      failed with nine `Kind.h: No such file` and then SUCCEEDED when
      run again (measured 2026-08-25).  order[] is appended POST-order
-     instead -- a module is added once everything it imports is in --
-     and MakeAll walks it forward. *)
+     instead, a module added once everything it imports is in, and
+     MakeAll walks it forward. *)
   order  : SLICE OF UTF ;
   norder : I64 ;
-  (* the import graph, recorded as it is walked: edgeFrom[i] imports
-     edgeTo[i].  The ORDER is computed from this afterwards, by a
-     post-order walk, because the order things are LOADED in cannot
-     answer it -- see BuildOrder. *)
+  (* edgeFrom and edgeTo record the import graph as it is walked:
+     edgeFrom[i] imports edgeTo[i].  The ORDER is computed from this
+     afterwards, by a post-order walk, because the order things are
+     LOADED in cannot answer it; see BuildOrder. *)
   edgeFrom, edgeTo : SLICE OF UTF ;
   nedge : I64 ;
   visiting : SLICE OF UTF ;
-  (* the import graph has a cycle -- two definitions importing each
-     other, allowed (Alex, 2026-10-22): every header of the build is
-     then written before any module of it is compiled *)
+  (* importCycle says the import graph has a cycle: two definitions
+     importing each other, allowed (Alex, 2026-10-22).  Every header
+     of the build is then written before any module of it is
+     compiled. *)
   importCycle : BOOL ;
   nvisit : I64 ;
-  (* roots of the deps that WERE named, so the gaps they leave can be
-     filled once the named ones are all in, in the order given *)
+  (* depRoots holds the roots of the deps that WERE named, so the gaps
+     they leave can be filled once the named ones are all in, in the
+     order given. *)
   depRoots : SLICE OF Ast.Kid ;
   mainRoot : Ast.Kid ;        (* the file on the command line: its own FOR "C"
                                  units name what they link too (2026-10-10) *)
@@ -206,35 +210,39 @@ VAR
   ndeps    : I64 ;
   nmissing : I64 ;
   readNotText : BOOL ;        (* TryRead's last file was there, and not UTF-8 *)
-  (* the module being compiled: its own object is not a dependency *)
+  (* modName names the module being compiled: its own object is not a
+     dependency. *)
   modName  : UTF ;
 
 CONST
-  (* Where a package puts the standard modules, the last resort when
-     this compiler cannot say where it is itself (Locate).  A
-     constant rather than a build-time substitution because M9 has no
-     -D and inventing one for a single string would be a language
-     feature bought with a packaging problem.  A distribution that
-     disagrees can set $M9LIBRARY, which is searched first anyway. *)
+  (* StdLib is where a package puts the standard modules, the last
+     resort when this compiler cannot say where it is itself (Locate).
+     It is a constant rather than a build-time substitution because M9
+     has no -D, and inventing one for a single string would be a
+     language feature bought with a packaging problem.  A distribution
+     that disagrees can set $M9LIBRARY, which is searched first
+     anyway. *)
   StdLib = '/usr/lib/m9' ;
 
-  (* Kept by hand in step with debian/changelog: the compiler is the
-     one artifact that cannot read its own package version, and a
-     generated file would drag the build system into the bootstrap. *)
-  Version = '0.25.4' ;
-  (* and where its runtime lives, which --help quotes so that the
-     example a user copies out of it actually compiles *)
+  (* Version is kept by hand in step with debian/changelog: the
+     compiler is the one artifact that cannot read its own package
+     version, and a generated file would drag the build system into
+     the bootstrap. *)
+  Version = '0.26.0' ;
+  (* StdInclude is where its runtime lives, which --help quotes so
+     that the example a user copies out of it actually compiles. *)
   StdInclude = '/usr/include/m9' ;
-  (* the installed runtime archive, linked when there are no runtime
-     sources beside the header that was included *)
+  (* StdArchive is the installed runtime archive, linked when there
+     are no runtime sources beside the header that was included. *)
   StdArchive = '/usr/lib/libm9rt.a' ;
 
-(* the module name a path denotes: last segment, minus the suffix.
-   Neither separator is assumed absent -- this compiler is built on
-   Windows and run under WSL in the same afternoon.                 *)
-(* the byte at offset i of u, as a number: the scanners below read ASCII
-   structure -- separators, digits, `:`, `=`, `.so` -- where a byte IS
-   the character *)
+(* BaseName answers the module name a path denotes: last segment,
+   minus the suffix.  Neither separator is assumed absent: this
+   compiler is built on Windows and run under WSL in the same
+   afternoon. *)
+(* B answers the byte at offset i of u, as a number.  The scanners
+   below read ASCII structure, such as separators, digits, `:`, `=`,
+   `.so`, where a byte IS the character. *)
 PROCEDURE B (RO u: UTF ; i: I64) : I64 =
 BEGIN
   RETURN I64 (Text.BAt (u, i))
@@ -262,51 +270,52 @@ END BaseName ;
    promising and what half of these were not doing: the missing-module
    message landed on stdout beside the generated text, so a harness
    capturing errors saw nothing and a harness capturing output saw
-   both.  One composer, so there is one place for it to be true. *)
+   both.  Diag is the one composer, so there is one place for it to be
+   true. *)
 PROCEDURE Diag (RO a: UTF ; RO b: UTF ; RO c: UTF) =
-VAR d : PTR DynUtf.DString IN pool ;
+VAR d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, a) ;
-  DynUtf.Append (d, b) ;
-  DynUtf.Append (d, c) ;
-  Io.ErrLine (DynUtf.ViewIn (pool, d))
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  Io.ErrLine (DynStr.ViewIn (pool, d))
 END Diag ;
 
 PROCEDURE DiagN (RO a: UTF ; n: I64 ; RO b: UTF ; RO c: UTF) =
-VAR d : PTR DynUtf.DString IN pool ;
+VAR d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, a) ;
-  DynUtf.AppendI64 (d, n) ;
-  DynUtf.Append (d, b) ;
-  DynUtf.Append (d, c) ;
-  Io.ErrLine (DynUtf.ViewIn (pool, d))
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, a) ;
+  DynStr.AppendI64 (d, n) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  Io.ErrLine (DynStr.ViewIn (pool, d))
 END DiagN ;
 
-(* FILE:LINE:COL: what: message -- the parser's errors carry a column
-   where the generator's carry only a line, because a parser knows
-   which token it was looking at *)
+(* Diag2 writes FILE:LINE:COL: what: message.  The parser's errors
+   carry a column where the generator's carry only a line, because a
+   parser knows which token it was looking at. *)
 PROCEDURE Diag2 (RO a: UTF ; ln: I64 ; cl: I64 ; RO b: UTF ; RO c: UTF) =
-VAR d : PTR DynUtf.DString IN pool ;
+VAR d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, a) ;
-  DynUtf.AppendI64 (d, ln) ;
-  DynUtf.AppendChar (d, ':') ;
-  DynUtf.AppendI64 (d, cl) ;
-  DynUtf.Append (d, b) ;
-  DynUtf.Append (d, c) ;
-  Io.ErrLine (DynUtf.ViewIn (pool, d))
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, a) ;
+  DynStr.AppendI64 (d, ln) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.AppendI64 (d, cl) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  Io.ErrLine (DynStr.ViewIn (pool, d))
 END Diag2 ;
 
 PROCEDURE Suffix (RO name: UTF ; RO ext: UTF) : UTF =
-VAR d : PTR DynUtf.DString IN pool ;
+VAR d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, name) ;
-  DynUtf.Append (d, ext) ;
-  RETURN DynUtf.ViewIn (pool, d)
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, name) ;
+  DynStr.Append (d, ext) ;
+  RETURN DynStr.ViewIn (pool, d)
 END Suffix ;
 
 (* ---- finding a module's source ----
@@ -317,7 +326,8 @@ END Suffix ;
    translation, which is the whole of what a build system was doing
    here.
 
-   Three sources, in order: -I DIR (repeatable, leftmost first),
+   The path has three sources, in order: -I DIR (repeatable, leftmost
+   first),
    $M9LIBRARY (colon-separated, as PATH is), and the directory the
    main file came from.  That last one is why `m9c corpus/M9c.m9`
    needs no -I at all: a module's neighbours are almost always its
@@ -347,10 +357,10 @@ BEGIN
   ndirs := ndirs + 1
 END DirAdd ;
 
-(* separated the way PATH is on the platform, because that is the
-   convention the shell already taught everyone: ':' here, and ';'
-   on Windows, where a path of its own carries a ':' two characters
-   in (C:\m9\lib\m9) *)
+(* DirAddPath splits a list separated the way PATH is on the
+   platform, because that is the convention the shell already taught
+   everyone: ':' here, and ';' on Windows, where a path of its own
+   carries a ':' two characters in (C:\m9\lib\m9). *)
 PROCEDURE DirAddPath (RO KEPT s: UTF ; trusted: BOOL) =
 VAR
   i, start : I64 ;
@@ -367,8 +377,10 @@ BEGIN
   DirAdd (SLICE (s, start, Text.BLen (s) - start), trusted)
 END DirAddPath ;
 
-(* the directory a path came from, empty when it names no directory *)
-(* the text of a file, or '' when it cannot be read as text *)
+(* DirOf answers the directory a path came from, empty when it names
+   no directory. *)
+(* TextOf answers the text of a file, or '' when it cannot be read as
+   text. *)
 PROCEDURE TextOf (RO path: UTF) : UTF =
 BEGIN
   RETURN UTF (pool, Io.ReadFileUtf (path))
@@ -377,12 +389,13 @@ EXCEPT
 | ValueRange : RETURN ''
 END TextOf ;
 
-(* a NAME.h beside the module's source that is not the header just
-   written to another directory: a C driver there includes "NAME.h"
-   and a quoted include searches the including file's directory first,
-   so it reads the stale one (2026-09-15: `implicit declaration of
-   Mod_m9init'; the owed ledger since).  Said, not refused -- the file
-   is not m9c's to delete. *)
+(* StaleBeside warns of a NAME.h beside the module's source that is
+   not the header just written to another directory.  A C driver
+   there includes "NAME.h", and a quoted include searches the
+   including file's directory first, so it reads the stale one
+   (2026-09-15: `implicit declaration of Mod_m9init'; the owed ledger
+   since).  It is said, not refused: the file is not m9c's to
+   delete. *)
 PROCEDURE StaleBeside (RO main, outDir, name: UTF ; RO fresh: UTF) RAISES ValueRange =
 VAR src, there : UTF ;
 BEGIN
@@ -416,14 +429,14 @@ END DirOf ;
    and <prefix>/lib/libm9rt.a, with prefix the directory ABOVE the
    executable's.  For /usr/bin/m9c that is /usr, which is exactly the
    package's layout, so nothing moves for an installed compiler.
-   What it buys is a tree that can be MOVED: `./build.sh /opt/m9`
-   gives /opt/m9/usr/bin/m9c, which finds its own library at
-   /opt/m9/usr/lib/m9 with no variable set; and the Windows zip
+   This buys a tree that can be MOVED: `./build.sh /opt/m9` gives
+   /opt/m9/usr/bin/m9c, which finds its own library at
+   /opt/m9/usr/lib/m9 with no variable set.  The Windows zip
    (docs/windows-plan.md) is bin\m9c.exe beside lib\m9, runtime\ and
    ucrt64\, and a zip cannot ask anyone to set a variable.  The zip's
    runtime\ is also a source tree's, so out/m9c finds THIS tree's
-   m9rt.h ahead of an installed one -- the stale-runtime trap
-   AddRuntime describes, closed from the other side.
+   m9rt.h ahead of an installed one.  That closes the stale-runtime
+   trap AddRuntime describes, from the other side.
    The constants stay as the last resort, and for a location the
    platform cannot answer (System.Executable is '') they are all
    there is.  Paths are joined with '/' throughout: a Windows path
@@ -436,41 +449,42 @@ BEGIN
   prefix := DirOf (DirOf (System.ExecutableUtf (pool)))
 END Locate ;
 
-(* this compiler's own library directory, or the package's *)
+(* LibDir answers this compiler's own library directory, or the
+   package's. *)
 PROCEDURE LibDir () : UTF =
 BEGIN
   IF Text.BLen (prefix) = 0 THEN RETURN StdLib END ;
   RETURN Cat (prefix, '/lib/m9')
 END LibDir ;
 
-(* its own installed headers, or the package's *)
+(* IncDir answers its own installed headers, or the package's. *)
 PROCEDURE IncDir () : UTF =
 BEGIN
   IF Text.BLen (prefix) = 0 THEN RETURN StdInclude END ;
   RETURN Cat (prefix, '/include/m9')
 END IncDir ;
 
-(* its own runtime archive, or the package's *)
+(* RtArchive answers its own runtime archive, or the package's. *)
 PROCEDURE RtArchive () : UTF =
 BEGIN
   IF Text.BLen (prefix) = 0 THEN RETURN StdArchive END ;
   RETURN Cat (prefix, '/lib/libm9rt.a')
 END RtArchive ;
 
-(* THE LIBRARY THE SEARCH PATH ENDS WITH: this compiler's own when it
-   has one, the package's otherwise -- one or the other, never both,
-   so a relocated tree does not quietly pick modules out of
-   /usr/lib/m9 when its own library lacks one.  For /usr/bin/m9c the
-   two are the same string; for out/m9c, whose tree has no lib/m9,
-   it is the package's, as it always was. *)
+(* LibPlace answers THE LIBRARY THE SEARCH PATH ENDS WITH: this
+   compiler's own when it has one, the package's otherwise.  It is one
+   or the other, never both, so a relocated tree does not quietly pick
+   modules out of /usr/lib/m9 when its own library lacks one.  For
+   /usr/bin/m9c the two are the same string; for out/m9c, whose tree
+   has no lib/m9, it is the package's, as it always was. *)
 PROCEDURE LibPlace () : UTF RAISES ValueRange =
 BEGIN
   IF Io.Exists (LibDir ()) THEN RETURN LibDir () END ;
   RETURN StdLib
 END LibPlace ;
 
-(* where THIS m9c would take its headers from, for --help; the
-   package's place when it would find none *)
+(* IncPlace answers where THIS m9c would take its headers from, for
+   --help, or the package's place when it would find none. *)
 PROCEDURE IncPlace () : UTF RAISES ValueRange =
 VAR r : UTF ;
 BEGIN
@@ -479,13 +493,13 @@ BEGIN
   RETURN r
 END IncPlace ;
 
-(* the bundled tool when the zip carries it, the PATH one otherwise.
-   Windows and macOS: a Linux package depends on gcc and does not ship
-   one.  On macOS the system's cc is clang under gcc's name, which
-   takes neither --param nor a nested function, so an install that
-   wants gcc's code carries gcc -- <prefix>/gcc/bin, a directory of
-   its own because nothing about that gcc's layout depends on the
-   name, as ucrt64's does. *)
+(* Bundled answers the bundled tool when the zip carries it, the PATH
+   one otherwise.  This serves Windows and macOS: a Linux package
+   depends on gcc and does not ship one.  On macOS the system's cc is
+   clang under gcc's name, which takes neither --param nor a nested
+   function, so an install that wants gcc's code carries gcc in
+   <prefix>/gcc/bin.  That is a directory of its own because nothing
+   about that gcc's layout depends on the name, as ucrt64's does. *)
 PROCEDURE Bundled (RO tool: UTF ; RO fallback: UTF) : UTF
   RAISES ValueRange =
 VAR p : UTF ;
@@ -501,8 +515,9 @@ BEGIN
   RETURN fallback
 END Bundled ;
 
-(* the bundled gcc's own bin when the zip carries one; empty
-   otherwise (Linux, or a tree without a ucrt64\ beside lib\).
+(* GccBin answers the bundled gcc's own bin when the zip carries one,
+   and empty otherwise (Linux, or a tree without a ucrt64\ beside
+   lib\).
    THE DIRECTORY IS NAMED ucrt64 BECAUSE gcc SAYS SO.  MSYS2's gcc is
    configured with /ucrt64/include as its system header directory
    and relocates that, from wherever gcc.exe finds itself, to
@@ -521,11 +536,11 @@ BEGIN
   RETURN ''
 END GccBin ;
 
-(* whether path names something inside dir: dir is a prefix of it
-   and a separator follows.  Nothing is normalised -- both sides were
-   composed here from the same prefix, so a spelling of the user's
-   own ($CC with backslashes) is simply not under it, which is the
-   answer wanted: that gcc runs with the PATH it was given. *)
+(* Under asks whether path names something inside dir: dir is a
+   prefix of it and a separator follows.  Nothing is normalised: both
+   sides were composed here from the same prefix, so a spelling of the
+   user's own ($CC with backslashes) is simply not under it.  That is
+   the answer wanted: that gcc runs with the PATH it was given. *)
 PROCEDURE Under (RO path: UTF ; RO dir: UTF) : BOOL =
 VAR i : I64 ;
 BEGIN
@@ -536,10 +551,11 @@ BEGIN
   RETURN B (path, Text.BLen (dir)) = ORD ('/') OR B (path, Text.BLen (dir)) = 92
 END Under ;
 
-(* '/' to the platform's separator, for a value handed to the SYSTEM
-   rather than to gcc: prefix arrives with backslashes from
-   GetModuleFileName and gains '/ucrt64/bin' here, and a PATH entry is
-   the one place the mixed spelling would be seen by a user. *)
+(* Native turns '/' into the platform's separator, for a value handed
+   to the SYSTEM rather than to gcc.  prefix arrives with backslashes
+   from GetModuleFileName and gains '/ucrt64/bin' here, and a PATH
+   entry is the one place the mixed spelling would be seen by a
+   user. *)
 PROCEDURE Native (RO s: UTF) : UTF =
 BEGIN
   IF NOT windows THEN RETURN s END ;
@@ -550,7 +566,7 @@ END Native ;
    for the child rather than asking the user to.  MSYS2's cc1.exe,
    lto1.exe and ld.exe import DLLs (libgmp, libmpfr, libisl, libzstd,
    libwinpthread ...) that live in ucrt64\bin beside gcc.exe, while
-   they themselves live in lib\gcc\...\16.2.0 -- and the loader
+   they themselves live in lib\gcc\...\16.2.0.  And the loader
    searches the directory of the program being STARTED, the system
    ones and then PATH, never the bin of the gcc.exe that started it.
    So with ucrt64\bin absent from PATH, gcc.exe runs, cc1 cannot load, and gcc
@@ -576,19 +592,19 @@ BEGIN
 END ChildEnv ;
 
 PROCEDURE Join (RO d: UTF ; RO f: UTF) : UTF =
-VAR s : PTR DynUtf.DString IN pool ;
+VAR s : PTR DynStr.DString IN pool ;
 BEGIN
   IF Text.BLen (d) = 0 THEN RETURN f END ;
-  s := DynUtf.New (pool) ;
-  DynUtf.Append (s, d) ;
-  DynUtf.AppendChar (s, '/') ;
-  DynUtf.Append (s, f) ;
-  RETURN DynUtf.ViewIn (pool, s)
+  s := DynStr.New (pool) ;
+  DynStr.Append (s, d) ;
+  DynStr.AppendChar (s, '/') ;
+  DynStr.Append (s, f) ;
+  RETURN DynStr.ViewIn (pool, s)
 END Join ;
 
-(* a candidate that does not read is not an error, it is the next
-   candidate -- so the handler answers "no" rather than propagating,
-   and only the exhausted search is diagnosed *)
+(* A candidate that does not read is not an error; it is the next
+   candidate.  So the handler answers "no" rather than propagating,
+   and only the exhausted search is diagnosed. *)
 PROCEDURE TryRead (RO path: UTF ; VAR ok: BOOL) : UTF =
 BEGIN
   ok := TRUE ;
@@ -607,16 +623,16 @@ EXCEPT
     RETURN ''
 END TryRead ;
 
-(* the first NAME.m9 on the search path, with its source already
-   read -- searching and reading are the same act, so doing them
-   twice would be two answers about one file *)
-(* the rehearsed switch (--utf-str) serves DynStr from DynUtf.m9 --
-   decision 4 of docs/utf8-stage4-plan.md: at the switch DynStr keeps
-   its name with DynUtf's body.  The unit's name is rewritten in the
-   text (DynUtf.m9 names itself nowhere else) and the result written
-   under the cache as DynStr.m9, so a dependency build by path and a
-   diagnostic's file name both see a DynStr.m9 whose lines are
-   DynUtf.m9's. *)
+(* FindModule answers the first NAME.m9 on the search path, with its
+   source already read.  Searching and reading are the same act, so a
+   second pass would give two answers about one file. *)
+(* Aliased serves the rehearsed switch (--utf-str): DynStr comes from
+   DynUtf.m9.  Decision 4 of docs/utf8-stage4-plan.md says that at the
+   switch DynStr keeps its name with DynUtf's body.  The unit's name is
+   rewritten in the text (DynUtf.m9 names itself nowhere else) and the
+   result written under the cache as DynStr.m9, so a dependency build
+   by path and a diagnostic's file name both see a DynStr.m9 whose
+   lines are DynUtf.m9's. *)
 PROCEDURE Aliased (RO src: UTF ; RO from: UTF ; RO to: UTF ;
                    VAR path: UTF ; VAR ok: BOOL) : UTF =
 VAR dir, text : UTF ;
@@ -645,7 +661,6 @@ VAR
 BEGIN
   trusted := FALSE ;
   want := name ;
-  IF utfStr AND Text.Eq (name, 'DynStr') THEN want := 'DynUtf' END ;
   FOR i := 0 TO ndirs - 1 DO
     cand := Join (dirs[i], Suffix (want, '.m9')) ;
     src := TryRead (cand, ok) ;
@@ -663,10 +678,10 @@ BEGIN
   RETURN ''
 END FindModule ;
 
-(* the file a generator error's line is in: main, or the definition of
-   the imported module the generator read it from (Gen.ErrModAt).
-   Until 2026-10-29 every error named main, so an imported type's line
-   was printed under the importer's name *)
+(* ErrFile answers the file a generator error's line is in: main, or
+   the definition of the imported module the generator read it from
+   (Gen.ErrModAt).  Until 2026-10-29 every error named main, so an
+   imported type's line was printed under the importer's name. *)
 PROCEDURE ErrFile (RO m: UTF ; RO main: UTF) : UTF =
 VAR
   path, src : UTF ;
@@ -701,13 +716,13 @@ BEGIN
   nloaded := nloaded + 1
 END MarkLoaded ;
 
-(* a module whose own imports are all in order[] already: the build
-   may reach it now.  Called once per module, at the point where that
-   became true -- after the recursion in LoadIndirect, and after a
-   kept root's subtree is walked in FillGaps -- so a duplicate would
-   be a mistake in the caller rather than something to absorb
-   quietly; it is refused by not appending it twice, and the FIRST
-   position is the one that is right. *)
+(* Ordered appends a module whose own imports are all in order[]
+   already: the build may reach it now.  It is called once per module,
+   at the point where that became true: after the recursion in
+   LoadIndirect, and after a kept root's subtree is walked in
+   FillGaps.  So a duplicate would be a mistake in the caller rather
+   than something to absorb quietly.  It is refused by not appending
+   it twice, and the FIRST position is the one that is right. *)
 PROCEDURE AddEdge (RO KEPT a: UTF ; RO KEPT b: UTF) =
 VAR
   nf, nt : SLICE OF UTF ;
@@ -772,15 +787,15 @@ BEGIN
   RETURN FALSE
 END IsOrdered ;
 
-(* POST-ORDER over the recorded import graph: a module is appended
-   once everything it imports has been.  This is computed from the
-   GRAPH rather than from the order modules were loaded in, because
-   loading is pre-order and a shared module can be reached first as
-   somebody's direct import and only later as their dependency --
-   `IMPORT Mid ; IMPORT Base ;` with Mid importing Base put Base
-   after Mid and the build failed on the first run.  A cycle stops at
-   the visiting mark: M9 does not forbid mutual imports, and a
-   compiler should not acquire the rule by recursing for ever. *)
+(* OrderDfs walks the recorded import graph in POST-ORDER: a module is
+   appended once everything it imports has been.  This is computed
+   from the GRAPH rather than from the order modules were loaded in,
+   because loading is pre-order and a shared module can be reached
+   first as somebody's direct import and only later as their
+   dependency.  `IMPORT Mid ; IMPORT Base ;` with Mid importing Base
+   put Base after Mid and the build failed on the first run.  A cycle
+   stops at the visiting mark: M9 does not forbid mutual imports, and
+   a compiler should not acquire the rule by recursing for ever. *)
 PROCEDURE OrderDfs (RO KEPT name: UTF) =
 VAR i : I64 ;
 BEGIN
@@ -793,7 +808,7 @@ BEGIN
   Ordered (name)
 END OrderDfs ;
 
-(* every loaded module, deepest first *)
+(* BuildOrder lists every loaded module, deepest first. *)
 PROCEDURE BuildOrder () =
 VAR i : I64 ;
 BEGIN
@@ -821,7 +836,7 @@ END BuildOrder ;
 (* ---- the command, NOT THROUGH A SHELL ----
 
    A command is the program's name and a list of words, and that list
-   is exactly what the operating system starts a process with -- the
+   is exactly what the operating system starts a process with.  The
    shell is the thing in between that takes ONE string apart into
    those words, by rules that differ between /bin/sh, cmd.exe and
    PowerShell, and that made a file called it's.m9 unbuildable.
@@ -851,26 +866,26 @@ BEGIN
   nwords := nwords + 1
 END Word ;
 
-(* the command as -v shows it: the words joined by single spaces.  A
-   display only -- it is not what runs, so a word holding a space
-   prints ambiguously and runs correctly. *)
+(* Line answers the command as -v shows it: the words joined by
+   single spaces.  It is a display only and not what runs, so a word
+   holding a space prints ambiguously and runs correctly. *)
 PROCEDURE Line (RO prog: UTF) : UTF =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, prog) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, prog) ;
   FOR i := 0 TO nwords - 1 DO
-    DynUtf.AppendChar (d, ' ') ;
-    DynUtf.Append (d, words[i])
+    DynStr.AppendChar (d, ' ') ;
+    DynStr.Append (d, words[i])
   END ;
-  RETURN DynUtf.ViewIn (pool, d)
+  RETURN DynStr.ViewIn (pool, d)
 END Line ;
 
-(* run prog with the words, forward what it wrote to the streams it
-   wrote it to, answer its status.  cc's diagnostics arrive whole
-   rather than interleaved with ours, which is the one visible
+(* Run runs prog with the words, forwards what it wrote to the streams
+   it wrote it to, and answers its status.  cc's diagnostics arrive
+   whole rather than interleaved with ours, which is the one visible
    difference from the shell days and a small price for it.
    A program that cannot start is -1 with its name said: the module
    handler's wording for Io.IOError is about files, not programs.
@@ -893,11 +908,11 @@ EXCEPT
     RETURN -1
 END Run ;
 
-(* $CC when set; else, on Windows, the gcc the zip bundles at
-   <prefix>/ucrt64/bin/gcc.exe or a gcc on PATH (there is no `cc` on
-   Windows); else cc.  It is the compiler's NAME -- a word, found on
-   PATH or given as a path -- and not a command line: with no shell
-   to split it, CC='gcc -m32' would be looked up as one program
+(* CcName answers $CC when set; else, on Windows, the gcc the zip
+   bundles at <prefix>/ucrt64/bin/gcc.exe or a gcc on PATH (there is
+   no `cc` on Windows); else cc.  It is the compiler's NAME, a word
+   found on PATH or given as a path, and not a command line.  With no
+   shell to split it, CC='gcc -m32' would be looked up as one program
    called "gcc -m32".  Flags go after --, where they always went. *)
 PROCEDURE CcName () : UTF RAISES ValueRange =
 VAR v : UTF ;
@@ -909,9 +924,9 @@ BEGIN
   RETURN 'cc'
 END CcName ;
 
-(* the archiver beside that gcc, or ar on PATH; no $AR, because the
-   archiver that matches the compiler is the one to use and nobody
-   has asked for another *)
+(* ArName answers the archiver beside that gcc, or ar on PATH.  There
+   is no $AR, because the archiver that matches the compiler is the
+   one to use and nobody has asked for another. *)
 PROCEDURE ArName () : UTF RAISES ValueRange =
 BEGIN
   IF windows THEN RETURN Bundled ('ar.exe', 'ar') END ;
@@ -926,8 +941,7 @@ END ArName ;
    m9c is not a build system, and the way that was stated -- every
    include path and every object after -- -- meant the shortest real
    command was four flags long and three of them were the same every
-   time.  Being unwilling to guess is not the same as being unwilling
-   to LOOK.
+   time.  m9c is unwilling to guess, but not unwilling to LOOK.
 
    So when nothing follows --, m9c supplies what it can establish by
    looking: where its runtime actually is, and which objects the
@@ -936,12 +950,12 @@ END ArName ;
    over, and a default silently added underneath a flag someone chose
    is worse than no default at all.                                 *)
 
-(* the runtime's headers: $M9RUNTIME; else beside this compiler --
-   <prefix>/runtime, which is the zip's layout and a source tree's,
-   then <prefix>/include/m9, the package's -- else the package's
-   place by its constant, else a source tree from the working
-   directory.  Probed rather than assumed, because this compiler runs
-   from /usr/bin and from a build directory on the same afternoon. *)
+(* RtBase finds the runtime's headers: $M9RUNTIME; else beside this
+   compiler, <prefix>/runtime (the zip's layout and a source tree's),
+   then <prefix>/include/m9 (the package's); else the package's place
+   by its constant; else a source tree from the working directory.  It
+   probes rather than assumes, because this compiler runs from
+   /usr/bin and from a build directory on the same afternoon. *)
 PROCEDURE RtBase () : UTF RAISES ValueRange =
 VAR v : UTF ;
 BEGIN
@@ -967,19 +981,19 @@ BEGIN
   RETURN ''
 END RtBase ;
 
-(* the runtime directory -- and for --cell, which compiles the runtime
-   as a shared object and needs its SOURCES, its own package's source
-   tree when the headers' directory holds none: <prefix>/share/m9/
-   runtime (build.sh installs it), the prefix being this compiler's --
-   /usr for /usr/bin/m9c.  NOT a system path besides: a relocated m9c
-   reaching /usr/share/m9/runtime would compile ANOTHER install's
-   runtime under its own header (the m9c gate's case (c) built so on
-   zoefii once the 0.15.0 package was installed, 2026-10-05).  Only
-   --cell: an ordinary link takes the archive, and sources beside the
-   header would have it compile m9rt.c on every link.  Until
-   2026-10-05 an installed m9c answered every --cell with `needs the
-   runtime sources beside m9rt.h' -- the notebook session did not work
-   from a package. *)
+(* RtDir answers the runtime directory.  For --cell, which compiles
+   the runtime as a shared object and needs its SOURCES, it answers its
+   own package's source tree when the headers' directory holds none:
+   <prefix>/share/m9/runtime (build.sh installs it), the prefix being
+   this compiler's, /usr for /usr/bin/m9c.  It takes NO system path
+   besides: a relocated m9c reaching /usr/share/m9/runtime would
+   compile ANOTHER install's runtime under its own header (the m9c
+   gate's case (c) built so on zoefii once the 0.15.0 package was
+   installed, 2026-10-05).  Only --cell does this: an ordinary link
+   takes the archive, and sources beside the header would have it
+   compile m9rt.c on every link.  Until 2026-10-05 an installed m9c
+   answered every --cell with `needs the runtime sources beside
+   m9rt.h': the notebook session did not work from a package. *)
 PROCEDURE RtDir () : UTF RAISES ValueRange =
 VAR base, v : UTF ;
 BEGIN
@@ -991,21 +1005,21 @@ BEGIN
   RETURN base
 END RtDir ;
 
-(* two strings, joined -- the one composition this module needs often
-   enough to name *)
+(* Cat joins two strings: the one composition this module needs often
+   enough to name. *)
 PROCEDURE Cat (RO a: UTF ; RO b: UTF) : UTF =
-VAR d : PTR DynUtf.DString IN pool ;
+VAR d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, a) ;
-  DynUtf.Append (d, b) ;
-  RETURN DynUtf.ViewIn (pool, d)
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  RETURN DynStr.ViewIn (pool, d)
 END Cat ;
 
-(* The runtime itself, to link.  What is linked must be the runtime
-   whose HEADER was included, or the program is built from two
-   versions of one library: the installed archive underneath this
-   repository's m9rt.h is how a newly added m9_exists became an
+(* AddRuntime adds the runtime itself, to link.  The linked runtime
+   must be the one whose HEADER was included, or the program is built
+   from two versions of one library: the installed archive underneath
+   this repository's m9rt.h is how a newly added m9_exists became an
    undefined reference at link time instead of a missing declaration
    at compile time.  So the sources beside the header win, and the
    installed archive answers only when there are none.
@@ -1020,30 +1034,32 @@ BEGIN
     IF Io.Exists (Cat (rt, '/tcpshim.c')) THEN
       Word (Cat (rt, '/tcpshim.c'))
     END ;
-    (* the TLS half of csock, over OpenSSL.  Http binds tls_connect/
-       read/write/close unconditionally, so a program that makes ANY
-       request -- over plain http included -- referenced four symbols
-       the flagless link never supplied and failed on them (measured
-       against the installed 0.11.0 package, 2026-09-28; the tutorial's
-       chapter 11 had named the shim by hand).  Not on Windows: the
-       shim is OpenSSL and does not build under mingw (the SChannel
-       question is open), so there the line stays as it was. *)
+    (* This adds the TLS half of csock, over OpenSSL.  Http binds
+       tls_connect/read/write/close unconditionally, so a program that
+       makes ANY request, over plain http included, referenced four
+       symbols the flagless link never supplied and failed on them
+       (measured against the installed 0.11.0 package, 2026-09-28; the
+       tutorial's chapter 11 had named the shim by hand).  It is left
+       out on Windows: the shim is OpenSSL and does not build under
+       mingw (the SChannel question is open), so there the line stays
+       as it was. *)
     IF NOT windows AND Io.Exists (Cat (rt, '/tlsshim.c')) THEN
       Word (Cat (rt, '/tlsshim.c'))
     END ;
-    (* fmt_g, Plot's %.4g twin: pure libc, so it always travels --
-       without it the FLAGLESS link could never build a program that
-       plots, and every gate had quietly hand-linked the shim (found
-       by m9edit's first figure, 2026-09-02) *)
+    (* fmt_g, Plot's %.4g twin, is pure libc, so it always travels.
+       Without it the FLAGLESS link could never build a program that
+       plots, and every gate had quietly hand-linked the shim (found by
+       m9edit's first figure, 2026-09-02). *)
     IF Io.Exists (Cat (rt, '/fmtshim.c')) THEN
       Word (Cat (rt, '/fmtshim.c'))
     END ;
     RETURN TRUE
   END ;
-  (* the archive: this compiler's own when it has one (a relocated
+  (* The archive is this compiler's own when it has one (a relocated
      install, DESTDIR somewhere other than /), which needs its
-     directory named because the linker does not search it; the
-     package's otherwise, which the linker finds by itself *)
+     directory named because the linker does not search it.
+     Otherwise it is the package's, which the linker finds by
+     itself. *)
   a := RtArchive () ;
   IF Io.Exists (a) THEN
     IF NOT Text.Eq (a, StdArchive) THEN
@@ -1062,12 +1078,13 @@ BEGIN
   RETURN FALSE
 END AddRuntime ;
 
-(* WHERE OPENSSL IS, ON macOS.  The system ships LibreSSL's dylibs
-   and no headers, so there is no place cc finds by itself: this
-   compiler's own prefix first (an install that carries its OpenSSL
-   beside its runtime, as the Windows zip carries its gcc), then
-   Homebrew's two prefixes.  Empty when none of them has ssl.h, and
-   then the line names no directory and cc says what is missing. *)
+(* OsslDir answers WHERE OPENSSL IS, ON macOS.  The system ships
+   LibreSSL's dylibs and no headers, so there is no place cc finds by
+   itself: this compiler's own prefix first (an install that carries
+   its OpenSSL beside its runtime, as the Windows zip carries its
+   gcc), then Homebrew's two prefixes.  It answers empty when none of
+   them has ssl.h, and then the line names no directory and cc says
+   what is missing. *)
 PROCEDURE OsslDir () : UTF RAISES ValueRange =
 BEGIN
   IF Text.BLen (prefix) > 0
@@ -1083,12 +1100,13 @@ BEGIN
   RETURN ''
 END OsslDir ;
 
-(* What Apple's cc needs said that gcc does not, after the defaults:
-   the generated C parenthesises every comparison and assigns a FOR
-   variable to itself, both of which clang warns about by default and
-   gcc does not (gcc ignores a -Wno- it does not know, so CC=gcc on
-   macOS is unharmed); and the directory OpenSSL's headers are in,
-   for the tlsshim.c that travels as a source. *)
+(* MacFlags adds what Apple's cc needs said that gcc does not, after
+   the defaults.  The generated C parenthesises every comparison and
+   assigns a FOR variable to itself, both of which clang warns about
+   by default and gcc does not (gcc ignores a -Wno- it does not know,
+   so CC=gcc on macOS is unharmed).  It also adds the directory
+   OpenSSL's headers are in, for the tlsshim.c that travels as a
+   source. *)
 PROCEDURE MacFlags () RAISES ValueRange =
 VAR o : UTF ;
 BEGIN
@@ -1099,12 +1117,13 @@ BEGIN
   IF Text.BLen (o) > 0 THEN Word (Cat ('-I', Cat (o, '/include'))) END
 END MacFlags ;
 
-(* -ffp-contract=off: a * b + c is two roundings, as the source says,
-   on every machine.  gcc's default lets it FUSE the two into one
-   rounding where the target has the instruction -- not baseline
-   x86-64, always arm64 -- so the same program printed other digits on
-   the MacBook: Plot.RenderTaylor's tick coordinates differed in the
-   fourth digit (51 fmadd in C18Taylor) and tutdiff failed there.
+(* FpWords adds -ffp-contract=off: a * b + c is two roundings, as the
+   source says, on every machine.  gcc's default lets it FUSE the two
+   into one rounding where the target has the instruction: not
+   baseline x86-64, always arm64.  So the same program printed other
+   digits on the MacBook: Plot.RenderTaylor's tick coordinates
+   differed in the fourth digit (51 fmadd in C18Taylor) and tutdiff
+   failed there.
    Alex, 2026-10-05: the flag, not a stated difference.  On baseline
    x86-64 it changes no instruction (measured: identical objects). *)
 PROCEDURE FpWords () =
@@ -1112,27 +1131,28 @@ BEGIN
   Word ('-ffp-contract=off')
 END FpWords ;
 
-(* The system libraries the runtime needs, after it on the line: libm,
-   which Fmt and Time need and which is never wrong to name; on POSIX
-   OpenSSL, because tlsshim.c is a member of the runtime there (the
-   sources beside the header and the installed archive alike since
-   0.12) and Http references its four symbols from every request path;
-   and on Windows Winsock, because tcpshim.c is a member of the runtime
-   on every platform and there its socket calls live in ws2_32 rather
-   than in the C library.  A program that opens no socket pays nothing
-   for the names: --as-needed keeps libssl and libcrypto out of a
-   binary that referenced nothing in them (Ubuntu's ld already does
-   this by default, Fedora's and Arch's do not), and an import library
-   gives up only what is referenced. *)
-(* One word a FOR "C" unit's LINK clause names (par 7), onto the
-   line, once: a word ending in `.c' is a shim SOURCE beside the
-   runtime (pgshim.c), found where the runtime's own sources are --
-   RtDir, else the package's <prefix>/share/m9/runtime; a word that
-   begins with `-' goes to the linker as it is, except that
-   `-l:libNAME.so.N' -- GNU ld's spelling for a library whose
+(* SystemLibs adds the system libraries the runtime needs, after it on
+   the line.  It names libm, which Fmt and Time need and which is
+   never wrong to name.  On POSIX it names OpenSSL, because tlsshim.c
+   is a member of the runtime there (the sources beside the header and
+   the installed archive alike since 0.12) and Http references its
+   four symbols from every request path.  On Windows it names Winsock,
+   because tcpshim.c is a member of the runtime on every platform and
+   there its socket calls live in ws2_32 rather than in the C library.
+   A program that opens no socket pays nothing for the names:
+   --as-needed keeps libssl and libcrypto out of a binary that
+   referenced nothing in them (Ubuntu's ld already does this by
+   default, Fedora's and Arch's do not), and an import library gives
+   up only what is referenced. *)
+(* LinkWord puts one word a FOR "C" unit's LINK clause names (par 7)
+   onto the line, once.  A word ending in `.c' is a shim SOURCE beside
+   the runtime (pgshim.c), found where the runtime's own sources are:
+   RtDir, else the package's <prefix>/share/m9/runtime.  A word that
+   begins with `-' goes to the linker as it is.  The exception is
+   `-l:libNAME.so.N', GNU ld's spelling for a library whose
    development package is not installed (Debian's libblosc1 without
-   libblosc-dev) -- is `-lNAME' where ld64 and mingw's ld are the
-   linker; any other word is a library name, `-lNAME'. *)
+   libblosc-dev): it is `-lNAME' where ld64 and mingw's ld are the
+   linker.  Any other word is a library name, `-lNAME'. *)
 PROCEDURE LinkWord (RO rt: UTF ; RO KEPT w: UTF ; VAR seen: SLICE OF UTF ;
                     VAR nseen: I64) RAISES ValueRange =
 VAR
@@ -1174,26 +1194,27 @@ BEGIN
   Word (Cat ('-l', w))
 END LinkWord ;
 
-(* What the closure's FOR "C" units link (their LINK clauses), before
-   the system libraries: the modules m9c resolved a moment ago say
-   what they bind, so a program that imports NetCDF, Grib, ZarrStore
-   or Pg links flagless, runs under --run and loads as a cell --
-   until 2026-10-09 each of them was a hand link line and `--run'
-   could not run C8Zarr, C10Icos or C14Flux (the owed list's first
-   item).  On macOS Homebrew's lib is named once when a unit links
-   anything, as OpenSSL's is: that is where blosc and netCDF live
-   there and the linker does not look by itself. *)
-(* Is the library a LINK word names on THIS machine?  Asked of the C
-   compiler, which answers a file it would link with its full path and
-   one it would not with the bare name (`cc -print-file-name=F').  A
-   shim source or another flag has nothing to look for: TRUE.  On
-   macOS Homebrew's lib is looked in as well -- m9c names it on the
-   line.  On Windows only the STATIC archive counts: the zip ships one
-   for what a program should carry (OpenSSL, zlib, zstd) and import
-   libraries for the rest, and a program linked against an import
-   library does not START without the DLL beside it (measured
-   2026-10-10: a Frame program that never calls NetCDF, given
-   -lnetcdf, exits 53 under wine where 0.20.0's ran). *)
+(* LinkWords adds what the closure's FOR "C" units link (their LINK
+   clauses), before the system libraries.  The modules m9c resolved a
+   moment ago say what they bind, so a program that imports NetCDF,
+   Grib, ZarrStore or Pg links flagless, runs under --run and loads as
+   a cell.  Until 2026-10-09 each of them was a hand link line and
+   `--run' could not run C8Zarr, C10Icos or C14Flux (the owed list's
+   first item).  On macOS Homebrew's lib is named once when a unit
+   links anything, as OpenSSL's is: that is where blosc and netCDF
+   live there and the linker does not look by itself. *)
+(* LibFound asks whether the library a LINK word names is on THIS
+   machine.  It asks the C compiler, which answers a file it would
+   link with its full path and one it would not with the bare name
+   (`cc -print-file-name=F').  A shim source or another flag has
+   nothing to look for: TRUE.  On macOS Homebrew's lib is looked in as
+   well, since m9c names it on the line.  On Windows only the STATIC
+   archive counts: the zip ships one for what a program should carry
+   (OpenSSL, zlib, zstd) and import libraries for the rest, and a
+   program linked against an import library does not START without
+   the DLL beside it (measured 2026-10-10: a Frame program that never
+   calls NetCDF, given -lnetcdf, exits 53 under wine where 0.20.0's
+   ran). *)
 PROCEDURE LibFound (RO w: UTF) : BOOL RAISES ValueRange =
 VAR
   n, i, at : I64 ;
@@ -1234,14 +1255,14 @@ BEGIN
   RETURN CcFinds (Cat ('lib', Cat (name, '.so'))) OR CcFinds (Cat ('lib', Cat (name, '.a')))
 END LibFound ;
 
-(* is libNAME.dylib or libNAME.a in a directory of $LIBRARY_PATH?  The
-   linker searches them, but Apple clang's -print-file-name does not:
-   under `cc' a keg-only Homebrew library (libpq in
-   /opt/homebrew/opt/libpq/lib) read as absent and an indirectly reached
-   unit's LINK words were dropped -- the heatpump server lost pgshim.c
-   and -lpq while a program importing Pg directly linked (2026-10-25;
-   the installed m9c runs its prefix's gcc, whose -print-file-name does
-   search it, and linked) *)
+(* InLibraryPath asks whether libNAME.dylib or libNAME.a is in a
+   directory of $LIBRARY_PATH.  The linker searches them, but Apple
+   clang's -print-file-name does not.  Under `cc' a keg-only Homebrew
+   library (libpq in /opt/homebrew/opt/libpq/lib) read as absent, and
+   an indirectly reached unit's LINK words were dropped.  The heatpump
+   server lost pgshim.c and -lpq while a program importing Pg directly
+   linked (2026-10-25; the installed m9c runs its prefix's gcc, whose
+   -print-file-name does search it, and linked). *)
 PROCEDURE InLibraryPath (RO name: UTF) : BOOL RAISES ValueRange =
 VAR
   lp, dir : UTF ;
@@ -1286,7 +1307,8 @@ EXCEPT
 | Io.IOError (p) : RETURN FALSE
 END CcFinds ;
 
-(* every library a unit's LINK clause names is found *)
+(* UnitFound asks whether every library a unit's LINK clause names is
+   found. *)
 PROCEDURE UnitFound (l: PTR Ast.Node) : BOOL RAISES ValueRange =
 VAR m : I64 ;
 BEGIN
@@ -1329,10 +1351,10 @@ BEGIN
               IF u.kids[k] IS SOME l THEN
                 (* a unit reached only through another module's
                    implementation links when its libraries are here:
-                   Frame reaches NetCDF so, and a Frame program that
-                   never calls it links without libnetcdf -- the
-                   linker drops the unused calls -- while one that
-                   reaches Parquet's zstd needs -lzstd on the line *)
+                   Frame reaches NetCDF so.  A Frame program that never
+                   calls it links without libnetcdf, since the linker
+                   drops the unused calls, while one that reaches
+                   Parquet's zstd needs -lzstd on the line. *)
                 IF l.kind = Ast.NLinkList AND far AND NOT UnitFound (l) THEN
                   IF verbose THEN
                     Diag ('m9c: not linking what ', u.au,
@@ -1368,7 +1390,8 @@ BEGIN
     o := OsslDir () ;
     IF Text.BLen (o) > 0 THEN Word (Cat ('-L', Cat (o, '/lib'))) END ;
     Word ('-Wl,-dead_strip_dylibs') ;
-    (* AND THE CODE NOTHING REACHES, which on Linux -flto removes by
+    (* It also strips THE CODE NOTHING REACHES, which on Linux -flto
+       removes by
        itself: the linker plugin tells gcc what the program uses, and
        a Frame that never reaches NetCDF links without libnetcdf
        (the tutorial's chapter 7 depends on it).  Apple's ld takes no
@@ -1388,15 +1411,15 @@ BEGIN
   IF windows THEN Word ('-lws2_32') END
 END SystemLibs ;
 
-(* IS THIS OBJECT OLDER THAN WHAT IT WAS MADE FROM?
+(* Older asks: IS THIS OBJECT OLDER THAN WHAT IT WAS MADE FROM?
 
    The comparison is deliberately shallow -- the object against its
    own source -- because m9c rebuilds the whole closure in dependency
    order, so a module whose DEPENDENCY is rebuilt is reached on the
-   same pass and its own source is not what changed.  What that does
-   not catch is a source untouched while its dependency's INTERFACE
-   moved; the pass below handles that by rebuilding in order and
-   letting each rebuilt header push the next comparison over. *)
+   same pass and its own source is not what changed.  That misses a
+   source untouched while its dependency's INTERFACE moved; the pass
+   below handles that by rebuilding in order and letting each rebuilt
+   header push the next comparison over. *)
 PROCEDURE Older (RO obj: UTF ; RO src: UTF) : BOOL
   RAISES ValueRange =
 VAR to, ts : I64 ;
@@ -1415,13 +1438,13 @@ BEGIN
   RETURN to < ts
 END Older ;
 
-(* whether the header at h was generated in this run's mode: Gen's
-   first line says `with --utf-str' under the switch and nothing
-   without it.  A header generated the other way is stale whatever the
-   mtimes say -- maillists' cplists built with --utf-str in a directory
-   a plain build had left took the plain Fmt.h as current, and cc
-   refused the importers (2026-10-25).  A header that cannot be read is
-   left to the tests beside this one. *)
+(* SameMode asks whether the header at h was generated in this run's
+   mode: Gen's first line says `with --utf-str' under the switch and
+   nothing without it.  A header generated the other way is stale
+   whatever the mtimes say.  maillists' cplists built with --utf-str
+   in a directory a plain build had left took the plain Fmt.h as
+   current, and cc refused the importers (2026-10-25).  A header that
+   cannot be read is left to the tests beside this one. *)
 PROCEDURE SameMode (RO h: UTF) : BOOL =
 VAR first : UTF ; nl : I64 ;
 BEGIN
@@ -1433,9 +1456,9 @@ EXCEPT
 | Io.IOError, ValueRange : RETURN TRUE
 END SameMode ;
 
-(* Rebuild one dependency by RE-INVOKING THIS COMPILER.
+(* MakeDep rebuilds one dependency by RE-INVOKING THIS COMPILER.
 
-   Not by recursing in-process: m9c holds exactly one module's
+   It does not recurse in-process: m9c holds exactly one module's
    registries and a process is the reset, which is the rule stated at
    the top of this file and the reason `one module per run` is in the
    help.  A subprocess is that rule honoured rather than worked
@@ -1451,8 +1474,8 @@ END SameMode ;
    bare `m9c`, a name to be looked up on a PATH the child may not
    share.  Where the platform cannot answer, argv[0] is the fallback
    it always was. *)
-(* a module's header and C only, where -c would put them (MakeAll,
-   for an import cycle) *)
+(* MakeHeader writes a module's header and C only, where -c would put
+   them (MakeAll, for an import cycle). *)
 PROCEDURE MakeHeader (RO name: UTF ; RO KEPT path: UTF) : BOOL
   RAISES ValueRange, IndexError =
 VAR
@@ -1504,10 +1527,10 @@ BEGIN
   RETURN TRUE
 END MakeDep ;
 
-(* THE CLOSURE, REBUILT IN DEPENDENCY ORDER.
+(* MakeAll rebuilds THE CLOSURE, IN DEPENDENCY ORDER.
 
    order[] is POST-order -- a module is appended once everything it
-   imports is already in it -- so walking it FORWARD builds leaves
+   imports is already in it -- so a FORWARD walk builds leaves
    first, which is the order a dependent needs.  (It used to walk
    loaded[] in reverse, which is pre-order reversed: right for a tree
    and wrong for a diamond.  See order[]'s own comment.)
@@ -1538,18 +1561,18 @@ BEGIN
 
      This loop runs in dependency order -- deepest first, which is
      what order[] is -- so anything that could depend on a rebuilt
-     module comes after it, and rebuilding the
-     rest of the closure is enough.  CONSERVATIVE, deliberately: a
-     module later in the closure that does NOT depend on the changed
-     one is rebuilt anyway.  Being exact would need a per-module
+     module comes after it, and a rebuild of the rest of the closure
+     is enough.  It is CONSERVATIVE, deliberately:
+     a module later in the closure that does NOT depend on the changed
+     one is rebuilt anyway.  An exact rule would need a per-module
      import list rather than the flat closure, and the cost of being
      wrong here is a stale object, while the cost of being
      over-eager is a second of cc. *)
   dirty := FALSE ;
-  (* an import cycle: every module's header first (MakeHeader), so the
-     compile of one member finds its partner's -- a clean build failed
-     on the partner's missing header, a second one passed on the first
-     one's leftovers (2026-10-22) *)
+  (* An import cycle writes every module's header first (MakeHeader),
+     so the compile of one member finds its partner's.  A clean build
+     failed on the partner's missing header, and a second one passed
+     on the first one's leftovers (2026-10-22). *)
   IF importCycle THEN
     FOR i := 0 TO norder - 1 DO
       nm := order[i] ;
@@ -1566,9 +1589,10 @@ BEGIN
     nm := order[i] ;
     IF NOT Text.Eq (nm, modName) THEN
       (* FindModule ANSWERS THE SOURCE and sets the path through a
-         VAR parameter.  Assigning its result to `path` type-checks
-         perfectly and stats the file's contents, which is never a
-         file, so nothing ever looked stale.  The result is named and
+         VAR parameter.  An assignment of its result to `path`
+         type-checks perfectly and stats the file's contents, which is
+         never a file, so nothing ever looked stale.  The result is
+         named and
          discarded here because M9 refuses a dropped function
          result -- which is what made the mistake visible at all. *)
       src := FindModule (nm, path, found, trustDummy) ;
@@ -1590,7 +1614,8 @@ BEGIN
   RETURN ok
 END MakeAll ;
 
-(* Every module the closure reached except this one, as an object.
+(* AddObjects adds every module the closure reached except this one,
+   as an object.
    These are not guessed: they are exactly the modules m9c resolved,
    parsed and checked a moment ago, so the list cannot disagree with
    what the program imports.
@@ -1648,9 +1673,9 @@ BEGIN
       Io.ErrLine ('  give the paths yourself after --') ;
       RETURN FALSE
     END ;
-    (* -O2, because a compiler that ships -O0 by default is not what
-       anybody wants and nobody was told they had to ask.  Found by
-       porting a Fortran kernel: the M9 build came out THIRTEEN
+    (* This adds -O2, because a compiler that ships -O0 by default is
+       not what anybody wants and nobody was told they had to ask.  A
+       Fortran kernel's port found it: the M9 build came out THIRTEEN
        TIMES slower than the Fortran, and the whole of that was the
        missing flag -- the same C at -O2 is 3.4x faster, and every
        number in docs/bench.md was measured with cc invoked by hand.
@@ -1658,7 +1683,8 @@ BEGIN
        program built by the same compiler by somebody who knew. *)
     Word ('-O2') ;
     FpWords () ;
-    (* -flto, for the same reason and with a bigger number.  An M9
+    (* This adds -flto, for the same reason and with a bigger number.
+       An M9
        program is MANY translation units by construction -- one per
        module, plus the runtime -- and every checked call that costs
        anything crosses one of those boundaries: Math.Pow's domain
@@ -1666,7 +1692,7 @@ BEGIN
        LTO none of them can be inlined and the checks are paid in
        full, at a call.
 
-       Measured on the port's kernel: 0.0134s -> 0.0088s, which is
+       On the port's kernel it measured 0.0134s -> 0.0088s, which is
        FASTER than the gfortran original's 0.0097s, and still bit
        identical to it (14/14 checks).  It costs 2% of build time
        (m9c itself: 5.51s -> 5.63s) and gives back 7% of the binary
@@ -1674,17 +1700,17 @@ BEGIN
 
        This is also what makes the checks affordable in general, and
        it is why the descriptor-hoisting work this replaced was
-       dropped: hoisting the GRID descriptor into locals by hand,
-       ON TOP of LTO, was worth 3% (0.0088 -> 0.0085).  LTO already
+       dropped: the GRID descriptor hoisted into locals by hand, ON
+       TOP of LTO, was worth 3% (0.0088 -> 0.0085).  LTO already
        does it.  See the port's README. *)
-    (* =auto on macOS, which is what the measurement further down
-       says Linux wants and has not been given: the platform is new,
+    (* macOS gets =auto, which is what the measurement further down
+       says Linux wants and has not been given.  The platform is new,
        so there is no build whose flags this changes, and the bundled
        gcc warns about serial LTRANS jobs on every link of two
        partitions without it (measured 2026-09-29: 1.25 s and the
        warning, 1.03 s and quiet).  Apple's cc takes the spelling. *)
     IF macos THEN Word ('-flto=auto') ELSE Word ('-flto') END ;
-    (* ON WINDOWS, ONE LTO PARTITION.  gcc runs its LTRANS stage in
+    (* Windows gets ONE LTO PARTITION.  gcc runs its LTRANS stage in
        parallel through a Makefile it writes and a `make` it looks
        for on PATH; the bundled ucrt64\ carries no make (MSYS2 ships
        it as a separate package), so every link of two or more
@@ -1694,12 +1720,13 @@ BEGIN
        just the same THERE, measured under wine: with no make, the
        job count cannot help.  One partition has nothing to
        parallelise and so nothing to warn about, and it was serial
-       anyway.  Measured on two real links under wine, and it goes
-       BOTH WAYS, which is why neither number is claimed as the rule:
-       m9c's own link 21.1 s -> 19.8 s and 945,222 -> 922,650 bytes
-       (one partition inlines across the whole program), m9setup's
-       4.4 s -> 4.4 s and 151,466 -> 152,935.  Under a percent or two
-       either side of nothing; what it buys is the warning's absence.
+       anyway.  It was measured on two real links under wine, and it
+       goes BOTH WAYS, which is why neither number is claimed as the
+       rule: m9c's own link 21.1 s -> 19.8 s and 945,222 -> 922,650
+       bytes (one partition inlines across the whole program),
+       m9setup's 4.4 s -> 4.4 s and 151,466 -> 152,935.  The change is
+       under a percent or two either side of nothing; it buys the
+       warning's absence.
 
        AND THE FIRST VERSION OF THIS COMMENT SAID "not on Linux,
        where a jobserver or the CPU count is found and the note never
@@ -1719,7 +1746,8 @@ BEGIN
        carrying that warning unnoticed for as long as it has existed,
        which is the other half of the finding. *)
     IF windows THEN Word ('-flto-partition=one') END ;
-    (* AND THE INLINER'S BUDGET, because the checks spend it.  gcc
+    (* It also raises THE INLINER'S BUDGET, because the checks spend
+       it.  gcc
        auto-inlines only functions under max-inline-insns-auto,
        default 15, and a checked M9 body rarely fits: every access
        carries its bounds test and every checked op its overflow
@@ -1730,27 +1758,29 @@ BEGIN
        2.4x faster (1.033 s -> 0.424 s a field, checksum identical),
        which is MORE than removing the checks outright buys (0.563):
        the checks were never the cost; the inlining they suppressed
-       was.  Binary +27%, build time the same to the second.  clang
-       ignores the flag with a warning, so $CC=clang still builds.
-       Two words, as cc receives them: the shell used to split them
-       and there is no shell now. *)
-    (* not to the system's cc on macOS, which is clang and says so
-       on every build; the bundled gcc, and a $CC, get it as ever *)
+       was.  The binary grows 27%, and build time is the same to the
+       second.  clang ignores the flag with a warning, so $CC=clang
+       still builds.  It goes as two words, as cc receives them: the
+       shell used to split them and there is no shell now. *)
+    (* The system's cc on macOS does not get it: it is clang and says
+       so on every build.  The bundled gcc, and a $CC, get it as
+       ever. *)
     IF NOT (macos AND Text.Eq (CcName (), 'cc')) THEN
       Word ('--param') ;
       Word ('max-inline-insns-auto=200')
     END ;
     MacFlags () ;
-    (* -fPIC only when asked, and --so asks.  Not the default,
-       because on x86-64 it costs an indirection on every global and
-       the overwhelming majority of these objects go into a program
-       or an archive, where it buys nothing. *)
+    (* This adds -fPIC only when asked, and --so asks.  It is not the
+       default, because on x86-64 it costs an indirection on every
+       global and the overwhelming majority of these objects go into a
+       program or an archive, where it buys nothing. *)
     IF doPic THEN Word ('-fPIC') END ;
-    (* -g ADDS, and changes nothing else.  Not -O0: silently dropping
-       the optimisation under a flag that says "debug information" is
-       flag-dependent semantics, which is the thing this language
-       refuses by name.  The line tables are optimised-code line
-       tables, and a caller who wants -O0 takes the line over. *)
+    (* -g ADDS, and changes nothing else.  It does not add -O0: a
+       silent drop of the optimisation under a flag that says "debug
+       information" is flag-dependent semantics, which is the thing
+       this language refuses by name.  The line tables are
+       optimised-code line tables, and a caller who wants -O0 takes
+       the line over. *)
     IF debug THEN Word ('-g') END ;
     (* -iquote, never -I: on a case-insensitive filesystem a generated
        Time.h on the angled path answers #include <time.h>, and the
@@ -1764,8 +1794,8 @@ BEGIN
 
   Word (cfile) ;
 
-  (* the link line, when m9c is supplying it: the closure's objects,
-     the runtime, and the system libraries the runtime needs *)
+  (* When m9c supplies the link line, it holds the closure's objects,
+     the runtime, and the system libraries the runtime needs. *)
   IF doLink AND ccFrom = 0 THEN
     IF NOT AddObjects () THEN RETURN FALSE END ;
     IF NOT AddRuntime (rt) THEN RETURN FALSE END ;
@@ -1782,7 +1812,7 @@ BEGIN
   RETURN TRUE
 END Compile ;
 
-(* The closure, as a library instead of a program.
+(* Archive builds the closure as a library instead of a program.
 
    THE SAME OBJECTS AND THE SAME RULE.  --ar and --so name exactly
    what -o would have linked -- the modules m9c resolved, parsed and
@@ -1793,7 +1823,7 @@ END Compile ;
 
    WHAT GOES IN, AND WHAT DOES NOT.  An archive holds M9 modules and
    nothing else: the runtime is its own deliverable and already has
-   its own archive, and burying a copy of it inside every library is
+   its own archive, and a copy of it buried inside every library is
    how two versions of m9rt end up in one link.  A SHARED object is
    different -- it has to resolve its own symbols at load time -- so
    the runtime and -lm go into that one, exactly as they go into an
@@ -1822,19 +1852,20 @@ BEGIN
     prog := CcName () ;
     Word ('-shared') ;
     IF ccFrom > 0 THEN
-      (* the caller took the line over at the compile step and keeps
-         it here: adding underneath a chosen flag is worse than
-         adding nothing *)
+      (* The caller took the line over at the compile step and keeps
+         it here: an addition underneath a chosen flag is worse than
+         none. *)
       FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.ArgUtf (pool, i)) END
     ELSE
-      (* -fPIC AGAIN, and this is the one that is easy to miss: the
+    (* This adds -fPIC AGAIN, and this is the one that is easy to
+       miss: the
          runtime arrives as SOURCES, so this command compiles m9rt.c
          and tcpshim.c on the way through, and gcc does NOT imply
          -fPIC from -shared.  Without it the members are all position
          independent and the link still fails, on
            relocation R_X86_64_PC32 against `stderr@@GLIBC_2.2.5'
-         out of a temporary object nobody named.  Measured, not
-         guessed: that is exactly what the first --so run said. *)
+         out of a temporary object nobody named.  This was measured,
+         not guessed: that is exactly what the first --so run said. *)
       Word ('-O2') ;
       FpWords () ;
       IF macos THEN Word ('-flto=auto') ELSE Word ('-flto') END ;
@@ -1891,16 +1922,16 @@ BEGIN
   END
 END Drop ;
 
-(* Written out rather than generated from a table: there are six
-   lines of it, and a help text that drifts from the behaviour is
+(* Help is written out rather than generated from a table: there are
+   six lines of it, and a help text that drifts from the behaviour is
    worse than none.  Exit codes are part of the interface, so they
-   are documented here and not only in the source.               *)
-(* What the language IS, before what the flags do.  Someone typing
-   --help cold has no reason to know either, and a compiler that opens
-   with its option table assumes a reader it has not earned.  Four
-   sentences: the family, the promise, the price, the shape.  Every
-   claim here is one the repository can show -- the 3% is measured,
-   not adjectival. *)
+   are documented here and not only in the source. *)
+(* About says what the language IS, before what the flags do.
+   Someone typing --help cold has no reason to know either, and a
+   compiler that opens with its option table assumes a reader it has
+   not earned.  It has four sentences: the family, the promise, the
+   price, the shape.  Every claim here is one the repository can
+   show: the 3% is measured, not adjectival. *)
 PROCEDURE About () =
 BEGIN
   Io.WriteLine ('m9c -- the M9 compiler.') ;
@@ -2160,21 +2191,21 @@ BEGIN
   Io.WriteLine ('M9 -- checks are semantics, not flags.')
 END Help ;
 
-(* One pass over the command line, before anything is read.  Options
-   set flags, -- ends them, and everything else is a source file; a
-   file is recognised by not being an option rather than by its
-   suffix, so a path that starts with a dash is a diagnosable mistake
-   and not a silently ignored argument.                             *)
-(* -Idir joined.  Guarded here rather than at each call site: a
-   predicate that raises on the empty string is one every caller has
-   to remember, and the reminder is a bug waiting. *)
+(* ScanArgs makes one pass over the command line, before anything is
+   read.  Options set flags, -- ends them, and everything else is a
+   source file.  A file is recognised by not being an option rather
+   than by its suffix, so a path that starts with a dash is a
+   diagnosable mistake and not a silently ignored argument. *)
+(* IsDashI tells -Idir joined.  It is guarded here rather than at each
+   call site: a predicate that raises on the empty string is one every
+   caller has to remember, and the reminder is a bug waiting. *)
 PROCEDURE IsDashI (RO a: UTF) : BOOL =
 BEGIN
   IF Text.BLen (a) < 3 THEN RETURN FALSE END ;
   RETURN Text.StartsWith (a, '-I')
 END IsDashI ;
 
-(* where `=' is in s, or -1 *)
+(* EqAt answers where `=' is in s, or -1. *)
 PROCEDURE EqAt (RO s: UTF) : I64 =
 VAR i : I64 ;
 BEGIN
@@ -2184,8 +2215,8 @@ BEGIN
   RETURN -1
 END EqAt ;
 
-(* --prefix MOD=NAME, kept as written: it goes to the generator, to
-   every child build, and into the keys *)
+(* AddPrefix keeps --prefix MOD=NAME as written: it goes to the
+   generator, to every child build, and into the keys. *)
 PROCEDURE AddPrefix (RO KEPT spec: UTF) =
 VAR
   nb : SLICE OF UTF ;
@@ -2200,7 +2231,7 @@ BEGIN
   npfxSpec := npfxSpec + 1
 END AddPrefix ;
 
-(* the C prefix --prefix gave module m, or empty *)
+(* PrefixOf answers the C prefix --prefix gave module m, or empty. *)
 PROCEDURE PrefixOf (RO m: UTF) : UTF =
 VAR i, e : I64 ;
 BEGIN
@@ -2231,9 +2262,9 @@ BEGIN
     ELSIF Text.Eq (a, '--no-unsafe') THEN
       noUnsafe := TRUE
     ELSIF Text.Eq (a, '--utf-str') THEN
-      (* set the moment it is read: --run and --cell leave the option
-         loop before the validation below, and compile the closure
-         in-process *)
+      (* It is set the moment it is read: --run and --cell leave the
+         option loop before the validation below, and compile the
+         closure in-process. *)
       utfStr := TRUE ;
       Sem.SetStrUtf (TRUE) ;
       Gen.SetStrUtf (TRUE)
@@ -2256,16 +2287,16 @@ BEGIN
     ELSIF Text.Eq (a, '--check') THEN
       doCheck := TRUE
     ELSIF Text.Eq (a, '--review') THEN
-      (* implies --check: the page is printed for a program that
-         exists, and nothing is written beside it *)
+      (* It implies --check: the page is printed for a program that
+         exists, and nothing is written beside it. *)
       doReview := TRUE ;
       doCheck := TRUE
     ELSIF Text.Eq (a, '--doc') THEN
       doDoc := TRUE
     ELSIF Text.Eq (a, '--json') THEN
-      (* implies --doc: the JSON is the same gather rendered twice,
-         and a run that wrote the data without the page would be a
-         run whose two documents could not be compared *)
+      (* It implies --doc: the JSON is the same gather rendered twice,
+         and a run that wrote the data without the page would be a run
+         whose two documents could not be compared. *)
       doJson := TRUE ;
       doDoc := TRUE
     ELSIF Text.Eq (a, '--make') THEN
@@ -2275,7 +2306,8 @@ BEGIN
     ELSIF Text.Eq (a, '--type-of') THEN
       doTypeOf := TRUE
     ELSIF Text.Eq (a, '--cell') THEN
-      (* --run's twin for the notebook session: the file follows *)
+      (* --cell is --run's twin for the notebook session: the file
+         follows. *)
       IF i + 1 >= Io.ArgCount () THEN
         Io.ErrLine ('m9c: --cell wants a file') ;
         failed := TRUE ;
@@ -2285,9 +2317,9 @@ BEGIN
       runAt := i + 1 ;
       RETURN
     ELSIF Text.Eq (a, '--run') THEN
-      (* the LAST option: the file follows, and every word after the
-         file is the program's, whatever it looks like -- a script's
-         `-v` is not this compiler's *)
+      (* It is the LAST option: the file follows, and every word after
+         the file is the program's, whatever it looks like.  A script's
+         `-v` is not this compiler's. *)
       IF i + 1 >= Io.ArgCount () THEN
         Io.ErrLine ('m9c: --run wants a file') ;
         failed := TRUE ;
@@ -2337,8 +2369,9 @@ BEGIN
         doAr := TRUE
       ELSE
         doSo := TRUE ;
-        (* free on the LTO path and necessary off it, so it is not
-           worth making the caller remember which one they are on *)
+        (* It is free on the LTO path and necessary off it, so it is
+           not worth making the caller remember which one they are
+           on. *)
         doPic := TRUE
       END ;
       i := i + 1
@@ -2351,8 +2384,9 @@ BEGIN
       DirAdd (Io.ArgUtf (pool, i + 1), FALSE) ;
       i := i + 1
     ELSIF Text.BLen (a) > 2 AND IsDashI (a) THEN
-      (* -Idir joined, as cc spells it: the habit is older than this
-         compiler and arguing with it costs more than honouring it *)
+      (* This takes -Idir joined, as cc spells it: the habit is older
+         than this compiler, and an argument with it costs more than
+         honouring it. *)
       DirAdd (SLICE (a, 2, Text.BLen (a) - 2), FALSE)
     ELSIF Text.BLen (a) > 1 AND B (a, 0) = ORD ('-') THEN
       (* an option nobody declared was taken for a source file and
@@ -2365,10 +2399,10 @@ BEGIN
   END
 END ScanArgs ;
 
-(* the i'th source file on the command line, or empty when there is
-   no i'th one.  Options are skipped here rather than compacted into
-   a list, because the language has no growable STR array in this
-   module and an index walk needs neither.                          *)
+(* SourceAt answers the i'th source file on the command line, or
+   empty when there is no i'th one.  Options are skipped here rather
+   than compacted into a list, because the language has no growable
+   STR array in this module and an index walk needs neither. *)
 PROCEDURE SourceAt (n: I64) : UTF RAISES ValueRange, IndexError =
 VAR
   i, seen : I64 ;
@@ -2380,7 +2414,7 @@ BEGIN
     a := Io.ArgUtf (pool, i) ;
     IF Text.Eq (a, '--') THEN RETURN '' END ;
     IF Text.Eq (a, '--run') OR Text.Eq (a, '--cell') THEN
-      (* the one source, and nothing after it is another *)
+      (* This is the one source, and nothing after it is another. *)
       IF n = seen AND i + 1 < Io.ArgCount () THEN
         RETURN Io.ArgUtf (pool, i + 1)
       END ;
@@ -2417,12 +2451,12 @@ BEGIN
 END IsHelp ;
 
 PROCEDURE Complain (RO what: UTF ; RO path: UTF) =
-VAR d : PTR DynUtf.DString IN pool ;
+VAR d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, what) ;
-  DynUtf.Append (d, ': ') ;
-  Diag ('m9c: ', DynUtf.ViewIn (pool, d), path) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, what) ;
+  DynStr.Append (d, ': ') ;
+  Diag ('m9c: ', DynStr.ViewIn (pool, d), path) ;
   failed := TRUE
 END Complain ;
 
@@ -2430,11 +2464,11 @@ END Complain ;
 
    `m9c --run Prog.m9 ARG...` is what a script interpreter is from the
    outside and is not one inside: the program is checked and compiled
-   exactly as -o would, then this process BECOMES it.  What makes it
-   fast enough to be typed is that nothing is compiled twice.  Measured
-   before it was built (2026-10-04): checking costs 0.01 s, a flagless
-   link 1.0 to 1.5 s, almost all of it -flto -- and compiling only the
-   program at -O2 against objects compiled once, 0.15 s.
+   exactly as -o would, then this process BECOMES it.  It is fast
+   enough to be typed because nothing is compiled twice.  Measured
+   before it was built (2026-10-04): a check costs 0.01 s, a flagless
+   link 1.0 to 1.5 s, almost all of it -flto.  A compile of only the
+   program at -O2 against objects compiled once costs 0.15 s.
 
    Everything lives under one directory (CacheRoot):
      mod/NAME-KEY/NAME.h, NAME.o   a module, compiled once
@@ -2444,29 +2478,30 @@ END Complain ;
    A KEY is a hash of the TEXT a thing was compiled from -- the
    module's source and the source of everything it imports, however
    far down, since a header includes its imports' headers -- and of
-   this compiler, its C compiler and its runtime (Ident).  Never a
-   modification time: an edit that is undone is the old key again, and
-   a copied file is not a changed one.  A program whose key has a
+   this compiler, its C compiler and its runtime (Ident).  It is never
+   a modification time: an edit that is undone is the old key again,
+   and a copied file is not a changed one.  A program whose key has a
    binary is run without being checked again, because the same text
    through the same compiler has the same verdict and the binary exists
    only because that verdict was yes.
 
-   No -flto here, deliberately: LTO is what made the flagless link take
-   a second, and an object compiled once for every program cannot be
-   LTO IR without paying it again at every link.  -O2 and the inliner
-   budget stay.  Concurrent runs are safe because every file reaches
-   its place by Rename, which is atomic, and two runs that build the
-   same key build the same bytes.  Nothing is ever evicted: removing
-   the directory is always safe. *)
+   There is no -flto here, deliberately: LTO is what made the flagless
+   link take a second, and an object compiled once for every program
+   cannot be LTO IR without paying it again at every link.  -O2 and
+   the inliner budget stay.  Concurrent runs are safe because every
+   file reaches its place by Rename, which is atomic, and two runs
+   that build the same key build the same bytes.  Nothing is ever
+   evicted: the directory can always be removed safely. *)
 
-(* a hash of text: two polynomial residues and the length, written out
-   as digits.  Not cryptographic -- a cache key has to tell an edit
+(* Hash answers a hash of text: two polynomial residues and the
+   length, written out as digits.  It is not cryptographic: a cache
+   key has to tell an edit
    from the original, not resist an attacker who can already write
    the source.  The moduli keep every product inside I64: 131 times
    2^55 and 257 times 2^54 are both under 2^63. *)
 PROCEDURE Hash (RO s: UTF) : UTF =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, a, b : I64 ;
 BEGIN
   a := 7 ;
@@ -2475,17 +2510,18 @@ BEGIN
     a := (a * 131 + B (s, i)) MOD 36028797018963913 ;
     b := (b * 257 + B (s, i)) MOD 18014398509481951
   END ;
-  d := DynUtf.New (pool) ;
-  DynUtf.AppendI64 (d, a) ;
-  DynUtf.AppendChar (d, 'x') ;
-  DynUtf.AppendI64 (d, b) ;
-  DynUtf.AppendChar (d, 'n') ;
-  DynUtf.AppendI64 (d, Text.BLen (s)) ;
-  RETURN DynUtf.ViewIn (pool, d)
+  d := DynStr.New (pool) ;
+  DynStr.AppendI64 (d, a) ;
+  DynStr.AppendChar (d, 'x') ;
+  DynStr.AppendI64 (d, b) ;
+  DynStr.AppendChar (d, 'n') ;
+  DynStr.AppendI64 (d, Text.BLen (s)) ;
+  RETURN DynStr.ViewIn (pool, d)
 END Hash ;
 
-(* a module's source, hashed as it is parsed: ParseText calls this for
-   every file the closure reads, the main one included *)
+(* Remember records a module's source, hashed as it is parsed:
+   ParseText calls this for every file the closure reads, the main one
+   included. *)
 PROCEDURE Remember (RO name: UTF ; RO src: UTF) =
 VAR
   nn, nh : SLICE OF UTF ;
@@ -2512,22 +2548,22 @@ BEGIN
   RETURN '?'
 END SrcHash ;
 
-(* the key of a module: Ident, then every module reachable from it by
-   import, each with its source's hash, in the order a depth-first
-   walk meets them -- which the import lists fix, so the same sources
-   give the same string *)
+(* ClosureKey answers the key of a module: Ident, then every module
+   reachable from it by import, each with its source's hash, in the
+   order a depth-first walk meets them.  The import lists fix that
+   order, so the same sources give the same string. *)
 PROCEDURE ClosureKey (RO top: UTF) : UTF =
 VAR
   seen, stack : SLICE OF UTF ;
   nseen, nstack, i, j : I64 ;
   cur : UTF ;
   dup : BOOL ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
 BEGIN
   seen := NEW (pool, UTF, nedge + 2) ;
   stack := NEW (pool, UTF, nedge + 2) ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, ident) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, ident) ;
   seen[0] := Suffix (top, '') ;
   stack[0] := seen[0] ;
   nseen := 1 ;
@@ -2535,13 +2571,13 @@ BEGIN
   WHILE nstack > 0 DO
     nstack := nstack - 1 ;
     cur := stack[nstack] ;
-    DynUtf.AppendChar (d, ';') ;
-    DynUtf.Append (d, cur) ;
-    DynUtf.AppendChar (d, '=') ;
-    DynUtf.Append (d, SrcHash (cur)) ;
+    DynStr.AppendChar (d, ';') ;
+    DynStr.Append (d, cur) ;
+    DynStr.AppendChar (d, '=') ;
+    DynStr.Append (d, SrcHash (cur)) ;
     IF Text.BLen (PrefixOf (cur)) > 0 THEN
-      DynUtf.AppendChar (d, '@') ;
-      DynUtf.Append (d, PrefixOf (cur))
+      DynStr.AppendChar (d, '@') ;
+      DynStr.Append (d, PrefixOf (cur))
     END ;
     FOR i := 0 TO nedge - 1 DO
       IF Text.Eq (edgeFrom[i], cur) THEN
@@ -2558,12 +2594,13 @@ BEGIN
       END
     END
   END ;
-  RETURN Hash (DynUtf.ViewIn (pool, d))
+  RETURN Hash (DynStr.ViewIn (pool, d))
 END ClosureKey ;
 
-(* where the cache is: $M9CACHE, else the platform's cache directory
-   -- %LOCALAPPDATA% on Windows, $XDG_CACHE_HOME, ~/.cache -- each
-   with m9 under it; empty when none of them is set *)
+(* CacheRoot answers where the cache is: $M9CACHE, else the
+   platform's cache directory (%LOCALAPPDATA% on Windows,
+   $XDG_CACHE_HOME, ~/.cache), each with m9 under it.  It answers
+   empty when none of them is set. *)
 PROCEDURE CacheRoot () : UTF RAISES ValueRange =
 VAR v : UTF ;
 BEGIN
@@ -2580,7 +2617,8 @@ BEGIN
   RETURN ''
 END CacheRoot ;
 
-(* a directory and every directory above it that is missing.  The
+(* TryMkDir makes a directory and every directory above it that is
+   missing.  The
    levels above may refuse (a drive letter, a root this user cannot
    write and that exists anyway); only the last one has to succeed. *)
 PROCEDURE TryMkDir (RO path: UTF) =
@@ -2602,32 +2640,34 @@ BEGIN
   Io.MkDir (path)
 END MkDirs ;
 
-(* this compiler as a cache key: its version and its binary's time,
-   so a rebuilt m9c in a source tree is a new key without a version
-   bump, and the C compiler and runtime it would use *)
+(* Ident answers this compiler as a cache key: its version and its
+   binary's time, so a rebuilt m9c in a source tree is a new key
+   without a version bump, and the C compiler and runtime it would
+   use. *)
 PROCEDURE Ident () : UTF RAISES ValueRange =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   self : UTF ;
 BEGIN
   self := System.ExecutableUtf (pool) ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, Version) ;
-  DynUtf.AppendChar (d, ' ') ;
-  DynUtf.AppendI64 (d, Io.ModTime (self)) ;
-  DynUtf.AppendChar (d, ' ') ;
-  DynUtf.Append (d, CcName ()) ;
-  DynUtf.AppendChar (d, ' ') ;
-  DynUtf.Append (d, RtDir ()) ;
-  (* and the shape of what RunFlags makes, so an object compiled
-     without its own sections is never linked by --gc-sections *)
-  DynUtf.Append (d, ' sections') ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, Version) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.AppendI64 (d, Io.ModTime (self)) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, CcName ()) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, RtDir ()) ;
+  (* The key also holds the shape of what RunFlags makes, so an object
+     compiled without its own sections is never linked by
+     --gc-sections. *)
+  DynStr.Append (d, ' sections') ;
   (* the rehearsed switch compiles every module another way *)
-  IF utfStr THEN DynUtf.Append (d, ' utf-str') END ;
-  RETURN DynUtf.ViewIn (pool, d)
+  IF utfStr THEN DynStr.Append (d, ' utf-str') END ;
+  RETURN DynStr.ViewIn (pool, d)
 END Ident ;
 
-(* where module order[i] is cached *)
+(* ModDir answers where module order[i] is cached. *)
 PROCEDURE ModDir (i: I64) : UTF RAISES IndexError =
 BEGIN
   (* --cell's objects are position independent and live apart *)
@@ -2637,8 +2677,8 @@ BEGIN
   RETURN Join (Join (cacheRoot, 'mod'), Cat (order[i], Cat ('-', keys[i])))
 END ModDir ;
 
-(* the C compiler's flags for everything --run compiles: m9c's own
-   defaults without -flto (see the section's comment) *)
+(* RunFlags adds the C compiler's flags for everything --run compiles:
+   m9c's own defaults without -flto (see the section's comment). *)
 PROCEDURE RunFlags () RAISES ValueRange =
 BEGIN
   Word ('-O2') ;
@@ -2647,15 +2687,15 @@ BEGIN
     Word ('--param') ;
     Word ('max-inline-insns-auto=200')
   END ;
-  (* EACH FUNCTION IN A SECTION OF ITS OWN, so that the link can drop
-     what nothing calls -- RunGcWords.  Without -flto nothing else
+  (* EACH FUNCTION goes IN A SECTION OF ITS OWN, so that the link can
+     drop what nothing calls (RunGcWords).  Without -flto nothing else
      removes the code a program never reaches, and a module that binds
      a C library the program does not use still names its symbols:
      every program importing Frame failed to link under --run on
      NetCDF's nc_* (measured 2026-10-04, C7Series), where the flagless
-     -flto link drops them.  Not on macOS: ld64's -dead_strip, which
-     SystemLibs already gives that link, works on atoms and needs no
-     sections. *)
+     -flto link drops them.  It is left out on macOS: ld64's
+     -dead_strip, which SystemLibs already gives that link, works on
+     atoms and needs no sections. *)
   IF NOT macos THEN
     Word ('-ffunction-sections') ;
     Word ('-fdata-sections')
@@ -2664,8 +2704,9 @@ BEGIN
   MacFlags ()
 END RunFlags ;
 
-(* a shared object of the objects on the line so far, its symbols left
-   to the session to resolve: on macOS ld64 must be told so *)
+(* SharedWords makes a shared object of the objects on the line so
+   far, its symbols left to the session to resolve: on macOS ld64 must
+   be told so. *)
 PROCEDURE SharedWords () =
 BEGIN
   Word ('-shared') ;
@@ -2675,15 +2716,17 @@ BEGIN
   END
 END SharedWords ;
 
-(* the link's half of the above: drop the sections nothing reaches,
-   and with them their references into libraries nobody linked *)
+(* RunGcWords is the link's half of the above: it drops the sections
+   nothing reaches, and with them their references into libraries
+   nobody linked. *)
 PROCEDURE RunGcWords () =
 BEGIN
   IF NOT macos THEN Word ('-Wl,--gc-sections') END
 END RunGcWords ;
 
-(* every cached module's directory on the include path, then the
-   scratch directory, where this run's fresh headers are *)
+(* RunIncludes puts every cached module's directory on the include
+   path, then the scratch directory, where this run's fresh headers
+   are. *)
 PROCEDURE RunIncludes (RO KEPT rt: UTF) RAISES IndexError =
 VAR i : I64 ;
 BEGIN
@@ -2699,9 +2742,9 @@ BEGIN
   Word (work)
 END RunIncludes ;
 
-(* hand over to the binary: argv[0] is the source as it was named,
-   the way a script is told its own path, and the rest are the words
-   after it on this command line *)
+(* Launch hands over to the binary: argv[0] is the source as it was
+   named, the way a script is told its own path, and the rest are the
+   words after it on this command line. *)
 PROCEDURE Launch () RAISES ValueRange, IndexError =
 VAR
   args : SLICE OF UTF ;
@@ -2721,13 +2764,13 @@ EXCEPT
     Io.Halt (1)
 END Launch ;
 
-(* the keys, the scratch directory and the binary's name; when the
-   binary is already there, nothing else is needed and Launch does not
-   come back *)
+(* RunKeys computes the keys, the scratch directory and the binary's
+   name.  When the binary is already there, nothing else is needed and
+   Launch does not come back. *)
 PROCEDURE RunKeys () RAISES ValueRange, IndexError, Io.IOError =
 VAR
   i : I64 ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
 BEGIN
   cacheRoot := CacheRoot () ;
   IF Text.BLen (cacheRoot) = 0 THEN
@@ -2738,30 +2781,31 @@ BEGIN
   ident := Ident () ;
   keys := NEW (pool, UTF, norder + 1) ;
   FOR i := 0 TO norder - 1 DO keys[i] := ClosureKey (order[i]) END ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, 'tmp/') ;
-  DynUtf.AppendI64 (d, System.ProcessId ()) ;
-  work := Join (cacheRoot, DynUtf.ViewIn (pool, d)) ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, 'bin/') ;
-  DynUtf.Append (d, modName) ;
-  DynUtf.AppendChar (d, '-') ;
-  DynUtf.Append (d, ClosureKey (modName)) ;
-  IF windows THEN DynUtf.Append (d, '.exe') END ;
-  binPath := Join (cacheRoot, DynUtf.ViewIn (pool, d)) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'tmp/') ;
+  DynStr.AppendI64 (d, System.ProcessId ()) ;
+  work := Join (cacheRoot, DynStr.ViewIn (pool, d)) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'bin/') ;
+  DynStr.Append (d, modName) ;
+  DynStr.AppendChar (d, '-') ;
+  DynStr.Append (d, ClosureKey (modName)) ;
+  IF windows THEN DynStr.Append (d, '.exe') END ;
+  binPath := Join (cacheRoot, DynStr.ViewIn (pool, d)) ;
   IF doCell THEN
-    d := DynUtf.New (pool) ;
-    IF cellProgram THEN DynUtf.Append (d, 'cells/') ELSE DynUtf.Append (d, 'modpic/') END ;
-    DynUtf.Append (d, modName) ;
-    DynUtf.AppendChar (d, '-') ;
-    DynUtf.Append (d, ClosureKey (modName)) ;
-    DynUtf.Append (d, '/lib') ;
-    DynUtf.Append (d, modName) ;
-    DynUtf.Append (d, '.so') ;
-    cellPath := Join (cacheRoot, DynUtf.ViewIn (pool, d)) ;
-    (* warm only when the runtime and the host of THIS key are there
-       too: a changed m9session.c is a new runtime key, and a cell
-       built before it named a host nobody had built (2026-10-04) *)
+    d := DynStr.New (pool) ;
+    IF cellProgram THEN DynStr.Append (d, 'cells/') ELSE DynStr.Append (d, 'modpic/') END ;
+    DynStr.Append (d, modName) ;
+    DynStr.AppendChar (d, '-') ;
+    DynStr.Append (d, ClosureKey (modName)) ;
+    DynStr.Append (d, '/lib') ;
+    DynStr.Append (d, modName) ;
+    DynStr.Append (d, '.so') ;
+    cellPath := Join (cacheRoot, DynStr.ViewIn (pool, d)) ;
+    (* The cell is warm only when the runtime and the host of THIS key
+       are there too: a changed m9session.c is a new runtime key, and a
+       cell built before it named a host nobody had built
+       (2026-10-04). *)
     IF Io.Exists (cellPath) AND
        Io.Exists (Join (RtCacheDir (RtDir ()), 'm9session')) AND
        Io.Exists (Join (RtCacheDir (RtDir ()), 'libm9rt.so')) THEN
@@ -2773,12 +2817,14 @@ BEGIN
   IF Io.Exists (binPath) THEN Launch () END
 END RunKeys ;
 
-(* one module of the closure, into the cache: its C by THIS compiler
-   run again (one module per process, as --make does it), into the
-   scratch directory; compiled there; and then its header and its
-   object renamed into its own directory, the object last, because
-   the object's presence is what says the directory is complete *)
-(* is module i of the order built in the cache already? *)
+(* CacheModule puts one module of the closure into the cache.  THIS
+   compiler, run again (one module per process, as --make does it),
+   writes its C into the scratch directory, and it is compiled there.
+   Then its header and its object are renamed into its own directory,
+   the object last, because the object's presence is what says the
+   directory is complete. *)
+(* CacheHas asks whether module i of the order is built in the cache
+   already. *)
 PROCEDURE CacheHas (i: I64) : BOOL RAISES ValueRange, IndexError =
 BEGIN
   IF doCell THEN
@@ -2787,9 +2833,10 @@ BEGIN
   RETURN Io.Exists (Join (ModDir (i), Suffix (order[i], '.o')))
 END CacheHas ;
 
-(* module i's C and header into work: the first half of CacheModule,
-   run for every module ahead of the compiles when the import graph
-   has a cycle, so that a member finds its partner's header *)
+(* CacheGen writes module i's C and header into work: the first half
+   of CacheModule.  It runs for every module ahead of the compiles
+   when the import graph has a cycle, so that a member finds its
+   partner's header. *)
 PROCEDURE CacheGen (i: I64) : BOOL RAISES ValueRange, IndexError, Io.IOError =
 VAR
   self, path, src, nm : UTF ;
@@ -2823,9 +2870,10 @@ BEGIN
   RETURN TRUE
 END CacheGen ;
 
-(* an import cycle: every uncached module's header first (CacheGen) --
-   a clean build failed on a partner's missing header, a second one
-   passed on the first one's leftovers (2026-10-22) *)
+(* CacheGenAll serves an import cycle: every uncached module's header
+   comes first (CacheGen).  A clean build failed on a partner's missing
+   header, and a second one passed on the first one's leftovers
+   (2026-10-22). *)
 PROCEDURE CacheGenAll () : BOOL RAISES ValueRange, IndexError, Io.IOError =
 VAR i : I64 ;
 BEGIN
@@ -2847,7 +2895,8 @@ BEGIN
   nm := order[i] ;
   dir := ModDir (i) ;
   IF CacheHas (i) THEN RETURN TRUE END ;
-  (* generated already when the graph has a cycle (CacheGenAll) *)
+  (* The module is generated already when the graph has a cycle
+     (CacheGenAll). *)
   IF NOT importCycle THEN
     IF NOT CacheGen (i) THEN RETURN FALSE END
   END ;
@@ -2886,12 +2935,13 @@ BEGIN
   RETURN TRUE
 END CacheModule ;
 
-(* THE RUNTIME, compiled once per key into rt-KEY/.  Its four sources
-   (m9rt and the three shims the flagless link carries, AddRuntime);
-   the TLS shim is OpenSSL and does not build under mingw, so not on
-   Windows, as there.  Answers the directory, or empty when there are
-   no runtime sources to compile -- an installed compiler, whose
-   archive the link names as the flagless link does. *)
+(* CacheRuntime compiles THE RUNTIME once per key into rt-KEY/.  It
+   has four sources (m9rt and the three shims the flagless link
+   carries, AddRuntime).  The TLS shim is OpenSSL and does not build
+   under mingw, so it is left out on Windows, as there.  CacheRuntime
+   answers the directory, or empty when there are no runtime sources
+   to compile: an installed compiler, whose archive the link names as
+   the flagless link does. *)
 PROCEDURE RtSource (i: I64) : UTF =
 BEGIN
   CASE i OF
@@ -2908,27 +2958,28 @@ BEGIN
   RETURN Io.Exists (Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))))
 END RtWanted ;
 
-(* where the runtime of this key is cached: rt-KEY, or rtpic-KEY for
-   --cell, whose key also covers the session host's source *)
+(* RtCacheDir answers where the runtime of this key is cached: rt-KEY,
+   or rtpic-KEY for --cell, whose key also covers the session host's
+   source. *)
 PROCEDURE RtCacheDir (RO rt: UTF) : UTF RAISES ValueRange =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   found : BOOL ;
   i : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, ident) ;
-  DynUtf.Append (d, TryRead (Cat (rt, '/m9rt.h'), found)) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, ident) ;
+  DynStr.Append (d, TryRead (Cat (rt, '/m9rt.h'), found)) ;
   FOR i := 0 TO 3 DO
     IF RtWanted (rt, i) THEN
-      DynUtf.Append (d, TryRead (Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))), found))
+      DynStr.Append (d, TryRead (Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))), found))
     END
   END ;
   IF doCell THEN
-    DynUtf.Append (d, TryRead (Cat (rt, '/m9session.c'), found)) ;
-    RETURN Join (cacheRoot, Cat ('rtpic-', Hash (DynUtf.ViewIn (pool, d))))
+    DynStr.Append (d, TryRead (Cat (rt, '/m9session.c'), found)) ;
+    RETURN Join (cacheRoot, Cat ('rtpic-', Hash (DynStr.ViewIn (pool, d))))
   END ;
-  RETURN Join (cacheRoot, Cat ('rt-', Hash (DynUtf.ViewIn (pool, d))))
+  RETURN Join (cacheRoot, Cat ('rt-', Hash (DynStr.ViewIn (pool, d))))
 END RtCacheDir ;
 
 PROCEDURE CacheRuntime (RO KEPT rt: UTF ; VAR ok: BOOL) : UTF
@@ -2971,9 +3022,10 @@ BEGIN
   RETURN dir
 END CacheRuntime ;
 
-(* --cell's runtime: one shared object of the runtime's objects and the
-   system libraries they need, loaded first; and the session host, a
-   plain C program that loads the rest (runtime/m9session.c) *)
+(* CacheSession builds --cell's runtime: one shared object of the
+   runtime's objects and the system libraries they need, loaded first;
+   and the session host, a plain C program that loads the rest
+   (runtime/m9session.c). *)
 PROCEDURE CacheSession (RO KEPT rt: UTF ; RO dir: UTF) : BOOL
   RAISES ValueRange, Io.IOError =
 VAR
@@ -2988,10 +3040,11 @@ BEGIN
       IF RtWanted (rt, i) THEN Word (Join (dir, Suffix (RtSource (i), '.o'))) END
     END ;
     SystemLibs () ;
-    (* AND libm KEPT: SystemLibs links it --as-needed, the runtime calls
-       nothing in it, and so the session never loaded it -- libMath.so
-       then failed on `undefined symbol: exp' (2026-10-04).  Loaded with
-       the runtime, globally, it answers every module after. *)
+    (* And libm is KEPT: SystemLibs links it --as-needed, the runtime
+       calls nothing in it, and so the session never loaded it.
+       libMath.so then failed on `undefined symbol: exp' (2026-10-04).
+       Loaded with the runtime, globally, it answers every module
+       after. *)
     IF NOT macos THEN
       Word ('-Wl,--no-as-needed') ;
       Word ('-lm')
@@ -3029,22 +3082,23 @@ BEGIN
   RETURN TRUE
 END CacheSession ;
 
-(* WHAT THE SESSION LOADS, one line each, fields by tab: the host; the
-   runtime; every module of the closure in dependency order; and the
-   cell -- STATE with its init symbol, or PROGRAM with the renamed main.
-   The kernel sends LOAD for what is not loaded yet, then INIT or RUN. *)
+(* CellLine writes WHAT THE SESSION LOADS, one line each, fields by
+   tab: the host; the runtime; every module of the closure in
+   dependency order; and the cell, STATE with its init symbol or
+   PROGRAM with the renamed main.  The kernel sends LOAD for what is
+   not loaded yet, then INIT or RUN. *)
 PROCEDURE CellLine (RO a, b, c: UTF) =
-VAR d : PTR DynUtf.DString IN pool ;
+VAR d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, a) ;
-  DynUtf.AppendChar (d, 09C) ;
-  DynUtf.Append (d, b) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, a) ;
+  DynStr.AppendChar (d, 09C) ;
+  DynStr.Append (d, b) ;
   IF Text.BLen (c) > 0 THEN
-    DynUtf.AppendChar (d, 09C) ;
-    DynUtf.Append (d, c)
+    DynStr.AppendChar (d, 09C) ;
+    DynStr.Append (d, c)
   END ;
-  Io.WriteLine (DynUtf.ViewIn (pool, d))
+  Io.WriteLine (DynStr.ViewIn (pool, d))
 END CellLine ;
 
 PROCEDURE CellReport () RAISES ValueRange, IndexError =
@@ -3064,7 +3118,8 @@ BEGIN
   IF cellProgram THEN
     CellLine ('PROGRAM', cellPath, 'm9_cell_main')
   ELSE
-    (* the initialiser under the generation's prefix, when it has one *)
+    (* The initialiser goes under the generation's prefix, when it has
+       one. *)
     IF Text.BLen (PrefixOf (modName)) > 0 THEN
       CellLine ('STATE', cellPath, Suffix (PrefixOf (modName), '_m9init'))
     ELSE
@@ -3073,11 +3128,12 @@ BEGIN
   END
 END CellReport ;
 
-(* the cell: every module of its closure as a shared object, the runtime
-   and the host, then the cell itself -- a state cell where a module of
-   its key would be (modpic/NAME-KEY/, header beside it), so that a later
-   cell importing it loads THIS object and not a second copy; a program
-   cell into cells/NAME-KEY/, its main renamed m9_cell_main *)
+(* CellBuild builds the cell: every module of its closure as a shared
+   object, the runtime and the host, then the cell itself.  A state
+   cell goes where a module of its key would be (modpic/NAME-KEY/,
+   header beside it), so that a later cell importing it loads THIS
+   object and not a second copy.  A program cell goes into
+   cells/NAME-KEY/, its main renamed m9_cell_main. *)
 PROCEDURE CellBuild (RO name: UTF) : BOOL
   RAISES ValueRange, IndexError, Io.IOError =
 VAR
@@ -3138,10 +3194,10 @@ BEGIN
   RETURN TRUE
 END CellBuild ;
 
-(* the program: every module of the closure into the cache, then the
-   program's own C -- which the caller has just written into the
-   scratch directory -- compiled and linked against them, and renamed
-   to its key *)
+(* RunBuild builds the program: every module of the closure into the
+   cache, then the program's own C, compiled and linked against them,
+   and renamed to its key.  The caller has just written that C into
+   the scratch directory. *)
 PROCEDURE RunBuild (RO name: UTF) : BOOL
   RAISES ValueRange, IndexError, Io.IOError =
 VAR
@@ -3197,11 +3253,12 @@ BEGIN
   RETURN TRUE
 END RunBuild ;
 
-(* parse text that has already been read; NONE when it did not parse,
-   having said why.  Split from ParseFile because the search path
-   reads a candidate to find out whether it exists, and reading it
-   twice would be two answers about one file. *)
-(* the document, and the coverage line that goes with it.
+(* ParseText parses text that has already been read; it answers NONE
+   when it did not parse, having said why.  It is split from ParseFile
+   because the search path reads a candidate to find out whether it
+   exists, and a second read would give two answers about one file. *)
+(* DocText answers the document, and the coverage line that goes with
+   it.
 
    MEASURED AND REPORTED, NEVER GATED: a threshold on documentation
    makes `(* obvious *)` a rational move, so this prints the way
@@ -3215,29 +3272,29 @@ PROCEDURE DocText (root: PTR Ast.Node ; RO name: UTF) : UTF
 VAR
   st : Doc.Stats ;
   txt : UTF ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
 BEGIN
   txt := Doc.Text (pool, root, name, st) ;
   IF verbose THEN
-    (* ONE LINE, and shaped so a gate can add it up: docdiff sums
-       these across the library rather than recomputing what the
-       tool already measured. *)
-    d := DynUtf.New (pool) ;
-    DynUtf.Append (d, 'doc ') ;
-    DynUtf.Append (d, name) ;
-    DynUtf.Append (d, ' procs ') ;
-    DynUtf.AppendI64 (d, st.procsDoc) ;
-    DynUtf.AppendChar (d, '/') ;
-    DynUtf.AppendI64 (d, st.procs) ;
-    DynUtf.Append (d, ' others ') ;
-    DynUtf.AppendI64 (d, st.othersDoc) ;
-    DynUtf.AppendChar (d, '/') ;
-    DynUtf.AppendI64 (d, st.others) ;
-    DynUtf.Append (d, ' paramlines ') ;
-    DynUtf.AppendI64 (d, st.paramsDoc) ;
-    DynUtf.Append (d, ' drift ') ;
-    DynUtf.AppendI64 (d, st.unknownParam) ;
-    Io.ErrLine (DynUtf.ViewIn (pool, d))
+    (* It is ONE LINE, shaped so a gate can add it up: docdiff sums
+       these across the library rather than recomputing what the tool
+       already measured. *)
+    d := DynStr.New (pool) ;
+    DynStr.Append (d, 'doc ') ;
+    DynStr.Append (d, name) ;
+    DynStr.Append (d, ' procs ') ;
+    DynStr.AppendI64 (d, st.procsDoc) ;
+    DynStr.AppendChar (d, '/') ;
+    DynStr.AppendI64 (d, st.procs) ;
+    DynStr.Append (d, ' others ') ;
+    DynStr.AppendI64 (d, st.othersDoc) ;
+    DynStr.AppendChar (d, '/') ;
+    DynStr.AppendI64 (d, st.others) ;
+    DynStr.Append (d, ' paramlines ') ;
+    DynStr.AppendI64 (d, st.paramsDoc) ;
+    DynStr.Append (d, ' drift ') ;
+    DynStr.AppendI64 (d, st.unknownParam) ;
+    Io.ErrLine (DynStr.ViewIn (pool, d))
   END ;
   IF st.unknownParam > 0 THEN
     DiagN ('m9c: ', st.unknownParam,
@@ -3248,8 +3305,9 @@ BEGIN
   RETURN txt
 END DocText ;
 
-(* the same declarations as data.  A fresh Stats, so that the counts
-   -v reports come from the page once and not twice. *)
+(* JsonText answers the same declarations as data.  It uses a fresh
+   Stats, so that the counts -v reports come from the page once and
+   not twice. *)
 PROCEDURE JsonText (root: PTR Ast.Node ; RO name: UTF) : UTF
   RAISES IndexError =
 VAR st : Doc.Stats ;
@@ -3260,14 +3318,15 @@ BEGIN
   RETURN Doc.Json (pool, root, name, st)
 END JsonText ;
 
-(* the review page, with the checker's own counts handed to it.  The
+(* ReviewText answers the review page, with the checker's own counts
+   handed to it.  The
    page module is a client of the tree and does not import Sem; this
    is where the two meet, as a driver is where Delim meets Zip. *)
 PROCEDURE ReviewText (root: PTR Ast.Node ; RO name: UTF) : UTF =
 VAR
   st : SLICE OF Review.Stat ;
   tw, sc, ss, ad : SLICE OF UTF ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, j, n : I64 ;
 BEGIN
   n := Sem.StatKinds ;
@@ -3276,17 +3335,17 @@ BEGIN
     st[i].name := Sem.StatName (i) ;
     st[i].checked := Sem.StatChecked (i) ;
     st[i].skipped := Sem.StatSkipped (i) ;
-    (* the lines of the first sites passed over, as the page prints
-       them; `...' when the checker met more than it kept *)
-    d := DynUtf.New (pool) ;
+    (* These are the lines of the first sites passed over, as the page
+       prints them; `...' when the checker met more than it kept. *)
+    d := DynStr.New (pool) ;
     FOR j := 0 TO Sem.StatLines (i) - 1 DO
-      IF j > 0 THEN DynUtf.Append (d, ', ') END ;
-      DynUtf.AppendI64 (d, Sem.StatLine (i, j))
+      IF j > 0 THEN DynStr.Append (d, ', ') END ;
+      DynStr.AppendI64 (d, Sem.StatLine (i, j))
     END ;
     IF Sem.StatSkipped (i) > Sem.StatLines (i) THEN
-      DynUtf.Append (d, ', ...')
+      DynStr.Append (d, ', ...')
     END ;
-    st[i].lines := DynUtf.ViewIn (pool, d)
+    st[i].lines := DynStr.ViewIn (pool, d)
   END ;
   tw := NEW (pool, UTF, Sem.ThreadWrites ()) ;
   FOR i := 0 TO LEN (tw) - 1 DO tw[i] := Sem.ThreadWrite (i) END ;
@@ -3310,11 +3369,12 @@ BEGIN
   root := Parse.File (pool, p) ;
   (* disarm, never clear: Collect (FALSE) keeps what it gathered, so
      the main file's comments survive while every dependency parsed
-     after this goes past uncollected.  Armed by the caller, because
+     after this goes past uncollected.  The caller arms it, because
      only the caller knows which file is the main one. *)
   Lex.Collect (FALSE) ;
   IF p.nerr > 0 THEN
-    (* each error with its line and column, the way the generator's
+    (* Each error is printed with its line and column, the way the
+       generator's
        have been printed since 2026-08-29.  A count alone was the
        parser's half of the same defect and cost the same bisects:
        one `<>` in a file gave `981 parse errors` and no line. *)
@@ -3343,17 +3403,17 @@ BEGIN
   RETURN ParseText (UTF (pool, Io.ReadFileUtf (path)), path)
 END ParseFile ;
 
-(* The two consumers want different closures, and conflating them is
-   what put Lex, Print and Text into M9c.h the first time this ran.
+(* The two consumers want different closures, and a conflation of the
+   two put Lex, Print and Text into M9c.h the first time this ran.
 
    The CHECKER wants the transitive closure: a cross-module name that
    has not been loaded is indistinguishable from one that does not
    exist, and that is true however far away the name lives.
 
-   The GENERATOR wants only what this module imports DIRECTLY, because
-   what it does with a registered unit is emit an #include for it, and
-   a header that includes its dependencies' dependencies is describing
-   somebody else's interface.                                        *)
+   The GENERATOR wants only what this module imports DIRECTLY,
+   because with a registered unit it emits an #include for it, and a
+   header that includes its dependencies' dependencies is describing
+   somebody else's interface. *)
 PROCEDURE Absorb (VAR root: PTR Ast.Node ; forGen: BOOL) =
 VAR i : I64 ;
 BEGIN
@@ -3381,7 +3441,7 @@ BEGIN
   END
 END Absorb ;
 
-(* remember a root so its own imports can be walked later *)
+(* Keep remembers a root so its own imports can be walked later. *)
 PROCEDURE Keep (KEPT root: PTR Ast.Node ; RO KEPT name: UTF ; far: BOOL) =
 VAR
   nb : SLICE OF Ast.Kid ;
@@ -3408,8 +3468,8 @@ BEGIN
   ndeps := ndeps + 1
 END Keep ;
 
-(* --no-unsafe: the language wall of the sandbox story
-   (docs/tutorial-plan.md).  A unit from a TRUSTED directory --
+(* ScanUnsafe enforces --no-unsafe, the language wall of the sandbox
+   story (docs/tutorial-plan.md).  A unit from a TRUSTED directory --
    $M9LIBRARY or the installed library (LibPlace) -- may be UNSAFE or
    FOR "C":
    that is the shipped library's own audited foreign boundary.  A
@@ -3446,7 +3506,8 @@ BEGIN
   END
 END ScanUnsafe ;
 
-(* the source of a module named by an IMPORT, or a diagnosis *)
+(* Fetch answers the source of a module named by an IMPORT, or a
+   diagnosis. *)
 PROCEDURE Fetch (RO name: UTF ; VAR path: UTF ; VAR ok: BOOL ;
                  VAR trusted: BOOL) : UTF =
 BEGIN
@@ -3461,12 +3522,13 @@ BEGIN
   failed := TRUE
 END Missing ;
 
-(* directly imported: registered for the generator too.  No recursion
-   here, deliberately -- every direct import must be registered before
-   any indirect one is even looked at, or a module reached first
-   through a dependency would be marked loaded and then skipped when
-   the main module asks for it by name, and its #include would go
-   missing.  Two passes cost one walk and remove that whole class. *)
+(* LoadDirect loads a direct import, registered for the generator
+   too.  It does not recurse, deliberately: every direct import must
+   be registered before any indirect one is even looked at.  Otherwise
+   a module reached first through a dependency would be marked loaded
+   and then skipped when the main module asks for it by name, and its
+   #include would go missing.  Two passes cost one walk and remove
+   that whole class. *)
 PROCEDURE LoadDirect (RO KEPT name: UTF) RAISES ValueRange =
 VAR
   path, src : UTF ;
@@ -3488,7 +3550,8 @@ END LoadDirect ;
 
 PROCEDURE LoadIndirect (RO KEPT name: UTF) RAISES ValueRange ;
 
-(* every module an import walk reaches.  The name is marked BEFORE the
+(* WalkImports loads every module an import walk reaches.  The name is
+   marked BEFORE the
    recursion, which is what makes a cycle terminate instead of
    recurring: M9 has no rule against mutual imports and the compiler
    should not acquire one by crashing. *)
@@ -3502,7 +3565,7 @@ BEGIN
         IF u.kids[j] IS SOME imp THEN
           (* NImportList only: a FROM names a foreign unit declared
              inside some module, so there is no file to find and
-             looking for one would invent it *)
+             a search for one would invent it. *)
           IF imp.kind = Ast.NImportList THEN
             IF imp.kids[0] IS SOME ids THEN
               FOR k := 0 TO ids.nkids - 1 DO
@@ -3527,9 +3590,9 @@ BEGIN
   END
 END WalkImports ;
 
-(* reached only through another module: the checker needs it, the
-   generated header does not name it.  Post-order, so its own
-   dependencies are registered before it is. *)
+(* LoadIndirect loads a module reached only through another module:
+   the checker needs it, the generated header does not name it.  It is
+   post-order, so its own dependencies are registered before it is. *)
 PROCEDURE LoadIndirect (RO KEPT name: UTF) RAISES ValueRange =
 VAR
   path, src : UTF ;
@@ -3543,18 +3606,19 @@ BEGIN
     ScanUnsafe (root, path, trusted) ;
     WalkImports (root, FALSE, name) ;
     Absorb (root, FALSE) ;
-    (* kept, so LinkWords sees its FOR "C" units: a LINK reached only
-       through another module's IMPLEMENTATION (NbCells -> Parquet ->
-       czstd) left its library off the line until 2026-10-10.  FAR:
-       its words go on only when their libraries are there *)
+    (* It is kept, so LinkWords sees its FOR "C" units: a LINK reached
+       only through another module's IMPLEMENTATION (NbCells -> Parquet
+       -> czstd) left its library off the line until 2026-10-10.  It is
+       FAR: its words go on only when their libraries are there. *)
     Keep (root, name, TRUE)
   END
 END LoadIndirect ;
 
-(* A dependency named on the command line: still supported, and it
-   wins over the search path, because a path someone typed is a
-   statement about which file they meant -- and about the ORDER,
-   which is why this does not recurse.  Post-order resolution would
+(* LoadDep loads a dependency named on the command line.  That is
+   still supported, and it wins over the search path, because a path
+   someone typed is a statement about which file they meant, and about
+   the ORDER, which is why this does not recurse.  Post-order
+   resolution would
    register a named module's own imports ahead of it and reshuffle
    the generated includes; a fully-named command line must still
    produce the same bytes it always did.  Its root is kept so that
@@ -3570,7 +3634,8 @@ BEGIN
   END
 END LoadDep ;
 
-(* What the command line did not name.  Two passes, and the order is
+(* FillGaps loads what the command line did not name.  It takes two
+   passes, and the order is
    the point: everything the main module imports directly is
    registered first, so the generated header includes exactly those;
    only then is the rest of the closure pulled in for the checker.
@@ -3594,16 +3659,18 @@ BEGIN
   BuildOrder ()
 END FillGaps ;
 
-(* the diagnostics, then a refusal.  A compiler that translates what
-   it knows to be wrong is a translator; this is the line between the
-   two, and until now m9c was on the wrong side of it. *)
-(* a checker message, `LINE:COL ctx: msg`, with lineShift taken off
-   its line: an expression cell's wrapper is not the reader's text *)
+(* Report prints the diagnostics, then a refusal.  A compiler that
+   translates what it knows to be wrong is a translator; this is the
+   line between the two, and until now m9c was on the wrong side of
+   it. *)
+(* Unshift answers a checker message, `LINE:COL ctx: msg`, with
+   lineShift taken off its line: an expression cell's wrapper is not
+   the reader's text. *)
 PROCEDURE Unshift (RO m: UTF) : UTF =
 VAR
   i, n : I64 ;
   scratch : POOL ;
-  d : PTR DynUtf.DString IN scratch ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
   IF lineShift = 0 THEN RETURN m END ;
   i := 0 ;
@@ -3613,22 +3680,23 @@ BEGIN
     i := i + 1
   END ;
   IF i = 0 OR i >= Text.BLen (m) OR B (m, i) # ORD (':') THEN RETURN m END ;
-  d := DynUtf.New (scratch) ;
+  d := DynStr.New (scratch) ;
   IF n > lineShift THEN
-    DynUtf.AppendI64 (d, n - lineShift) ;
-    DynUtf.Append (d, SLICE (m, i, Text.BLen (m) - i))
+    DynStr.AppendI64 (d, n - lineShift) ;
+    DynStr.Append (d, SLICE (m, i, Text.BLen (m) - i))
   ELSE
-    (* on the wrapper's own line: a message about the statement as a
-       whole, which is the cell's expression from its start *)
+    (* A message on the wrapper's own line is about the statement as a
+       whole, which is the cell's expression from its start. *)
     i := i + 1 ;
     WHILE i < Text.BLen (m) AND B (m, i) >= ORD ('0') AND B (m, i) <= ORD ('9') DO i := i + 1 END ;
-    DynUtf.Append (d, '1:1') ;
-    DynUtf.Append (d, SLICE (m, i, Text.BLen (m) - i))
+    DynStr.Append (d, '1:1') ;
+    DynStr.Append (d, SLICE (m, i, Text.BLen (m) - i))
   END ;
-  RETURN DynUtf.View (d)
+  RETURN DynStr.View (d)
 END Unshift ;
 
-(* does hay hold needle?  Small strings, a naive scan *)
+(* Holds asks whether hay holds needle.  It does a naive scan over
+   small strings. *)
 PROCEDURE Holds (RO hay, needle: UTF) : BOOL =
 VAR i, j : I64 ;
 BEGIN
@@ -3640,8 +3708,9 @@ BEGIN
   RETURN FALSE
 END Holds ;
 
-(* a checker diagnostic, `LINE:COL CTX: MSG', in the FILE:LINE:COL:
-   shape the parser's and every tool's: `X.m9:12:14: X.F: MSG'.  The
+(* Located puts a checker diagnostic, `LINE:COL CTX: MSG', in the
+   FILE:LINE:COL: shape the parser's and every tool's: `X.m9:12:14:
+   X.F: MSG'.  The
    checker's own text stays as it is -- the twins compare it (semdiff,
    probediff) -- and only what m9c prints carries the file (Alex,
    2026-10-22, the review's tier 3: checker messages had no file) *)
@@ -3666,8 +3735,8 @@ BEGIN
   FOR i := 0 TO Sem.ErrCount () - 1 DO
     Io.ErrLine (Located (main, Unshift (Sem.ErrAt (i))))
   END ;
-  (* the region judgement's shadow findings, under M9_REGIONS=1
-     (docs/region-plan.md): listed, never a refusal *)
+  (* The region judgement's shadow findings, under M9_REGIONS=1
+     (docs/region-plan.md), are listed, never a refusal. *)
   FOR i := 0 TO Sem.RegionCount () - 1 DO
     Io.ErrLine (Unshift (Sem.RegionAt (i)))
   END ;
@@ -3688,14 +3757,14 @@ VAR
   tk, prev, cur : Lex.Token ;
   out, path, k : UTF ;
   ok, trusted, afterDot : BOOL ;
-  seen : PTR DynUtf.DString IN pool ;
+  seen : PTR DynStr.DString IN pool ;
 BEGIN
   out := '' ;
-  seen := DynUtf.New (pool) ;
-  DynUtf.Append (seen, ' ') ;
+  seen := DynStr.New (pool) ;
+  DynStr.Append (seen, ' ') ;
   IF withShow THEN
     out := 'IMPORT NbShow ; ' ;
-    DynUtf.Append (seen, 'NbShow ')
+    DynStr.Append (seen, 'NbShow ')
   END ;
   Lex.Init (lx, expr) ;
   afterDot := FALSE ;
@@ -3707,8 +3776,8 @@ BEGIN
     Lex.Next (lx, cur) ;
     IF Text.Eq (Lex.KindName (prev.kind), 'Ident') AND NOT afterDot AND
        Text.Eq (Lex.KindName (cur.kind), 'Dot') THEN
-      IF NOT Holds (DynUtf.ViewIn (pool, seen), ' ' + prev.text + ' ') THEN
-        DynUtf.Append (seen, prev.text + ' ') ;
+      IF NOT Holds (DynStr.ViewIn (pool, seen), ' ' + prev.text + ' ') THEN
+        DynStr.Append (seen, prev.text + ' ') ;
         tk := prev ;
         k := FindModule (tk.text, path, ok, trusted) ;
         IF ok THEN out := out + 'IMPORT ' + tk.text + ' ; ' END
@@ -3719,8 +3788,8 @@ BEGIN
   RETURN out
 END ShowImports ;
 
-(* the NbShow call for a type, as the text before and after the
-   expression; FALSE for a type nothing shows *)
+(* ShowCall answers the NbShow call for a type, as the text before and
+   after the expression, or FALSE for a type nothing shows. *)
 PROCEDURE ShowCall (RO ty: UTF ; VAR pre, post: UTF) : BOOL =
 BEGIN
   post := ')' ;
@@ -3760,8 +3829,9 @@ BEGIN
   RETURN TRUE
 END ShowCall ;
 
-(* the program's handlers and the imports their names need: one arm
-   for each exception the expression raises, each saying so.  A
+(* ShowHandlers answers the program's handlers and the imports their
+   names need: one arm for each exception the expression raises, each
+   saying so.  A
    program body must handle what it raises, and M9 has no catch-all
    (report par 5), so the checker's list is the only honest one. *)
 PROCEDURE ShowHandlers (RO raises: UTF ; VAR imports: UTF) : UTF =
@@ -3793,9 +3863,10 @@ BEGIN
   RETURN out
 END ShowHandlers ;
 
-(* the expression's type, from a child m9c run with this command
-   line and --type-of in place of --show ... --run/--cell: the checker
-   keeps module state and checks one file a process *)
+(* ShowProbe answers the expression's type, from a child m9c run with
+   this command line and --type-of in place of --show ...
+   --run/--cell.  The checker keeps module state and checks one file a
+   process. *)
 PROCEDURE ShowProbe (VAR raises: UTF) : UTF RAISES ValueRange =
 VAR
   self, a, ty : UTF ;
@@ -3823,7 +3894,8 @@ BEGIN
     failed := TRUE ;
     Io.Halt (1)
   END ;
-  (* two lines: the type, then the exceptions it raises *)
+  (* The answer has two lines: the type, then the exceptions it
+     raises. *)
   ty := r.out ;
   WHILE Text.BLen (ty) > 0 AND (B (ty, Text.BLen (ty) - 1) = 10 OR B (ty, Text.BLen (ty) - 1) = 13) DO
     ty := SLICE (ty, 0, Text.BLen (ty) - 1)
@@ -3853,13 +3925,17 @@ VAR
   showExpr, showType, showPre, showPost, showRaises, showImps, showArms : UTF ;
 
 BEGIN
-  (* first, because --help and every default below ask where this
-     compiler is *)
+  (* STR is the UTF-8 type (the switch, docs/utf8-stage4-plan.md 4d;
+     Alex, 2026-10-31: in 0.26.0).  --utf-str is accepted and changes
+     nothing now. *)
+  utfStr := TRUE ;
+    (* Locate runs first, because --help and every default below ask
+       where this compiler is. *)
   Locate () ;
   IF Io.ArgCount () < 2 THEN
-    (* no arguments is a mistake and exits 1; asking for help is not
-       and exits 0.  Conflating the two is why scripts check output
-       instead of status. *)
+    (* A call with no arguments is a mistake and exits 1; a request for
+       help is not and exits 0.  A conflation of the two is why scripts
+       check output instead of status. *)
     Io.WriteLine ('usage: m9c FILE.m9 [DEP.m9 ...]') ;
     Io.WriteLine ("try 'm9c --help'") ;
     failed := TRUE
@@ -3869,10 +3945,10 @@ BEGIN
     ScanArgs () ;
     (* a refused argument has been said; nothing after it is meant *)
     IF failed THEN Io.Halt (1) END ;
-    (* --doc writes documentation and nothing else.  Combining it
-       with a flag that produces an object or a program is not a
-       thing to guess at -- one of the two was meant -- so it is
-       refused rather than silently favoured. *)
+    (* --doc writes documentation and nothing else.  A combination
+       with a flag that produces an object or a program is not a thing
+       to guess at: one of the two was meant.  So it is refused rather
+       than silently favoured. *)
     IF doDoc AND (doCompile OR doLink OR Text.BLen (lib) > 0) THEN
       Io.ErrLine ('m9c: --doc writes documentation, not objects;') ;
       Io.ErrLine ('  it cannot be combined with -c, -o, --ar or --so') ;
@@ -3925,7 +4001,8 @@ BEGIN
     name := BaseName (main) ;
     modName := name ;
 
-    (* -I first (leftmost wins), then $M9LIBRARY, then the main
+    (* The order is -I first (leftmost wins), then $M9LIBRARY, then the
+       main
        file's own directory: a module's neighbours are almost always
        its imports, which is why `m9c corpus/M9c.m9` needs no -I *)
     DirAddPath (Io.EnvUtf (pool, 'M9LIBRARY'), TRUE) ;
@@ -3935,13 +4012,14 @@ BEGIN
        directory the imports sit in, could not find them while
        `m9c ... ./Top.m9` and `-I.` both could.  The rule says "the
        directory FILE.m9 came from", and for a bare name that is the
-       current one; saying so here rather than in DirOf keeps
+       current one.  A rule stated here rather than in DirOf keeps
        DirOf's own answer (empty means no directory) true. *)
     IF Text.BLen (DirOf (main)) = 0 THEN DirAdd ('.', FALSE)
     ELSE DirAdd (DirOf (main), FALSE) END ;
-    (* Last, and only as a fallback: where the standard modules are
-       installed -- beside this compiler when it has a library of its
-       own, the package's place otherwise (LibPlace).  An installed
+    (* Last, and only as a fallback, comes the place where the standard
+       modules are installed: beside this compiler when it has a
+       library of its own, the package's place otherwise (LibPlace).
+       An installed
        compiler that cannot find its own library without the user
        exporting a variable is a compiler nobody installs twice.  In
        a source tree the directory does not exist and this costs one
@@ -3953,9 +4031,9 @@ BEGIN
        library set, and the argument can be a module rather than a
        path -- which is what a module compiler ought to accept. *)
     mainSrc := TryRead (main, found) ;
-    (* there, and not text: said once by TryRead, and nothing to search
-       for -- the path search read it again and then said `cannot find'
-       (2026-10-10) *)
+    (* A file that is there, and not text, was said once by TryRead,
+       and there is nothing to search for: the path search read it
+       again and then said `cannot find' (2026-10-10). *)
     IF NOT found AND readNotText THEN Io.Halt (1) END ;
     (* a PATH that is not there is not there: `m9c --check
        no/such/dir/Text.m9' checked the library's Text and exited 0
@@ -4030,17 +4108,16 @@ BEGIN
       i := i + 1
     END ;
 
-    (* armed for the MAIN file's parse and no other.  ParseText
+    (* It is armed for the MAIN file's parse and no other.  ParseText
        disarms as it returns, so the dependencies FillGaps pulls in
        below do not add their comments to this module's. *)
     IF doDoc THEN Lex.Collect (TRUE) END ;
     IF ParseText (mainSrc, main) IS SOME root THEN
       mainRoot := SOME (root) ;
       ScanUnsafe (root, main, FALSE) ;
-      (* whatever the command line did not name, the search path
-         finds: IMPORT names a module and m9c can now translate that
-         to a file, which was the last job a build system was doing
-         here *)
+      (* The search path finds whatever the command line did not name:
+         IMPORT names a module and m9c can now translate that to a
+         file, which was the last job a build system was doing here. *)
       FillGaps (root) ;
       (* every module that could not be found is reported, and then
          this stops: without a module's source everything after it is
@@ -4074,8 +4151,8 @@ BEGIN
          IT.  m9c has always known which modules it needs -- it
          resolved, read and parsed them a moment ago -- and has
          always been willing to NAME the command that builds a
-         missing one.  Running it is the same knowledge acted on.
-         Ordering these by hand in a build script has been wrong
+         missing one.  A run of it acts on the same knowledge.  A
+         hand-written order in a build script has been wrong
          repeatedly, and a stale object is indistinguishable from a
          real difference until something like -flto happens to
          notice. *)
@@ -4112,8 +4189,8 @@ BEGIN
       (* --doc STILL CHECKS, and stops here.  Documentation for a
          program the checker rejects is a lie about a program that
          does not exist, and everything above this line is what makes
-         it true.  What it does NOT do is generate: no C, no object,
-         no cc, and the header is not this module's business. *)
+         it true.  It does NOT generate: no C, no object, no cc, and
+         the header is not this module's business. *)
       IF doDoc THEN
         Io.WriteFile (Suffix (name, '.md'), DocText (root, name)) ;
         IF doJson THEN
@@ -4133,16 +4210,17 @@ BEGIN
       irEnv := Io.EnvUtf (pool, 'M9_IRCHECK') ;
       Gen.SetIrCheck (Text.BLen (irEnv) = 1 AND B (irEnv, 0) = ORD ('1')) ;
       Gen.Emit (name) ;
-      (* the IR lowering's first step: where the tree and the emitter
-         disagree on what can raise (docs/ir-plan.md), on stderr *)
+      (* The IR lowering's first step reports where the tree and the
+         emitter disagree on what can raise (docs/ir-plan.md), on
+         stderr. *)
       IF Text.BLen (Gen.IrReport ()) > 0 THEN
         Io.ErrLine (Cat ('m9c: ircheck ', Cat (name, ':'))) ;
         Io.ErrLine (Gen.IrReport ())
       END ;
       IF Gen.Errs () > 0 THEN
-        (* each error with its line, the way g1 always did on the
-           host side -- a count alone cost a bisect every time, and
-           then cost one inside the tutorial *)
+        (* Each error is printed with its line, the way g1 always did
+           on the host side.  A count alone cost a bisect every time,
+           and then cost one inside the tutorial. *)
         i := 0 ;
         WHILE i < Gen.Errs () AND i < 8 DO
           DiagN (Cat (ErrFile (Gen.ErrModAt (i), main), ':'), Gen.ErrLineAt (i), ': gen: ',
@@ -4152,14 +4230,14 @@ BEGIN
         DiagN ('m9c: ', Gen.Errs (), ' generator errors in ', main) ;
         failed := TRUE
       ELSIF doCheck THEN
-        (* the stop with empty hands: every diagnostic the build would
-           print has been printed, the exit code says whether the
-           program exists, and nothing appears on disk.  What an
-           editor asks. *)
+        (* This is the stop with empty hands: every diagnostic the
+           build would print has been printed, the exit code says
+           whether the program exists, and nothing appears on disk.
+           That is what an editor asks. *)
         IF doReview THEN
-          (* and what a REVIEWER asks: the checker and the generator
-             have both accepted the program, so the page may say
-             `proved' *)
+          (* This is what a REVIEWER asks: the checker and the
+             generator have both accepted the program, so the page may
+             say `proved'. *)
           Io.Write (ReviewText (root, name))
         END ;
         RETURN
@@ -4177,9 +4255,10 @@ BEGIN
         IF NOT doRun AND NOT doCell THEN
           StaleBeside (main, outDir, name, Gen.HText ())
         END ;
-        (* said under -v: a stale NAME.h beside a driver beats the fresh
-           one (a quoted include searches the including directory first),
-           and where the fresh one went is the first thing to know *)
+        (* This is said under -v: a stale NAME.h beside a driver beats
+           the fresh one (a quoted include searches the including
+           directory first).  The fresh one's place is the first thing
+           to know. *)
         IF verbose THEN
           Diag ('m9c: wrote ', Join (outDir, Suffix (name, '.h')),
                 Cat (' and ', Join (outDir, Suffix (name, '.c'))))

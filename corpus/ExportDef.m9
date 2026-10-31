@@ -1,12 +1,12 @@
 STATEFUL DEFINITION MODULE ExportDef ;
 
-(* An exporter of module variables (decision 28): an importer reads
-   and writes them as ExportDef.count, ExportDef.xs, ExportDef.box.
-   version is RO, which forbids writing THROUGH it and so restricts a
-   scalar not at all -- it is here to be read like any other export.
-   Show prints what THIS module sees, so the importer's writes are
-   seen to land in the same storage.  A gendiff fixture with
-   ExportUse; runtime/test/run.sh runs ExportUse. *)
+(* ExportDef exports module variables (decision 28).  An importer
+   reads and writes them as ExportDef.count, ExportDef.xs,
+   ExportDef.box.  version is RO, which forbids writing THROUGH it and
+   so restricts a scalar not at all.  It is here to be read like any
+   other export.  Show prints what THIS module sees, so the importer's
+   writes are seen to land in the same storage.  It is a gendiff
+   fixture with ExportUse; runtime/test/run.sh runs ExportUse. *)
 
 CONST Width = 4 ;      (* an importer's ARRAY ExportDef.Width OF F64 *)
 TYPE

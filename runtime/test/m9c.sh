@@ -1,11 +1,11 @@
 #!/bin/sh
-# m9c: the compiler as a PROGRAM, not a library.
+# This gate tests m9c: the compiler as a PROGRAM, not a library.
 #
-# Builds m9c from the generated toolchain, then has it compile a
-# handful of modules -- including Gen, which generates code, and M9c
-# itself -- and compares every byte against runtime/gen, which the
-# FPC host produced.  gendiff already proves the M9 generator agrees
-# with the oracle; this proves the same thing end to end, through
+# It builds m9c from the generated toolchain, then has it compile a
+# handful of modules, including Gen, which generates code, and M9c
+# itself.  It compares every byte against runtime/gen, which the FPC
+# host produced.  gendiff already proves the M9 generator agrees with
+# the oracle.  This gate proves the same thing end to end, through
 # argument handling, file reading, and file writing, in a process
 # with no FPC in it.
 set -e
@@ -15,20 +15,21 @@ G=../gen
 OUT=/tmp/m9c-out
 
 # runtime/gen is BOTH the source m9c is built from and the reference
-# every byte is compared against, so this gate must produce it rather
+# every byte is compared against.  So this gate must produce it rather
 # than find whatever an earlier run left behind.  A stale gen reports
-# DIVERGES against agreeing generators -- which is how this was
-# noticed, after Gen.m9 gained a case -- and a stale gen consistent
-# with a stale m9c built from it reports agreement that is not there.
-# Same hole bootstrap.sh had.  lib/gen.sh produces it (or proves by its
-# stamp that it is what the generator writes from these sources).
+# DIVERGES against agreeing generators (that is how this was noticed,
+# after Gen.m9 gained a case).  A stale gen consistent with a stale
+# m9c built from it reports agreement that is not there.  bootstrap.sh
+# had the same hole.  lib/gen.sh produces runtime/gen (or proves by
+# its stamp that it is what the generator writes from these sources).
 . ./lib/gen.sh
 
 M9CNEW=$(mktemp -d)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
-# replaced only when it differs: a gate in another lane running m9c keeps
-# its file, and --run's cache, whose key holds m9c's mtime, its entries
+# Replace m9c only when it differs.  So a gate in another lane running
+# m9c keeps its file, and --run's cache keeps its entries; that cache's
+# key holds m9c's mtime.
 if cmp -s "$M9CNEW/m9c" m9c; then rm -r "$M9CNEW"; else mv -f "$M9CNEW/m9c" m9c; rmdir "$M9CNEW"; fi
 
 M9C=$(pwd)/m9c
@@ -46,18 +47,18 @@ check () {                      # check MODULE [DEP ...]
 }
 
 check DynStr
-check Dict
-check Json DynStr
+check Dict Text
+check Json DynStr Text
 check Lex DynStr Text
 check Parse Ast Lex Text
-check Gen Ast DynUtf Text
-check Sem Ast DynUtf Print Text
+check Gen Ast DynStr Text
+check Sem Ast DynStr Print Text
 check Io DynStr
-check M9c Io Ast Parse Gen Sem DynUtf Doc Review Lex System Text
+check M9c Io Ast Parse Gen Sem DynStr Doc Review Lex System Text
 
-# usage and exit status are part of the tool, so they are checked too.
-# Asking for help SUCCEEDS; getting the usage because you gave no
-# arguments FAILS.  Conflating the two is why scripts end up parsing
+# Usage and exit status are part of the tool, so they are checked too.
+# A request for help SUCCEEDS.  The usage you get because you gave no
+# arguments FAILS.  Scripts that conflate the two end up parsing
 # output instead of reading status.
 if ./m9c >/dev/null 2>&1; then echo "FAIL: no-args should exit 1"; exit 1; fi
 if ./m9c /nonexistent.m9 >/dev/null 2>&1; then
@@ -73,12 +74,12 @@ echo "m9c: 9 modules compiled by M9 itself, byte-identical to the oracle"
 
 # THE FLAGLESS LINK OF A PROGRAM THAT MAKES AN Http REQUEST.  Http
 # binds the TLS shim from every request path, plain http included, and
-# the supplied line named neither tlsshim.c nor OpenSSL: a loopback
+# the supplied line named neither tlsshim.c nor OpenSSL.  A loopback
 # POST failed on four undefined tls_* against the installed 0.11.0
-# package and this tree alike (2026-09-28).  Shown able to fail with
-# the m9c of that day.  M9RUNTIME names the runtime because the work
-# directory is not a source tree; nothing after -- so the line is the
-# one a first-time user types.
+# package and this tree alike (2026-09-28).  The m9c of that day shows
+# the check able to fail.  M9RUNTIME names the runtime because the
+# work directory is not a source tree.  Nothing comes after --, so the
+# line is the one a first-time user types.
 LINK=/tmp/m9c-link
 RT=$(cd .. && pwd)
 rm -rf "$LINK"; mkdir -p "$LINK"
@@ -95,14 +96,14 @@ echo "m9c: a plain-http request program links flagless (tlsshim + OpenSSL suppli
 
 # A FOR "C" UNIT REACHED ONLY THROUGH ANOTHER MODULE'S IMPLEMENTATION
 # (2026-10-10).  Its LINK words go on the line only when the libraries
-# they name are on this machine: linkfar/FarLib binds m9nosuchlib,
-# which is on none, and FarUse reaches it only through FarMid -- the
-# Frame-and-NetCDF shape -- so it links and -v says the unit was left
-# out; FarDirect imports FarLib itself and must FAIL naming the library;
-# NbUse reaches Parquet (and libzstd, which is everywhere) only through
-# NbCells and must have zstd on its line.  Every gate machine has
-# netCDF, so this is the only check of the case where a library is
-# missing.
+# they name are on this machine.  linkfar/FarLib binds m9nosuchlib,
+# which is on none.  FarUse reaches it only through FarMid (the
+# Frame-and-NetCDF shape), so it links, and -v says the unit was left
+# out.  FarDirect imports FarLib itself and must FAIL naming the
+# library.  NbUse reaches Parquet (and libzstd, which is everywhere)
+# only through NbCells and must have zstd on its line.  Every gate
+# machine has netCDF, so this is the only check of the case where a
+# library is missing.
 FAR=/tmp/m9c-linkfar
 rm -rf "$FAR"; mkdir -p "$FAR"
 cp linkfar/*.m9 "$FAR/"
@@ -128,14 +129,14 @@ echo "m9c: a unit reached through an implementation links its library when it is
 
 # AN ARRAY TYPE EXPORTED WITH A CONST COUNT (2026-10-29).  An importer
 # read BndDef's `Vec = ARRAY N OF F64' with N looked up among ITS OWN
-# constants: none, and the generator said `array count form
-# unsupported'; one of the same name, and Vec silently had the
+# constants.  With none, the generator said `array count form
+# unsupported'.  With one of the same name, Vec silently had the
 # importer's length.  The checker spelled the same type `ARRAY N' read
 # whole and `ARRAY BndDef.N' through a record's field, and refused
 # the assignment of one to the other.  And a count over CONST names,
 # ARRAY 2 * N, was refused even at home.  BndUse holds every exported
-# form beside a CONST N of its own; BndClash/BndClash2 must be refused
-# by the checker, not by the C compiler.
+# form beside a CONST N of its own.  The checker, not the C compiler,
+# must refuse BndClash/BndClash2.
 BND=/tmp/m9c-arrbound
 rm -rf "$BND"; mkdir -p "$BND"
 cp arrbound/*.m9 "$BND/"
@@ -150,21 +151,22 @@ for p in BndClash BndClash2; do
   if ( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -o "$p" "$p.m9" >"$BND/$p.txt" 2>&1 ); then
     echo "FAIL: $p built: an importer's ARRAY N taken for BndDef's"; exit 1
   fi
-  # by value since 2026-10-30 (report M8): BndDef's 4 against this 9
+  # The message gives counts by value since 2026-10-30 (report M8):
+  # BndDef's 4 against this 9.
   grep -q "body: cannot assign ARRAY \(4 OF F64 to ARRAY 9\|8 OF I32 to ARRAY 18\) OF" "$BND/$p.txt" || {
     echo "FAIL: $p was not refused by the checker naming both counts"; cat "$BND/$p.txt"; exit 1; }
 done
 # ONE VALUE, ONE TYPE (2026-10-30, a port's report M8): ARRAY N with N
-# = 3, ARRAY 3 and ARRAY 2 + 1 are one type -- the checker compared the
-# counts as written, and refused ARRAY N where ARRAY 3 was expected
+# = 3, ARRAY 3 and ARRAY 2 + 1 are one type.  The checker compared the
+# counts as written, and refused ARRAY N where ARRAY 3 was expected.
 ( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -o BndShape BndShape.m9 >"$BND/shape.txt" 2>&1 ) || {
   echo "FAIL: BndShape does not build"; tail -8 "$BND/shape.txt"; exit 1; }
 [ "$("$BND/BndShape")" = "6.0 6.0 6.0" ] || { echo "FAIL: BndShape printed the wrong thing"; "$BND/BndShape"; exit 1; }
-# a generator error in an imported declaration names the EXPORTER's
-# file (Gen.ErrModAt): BndZeroUse.m9:9 until 2026-10-29.  Compiling
-# BndZero itself, the checker refuses the count (decision 78); compiling
-# only the importer, the definition's declarations are not checked
-# again and the generator meets it
+# A generator error in an imported declaration names the EXPORTER's
+# file (Gen.ErrModAt); it said BndZeroUse.m9:9 until 2026-10-29.  When
+# m9c compiles BndZero itself, the checker refuses the count (decision
+# 78).  When it compiles only the importer, the definition's
+# declarations are not checked again, and the generator meets it.
 ( cd "$BND" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" BndZeroUse.m9 >"$BND/zero.txt" 2>&1 ) &&
   { echo "FAIL: BndZeroUse generated: a count dividing by a CONST of 0"; exit 1; }
 grep -q "BndZero\.m9:9: gen: array count form unsupported yet" "$BND/zero.txt" &&
@@ -177,9 +179,10 @@ grep -q "BndZero\.m9:9:[0-9]*: .*count has no value: N DIV Z" "$BND/zero2.txt" |
 rm -rf "$BND"
 echo "m9c: an exported array's CONST count is the exporter's, read whole, through a field, in an expression"
 
-# the point of connecting Sem: a compiler that translates what it
-# knows to be wrong is a translator.  A program with a semantic error
-# must produce diagnostics on stderr, NO output files, and exit 1.
+# This is the point of connecting Sem: a compiler that translates what
+# it knows to be wrong is a translator.  A program with a semantic
+# error must produce diagnostics on stderr, NO output files, and exit
+# 1.
 BAD=/tmp/m9c-bad
 rm -rf "$BAD"; mkdir -p "$BAD"
 printf 'MODULE bad ;\nVAR x : F64 ; i : I64 ;\nBEGIN\n  i := I64 (x)\nEND bad.\n' \
@@ -192,10 +195,10 @@ grep -q 'unhandled RAISES ValueRange from I64 conversion' "$BAD/err.txt" || \
 echo "m9c: rejects what the checker rejects, and emits nothing"
 
 # -c / -o / --keep-c: the C is the OUTPUT until a C compiler has been
-# run over it, and a BY-PRODUCT afterwards.  What is checked here is
-# not that cc works but that m9c is honest about what it leaves on
-# disk -- a flag that quietly keeps or drops files is how build
-# scripts start describing something other than what happened.
+# run over it, and a BY-PRODUCT afterwards.  This checks not that cc
+# works but that m9c is honest about what it leaves on disk.  With a
+# flag that quietly keeps or drops files, build scripts start
+# describing something other than what happened.
 RT=$(cd .. && pwd)
 BLD=/tmp/m9c-build
 rm -rf "$BLD"; mkdir -p "$BLD"
@@ -204,17 +207,17 @@ cd "$BLD"
 "$M9C" -c "$SRC/DynStr.m9" -- -iquote "$RT" -iquote .
 [ -f DynStr.o ] || { echo "FAIL: -c produced no object"; exit 1; }
 [ -f DynStr.c ] && { echo "FAIL: -c left the C behind"; exit 1; }
-# the header is the module's INTERFACE, not a by-product: the next
-# module's generated C includes it, so -c must keep it
+# The header is the module's INTERFACE, not a by-product.  The next
+# module's generated C includes it, so -c must keep it.
 [ -f DynStr.h ] || { echo "FAIL: -c removed the header"; exit 1; }
 
 "$M9C" -c --keep-c "$SRC/Io.m9" "$SRC/DynStr.m9" -- -iquote "$RT" -iquote .
 [ -f Io.c ] || { echo "FAIL: --keep-c did not keep the C"; exit 1; }
 [ -f Io.o ] || { echo "FAIL: --keep-c skipped the compile"; exit 1; }
 
-# a NAME.h beside the source that is not the one just written to
-# --out-dir is said (a C driver there would include the stale one,
-# 2026-09-15); a copy identical to it is not
+# m9c names a NAME.h beside the source that is not the one just
+# written to --out-dir (a C driver there would include the stale one,
+# 2026-09-15).  It does not name a copy identical to it.
 rm -rf staleh && mkdir -p staleh/src staleh/out
 cp "$SRC/Hello.m9" staleh/src/
 printf '/* an old header */\n' > staleh/src/Hello.h
@@ -228,11 +231,11 @@ if grep -q 'is not the header' staleh/said2.txt; then
   echo "FAIL: an identical Hello.h beside the source was called stale"; exit 1
 fi
 rm -rf staleh
-# a whole program, linked, with no make and no build script in sight
+# Link a whole program, with no make and no build script in sight.
 "$M9C" -o hello "$SRC/Hello.m9" "$SRC/Io.m9" "$SRC/DynStr.m9" \
        -- -iquote "$RT" -iquote . "$RT/m9rt.c" Io.o DynStr.o
 [ -f hello ] || { echo "FAIL: -o produced no executable"; exit 1; }
-# -o leaves nothing downstream, so the header goes too
+# -o leaves nothing downstream, so the header goes too.
 if [ -f Hello.c ] || [ -f Hello.h ]; then
   echo "FAIL: -o left C behind"; exit 1
 fi
@@ -242,7 +245,7 @@ fi
 1" ] || { echo "FAIL: arguments did not reach the linked program"; exit 1; }
 
 # A MODULE BODY IS INITIALISATION, AND IT RUNS.  InitState sets its
-# sum to 42 in its implementation body; before 2026-09-15 that body
+# sum to 42 in its implementation body.  Before 2026-09-15 that body
 # was accepted and silently never emitted, so an importer read zero.
 # InitMain prints InitState.Total (), which must be 42, not 0.
 M9RUNTIME="$RT" "$M9C" --make -o initmain "$RT/test/InitMain.m9" \
@@ -250,11 +253,11 @@ M9RUNTIME="$RT" "$M9C" --make -o initmain "$RT/test/InitMain.m9" \
 [ "$(./initmain)" = "42" ] \
   || { echo "FAIL: an implementation-module body did not run (init dropped)"; exit 1; }
 
-# AN OBJECT OLDER THAN THE COMPILER IS STALE (2026-10-08): a build
+# AN OBJECT OLDER THAN THE COMPILER IS STALE (2026-10-08).  A build
 # directory from before a generator change kept a stale .h/.o and
 # failed on `implicit declaration of Mod_m9init' (2026-09-15).  An
-# unchanged tree makes nothing twice; the same tree under a FRESH
-# COPY of the compiler -- a newer binary, an upgrade -- makes it again.
+# unchanged tree makes nothing twice.  The same tree under a FRESH
+# COPY of the compiler (a newer binary, an upgrade) makes it again.
 rm -rf stale && mkdir stale && ( cd stale &&
   M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -c -v "$SRC/Hello.m9" > first.txt 2>&1 &&
   M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -c -v "$SRC/Hello.m9" > second.txt 2>&1 &&
@@ -264,7 +267,7 @@ rm -rf stale && mkdir stale && ( cd stale &&
 grep -q 'make Io' stale/first.txt || { echo "FAIL: the first --make did not make Io"; exit 1; }
 grep -q 'make Io' stale/second.txt && { echo "FAIL: an unchanged tree was made twice"; exit 1; }
 grep -q 'make Io' stale/third.txt || { echo "FAIL: a newer compiler binary did not make the objects again"; exit 1; }
-# A HEADER IS A PRODUCT TOO (2026-10-09): a build directory whose
+# A HEADER IS A PRODUCT TOO (2026-10-09).  A build directory whose
 # generated headers were deleted but whose objects stayed regenerated
 # only the stale module and failed on a fresh one's missing DynStr.h.
 ( cd stale && rm -f Io.h &&
@@ -273,28 +276,28 @@ grep -q 'make Io' stale/third.txt || { echo "FAIL: a newer compiler binary did n
 grep -q 'make Io' stale/fourth.txt || { echo "FAIL: a missing generated header did not make its module again"; exit 1; }
 [ -f stale/Io.h ] || { echo "FAIL: the header was not written back"; exit 1; }
 
-# a C compiler that fails must fail m9c, and must not be reported as
-# success just because the M9 half went fine
+# A C compiler that fails must fail m9c, and must not be reported as
+# success just because the M9 half went fine.
 if "$M9C" -c "$SRC/DynStr.m9" -- -iquote . -DM9_NO_SUCH 2>/dev/null; then
   echo "FAIL: cc errors did not fail m9c"; exit 1
 fi
 
-# -g: adds debug information and changes NOTHING else.  Both halves
-# are checked, because the one an assumption gets wrong is that a
-# plain build has none -- the objects are not stripped, so symbols
-# are there and it is easy to believe the line tables are too.
-# $M9RUNTIME so the flagless commands below can find m9rt.h; the
+# -g adds debug information and changes NOTHING else.  Both halves are
+# checked.  An assumption gets the plain half wrong: that a plain
+# build has none.  The objects are not stripped, so symbols are there,
+# and it is easy to believe the line tables are too.
+# Set $M9RUNTIME so the flagless commands below can find m9rt.h.  The
 # section above deliberately spells every path out after --, and -g
-# has to be tested WITHOUT -- because -- turns it off.
+# has to be tested WITHOUT --, because -- turns it off.
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 
-# CHECKED ON THE PROGRAM, NOT THE OBJECT, and the reason is the same
-# one --pic already taught: m9c compiles with -flto, so a -c object
-# holds intermediate code -- 26 .gnu.lto_* sections and no
-# .debug_info at all -- and the DWARF is produced when the program is
-# LINKED.  Asserting .debug_info on the object is asserting the wrong
-# artifact, which is how this test failed the first time it ran.
+# CHECKED ON THE PROGRAM, NOT THE OBJECT, for the reason --pic already
+# taught.  m9c compiles with -flto, so a -c object holds intermediate
+# code (26 .gnu.lto_* sections and no .debug_info at all).  The DWARF
+# is produced when the program is LINKED.  An assertion of .debug_info
+# on the object asserts the wrong artifact, and so this test failed
+# the first time it ran.
 if command -v readelf >/dev/null 2>&1; then
   rm -f DynStr.o DynStr.c Io.o Io.c hello hellog Hello.c Hello.h
   "$M9C" -c "$SRC/DynStr.m9"
@@ -305,7 +308,8 @@ if command -v readelf >/dev/null 2>&1; then
 
   rm -f DynStr.o DynStr.c Io.o Io.c
   "$M9C" -g -c "$SRC/DynStr.m9"
-  # -g implies --keep-c, and must: the debug information NAMES this file
+  # -g implies --keep-c, and must: the debug information NAMES this
+  # file.
   [ -f DynStr.c ] ||
     { echo "FAIL: -g did not keep the C its debug info names"; exit 1; }
   "$M9C" -g -c "$SRC/Io.m9"
@@ -314,21 +318,21 @@ if command -v readelf >/dev/null 2>&1; then
     { echo "FAIL: -g produced no debug information"; exit 1; }
   readelf --debug-dump=info hellog | grep -q 'Hello\.c' ||
     { echo "FAIL: the debug information does not name the generated C"; exit 1; }
-  # and it is still the same program
+  # It is still the same program.
   [ "$(./hellog M9)" = "hello, M9
 1" ] || { echo "FAIL: -g changed the program"; exit 1; }
 fi
 
 # -g is an OPTION, not a source file.  ScanArgs and SourceAt keep two
-# independent lists of the option spellings and nothing checks that
-# they agree, so a flag added to one and not the other becomes a file
-# name -- which is what this asserts.
+# independent lists of the option spellings, and nothing checks that
+# they agree.  So a flag added to one and not the other becomes a file
+# name, and this asserts against that.
 rm -f DynStr.o DynStr.c
 "$M9C" -g -c "$SRC/DynStr.m9" 2>/tmp/m9c-g.txt
 grep -q 'cannot find' /tmp/m9c-g.txt &&
   { echo "FAIL: -g was taken for a source file"; exit 1; }
 
-# and it is off unless asked for, and off again after --
+# It is off unless asked for, and off again after --.
 "$M9C" -v -g -c "$SRC/DynStr.m9" 2>/tmp/m9c-g.txt
 [ "$(sed -n 's/.*\( -g\).*/x/p' /tmp/m9c-g.txt | wc -l)" = 1 ] ||
   { echo "FAIL: -g not on the compiler line exactly once"; exit 1; }
@@ -346,13 +350,14 @@ echo "m9c: -c, -o and --keep-c leave exactly what they say they leave"
 
 # The search path: IMPORT names a module, and m9c translates that to
 # a file so the caller does not have to.  Everything above named its
-# dependencies explicitly and still produced oracle-identical bytes;
-# this names NOTHING and must produce the same program.
+# dependencies explicitly and still produced oracle-identical bytes.
+# This part names NOTHING and must produce the same program.
 PATHT=/tmp/m9c-path
 rm -rf "$PATHT"; mkdir -p "$PATHT"; cd "$PATHT"
 
-# no -I, no $M9LIBRARY, no deps: the main file's own directory is on
-# the path, because a module's neighbours are almost always its imports
+# With no -I, no $M9LIBRARY and no deps, the main file's own directory
+# is on the path, because a module's neighbours are almost always its
+# imports.
 "$M9C" -c "$SRC/DynStr.m9" -- -iquote "$RT" -iquote .
 "$M9C" -c "$SRC/Io.m9"     -- -iquote "$RT" -iquote .
 "$M9C" -o hello "$SRC/Hello.m9" \
@@ -360,25 +365,26 @@ rm -rf "$PATHT"; mkdir -p "$PATHT"; cd "$PATHT"
 [ "$(./hello M9)" = "hello, M9
 1" ] || { echo "FAIL: resolved-import build behaves differently"; exit 1; }
 
-# $M9LIBRARY, and the argument as a MODULE rather than a path
+# Test $M9LIBRARY, and the argument as a MODULE rather than a path.
 rm -rf "$PATHT/lib"; mkdir -p "$PATHT/lib"; cd "$PATHT/lib"
 M9LIBRARY="$SRC" "$M9C" -c DynStr -- -iquote "$RT" -iquote .
 [ -f DynStr.o ] || { echo "FAIL: \$M9LIBRARY did not resolve"; exit 1; }
-"$M9C" -I "$SRC" -c Json -- -iquote "$RT" -iquote .
-[ -f Json.o ] || { echo "FAIL: -I did not resolve"; exit 1; }
+# Text first: Json imports it since STR is the UTF-8 type (2026-10-31).
 "$M9C" "-I$SRC" -c Text -- -iquote "$RT" -iquote .
 [ -f Text.o ] || { echo "FAIL: -IDIR joined did not resolve"; exit 1; }
+"$M9C" -I "$SRC" -c Json -- -iquote "$RT" -iquote .
+[ -f Json.o ] || { echo "FAIL: -I did not resolve"; exit 1; }
 
-# A module that cannot be found is fatal BEFORE generation: without
+# A module that cannot be found is fatal BEFORE generation.  Without
 # its source everything downstream is guesswork, and the fourteen
 # generator errors this produced the first time were one problem said
-# fourteen times.  Every missing module is still named -- errors are
+# fourteen times.  Every missing module is still named: errors are
 # values, and a list of them beats the first one.
 #
-# The imports are named so that nothing can satisfy them: the search
-# path ends at /usr/lib/m9, so a test that hid the real Io and DynStr
+# The imports are named so that nothing can satisfy them.  The search
+# path ends at /usr/lib/m9.  So a test that hid the real Io and DynStr
 # would pass on a developer's machine and fail on one with the package
-# installed -- which is exactly what happened the first time this ran.
+# installed, and that is exactly what happened the first time this ran.
 rm -rf "$PATHT/only"; mkdir -p "$PATHT/only"; cd "$PATHT"
 cat > only/Orphan.m9 <<'M9'
 MODULE Orphan ;
@@ -402,16 +408,16 @@ echo "m9c: imports resolve through -I, \$M9LIBRARY and the source dir"
 #
 # Every command above named every include path and every object after
 # --, which is four flags of which three were the same every time.
-# What is checked here is that with nothing after --, m9c supplies
-# them by LOOKING -- and that the program it builds is the same
+# This checks that with nothing after --, m9c supplies them by
+# LOOKING.  It also checks that the program it builds is the same
 # program, byte for byte the same behaviour as the spelled-out one.
 DEF=/tmp/m9c-default
 rm -rf "$DEF"; mkdir -p "$DEF"; cd "$DEF"
 
-# $M9RUNTIME is what a source tree needs: this runs in a scratch
-# directory, so neither runtime/ nor ../runtime/ is the runtime, and
-# /usr/include/m9 is the INSTALLED answer, which a source tree must
-# not depend on being present or absent
+# A source tree needs $M9RUNTIME.  This runs in a scratch directory, so
+# neither runtime/ nor ../runtime/ is the runtime.  /usr/include/m9 is
+# the INSTALLED answer, and a source tree must not depend on its being
+# present or absent.
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 
@@ -421,8 +427,8 @@ export M9LIBRARY="$SRC"
 [ "$(./hello M9)" = "hello, M9
 1" ] || { echo "FAIL: the default build produced a different program"; exit 1; }
 
-# -v prints the command, which is the only way to check WHAT was
-# supplied rather than merely that something linked
+# -v prints the command, the only way to check WHAT was supplied
+# rather than merely that something linked.
 grep -q -- "-iquote $RT" verbose.txt ||
   { echo "FAIL: the runtime include path was not supplied"; exit 1; }
 grep -q -- '-iquote \.' verbose.txt ||
@@ -434,13 +440,13 @@ done
 grep -q 'm9rt.c' verbose.txt ||
   { echo "FAIL: the runtime was not linked"; exit 1; }
 grep -q -- '-lm' verbose.txt || { echo "FAIL: -lm was not supplied"; exit 1; }
-# the module being compiled is not one of its own dependencies
+# The module being compiled is not one of its own dependencies.
 grep -q ' Hello.o' verbose.txt &&
   { echo "FAIL: m9c tried to link the object it is producing"; exit 1; }
 
-# a missing object is NAMED, with the command that makes it: the
+# A missing object is NAMED, with the command that makes it.  The
 # alternative is the C linker explaining our omission in its own
-# vocabulary ("undefined reference to DynStr_New")
+# vocabulary ("undefined reference to DynStr_New").
 rm -f DynStr.o hello
 if "$M9C" -o hello Hello 2>miss.txt; then
   echo "FAIL: a missing object should fail the link"; exit 1
@@ -449,12 +455,12 @@ grep -q 'DynStr.o is missing' miss.txt ||
   { echo "FAIL: the missing object was not named"; exit 1; }
 grep -q 'm9c -c DynStr' miss.txt ||
   { echo "FAIL: the command that makes it was not given"; exit 1; }
-# and it is refused BEFORE cc runs, so nothing half-built appears
+# It is refused BEFORE cc runs, so nothing half-built appears.
 [ -f hello ] && { echo "FAIL: a program was linked anyway"; exit 1; }
 
 # -- turns every one of these off.  The same link, with the caller's
-# own line, must fail for want of the objects m9c would have added:
-# a default that survives underneath a flag someone chose is worse
+# own line, must fail for want of the objects m9c would have added.
+# A default that survives underneath a flag someone chose is worse
 # than no default at all.
 "$M9C" -c DynStr
 if "$M9C" -o hello Hello -- -iquote "$RT" -iquote . 2>/dev/null; then
@@ -463,10 +469,10 @@ fi
 
 # $M9RUNTIME pointing at the wrong directory is answered by the
 # compiler that read the variable, not by cc failing over a missing
-# include three steps later.  Only the diagnostic is asserted: where
-# the search goes next depends on whether this machine has the
-# package installed, and a test that cared would pass on a developer's
-# machine and fail on a user's.
+# include three steps later.  Only the diagnostic is asserted.  The
+# search's next step depends on whether this machine has the package
+# installed, and a test that cared would pass on a developer's machine
+# and fail on a user's.
 mkdir -p "$DEF/nort"; cd "$DEF/nort"
 M9RUNTIME=/nonexistent "$M9C" -c DynStr 2>nort.txt || true
 grep -q 'M9RUNTIME' nort.txt ||
@@ -479,9 +485,9 @@ echo "     objects and the runtime are found rather than typed"
 # ---- the closure as a LIBRARY: --ar, --so, --pic ----
 #
 # "Distribute the compiler without sources" is the ask, so that is
-# what is checked: build the compiler's whole import closure, archive
-# it, and then LINK AND RUN A COMPILER out of the archive alone, in a
-# directory with no .m9 in it, and require the C it emits to be
+# what is checked.  Build the compiler's whole import closure and
+# archive it.  Then LINK AND RUN A COMPILER out of the archive alone, in
+# a directory with no .m9 in it, and require the C it emits to be
 # byte-identical to the oracle's.  A library that produces different
 # bytes from the program built the same afternoon is not the same
 # compiler however well it links.
@@ -490,19 +496,19 @@ rm -rf "$LIB"; mkdir -p "$LIB"; cd "$LIB"
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 
-for m in DynStr DynUtf Text Io System Lex Ast Parse Print Sem Gen Doc Review; do "$M9C" -c $m; done
+for m in DynStr Text Io System Lex Ast Parse Print Sem Gen Doc Review; do "$M9C" -c $m; done
 "$M9C" -v --ar libm9.a M9c 2>ar.txt
 [ -f libm9.a ] || { echo "FAIL: --ar produced no archive"; exit 1; }
-# the members are the closure m9c just resolved, and its own object
-for o in M9c.o DynStr.o Io.o System.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o DynUtf.o Review.o; do
+# The members are the closure m9c just resolved, and its own object.
+for o in M9c.o DynStr.o Io.o System.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o Review.o; do
   ar t libm9.a | grep -qx "$o" ||
     { echo "FAIL: $o is not in the archive"; exit 1; }
 done
-# the runtime is NOT in it: it is its own deliverable, and two copies
-# of m9rt in one link is the thing that rule exists to prevent
+# The runtime is NOT in it.  It is its own deliverable, and that rule
+# exists to prevent two copies of m9rt in one link.
 ar t libm9.a | grep -q 'm9rt' &&
   { echo "FAIL: the runtime was buried in the archive"; exit 1; }
-# the headers are the other half of the deliverable
+# The headers are the other half of the deliverable.
 for h in M9c.h DynStr.h Sem.h Gen.h; do
   [ -f "$h" ] || { echo "FAIL: --ar did not keep $h"; exit 1; }
 done
@@ -518,30 +524,30 @@ cmp Json.h "$GEN/Json.h" ||
   { echo "DIVERGES: a compiler built from the archive emits a different header"; exit 1; }
 cd "$LIB"
 
-# --so.  BOTH halves of the -fPIC story are checked, because the
-# working one is what an assumption got wrong: this was written
-# believing every member of a shared object must be built -fPIC, and
-# it is only half true.  m9c compiles with -flto, so a -c object is
+# --so.  BOTH halves of the -fPIC story are checked, because an
+# assumption got the working one wrong.  This was written believing
+# every member of a shared object must be built -fPIC, and that is
+# only half true.  m9c compiles with -flto, so a -c object is
 # LTO IR and the code generation happens at LINK time, where -shared
 # asks for position-independent code and gets it.  So the closure
 # built above with a plain `m9c -c` goes into a .so and WORKS.
 #
-# Json rather than M9c for the callable half: a shared object carrying
-# main() links, but a LIBRARY is the thing worth proving, so a C
-# program calls into it.
+# The callable half uses Json rather than M9c.  A shared object
+# carrying main() links, but a LIBRARY is the thing worth proving, so
+# a C program calls into it.
 SO=/tmp/m9c-so
 rm -rf "$SO"; mkdir -p "$SO"; cd "$SO"
 "$M9C" -c DynStr                    # NO --pic, on purpose
+"$M9C" -c Text                      # Json imports it since the switch
 "$M9C" --so libm9json.so Json
 [ -f libm9json.so ] || { echo "FAIL: --so produced no shared object"; exit 1; }
 cat > use.c <<'USE'
 #include <stdio.h>
 #include <string.h>
 #include "Json.h"
-static uint32_t sb[256];
-static m9_sl_CHAR S (const char *s)
-{ size_t i, n = strlen (s); for (i = 0; i < n; i++) sb[i] = (unsigned char) s[i];
-  return (m9_sl_CHAR){ sb, (int64_t) n }; }
+/* A STR is UTF-8 octets since the switch (2026-10-31). */
+static m9_sl_UTF8 S (const char *s)
+{ return (m9_sl_UTF8){ (uint8_t *) s, (int64_t) strlen (s) }; }
 int main (void)
 {
   m9_state e = {0};   /* no frame: Parse builds in HEAP for a C caller */
@@ -559,33 +565,37 @@ gcc -std=c11 -O2 -iquote . -iquote "$RT" use.c ./libm9json.so \
 [ -f use ] || { echo "FAIL: the shared object would not link"; exit 1; }
 [ "$(./use)" = "3 true none" ] ||
   { echo "FAIL: calling M9 through the shared object gave the wrong answer"; exit 1; }
-# ldd on GNU/Linux, otool on macOS (the gate stopped here on the
-# MacBook until 2026-10-09)
+# Use ldd on GNU/Linux and otool on macOS (the gate stopped here on
+# the MacBook until 2026-10-09).
 if [ "$(uname)" = Darwin ]; then loaded=$(otool -L use); else loaded=$(ldd use); fi
 echo "$loaded" | grep -q libm9json.so ||
   { echo "FAIL: the program did not actually load the shared object"; exit 1; }
 
-# and the other half: with the caller's own flags after --, LTO goes
+# Now the other half.  With the caller's own flags after --, LTO goes
 # with the rest of the defaults, the object really is machine code,
 # and ld refuses it.  m9c must fail and must name the flag that fixes
 # it, rather than leaving the C linker to explain our omission in its
 # own vocabulary.
-# (Not on macOS: there the C compiler emits position-independent code
+# (Not on macOS.  There the C compiler emits position-independent code
 # whether asked or not, the link succeeds, and there is nothing for
-# m9c to refuse -- the gate's next Mac-only red once the ldd line was
-# passed, 2026-10-09.)
+# m9c to refuse.  That was the gate's next Mac-only red once the ldd
+# line was passed, 2026-10-09.)
 if [ "$(uname)" != Darwin ]; then
 NOLTO=/tmp/m9c-nolto
 rm -rf "$NOLTO"; mkdir -p "$NOLTO"; cd "$NOLTO"
+# Json imports DynStr and, since the UTF-8 switch, Text: both are built
+# here without --pic, or the C compiler stops at Text.h first.
 "$M9C" -c DynStr -- -c -O2 -iquote "$RT" -iquote .
+"$M9C" -c Text -- -c -O2 -iquote "$RT" -iquote .
 if "$M9C" --so libbad.so Json 2>so-bad.txt; then
   echo "FAIL: --so over a really-compiled non-PIC object should fail"; exit 1
 fi
 grep -q -- '--pic' so-bad.txt ||
   { echo "FAIL: the --so refusal did not name --pic"; exit 1; }
 [ -f libbad.so ] && { echo "FAIL: a broken shared object was left behind"; exit 1; }
-# and --pic is the fix it named
+# --pic is the fix it named.
 "$M9C" -c DynStr -- -c -O2 -fPIC -iquote "$RT" -iquote .
+"$M9C" -c Text -- -c -O2 -fPIC -iquote "$RT" -iquote .
 "$M9C" --so libgood.so Json
 [ -f libgood.so ] || { echo "FAIL: --pic did not fix the shared link"; exit 1; }
 fi
@@ -593,14 +603,14 @@ fi
 echo "m9c: --ar and --so build the closure as a library, and a compiler"
 echo "     linked from the archive alone emits the oracle's bytes"
 
-# --no-unsafe: the language wall for running untrusted code.  A cell
+# --no-unsafe is the language wall for running untrusted code.  A cell
 # may import the shipped library (whose own FOR "C" units are the
-# audited foreign boundary, found through $M9LIBRARY) and may NOT
+# audited foreign boundary, found through $M9LIBRARY).  It may NOT
 # declare foreign or UNSAFE units of its own, wherever they hide in
-# the closure.  Probed both ways, like every flag: the refusal must
-# fire WITH the unit named, and the same programs must build without
-# the flag -- a refusal that fires always is a broken compiler, not a
-# security feature.
+# the closure.  The flag is probed both ways, like every flag.  The
+# refusal must fire WITH the unit named, and the same programs must
+# build without the flag.  A refusal that fires always is a broken
+# compiler, not a security feature.
 NOUNS=/tmp/m9c-nounsafe
 rm -rf "$NOUNS"; mkdir -p "$NOUNS"; cd "$NOUNS"
 cat > Cell.m9 <<'M9'
@@ -666,8 +676,8 @@ fi
 grep -q 'Peek.m9:[0-9][0-9]*:[0-9][0-9]*: no-unsafe: UNSAFE unit Peek' nu2.txt ||
   { echo "FAIL: the --no-unsafe refusal did not name the UNSAFE unit"; exit 1; }
 
-# and the trusted half: the shipped library's own foreign units (Io
-# binds cio) pass through $M9LIBRARY under the same flag
+# In the trusted half, the shipped library's own foreign units (Io
+# binds cio) pass through $M9LIBRARY under the same flag.
 cat > Clean.m9 <<'M9'
 MODULE Clean ;
 IMPORT Io ;
@@ -684,7 +694,7 @@ echo "     library, names them, and passes the trusted closure"
 # QUALIFIED exception identity: Io.IOError and PondA.Splash are
 # different descriptors even when a second module declares the same
 # bare name.  The generators used to drop the qualifier and match
-# whichever module registered the name first; a handler for
+# whichever module registered the name first.  A handler for
 # ZarrStore.IOError compiled to a test against &Io_IOError and
 # matched nothing (found by the tutorial service's no-network zarr
 # cell).  This runs a program whose handler can only succeed if the
@@ -739,22 +749,23 @@ M9LIBRARY="$SRC" "$M9C" --make -o qexc ./QExc.m9 >/dev/null 2>&1 ||
 
 echo "m9c: a qualified handler catches exactly the module it names"
 
-# generator errors carry LINES AND MESSAGES now: the count alone cost
+# Generator errors carry LINES AND MESSAGES now.  The count alone cost
 # a bisect every time a module was written outside the corpus, and
 # then cost one inside the tutorial (a reversed NEW).
 #
-# THE PROBE USED TO BE THAT REVERSED NEW and cannot be any more: the
-# CHECKER refuses it since 2026-08-30 ("NEW takes the pool first"),
-# so the generator never sees it -- a gate broken by its own defect
-# being fixed one layer earlier, which is the right way round.  The
+# THE PROBE USED TO BE THAT REVERSED NEW and cannot be any more.  The
+# CHECKER refuses it since 2026-08-30 ("NEW takes the pool first"), so
+# the generator never sees it.  The gate broke because its own defect
+# was fixed one layer earlier, which is the right way round.  The
 # trigger was EXIT inside a CASE arm until 2026-10-09, when the
-# generator learned it, then an expression as a CASE label until stage
-# 2 of the typed tree the same evening, a variable FOR step until stage
-# 3 (the checker refuses it now, par 10), a SLICE of an array a call
-# answers until the checker refused it too (2026-10-10), a VIEW of a grid
-# a call answers until the generator learned it (2026-10-25); it is two
-# VAR string arguments whose storage lives in two pools now (decision
-# 60), which the checker passes and the generator refuses by name.  The
+# generator learned it.  Then it was an expression as a CASE label
+# until stage 2 of the typed tree the same evening.  Then it was a
+# variable FOR step until stage 3 (the checker refuses it now, par
+# 10).  Then a SLICE of an array a call answers, until the checker
+# refused it too (2026-10-10).  Then a VIEW of a grid a call answers,
+# until the generator learned it (2026-10-25).  Now it is two VAR
+# string arguments whose storage lives in two pools (decision 60),
+# which the checker passes and the generator refuses by name.  The
 # reversed NEW is checked below, where it belongs now.
 GMSG=/tmp/m9c-genmsg
 rm -rf "$GMSG"; mkdir -p "$GMSG"; cd "$GMSG"
@@ -776,8 +787,8 @@ grep -q 'Exc.m9:6: gen: VAR arguments whose storage lives in two pools' gm.txt |
   { echo "FAIL: the generator error lost its line or message:"; \
     head -3 gm.txt; exit 1; }
 
-# and the reversed NEW, which the CHECKER now catches -- with its own
-# line and column, before a single byte of C is generated
+# The CHECKER now catches the reversed NEW, with its own line and
+# column, before a single byte of C is generated.
 cat > Rev.m9 <<'M9'
 MODULE Rev ;
 IMPORT Io ;
@@ -803,12 +814,12 @@ grep -q 'Rev.m9:11:8: Rev body: NEW takes the pool first, then the type' rv.txt 
 
 echo "m9c: generator errors name their line and their reason"
 
-# --json: the declarations as data, and the page unchanged by it.
+# --json gives the declarations as data and leaves the page unchanged.
 # DynStr is the probe because its AppendChar has every field the
-# schema carries -- VAR params, a PTR type, no result, no RAISES --
-# and New has a result and an IN-pool type.  The .md written beside
-# the .json must be byte-identical to the golden docdiff holds, or
-# --json would be changing --doc.
+# schema carries (VAR params, a PTR type, no result, no RAISES), and
+# New has a result and an IN-pool type.  The .md written beside the
+# .json must be byte-identical to the golden docdiff holds, or --json
+# would be changing --doc.
 JD=/tmp/m9c-json
 rm -rf "$JD"; mkdir -p "$JD"; cd "$JD"
 M9LIBRARY="$SRC" "$M9C" --json "$SRC/DynStr.m9" ||
@@ -837,11 +848,12 @@ grep -q 'cannot be combined' jc.txt ||
   { echo "FAIL: the --json/-c refusal lost its message"; cat jc.txt; exit 1; }
 
 echo "m9c: --json is the page as data, and the page is unchanged"
-# --check: the diagnostics with EMPTY HANDS.  An editor invokes this
-# per save, so a .h/.c/.md appearing beside the file would arm the
-# generated-header-shadows trap on every keystroke.  Probed both
-# ways: a clean module writes NOTHING and exits 0; a broken one
-# exits 1 with the diagnostic on stderr; combining with -c refused.
+# --check gives the diagnostics with EMPTY HANDS.  An editor invokes
+# this per save, so a .h/.c/.md appearing beside the file would arm
+# the generated-header-shadows trap on every keystroke.  The gate
+# probes it both ways: a clean module writes NOTHING and exits 0; a
+# broken one exits 1 with the diagnostic on stderr; a combination with
+# -c is refused.
 CK=/tmp/m9c-check
 rm -rf "$CK"; mkdir -p "$CK"; cd "$CK"
 M9LIBRARY="$SRC" "$M9C" --check "$SRC/DynStr.m9" ||
@@ -863,16 +875,18 @@ grep -q "cannot assign" ck.err ||
 if "$M9C" --check -c "$SRC/DynStr.m9" 2>/dev/null; then
   echo "FAIL: --check -c should be refused"; exit 1
 fi
-# and the GENERATOR's refusals reach --check too (2026-09-27): this
-# program passes the checker and the generator refuses it, so until
+# The GENERATOR's refusals reach --check too (2026-09-27).  This
+# program passes the checker and the generator refuses it.  So until
 # that day an editor called it clean and the build said no.  Still
-# nothing on disk.
-# (EXCEPT and FINALLY on one block until 2026-10-09, when the generator
-# learned it; an expression as a CASE label until stage 2 of the typed
-# tree the same evening; a variable FOR step until stage 3, when the
-# checker learned to refuse it; a SLICE of a call's array until the
-# checker refused that too; a VIEW of a call's grid until the generator
-# learned it; two VAR arguments in two pools now)
+# nothing lands on disk.
+# The form changes as the generator learns them.  It was EXCEPT and
+# FINALLY on one block until 2026-10-09, when the generator learned
+# it.  It was an expression as a CASE label until stage 2 of the typed
+# tree the same evening.  It was a variable FOR step until stage 3,
+# when the checker learned to refuse it.  It was a SLICE of a call's
+# array until the checker refused that too.  It was a VIEW of a call's
+# grid until the generator learned it.  It is two VAR arguments in two
+# pools now.
 cat > Late.m9 <<'LATE'
 MODULE Late ;
 IMPORT Io ;
@@ -894,8 +908,8 @@ grep -q "gen: VAR arguments whose storage lives in two pools" late.err ||
 echo "m9c: --check answers diagnostics, the generator's included, and writes nothing"
 
 # A SOURCE THAT IS NOT UTF-8 is said once, as that, and nothing is
-# searched for: m9c said `not text' twice and then `cannot find' of a
-# file that was there (2026-10-10) -- the path search read it again.
+# searched for.  m9c said `not text' twice and then `cannot find' of a
+# file that was there (2026-10-10): the path search read it again.
 printf 'MODULE NotUtf ;\nIMPORT Io ;\nBEGIN\n  Io.WriteLine (%sa\377b%s)\nEND NotUtf.\n' "'" "'" > NotUtf.m9
 if M9LIBRARY="$SRC" "$M9C" --check NotUtf.m9 2>notutf.err; then
   echo "FAIL: a source that is not UTF-8 was accepted"; exit 1
@@ -905,10 +919,10 @@ fi
 rm -f NotUtf.m9 notutf.err
 echo "m9c: a source that is not UTF-8 is refused once, by what it is"
 
-# A PATH THAT IS NOT THERE is not a module name: `m9c --check
+# A PATH THAT IS NOT THERE is not a module name.  `m9c --check
 # no/such/dir/Text.m9' checked the library's Text and exited 0 (the
 # review's F6).  A bare name is still searched for.  AN UNKNOWN OPTION
-# is said as one, once: it was taken for a source, `cannot find:
+# is said as one, once.  It was taken for a source: `cannot find:
 # --frobnicate'.
 if M9LIBRARY="$SRC" "$M9C" --check no/such/dir/Text.m9 2>miss.err; then
   echo "FAIL: a missing path was answered by the library's module"; exit 1
@@ -925,9 +939,9 @@ fi
 rm -f miss.err
 echo "m9c: a missing path and an unknown option are said as what they are"
 
-# A HEADER GUARD IS ONE IDENTIFIER, ONE PER FILE: `a-b.m9' gave
+# A HEADER GUARD IS ONE IDENTIFIER, ONE PER FILE.  `a-b.m9' gave
 # `#ifndef M9G_a-b_H', which is M9G_a and junk, the guard of `a-c.m9'
-# too, so including both dropped the second (the review's F6).
+# too.  So a file including both dropped the second (the review's F6).
 GD=$(mktemp -d)
 printf 'MODULE ab ;\nCONST X = 1 ;\nBEGIN\nEND ab.\n' > "$GD/a-b.m9"
 printf 'MODULE ac ;\nCONST Y = 2 ;\nBEGIN\nEND ac.\n' > "$GD/a-c.m9"
@@ -955,14 +969,14 @@ echo "m9c: --version agrees with the changelog ($BV)"
 
 # --make BUILDS IN DEPENDENCY ORDER, and a DIAMOND is what proves it.
 # loaded[] is filled pre-order (a name is marked before its imports
-# are walked, so a cycle terminates), and reversing pre-order is a
-# topological sort for a TREE and not for a DAG: Top importing Mid and
+# are walked, so a cycle terminates).  Reversed pre-order is a
+# topological sort for a TREE and not for a DAG.  Top importing Mid and
 # Base, with Mid importing Base, gave Mid before the Base.h it
-# includes, and the build converged by REPETITION -- exit 1 with nine
+# includes, and the build converged by REPETITION: exit 1 with nine
 # `Kind.h: No such file` on the first run in the port, exit 0 on the
-# second (2026-08-25).  order[] is post-order now and MakeAll walks it
-# forward.  Shown able to fail: the pre-fix compiler dies here with
-# `Mid.h:5: #include "Base.h": No such file`.
+# second (2026-08-25).  order[] is post-order now, and MakeAll walks it
+# forward.  The check is shown able to fail: the pre-fix compiler dies
+# here with `Mid.h:5: #include "Base.h": No such file`.
 cat > Base.m9 <<'M9'
 DEFINITION MODULE Base ;
 TYPE Real = F64 ;
@@ -1005,8 +1019,8 @@ M9
 # first version of this gate could not see: Top importing Base then
 # Mid passed even while the ordering was wrong, because Base happened
 # to be marked loaded first.  With Mid FIRST, Base is a direct import
-# that is also Mid's dependency -- LoadDirect marks it before any
-# subtree is walked -- and the arrival-order fix put Mid ahead of it.
+# that is also Mid's dependency (LoadDirect marks it before any
+# subtree is walked), and the arrival-order fix put Mid ahead of it.
 # The order is computed from the import GRAPH now, so both spellings
 # build.  Found by an I/O probe importing Http, Io, Time, Fmt where
 # Time imports Fmt (2026-08-30).
@@ -1028,10 +1042,10 @@ M9LIBRARY="$SRC" "$M9C" --make -o diamond2 Diamond2.m9 >dm2.txt 2>&1 ||
   { echo "FAIL: the second diamond built but answered wrong"; ./diamond2; exit 1; }
 
 rm -f Base.o Base.h Mid.o Mid.h diamond
-# AND THE MAIN FILE IS NAMED BARE, no -I and no ./ -- the search
+# AND THE MAIN FILE IS NAMED BARE, with no -I and no ./.  The search
 # path's last entry is "the directory FILE.m9 came from", which for a
-# bare name is this one; DirOf answered empty and DirAdd dropped it,
-# so a program compiled in the very directory its imports sit in
+# bare name is this one.  DirOf answered empty and DirAdd dropped it.
+# So a program compiled in the very directory its imports sit in
 # could not find them (found 2026-08-30 writing the diamond above).
 M9LIBRARY="$SRC" "$M9C" --make -o diamond Diamond.m9 >dm.txt 2>&1 ||
   { echo "FAIL: --make could not build a diamond on the first run:"; \
@@ -1039,10 +1053,10 @@ M9LIBRARY="$SRC" "$M9C" --make -o diamond Diamond.m9 >dm.txt 2>&1 ||
 [ "$(./diamond)" = "diamond ok" ] ||
   { echo "FAIL: the diamond built but answered wrong"; ./diamond; exit 1; }
 
-# SizeOf and ByteSize: the type size (compile-time C sizeof) and a
-# slice's data bytes (LEN * element size).  A runnable check because
-# the values are the contract -- 8, 4, 800, 250, and a slice's own
-# SizeOf is its 16-byte descriptor, the data is ByteSize.
+# SizeOf gives the type size (compile-time C sizeof), and ByteSize a
+# slice's data bytes (LEN * element size).  The check is runnable
+# because the values are the contract: 8, 4, 800, 250.  A slice's own
+# SizeOf is its 16-byte descriptor; the data is ByteSize.
 cat > Sz.m9 <<'SZ'
 MODULE Sz ;
 IMPORT Io ;
@@ -1065,25 +1079,25 @@ M9LIBRARY="$SRC" "$M9C" --make -o sz Sz.m9 >sz.txt 2>&1 ||
 echo "m9c: SizeOf and ByteSize answer the right bytes"
 
 # NO SHELL BETWEEN m9c AND cc.  Through 0.7.0 the command was one
-# string handed to Io.Run (system(3)), so every name in it was quoted
-# for /bin/sh -- and only the FILE names were: a quote in an -I
-# directory went in bare and sh died with "Unterminated quoted
+# string handed to Io.Run (system(3)), so every name in it needed
+# quoting for /bin/sh.  Only the FILE names were quoted.  A quote in an
+# -I directory went in bare, and sh died with "Unterminated quoted
 # string" before cc ever ran.  Now the words go to System.Exec as a
-# list, so a directory with a quote and a space in its name builds
+# list.  So a directory with a quote and a space in its name builds
 # like any other, its own -I included (the main file's directory is
-# always on the search path).  Shown able to fail: the compiler built
-# from the previous runtime/gen answers "sh: 1: Syntax error:
-# Unterminated quoted string" and "could not build dependency DynStr"
-# on this very line.
+# always on the search path).  The check is shown able to fail: the
+# compiler built from the previous runtime/gen answers "sh: 1: Syntax
+# error: Unterminated quoted string" and "could not build dependency
+# DynStr" on this very line.
 rm -rf "o'brien dir" && mkdir "o'brien dir" && cp "$SRC/Hello.m9" "o'brien dir/"
 ( cd "o'brien dir" &&
   M9LIBRARY="$SRC" "$M9C" --make -o hello "$PWD/Hello.m9" >q.txt 2>&1 ||
     { echo "FAIL: a quote in the directory name broke the build:"; head -5 q.txt; exit 1; }
   [ "$(./hello | head -1)" = "hello, world" ] ||
     { echo "FAIL: built under a quoted name but answered wrong"; ./hello; exit 1; } ) || exit 1
-# and what cc says comes back on stderr as cc wrote it, then m9c's
-# own verdict -- a bad flag after -- is the cheapest way to make cc
-# talk; a compiler that cannot be started is named, not shelled at
+# What cc says comes back on stderr as cc wrote it, then m9c's own
+# verdict.  A bad flag after -- is the cheapest way to make cc talk.
+# A compiler that cannot be started is named, not shelled at.
 rm -f DynStr.o DynStr.h
 "$M9C" -c "$SRC/DynStr.m9" -- -fno-such-flag >cc1.txt 2>cc2.txt && {
   echo "FAIL: cc's failure was not m9c's"; exit 1; }
@@ -1101,21 +1115,21 @@ echo "     directory name builds, and cc's own words come back"
 
 # THE DEFAULTS ARE RELATIVE TO THE EXECUTABLE.  Through 0.7.0 the
 # flagless command looked for its library in /usr/lib/m9 and its
-# headers in /usr/include/m9 -- the install locations, spelled as
-# constants -- so a compiler living anywhere else (a build.sh DESTDIR
+# headers in /usr/include/m9, the install locations, spelled as
+# constants.  So a compiler living anywhere else (a build.sh DESTDIR
 # tree, the Windows zip, out/m9c in this very tree) found the
 # PACKAGE'S runtime under its own freshly generated C unless
 # $M9RUNTIME and $M9LIBRARY said otherwise.  Now m9c asks
 # System.Executable where it is and looks beside itself first:
 # <prefix>/lib/m9, <prefix>/runtime or <prefix>/include/m9, and
 # <prefix>/lib/libm9rt.a, where prefix is two directories up from the
-# binary.  Two layouts, both from an EMPTY directory with no variable
-# set, both required to say what they linked in -v and to run.
-# Shown able to fail: the compiler built from the previous
-# runtime/gen answers "-iquote /usr/include/m9 ... -lm9rt" for both
-# (measured with the 0.7.0 package installed; with /usr/lib/m9
-# hidden under a tmpfs it is "cannot find module Io on the search
-# path" -- the relocated tree's own lib/m9 was never looked at).
+# binary.  The check runs two layouts, both from an EMPTY directory
+# with no variable set.  Both must say what they linked in -v, and
+# run.  The check is shown able to fail: the compiler built from the
+# previous runtime/gen answers "-iquote /usr/include/m9 ... -lm9rt"
+# for both.  (Measured with the 0.7.0 package installed.  With
+# /usr/lib/m9 hidden under a tmpfs it is "cannot find module Io on the
+# search path": the relocated tree's own lib/m9 was never looked at.)
 #
 # (a) a relocated install, the shape build.sh DESTDIR makes: bin/,
 #     lib/m9/, include/m9/m9rt.h and lib/libm9rt.a under one prefix
@@ -1141,7 +1155,7 @@ cp "$SRC/Hello.m9" w2/
   [ "$(./hello | head -1)" = "hello, world" ] ||
     { echo "FAIL: built from the relocated install but answered wrong"; ./hello; exit 1; } ) || exit 1
 # (b) the zip layout: bin/, lib/m9/ and the runtime as SOURCES in
-#     runtime/ -- sources beside the header win over any archive
+#     runtime/.  Sources beside the header win over any archive.
 rm -rf zip w3 && mkdir -p zip/bin zip/lib/m9 zip/runtime w3
 cp "$M9C" zip/bin/m9c
 cp "$SRC/DynStr.m9" "$SRC/Io.m9" zip/lib/m9/
@@ -1159,7 +1173,7 @@ cp "$SRC/Hello.m9" w3/
     { echo "FAIL: the zip layout linked an installed archive under its own header:"; grep -- '-lm9rt' r.txt; exit 1; }
   [ "$(./hello | head -1)" = "hello, world" ] ||
     { echo "FAIL: built from the zip layout but answered wrong"; ./hello; exit 1; } ) || exit 1
-# and --help names the places it will use, not the package's
+# --help names the places it will use, not the package's.
 ( cd w3 && env -u M9LIBRARY -u M9RUNTIME ../zip/bin/m9c --help >h.txt 2>&1 || exit 1
   P=$(cd ../zip && pwd -P)
   grep -q "^ *$P/lib/m9\$" h.txt || { echo "FAIL: --help does not name the zip's library:"; cat h.txt; exit 1; }
@@ -1168,8 +1182,8 @@ cp "$SRC/Hello.m9" w3/
 #     the runtime position-independent and builds the session host,
 #     so it needs the runtime as SOURCES; build.sh installs them as
 #     share/m9/runtime, apart from include/m9, where sources would win
-#     over the archive for every link.  Without them it says so; with
-#     them it builds; and an ordinary link still takes the archive.
+#     over the archive for every link.  Without them it says so.  With
+#     them it builds, and an ordinary link still takes the archive.
 #     (Until 2026-10-05 an installed m9c refused every --cell.)
 rm -rf w4 && mkdir -p w4 && cp "$SRC/Hello.m9" w4/
 ( cd w4 && env -u M9LIBRARY -u M9RUNTIME M9CACHE="$PWD/cache" \

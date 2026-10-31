@@ -1,8 +1,8 @@
 MODULE R3OwnZarr ;
-(* the library's own API in N19's shape: a view of an owned Array's cache
-   pool (ReadChunk's RO answer) read after the Array is consumed by
-   CloseArray (OWN a).  The definition's comment says the caller "cannot
-   retain it past the next call". *)
+(* This is the library's own API in N19's shape: a view of an owned
+   Array's cache pool (ReadChunk's RO answer) is read after the Array
+   is consumed by CloseArray (OWN a).  The definition's comment says
+   the caller "cannot retain it past the next call". *)
 IMPORT Io, Fmt, ZarrStore ;
 PROCEDURE Go (RO dir: STR) RAISES ZarrStore.StoreError, ZarrStore.FormatError =
 VAR

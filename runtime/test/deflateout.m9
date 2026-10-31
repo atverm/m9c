@@ -5,9 +5,9 @@ MODULE deflateout ;
         (Zip.Compress) and OUT.raw (Zip.Deflate), and prints
         `IN-LENGTH GZ-LENGTH` on one line
 
-   The program runtime/test/deflate.sh drives: what it writes is read
-   back by Python's gzip and zlib there, which is the whole check --
-   a compressor is right when somebody else's inflate says so. *)
+   runtime/test/deflate.sh drives this program.  Python's gzip and
+   zlib read back what it writes there, which is the whole check: a
+   compressor is right when somebody else's inflate says so. *)
 
 IMPORT Io ;
 IMPORT Zip ;

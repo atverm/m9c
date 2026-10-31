@@ -1,20 +1,20 @@
-/* Zarr.m9 -- the zarr v2 WRITER, against zarr-python.
+/* This holds Zarr.m9, the zarr v2 WRITER, to zarr-python.
  *
- * Named zarrw_ because zarr_driver.c is already ZarrStore's, the
- * HTTP READER: two modules, two directions, and one of them was here
- * first.
+ * It is named zarrw_ because zarr_driver.c is already ZarrStore's,
+ * the HTTP READER.  There are two modules, two directions, and one of
+ * them was here first.
  *
- * A store nobody can open is worse than no store, so the oracle is
- * the library the clients actually use: this driver writes a store,
- * checks the metadata text and the raw chunk bytes ITSELF -- every
- * expected value below is written here by hand and nothing is read
- * back from the code under test -- and then, when python3 + zarr are
- * on the machine, hands the directory to zarr-python and has it
- * report every cell back.  arrow_driver.c's arrangement, for the
- * same reason.
+ * A store nobody can open is worse than no store.  So the oracle is
+ * the library the clients actually use.  This driver writes a store
+ * and checks the metadata text and the raw chunk bytes ITSELF.  Every
+ * expected value below is written here by hand, and nothing is read
+ * back from the code under test.  Then, when python3 + zarr are on
+ * the machine, it hands the directory to zarr-python and has it
+ * report every cell back.  arrow_driver.c has the same arrangement,
+ * for the same reason.
  *
- * The uncompressed cases are deliberate: at clevel 0 the chunk file
- * IS the buffer, so the little-endian spelling, the two's-complement
+ * The uncompressed cases are deliberate.  At clevel 0 the chunk file
+ * IS the buffer.  So the little-endian spelling, the two's-complement
  * negative and the fill padding of an edge chunk can be asserted as
  * bytes rather than inferred from a reader agreeing with a writer.
  */
@@ -28,11 +28,13 @@
 #define ROOT "/tmp/m9-zarr-test.zarr"
 #define ROOT2 "/tmp/m9-zarr-test2.zarr"   /* the byte-identity store */
 
-static m9_sl_CHAR sl (const char *s, uint32_t *buf)
+/* A STR is UTF-8 octets.  The C literal is already UTF-8, so sl copies
+   its bytes. */
+static m9_sl_UTF8 sl (const char *s, uint8_t *buf)
 {
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
+  int64_t n = (int64_t) strlen (s);
+  memcpy (buf, s, (size_t) n);
+  return (m9_sl_UTF8){ buf, n };
 }
 
 static int checks = 0, fails = 0;
@@ -43,7 +45,8 @@ static void ck (bool okp, const char *what)
   fflush (stdout);
 }
 
-/* a whole file, NUL-terminated so text can be strcmp'd */
+/* slurp reads a whole file, NUL-terminated so text can be
+   strcmp'd. */
 static unsigned char fbuf[1 << 16];
 static long slurp (const char *path)
 {
@@ -90,8 +93,8 @@ static void ckbytes (const char *path, const unsigned char *want, long n,
   fflush (stdout);
 }
 
-/* the first n bytes only -- for a chunk whose tail is fill and whose
-   fill pattern is asserted elsewhere */
+/* ckbytes_prefix checks the first n bytes only.  It serves a chunk
+   whose tail is fill and whose fill pattern is asserted elsewhere. */
 static void ckbytes_prefix (const char *path, const unsigned char *want,
                             long n, const char *what)
 {
@@ -119,8 +122,8 @@ int main (int argc, char **argv)
 {
   m9_state errv = {0}, *err = &errv;
   m9_pool pool = {0};
-  uint32_t nb[68][80];
-  m9_sl_CHAR dims1[1], strs[3];
+  uint8_t nb[68][80];
+  m9_sl_UTF8 dims1[1], strs[3];
   int64_t sh[3], ch[3];
   int64_t iv[8], tv[2];
   float fv[5];
@@ -155,7 +158,7 @@ int main (int argc, char **argv)
   sh[0] = 5; ch[0] = 2;
   Zarr_WriteF32 (&pool, sl (ROOT "/_obs/v", nb[6]), (m9_sl_F32){ fv, 5 },
                  (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                 (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, err);
+                 (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, err);
   ck (err->exc == NULL, "an f4 array with a short edge chunk writes");
   cktext (ROOT "/_obs/v/.zarray",
           "{\"shape\": [5], \"chunks\": [2], \"dtype\": \"<f4\", "
@@ -171,9 +174,9 @@ int main (int argc, char **argv)
     memcpy (want0, &a, 4); memcpy (want0 + 4, &b, 4);
     ckbytes (ROOT "/_obs/v/0", want0, 8, "chunk 0 is two little-endian f4");
   }
-  /* THE EDGE CHUNK IS FULL, not short: zarr pads with the fill value,
+  /* THE EDGE CHUNK IS FULL, not short.  zarr pads with the fill value,
      and a reader that trusted the file length would read a short
-     buffer.  The pad must be NaN, never 0.0 -- a 0.0 fill on a
+     buffer.  The pad must be NaN, never 0.0.  A 0.0 fill on a
      coordinate once put 1.3 M phantom positions on Null Island. */
   n = slurp (ROOT "/_obs/v/2");
   ck (n == 8, "the last chunk is a FULL chunk, padded");
@@ -186,13 +189,13 @@ int main (int argc, char **argv)
   /* ---- i1, and the negative that the checked conversion caught ---- */
   iv[0] = -1; iv[1] = 0; iv[2] = 3;
   sh[0] = 3; ch[0] = 3;
-  /* a dimension NAME carries exactly one length across a group, so
-     each array here names an axis of its own size; sharing 'obs'
-     across three lengths is a store xarray will not open */
+  /* A dimension NAME carries exactly one length across a group.  So
+     each array here names an axis of its own size.  Sharing 'obs'
+     across three lengths makes a store xarray will not open. */
   dims1[0] = sl ("obs3", nb[36]);
   Zarr_WriteInt (&pool, sl (ROOT "/_obs/qc", nb[7]), (m9_sl_I64){ iv, 3 },
                  1, true, (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                 (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, err);
+                 (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, err);
   ck (err->exc == NULL, "an int8 flag column writes");
   cktext (ROOT "/_obs/qc/.zarray",
           "{\"shape\": [3], \"chunks\": [3], \"dtype\": \"|i1\", "
@@ -201,9 +204,9 @@ int main (int argc, char **argv)
           "\"zarr_format\": 2}",
           "|i1 takes '|' and fill_value NULL, never 0");
   {
-    /* the ICOS 'not checked' sentinel: FF, two's complement, and NOT
-       a refusal -- BYTE (x MOD 256) was the first spelling and the
-       checker rejected it on exactly this value */
+    /* The ICOS 'not checked' sentinel is FF, two's complement, and NOT
+       a refusal.  BYTE (x MOD 256) was the first spelling, and the
+       checker rejected it on exactly this value. */
     static const unsigned char want[3] = { 0xFF, 0x00, 0x03 };
     ckbytes (ROOT "/_obs/qc/0", want, 3, "-1 is FF, not a refusal");
   }
@@ -213,7 +216,7 @@ int main (int argc, char **argv)
   dims1[0] = sl ("obs2", nb[37]);
   Zarr_WriteInt (&pool, sl (ROOT "/_obs/i4", nb[8]), (m9_sl_I64){ iv, 2 },
                  4, true, (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                 (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, err);
+                 (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, err);
   {
     static const unsigned char want[8] =
       { 0xFF, 0xFF, 0xFF, 0xFF, 0xE8, 0x03, 0x00, 0x00 };
@@ -225,7 +228,7 @@ int main (int argc, char **argv)
   sh[0] = 2; ch[0] = 2;
   Zarr_WriteTimeNs (&pool, sl (ROOT "/_obs/time", nb[9]), (m9_sl_I64){ tv, 2 },
                     (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                    (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, err);
+                    (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, err);
   cktext (ROOT "/_obs/time/.zarray",
           "{\"shape\": [2], \"chunks\": [2], \"dtype\": \"<M8[ns]\", "
           "\"fill_value\": null, \"order\": \"C\", \"filters\": null, "
@@ -249,12 +252,12 @@ int main (int argc, char **argv)
   {
     bool bv[3];
     unsigned char want[3];
-    m9_sl_CHAR bd[1]; bd[0] = sl ("cruise", nb[63]);
+    m9_sl_UTF8 bd[1]; bd[0] = sl ("cruise", nb[63]);
     bv[0] = true; bv[1] = false; bv[2] = true;
     sh[0] = 3; ch[0] = 3;
     Zarr_WriteBool (&pool, sl (ROOT "/_obs/fixed", nb[64]),
                     (m9_sl_BOOL){ bv, 3 }, (m9_sl_I64){ sh, 1 },
-                    (m9_sl_I64){ ch, 1 }, (m9_sl_m9_sl_CHAR){ bd, 1 },
+                    (m9_sl_I64){ ch, 1 }, (m9_sl_m9_sl_UTF8){ bd, 1 },
                     0, err);
     cktext (ROOT "/_obs/fixed/.zarray",
             "{\"shape\": [3], \"chunks\": [3], \"dtype\": \"|b1\", "
@@ -271,26 +274,26 @@ int main (int argc, char **argv)
      The ICOS ecosystem store needs all three at once: a 0-d `<U5`
      holding `PT30M`, small `<U` label coordinates, and the ONEFlux
      cube `GPP(time, partition_method, ustar_threshold, nee_variant)`.
-     The chunk walk is an odometer over the axes now, so the rank-4
-     case with a RAGGED last chunk on two axes is what proves it: an
-     edge chunk must carry the fill wherever the array does not reach,
-     and the cell that lands there is the one a fixed three-deep
-     nesting could not have addressed at all. */
+     The chunk walk is an odometer over the axes now.  The rank-4
+     case with a RAGGED last chunk on two axes proves it.  An edge
+     chunk must carry the fill wherever the array does not reach.  The
+     cell that lands there is the one a fixed three-deep nesting could
+     not have addressed at all. */
   {
     m9_state e = {0};
-    m9_sl_CHAR us[6];
+    m9_sl_UTF8 us[6];
     unsigned char want[24];
-    m9_sl_CHAR ud0[1]; /* the 0-d array has NO dimensions */
-    m9_sl_CHAR ud1[1];
+    m9_sl_UTF8 ud0[1]; /* the 0-d array has NO dimensions */
+    m9_sl_UTF8 ud1[1];
     int64_t sh0[1], ch0[1];
     ud1[0] = sl ("nee_variant", nb[65]);
 
-    /* a scalar: shape [], chunks [], one chunk file named `0` */
+    /* A scalar has shape [], chunks [], one chunk file named `0`. */
     us[0] = sl ("PT30M", nb[0]);
     Zarr_WriteStrUcs4 (&pool, sl (ROOT "/_obs/tres", nb[1]),
-                       (m9_sl_m9_sl_CHAR){ us, 1 }, 5,
+                       (m9_sl_m9_sl_UTF8){ us, 1 }, 5,
                        (m9_sl_I64){ sh0, 0 }, (m9_sl_I64){ ch0, 0 },
-                       (m9_sl_m9_sl_CHAR){ ud0, 0 }, 0, err);
+                       (m9_sl_m9_sl_UTF8){ ud0, 0 }, 0, err);
     cktext (ROOT "/_obs/tres/.zarray",
             "{\"shape\": [], \"chunks\": [], \"dtype\": \"<U5\", "
             "\"fill_value\": null, \"order\": \"C\", \"filters\": null, "
@@ -303,33 +306,33 @@ int main (int argc, char **argv)
     ckbytes (ROOT "/_obs/tres/0", want, 20,
              "one UCS-4 code point per cell, four octets, LE");
 
-    /* a <U label coordinate, three values, one short */
+    /* Write a <U label coordinate, three values, one short. */
     us[0] = sl ("CUT", nb[2]);
     us[1] = sl ("VUT", nb[3]);
     us[2] = sl ("p5", nb[4]);
     sh0[0] = 3; ch0[0] = 3;
     Zarr_WriteStrUcs4 (&pool, sl (ROOT "/_obs/ustar", nb[5]),
-                       (m9_sl_m9_sl_CHAR){ us, 3 }, 3,
+                       (m9_sl_m9_sl_UTF8){ us, 3 }, 3,
                        (m9_sl_I64){ sh0, 1 }, (m9_sl_I64){ ch0, 1 },
-                       (m9_sl_m9_sl_CHAR){ ud1, 1 }, 0, err);
+                       (m9_sl_m9_sl_UTF8){ ud1, 1 }, 0, err);
     ck (err->exc == NULL, "a <U label coordinate writes");
-    /* and a value longer than the width is REFUSED, not cut */
+    /* A value longer than the width is REFUSED, not cut. */
     us[0] = sl ("CUTTER", nb[6]);
     Zarr_WriteStrUcs4 (&pool, sl (ROOT "/_obs/bad", nb[7]),
-                       (m9_sl_m9_sl_CHAR){ us, 1 }, 3,
+                       (m9_sl_m9_sl_UTF8){ us, 1 }, 3,
                        (m9_sl_I64){ sh0, 1 }, (m9_sl_I64){ ch0, 1 },
-                       (m9_sl_m9_sl_CHAR){ ud1, 1 }, 0, &e);
+                       (m9_sl_m9_sl_UTF8){ ud1, 1 }, 0, &e);
     ck (e.exc != NULL, "a value past the <U width is refused, not cut");
     e.exc = NULL;
   }
   {
-    /* GPP(time=3, partition=2, ustar=2, variant=3) chunked
-       (2, 2, 1, 2): ragged on time AND on variant, so four of the
-       eight chunks carry fill. */
+    /* GPP(time=3, partition=2, ustar=2, variant=3) is chunked
+       (2, 2, 1, 2).  It is ragged on time AND on variant, so four of
+       the eight chunks carry fill. */
     m9_state e = {0};
     float cube[36];
     int64_t sh4[4], ch4[4];
-    m9_sl_CHAR cd[4];
+    m9_sl_UTF8 cd[4];
     unsigned char want[16];
     int q;
     for (q = 0; q < 36; q++) cube[q] = (float) q;
@@ -341,12 +344,12 @@ int main (int argc, char **argv)
     cd[3] = sl ("nee_variant", nb[11]);
     Zarr_WriteF32 (&pool, sl (ROOT "/_obs/GPP", nb[12]),
                    (m9_sl_F32){ cube, 36 }, (m9_sl_I64){ sh4, 4 },
-                   (m9_sl_I64){ ch4, 4 }, (m9_sl_m9_sl_CHAR){ cd, 4 },
+                   (m9_sl_I64){ ch4, 4 }, (m9_sl_m9_sl_UTF8){ cd, 4 },
                    0, err);
     ck (err->exc == NULL, "a rank-4 cube writes");
     /* chunk 0.0.0.0 holds (t,p,u,v) for t in 0..1, p in 0..1, u = 0,
-       v in 0..1 -- flat index t*12 + p*6 + u*3 + v, so
-       0,1, 6,7, 12,13, 18,19 */
+       v in 0..1.  The flat index is t*12 + p*6 + u*3 + v, so
+       0,1, 6,7, 12,13, 18,19. */
     {
       float exp[8] = { 0, 1, 6, 7, 12, 13, 18, 19 };
       unsigned char w[32];
@@ -354,7 +357,7 @@ int main (int argc, char **argv)
       ckbytes (ROOT "/_obs/GPP/0.0.0.0", w, 32,
                "the rank-4 chunk is C order over four axes");
     }
-    /* the LAST time chunk is half real: t = 2 only, so its second
+    /* The LAST time chunk is half real: t = 2 only.  So its second
        half is the NaN fill.  Cell (2,0,0,0) is 24. */
     {
       float v0 = 24.0f;
@@ -366,12 +369,12 @@ int main (int argc, char **argv)
     /* rank 6 is refused BY NAME */
     {
       int64_t s6[6] = { 1, 1, 1, 1, 1, 1 }, c6[6] = { 1, 1, 1, 1, 1, 1 };
-      m9_sl_CHAR d6[6];
+      m9_sl_UTF8 d6[6];
       float one = 1.0f;
       for (q = 0; q < 6; q++) d6[q] = sl ("d", nb[13]);
       Zarr_WriteF32 (&pool, sl (ROOT "/_obs/deep", nb[14]),
                      (m9_sl_F32){ &one, 1 }, (m9_sl_I64){ s6, 6 },
-                     (m9_sl_I64){ c6, 6 }, (m9_sl_m9_sl_CHAR){ d6, 6 },
+                     (m9_sl_I64){ c6, 6 }, (m9_sl_m9_sl_UTF8){ d6, 6 },
                      0, &e);
       ck (e.exc != NULL, "rank 6 is refused by name");
       e.exc = NULL;
@@ -386,9 +389,9 @@ int main (int argc, char **argv)
   sh[0] = 3; ch[0] = 2;
   dims1[0] = sl ("cruise", nb[13]);
   Zarr_WriteStrFixed (&pool, sl (ROOT "/_obs/expocode", nb[14]),
-                      (m9_sl_m9_sl_CHAR){ strs, 3 }, 12,
+                      (m9_sl_m9_sl_UTF8){ strs, 3 }, 12,
                       (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                      (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, err);
+                      (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, err);
   ck (err->exc == NULL, "a |S12 identity column writes");
   cktext (ROOT "/_obs/expocode/.zarray",
           "{\"shape\": [3], \"chunks\": [2], \"dtype\": \"|S12\", "
@@ -411,13 +414,12 @@ int main (int argc, char **argv)
   /* ---- |O + vlen-utf8: one chunk, and a scalar past ASCII ---- */
   strs[0] = sl ("A", nb[15]);
   strs[1] = sl ("", nb[16]);
-  strs[2] = sl ("x", nb[17]);
-  nb[17][0] = 0xE9;                    /* U+00E9, two octets of UTF-8 */
+  strs[2] = sl ("\xC3\xA9", nb[17]);  /* U+00E9, two octets of UTF-8 */
   sh[0] = 3;
   Zarr_WriteStrVlen (&pool, sl (ROOT "/_obs/platform", nb[18]),
-                     (m9_sl_m9_sl_CHAR){ strs, 3 },
+                     (m9_sl_m9_sl_UTF8){ strs, 3 },
                      (m9_sl_I64){ sh, 1 },
-                     (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, err);
+                     (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, err);
   ck (err->exc == NULL, "a vlen-utf8 table writes");
   cktext (ROOT "/_obs/platform/.zarray",
           "{\"shape\": [3], \"chunks\": [3], \"dtype\": \"|O\", "
@@ -442,30 +444,31 @@ int main (int argc, char **argv)
   for (i = 0; i < 4096; i++) big[i] = (float) (i % 8);
   sh[0] = 4096; ch[0] = 4096;
   {
-    /* its own axis name: xarray refuses a store where one dimension
-       name carries two lengths, and this array shares none */
-    m9_sl_CHAR pd[1]; pd[0] = sl ("packed_dim", nb[35]);
+    /* It gets its own axis name.  xarray refuses a store where one
+       dimension name carries two lengths, and this array shares
+       none. */
+    m9_sl_UTF8 pd[1]; pd[0] = sl ("packed_dim", nb[35]);
     Zarr_WriteF32 (&pool, sl (ROOT "/_obs/packed", nb[19]),
                    (m9_sl_F32){ big, 4096 },
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ pd, 1 }, Zarr_Lz4 (5, err), err);
+                   (m9_sl_m9_sl_UTF8){ pd, 1 }, Zarr_Lz4 (5, err), err);
   }
   ck (err->exc == NULL, "a blosc-compressed chunk writes");
   n = slurp (ROOT "/_obs/packed/0");
   ck (n > 0 && n < 16384, "blosc_compress_ctx actually compressed it");
   ck (n > 16 && fbuf[0] == 2, "the chunk carries a blosc v2 frame header");
 
-  /* THE SECOND CODEC IS NOT A TUNING KNOB: the NOAA ObsPack station
-     groups are zstd at 3 where the SOCAT tables are lz4 at 5, and a
+  /* THE SECOND CODEC IS NOT A TUNING KNOB.  The NOAA ObsPack station
+     groups are zstd at 3 where the SOCAT tables are lz4 at 5.  A
      store rebuilt with the other one has a different .zarray.  So
      zstd is written, its .zarray is asserted by hand, and the python
      half below reads the values back through numcodecs. */
   {
-    m9_sl_CHAR pd[1]; pd[0] = sl ("packed_dim2", nb[46]);
+    m9_sl_UTF8 pd[1]; pd[0] = sl ("packed_dim2", nb[46]);
     Zarr_WriteF32 (&pool, sl (ROOT "/_obs/packedz", nb[47]),
                    (m9_sl_F32){ big, 4096 },
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ pd, 1 }, Zarr_Zstd (3, err), err);
+                   (m9_sl_m9_sl_UTF8){ pd, 1 }, Zarr_Zstd (3, err), err);
   }
   ck (err->exc == NULL, "a zstd-compressed chunk writes");
   cktext (ROOT "/_obs/packedz/.zarray",
@@ -478,12 +481,12 @@ int main (int argc, char **argv)
   n = slurp (ROOT "/_obs/packedz/0");
   ck (n > 0 && n < 16384, "zstd actually compressed it");
 
-  /* ZARR'S OWN CHUNK GUESS, asserted against numbers computed by hand
-     from the algorithm: 57780 int64s halve ONCE to 28890, 258025
-     halve THREE times to 32254, and a small array is left whole.
-     500 of the live NOAA ObsPack store's 971 time axes are neither
-     the whole array nor a builder's cap, which is why this is
-     transcribed rather than approximated. */
+  /* ZARR'S OWN CHUNK GUESS is asserted against numbers computed by
+     hand from the algorithm.  57780 int64s halve ONCE to 28890,
+     258025 halve THREE times to 32254, and a small array is left
+     whole.  500 of the live NOAA ObsPack store's 971 time axes are
+     neither the whole array nor a builder's cap.  That is why this
+     is transcribed rather than approximated. */
   {
     int64_t gs[2], *gc;
     m9_sl_I64 got;
@@ -509,18 +512,18 @@ int main (int argc, char **argv)
         "guess_chunks: 2-D halves the FIRST axis, round-robin");
   }
 
-  /* THE DECLARED FILL, which is a different job from an invented one:
-     an ICOS ObsPack nvalue says -9 is missing and a reader masks on
-     it, so the store must carry it or those observations read as
-     real.  Asserted as .zarray TEXT, by hand. */
+  /* THE DECLARED FILL is a different job from an invented one.  An
+     ICOS ObsPack nvalue says -9 is missing, and a reader masks on
+     it.  So the store must carry it, or those observations read as
+     real.  It is asserted as .zarray TEXT, by hand. */
   sh[0] = 3; ch[0] = 3;
   {
-    m9_sl_CHAR pd[1]; pd[0] = sl ("fdim", nb[50]);
+    m9_sl_UTF8 pd[1]; pd[0] = sl ("fdim", nb[50]);
     iv[0] = -9; iv[1] = 4; iv[2] = -9;
     Zarr_WriteIntFill (&pool, sl (ROOT "/_obs/nv", nb[51]),
                        (m9_sl_I64){ iv, 3 }, 4, true, true, -9,
                        (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                       (m9_sl_m9_sl_CHAR){ pd, 1 }, 0, err);
+                       (m9_sl_m9_sl_UTF8){ pd, 1 }, 0, err);
   }
   ck (err->exc == NULL, "an int array with a declared fill writes");
   cktext (ROOT "/_obs/nv/.zarray",
@@ -531,27 +534,27 @@ int main (int argc, char **argv)
           "the fill the SOURCE declared, not null");
   {
     m9_state e3 = { 0 };
-    m9_sl_CHAR pd[1]; pd[0] = sl ("fdim2", nb[52]);
+    m9_sl_UTF8 pd[1]; pd[0] = sl ("fdim2", nb[52]);
     iv[0] = 1;
     Zarr_WriteIntFill (&pool, sl (ROOT "/_obs/badfill", nb[53]),
                        (m9_sl_I64){ iv, 1 }, 1, true, true, 999,
                        (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                       (m9_sl_m9_sl_CHAR){ pd, 1 }, 0, &e3);
+                       (m9_sl_m9_sl_UTF8){ pd, 1 }, 0, &e3);
     ck (e3.exc != NULL, "a fill that does not fit its own width is refused");
   }
   {
-    /* zarr spells a |S fill as BASE64 of the padded octets: '-' in a
+    /* zarr spells a |S fill as BASE64 of the padded octets.  '-' in a
        one-byte cell is "LQ==", which is what the live ICOS ObsPack
-       qc_flag column carries */
-    m9_sl_CHAR sv2[2], pd[1];
+       qc_flag column carries. */
+    m9_sl_UTF8 sv2[2], pd[1];
     pd[0] = sl ("fdim3", nb[54]);
     sv2[0] = sl ("U", nb[55]); sv2[1] = sl ("O", nb[56]);
     sh[0] = 2; ch[0] = 2;
     Zarr_WriteStrFixedFill (&pool, sl (ROOT "/_obs/qcf", nb[57]),
-                            (m9_sl_m9_sl_CHAR){ sv2, 2 }, 1, true,
+                            (m9_sl_m9_sl_UTF8){ sv2, 2 }, 1, true,
                             sl ("-", nb[58]),
                             (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                            (m9_sl_m9_sl_CHAR){ pd, 1 }, 0, err);
+                            (m9_sl_m9_sl_UTF8){ pd, 1 }, 0, err);
   }
   ck (err->exc == NULL, "a |S array with a declared fill writes");
   cktext (ROOT "/_obs/qcf/.zarray",
@@ -565,11 +568,11 @@ int main (int argc, char **argv)
   /* the bands are 100 apart so a BARE LEVEL cannot silently mean raw */
   {
     m9_state e2 = { 0 };
-    m9_sl_CHAR pd[1]; pd[0] = sl ("packed_dim3", nb[48]);
+    m9_sl_UTF8 pd[1]; pd[0] = sl ("packed_dim3", nb[48]);
     Zarr_WriteF32 (&pool, sl (ROOT "/_obs/badcomp", nb[49]),
                    (m9_sl_F32){ big, 4096 },
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ pd, 1 }, 5, &e2);
+                   (m9_sl_m9_sl_UTF8){ pd, 1 }, 5, &e2);
     ck (e2.exc != NULL, "a bare 5 is refused, not taken as raw");
   }
   free (big);
@@ -582,7 +585,7 @@ int main (int argc, char **argv)
     fv[0] = 1.0f;
     Zarr_WriteF32 (&pool, sl (ROOT "/_obs/bad", nb[20]), (m9_sl_F32){ fv, 1 },
                    (m9_sl_I64){ sh, 3 }, (m9_sl_I64){ ch, 2 },
-                   (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, &e);
+                   (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, &e);
     ck (e.exc != NULL, "chunks of a different rank than shape are refused");
   }
   {
@@ -590,58 +593,59 @@ int main (int argc, char **argv)
     sh[0] = 2; ch[0] = 0;
     Zarr_WriteF32 (&pool, sl (ROOT "/_obs/bad", nb[21]), (m9_sl_F32){ fv, 2 },
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, &e);
+                   (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, &e);
     ck (e.exc != NULL, "a zero chunk size is refused");
   }
   {
-    /* |u1 and <u2 are offered unsigned; wider is not, because no ICOS
-       store carries one and Zread does not read one */
+    /* |u1 and <u2 are offered unsigned.  Wider is not, because no ICOS
+       store carries one and Zread does not read one. */
     m9_state e = {0}; e.res = &pool;
     sh[0] = 2; ch[0] = 2;
     Zarr_WriteInt (&pool, sl (ROOT "/_obs/bad", nb[22]), (m9_sl_I64){ iv, 2 },
                    4, false, (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, &e);
+                   (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, &e);
     ck (e.exc != NULL, "only |u1 and <u2 are offered unsigned");
   }
   {
-    /* and <u2 IS offered: obspack_id_src indexes a prefix list, and 29
-       arrays of the live NOAA ObsPack store use it */
-    m9_sl_CHAR pd[1]; pd[0] = sl ("u2dim", nb[59]);
+    /* <u2 IS offered: obspack_id_src indexes a prefix list, and 29
+       arrays of the live NOAA ObsPack store use it. */
+    m9_sl_UTF8 pd[1]; pd[0] = sl ("u2dim", nb[59]);
     sh[0] = 2; ch[0] = 2;
     iv[0] = 0; iv[1] = 65535;
     Zarr_WriteInt (&pool, sl (ROOT "/_obs/src", nb[60]),
                    (m9_sl_I64){ iv, 2 }, 2, false,
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ pd, 1 }, 0, err);
+                   (m9_sl_m9_sl_UTF8){ pd, 1 }, 0, err);
     ck (err->exc == NULL, "<u2 writes, and 65535 fits it");
   }
   {
     m9_state e = {0}; e.res = &pool;
-    m9_sl_CHAR pd[1]; pd[0] = sl ("u2dim", nb[61]);
+    m9_sl_UTF8 pd[1]; pd[0] = sl ("u2dim", nb[61]);
     iv[0] = 65536;
     Zarr_WriteInt (&pool, sl (ROOT "/_obs/bad", nb[62]),
                    (m9_sl_I64){ iv, 1 }, 2, false,
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ pd, 1 }, 0, &e);
+                   (m9_sl_m9_sl_UTF8){ pd, 1 }, 0, &e);
     ck (e.exc != NULL, "and 65536 does not");
   }
   {
     m9_state e = {0}; e.res = &pool;
     Zarr_WriteInt (&pool, sl (ROOT "/_obs/bad", nb[23]), (m9_sl_I64){ iv, 2 },
                    3, true, (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, &e);
+                   (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, &e);
     ck (e.exc != NULL, "an integer width of 3 is refused");
   }
   {
-    /* the one that matters most: a truncated expocode is a DIFFERENT
-       cruise, and numpy's own assignment would have cut it silently */
+    /* This one matters most.  A truncated expocode is a DIFFERENT
+       cruise, and numpy's own assignment would have cut it
+       silently. */
     m9_state e = {0}; e.res = &pool;
     strs[0] = sl ("far too long", nb[24]);
     sh[0] = 1; ch[0] = 1;
     Zarr_WriteStrFixed (&pool, sl (ROOT "/_obs/bad", nb[25]),
-                        (m9_sl_m9_sl_CHAR){ strs, 1 }, 4,
+                        (m9_sl_m9_sl_UTF8){ strs, 1 }, 4,
                         (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                        (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, &e);
+                        (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, &e);
     ck (e.exc != NULL, "a string longer than its |S width is refused");
   }
   ck (slurp (ROOT "/_obs/bad/.zarray") < 0,
@@ -650,9 +654,9 @@ int main (int argc, char **argv)
     m9_state e = {0}; e.res = &pool;
     sh[0] = 5;
     Zarr_WriteStrVlen (&pool, sl (ROOT "/_obs/bad2", nb[26]),
-                       (m9_sl_m9_sl_CHAR){ strs, 1 },
+                       (m9_sl_m9_sl_UTF8){ strs, 1 },
                        (m9_sl_I64){ sh, 1 },
-                       (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, &e);
+                       (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, &e);
     ck (e.exc != NULL, "data that does not fill the shape is refused");
   }
 
@@ -661,7 +665,7 @@ int main (int argc, char **argv)
      against zarr-python's own consolidate over the same files. ---- */
   if (system ("rm -rf " ROOT2) != 0) { printf ("FAIL: cannot clear " ROOT2 "\n"); return 1; }
   {
-    m9_sl_CHAR d2[1];
+    m9_sl_UTF8 d2[1];
     Zarr_CreateGroup (&pool, sl (ROOT2, nb[38]), err);
     Zarr_WriteAttrs (&pool, sl (ROOT2, nb[39]),
                      sl ("{\"title\":\"two\",\"n\":3}", nb[40]), err);
@@ -670,11 +674,11 @@ int main (int argc, char **argv)
     fv[0] = 1.5f; fv[1] = 2.5f; fv[2] = 3.5f; fv[3] = 4.5f;
     Zarr_WriteF32 (&pool, sl (ROOT2 "/a", nb[42]), (m9_sl_F32){ fv, 4 },
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ d2, 1 }, 0, err);
+                   (m9_sl_m9_sl_UTF8){ d2, 1 }, 0, err);
     iv[0] = -1; iv[1] = 2; iv[2] = 3; iv[3] = 4;
     Zarr_WriteInt (&pool, sl (ROOT2 "/q", nb[43]), (m9_sl_I64){ iv, 4 },
                    1, true, (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ d2, 1 }, 0, err);
+                   (m9_sl_m9_sl_UTF8){ d2, 1 }, 0, err);
     Zarr_Consolidate (&pool, sl (ROOT2, nb[44]), err);
     ck (err->exc == NULL, "the second store consolidates");
   }
@@ -684,12 +688,13 @@ int main (int argc, char **argv)
      That is the whole claim, and 44 M rows is why it exists. ---- */
   {
     Zarr_Sink *sk;
-    m9_sl_CHAR sd[1];
+    m9_sl_UTF8 sd[1];
     int64_t k;
     sd[0] = sl ("streamed_dim", nb[36]);
-    /* 1000 values through chunks of 7: 142 full chunks and a partial */
+    /* Write 1000 values through chunks of 7: 142 full chunks and a
+       partial. */
     sk = Zarr_SinkF32 (&pool, sl (ROOT "/_obs/streamed", nb[37]), 7,
-                       (m9_sl_m9_sl_CHAR){ sd, 1 }, 0, err);
+                       (m9_sl_m9_sl_UTF8){ sd, 1 }, 0, err);
     ck (err->exc == NULL, "a float sink opens");
     for (k = 0; k < 1000; k++) Zarr_PutF32 (&sk, &pool,(float) k * 0.5f, err);
     ck (err->exc == NULL && Zarr_Rows (sk, err) == 1000,
@@ -702,8 +707,8 @@ int main (int argc, char **argv)
             "\"dimension_separator\": \".\", \"compressor\": null, "
             "\"zarr_format\": 2}",
             "the shape is what was actually written, not declared ahead");
-    /* the LAST chunk is padded: 1000 = 142*7 + 6, so chunk 142 holds
-       six values and one NaN, and the file is a full chunk */
+    /* The LAST chunk is padded: 1000 = 142*7 + 6.  So chunk 142 holds
+       six values and one NaN, and the file is a full chunk. */
     n = slurp (ROOT "/_obs/streamed/142");
     ck (n == 7 * 4, "the partial last chunk is a FULL chunk file");
     {
@@ -713,11 +718,11 @@ int main (int argc, char **argv)
       ck (last == 999.0f * 0.5f, "with the last real value in place");
       ck (pad != pad, "and the tail padded with the fill, not zero");
     }
-    /* an integer sink, and the checked conversion that makes a QC
-       column safe: 300 does not fit int8 and must not become 44 */
+    /* An integer sink has the checked conversion that makes a QC
+       column safe: 300 does not fit int8 and must not become 44. */
     sd[0] = sl ("flag_dim", nb[39]);
     sk = Zarr_SinkInt (&pool, sl (ROOT "/_obs/flag", nb[38]), 1, true,
-                       64, (m9_sl_m9_sl_CHAR){ sd, 1 }, 0, err);
+                       64, (m9_sl_m9_sl_UTF8){ sd, 1 }, 0, err);
     for (k = 0; k < 100; k++) Zarr_PutI64 (&sk, &pool,(k % 5) - 1, err);
     ck (err->exc == NULL, "an int8 sink takes -1..3");
     {
@@ -745,7 +750,7 @@ int main (int argc, char **argv)
       && has (ROOT "/.zmetadata", "\"_obs/.zgroup\""),
       "the full walk indexes every array below the root");
 
-  /* the SLIM root is not an optimisation: a full consolidate at ICOS
+  /* The SLIM root is not an optimisation.  A full consolidate at ICOS
      site density re-bloated one root from 7 MB to 1.2 GB and took the
      viewers down.  It indexes the entity MARKERS and _combined, and
      nothing deeper. */
@@ -755,11 +760,11 @@ int main (int argc, char **argv)
     sh[0] = 2; ch[0] = 2;
     Zarr_WriteF32 (&pool, sl (ROOT "/SITE1/deep", nb[31]), (m9_sl_F32){ fv, 2 },
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, err);
+                   (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, err);
     Zarr_CreateGroup (&pool, sl (ROOT "/_combined", nb[32]), err);
     Zarr_WriteF32 (&pool, sl (ROOT "/_combined/panel", nb[33]), (m9_sl_F32){ fv, 2 },
                    (m9_sl_I64){ sh, 1 }, (m9_sl_I64){ ch, 1 },
-                   (m9_sl_m9_sl_CHAR){ dims1, 1 }, 0, err);
+                   (m9_sl_m9_sl_UTF8){ dims1, 1 }, 0, err);
     Zarr_ConsolidateSlim (&pool, sl (ROOT, nb[34]), err);
     ck (err->exc == NULL, "the slim consolidation writes");
     ck (has (ROOT "/.zmetadata", "\"SITE1/.zgroup\""),
@@ -770,17 +775,17 @@ int main (int argc, char **argv)
         "the slim root does NOT descend into an entity");
     ck (!has (ROOT "/.zmetadata", "\"_obs/expocode/.zarray\""),
         "and it replaced the full index rather than adding to it");
-    /* a `_`-prefixed group that is NOT _combined contributes nothing
-       at all -- not even its marker.  The whole point of a slim root
+    /* A `_`-prefixed group that is NOT _combined contributes nothing
+       at all, not even its marker.  The whole point of a slim root
        is that it stays small. */
     ck (!has (ROOT "/.zmetadata", "\"_obs/.zgroup\""),
         "a _-prefixed group other than _combined is not indexed");
-    /* THE MARKER IS WRITTEN BY THE CONSOLIDATION, not by the caller:
-       a store is marked by the ACT, so a builder cannot leave it
-       unmarked and hand the next tool a root it will re-bloat. */
+    /* THE MARKER IS WRITTEN BY THE CONSOLIDATION, not by the caller.
+       The ACT marks a store, so a builder cannot leave it unmarked
+       and hand the next tool a root it will re-bloat. */
     ck (has (ROOT "/.zattrs", "\"metadata_layout\": \"shallow-root\""),
         "ConsolidateSlim marks the root .zattrs itself");
-    /* and the refusal that marker exists for */
+    /* Check the refusal that marker exists for. */
     {
       m9_state e = {0}; e.res = &pool;
       Zarr_Consolidate (&pool, sl (ROOT, nb[45]), &e);
@@ -793,9 +798,9 @@ int main (int argc, char **argv)
   /* ---- the cross half: zarr-python reads what M9 wrote ---- */
   if (system ("python3 -c 'import zarr' >/dev/null 2>&1") == 0) {
     int rc;
-    /* the slim root is in place by now and a group open would read
-       it without being asked, so each array is opened by its own
-       path instead */
+    /* The slim root is in place by now, and a group open would read
+       it without being asked.  So each array is opened by its own
+       path instead. */
     rc = system (
       "python3 - <<'PY'\n"
       "import zarr, sys\n"
@@ -831,11 +836,11 @@ int main (int argc, char **argv)
       "PY\n");
     ck (rc == 0, "zarr-python reads every dtype back equal");
     /* THE .zmetadata IS BYTE-IDENTICAL TO zarr-python 3's.  It cannot
-       be identical to zarr 2's -- measured 2026-09-09, the two majors
-       disagree with each other: 2.18.7 indents by four and sorts its
-       keys, 3.3.0 writes one line with json.dumps' default
+       be identical to zarr 2's.  Measured 2026-09-09, the two majors
+       disagree with each other.  2.18.7 indents by four and sorts its
+       keys.  3.3.0 writes one line with json.dumps' default
        separators.  This module writes the second, which is also what
-       icos_ingest.finalize writes a slim root in, so the check is
+       icos_ingest.finalize writes a slim root in.  So the check is
        skipped rather than failed on zarr 2. */
     rc = system (
       "python3 - <<'PY'\n"

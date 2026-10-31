@@ -1,9 +1,9 @@
-(* EXPECT-ERROR: argument 1 of Run: cannot pass PROCEDURE (RO SLICE OF CHAR) : PTR Json.Node RAISES Json.ParseError where PROCEDURE (RO SLICE OF CHAR) : PTR Json.Node RAISES Csv.ParseError is expected *)
-(* A procedure fitted a procedure type by the BARE names of its RAISES:
-   one raising one module's Error was taken for a type raising
-   another's, the caller's handler for the type's exception did not
+(* EXPECT-ERROR: argument 1 of Run: cannot pass PROCEDURE (RO UTF) : PTR Json.Node RAISES Json.ParseError where PROCEDURE (RO UTF) : PTR Json.Node RAISES Csv.ParseError is expected *)
+(* A procedure fitted a procedure type by the BARE names of its RAISES.
+   One raising one module's Error was taken for a type raising
+   another's.  The caller's handler for the type's exception did not
    catch what the procedure raised, and the program died "unhandled
-   Error".  Observed 2026-10-21 by the compiler review (its C5 repro,
+   Error".  The compiler review observed it 2026-10-21 (its C5 repro,
    EA.Boom into a type raising EB.Error).  Json and Csv both declare a
    ParseError, which is the shape in the library. *)
 MODULE m ;

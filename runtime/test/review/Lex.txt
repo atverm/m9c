@@ -3,9 +3,9 @@ REVIEW Lex -- 25 procedures with a body, 16 of them functions; 7 headings in a D
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              16
   assignments                                   103
-  arguments                                     509
+  arguments                                     528
   RETURN values                                 141
-  operands of a comparison or an operator       188
+  operands of a comparison or an operator       187
   CASE labels                                    94
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -39,4 +39,4 @@ COUNTED -- how much there was to check
   NEW in the frame                                0
   NEW in a named pool                             2
   calls of a STR form with a UTF twin             0
-  STR subscripts, writes and LEN                  3   len s, len s, index s[i]
+  STR subscripts, writes and LEN                  0

@@ -1,23 +1,23 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
-/* tcpshim.c -- the TCP shim csock and csrv bind to, on POSIX and on
-   Windows.  Adapted from reference/m2-stack/tcpshim.c with one fix:
-   the reference leaked the socket when connect() failed; this closes
-   it.  SERIAL in the M9 declaration until audited, and the audit is
-   this file: getaddrinfo is thread-safe per POSIX, so the [SERIAL]
-   tag is conservative, not load-bearing.
+/* tcpshim.c is the TCP shim csock and csrv bind to, on POSIX and on
+   Windows.  It is adapted from reference/m2-stack/tcpshim.c with one
+   fix: the reference leaked the socket when connect() failed, and
+   this closes it.  The M9 declaration says SERIAL until audited, and
+   the audit is this file.  getaddrinfo is thread-safe per POSIX, so
+   the [SERIAL] tag is conservative, not load-bearing.
 
    THE SOCKET TRAVELS AS AN INT AND THE THREE I/O CALLS ARE THE SHIM'S
-   OWN.  On POSIX a socket is a descriptor and read/write/close work on
-   it; on Windows a SOCKET is a kernel handle that the C runtime's
-   read/write/close know nothing about, so Http used to bind libc's
+   OWN.  On POSIX a socket is a descriptor, and read/write/close work
+   on it.  On Windows a SOCKET is a kernel handle that the C runtime's
+   read/write/close know nothing about.  So Http used to bind libc's
    three by name and could not have run there.  tcp_read/tcp_write/
    tcp_close are read/write/close here and recv/send/closesocket
-   there, and the generated C names neither -- it names the shim,
-   which is the rule the runtime slice set (docs/windows-plan.md).
-   A SOCKET fits the int the M9 side declares because kernel handles
-   use 32 bits by contract (64-bit Windows keeps the upper half zero
-   for interoperability), and INVALID_SOCKET, all ones, comes out as
-   the -1 every caller already tests for.                            */
+   there.  The generated C names neither: it names the shim, which is
+   the rule the runtime slice set (docs/windows-plan.md).  A SOCKET
+   fits the int the M9 side declares, because kernel handles use 32
+   bits by contract (64-bit Windows keeps the upper half zero for
+   interoperability).  INVALID_SOCKET, all ones, comes out as the -1
+   every caller already tests for.                                   */
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -40,13 +40,14 @@
 #include <fcntl.h>
 #endif
 
-/* EVERY SOCKET IS CLOSE-ON-EXEC (2026-10-21, the compiler review's G9):
-   a child an Exec started inherited the listening socket and every
-   client's.  On Linux at the socket's making -- SOCK_CLOEXEC, and
-   accept4, which glibc declares only under _GNU_SOURCE, so here -- on
-   other Unixes by fcntl after it (macOS's spawn says CLOEXEC_DEFAULT
-   as well, which closes the window); Windows sockets are not inherited
-   by CreateProcess's explicit handle list. */
+/* EVERY SOCKET IS CLOSE-ON-EXEC (2026-10-21, the compiler review's G9).
+   A child an Exec started inherited the listening socket and every
+   client's.  On Linux the flag is set at the socket's making, with
+   SOCK_CLOEXEC and accept4.  glibc declares accept4 only under
+   _GNU_SOURCE, so it is declared here.  On other Unixes fcntl sets it
+   after the making (macOS's spawn says CLOEXEC_DEFAULT as well, which
+   closes the window).  Windows sockets are not inherited by
+   CreateProcess's explicit handle list. */
 #if defined (__linux__)
 #define M9_SOCK_CE SOCK_CLOEXEC
 int accept4 (int fd, struct sockaddr *addr, socklen_t *len, int flags);
@@ -72,9 +73,9 @@ typedef SOCKET sock_t;
 #define BAD_SOCK INVALID_SOCKET
 #define OPTP(x) ((const char *) (x))   /* setsockopt wants char * */
 
-/* Winsock must be started before the first socket call.  Once, from
-   whichever of connect/listen gets there first -- they sit behind
-   two different [SERIAL] monitors (csock's and csrv's), so the
+/* Winsock must be started before the first socket call.  It starts
+   once, from whichever of connect/listen gets there first.  They sit
+   behind two different [SERIAL] monitors (csock's and csrv's), so the
    once-only is the system's, not a static flag.                     */
 static INIT_ONCE wsa_once = INIT_ONCE_STATIC_INIT;
 static BOOL CALLBACK wsa_start (PINIT_ONCE o, PVOID p, PVOID *c)
@@ -112,10 +113,10 @@ int tcp_listen (int port, int backlog)
   if (fd == BAD_SOCK) return -1;
   m9_ce (fd);
 #ifdef _WIN32
-  /* Not SO_REUSEADDR: on Windows that option lets a second socket
-     bind a port another socket is LISTENING on, the opposite of what
-     a server wants; SO_EXCLUSIVEADDRUSE is the documented server
-     option there.                                                   */
+  /* This is not SO_REUSEADDR.  On Windows that option lets a second
+     socket bind a port another socket is LISTENING on, the opposite
+     of what a server wants.  SO_EXCLUSIVEADDRUSE is the documented
+     server option there.                                            */
   setsockopt (fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, OPTP (&one), sizeof one);
 #else
   setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof one);
@@ -131,12 +132,13 @@ int tcp_listen (int port, int backlog)
   return fd_of (fd);
 }
 
-/* tcp_listen at a NUMERIC address: 127.0.0.1, 0.0.0.0, ::1, :: or any
-   other, never a name -- a name could resolve to several addresses or
-   none, and a server that binds what a resolver answered today is not
-   configured, it is guessed.  :: takes v4 clients as well (IPV6_V6ONLY
-   off), as a server bound to "all addresses" is expected to.  -1 when
-   the address is not one or the port cannot be bound.               */
+/* tcp_listen_at is tcp_listen at a NUMERIC address: 127.0.0.1,
+   0.0.0.0, ::1, :: or any other, never a name.  A name could resolve
+   to several addresses or none.  A server that binds what a resolver
+   answered today is not configured, it is guessed.  :: takes v4
+   clients as well (IPV6_V6ONLY off), as a server bound to "all
+   addresses" is expected to.  It answers -1 when the address is not
+   one or the port cannot be bound.                                  */
 int tcp_listen_at (const char *addr, int port, int backlog)
 {
   char ps[16];
@@ -174,15 +176,16 @@ int tcp_accept (int fd);
 
 /* ---- stopping: a flag a signal, a console event or Stop sets ----
 
-   Process-wide, as a signal is.  The accepting thread asks it between
-   waits of at most a quarter of a second (tcp_accept_wait), so a stop
-   is seen within that; workers ask it between requests and while a
-   kept connection is idle.  Installed by HttpServer.Run for SIGTERM
-   and SIGINT (Ctrl-C and the console's close on Windows) and put back
-   as it was when Run returns.                                       */
-/* Windows needs no <signal.h> for it -- and the toolchain subset the
-   release's zip bundles has none: a console handler runs on a thread
-   of its own, and a LONG written whole is what it may set */
+   The flag is process-wide, as a signal is.  The accepting thread
+   asks it between waits of at most a quarter of a second
+   (tcp_accept_wait), so a stop is seen within that.  Workers ask it
+   between requests and while a kept connection is idle.
+   HttpServer.Run installs it for SIGTERM and SIGINT (Ctrl-C and the
+   console's close on Windows) and puts it back as it was when Run
+   returns.                                                          */
+/* Windows needs no <signal.h> for it, and the toolchain subset the
+   release's zip bundles has none.  A console handler runs on a thread
+   of its own, and a LONG written whole is what it may set. */
 #ifdef _WIN32
 static volatile LONG m9_stopping = 0;
 #else
@@ -225,9 +228,9 @@ void m9_srv_signals (int on)
 }
 #endif
 
-/* a wait in ms as poll takes it: past INT_MAX it wrapped through
-   (int), so 2^32 + 500 waited half a second (review2 R2); a negative
-   wait is poll's "forever" */
+/* m9_poll_ms answers a wait in ms as poll takes it.  Past INT_MAX it
+   wrapped through (int), so 2^32 + 500 waited half a second (review2
+   R2).  A negative wait is poll's "forever". */
 static int m9_poll_ms (int64_t ms)
 {
   if (ms > INT_MAX) return INT_MAX;
@@ -235,9 +238,10 @@ static int m9_poll_ms (int64_t ms)
   return (int) ms;
 }
 
-/* accept, waiting at most ms: the descriptor, -2 when nothing came in
-   that time, -1 when the listener is dead.  The accepting thread
-   waits in slices so that it sees a stop.                           */
+/* tcp_accept_wait accepts, waiting at most ms.  It answers the
+   descriptor, -2 when nothing came in that time, -1 when the listener
+   is dead.  The accepting thread waits in slices so that it sees a
+   stop.                                                             */
 int tcp_accept_wait (int fd, int64_t ms)
 {
 #ifdef _WIN32
@@ -266,9 +270,10 @@ int tcp_accept_wait (int fd, int64_t ms)
   return tcp_accept (fd);
 }
 
-/* 1 when fd has something to read -- or its peer closed, which a read
-   then reports -- within ms; 0 when not.  A worker waits for a kept
-   connection's next request in slices of this, to see a stop.      */
+/* tcp_readable answers 1 when fd has something to read within ms,
+   and 0 when not.  A peer that closed counts too: a read then reports
+   it.  A worker waits for a kept connection's next request in slices
+   of this, to see a stop.                                          */
 int tcp_readable (int fd, int64_t ms)
 {
 #ifdef _WIN32
@@ -287,17 +292,17 @@ int tcp_readable (int fd, int64_t ms)
 }
 
 /* accept(2) fails for two kinds of reason, and a server must tell
-   them apart: the LISTENER is gone (EBADF, EINVAL, ENOTSOCK -- there
-   is nothing to accept from any more), or something TRANSIENT
-   happened -- a queued client reset before it was accepted
-   (ECONNABORTED), a signal (EINTR), a spurious wake-up (EAGAIN), or
-   the process is out of descriptors for the moment (EMFILE/ENFILE,
-   which a burst of clients causes and which clears as workers close
-   connections).  A caller that treats every -1 as the end of the
+   them apart.  Either the LISTENER is gone (EBADF, EINVAL, ENOTSOCK:
+   there is nothing to accept from any more).  Or something TRANSIENT
+   happened: a queued client reset before it was accepted
+   (ECONNABORTED), a signal (EINTR), a spurious wake-up (EAGAIN).  Or
+   the process is out of descriptors for the moment (EMFILE/ENFILE).
+   A burst of clients causes that, and it clears as workers close
+   connections.  A caller that treats every -1 as the end of the
    accept loop takes the whole server down on the first aborted
-   client under load -- which is what happened.  So the transient
-   cases are retried here, with a short sleep for descriptor
-   exhaustion, and -1 means the listener is dead.                   */
+   client under load.  That is what happened.  So tcp_accept retries
+   the transient cases, with a short sleep for descriptor exhaustion,
+   and -1 means the listener is dead.                               */
 int tcp_accept (int fd)
 {
   for (;;) {
@@ -314,8 +319,8 @@ int tcp_accept (int fd)
     {
       int e = errno;
       /* Linux additionally reports a peer's network errors through
-         accept (its man page lists them); the three that POSIX does
-         not name are guarded so the file still compiles elsewhere. */
+         accept (its man page lists them).  The three that POSIX does
+         not name are guarded, so the file still compiles elsewhere. */
       if (e == EINTR || e == ECONNABORTED || e == EAGAIN ||
           e == EWOULDBLOCK || e == ENETDOWN || e == ENOPROTOOPT ||
           e == EHOSTUNREACH || e == EOPNOTSUPP || e == ENETUNREACH
@@ -341,10 +346,10 @@ int tcp_accept (int fd)
   }
 }
 
-/* Every address getaddrinfo answers is tried in order, not the first
-   alone: for 'localhost' a resolver may put ::1 ahead of 127.0.0.1
-   (Windows does), and a server listening on the v4 loopback is then
-   reachable only through the second entry.                          */
+/* tcp_connect tries every address getaddrinfo answers in order, not
+   the first alone.  For 'localhost' a resolver may put ::1 ahead of
+   127.0.0.1 (Windows does).  A server listening on the v4 loopback is
+   then reachable only through the second entry.                     */
 int tcp_connect (const char *host, int port)
 {
   char ps[16];
@@ -378,8 +383,8 @@ int64_t tcp_read (int fd, void *buf, size_t n)
 #endif
 }
 
-/* On POSIX this is write(2), so a peer that has gone answers EPIPE
-   rather than a signal only because m9rt ignores SIGPIPE at start;
+/* On POSIX this is write(2).  So a peer that has gone answers EPIPE
+   rather than a signal only because m9rt ignores SIGPIPE at start.
    Windows has no such signal.                                       */
 int64_t tcp_write (int fd, const void *buf, size_t n)
 {
@@ -400,10 +405,10 @@ int tcp_close (int fd)
 #endif
 }
 
-/* The connected peer's numeric address into buf (cap bytes,
- * NUL-terminated); answers its length, or -1.  The zarr proxy keys
- * access sessions by client IP, exactly as the Python reference
- * keys them (request.client.host). */
+/* tcp_peer writes the connected peer's numeric address into buf (cap
+ * bytes, NUL-terminated).  It answers its length, or -1.  The zarr
+ * proxy keys access sessions by client IP, exactly as the Python
+ * reference keys them (request.client.host). */
 int64_t tcp_peer (int fd, char *buf, int64_t cap)
 {
   struct sockaddr_storage ss;
@@ -423,10 +428,11 @@ int64_t tcp_peer (int fd, char *buf, int64_t cap)
   return (int64_t) strlen (host);
 }
 
-/* Nagle off: a response is written as headers then body, and with
- * the connection now kept alive the second write otherwise waits
- * ~40 ms behind the client's delayed ACK of the first -- measured
- * as 30 req/s where the HTTP/1.0 close() used to flush it.         */
+/* tcp_nodelay turns Nagle off.  A response is written as headers
+ * then body.  With the connection now kept alive, the second write
+ * otherwise waits ~40 ms behind the client's delayed ACK of the
+ * first.  That measured as 30 req/s where the HTTP/1.0 close() used
+ * to flush it.                                                     */
 int tcp_nodelay (int fd)
 {
   int one = 1;
@@ -434,9 +440,10 @@ int tcp_nodelay (int fd)
                      OPTP (&one), sizeof one);
 }
 
-/* a receive timeout so an idle keep-alive connection releases its
- * worker: the next tcp_read then fails after ms of silence (EAGAIN
- * on POSIX, WSAETIMEDOUT on Windows, -1 to the caller either way).
+/* tcp_rcvtimeo sets a receive timeout, so an idle keep-alive
+ * connection releases its worker.  The next tcp_read then fails after
+ * ms of silence (EAGAIN on POSIX, WSAETIMEDOUT on Windows, -1 to the
+ * caller either way).
  * Windows takes the timeout as a DWORD of milliseconds, not a
  * timeval.                                                          */
 int tcp_rcvtimeo (int fd, int64_t ms)
@@ -453,8 +460,8 @@ int tcp_rcvtimeo (int fd, int64_t ms)
 #endif
 }
 
-/* m9_sleep_ms LIVED HERE, for the session reaper's tick, and moved to
-   m9rt.c on 2026-09-10 when Time.Sleep wanted it: a corpus module
+/* m9_sleep_ms LIVED HERE, for the session reaper's tick.  It moved to
+   m9rt.c on 2026-09-10 when Time.Sleep wanted it.  A corpus module
    cannot depend on the SOCKET shim being in the link, and the
    time_driver's own line does not name it.  The move also picked up
    the EINTR retry the reaper never needed and a backoff does.     */

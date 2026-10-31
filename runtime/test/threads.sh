@@ -1,12 +1,13 @@
 #!/bin/sh
-# par 6, end to end: m9c compiles a program using THREAD, MONITOR,
-# WAIT and SIGNAL, and the program gives the right answer.
+# This gate tests par 6, end to end.  m9c compiles a program using
+# THREAD, MONITOR, WAIT and SIGNAL, and the program gives the right
+# answer.
 #
 # The answer is what makes this a test rather than a demonstration.
 # The worker adds i MOD 7 for i in 0..N-1 into a monitor field and
 # signals; the main thread waits.  If the wait returned early, or the
 # lock did not serialise the field, or the thread never ran, the total
-# is wrong -- and it is checked against a number computed here, not
+# is wrong.  The gate checks it against a number computed here, not
 # against whatever the program printed last time.
 #
 # RUN REPEATEDLY.  A race that fires one time in ten is still a race,
@@ -25,9 +26,9 @@ export M9LIBRARY="$REPO/corpus"
 
 ( cd "$OUT" && "$M9C" --make -o thrtest thrtest.m9 -I. )
 
-# 3000000 terms of i mod 7: 428571 full cycles of 0..6 (sum 21) plus
-# the tail 0,1,2 -- computed here so the expectation is derived, not
-# remembered
+# 3000000 terms of i mod 7 make 428571 full cycles of 0..6 (sum 21)
+# plus the tail 0,1,2.  The sum is computed here, so the expectation is
+# derived, not remembered.
 want=$(( 428571 * 21 + 0 + 1 + 2 ))
 runs=20
 bad=0
@@ -46,8 +47,8 @@ fi
 # write back) from eight threads.  The generator gates every call to a
 # [SERIAL] foreign procedure behind one monitor per FOR-C unit, so the
 # count comes out exact.  Change the declaration to [REENTRANT] and
-# the same program loses about 85% of its updates -- measured, which
-# is how this test was shown able to fail.
+# the same program loses about 85% of its updates.  That was measured,
+# and so this test was shown able to fail.
 cp serialtest.m9 serialgate.c "$OUT/"
 gcc -std=c11 -O2 -c "$OUT/serialgate.c" -o "$OUT/serialgate.o"
 ( cd "$OUT" && "$M9C" --make -c serialtest.m9 -I. )
@@ -68,11 +69,11 @@ if [ "$sbad" -ne 0 ]; then
 fi
 
 # ---- ONE gate per [SERIAL] UNIT, not per module (2026-10-10) ----
-# serialtwo/: SerialA declares a [SERIAL] unit over the same unsafe
-# counter, SerialB calls it too, and SerialTwo runs four threads through
-# each.  The gate was a static of each generated file, so the two
-# modules locked two mutexes and lost updates against each other
-# (shown with the old generator); the runtime now answers one gate per
+# In serialtwo/, SerialA declares a [SERIAL] unit over the same unsafe
+# counter, SerialB calls it too, and SerialTwo runs four threads
+# through each.  The gate was a static of each generated file.  So the
+# two modules locked two mutexes and lost updates against each other
+# (shown with the old generator).  The runtime now answers one gate per
 # unit name for the whole program.
 TWO="$OUT/two"
 mkdir -p "$TWO"
@@ -99,12 +100,12 @@ echo "         5 runs of the [SERIAL] gate lost no updates, nor 5 through two mo
 
 # ---- CONCURRENT FILE I/O, which Io's [REENTRANT] tag on the whole-file
 # primitives claims (64ac53f; they were [SERIAL] until 2026-09-12, and
-# one gate was serialising every thread's file I/O).  IoPar.m9: eight
+# one gate was serialising every thread's file I/O).  In IoPar.m9 eight
 # workers each write, read back, append to and remove their OWN files.
-# The marking itself is not what this can see -- [SERIAL] passes it
-# too, slower -- what it fails on is a shim that grows shared state,
-# which is the only way the tag becomes a lie.  Every check is against
-# what the worker itself wrote, not against a recorded output.
+# This cannot see the marking itself: [SERIAL] passes it too, slower.
+# It fails on a shim that grows shared state, the only way the tag
+# becomes a lie.  Every check is against what the worker itself wrote,
+# not against a recorded output.
 cp IoPar.m9 "$OUT/"
 ( cd "$OUT" && "$M9C" --make -o iopar IoPar.m9 -I. >/dev/null )
 
@@ -125,7 +126,7 @@ echo "         with what each thread wrote, byte for byte"
 
 # ---- CONCURRENT EXEC: one child's pipes are not another's (2026-10-21,
 # the compiler review's G9).  ExecPar.m9 runs `echo' while a THREAD runs
-# `sleep 3', six rounds; with pipe () lacking close-on-exec the sleep
+# `sleep 3', six rounds.  With pipe () lacking close-on-exec, the sleep
 # inherited echo's output and held it three seconds (the review's C
 # repro: 2 of 5 rounds).  The program says when an echo took a second
 # or more, which the old runtime does (3.01 s, measured).
@@ -139,21 +140,21 @@ esac
 echo "         an Exec beside a slow one came back at once, six rounds"
 
 # ---- CONCURRENT HTTPS, which the shim's [REENTRANT] tag now claims.
-# It said [SERIAL] until 2026-08-30 and that was load-bearing: the
+# It said [SERIAL] until 2026-08-30, and that was load-bearing.  The
 # slot table was claimed without a lock, so two threads could take
 # the same slot and one would free the other's SSL object.  The tag
-# is only worth the test behind it, so: a real TLS server, a real
-# certificate this run generates and trusts through $SSL_CERT_FILE,
-# a real handshake per connection, and every byte compared against a
-# sequential pass.  `localhost` rather than 127.0.0.1 because the
-# certificate's NAME is verified and OpenSSL does not match a
-# hostname against an IP.
+# is only worth the test behind it, so the gate uses a real TLS
+# server and a real certificate this run generates and trusts through
+# $SSL_CERT_FILE.  It makes a real handshake per connection, and
+# compares every byte against a sequential pass.  It uses `localhost`
+# rather than 127.0.0.1, because the certificate's NAME is verified and
+# OpenSSL does not match a hostname against an IP.
 #
 # AN ENVIRONMENT THAT CANNOT HOST THIS SKIPS; A SHIM THAT RACES
-# FAILS.  The first CI run conflated them: the server bound
-# 127.0.0.1 only while `localhost` resolves to ::1 first on the
-# runner, so every fetch -- sequential included -- came back -1 and
-# the gate blamed the shim.  The server now binds both families, the
+# FAILS.  The first CI run conflated them.  The server bound 127.0.0.1
+# only, while `localhost` resolves to ::1 first on the runner.  So
+# every fetch, sequential included, came back -1, and the gate blamed
+# the shim.  The server now binds both families, the
 # script WAITS for the port instead of sleeping at it, and a
 # handshake that cannot be made at all is a skip with its reason.
 TLSD=$OUT/tls
@@ -178,9 +179,9 @@ class H(http.server.BaseHTTPRequestHandler):
         s.end_headers(); s.wfile.write(b)
     def log_message(s, *a): pass
 class S(http.server.ThreadingHTTPServer):
-    # BOTH FAMILIES: `localhost` is ::1 before 127.0.0.1 on some
+    # Bind BOTH FAMILIES.  `localhost` is ::1 before 127.0.0.1 on some
     # machines, and a server bound to one of them fails on the other
-    # in a way that looks exactly like a broken client
+    # in a way that looks exactly like a broken client.
     address_family = socket.AF_INET6
     def server_bind(self):
         self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
@@ -194,7 +195,7 @@ PY
     python3 "$TLSD/serve.py" 18943 "$TLSD/cert.pem" "$TLSD/key.pem" &
     TLSPID=$!
     trap 'rc=$?; kill $TLSPID 2>/dev/null || :; exit $rc' EXIT
-    # wait for a real handshake, not for a number of seconds
+    # Wait for a real handshake, not for a number of seconds.
     for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
       if echo | openssl s_client -connect localhost:18943 \
            -CAfile "$TLSD/cert.pem" -verify_return_error >/dev/null 2>&1; then
@@ -214,13 +215,13 @@ if [ "$tls_ready" = 1 ]; then
   ( cd "$OUT" && "$M9C" --make -c TlsPar.m9 -I. >/dev/null )
   ( cd "$OUT" && gcc -std=c11 -O2 -flto -iquote "$REPO/runtime" -iquote . \
       "$REPO/runtime/m9rt.c" "$REPO/runtime/tcpshim.c" "$REPO/runtime/tlsshim.c" \
-      TlsPar.o Http.o DynStr.o Io.o -lssl -lcrypto -lm -o tlspar )
+      TlsPar.o Http.o Text.o DynStr.o Io.o -lssl -lcrypto -lm -o tlspar )   # Http imports Text since the switch
 
   tbad=0
   for i in $(seq 5); do
-    # || echo CRASHED: the point of this gate is a shim that CRASHES
-    # when it is wrong (the pre-fix one aborts on a double free), and
-    # set -e would end the script before it could say so
+    # The || echo CRASHED is needed.  This gate exists for a shim that
+    # CRASHES when it is wrong (the pre-fix one aborts on a double
+    # free), and set -e would end the script before it could say so.
     out=$(cd "$OUT" && SSL_CERT_FILE="$TLSD/cert.pem" ./tlspar 2>&1 || echo "CRASHED ($?)")
     case "$out" in
       *"all identical to the sequential pass") : ;;

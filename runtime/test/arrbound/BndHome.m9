@@ -1,8 +1,8 @@
 MODULE BndHome ;
 
-(* an array count that is an expression over this module's CONSTs:
-   `array count form unsupported' until 2026-10-29, the folder taking
-   literals only *)
+(* BndHome holds an array count that is an expression over this
+   module's CONSTs.  That was `array count form unsupported' until
+   2026-10-29: the folder took literals only. *)
 
 IMPORT Io, Fmt ;
 

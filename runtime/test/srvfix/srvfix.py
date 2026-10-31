@@ -69,6 +69,21 @@ def ck(ok, what):
         print("FAIL:", what, flush=True)
 
 
+# A client thread that raises would only print to stderr, and the run
+# would go on as if its requests had gone well.  The hook records it,
+# and the last check fails on it (2026-10-31: the Python sabotage driver's pool kept
+# its threads' exceptions silent until the end).
+thread_errors = []
+
+
+def thread_failed(a):
+    thread_errors.append(f"{a.thread.name}: {a.exc_type.__name__}: {a.exc_value}")
+    print("FAIL: a client thread raised:", thread_errors[-1], flush=True)
+
+
+threading.excepthook = thread_failed
+
+
 # ---- the server under test ------------------------------------------
 
 STARTED = []                        # every server this run started
@@ -481,6 +496,39 @@ g = statuses(P, b"GET /probe?x=1 HTTP/1.1\r\n" + H + b"x-PROBE:  abc  \r\n"
 if g:
     ck(g[0][2] == b"x-probe=abc method=GET peer=127.0.0.1 client=127.0.0.1",
        f"Header lookup: {g[0][2]!r}")
+# text past Latin-1, each way (Alex, 2026-10-31): text goes out as its
+# UTF-8 octets; each line of a request head reads as UTF-8 when it is
+# UTF-8, else one character per octet
+UTFBODY = "pi=π euro=€".encode()
+data = raw(P, b"GET /utf HTTP/1.1\r\n" + H + b"Connection: close\r\n\r\n")
+ck(data.endswith(b"\r\n\r\n" + UTFBODY),
+   f"a body past U+00FF: not its UTF-8 octets: {data[-40:]!r}")
+ck(b"\r\nX-Utf: \xe2\x82\xac1\r\n" in data,
+   f"a header past U+00FF: not its UTF-8 octets: {data[:300]!r}")
+try:
+    g = parse(data, ["GET"])
+    ck([x[0] for x in g] == [200], f"/utf: statuses {[x[0] for x in g]}")
+    if g:
+        ck(g[0][2] == UTFBODY, f"/utf: body {g[0][2]!r}")
+        ck(g[0][1].get("content-length") == str(len(UTFBODY)),
+           f"/utf: Content-Length {g[0][1].get('content-length')!r} counts octets")
+        ck(g[0][1].get("x-utf") == "€1", f"/utf: X-Utf {g[0][1].get('x-utf')!r}")
+except h11.RemoteProtocolError as e:
+    ck(False, f"/utf: h11 refused: {e}")
+for what, req, want in [
+        ("a UTF-8 path", b"GET /u/\xcf\x80 HTTP/1.1\r\n" + H + b"X-Probe: \xe2\x82\xac\r\n",
+         "path=/u/π cp=4 x=€"),
+        ("a Latin-1 octet in the path", b"GET /u/\xe9 HTTP/1.1\r\n" + H, "path=/u/é cp=4 x="),
+        ("a Latin-1 octet in a header", b"GET /u/a HTTP/1.1\r\n" + H + b"X-Probe: caf\xe9\r\n",
+         "path=/u/a cp=4 x=café"),
+        # each line is judged alone: the Latin-1 header leaves the
+        # UTF-8 path its text (a whole-head decode read it as Latin-1)
+        ("a UTF-8 path beside a Latin-1 header",
+         b"GET /u/\xcf\x80 HTTP/1.1\r\n" + H + b"X-Probe: caf\xe9\r\n",
+         "path=/u/π cp=4 x=café")]:
+    g = statuses(P, req + b"Connection: close\r\n\r\n", ["GET"], what, [200])
+    if g:
+        ck(g[0][2] == want.encode(), f"{what}: {g[0][2]!r}, want {want.encode()!r}")
 for what, path in [("a handler raising ValueRange", b"/raise"),
                    ("a handler raising IndexError", b"/index")]:
     statuses(P, b"GET " + path + b" HTTP/1.1\r\n" + H + b"Connection: close\r\n\r\n",
@@ -1107,6 +1155,8 @@ ck(sum(1 for g_ in ms_ if g_[1].startswith("/concat") and g_[2] == "200") == 400
 ck(("GET", "/hello", "200", "5") in [g_[:4] for g_ in ms_], "access log: /hello sent 5 octets")
 ck(("-", "-", "400") in [g_[:3] for g_ in ms_], "access log: a refusal is logged too")
 ck(len(set(g_[6] for g_ in ms_)) > 1, "access log: more than one worker wrote")
+
+ck(not thread_errors, f"no client thread raised: {thread_errors[:2]}")
 
 print(f"srvfix: {'PASS' if not fails else 'FAIL'} "
       f"({checks} checks{'' if not fails else ', ' + str(len(fails)) + ' failed'})")

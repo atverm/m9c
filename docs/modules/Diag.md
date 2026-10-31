@@ -1,13 +1,13 @@
 # Diag
 
-Diag -- the compiler's diagnostics as data.
+Diag answers the compiler's diagnostics as data.
 
 Three programs republish what `m9c --check` prints: m9lsp over the
 Language Server Protocol, m9edit as JSON for its page, and the
 tutorial's cells next.  Each had carried its own copy of the line
-parser, and the two copies had already drifted by a shape: the
-`--no-unsafe` refusal, which carried no position at all, was
-dropped by both -- a check that failed with ZERO findings.  This
+parser, and the two copies had already drifted by a shape.  Both
+dropped the `--no-unsafe` refusal, which carried no position at
+all: a check that failed with ZERO findings.  This
 module is the one parser, the one runner, and the one JSON
 renderer, so a shape m9c gains is learned in one place.
 
@@ -23,8 +23,8 @@ fifty-four lines of Gen.m9.
 
 ### Parse (RO line: UTF ; VAR f: Finding) : BOOL
 
-one line of m9c's output as a finding, when it carries a
-position.  Two shapes, m9c's own:
+Parse reads one line of m9c's output as a finding, when it
+carries a position.  Two shapes, m9c's own:
   LINE:COL MSG            the checker's
   FILE:LINE:COL: MSG      the parser's (`parse: ...`) and the
                           --no-unsafe refusal (`no-unsafe: ...`)
@@ -33,63 +33,64 @@ position.  Two shapes, m9c's own:
 The second is found by the leftmost `:D+:D+: `, so a path may
 hold colons and a message may quote source text; the third by
 the leftmost `:D+: gen: `.  msg keeps the prefix (`parse: `,
-`gen: `) and is a view into line, hence KEPT.  FALSE for
-anything else -- the summaries.  The generator's shape was
-dropped on purpose until 2026-09-27, when --check began to run
-the generator (docs/agent-review-2026-09-27.md F4): before that
-a construct the checker accepts and the generator refuses was
-invisible to every editor.
+`gen: `) and is a view into line, hence KEPT.  Parse answers
+FALSE for anything else: the summaries.  The generator's shape
+was dropped on purpose until 2026-09-27, when --check began to
+run the generator (docs/agent-review-2026-09-27.md F4).  Before
+that a construct the checker accepts and the generator refuses
+was invisible to every editor.
 
 ### One (VAR pool: POOL ; line, col: I64 ; RO msg: STR) : SLICE OF Finding
 
 **Deprecated** (the UTF transition): OneUtf is its UTF form.
 
-a single finding, as a slice: what a caller answers for a
-refusal of its own (a buffer with no MODULE line, a path it will
-not hand to a shell).  msg is copied into pool.
+One answers a single finding, as a slice: what a caller answers
+for a refusal of its own (a buffer with no MODULE line, a path it
+will not hand to a shell).  msg is copied into pool.
 
 ### OneUtf (VAR pool: POOL ; line, col: I64 ; RO msg: UTF) : SLICE OF Finding
 
-One for a UTF message, copied into pool the same way.
+OneUtf is One for a UTF message, copied into pool the same way.
 
 ### Check (VAR pool: POOL ; RO m9c: STR ; RO flags: STR ; RO dir: STR ; RO file: STR ; RO outFile: STR) : SLICE OF Finding RAISES ValueRange, IndexError
 
-run `(cd 'DIR' && M9C FLAGS --check 'FILE') > 'OUTFILE' 2>&1`
-and answer every finding it printed, in order; an indented line
-after a finding continues its message (the signature mismatch
+Check runs `(cd 'DIR' && M9C FLAGS --check 'FILE') > 'OUTFILE'
+2>&1` and answers every finding it printed, in order.  An indented
+line after a finding continues its message (the signature mismatch
 prints both signatures under it, each on a line).  dir may be
 empty (no cd); outFile is a path as seen from THIS process,
 which is where it is read back.  Exit 0 answers no finding
 without reading anything.  A nonzero exit that printed NO
 positioned line answers ONE finding at 1:1 carrying the
 output's first line (or the exit code when there was none), so
-a refusal is never silent -- that was the --no-unsafe hole.  A
+a refusal is never silent.  That was the --no-unsafe hole.  A
 path holding a quote is answered the same way, unrun: m9c's own
 rule at its own link step.
 
 ### DocJson (VAR pool: POOL ; RO m9c: STR ; RO flags: STR ; RO workDir: STR ; RO name: STR) : STR RAISES ValueRange, IndexError
 
-the m9c --json gather for module `name`, cached as
-WORKDIR/docs/NAME.json -- the hovers' food, m9edit's and the
-tutorial's, so the name gate lives here and cannot drift:
-letters and digits only, under 64.  Composes
+DocJson runs the m9c --json gather for module `name`, cached as
+WORKDIR/docs/NAME.json.  That is the hovers' food, m9edit's and
+the tutorial's, so the name gate lives here and cannot drift:
+letters and digits only, under 64.  It composes
   mkdir -p 'DOCS' && cd 'DOCS' &&
     test -f NAME.json || M9C FLAGS --json NAME > dc.txt 2>&1
-and answers the file's text.  '' means "no document" -- a
-refused name, a workDir holding a quote (unrun, m9c's own
-rule), or a module the compiler does not know -- and the
-server answers its 404 without inventing one.
+and answers the file's text.  '' means "no document": a refused
+name, a workDir holding a quote (unrun, m9c's own rule), or a
+module the compiler does not know.  The server then answers its
+404 without inventing one.
 
 ### Json (VAR pool: POOL ; RO fs: SLICE OF Finding) : STR RAISES ValueRange, IndexError
 
-the cell shape:
+Json renders the cell shape:
   {"ok":true,"diags":[]}
   {"ok":false,"diags":[{"line":L,"col":C,"msg":"..."},...]}
 ok is exactly "no finding".
 
 ### LexJson (RO src: STR) : STR RAISES ValueRange, IndexError
 
-the compiler's own tokens and comments, for a page that paints:
+LexJson answers the compiler's own tokens and comments, for a
+page that paints:
   {"tokens":[[kind,line,col,len],...],
    "comments":[{"line":L,"col":C,"text":"..."},...]}
 kind is Lex's stable code (0 is EOF and is not listed; 1 is an
@@ -99,13 +100,13 @@ error token), len the token's text length in CHARs.
 
 **Deprecated** (the UTF transition): JStrUtf is its UTF form.
 
-a JSON string literal appended to d: the escapes RFC 8259
-requires and no others -- `"` and `\` backslashed, controls as
+JStr appends a JSON string literal to d, with the escapes RFC
+8259 requires and no others: `"` and `\` backslashed, controls as
 \u00XX, everything else as it is.  Json.m9 keeps its emitter
 private; this is the shared home its three copies were owed.
 
-### JStrUtf (VAR d: PTR DynUtf.DString ; RO s: UTF) RAISES ValueRange
+### JStrUtf (VAR d: PTR DynStr.DString ; RO s: UTF) RAISES ValueRange
 
-JStr for a UTF-8 builder and text: the same escapes, byte by
-byte -- a byte past 0x7F is part of a character and goes as it
-is.
+JStrUtf is JStr for a UTF-8 builder and text: the same escapes,
+byte by byte.  A byte past 0x7F is part of a character and goes
+as it is.

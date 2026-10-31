@@ -212,7 +212,7 @@ def netcdf(d):
         ok("text: the global title, UTF-8 octets",
            raw == "µmol m-2 s-1 — a title".encode("utf-8"))
         ok("text: ASCII through PutAttText", nc.getncattr("plain") == "ASCII only")
-        ok("text: PutAttStr still writes octets", att_bytes(d + "/text.nc", None, "octets") == b"K and m")
+        ok("text: PutAttStr writes UTF-8 octets", att_bytes(d + "/text.nc", None, "octets") == "K and µm".encode("utf-8"))
         ok("text: TA float, the NaN fill", ta.dtype == np.float32 and math.isnan(ta.getncattr("_FillValue")))
         want = np.array([r * 0.25 - 1.0 for r in range(ROWS)], dtype=np.float32)
         got = ta[:]

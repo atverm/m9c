@@ -1,4 +1,4 @@
-(* EXPECT: cannot pass SLICE OF CHAR where I64 is expected *)
+(* EXPECT: cannot pass UTF where I64 is expected *)
 MODULE m ;
 CONST N = 3 ;
 VAR x : I64 ;

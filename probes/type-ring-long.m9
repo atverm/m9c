@@ -1,8 +1,8 @@
 (* EXPECT: type H0 refers to itself other than through a pointer to a record *)
 MODULE m ;
-(* a ring of 102 names: the walk stopped at 200 steps and called a ring
-   past 100 names no cycle -- the generator then crashed (the second
-   review's fuzz N1, 2026-10-26) *)
+(* This probe declares a ring of 102 names.  The walk stopped at 200
+   steps and called a ring past 100 names no cycle, and the generator
+   then crashed (the second review's fuzz N1, 2026-10-26). *)
 TYPE
   H0 = PTR H1 ;
   H1 = PTR H2 ;

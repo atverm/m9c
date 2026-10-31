@@ -1,6 +1,6 @@
 program comdump;
-{ The comment side channel, oracle side: dump every comment the FPC
-  lexer skipped over one file, one per line:
+{ comdump is the comment side channel, oracle side.  It dumps every
+  comment the FPC lexer skipped over one file, one per line:
 
       line:col-endLine text
 
@@ -9,10 +9,10 @@ program comdump;
   M9-compiled lexer must produce the identical bytes (comdiff in
   runtime/test).
 
-  Comments are NOT tokens -- lexdump's stream does not contain one and
+  Comments are NOT tokens.  lexdump's stream does not contain one and
   must not start to, or "token streams byte-identical to the oracle"
-  stops being literally true.  Hence a second dump rather than a
-  wider one. }
+  stops being literally true.  So this is a second dump rather than
+  a wider one. }
 {$mode objfpc}{$H+}
 uses SysUtils, Classes, M9Lex;
 

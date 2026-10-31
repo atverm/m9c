@@ -1,15 +1,15 @@
 (* EXPECT: cannot write through the RO variable view *)
-(* `VAR RO view : STR' was parsed and never read: a write through the
+(* `VAR RO view : SLICE OF CHAR' was parsed and never read.  A write through the
    view passed both checkers until 2026-10-03, though report par 2.4
-   says writing through an RO binding is an error whatever its type.
-   Giving the name a new view and reading through it are the legal
-   forms, held here before the one refusal. *)
+   says a write through an RO binding is an error whatever its type.  A
+   new view given to the name and a read through it are the legal forms,
+   held here before the one refusal. *)
 MODULE m ;
 VAR n : I64 ;
 PROCEDURE F () =
 VAR
-  buf : STR ;
-  RO view : STR ;
+  buf : SLICE OF CHAR ;
+  RO view : SLICE OF CHAR ;
 BEGIN
   buf := NEW (CHAR, 4) ;
   view := buf ;

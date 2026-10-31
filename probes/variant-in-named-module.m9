@@ -1,9 +1,9 @@
 (* EXPECT: unknown procedure: Lib.Kind.Nope *)
 (* The three-part constructor Mod.Type.Variant (args) names the module
    the type lives in, and the variant is looked for THERE and nowhere
-   else.  Until 2026-09-15 the callee was split at its first dot --
-   type `Lib', variant `Kind.Stamp' -- and every such call was refused
-   as `unknown procedure: Lib', so nobody could construct an imported
+   else.  Until 2026-09-15 the callee was split at its first dot, into
+   type `Lib' and variant `Kind.Stamp'.  Every such call was refused as
+   `unknown procedure: Lib', so nobody could construct an imported
    variant with a payload from another module. *)
 DEFINITION MODULE Lib ;
 TYPE Kind = CASE RECORD | Plain | Stamp : format : I64 END ;

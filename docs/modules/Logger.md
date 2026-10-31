@@ -1,8 +1,8 @@
 # Logger
 
-Levelled, timestamped, structured logging to stderr.
+Logger writes levelled, timestamped, structured logs to stderr.
 
-Three decisions worth stating, because each is a place logging
+Three decisions are worth stating, because each is a place logging
 libraries usually go wrong:
 
   It goes to STDERR, always.  A log line in the program's output
@@ -12,8 +12,8 @@ libraries usually go wrong:
 
   It NEVER RAISES.  A logger that propagates failure turns a
   diagnostic into a second fault, usually while handling the
-  first.  Timestamp formatting can fail in principle -- an
-  Instant can hold NaN -- so it is handled here and degrades to
+  first.  Timestamp formatting can fail in principle, since an
+  Instant can hold NaN.  So it is handled here and degrades to
   a marker rather than escaping.
 
   Fields are KEY=VALUE on one line, logfmt style, because a log
@@ -58,8 +58,8 @@ _(documented with the group below)_
 
 ### Enabled (level: I64) : BOOL
 
-the threshold, read and written.  A message at a level below
-the threshold is dropped.
+SetLevel and Level write and read the threshold.  A message at a
+level below the threshold is dropped.
 
   level -- one of the level constants above, and the ORDER is
            the point: they increase with severity, so a
@@ -72,9 +72,9 @@ rather than being one hidden variable.
 
 ### Msg (level: I64 ; RO text: STR)
 
-the whole line in one call, for the common case.  Threads may
-call it at once and each line comes out whole; the builder below
-is NOT for threads -- its line is module state
+Msg writes the whole line in one call, for the common case.
+Threads may call it at once and each line comes out whole.  The
+builder below is NOT for threads: its line is module state.
 
 ### Start (level: I64 ; RO text: STR)
 
@@ -105,14 +105,15 @@ line: a lost field is a smaller bug than a corrupted record.
 
 ### ToSyslog (RO ident: STR ; options: I64 ; facility: I64)
 
-subsequent lines go to the system log under this ident, at a
-priority derived from the level.  The timestamp and level word
-are DROPPED from the text, because syslog records both itself
-and a line carrying two of each is a line nobody can grep.
-options are Syslog's, ORed: Syslog.Pid is the usual one, and
-Syslog.Perror keeps the lines on stderr as well, which is what
-a person wants while developing and a daemon does not.
+ToSyslog sends subsequent lines to the system log under this ident,
+at a priority derived from the level.  The timestamp and level word
+are DROPPED from the text, because syslog records both itself and a
+line carrying two of each is a line nobody can grep.  options are
+Syslog's, ORed: Syslog.Pid is the usual one, and Syslog.Perror
+keeps the lines on stderr as well, which is what a person wants
+while developing and a daemon does not.
 
 ### ToStderr ()
 
-back to stderr, timestamp and level restored.  The default.
+ToStderr sends lines back to stderr, with timestamp and level
+restored.  That is the default.

@@ -1,16 +1,17 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Pg ;
 
-(* PostgreSQL over libpq: connect, run parameterised statements, read
-   the answer as text cells or as typed values.  Lifted from the
-   download statistics (m9downloadstats/Pg.m9, in production since
-   2026-09-12) into the library, docs/datalib-plan.md par 1.
+(* Pg speaks PostgreSQL over libpq: it connects, runs parameterised
+   statements, and reads the answer as text cells or as typed values.
+   It was lifted from the download statistics (m9downloadstats/Pg.m9,
+   in production since 2026-09-12) into the library,
+   docs/datalib-plan.md par 1.
 
    TEXT FIRST.  Every parameter goes out as text and the SQL casts it
    (`$1::text[]`, `$2::timestamptz`); every cell comes back as the
    text Postgres prints for it.  The typed reads (I64Cell, F64Cell,
    BoolCell, TimeCell) parse that text and RAISE ValueRange when it
-   is not what they read -- a NULL included, which IsNull tells
+   is not what they read: a NULL included, which IsNull tells
    apart beforehand.  Nothing is converted silently.
 
    THREADS.  libpq is safe per connection: two threads must not use
@@ -36,9 +37,10 @@ TYPE
 
 EXCEPTION
   PgError (RO msg: STR) ;
-    (* libpq's own message: a refused connection, a syntax error, a
-       missing relation.  The text is what PQerrorMessage or
-       PQresultErrorMessage said, trimmed of its trailing newline. *)
+    (* PgError carries libpq's own message: a refused connection, a
+       syntax error, a missing relation.  The text is what
+       PQerrorMessage or PQresultErrorMessage said, trimmed of its
+       trailing newline. *)
 
 CONST
   MaxParams = 64 ;                (* pgshim.c's pointer table *)
@@ -51,22 +53,23 @@ PROCEDURE Connect (VAR pool: POOL ; RO conninfo: STR) : PTR Conn IN pool
                  environment.  KEPT: Reconnect needs it again.      *)
 
 PROCEDURE Reconnect (VAR c: PTR Conn) RAISES PgError, ValueRange ;
-  (* close and open again with the same conninfo -- what a worker
-     does once after a query fails with the connection gone (a
-     server restart, an idle timeout).                             *)
+  (* Reconnect closes and opens again with the same conninfo.  A
+     worker does that once after a query fails with the connection
+     gone (a server restart, an idle timeout).                     *)
 
 PROCEDURE Alive (c: PTR Conn) : BOOL RAISES ValueRange ;
-  (* PQstatus = CONNECTION_OK.  FALSE after the server went away;
-     the answer to "should I Reconnect before retrying". *)
+  (* Alive answers PQstatus = CONNECTION_OK.  It answers FALSE after
+     the server went away: the answer to "should I Reconnect before
+     retrying". *)
 
 PROCEDURE Close (VAR c: PTR Conn) ;
 
 PROCEDURE Query (VAR pool: POOL ; c: PTR Conn ; RO sql: STR ;
                  RO params: SLICE OF STR) : PTR Result IN pool
   RAISES PgError, ValueRange, IndexError ;
-  (* one statement, `$1`..`$n` bound to params as text, the rows
-     copied out of libpq into pool before the PGresult is freed, so
-     the Result owes libpq nothing.
+  (* Query runs one statement, `$1`..`$n` bound to params as text.
+     It copies the rows out of libpq into pool before the PGresult is
+     freed, so the Result owes libpq nothing.
 
        params -- at most MaxParams; an empty slice is fine.  Every
                  CHAR goes out as UTF-8 (the database's encoding).
@@ -75,79 +78,86 @@ PROCEDURE Query (VAR pool: POOL ; c: PTR Conn ; RO sql: STR ;
 
 PROCEDURE Exec (c: PTR Conn ; RO sql: STR ; RO params: SLICE OF STR)
   : I64 RAISES PgError, ValueRange, IndexError ;
-  (* one statement that answers no rows -- INSERT, UPDATE, DELETE,
-     CREATE -- bound as Query binds; answers how many rows it
-     affected (PQcmdTuples), 0 for a command that does not say.     *)
+  (* Exec runs one statement that answers no rows (INSERT, UPDATE,
+     DELETE, CREATE), bound as Query binds.  It answers how many rows
+     it affected (PQcmdTuples), 0 for a command that does not say.  *)
 
 PROCEDURE ArrayLiteral (RO items: SLICE OF STR) : STR ;
-  (* the text of a one-dimensional array for a `$n::text[]'
-     parameter: every item double-quoted, a backslash or a quote in
-     it escaped with a backslash, the empty slice `{}' -- the form the
-     server reads back element for element (PgTest asks it).
+  (* ArrayLiteral answers the text of a one-dimensional array for a
+     `$n::text[]' parameter: every item double-quoted, a backslash or
+     a quote in it escaped with a backslash, the empty slice `{}'.
+     That is the form the server reads back element for element
+     (PgTest asks it).
      cp-kernel's issue 8, 2026-10-09.                                *)
 
 PROCEDURE Script (c: PTR Conn ; RO sql: STR) RAISES PgError, ValueRange ;
-  (* several statements separated by semicolons, no parameters
-     (PQexec): a schema, a fixture, a migration.  It stops at the
-     first statement that fails and raises with its message; what
-     ran before it stands unless the script is in a transaction.   *)
+  (* Script runs several statements separated by semicolons, no
+     parameters (PQexec): a schema, a fixture, a migration.  It stops
+     at the first statement that fails and raises with its message;
+     the statements before it stand unless the script is in a
+     transaction.                                                  *)
 
 PROCEDURE Begin (c: PTR Conn) RAISES PgError, ValueRange ;
 PROCEDURE Commit (c: PTR Conn) RAISES PgError, ValueRange ;
 PROCEDURE Rollback (c: PTR Conn) RAISES PgError, ValueRange ;
-  (* BEGIN, COMMIT and ROLLBACK, named so a reader sees them.       *)
+  (* These run BEGIN, COMMIT and ROLLBACK, named so a reader sees
+     them.                                                          *)
 
 PROCEDURE Rows (r: PTR Result) : I64 ;
 PROCEDURE Cols (r: PTR Result) : I64 ;
 
 PROCEDURE Cell (r: PTR Result ; row, col: I64) : STR RAISES IndexError ;
-  (* the text of one cell; EMPTY for SQL NULL -- ask IsNull when the
-     two must be told apart.  row and col are each checked against
-     their own extent: Cell (r, 0, Cols (r)) is an IndexError, never
-     the first cell of row 1 (the lifted module answered that until
-     2026-10-06). *)
+  (* Cell answers the text of one cell, EMPTY for SQL NULL.  Ask
+     IsNull when the two must be told apart.  row and col are each
+     checked against their own extent: Cell (r, 0, Cols (r)) is an
+     IndexError, never the first cell of row 1 (the lifted module
+     answered that until 2026-10-06). *)
 
 PROCEDURE IsNull (r: PTR Result ; row, col: I64) : BOOL RAISES IndexError ;
 
 PROCEDURE Name (r: PTR Result ; col: I64) : STR RAISES IndexError ;
-  (* the column's name as the SELECT spelled it *)
+  (* Name answers the column's name as the SELECT spelled it. *)
 
 PROCEDURE Column (r: PTR Result ; RO name: STR) : I64 ;
-  (* the index of the first column named name, or -1 *)
+  (* Column answers the index of the first column named name, or
+     -1. *)
 
 PROCEDURE I64Cell (r: PTR Result ; row, col: I64) : I64
   RAISES IndexError, ValueRange ;
-  (* an integer cell (int2, int4, int8, or numeric with no fraction);
-     ValueRange for NULL, for a fraction, and for anything else.    *)
+  (* I64Cell reads an integer cell (int2, int4, int8, or numeric with
+     no fraction).  It raises ValueRange for NULL, for a fraction, and
+     for anything else.                                             *)
 
 PROCEDURE F64Cell (r: PTR Result ; row, col: I64) : F64
   RAISES IndexError, ValueRange ;
-  (* a float4, float8, numeric or integer cell; Postgres's NaN,
-     Infinity and -Infinity are read as themselves.  ValueRange for
-     NULL and for anything that is not a number.                   *)
+  (* F64Cell reads a float4, float8, numeric or integer cell;
+     Postgres's NaN, Infinity and -Infinity are read as themselves.
+     It raises ValueRange for NULL and for anything that is not a
+     number.                                                       *)
 
 PROCEDURE BoolCell (r: PTR Result ; row, col: I64) : BOOL
   RAISES IndexError, ValueRange ;
-  (* a boolean cell: Postgres prints t or f.  ValueRange otherwise. *)
+  (* BoolCell reads a boolean cell: Postgres prints t or f.  It raises
+     ValueRange otherwise. *)
 
 PROCEDURE TimeCell (r: PTR Result ; row, col: I64) : Time.Instant
   RAISES IndexError, ValueRange ;
-  (* a timestamptz cell, `2026-10-06 21:26:48.123+02` in whatever
-     zone the session prints, converted to UTC by the offset it
-     carries.  A timestamp WITHOUT time zone has no offset and is
-     refused (ValueRange): which instant it means is a claim this
-     module will not make, as Time.ParseIso will not.  So are
-     infinity and dates BC.                                         *)
+  (* TimeCell reads a timestamptz cell, `2026-10-06 21:26:48.123+02`
+     in whatever zone the session prints, converted to UTC by the
+     offset it carries.  A timestamp WITHOUT time zone has no offset
+     and is refused (ValueRange): this module will not claim which
+     instant it means, as Time.ParseIso will not.  Infinity and dates
+     BC are refused too.                                            *)
 
 END Pg.
 
 
 UNSAFE DEFINITION MODULE FOR "C" cpq LINK "pgshim.c", "-l:libpq.so.5" ;
 
-(* libpq, verbatim, plus the shim and two runtime calls.  All
-   [REENTRANT]: see THREADS in the definition above -- no call here
-   touches state shared between two connections, and the one
-   process-wide thing libpq does (initialising OpenSSL) happens
+(* This unit binds libpq, verbatim, plus the shim and two runtime
+   calls.  All are [REENTRANT]: see THREADS in the definition above.
+   No call here touches state shared between two connections, and the
+   one process-wide thing libpq does (initialising OpenSSL) happens
    inside the first connect, which the main thread makes alone.    *)
 
 PROCEDURE ConnectDb = "PQconnectdb" (info: C.ConstPtr) : C.MutPtr
@@ -179,30 +189,27 @@ PROCEDURE GetIsNull = "PQgetisnull" (r: C.MutPtr ; row: C.Int ; col: C.Int)
   : C.Int  [REENTRANT] ;
 PROCEDURE Clear = "PQclear" (r: C.MutPtr)  [REENTRANT] ;
 PROCEDURE CLen = "m9_cstrlen" (s: C.ConstPtr) : C.SSizeT  [REENTRANT] ;
-  (* the runtime's shim, as Grib explains: string.h has declared
-     strlen with `const char *` and the foreign declaration would
-     collide *)
+  (* This is the runtime's shim, as Grib explains: string.h has
+     declared strlen with `const char *` and the foreign declaration
+     would collide. *)
 PROCEDURE CCopy = "memcpy" (d: C.MutPtr ; s: C.ConstPtr ; n: C.SizeT)
   : C.MutPtr  [REENTRANT] ;
-PROCEDURE StrToD = "m9_strtod" (s: C.ConstPtr) : C.Double  [REENTRANT] ;
-  (* libc's float parse.  Chosen when Fmt.ParseF64 scaled in F64 and
-     read 1e-300 one bit low (PgTest found it, against psycopg); since
-     0.20.0 ParseF64 rounds correctly too, and this stays because it
-     reads the cell's octets as they are, with no decode first *)
 
 END cpq.
 
 
 UNSAFE IMPLEMENTATION MODULE Pg ;
 
-(* UNSAFE for one reason: ADR at the C boundary. *)
+IMPORT Text ;
+
+(* Pg is UNSAFE for one reason: ADR at the C boundary. *)
 
 IMPORT DynStr ;
 IMPORT Fmt ;
 IMPORT Time ;
 FROM cpq IMPORT ConnectDb, Status, Finish, ErrMsg, ExecBlock, ExecPlain,
                 ResStatus, ResErr, CmdTuples, NTuples, NFields, FName,
-                GetValue, GetLength, GetIsNull, Clear, CLen, CCopy, StrToD ;
+                GetValue, GetLength, GetIsNull, Clear, CLen, CCopy ;
 
 CONST
   Nowhere = 0 ;                   (* the null pointer, as Grib spells it *)
@@ -235,35 +242,53 @@ BEGIN
   RETURN C.SSizeT (p) = C.SSizeT (Null ())
 END IsNil ;
 
-(* a C string copied into pool, capped, decoded as Latin-1: server
-   messages are ASCII in practice and a copy that cannot raise is
-   worth more here than one that is exactly right for accents *)
+(* CText copies a C string into pool, capped, as text: a server
+   message, a column name, a command tag.  It decodes the octets as
+   UTF-8 when they are valid, else one character per octet, so it
+   cannot raise on what libpq sends.  The server sends its text in
+   client_encoding, which is UTF-8 for a UTF-8 database.  A message
+   quotes the identifiers it names.  Until 2026-10-31 CText
+   read every message as Latin-1, so `relation "größe"' read as
+   mojibake. *)
 PROCEDURE CText (VAR pool: POOL ; p: C.ConstPtr) : STR RAISES ValueRange =
 VAR
-  n : I64 ;
+  n, k : I64 ;
   b : SLICE OF BYTE ;
   q : C.MutPtr ;
 BEGIN
   IF C.SSizeT (p) = C.SSizeT (Null ()) THEN RETURN '' END ;
   n := I64 (CLen (p)) ;
-  IF n > MaxMsg THEN n := MaxMsg END ;
   IF n = 0 THEN RETURN '' END ;
-  b := NEW (pool, BYTE, n + 1) ;
-  q := CCopy (ADR (b), p, C.SizeT (n)) ;
+  k := n ;
+  IF k > MaxMsg THEN k := MaxMsg + 1 END ;
+  b := NEW (pool, BYTE, k + 1) ;
+  q := CCopy (ADR (b), p, C.SizeT (k)) ;
+  IF n > MaxMsg THEN
+    (* The cap keeps whole characters.  An octet 80..BF continues a
+       character, so the cut steps back over them.  A message cut
+       inside a character would otherwise fail UTF-8 and read whole
+       as Latin-1. *)
+    n := MaxMsg ;
+    WHILE n > 0 AND I64 (b[n]) >= 128 AND I64 (b[n]) < 192 DO
+      n := n - 1
+    END
+  END ;
+  IF n = 0 THEN RETURN '' END ;
   (* libpq ends its messages with a newline; the caller composes *)
   IF b[n - 1] = 10 THEN n := n - 1 END ;
-  RETURN DynStr.Chars (pool, SLICE (b, 0, n))
+  RETURN DynStr.Decoded (pool, SLICE (b, 0, n))
 END CText ;
 
-(* s as UTF-8 octets with a terminator: pool storage is zero, so the
-   extra byte is the terminator (the DynStr.Bytes remark) *)
+(* CStr answers s as UTF-8 octets with a terminator.  Pool storage is
+   zero, so the extra byte is the terminator.  This is DynStr.Wire's
+   contract. *)
 PROCEDURE CStr (VAR pool: POOL ; RO s: STR) : SLICE OF BYTE
   RAISES ValueRange, IndexError =
 VAR
   u, b : SLICE OF BYTE ;
   i : I64 ;
 BEGIN
-  u := DynStr.Utf8 (pool, s) ;
+  u := OCTETS (s) ;
   b := NEW (pool, BYTE, LEN (u) + 1) ;
   FOR i := 0 TO LEN (u) - 1 DO b[i] := u[i] END ;
   RETURN b
@@ -271,7 +296,8 @@ END CStr ;
 
 PROCEDURE Open (VAR scratch: POOL ; RO info: STR ; VAR msg: STR) : C.MutPtr
   RAISES ValueRange =
-  (* a connection, or the null pointer with msg saying why *)
+  (* Open answers a connection, or the null pointer with msg saying
+     why. *)
 VAR
   cb : SLICE OF BYTE ;
   h : C.MutPtr ;
@@ -344,8 +370,9 @@ BEGIN
   Finish (c.h)
 END Close ;
 
-(* the parameters as ONE block: each as UTF-8, each followed by the
-   zero the pool already holds; a trailing zero for the empty case *)
+(* ParamBlock answers the parameters as ONE block: each as UTF-8,
+   each followed by the zero the pool already holds; a trailing zero
+   for the empty case. *)
 PROCEDURE ParamBlock (VAR pool: POOL ; RO params: SLICE OF STR)
   : SLICE OF BYTE RAISES ValueRange, IndexError =
 VAR
@@ -354,13 +381,13 @@ VAR
 BEGIN
   total := 1 ;
   FOR i := 0 TO LEN (params) - 1 DO
-    u := DynStr.Utf8 (pool, params[i]) ;
+    u := OCTETS (params[i]) ;
     total := total + LEN (u) + 1
   END ;
   blk := NEW (pool, BYTE, total) ;
   pos := 0 ;
   FOR i := 0 TO LEN (params) - 1 DO
-    u := DynStr.Utf8 (pool, params[i]) ;
+    u := OCTETS (params[i]) ;
     FOR j := 0 TO LEN (u) - 1 DO
       blk[pos] := u[j] ;
       pos := pos + 1
@@ -373,7 +400,7 @@ END ParamBlock ;
 PROCEDURE Run (VAR scratch: POOL ; c: PTR Conn ; RO sql: STR ;
                RO params: SLICE OF STR) : C.MutPtr
   RAISES PgError, ValueRange, IndexError =
-  (* the statement sent and its PGresult answered; the caller clears
+  (* Run sends the statement and answers its PGresult; the caller clears
      it.  A status other than TUPLES_OK or COMMAND_OK is cleared here
      and raised with the server's message. *)
 VAR
@@ -441,7 +468,9 @@ BEGIN
           ELSE
             b := NEW (pool, BYTE, n) ;
             q := CCopy (ADR (b), GetValue (res, C.Int (i), C.Int (j)), C.SizeT (n)) ;
-            r.cell[k] := DynStr.FromUtf8 (pool, b)
+            (* A cell is UTF-8 text, or one character per octet when a
+               server in another encoding sends what is not. *)
+            r.cell[k] := DynStr.Decoded (pool, b)
           END ;
           r.isNull[k] := FALSE
         END ;
@@ -455,14 +484,14 @@ BEGIN
 END Query ;
 
 PROCEDURE Count (RO s: STR) : I64 =
-  (* PQcmdTuples' text as a count: '' (a command that reports none)
-     is 0; it is digits otherwise *)
+  (* Count reads PQcmdTuples' text as a count: '' (a command that
+     reports none) is 0; it is digits otherwise. *)
 VAR i, v : I64 ;
 BEGIN
   v := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] >= '0' AND s[i] <= '9' THEN
-      v := v * 10 + ORD (s[i]) - ORD ('0')
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF I64 (Text.BAt (s, i)) >= ORD ('0') AND I64 (Text.BAt (s, i)) <= ORD ('9') THEN
+      v := v * 10 + I64 (Text.BAt (s, i)) - ORD ('0')
     END
   END ;
   RETURN v
@@ -539,7 +568,8 @@ BEGIN
 END Cols ;
 
 PROCEDURE At (r: PTR Result ; row, col: I64) : I64 RAISES IndexError =
-  (* the index of a cell, each coordinate held to its own extent *)
+  (* At answers the index of a cell, each coordinate held to its own
+     extent. *)
 BEGIN
   IF row < 0 OR row >= r.rows THEN RAISE IndexError (row, r.rows) END ;
   IF col < 0 OR col >= r.cols THEN RAISE IndexError (col, r.cols) END ;
@@ -589,14 +619,14 @@ PROCEDURE Column (r: PTR Result ; RO name: STR) : I64 =
 VAR j : I64 ;
 BEGIN
   FOR j := 0 TO r.cols - 1 DO
-    IF DynStr.Eq (r.name[j], name) THEN RETURN j END
+    IF Text.Eq (r.name[j], name) THEN RETURN j END
   END ;
   RETURN -1
 END Column ;
 
 PROCEDURE Present (r: PTR Result ; row, col: I64) : STR
   RAISES IndexError, ValueRange =
-  (* the cell's text, NULL refused *)
+  (* Present answers the cell's text, NULL refused. *)
 VAR k : I64 ;
 BEGIN
   k := At (r, row, col) ;
@@ -612,18 +642,19 @@ VAR
   neg : BOOL ;
 BEGIN
   s := Present (r, row, col) ;
-  IF LEN (s) = 0 THEN RAISE ValueRange END ;
+  IF Text.BLen (s) = 0 THEN RAISE ValueRange END ;
   i := 0 ;
   neg := FALSE ;
-  IF s[0] = '-' THEN neg := TRUE ; i := 1
-  ELSIF s[0] = '+' THEN i := 1
+  IF Text.BIs (s, 0, '-') THEN neg := TRUE ; i := 1
+  ELSIF Text.BIs (s, 0, '+') THEN i := 1
   END ;
-  IF i = LEN (s) THEN RAISE ValueRange END ;
+  IF i = Text.BLen (s) THEN RAISE ValueRange END ;
   v := 0 ;
-  WHILE i < LEN (s) DO
-    IF s[i] < '0' OR s[i] > '9' THEN RAISE ValueRange END ;
-    d := ORD (s[i]) - ORD ('0') ;
-    (* accumulated negative, so the most negative int8 fits *)
+  WHILE i < Text.BLen (s) DO
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RAISE ValueRange END ;
+    d := I64 (Text.BAt (s, i)) - ORD ('0') ;
+    (* The value is accumulated negative, so the most negative int8
+       fits. *)
     v := v * 10 - d ;
     i := i + 1
   END ;
@@ -633,21 +664,17 @@ END I64Cell ;
 
 PROCEDURE F64Cell (r: PTR Result ; row, col: I64) : F64
   RAISES IndexError, ValueRange =
-  (* Fmt.ParseF64 says whether it is a number at all; strtod reads the
-     same double from the octets (see StrToD) *)
-VAR
-  scratch : POOL ;
-  s : STR ;
-  v : F64 ;
-  cb : SLICE OF BYTE ;
+  (* Fmt.ParseF64 reads the number, correctly rounded since 0.20.0, and
+     refuses what is not one.  F64Cell parsed it a second time through
+     libc's strtod until 2026-10-31.  The two gave the same double, and
+     a sabotage that dropped strtod stayed green. *)
+VAR s : STR ;
 BEGIN
   s := Present (r, row, col) ;
-  IF DynStr.Eq (s, 'NaN') THEN RETURN NaN END ;
-  IF DynStr.Eq (s, 'Infinity') THEN RETURN 1.0E308 * 10.0 END ;
-  IF DynStr.Eq (s, '-Infinity') THEN RETURN -1.0E308 * 10.0 END ;
-  v := Fmt.ParseF64 (s) ;
-  cb := CStr (scratch, s) ;
-  RETURN F64 (StrToD (ADR (cb)))
+  IF Text.Eq (s, 'NaN') THEN RETURN NaN END ;
+  IF Text.Eq (s, 'Infinity') THEN RETURN 1.0E308 * 10.0 END ;
+  IF Text.Eq (s, '-Infinity') THEN RETURN -1.0E308 * 10.0 END ;
+  RETURN Fmt.ParseF64 (s)
 END F64Cell ;
 
 PROCEDURE BoolCell (r: PTR Result ; row, col: I64) : BOOL
@@ -655,29 +682,30 @@ PROCEDURE BoolCell (r: PTR Result ; row, col: I64) : BOOL
 VAR s : STR ;
 BEGIN
   s := Present (r, row, col) ;
-  IF DynStr.Eq (s, 't') THEN RETURN TRUE END ;
-  IF DynStr.Eq (s, 'f') THEN RETURN FALSE END ;
+  IF Text.Eq (s, 't') THEN RETURN TRUE END ;
+  IF Text.Eq (s, 'f') THEN RETURN FALSE END ;
   RAISE ValueRange
 END BoolCell ;
 
 PROCEDURE Num (RO s: STR ; at, n: I64) : I64 RAISES ValueRange =
-  (* n digits of s from at, as a count; ValueRange for anything else *)
+  (* Num reads n digits of s from at, as a count.  It raises
+     ValueRange for anything else. *)
 VAR i, v : I64 ;
 BEGIN
-  IF at + n > LEN (s) THEN RAISE ValueRange END ;
+  IF at + n > Text.BLen (s) THEN RAISE ValueRange END ;
   v := 0 ;
   FOR i := at TO at + n - 1 DO
-    IF s[i] < '0' OR s[i] > '9' THEN RAISE ValueRange END ;
-    v := v * 10 + ORD (s[i]) - ORD ('0')
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RAISE ValueRange END ;
+    v := v * 10 + I64 (Text.BAt (s, i)) - ORD ('0')
   END ;
   RETURN v
 END Num ;
 
 PROCEDURE TimeCell (r: PTR Result ; row, col: I64) : Time.Instant
   RAISES IndexError, ValueRange =
-  (* `YYYY-MM-DD HH:MM:SS[.ffffff](+|-)HH[:MM[:SS]]`, ISO DateStyle,
-     Postgres's default and the one it prints when nothing says
-     otherwise *)
+  (* TimeCell reads `YYYY-MM-DD HH:MM:SS[.ffffff](+|-)HH[:MM[:SS]]`,
+     ISO DateStyle, Postgres's default and the one it prints when
+     nothing says otherwise. *)
 VAR
   s : STR ;
   cv : Time.Civil ;
@@ -685,8 +713,8 @@ VAR
   i, frac, scale, sign, off : I64 ;
 BEGIN
   s := Present (r, row, col) ;
-  IF LEN (s) < 22 OR s[4] # '-' OR s[7] # '-' OR s[10] # ' ' OR
-     s[13] # ':' OR s[16] # ':' THEN
+  IF Text.BLen (s) < 22 OR NOT Text.BIs (s, 4, '-') OR NOT Text.BIs (s, 7, '-') OR NOT Text.BIs (s, 10, ' ') OR
+     NOT Text.BIs (s, 13, ':') OR NOT Text.BIs (s, 16, ':') THEN
     RAISE ValueRange
   END ;
   cv.year := Num (s, 0, 4) ;
@@ -696,36 +724,36 @@ BEGIN
   cv.minute := Num (s, 14, 2) ;
   cv.second := F64 (Num (s, 17, 2)) ;
   i := 19 ;
-  IF s[i] = '.' THEN
+  IF Text.BIs (s, i, '.') THEN
     i := i + 1 ;
     frac := 0 ;
     scale := 1 ;
-    WHILE i < LEN (s) AND s[i] >= '0' AND s[i] <= '9' DO
-      frac := frac * 10 + ORD (s[i]) - ORD ('0') ;
+    WHILE i < Text.BLen (s) AND I64 (Text.BAt (s, i)) >= ORD ('0') AND I64 (Text.BAt (s, i)) <= ORD ('9') DO
+      frac := frac * 10 + I64 (Text.BAt (s, i)) - ORD ('0') ;
       scale := scale * 10 ;
       i := i + 1
     END ;
     IF scale = 1 THEN RAISE ValueRange END ;
     cv.second := cv.second + F64 (frac) / F64 (scale)
   END ;
-  IF i >= LEN (s) THEN RAISE ValueRange END ;
-  IF s[i] = '+' THEN sign := 1
-  ELSIF s[i] = '-' THEN sign := -1
+  IF i >= Text.BLen (s) THEN RAISE ValueRange END ;
+  IF Text.BIs (s, i, '+') THEN sign := 1
+  ELSIF Text.BIs (s, i, '-') THEN sign := -1
   ELSE RAISE ValueRange
   END ;
   off := Num (s, i + 1, 2) * 3600 ;
   i := i + 3 ;
-  IF i < LEN (s) THEN
-    IF s[i] # ':' THEN RAISE ValueRange END ;
+  IF i < Text.BLen (s) THEN
+    IF NOT Text.BIs (s, i, ':') THEN RAISE ValueRange END ;
     off := off + Num (s, i + 1, 2) * 60 ;
     i := i + 3 ;
-    IF i < LEN (s) THEN
-      IF s[i] # ':' THEN RAISE ValueRange END ;
+    IF i < Text.BLen (s) THEN
+      IF NOT Text.BIs (s, i, ':') THEN RAISE ValueRange END ;
       off := off + Num (s, i + 1, 2) ;
       i := i + 3
     END
   END ;
-  IF i # LEN (s) THEN RAISE ValueRange END ;
+  IF i # Text.BLen (s) THEN RAISE ValueRange END ;
   t := Time.FromCivil (cv) ;
   RETURN Time.AddSeconds (t, F64 (-sign * off))
 END TimeCell ;

@@ -1,16 +1,16 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
-/* m9session -- the long-lived process behind the M9 Jupyter kernel's
+/* m9session is the long-lived process behind the M9 Jupyter kernel's
    in-memory state (docs/notebook-state-plan.md, phase 1).
 
-   It holds every STATE CELL -- a library module whose body runs once
-   -- loaded into itself, and runs every PROGRAM CELL in a fork of
-   itself, so a program sees the state as it is, cannot change it, and
-   cannot take the session down by halting or crashing.
+   It holds every STATE CELL loaded into itself.  A state cell is a
+   library module whose body runs once.  It runs every PROGRAM CELL in
+   a fork of itself.  So a program sees the state as it is, cannot
+   change it, and cannot take the session down by halting or crashing.
 
-   Commands come one per line on stdin; each answer is one line on the
-   descriptor named by the first argument (3 when there is none), so
-   that a program's own stdout and stderr (descriptors
-   1 and 2, which the children inherit) can never be mistaken for one.
+   Commands come one per line on stdin.  Each answer is one line on the
+   descriptor named by the first argument (3 when there is none).  So
+   a program's own stdout and stderr (descriptors 1 and 2, which the
+   children inherit) can never be mistaken for one.
    After every command a marker line, "\001M9 END\001", is written to
    stdout and stderr, so the reader knows where a cell's output stops.
 
@@ -28,7 +28,7 @@
                           never loads the program.   -> STATUS n
      QUIT
 
-   POSIX only (decision 4 of the plan): fork is the isolation. */
+   It is POSIX only (decision 4 of the plan): fork is the isolation. */
 
 #include "m9rt.h"
 #include <dlfcn.h>
@@ -44,8 +44,8 @@
 static FILE *ctl;                      /* answers, on descriptor 3 */
 static volatile pid_t child;           /* the program cell running now */
 
-/* Ctrl-C in the notebook interrupts the PROGRAM, not the session: the
-   kernel signals this process, and it passes the signal on */
+/* Ctrl-C in the notebook interrupts the PROGRAM, not the session.  The
+   kernel signals this process, and it passes the signal on. */
 static void pass_on (int sig)
 {
   if (child > 0) kill (child, sig);
@@ -83,11 +83,11 @@ int main (int argc0, char **argv0)
   struct sigaction sa;
   memset (&sa, 0, sizeof sa);
   sa.sa_handler = pass_on;
-  /* SA_RESTART, and the read below retried: Jupyter interrupts the
-     kernel's whole process group, this host included, and an interrupt
+  /* Set SA_RESTART, and retry the read below.  Jupyter interrupts the
+     kernel's whole process group, this host included.  An interrupt
      that arrived while the host sat in fgets ended the read with EINTR,
-     which the loop took for the end of its input -- the session died
-     between two cells (CI, 2026-10-04) */
+     which the loop took for the end of its input.  The session died
+     between two cells (CI, 2026-10-04). */
   sa.sa_flags = SA_RESTART;
   sigaction (SIGINT, &sa, NULL);
   ctl = fdopen (cfd, "w");
@@ -153,7 +153,7 @@ int main (int argc0, char **argv0)
           _exit (127);
         }
         /* argv[0] of the program is the cell's own path, then its
-           arguments: what m9c --run hands a program */
+           arguments come.  That is what m9c --run hands a program. */
         {
           char *pargv[256];
           int pc = 0, k;

@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        3
   NEW in the frame                                0
   NEW in a named pool                            12
-  calls of a STR form with a UTF twin             8   Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf, +2 more
+  calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

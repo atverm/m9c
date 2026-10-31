@@ -2,13 +2,13 @@ MODULE SanKeptPoolOk ;
 
 (* WANT: kept pools: heap 1 module 2 field 3 forwarded 4 churned 1 2 3 4 *)
 
-(* The legal side of 2026-10-28's KEPT rule for a POOL: what a KEPT
-   pool parameter keeps lives in a pool that outlives the module state
-   holding it -- HEAP, a module's pool, a module variable's pool field,
-   and a KEPT parameter handed on.  After every call a LOCAL pool is
-   made and written, the churn that turned a kept cell's 42 into 99
-   when the pool was the caller's local one; under the M9_ASAN arenas
-   a freed block is poisoned, so a read of one traps. *)
+(* The legal side of 2026-10-28's KEPT rule for a POOL: the storage a
+   KEPT pool parameter keeps lives in a pool that outlives the module
+   state holding it -- HEAP, a module's pool, a module variable's pool
+   field, and a KEPT parameter handed on.  After every call a LOCAL
+   pool is made and written, the churn that turned a kept cell's 42
+   into 99 when the pool was the caller's local one; under the M9_ASAN
+   arenas a freed block is poisoned, so a read of one traps. *)
 
 IMPORT Io, Fmt ;
 

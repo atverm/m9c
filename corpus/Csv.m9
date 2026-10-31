@@ -1,10 +1,11 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Csv ;
 
-(* A reader for delimited text tables with a column header.
+(* Csv reads delimited text tables with a column header.
 
-   WHAT IT IS FOR.  Numeric tables large enough that the reading is
-   the cost: instrument timeseries, model output, station archives.
+   WHAT IT IS FOR.  It is for numeric tables large enough that the
+   reading is the cost: instrument timeseries, model output, station
+   archives.
    It parses every column in ONE pass and hands out finished storage
    afterwards, because a column-at-a-time reader walks the whole file
    once per column and there are usually hundreds.
@@ -21,13 +22,13 @@ DEFINITION MODULE Csv ;
    THERE IS NO TYPE INFERENCE, deliberately.  A reader that samples the
    first rows and decides types from them will read a column of
    sentinels as an integer and fail on the first real value further
-   down -- not hypothetical: polars, given the file this was first
-   written for, stops 125 KB in with "could not parse `-2.03` as dtype
-   `i64`".  Sampling also cannot distinguish a station code from a
-   number.  So the caller states the schema, and a schema is exactly
-   the kind of thing that belongs in a file next to the data rather
-   than in the program (demo/icos-roundtrip has one, derived from its
-   data provider's published variable dictionary).
+   down.  That is not hypothetical: polars, given the file this was
+   first written for, stops 125 KB in with "could not parse `-2.03` as
+   dtype `i64`".  Sampling also cannot distinguish a station code from a
+   number.  So the caller states the schema, and a schema is exactly the
+   kind of thing that belongs in a file next to the data rather than in
+   the program (demo/icos-roundtrip has one, derived from its data
+   provider's published variable dictionary).
 
    MEASUREMENTS ARE F32.  That is what instruments produce and what
    NetCDF and Zarr archives of the same data store, so comparing them
@@ -38,9 +39,9 @@ DEFINITION MODULE Csv ;
    a kind; nobody has yet.
 
    TIME IS Time.Instant, which is UTC by construction.  A timestamp
-   written without a zone -- which is most of them, in this kind of
-   data -- therefore cannot become an Instant until the caller says
-   what zone it was written in.  That is the point, not an
+   written without a zone (most of them, in this kind of data)
+   therefore cannot become an Instant until the caller says what zone
+   it was written in.  That is the point, not an
    inconvenience: it is the difference between an hour of silent error
    and a line of configuration.
 
@@ -48,16 +49,16 @@ DEFINITION MODULE Csv ;
    caller declared Real or Real64 is parsed only when the field looks
    like a number; anything else reads NaN, exactly as an empty field
    does.  strtod answers 0 for text, and a sentence stored as a
-   measured 0.0 is the worst of the three possible answers -- found
-   in the ICOS ocean store, where 551 comment cells did precisely
+   measured 0.0 is the worst of the three possible answers.  The ICOS
+   ocean store found this: 551 comment cells there did precisely
    that.  See IsNumber for what counts.
 
-   WHAT IT IS NOT.  Not a general CSV library: no ragged rows, no
-   type inference, no streaming.  A quoted field MAY carry a newline
-   and a doubled "" (TextAt undoubles it) -- both arrived when a
-   caller needed them, the FLUXNET shuttle's BADM tables, and each
-   of the rest is a real feature for somebody and none is free, so
-   they arrive the same way.                                        *)
+   WHAT IT IS NOT.  Csv is not a general CSV library: no ragged rows,
+   no type inference, no streaming.  A quoted field MAY carry a
+   newline and a doubled "" (TextAt undoubles it).  Both arrived when
+   a caller needed them, the FLUXNET shuttle's BADM tables.  Each of
+   the rest is a real feature for somebody and none is free, so they
+   arrive the same way.                                             *)
 
 IMPORT Time ;
 
@@ -84,8 +85,9 @@ TYPE
   END ;
 
 CONST
-  (* timestamp layouts, named because a caller reading its options
-     out of a configuration file has to be able to write one down *)
+  (* These are the timestamp layouts, named because a caller reading
+     its options out of a configuration file has to be able to write
+     one down. *)
   StampYmdHm  = 0 ;           (* YYYYMMDDhhmm    *)
   StampYmdHms = 1 ;           (* YYYYMMDDhhmmss  *)
   StampIso    = 2 ;           (* RFC 3339, via Time.ParseIso *)
@@ -96,56 +98,58 @@ EXCEPTION
   RangeError (row, col: I64) ;
 
 PROCEDURE Defaults () : Options ;
-  (* comma, unquoted, one header row, no preamble, no missing value,
-     UTC.  Every one of those is a decision, so they are in one place
-     where a reader can see all of them at once.                    *)
+  (* Defaults answers comma, unquoted, one header row, no preamble, no
+     missing value, UTC.  Every one of those is a decision, so they are
+     in one place where a reader can see all of them at once.       *)
 
 PROCEDURE Open (VAR pool: POOL ; RO path: STR ; RO opt: Options)
   : PTR Table IN pool
   RAISES ParseError, ValueRange, Io.IOError ;
-  (* reads the file and the header and counts the rows; parses no
-     values, because the caller declares the column kinds first.
-     Every column is Skip until a setter names it: a column nobody
-     declared is scanned past, never parsed and never carried.     *)
+  (* Open reads the file and the header and counts the rows.  It
+     parses no values, because the caller declares the column kinds
+     first.  Every column is Skip until a setter names it: a column
+     nobody declared is scanned past, never parsed and never carried. *)
 
 PROCEDURE OpenBytes (VAR pool: POOL ; RO src: SLICE OF BYTE ;
                      RO opt: Options) : PTR Table IN pool
   RAISES ParseError, ValueRange ;
-  (* the same, over bytes the caller already holds -- a ZIP member
-     inflated into memory, a body off the wire.  The octets are COPIED
-     into the table (plus the trailing zero Open's file read carries),
-     so the caller's buffer is free the moment this returns and the
-     table never reaches into a pool it does not own.                *)
+  (* OpenBytes does the same over bytes the caller already holds: a
+     ZIP member inflated into memory, a body off the wire.  The octets
+     are COPIED into the table (plus the trailing zero Open's file read
+     carries), so the caller's buffer is free the moment this returns
+     and the table never reaches into a pool it does not own.        *)
 
 PROCEDURE Rows (t: PTR Table) : I64 ;
 PROCEDURE Cols (t: PTR Table) : I64 ;
 PROCEDURE Name (VAR pool: POOL ; t: PTR Table ; c: I64) : STR
   RAISES IndexError, ValueRange ;
 PROCEDURE Find (t: PTR Table ; RO name: STR) : I64 ;
-  (* the column index, or -1.  Not an error: a caller choosing
-     between conventions needs the question, not the diagnosis     *)
+  (* Find answers the column index, or -1.  That is not an error: a
+     caller choosing between conventions needs the question, not the
+     diagnosis.                                                    *)
 
 PROCEDURE SetKind (VAR t: PTR Table ; c: I64 ; k: Kind)
   RAISES IndexError ;
 PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError ;
 PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError ;
-  (* MEASUREMENTS ARE F32 by default and the module header says why.
-     This is the exception that header names -- "a caller needing F64
-     measurements should say so and this grows a kind" -- and the
+  (* MEASUREMENTS ARE F32 by default, and the module header says why.
+     SetReal64 is the exception that header names: "a caller needing
+     F64 measurements should say so and this grows a kind".  The
      caller that needed it is the ICOS ocean store, whose every
-     measurement array is `<f8>`: narrowing here and widening again
-     to write would be two roundings where the file has one number. *)
+     measurement array is `<f8>`.  A narrowing here and a widening
+     again to write would be two roundings where the file has one
+     number. *)
 PROCEDURE SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError ;
 PROCEDURE SetText (VAR t: PTR Table ; c: I64) RAISES IndexError ;
 PROCEDURE SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError ;
 PROCEDURE SetStamp (VAR t: PTR Table ; c: I64 ; format: I64)
   RAISES IndexError ;
-  (* the same thing as SetKind, said without naming the variant.
-     These setters date from when a caller in another module could
+  (* These setters say the same thing as SetKind without naming the
+     variant.  They date from when a caller in another module could
      not write `Csv.Kind.Real` (the checker accepted it, the
      generator refused it).  That gap CLOSED 2026-09-15
      (`corpus/KindUse.m9` is the gendiff fixture that writes every
-     form); `SetKind (t, c, Csv.Kind.Real)` works from anywhere and
+     form).  `SetKind (t, c, Csv.Kind.Real)` works from anywhere and
      is the preferred spelling.  The setters stay for their callers
      and for C, which has no constructor syntax.                     *)
 
@@ -153,20 +157,20 @@ PROCEDURE KindAt (t: PTR Table ; c: I64) : Kind
   RAISES IndexError ;
 PROCEDURE IsSet (t: PTR Table ; c: I64) : BOOL
   RAISES IndexError ;
-  (* whether column c has had its kind named -- FALSE while it is
-     still Skip.  The count of parsed columns, without spelling out
-     every kind at the call site. *)
+  (* IsSet asks whether column c has had its kind named: FALSE while
+     it is still Skip.  It gives the count of parsed columns without
+     spelling out every kind at the call site. *)
 PROCEDURE FormatAt (t: PTR Table ; c: I64) : I64
   RAISES IndexError ;
-  (* the kind the caller set (Skip until set) and, for a Stamp
-     column, its format.  A caller in another module CASEs the Kind
-     directly now (the cross-module variant selector the enumeration
-     work gave the generator); the integer codes it used to answer
-     against are gone. *)
+  (* KindAt answers the kind the caller set (Skip until set), and
+     FormatAt, for a Stamp column, its format.  A caller in another
+     module CASEs the Kind directly now (the cross-module variant
+     selector the enumeration work gave the generator); the integer
+     codes it used to answer against are gone. *)
 
 PROCEDURE Parse (VAR pool: POOL ; VAR t: PTR Table)
   RAISES ParseError, RangeError, ValueRange, IndexError ;
-  (* one pass over the whole file *)
+  (* Parse makes one pass over the whole file. *)
 
 PROCEDURE ColF32 (t: PTR Table ; c: I64) : SLICE OF F32
   RAISES IndexError ;
@@ -178,16 +182,17 @@ PROCEDURE ColStamp (t: PTR Table ; c: I64) : SLICE OF Time.Instant
   RAISES IndexError ;
 PROCEDURE TextAt (VAR pool: POOL ; t: PTR Table ; c, row: I64) : STR
   RAISES IndexError, ValueRange ;
-  (* a text field, built on demand out of the file still in memory: a
-     table of a hundred thousand rows does not want a hundred
-     thousand strings nobody asked for                              *)
+  (* TextAt answers a text field, built on demand out of the file
+     still in memory: a table of a hundred thousand rows does not want
+     a hundred thousand strings nobody asked for.                   *)
 
 (* ---- the UTF twins (docs/utf8-plan.md, stage 2; Alex: twins in Csv,
-   not a second module -- the file is held as octets already).  Name and
-   TextAt widen one octet to one CHAR, so a header or a field past ASCII
-   comes back as its UTF-8 octets read as Latin-1; these answer the text
-   itself, its octets validated into pool (ValueRange when the file holds
-   a field that is not UTF-8).  Csv.Find (t, u) with a UTF is FindUtf. ---- *)
+   not a second module, since the file is held as octets already).
+   Name and TextAt widen one octet to one CHAR, so a header or a field
+   past ASCII comes back as its UTF-8 octets read as Latin-1.  These
+   answer the text itself, its octets validated into pool (ValueRange
+   when the file holds a field that is not UTF-8).  Csv.Find (t, u)
+   with a UTF is FindUtf. ---- *)
 
 PROCEDURE NameUtf (VAR pool: POOL ; t: PTR Table ; c: I64) : UTF
   RAISES IndexError, ValueRange ;
@@ -208,16 +213,17 @@ PROCEDURE CNumber = "m9_csv_number" (p: C.ConstPtr ; n: C.SSizeT) : C.Int
   [REENTRANT] ;
 PROCEDURE CFieldF64 = "m9_field_f64" (p: C.ConstPtr ; n: C.SSizeT ; out: C.MutPtr) : C.Int
   [REENTRANT] ;
-  (* IsNumber's grammar in one pass in the runtime (m9rt.h,
-     2026-10-25), CFieldF64 with the value: 1 a number, 0 not one, -1
-     under M9_CSV_PORTABLE -- then IsNumber and FieldF64 below decide,
-     the portable twin.  IsNumber and Word were 31% of a CSV read. *)
-  (* the runtime's one-line shim over strtof, not strtof itself:
-     C.ConstPtr is `const void *` and stdlib.h has already declared
-     strtof with `const char *`, so a direct binding collides.  The
-     same collision m9_cstrlen answers, and the second instance of
-     it -- a libc function the runtime header prototypes cannot be
-     bound directly today.
+  (* CNumber runs IsNumber's grammar in one pass in the runtime
+     (m9rt.h, 2026-10-25), and CFieldF64 runs it with the value: 1 a
+     number, 0 not one, -1 under M9_CSV_PORTABLE.  Then IsNumber and
+     FieldF64 below decide, the portable twin.  IsNumber and Word were
+     31% of a CSV read. *)
+  (* StrToF32 binds the runtime's one-line shim over strtof, not
+     strtof itself.  C.ConstPtr is `const void *` and stdlib.h has
+     already declared strtof with `const char *`, so a direct binding
+     collides.  m9_cstrlen answers the same collision, and this is the
+     second instance of it: a libc function the runtime header
+     prototypes cannot be bound directly today.
 
      The answer is a C.Double because M9 has no C.Float.  It carries
      exactly the float strtof computed: widening is exact, and the
@@ -232,14 +238,16 @@ END ccsv.
 
 UNSAFE IMPLEMENTATION MODULE Csv ;
 
-(* UNSAFE for one reason: ADR, to hand strtof a pointer into the file
-   buffer rather than a copy of every field.  Grep ADR.            *)
+IMPORT Text ;
+
+(* Csv is UNSAFE for one reason: ADR, to hand strtof a pointer into
+   the file buffer rather than a copy of every field.  Grep ADR.   *)
 
 IMPORT DynStr ;
 IMPORT Io ;
 FROM ccsv IMPORT StrToF32, StrToF64, CNumber, CFieldF64 ;
 
-(* a double the runtime fills through ADR (h) *)
+(* Held is a double the runtime fills through ADR (h). *)
 TYPE Held = RECORD v : F64 END ;
 
 (* Delimiters and quotes are compared as byte VALUES rather than named
@@ -319,9 +327,9 @@ BEGIN
   RETURN I64 (b) >= 48 AND I64 (b) <= 57
 END IsDigit ;
 
-(* the number of rows, counted before anything is allocated: one pass
+(* CountRows counts the rows before anything is allocated: one pass
    over the file to learn a number is cheaper than growing hundreds
-   of columns by doubling *)
+   of columns by doubling. *)
 PROCEDURE CountRows (RO b: SLICE OF BYTE ; from: I64 ; quoted: BOOL)
   : I64
   RAISES IndexError =
@@ -333,10 +341,10 @@ BEGIN
   inQuote := FALSE ;
   FOR i := from TO LEN (b) - 1 DO
     (* a newline INSIDE a quoted field is part of the field, exactly
-       as Parse treats it; counting it here as a row used to hand back
-       a row count larger than Parse fills, and the tail rows read as
-       empty text -- silently.  78 of the 783 FLUXNET shuttle BADM
-       tables carry a multi-line site description. *)
+       as Parse treats it.  CountRows used to count it here as a row
+       and hand back a row count larger than Parse fills, and the tail
+       rows read as empty text, silently.  78 of the 783 FLUXNET
+       shuttle BADM tables carry a multi-line site description. *)
     IF quoted AND I64 (b[i]) = 34 THEN inQuote := NOT inQuote END ;
     IF I64 (b[i]) = 10 AND NOT inQuote THEN n := n + 1 END
   END ;
@@ -347,7 +355,8 @@ BEGIN
   RETURN n
 END CountRows ;
 
-(* the byte after the end of preamble line number `skip` *)
+(* SkipLines answers the byte after the end of preamble line number
+   `skip`. *)
 PROCEDURE SkipLines (RO b: SLICE OF BYTE ; skip: I64) : I64
   RAISES IndexError =
 VAR
@@ -363,7 +372,8 @@ BEGIN
   RETURN i
 END SkipLines ;
 
-(* a field with the quotes taken off, if it wore any *)
+(* Unquote answers a field with the quotes taken off, if it wore
+   any. *)
 PROCEDURE Unquote (RO b: SLICE OF BYTE ; VAR ofs: I64 ; VAR len: I64)
   RAISES IndexError =
 BEGIN
@@ -389,18 +399,19 @@ VAR
   buf : SLICE OF BYTE ;
   i : I64 ;
 BEGIN
-  (* copied, and one zero past the end: a C string function called
-     on a field inside it must not run off the buffer, which is the
-     contract Io.ReadFileBytes gives Open *)
+  (* The bytes are copied, with one zero past the end: a C string
+     function called on a field inside it must not run off the buffer,
+     which is the contract Io.ReadFileBytes gives Open. *)
   buf := NEW (pool, BYTE, LEN (src) + 1) ;
   FOR i := 0 TO LEN (src) - 1 DO buf[i] := src[i] END ;
-  (* the zero is PAST the slice, exactly as ReadFileBytes places it:
-     inside it, the row counter would see one byte more than the file
-     and answer one row too many -- which the driver caught *)
+  (* the zero is PAST the slice, exactly as ReadFileBytes places it.
+     Inside it, the row counter would see one byte more than the file
+     and answer one row too many, which the driver caught. *)
   RETURN Build (pool, SLICE (buf, 0, LEN (src)), opt)
 END OpenBytes ;
 
-(* the header and the row count over a buffer the table will keep *)
+(* Build reads the header and the row count over a buffer the table
+   will keep. *)
 PROCEDURE Build (VAR pool: POOL ; RO buf: SLICE OF BYTE ;
                  RO opt: Options) : PTR Table IN pool
   RAISES ParseError, ValueRange =
@@ -433,7 +444,7 @@ BEGIN
   t.nameLen := NEW (pool, I64, n) ;
   t.kinds := NEW (pool, Kind, n) ;
   t.formats := NEW (pool, I64, n) ;
-  (* every column is Skip until a setter names its kind -- what the
+  (* every column is Skip until a setter names its kind, as the
      definition promises.  It was Real here until 2026-09-06, and a
      caller that declared two of 244 columns got all 244 parsed. *)
   FOR i := 0 TO n - 1 DO t.kinds[i] := Kind.Skip END ;
@@ -564,11 +575,11 @@ BEGIN
   t.formats[c] := format
 END SetStamp ;
 
-(* 10^k, for k the number of digits after the point.  Exact in F32 up
-   to k = 10: 10^10 is 2^10 * 5^10 and 5^10 = 9765625 fits in the
-   24-bit significand.  10^11 does not, which is where the fast path
-   below stops.  The chain is ordered by how often each k occurs in
-   instrument data. *)
+(* Pow10F32 answers 10^k, for k the number of digits after the point.
+   It is exact in F32 up to k = 10: 10^10 is 2^10 * 5^10, and
+   5^10 = 9765625 fits in the 24-bit significand.  10^11 does not,
+   which is where the fast path below stops.  The chain is ordered by
+   how often each k occurs in instrument data. *)
 PROCEDURE Pow10F32 (k: I64) : F32 =
 BEGIN
   IF k = 3 THEN RETURN 1000.0 END ;
@@ -584,21 +595,21 @@ BEGIN
   RETURN 10000000000.0
 END Pow10F32 ;
 
-(* One field.
+(* FieldF32 parses one field.
 
    THE FAST PATH IS NOT AN APPROXIMATION.  For [-]ddd[.ddd] with at
    most 7 significant digits and at most 10 after the point, the
    mantissa is below 2^24 and 10^k is exact, so both operands of the
    division are exactly representable in F32 and IEEE 754 rounds the
    quotient once, correctly.  That is the same value strtof answers,
-   not a value near it -- and the driver proves it by comparing every
+   not a value near it.  The driver proves it by comparing every
    parsed field against strtof rather than taking the argument on
    trust.  On the file this was written for, 98.8% of 34 million
    fields take this path.
 
-   Everything else -- exponent notation, longer mantissas, anything
-   with a character the loop does not recognise -- falls through to
-   strtof on a pointer INTO the buffer.  No copy: the buffer carries a
+   Everything else falls through to strtof on a pointer INTO the
+   buffer: exponent notation, longer mantissas, anything with a
+   character the loop does not recognise.  No copy: the buffer carries a
    zero byte past its end and every field is followed by a delimiter
    or a newline, either of which stops strtof.                      *)
 PROCEDURE FieldF32 (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64) : F32
@@ -626,9 +637,9 @@ BEGIN
   WHILE i < stop DO
     c := I64 (b[i]) ;
     IF c >= 48 AND c <= 57 THEN
-      (* eight digits is one too many for an exact F32 mantissa, and
-         leaving the loop HERE also keeps mant from overflowing on a
-         field that is all digits *)
+      (* eight digits is one too many for an exact F32 mantissa.  The
+         exit HERE also keeps mant from overflowing on a field that is
+         all digits. *)
       IF digs >= 7 THEN
         hard := TRUE ;
         EXIT
@@ -657,28 +668,28 @@ BEGIN
   RETURN F32 (StrToF32 (ADR (v)))
 END FieldF32 ;
 
-(* THE WIDE FIELD GOES STRAIGHT THROUGH strtod -- since 2026-10-25
-   through the runtime's m9_strtod, which is Eisel-Lemire where it
-   decides and strtod where it does not, the same value either way
-   (glibc's strtod was 44% of a CSV read) -- with none of the
-   fast path FieldF32 keeps.  That fast path exists because a float32
-   result is a single rounding whichever way it is reached; a float64
+(* THE WIDE FIELD GOES STRAIGHT THROUGH strtod, with none of the fast
+   path FieldF32 keeps.  Since 2026-10-25 it goes through the
+   runtime's m9_strtod, which is Eisel-Lemire where it decides and
+   strtod where it does not, the same value either way (glibc's strtod
+   was 44% of a CSV read).  That fast path exists because a float32
+   result is a single rounding whichever way it is reached.  A float64
    one is not, and a hand-rolled mantissa would be an ulp out on the
-   values this exists for -- which is the same finding the SOCAT
+   values this exists for.  That is the same finding the SOCAT
    longitude produced from the other side. *)
 (* IS THIS FIELD A NUMBER AT ALL?
 
    strtod answers 0 for text, so a column declared Real that carries a
-   word read back as a real ZERO -- indistinguishable from a measured
-   one, and silently wrong.  The ICOS ocean store found it: a comment
-   column that pandas' duplicate-name mangling let past the drop rule
-   became a float array, and 551 sentences read as 0.0 where pandas'
-   `to_numeric(errors='coerce')` says NaN.
+   word read back as a real ZERO.  That zero is indistinguishable from
+   a measured one, and silently wrong.  The ICOS ocean store found it:
+   a comment column that pandas' duplicate-name mangling let past the
+   drop rule became a float array, and 551 sentences read as 0.0 where
+   pandas' `to_numeric(errors='coerce')` says NaN.
 
    So a field the caller declared numeric is parsed only if it LOOKS
-   numeric, and is missing otherwise -- which is what an empty field
-   already answers.  Deliberately narrower than strtod: `0x10` is not
-   a number here, and pandas agrees.                                *)
+   numeric, and is missing otherwise, which is what an empty field
+   already answers.  IsNumber is deliberately narrower than strtod:
+   `0x10` is not a number here, and pandas agrees.                  *)
 PROCEDURE IsNumber (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64) : BOOL
   RAISES IndexError =
 VAR
@@ -719,17 +730,18 @@ BEGIN
   RETURN i = e
 END IsNumber ;
 
-(* the octets at i..e, lower-cased, equal to a lower-case ASCII word *)
+(* Word asks whether the octets at i..e, lower-cased, equal a
+   lower-case ASCII word. *)
 PROCEDURE Word (RO b: SLICE OF BYTE ; i: I64 ; e: I64 ; RO w: STR)
   : BOOL
   RAISES IndexError =
 VAR k, c : I64 ;
 BEGIN
-  IF e - i # LEN (w) THEN RETURN FALSE END ;
-  FOR k := 0 TO LEN (w) - 1 DO
+  IF e - i # Text.BLen (w) THEN RETURN FALSE END ;
+  FOR k := 0 TO Text.BLen (w) - 1 DO
     c := I64 (b[i + k]) ;
     IF c >= 65 AND c <= 90 THEN c := c + 32 END ;
-    IF c # ORD (w[k]) THEN RETURN FALSE END
+    IF c # I64 (Text.BAt (w, k)) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 EXCEPT
@@ -772,7 +784,8 @@ BEGIN
   RETURN v
 END FieldI64 ;
 
-(* the packed digit layouts, YYYYMMDDhhmm and YYYYMMDDhhmmss *)
+(* CompactStamp reads the packed digit layouts, YYYYMMDDhhmm and
+   YYYYMMDDhhmmss. *)
 PROCEDURE CompactStamp (v: I64 ; withSeconds: BOOL) : Time.Instant
   RAISES ValueRange =
 VAR c : Time.Civil ;
@@ -877,8 +890,9 @@ BEGIN
       IF c < t.ncols THEN
         CASE t.kinds[c] OF
         | Real64 :
-          (* the runtime's one pass -- the grammar and the value -- or,
-             where it declines, IsNumber and FieldF64 as before *)
+          (* Use the runtime's one pass (the grammar and the value)
+             or, where it declines, IsNumber and FieldF64 as
+             before. *)
           k := 0 ;
           IF len > 0 THEN
             v := SLICE (t.buf, ofs, len) ;
@@ -980,9 +994,9 @@ BEGIN
     RETURN DynStr.Chars (pool, raw)
   END ;
   (* undouble "" inside a quoted field.  The header used to declare
-     'no doubled "" escapes' as a narrowing; Frame.WriteCsv writes
-     them (it must -- a note containing a quote has no other legal
-     spelling), and its round-trip gate is what widened this. *)
+     'no doubled "" escapes' as a narrowing.  Frame.WriteCsv writes
+     them (it must: a note containing a quote has no other legal
+     spelling), and its round-trip gate widened this. *)
   n := 0 ;
   i := 0 ;
   WHILE i < LEN (raw) DO

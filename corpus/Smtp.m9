@@ -1,29 +1,43 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Smtp ;
 
-(* Mail submission: a message built by calls and sent by SMTP (RFC
+(* Smtp submits mail: a message built by calls and sent by SMTP (RFC
    5321) over a plain socket, implicit TLS (465) or STARTTLS (587,
    RFC 3207), with AUTH PLAIN or LOGIN (docs/library-plan-2.md,
    item 6).
 
-   LIFTED from the zarr proxy's Smtp.m9 (in production since
+   Smtp is LIFTED from the zarr proxy's Smtp.m9 (in production since
    2026-09-13: implicit TLS, AUTH LOGIN, one text message to N
    recipients) and widened: STARTTLS through one new shim call,
-   tls_wrap, a handshake on the socket already talked on; a Message
-   with From, To, Cc, Bcc (envelope only), Subject, Date, Message-ID,
-   a text body and attachments as multipart/mixed; a subject beyond
-   ASCII as an RFC 2047 encoded word; AUTH PLAIN where EHLO offers
-   it, LOGIN else.  Every body part goes base64, so nothing depends on
-   8BITMIME, on line endings or on a line that begins with a dot --
-   the one place dot-stuffing matters, the message text itself, is
-   stuffed anyway (RFC 5321 par 4.5.2).
+   tls_wrap, a handshake on the socket already talked on; a Message with
+   From, To, Cc, Bcc (envelope only), Subject, Date, Message-ID, a text
+   body and attachments as multipart/mixed; a subject beyond ASCII as an
+   RFC 2047 encoded word; AUTH PLAIN where EHLO offers it, LOGIN else.
+   Every body part goes base64, so nothing depends on 8BITMIME, on line
+   endings or on a line that begins with a dot.  The one place
+   dot-stuffing matters, the message text itself, is stuffed anyway (RFC
+   5321 par 4.5.2).
 
-   HELD by SmtpTest (m9test: the message as written -- the Date line,
-   the encoded word, the multipart -- against Python's email, and the
-   refusals) and by runtime/test/smtp.sh: an aiosmtpd server records
-   what arrives plain, over TLS, over STARTTLS and with each AUTH, and
-   Python's email parses every message back to what was sent --
-   SendOctets' too, under an envelope that differs from its headers.
+   Text goes out as its UTF-8 octets, and a reply reads as UTF-8 when
+   it is UTF-8, else one character per octet (Alex, 2026-10-31).  The
+   body and a non-ASCII subject go base64, so they stay ASCII.  An
+   address or an attachment name beyond ASCII goes as raw UTF-8 (RFC
+   6532), and that needs SMTPUTF8 (RFC 6531).  Smtp decides once per
+   message, before MAIL FROM.  It needs SMTPUTF8 when the message
+   octets or an envelope address hold an octet past ASCII.  Then it
+   sends MAIL FROM with the SMTPUTF8 parameter, and BODY=8BITMIME as
+   well when the server offers 8BITMIME (RFC 6531 par 3.4).  A server
+   that does not offer SMTPUTF8 gets QUIT instead, and Send raises
+   Error.  Nothing is downgraded.  An all-ASCII message sends no
+   parameter.
+
+   SmtpTest HOLDS it (m9test: the message as written, meaning the Date
+   line, the encoded word and the multipart, against Python's email,
+   and the refusals).  So does runtime/test/smtp.sh: an aiosmtpd
+   server records what arrives plain, over TLS, over STARTTLS and with
+   each AUTH, and Python's email parses every message back to what was
+   sent.  That includes SendOctets' messages, under an envelope that
+   differs from their headers.
 
    Nothing is retried: a submission failure is a fact the caller
    reports.  The reply code is in the Error (0 for the transport).  *)
@@ -32,8 +46,8 @@ IMPORT Time ;
 
 EXCEPTION
   Error (RO msg: STR ; code: I64) ;
-    (* the stage and what the server said; code is its reply code, or
-       0 when the connection failed or closed *)
+    (* Error carries the stage and what the server said; code is its
+       reply code, or 0 when the connection failed or closed. *)
 
 CONST
   Plain = 0 ;                  (* no TLS: a relay on localhost, a test *)
@@ -53,66 +67,73 @@ PROCEDURE New (VAR pool: POOL ; RO from: STR ; RO subject: STR) : PTR Message IN
 PROCEDURE AddTo (VAR m: PTR Message ; RO addr: STR) ;
 PROCEDURE AddCc (VAR m: PTR Message ; RO addr: STR) ;
 PROCEDURE AddBcc (VAR m: PTR Message ; RO addr: STR) ;
-  (* recipients: To and Cc appear in the headers, Bcc only in the
-     envelope; every one is a RCPT TO *)
+  (* These add recipients: To and Cc appear in the headers, Bcc only
+     in the envelope; every one is a RCPT TO. *)
 
 PROCEDURE SetText (VAR m: PTR Message ; RO body: STR) ;
-  (* the text/plain; charset=utf-8 part *)
+  (* SetText sets the text/plain; charset=utf-8 part. *)
 
 PROCEDURE SetDate (VAR m: PTR Message ; t: Time.Instant) ;
 PROCEDURE SetId (VAR m: PTR Message ; RO id: STR) ;
-  (* the Message-ID without its angle brackets *)
+  (* SetId takes the Message-ID without its angle brackets. *)
 
 PROCEDURE Attach (VAR m: PTR Message ; RO name: STR ; RO ctype: STR ;
                   RO data: SLICE OF BYTE) ;
-  (* a part: Content-Type ctype, Content-Disposition attachment with
-     the file name, base64 *)
+  (* Attach adds a part: Content-Type ctype, Content-Disposition
+     attachment with the file name, base64. *)
 
 PROCEDURE Wire (m: PTR Message) : STR RAISES ValueRange ;
-  (* the RFC 5322 message as the server receives it: CR LF line ends,
-     the headers, the body or the multipart -- NOT dot-stuffed, that is
-     the transport's.  What SmtpTest holds, and what Send writes *)
+  (* Wire answers the RFC 5322 message as the server receives it: CR
+     LF line ends, the headers, the body or the multipart.  It is NOT
+     dot-stuffed; that is the transport's.  SmtpTest holds it, and
+     Send writes it. *)
 
 PROCEDURE Send (RO host: STR ; port: I64 ; security: I64 ;
                 RO user: STR ; RO pass: STR ; m: PTR Message)
   RAISES Error, ValueRange ;
-  (* the dialogue: EHLO, STARTTLS and EHLO again under StartTls, AUTH
-     when user is not empty (PLAIN if offered, else LOGIN), MAIL FROM,
-     one RCPT TO a recipient, DATA, the message dot-stuffed, QUIT.  A
-     message with no recipient is an Error before any connection *)
+  (* Send runs the dialogue: EHLO, STARTTLS and EHLO again under
+     StartTls, AUTH when user is not empty (PLAIN if offered, else
+     LOGIN), MAIL FROM, one RCPT TO a recipient, DATA, the message
+     dot-stuffed, QUIT.  A message with no recipient is an Error
+     before any connection.  A message that needs SMTPUTF8 names it on
+     MAIL FROM.  It is an Error, code 250, before AUTH and MAIL FROM
+     when the server does not offer SMTPUTF8. *)
 
 PROCEDURE SendText (RO host: STR ; port: I64 ; security: I64 ;
                     RO user: STR ; RO pass: STR ; RO from: STR ;
                     RO to: SLICE OF STR ; RO subject: STR ; RO body: STR)
   RAISES Error, ValueRange ;
-  (* the proxy's shape: one text message to every address in to *)
+  (* SendText keeps the proxy's shape: one text message to every
+     address in to. *)
 
 PROCEDURE SendOctets (RO host: STR ; port: I64 ; security: I64 ;
                       RO user: STR ; RO pass: STR ; RO from: STR ;
                       RO to: SLICE OF STR ; RO octets: SLICE OF BYTE)
   RAISES Error, ValueRange ;
-  (* the same dialogue for a message the CALLER composed -- one a
-     list server rewrote and sends once per member, one read from a
-     file: from is the envelope sender (MAIL FROM) and to the envelope
-     recipients (RCPT TO), whatever the octets' own From and To say;
-     octets are the RFC 5322 message as it stands, headers and body.
-     A bare LF line end is made CR LF on the wire, the message is
-     dot-stuffed and ended as the transport wants, and nothing else
-     is read or changed: Date, Message-ID and the rest are the
-     caller's.  A message with no recipient is an Error before any
-     connection (2026-10-15, for cplists) *)
+  (* SendOctets runs the same dialogue for a message the CALLER
+     composed: one a list server rewrote and sends once per member, one
+     read from a file.  from is the envelope sender (MAIL FROM) and to
+     the envelope recipients (RCPT TO), whatever the octets' own From
+     and To say; octets are the RFC 5322 message as it stands, headers
+     and body.  A bare LF line end is made CR LF on the wire, the
+     message is dot-stuffed and ended as the transport wants, and
+     nothing else is read or changed: Date, Message-ID and the rest are
+     the caller's.  A message with no recipient is an Error before any
+     connection (2026-10-15, for cplists).  Octets or an envelope
+     address past ASCII need SMTPUTF8, as in Send. *)
 
 PROCEDURE Stuffed (RO text: STR) : STR ;
-  (* text with a dot put before every line that begins with one:
-     exported so that the test holds it *)
+  (* Stuffed answers text with a dot put before every line that
+     begins with one.  It is exported so that the test holds it. *)
 
 END Smtp.
 
 
 UNSAFE DEFINITION MODULE FOR "C" csmtp ;
 
-(* runtime/tcpshim.c and tlsshim.c, as Http's csock binds them, plus
-   tls_wrap: TLS over a socket already in use (STARTTLS) *)
+(* csmtp binds runtime/tcpshim.c and tlsshim.c, as Http's csock binds
+   them, plus tls_wrap: TLS over a socket already in use
+   (STARTTLS). *)
 
 PROCEDURE Connect = "tcp_connect" (host: C.ConstPtr ; port: C.Int)
   : C.Int  [SERIAL] ;
@@ -137,7 +158,8 @@ END csmtp.
 
 UNSAFE IMPLEMENTATION MODULE Smtp ;
 
-(* UNSAFE for the ADR at the foreign boundary only, as in Http *)
+(* Smtp is UNSAFE for the ADR at the foreign boundary only, as in
+   Http. *)
 
 FROM csmtp IMPORT Connect, Read, Write, Close, TlsConnect, TlsWrap, TlsRead,
                   TlsWrite, TlsClose ;
@@ -191,10 +213,11 @@ BEGIN
   m.parts := NEW (pool, Part, 2) ;
   m.nparts := 0 ;
   m.date := Time.Now () ;
-  (* the id: seconds and nanoseconds of now, at the sender's host *)
+  (* The id is seconds and nanoseconds of now, at the sender's
+     host. *)
   at := Text.FindChar (from, '@') ;
   IF at >= 0 THEN
-    m.id := Text.Keep (pool, IdNow () + SLICE (from, at, LEN (from) - at))
+    m.id := Text.Keep (pool, IdNow () + SLICE (from, at, Text.BLen (from) - at))
   ELSE
     m.id := Text.Keep (pool, IdNow () + '@m9')
   END ;
@@ -222,14 +245,10 @@ EXCEPT
 END IdNow ;
 
 PROCEDURE Keep (VAR m: PTR Message ; RO s: STR) : STR =
-  (* a copy of s in the message's pool, rule 2's spelling *)
-VAR
-  c : STR ;
-  i : I64 ;
+  (* Keep answers a copy of s in the message's pool, rule 2's
+     spelling. *)
 BEGIN
-  c := NEW (m, CHAR, LEN (s)) ;
-  FOR i := 0 TO LEN (s) - 1 DO c[i] := s[i] END ;
-  RETURN c
+  RETURN UTF (m, s)
 END Keep ;
 
 PROCEDURE Grow (VAR m: PTR Message ; VAR list: SLICE OF STR ; VAR n: I64 ; RO addr: STR) =
@@ -331,7 +350,8 @@ BEGIN
 END Two ;
 
 PROCEDURE DateLine (t: Time.Instant) : STR RAISES ValueRange =
-  (* RFC 5322 par 3.3, in UTC: Wed, 07 Oct 2026 12:04:07 +0000 *)
+  (* DateLine writes RFC 5322 par 3.3, in UTC: Wed, 07 Oct 2026
+     12:04:07 +0000. *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
@@ -361,16 +381,17 @@ END DateLine ;
 PROCEDURE IsAscii (RO s: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF ORD (s[i]) > 126 OR ORD (s[i]) < 32 THEN RETURN FALSE END
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF I64 (Text.BAt (s, i)) > 126 OR I64 (Text.BAt (s, i)) < 32 THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END IsAscii ;
 
 PROCEDURE QpLen (RO b: SLICE OF BYTE) : I64 =
-  (* the length of b as RFC 2047's Q encoding: a letter, a digit, one
-     of -!*+/ and a blank (written _) are one character, the rest =XX
-     -- Python's quoprimime.header_length *)
+  (* QpLen answers the length of b as RFC 2047's Q encoding: a
+     letter, a digit, one of -!*+/ and a blank (written _) are one
+     character, the rest =XX.  That is Python's
+     quoprimime.header_length. *)
 VAR i, n : I64 ;
 BEGIN
   n := 0 ;
@@ -403,8 +424,8 @@ BEGIN
     ELSIF QpSafe (b[i]) THEN DynStr.AppendChar (d, CHR (v))
     ELSE
       DynStr.AppendChar (d, '=') ;
-      DynStr.AppendChar (d, hex[v DIV 16]) ;
-      DynStr.AppendChar (d, hex[v MOD 16])
+      DynStr.AppendChar (d, Text.BChar (hex, v DIV 16)) ;   (* ASCII digits *)
+      DynStr.AppendChar (d, Text.BChar (hex, v MOD 16))
     END
   END ;
   RETURN DynStr.View (d)
@@ -423,28 +444,35 @@ BEGIN
 END OneWord ;
 
 PROCEDURE EncodedWord (RO s: STR) : STR RAISES ValueRange =
-  (* RFC 2047 encoded words of the UTF-8 of s: B or Q as Python's
-     email.header chooses for utf-8 (SHORTEST: B only when strictly
-     shorter), one word when it fits the line (76 less the header
-     name's room), else as many as needed, each over whole code
-     points, folded with CR LF SP, a continuation's word within 75.
-     The one-word case is held to Python; the folding is structural *)
+  (* EncodedWord writes RFC 2047 encoded words of the UTF-8 of s: B or Q
+     as Python's email.header chooses for utf-8 (SHORTEST: B only when
+     strictly shorter), one word when it fits the line (76 less the
+     header name's room), else as many as needed, each over whole code
+     points, folded with CR LF SP, a continuation's word within 75.  The
+     one-word case is held to Python; the folding is structural. *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
   all, b : SLICE OF BYTE ;
   useB : BOOL ;
-  i, start, cost, more, nb, room : I64 ;
+  i, nx, start, cost, more, nb, room : I64 ;
+  c : CHAR ;
 BEGIN
-  room := 63 - LEN ('Subject: ') + 1 ;   (* the payload the first line takes *)
-  all := DynStr.Utf8 (scratch, s) ;
+  room := 63 - Text.BLen ('Subject: ') + 1 ;   (* the payload the first line takes *)
+  all := OCTETS (s) ;
   useB := B64Len (LEN (all)) < QpLen (all) ;
   d := DynStr.New (scratch) ;
   start := 0 ;
   cost := 0 ;                  (* bytes (B) or Q characters so far *)
   nb := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    b := DynStr.Utf8 (scratch, SLICE (s, i, 1)) ;
+  (* one CHARACTER a step, its octets all[i .. nx): the words are cut
+     over whole code points, and a SLICE of one byte inside a
+     character would raise *)
+  i := 0 ;
+  WHILE i < LEN (all) DO
+    nx := i ;
+    c := Text.NextCp (s, nx) ;
+    b := SLICE (all, i, nx - i) ;
     IF useB THEN more := LEN (b) ELSE more := QpLen (b) END ;
     IF i > start AND ((useB AND B64Len (cost + more) > room) OR (NOT useB AND cost + more > room)) THEN
       IF start > 0 THEN DynStr.Append (d, '' + 0DC + 0AC + ' ') END ;
@@ -454,7 +482,8 @@ BEGIN
       start := i ;
       room := 63
     END ;
-    cost := cost + more
+    cost := cost + more ;
+    i := nx
   END ;
   IF start > 0 THEN DynStr.Append (d, '' + 0DC + 0AC + ' ') END ;
   DynStr.Append (d, OneWord (SLICE (all, nb, LEN (all) - nb), useB)) ;
@@ -462,12 +491,12 @@ BEGIN
 END EncodedWord ;
 
 PROCEDURE Lines (VAR d: PTR DynStr.DString ; RO b64: STR) =
-  (* base64 in lines of LineWrap, each ended CR LF *)
+  (* Lines writes base64 in lines of LineWrap, each ended CR LF. *)
 VAR i, n : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i < LEN (b64) DO
-    n := LEN (b64) - i ;
+  WHILE i < Text.BLen (b64) DO
+    n := Text.BLen (b64) - i ;
     IF n > LineWrap THEN n := LineWrap END ;
     DynStr.Append (d, SLICE (b64, i, n)) ;
     CrLf (d) ;
@@ -497,7 +526,7 @@ BEGIN
   DynStr.Append (d, 'Content-Transfer-Encoding: base64') ;
   CrLf (d) ;
   CrLf (d) ;
-  Lines (d, Text.ToBase64 (DynStr.Utf8 (scratch, text)))
+  Lines (d, Text.ToBase64 (OCTETS (text)))
 END TextPart ;
 
 PROCEDURE Wire (m: PTR Message) : STR RAISES ValueRange =
@@ -565,8 +594,8 @@ BEGIN
 END Wire ;
 
 PROCEDURE Stuffed (RO text: STR) : STR =
-  (* by FOR c IN text with the previous character carried: the same
-     both sides of the UTF switch *)
+  (* This walks by FOR c IN text with the previous character
+     carried: the same both sides of the UTF switch. *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
@@ -584,10 +613,10 @@ END Stuffed ;
 
 (* ---- the dialogue ------------------------------------------------------ *)
 
-(* a descriptor and a length as C takes them, now that a C.*
-   conversion that narrows is checked (2026-10-10): what no C int holds
-   is no descriptor -- -1, which every call refuses as a bad one -- and
-   a length below zero is none *)
+(* CFd and CLen answer a descriptor and a length as C takes them, now
+   that a C.* conversion that narrows is checked (2026-10-10).  A value
+   no C int holds is no descriptor: -1, which every call refuses as a
+   bad one.  A length below zero is none. *)
 PROCEDURE CFd (v: I64) : C.Int =
 VAR bad : I32 ;
 BEGIN
@@ -621,16 +650,18 @@ BEGIN
   END
 END WrAll ;
 
-PROCEDURE Cmd (VAR c: Conn ; RO s: STR) RAISES Error, ValueRange =
-  (* a command line: ASCII, so the octets are the characters *)
-VAR scratch : POOL ;
+PROCEDURE Cmd (VAR c: Conn ; RO s: STR) RAISES Error =
+  (* Cmd sends a command line as its UTF-8 octets (Alex, 2026-10-31).
+     A command is ASCII but for an address, and RFC 6531 spells a
+     non-ASCII address in UTF-8. *)
 BEGIN
-  WrAll (c, DynStr.Bytes (scratch, s + 0DC + 0AC, FALSE))
+  WrAll (c, OCTETS (s + 0DC + 0AC))
 END Cmd ;
 
 PROCEDURE Reply (VAR c: Conn ; VAR text: STR) : I64 RAISES Error, ValueRange =
-  (* one reply, every line of it, in text; the code of its last line,
-     whose fourth character is a blank where a continuation's is - *)
+  (* Reply reads one reply, every line of it, in text, and answers
+     the code of its last line, whose fourth character is a blank
+     where a continuation's is -. *)
 VAR
   scratch : POOL ;
   buf : SLICE OF BYTE ;
@@ -667,7 +698,10 @@ BEGIN
       END
     END
   END ;
-  text := DynStr.Chars (scratch, SLICE (buf, 0, total)) ;
+  (* The reply reads as UTF-8 when it is UTF-8 (RFC 6531 lets a
+     server say so), else one character per octet.  So a Latin-1
+     reply still reads.  Http's Line reads a line the same way. *)
+  text := DynStr.Decoded (scratch, SLICE (buf, 0, total)) ;
   RETURN code
 END Reply ;
 
@@ -678,7 +712,8 @@ END IsDigit ;
 
 PROCEDURE Need (VAR c: Conn ; want: I64 ; RO stage: STR ; VAR text: STR)
   RAISES Error, ValueRange =
-  (* the reply's code is want (a 2xx when want is 2); the text answered *)
+  (* Need checks that the reply's code is want (a 2xx when want is
+     2), and answers the text. *)
 VAR code : I64 ;
 BEGIN
   code := Reply (c, text) ;
@@ -688,8 +723,8 @@ BEGIN
 END Need ;
 
 PROCEDURE Offers (RO ehlo: STR ; RO word: STR) : BOOL RAISES ValueRange =
-  (* the EHLO reply names the capability (a line 250-WORD or 250 WORD,
-     or AUTH's mechanisms after it) *)
+  (* Offers answers whether the EHLO reply names the capability (a
+     line 250-WORD or 250 WORD, or AUTH's mechanisms after it). *)
 VAR
   lines : SLICE OF STR ;
   i : I64 ;
@@ -698,8 +733,8 @@ BEGIN
   lines := Text.Split (ehlo, 0AC) ;
   FOR i := 0 TO LEN (lines) - 1 DO
     l := Text.Upper (Text.Trim (lines[i])) ;
-    IF LEN (l) > 4 THEN
-      l := SLICE (l, 4, LEN (l) - 4) ;
+    IF Text.BLen (l) > 4 THEN
+      l := SLICE (l, 4, Text.BLen (l) - 4) ;
       IF Text.Eq (l, word) OR Text.StartsWith (l, word + ' ') OR
          (Text.StartsWith (l, 'AUTH ') AND Text.OneOf (word, Text.Fields (l, ' '))) THEN
         RETURN TRUE
@@ -711,8 +746,8 @@ END Offers ;
 
 PROCEDURE Auth (VAR c: Conn ; RO ehlo: STR ; RO user: STR ; RO pass: STR)
   RAISES Error, ValueRange =
-  (* PLAIN where offered: one line, the NUL-separated identity in
-     base64 (RFC 4616); else LOGIN, two prompts *)
+  (* Auth uses PLAIN where offered: one line, the NUL-separated
+     identity in base64 (RFC 4616); else LOGIN, two prompts. *)
 VAR
   scratch : POOL ;
   text : STR ;
@@ -720,8 +755,8 @@ VAR
   u, p : SLICE OF BYTE ;
   i : I64 ;
 BEGIN
-  u := DynStr.Utf8 (scratch, user) ;
-  p := DynStr.Utf8 (scratch, pass) ;
+  u := OCTETS (user) ;
+  p := OCTETS (pass) ;
   IF Offers (ehlo, 'PLAIN') THEN
     ident := NEW (scratch, BYTE, LEN (u) + LEN (p) + 2) ;
     ident[0] := 0 ;
@@ -754,8 +789,12 @@ BEGIN
   FOR i := 0 TO m.nto - 1 DO rcpts[n] := m.to[i] ; n := n + 1 END ;
   FOR i := 0 TO m.ncc - 1 DO rcpts[n] := m.cc[i] ; n := n + 1 END ;
   FOR i := 0 TO m.nbcc - 1 DO rcpts[n] := m.bcc[i] ; n := n + 1 END ;
+  (* The message goes out as its UTF-8 octets.  Wire puts the body
+     and a non-ASCII subject in base64, so those octets are ASCII.  An
+     address or a file name beyond ASCII stays raw UTF-8 in its
+     header. *)
   Dialogue (host, port, security, user, pass, m.from, rcpts,
-            DynStr.Bytes (scratch, Stuffed (Wire (m)) + '.' + 0DC + 0AC, FALSE))
+            OCTETS (Stuffed (Wire (m)) + '.' + 0DC + 0AC))
 END Send ;
 
 PROCEDURE SendOctets (RO host: STR ; port: I64 ; security: I64 ;
@@ -769,9 +808,9 @@ VAR
   atLineStart : BOOL ;
 BEGIN
   IF LEN (to) = 0 THEN RAISE Error ('smtp: a message with no recipient', 0) END ;
-  (* CR LF for every line end, a dot before a line that begins with
-     one, CR LF to close the last line, and the terminating dot: at
-     most twice the octets and five more *)
+  (* The wire gets CR LF for every line end, a dot before a line that
+     begins with one, CR LF to close the last line, and the
+     terminating dot: at most twice the octets and five more. *)
   data := NEW (scratch, BYTE, 2 * LEN (octets) + 5) ;
   o := 0 ;
   atLineStart := TRUE ;
@@ -792,23 +831,49 @@ BEGIN
   Dialogue (host, port, security, user, pass, from, to, SLICE (data, 0, o))
 END SendOctets ;
 
+PROCEDURE HasHigh (RO b: SLICE OF BYTE) : BOOL =
+  (* HasHigh answers TRUE when b holds an octet past ASCII. *)
+VAR x : BYTE ;
+BEGIN
+  FOR x IN b DO
+    IF I64 (x) > 127 THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END HasHigh ;
+
+PROCEDURE NeedsUtf8 (RO from: STR ; RO rcpts: SLICE OF STR ;
+                     RO data: SLICE OF BYTE) : BOOL =
+  (* NeedsUtf8 answers TRUE when the message octets or an envelope
+     address hold an octet past ASCII.  Such a message needs SMTPUTF8
+     (RFC 6531). *)
+VAR r : STR ;
+BEGIN
+  IF HasHigh (data) OR HasHigh (OCTETS (from)) THEN RETURN TRUE END ;
+  FOR r IN rcpts DO
+    IF HasHigh (OCTETS (r)) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END NeedsUtf8 ;
+
 PROCEDURE Dialogue (RO host: STR ; port: I64 ; security: I64 ;
                     RO user: STR ; RO pass: STR ; RO from: STR ;
                     RO rcpts: SLICE OF STR ; RO data: SLICE OF BYTE)
   RAISES Error, ValueRange =
-  (* the session: data is the message dot-stuffed and ended with the
-     dot line, as the transport sends it *)
+  (* Dialogue runs the session: data is the message dot-stuffed and
+     ended with the dot line, as the transport sends it. *)
 VAR
-  scratch : POOL ;
   c : Conn ;
   hz : SLICE OF BYTE ;
-  text, ehlo : STR ;
+  text, ehlo, params : STR ;
   i, h : I64 ;
+  utf8 : BOOL ;
 BEGIN
+  utf8 := NeedsUtf8 (from, rcpts, data) ;
+  params := '' ;
   IF security # Plain AND security # Tls AND security # StartTls THEN
     RAISE Error ('smtp: security is Plain, Tls or StartTls', 0)
   END ;
-  hz := DynStr.Bytes (scratch, host, TRUE) ;
+  hz := OCTETS (host + 0C) ;          (* the C string: UTF-8, NUL-ended *)
   c.secure := security = Tls ;
   IF c.secure THEN c.fd := I64 (TlsConnect (ADR (hz), C.Int (port)))
   ELSE c.fd := I64 (Connect (ADR (hz), C.Int (port)))
@@ -831,8 +896,19 @@ BEGIN
       Cmd (c, Ehlo) ;
       Need (c, 250, 'EHLO after STARTTLS', ehlo)
     END ;
-    IF LEN (user) > 0 THEN Auth (c, ehlo, user, pass) END ;
-    Cmd (c, 'MAIL FROM:<' + from + '>') ;
+    (* The EHLO reply here is the last one, after STARTTLS when there
+       was one.  A message that needs SMTPUTF8 goes no further without
+       it. *)
+    IF utf8 THEN
+      IF NOT Offers (ehlo, 'SMTPUTF8') THEN
+        Cmd (c, 'QUIT') ;
+        RAISE Error ('smtp: the message needs SMTPUTF8, which the server does not offer', 250)
+      END ;
+      params := ' SMTPUTF8' ;
+      IF Offers (ehlo, '8BITMIME') THEN params := params + ' BODY=8BITMIME' END
+    END ;
+    IF Text.BLen (user) > 0 THEN Auth (c, ehlo, user, pass) END ;
+    Cmd (c, 'MAIL FROM:<' + from + '>' + params) ;
     Need (c, 2, 'MAIL FROM', text) ;
     FOR i := 0 TO LEN (rcpts) - 1 DO
       Cmd (c, 'RCPT TO:<' + rcpts[i] + '>') ;

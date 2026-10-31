@@ -1,4 +1,4 @@
-(* EXPECT: cannot compare I64 with SLICE OF CHAR *)
+(* EXPECT: cannot compare I64 with UTF *)
 MODULE m ;
 VAR x : I64 ; b : BOOL ;
 PROCEDURE F () = BEGIN b := x = "hi" END F ;

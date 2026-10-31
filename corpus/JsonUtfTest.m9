@@ -1,12 +1,13 @@
 MODULE JsonUtfTest ;
 
-(* JsonUtf, the UTF-native Json of the transition (docs/utf8-plan.md,
-   stage 2), held to Python's json: a document with characters past ASCII
-   and every escape json.loads knows parsed, read back and rendered --
-   json.dumps (ensure_ascii=False) with the compact separators, the
-   default ones, sort_keys and indent=2 -- each expected string written
-   by Python.  Then what is Json's own: the raw numbers of NewRaw, the
-   clone into a pool, a parse error's position in characters. *)
+(* JsonUtfTest holds JsonUtf, the UTF-native Json of the transition
+   (docs/utf8-plan.md, stage 2), to Python's json.  A document with
+   characters past ASCII and every escape json.loads knows is parsed,
+   read back and rendered: json.dumps (ensure_ascii=False) with the
+   compact separators, the default ones, sort_keys and indent=2.
+   Python wrote each expected string.  Then it tests what is Json's
+   own: the raw numbers of NewRaw, the clone into a pool, a parse
+   error's position in characters. *)
 
 IMPORT Check ;
 IMPORT Fmt ;
@@ -66,7 +67,8 @@ BEGIN
   ELSE
     Check.That (t, 'Field n', FALSE)
   END ;
-  (* the clone owns its text: compared after the source would be gone *)
+  (* The clone owns its text: the test compares it after the source
+     would be gone. *)
   c := JsonUtf.Clone (root) ;
   k := JsonUtf.CloneIn (pool, root) ;
   Check.That (t, 'Clone renders the same', Text.Eq (JsonUtf.Compact (c), JsonUtf.Compact (root))) ;
@@ -88,8 +90,8 @@ EXCEPT
 | IndexError : Check.That (t, 'no IndexError', FALSE)
 END Document ;
 
-(* json.loads ('{"ü": x}'): Expecting value: line 1 column 7 -- the
-   column counted in characters, ü one of them *)
+(* Position checks json.loads ('{"ü": x}'): Expecting value: line 1
+   column 7.  The column is counted in characters, ü one of them. *)
 PROCEDURE Position () =
 VAR n : PTR JsonUtf.Node ;
 BEGIN

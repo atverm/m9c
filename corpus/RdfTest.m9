@@ -1,25 +1,28 @@
 MODULE RdfTest ;
 
-(* Rdf against the W3C RDF 1.1 test suites, checked in under
-   runtime/test/rdf-tests and listed by tools/rdfgold.py from their
-   manifests (runtime/test/gold/Rdf.gold; docs/datalib-plan.md par 2).
+(* This test holds Rdf against the W3C RDF 1.1 test suites, checked in
+   under runtime/test/rdf-tests and listed by tools/rdfgold.py from
+   their manifests (runtime/test/gold/Rdf.gold; docs/datalib-plan.md
+   par 2).
 
-   Here, offline: every positive N-Triples and Turtle document is
-   read, every negative one REFUSED -- a SyntaxError, or ValueRange
-   when the file is not even UTF-8 -- and every evaluation document
-   and its expected N-Triples are read.  Whether the graph read is the
-   graph expected is runtime/test/rdf.sh's question: rdflib judges
-   M9's N-Triples output there, isomorphism and all, which needs
-   blank nodes matched and so is left to code M9 did not write.
+   Here, offline, every positive N-Triples and Turtle document is
+   read, and every negative one is REFUSED: a SyntaxError, or
+   ValueRange when the file is not even UTF-8.  Every evaluation
+   document and its expected N-Triples are read too.
+   runtime/test/rdf.sh asks whether the graph read is the graph
+   expected: rdflib judges M9's N-Triples output there, isomorphism
+   and all.  That needs blank nodes matched, and so is left to code M9
+   did not write.
 
    A negative document must be refused by a SyntaxError: ValueRange
    would be an escape or a conversion the reader did not check itself,
    with no line to show.
 
-   And a few exact cases by hand: a collection, a blank-node property
-   list, the writer's escapes, and where a refusal says it stopped and
-   why -- four of them for rules a later one would also refuse, with a
-   worse place or reason (runtime/test/rdfsabotage.py found them).  *)
+   A few exact cases are checked by hand: a collection, a blank-node
+   property list, the writer's escapes, and where a refusal says it
+   stopped and why.  Four of them are for rules a later one would also
+   refuse, with a worse place or reason (the rdf sabotage list, runtime/test/rdfsabotage.txt,
+   found them).                                                      *)
 
 IMPORT Check ;
 IMPORT DynStr ;
@@ -38,14 +41,14 @@ VAR
   bases : SLICE OF STR ;
 
 PROCEDURE Read (VAR p: POOL ; RO path: STR ; VAR ok: BOOL) : STR =
-  (* a test file as UTF-8; ok FALSE when it is not UTF-8 or cannot be
-     read *)
+  (* Read answers a test file as UTF-8; ok is FALSE when it is not
+     UTF-8 or cannot be read. *)
 VAR s : STR ;
 BEGIN
   ok := TRUE ;
   s := '' ;
   BEGIN
-    s := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, path))
+    s := UTF (p, Io.ReadFileBytes (p, path))
   EXCEPT
   | ValueRange :
       ok := FALSE
@@ -61,7 +64,8 @@ BEGIN
 END Path ;
 
 PROCEDURE ParsesNt (RO file: STR ; VAR msg: STR) : BOOL =
-  (* the N-Triples document reads; msg says why when it does not *)
+  (* ParsesNt answers whether the N-Triples document reads; msg says
+     why when it does not. *)
 VAR
   p : POOL ;
   g : PTR Rdf.Graph IN p ;
@@ -76,7 +80,7 @@ BEGIN
     RETURN TRUE
   EXCEPT
   | Rdf.SyntaxError (m, line, col) :
-      (* a handler's binders have no type in the checker yet: copied *)
+      (* A handler's binders have no type in the checker yet: copied. *)
       em := m ; el := line ; ec := col ;
       msg := Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em
   | ValueRange :
@@ -100,7 +104,7 @@ BEGIN
     RETURN TRUE
   EXCEPT
   | Rdf.SyntaxError (m, line, col) :
-      (* a handler's binders have no type in the checker yet: copied *)
+      (* A handler's binders have no type in the checker yet: copied. *)
       em := m ; el := line ; ec := col ;
       msg := Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em
   | ValueRange :
@@ -217,7 +221,8 @@ BEGIN
       Check.That (t, 'N-Triples reads the expected ' + results[i] + ' ' + msg, ok)
     END
   END ;
-  (* RDF/XML: every evaluation document read, every negative refused *)
+  (* RDF/XML: read every evaluation document, refuse every
+     negative. *)
   files := Check.GoldStrs (t, gold, 'xml.eval.action') ;
   FOR i := 0 TO LEN (files) - 1 DO
     msg := '' ;
@@ -237,7 +242,8 @@ BEGIN
     END
   END ;
   Check.EqI64 (t, 'RDF/XML: every negative test refused', refused, LEN (files)) ;
-  (* JSON-LD: every evaluation and syntax document read, every negative refused *)
+  (* JSON-LD: read every evaluation and syntax document, refuse every
+     negative. *)
   files := Check.GoldStrs (t, gold, 'jld.pos.action') ;
   results := Check.GoldStrs (t, gold, 'jld.pos.base') ;
   Check.EqI64 (t, 'a base for every JSON-LD test', LEN (results), LEN (files)) ;
@@ -284,7 +290,7 @@ BEGIN
     RETURN TRUE
   EXCEPT
   | Rdf.SyntaxError (m, line, col) :
-      (* a handler's binders have no type in the checker yet: copied *)
+      (* A handler's binders have no type in the checker yet: copied. *)
       em := m ; el := line ; ec := col ;
       msg := Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em
   | ValueRange :
@@ -303,8 +309,8 @@ VAR
   raised : BOOL ;
 BEGIN
   BEGIN
-    (* a collection: two cells and the closing rdf:nil, then the
-       triple that names the list *)
+    (* Check a collection: two cells and the closing rdf:nil, then the
+       triple that names the list. *)
     g := Rdf.ParseTurtle (p, '@prefix ex: <http://e/> . ex:a ex:b ( 1 "x" ) .', '') ;
     Check.EqI64 (t, 'a two-member collection is five triples', Rdf.Count (g), 5) ;
     tr := Rdf.Get (g, 4) ;
@@ -313,8 +319,8 @@ BEGIN
     tr := Rdf.Get (g, 0) ;
     Check.EqStr (t, 'its first member', tr.o.value, '1') ;
     Check.EqStr (t, 'typed xsd:integer', tr.o.datatype, 'http://www.w3.org/2001/XMLSchema#integer') ;
-    (* Turtle's escapes read, and the writer's written back: an M9
-       string has no escapes, so the Turtle text is as it stands *)
+    (* Read Turtle's escapes, and write the writer's back.  An M9
+       string has no escapes, so the Turtle text is as it stands. *)
     g := Rdf.ParseTurtle (p, '<http://e/s> <http://e/p> "a\nb\tc\"d\\e\u00e9" .', '') ;
     tr := Rdf.Get (g, 0) ;
     Check.EqStr (t, 'the escapes read', tr.o.value,
@@ -322,7 +328,7 @@ BEGIN
     nt := Rdf.NTriples (g) ;
     Check.EqStr (t, 'the writer escapes a quote, a backslash, a line feed and a tab, and no more',
                  nt, '<http://e/s> <http://e/p> "a\nb\tc\"d\\e' + 0E9C + '" .' + 0AC) ;
-    (* a relative IRI resolved against the base given *)
+    (* Resolve a relative IRI against the base given. *)
     g := Rdf.ParseTurtle (p, '<s> <../p> <o#f> .', 'http://a/b/c/d') ;
     tr := Rdf.Get (g, 0) ;
     Check.EqStr (t, 'a relative subject resolved', tr.s.value, 'http://a/b/c/s') ;
@@ -334,7 +340,8 @@ BEGIN
   | IndexError :
       Check.That (t, 'the hand cases have their triples', FALSE)
   END ;
-  (* where a refusal says it stopped: line 2, the undeclared prefix *)
+  (* Check where a refusal says it stopped: line 2, the undeclared
+     prefix. *)
   raised := FALSE ;
   line := 0 ;
   col := 0 ;
@@ -349,7 +356,7 @@ BEGIN
   Check.That (t, 'an undeclared prefix is refused', raised) ;
   Check.EqI64 (t, 'on the line it is on', line, 2) ;
   Check.EqI64 (t, 'past the name it could not resolve', col, 8) ;
-  (* a relative IRI with no base: refused, not guessed *)
+  (* A relative IRI with no base is refused, not guessed. *)
   raised := FALSE ;
   BEGIN
     g := Rdf.ParseTurtle (p, '<s> <p> <o> .', '')
@@ -371,16 +378,16 @@ BEGIN
 END ByHand ;
 
 PROCEDURE XmlDoc (VAR pool: POOL ; RO text: STR) : SLICE OF BYTE RAISES ValueRange =
-  (* the octets of a document, in the caller's pool.  (Answering
-     DynStr.Utf8 of a LOCAL pool passed the checker and came back as
-     freed bytes -- the escape through a callee's answer is the owed
-     call-summary item, CLAUDE.md.) *)
+  (* XmlDoc answers the octets of a document, in the caller's pool.
+     (An answer of DynStr.Utf8 of a LOCAL pool passed the checker and
+     came back as freed bytes.  The escape through a callee's answer
+     is the owed call-summary item, CLAUDE.md.) *)
 BEGIN
-  RETURN DynStr.Utf8 (pool, text)
+  RETURN OCTETS (text)
 END XmlDoc ;
 
 PROCEDURE XmlRefusal (RO text: STR) : STR =
-  (* the SyntaxError's text, or 'read' *)
+  (* XmlRefusal answers the SyntaxError's text, or 'read'. *)
 VAR
   p : POOL ;
   g : PTR Rdf.Graph IN p ;
@@ -394,7 +401,7 @@ EXCEPT
 END XmlRefusal ;
 
 PROCEDURE JsonLdRefusal (RO text: STR) : STR =
-  (* the SyntaxError's text, or 'read' *)
+  (* JsonLdRefusal answers the SyntaxError's text, or 'read'. *)
 VAR
   p : POOL ;
   g : PTR Rdf.Graph IN p ;
@@ -408,7 +415,8 @@ EXCEPT
 END JsonLdRefusal ;
 
 PROCEDURE JsonLdByHand () RAISES ValueRange =
-  (* what the suite's subset does not reach: a context given as a URL
+  (* JsonLdByHand checks what the suite's subset does not reach: a
+     context given as a URL
      (the four such tests are left out, since nothing is fetched), and
      a context handed in by the caller *)
 VAR
@@ -444,7 +452,8 @@ BEGIN
 END JsonLdByHand ;
 
 PROCEDURE JsonLdWritten () RAISES ValueRange =
-  (* the writer: a graph to the byte against a context, and read back *)
+  (* JsonLdWritten checks the writer: a graph to the byte against a
+     context, and read back. *)
 VAR
   p : POOL ;
   g, g2 : PTR Rdf.Graph IN p ;
@@ -487,13 +496,15 @@ BEGIN
     a := Blanked (Rdf.NTriples (g)) ;
     b := Blanked (Rdf.NTriples (g2)) ;
     Check.EqStrs (t, 'JSON-LD written: read back the same', b, a) ;
-    (* without a context: full IRIs, value objects *)
+    (* Without a context the writer gives full IRIs and value
+       objects. *)
     doc := Rdf.JsonLd (g, NONE) ;
     g2 := Rdf.ParseJsonLd (p, doc, '', NONE) ;
     b := Blanked (Rdf.NTriples (g2)) ;
     Check.EqStrs (t, 'JSON-LD written without a context: read back the same', b, a) ;
     Check.That (t, 'JSON-LD written without a context: no @context', NOT Text.Contains (doc, '@context')) ;
-    (* two prefixes, one inside the other: the longest applies *)
+    (* With two prefixes, one inside the other, the longest
+       applies. *)
     g := Rdf.ParseTurtle (p, '<http://e/x/a> <http://e/p> "1" .', '') ;
     ctx := Json.ParseIn (p, '{"e": "http://e/", "ex": "http://e/x/"}') ;
     doc := Rdf.JsonLd (g, SOME (ctx)) ;
@@ -508,8 +519,9 @@ BEGIN
 END JsonLdWritten ;
 
 PROCEDURE JsonLdRoundTrips (RO list: STR) =
-  (* each listed Turtle document: read, written as JSON-LD, read
-     again; the same triples up to blank-node labels *)
+  (* JsonLdRoundTrips takes each listed Turtle document: read, written
+     as JSON-LD, read again.  The triples are the same up to
+     blank-node labels. *)
 VAR
   files : SLICE OF STR ;
   i : I64 ;
@@ -543,7 +555,8 @@ BEGIN
 END JsonLdRoundTrips ;
 
 PROCEDURE XmlByHand () RAISES ValueRange =
-  (* what rdflib judges by value and the suite does not ask: the text
+  (* XmlByHand checks what rdflib judges by value and the suite does
+     not ask: the text
      of an XML literal, and the refusal of an attribute no namespace
      qualifies *)
 VAR
@@ -580,7 +593,8 @@ END XmlByHand ;
 
 PROCEDURE Refused (RO what: STR ; nt: BOOL ; RO text: STR ;
                    wantLine: I64 ; RO wantMsg: STR) =
-  (* the document refused by a SyntaxError, on that line, saying that *)
+  (* Refused checks that the document is refused by a SyntaxError, on
+     that line, saying that. *)
 VAR
   p : POOL ;
   g : PTR Rdf.Graph IN p ;
@@ -596,7 +610,7 @@ BEGIN
     END
   EXCEPT
   | Rdf.SyntaxError (m, line, col) :
-      (* a handler's binders have no type in the checker yet: copied *)
+      (* A handler's binders have no type in the checker yet: copied. *)
       how := 'SyntaxError' ;
       em := m ;
       el := line
@@ -608,12 +622,14 @@ BEGIN
   Check.EqI64 (t, what + ': the line', el, wantLine)
 END Refused ;
 
-(* the Turtle writer: hand graphs held to the text byte for byte, and
-   every document of the W3C suites written and read back -- the
-   triples the same up to blank-node labels, which grouping by
-   subject renumbers (rdflib judges the graphs isomorphic in rdf.sh) *)
+(* These check the Turtle writer: hand graphs held to the text byte
+   for byte, and every document of the W3C suites written and read
+   back.  The triples are the same up to blank-node labels, which
+   grouping by subject renumbers (rdflib judges the graphs isomorphic
+   in rdf.sh). *)
 PROCEDURE NoLocalName () : BOOL RAISES ValueRange =
-  (* a predicate that ends in `/': no NCName tail, so no element *)
+  (* NoLocalName checks a predicate that ends in `/': no NCName tail,
+     so no element. *)
 VAR
   p : POOL ;
   g : PTR Rdf.Graph IN p ;
@@ -629,10 +645,10 @@ EXCEPT
 END NoLocalName ;
 
 PROCEDURE XmlWritten () RAISES ValueRange =
-  (* the RDF/XML writer: read back by ParseRdfXml as the graph it was
-     given -- IRIs, two blank nodes, a language tag, a datatype, a
-     plain literal with markup in it, a predicate whose local name
-     starts after a `#' and one after a `/' *)
+  (* XmlWritten checks the RDF/XML writer, read back by ParseRdfXml as
+     the graph it was given: IRIs, two blank nodes, a language tag, a
+     datatype, a plain literal with markup in it, a predicate whose
+     local name starts after a `#' and one after a `/' *)
 VAR
   p : POOL ;
   g, g2 : PTR Rdf.Graph IN p ;
@@ -652,7 +668,7 @@ BEGIN
     Check.That (t, 'RDF/XML written: a datatype', Text.Contains (doc, 'rdf:datatype="http://www.w3.org/2001/XMLSchema#integer"')) ;
     Check.That (t, 'RDF/XML written: a blank node by id', Text.Contains (doc, 'rdf:nodeID="')) ;
     Check.That (t, 'RDF/XML written: markup in a literal escaped', Text.Contains (doc, 'a &lt; b &amp; "c"')) ;
-    g2 := Rdf.ParseRdfXml (p, DynStr.Utf8 (p, doc), '') ;
+    g2 := Rdf.ParseRdfXml (p, OCTETS (doc), '') ;
     a := Blanked (Rdf.NTriples (g)) ;
     b := Blanked (Rdf.NTriples (g2)) ;
     Check.EqStrs (t, 'RDF/XML written: read back the same', b, a)
@@ -720,33 +736,41 @@ PROCEDURE Blanked (RO nt: STR) : SLICE OF STR =
   (* the lines of N-Triples text, sorted, every blank node label
      replaced by _: -- what grouping may renumber -- and a language
      tag lowercased, as JSON-LD normalises it and RDF compares it *)
+  (* the text between the two ASCII shapes goes over as RUNS, SLICE (l,
+     from, j - from) -- an octet appended as a character would encode a
+     character past ASCII twice; the answer is a fresh slice, since
+     Split's elements view nt, which is read-only *)
 VAR
-  lines : SLICE OF STR ;
-  i, j : I64 ;
-  o : STR ;
+  lines, out : SLICE OF STR ;
+  l, o : STR ;
+  i, j, from : I64 ;
 BEGIN
   lines := Text.Split (nt, 0AC) ;
+  out := NEW (STR, LEN (lines)) ;
   FOR i := 0 TO LEN (lines) - 1 DO
+    l := lines[i] ;
     o := '' ;
     j := 0 ;
-    WHILE j < LEN (lines[i]) DO
-      IF lines[i][j] = '_' AND j + 1 < LEN (lines[i]) AND lines[i][j + 1] = ':' THEN
-        o := o + '_:' ;
+    from := 0 ;
+    WHILE j < Text.BLen (l) DO
+      IF Text.BIs (l, j, '_') AND j + 1 < Text.BLen (l) AND Text.BIs (l, j + 1, ':') THEN
+        o := o + SLICE (l, from, j - from) + '_:' ;
         j := j + 2 ;
-        WHILE j < LEN (lines[i]) AND lines[i][j] # ' ' DO j := j + 1 END
-      ELSIF lines[i][j] = '"' AND j + 1 < LEN (lines[i]) AND lines[i][j + 1] = '@' THEN
-        o := o + '"@' ;
+        WHILE j < Text.BLen (l) AND NOT Text.BIs (l, j, ' ') DO j := j + 1 END ;
+        from := j
+      ELSIF Text.BIs (l, j, '"') AND j + 1 < Text.BLen (l) AND Text.BIs (l, j + 1, '@') THEN
+        o := o + SLICE (l, from, j - from) + '"@' ;
         j := j + 2 ;
-        WHILE j < LEN (lines[i]) AND lines[i][j] # ' ' DO o := o + Text.Lower ('' + lines[i][j]) ; j := j + 1 END
+        WHILE j < Text.BLen (l) AND NOT Text.BIs (l, j, ' ') DO o := o + Text.Lower ('' + Text.BChar (l, j)) ; j := j + 1 END ;
+        from := j
       ELSE
-        o := o + lines[i][j] ;
         j := j + 1
       END
     END ;
-    lines[i] := o
+    out[i] := o + SLICE (l, from, Text.BLen (l) - from)
   END ;
-  Sort.Strs (lines) ;
-  RETURN lines
+  Sort.Strs (out) ;
+  RETURN out
 END Blanked ;
 
 PROCEDURE Recorded () =

@@ -2,11 +2,11 @@ MODULE GfFieldRows ;
 
 (* WANT: 3b TIMESTAMP *)
 
-(* oneflux's RoLentRec (item 27's record half, 2026-10-27): GfReturnRows
-   with the rows in a field of a local record, the record RETURNed.  The
-   depth scan followed bare names only, so fl.rows[0][m-1] fell to the
-   flow walk's one contents set; a field path of a local record held by
-   value is followed now. *)
+(* This is oneflux's RoLentRec (item 27's record half, 2026-10-27):
+   GfReturnRows with the rows in a field of a local record, the record
+   RETURNed.  The depth scan followed bare names only, so
+   fl.rows[0][m-1] fell to the flow walk's one contents set.  A field
+   path of a local record held by value is followed now. *)
 (* SAFE: the write replaces a slot of a fresh row; the lent text is only read *)
 IMPORT Io, Fmt ;
 TYPE

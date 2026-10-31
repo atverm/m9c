@@ -1,7 +1,7 @@
 (* EXPECT: a UTF has no subscript -- Text.BAt (u, i) for the byte at offset i *)
 MODULE m ;
-(* legal forms first: a UTF is assigned, passed, answered and stored;
-   a literal adapts to it, also lent to a parameter that is not RO *)
+(* Legal forms come first: a UTF is assigned, passed, answered, stored;
+   a literal adapts to it, also lent to a parameter that is not RO. *)
 TYPE Named = RECORD name : UTF ; n : I64 END ;
 VAR
   u, v : UTF ;

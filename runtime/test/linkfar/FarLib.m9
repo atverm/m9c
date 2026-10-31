@@ -1,12 +1,12 @@
 DEFINITION MODULE FarLib ;
 
-(* m9c.sh's fixture for a FOR "C" unit whose LINK names a library that
-   is on no machine (m9nosuchlib).  Answer never calls into it; the
-   private Calls does, and nothing calls Calls -- the shape of Frame
-   and NetCDF: a program that never reaches the foreign calls links
-   without the library, when the unit is reached through another
-   module's implementation (FarMid), and fails by name when imported
-   directly (FarDirect). *)
+(* FarLib is m9c.sh's fixture for a FOR "C" unit whose LINK names a
+   library that is on no machine (m9nosuchlib).  Answer never calls
+   into it; the private Calls does, and nothing calls Calls.  This is
+   the shape of Frame and NetCDF: a program that never reaches the
+   foreign calls links without the library, when the unit is reached
+   through another module's implementation (FarMid), and fails by
+   name when imported directly (FarDirect). *)
 
 PROCEDURE Answer () : I64 ;
 

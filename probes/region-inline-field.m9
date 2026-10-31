@@ -1,12 +1,12 @@
 (* EXPECT: undeclared retention: borrowed o (carried by spec) reaches module state *)
 MODULE m ;
-(* a field of a field of a LOCAL record is the local's own storage,
-   through records held by value: a borrowed string stored there dies
+(* A field of a field of a LOCAL record is the local's own storage,
+   through records held by value.  A borrowed string stored there dies
    with the frame, as one level down does.  The region judgement took
    `spec.scale.cmap := o.cmap' after `spec := Default ()' for a store
    into what the call's answer reached (cp-kernel's DapPreview.MapSvg,
-   2026-10-25).  Legal forms first; then the record that carries the
-   borrow is stored in a module variable, which is a retention *)
+   2026-10-25).  Legal forms come first.  Then the record that carries
+   the borrow is stored in a module variable, which is a retention. *)
 TYPE
   Scale = RECORD cmap : STR ; lo : F64 END ;
   Spec = RECORD title : STR ; scale : Scale END ;
@@ -24,14 +24,14 @@ VAR spec : Spec ;
 BEGIN
   spec := Default () ;
   spec.title := o.cmap ;
-  RETURN LEN (spec.title)
+  RETURN LEN (OCTETS (spec.title))
 END OneLevel ;
 PROCEDURE TwoLevels (RO o: Opts) : I64 =
 VAR spec : Spec ;
 BEGIN
   spec := Default () ;
   spec.scale.cmap := o.cmap ;
-  RETURN LEN (spec.scale.cmap)
+  RETURN LEN (OCTETS (spec.scale.cmap))
 END TwoLevels ;
 PROCEDURE Keeps (RO o: Opts) =
 VAR spec : Spec ;

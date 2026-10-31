@@ -1,19 +1,20 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Parquet ;
 
-(* A Parquet subset for Frame.m9: flat schemas.  pyarrow is the oracle
-   both ways: files pyarrow wrote are read value-exact against what
-   pyarrow reads from them (corpus/ParquetTest.m9), files this module
-   writes are read back by pyarrow (runtime/test/columnar.sh).
+(* Parquet reads and writes a subset for Frame.m9: flat schemas.
+   pyarrow is the oracle both ways: files pyarrow wrote are read
+   value-exact against what pyarrow reads from them
+   (corpus/ParquetTest.m9), files this module writes are read back by
+   pyarrow (runtime/test/columnar.sh).
 
    THE READER reads what pyarrow and polars write with their DEFAULTS:
    several row groups, several data pages a chunk (version 1 or 2), a
    dictionary page with RLE_DICTIONARY indices (and PLAIN_DICTIONARY,
    its old name), PLAIN values, RLE booleans, and pages compressed
    with SNAPPY, GZIP or ZSTD or not at all.  Everything outside that is
-   refused BY NAME -- a codec (brotli, lz4), an encoding (the DELTA
-   family, BYTE_STREAM_SPLIT), a nesting, a repeated column -- because
-   a half-read Parquet file is a numbers-shaped lie.  An OPTIONAL
+   refused BY NAME: a codec (brotli, lz4), an encoding (the DELTA
+   family, BYTE_STREAM_SPLIT), a nesting, a repeated column.  A
+   half-read Parquet file is a numbers-shaped lie.  An OPTIONAL
    column's null is the arm's own missing value, the mapping CSV import
    applies to an empty field; a null BOOLEAN is refused, BOOL keeping
    no missing value.  Strings are UTF-8 both ways.
@@ -24,8 +25,8 @@ DEFINITION MODULE Parquet ;
    the data (NaN, the sentinels), not as Parquet nulls, so no
    definition levels are written.  Asked for (`Options.nulls`,
    WriteOpt), every numeric column is OPTIONAL and a missing cell is a
-   NULL -- what pyarrow writes from pandas, and what a reader that
-   knows no sentinel needs. *)
+   NULL.  That is what pyarrow writes from pandas, and what a reader
+   that knows no sentinel needs. *)
 
 IMPORT Faults ;
 
@@ -46,31 +47,32 @@ PROCEDURE WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
                   RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                   RO nsCols: SLICE OF STR)
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
-  (* Write plus two things a data service needs: file-level
+  (* WriteX is Write plus two things a data service needs: file-level
      key_value_metadata pairs (the zarr proxy rides its JSON-LD
      data passport under 'data_passport', as pyarrow's writer
      does), and INT64 columns named in nsCols annotated as
-     TIMESTAMP(NANOS, adjusted-to-UTC) -- pyarrow then reads a real
+     TIMESTAMP(NANOS, adjusted-to-UTC).  pyarrow then reads a real
      timestamp[ns] column, not a bare integer.                      *)
 
 PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
                   RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                   RO nsCols: SLICE OF STR) : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange, Overflow, IndexError ;
-  (* WriteX's document, IN MEMORY, for a caller that is answering a
-     request rather than filling a directory.  The whole file was
-     already assembled in a buffer before WriteX touched the disk;
-     this hands that buffer over instead, so a server does not need a
-     per-request temp file it must then read back and remove.  No
-     Io.IOError, because nothing is opened.                          *)
+  (* BytesX answers WriteX's document, IN MEMORY, for a caller that is
+     answering a request rather than filling a directory.  The whole
+     file was already assembled in a buffer before WriteX touched the
+     disk; this hands that buffer over instead, so a server does not
+     need a per-request temp file it must then read back and remove.
+     It raises no Io.IOError, because nothing is opened.             *)
 
 CONST
-  (* Options.codec: how the writer compresses each page.  The numbers
-     are the format's own (parquet.thrift CompressionCodec).  SNAPPY is
-     pyarrow's default; GZIP is the RFC 1952 wrapping of Zip's plain
-     compressor -- smaller than snappy, slower to write, and larger
-     than zlib's level 6 would make it; ZSTD is libzstd at its default
-     level 3, polars' default codec.  Snappy and gzip are written in
+  (* These are Options.codec: how the writer compresses each page.
+     The numbers are the format's own (parquet.thrift
+     CompressionCodec).  SNAPPY is pyarrow's default.  GZIP is the RFC
+     1952 wrapping of Zip's plain compressor: smaller than snappy,
+     slower to write, and larger than zlib's level 6 would make it.
+     ZSTD is libzstd at its default level 3, polars' default codec.
+     Snappy and gzip are written in
      M9; zstd is the system's libzstd, so a program importing Parquet
      links it (LINK below). *)
   CodecNone = 0 ;
@@ -87,9 +89,10 @@ TYPE
     nulls : BOOL ;              (* missing cells as Parquet nulls *)
     codec : I64 ;               (* CodecNone, CodecSnappy, CodecGzip, CodecZstd *)
   END ;
-  (* what WriteX takes, and three things a dataframe written for
-     pandas and pyarrow needs, found by the cp-kernel's time series
-     renditions (2026-10-09), which pyarrow writes from pandas:
+  (* Options holds what WriteX takes, and three things a dataframe
+     written for pandas and pyarrow needs.  The cp-kernel's time
+     series renditions (2026-10-09), which pyarrow writes from pandas,
+     found them:
 
        usCols -- INT64 columns (microseconds since the epoch)
                  annotated TIMESTAMP(MICROS, isAdjustedToUTC false):
@@ -122,7 +125,8 @@ PROCEDURE WriteOpt (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
 PROCEDURE BytesOpt (VAR pool: POOL ; f: PTR Frame.Fr ; RO o: Options)
   : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange, Overflow, IndexError ;
-  (* WriteOpt's document in memory, as BytesX is WriteX's *)
+  (* BytesOpt answers WriteOpt's document in memory, as BytesX is
+     WriteX's. *)
 
 PROCEDURE Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
@@ -135,9 +139,9 @@ END Parquet.
 
 UNSAFE DEFINITION MODULE FOR "C" czstd LINK "-l:libzstd.so.1" ;
 
-(* libzstd's one-shot calls: each makes and frees its own context, so
-   any number of threads may call them at once.  An error is a size_t
-   near 2 ** 64, which I64 () refuses with ValueRange. *)
+(* These are libzstd's one-shot calls.  Each makes and frees its own
+   context, so any number of threads may call them at once.  An error is
+   a size_t near 2 ** 64, which I64 () refuses with ValueRange. *)
 
 PROCEDURE ZstdDecompress = "ZSTD_decompress"
   (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT)
@@ -155,7 +159,10 @@ END czstd.
 
 UNSAFE IMPLEMENTATION MODULE Parquet ;
 
-(* UNSAFE for one reason: ADR at the libzstd boundary.  Grep ADR. *)
+IMPORT Text ;
+
+(* The module is UNSAFE for one reason: ADR at the libzstd boundary.
+   Grep ADR. *)
 
 FROM czstd IMPORT ZstdDecompress, ZstdCompress, ZstdBound ;
 
@@ -264,7 +271,7 @@ END P8 ;
 
 PROCEDURE PLE (VAR pool: POOL ; VAR u: Buf ; v, k: I64)
   RAISES ValueRange =
-  (* k little-endian bytes of a NONNEGATIVE v *)
+  (* PLE writes k little-endian bytes of a NONNEGATIVE v. *)
 VAR i, x : I64 ;
 BEGIN
   x := v ;
@@ -286,7 +293,7 @@ END PBytes ;
 
 PROCEDURE PVar (VAR pool: POOL ; VAR u: Buf ; v: I64)
   RAISES ValueRange =
-  (* unsigned LEB128 of a nonnegative v *)
+  (* PVar writes unsigned LEB128 of a nonnegative v. *)
 VAR x : I64 ;
 BEGIN
   x := v ;
@@ -298,14 +305,15 @@ BEGIN
 END PVar ;
 
 PROCEDURE Zig (v: I64) : I64 RAISES Overflow =
-  (* zigzag without shifts: 2v for v >= 0, -2v-1 below *)
+  (* Zig answers zigzag without shifts: 2v for v >= 0, -2v-1 below. *)
 BEGIN
   IF v >= 0 THEN RETURN 2 * v END ;
   RETURN -2 * v - 1
 END Zig ;
 
-(* a thrift field header: delta-encoded id, then the payload the
-   caller writes.  `last` is the running field id of the struct. *)
+(* PField writes a thrift field header: delta-encoded id, then the
+   payload the caller writes.  `last` is the running field id of the
+   struct. *)
 PROCEDURE PField (VAR pool: POOL ; VAR u: Buf ; VAR last: I64 ;
                   id, ct: I64)
   RAISES ValueRange =
@@ -333,14 +341,14 @@ END PI64F ;
 PROCEDURE PStrRaw (VAR pool: POOL ; VAR u: Buf ; RO s: STR)
   RAISES ValueRange, Faults.BadArg =
   (* thrift binary carries BYTES: the text goes out as UTF-8, and
-     the length prefix is the BYTE length, not the scalar count --
-     the ASCII-only refusal fell when the zarr proxy's passports
-     (accented citation names) and station ids met this writer      *)
+     the length prefix is the BYTE length, not the scalar count.
+     The ASCII-only refusal fell when the zarr proxy's passports
+     (accented citation names) and station ids met this writer.     *)
 VAR
   bb : SLICE OF BYTE ;
   i : I64 ;
 BEGIN
-  bb := DynStr.Utf8 (pool, s) ;
+  bb := OCTETS (s) ;
   PVar (pool, u, LEN (bb)) ;
   Room (u, LEN (bb)) ;
   FOR i := 0 TO LEN (bb) - 1 DO
@@ -373,10 +381,11 @@ END PListF ;
 (* ---- the writer ---- *)
 
 PROCEDURE ColPhys (k: I64) : I64 =
-  (* physical type from a Frame kind code.  The kind travels as an
-     integer because Frame's cross-module face predates the generator
-     learning to CASE a cross-module variant (2026-09-15); a CASE over
-     Frame.Data would do now and would make this total.  Ledgered. *)
+  (* ColPhys answers the physical type from a Frame kind code.  The kind
+     travels as an integer because Frame's cross-module face predates
+     the generator learning to CASE a cross-module variant (2026-09-15);
+     a CASE over Frame.Data would do now and would make this total.
+     Ledgered. *)
 BEGIN
   IF k = Frame.KindF64 THEN RETURN PtDouble END ;
   IF k = Frame.KindF32 THEN RETURN PtFloat END ;
@@ -387,7 +396,7 @@ BEGIN
 END ColPhys ;
 
 PROCEDURE ColConv (k: I64) : I64 =
-  (* the converted_type, or -1 for none *)
+  (* ColConv answers the converted_type, or -1 for none. *)
 BEGIN
   IF k = Frame.KindI16 THEN RETURN CvInt16 END ;
   IF k = Frame.KindByte THEN RETURN CvUint8 END ;
@@ -397,7 +406,8 @@ END ColConv ;
 
 PROCEDURE Kept (RO skip: SLICE OF BOOL ; r: I64) : BOOL
   RAISES IndexError =
-  (* row r has a value to write: an empty mask skips nothing *)
+  (* Kept answers whether row r has a value to write: an empty mask
+     skips nothing. *)
 BEGIN
   RETURN LEN (skip) = 0 OR NOT skip[r]
 END Kept ;
@@ -405,10 +415,10 @@ END Kept ;
 PROCEDURE Missing (VAR pool: POOL ; f: PTR Frame.Fr ; RO name: STR ;
                    k: I64) : SLICE OF BOOL
   RAISES Faults.BadArg =
-  (* which cells of a numeric column are missing: the column's own
-     missing value, or NaN in a real column whatever that value is
-     (Frame: a NaN in a real column is ALWAYS missing).  BOOL and STR
-     columns have none: an empty mask. *)
+  (* Missing answers which cells of a numeric column are missing: the
+     column's own missing value, or NaN in a real column whatever that
+     value is (Frame: a NaN in a real column is ALWAYS missing).  BOOL
+     and STR columns have none: an empty mask. *)
 VAR
   m : SLICE OF BOOL ;
   v64 : SLICE OF F64 ;
@@ -466,8 +476,8 @@ END Missing ;
 PROCEDURE PutValues (VAR pool: POOL ; VAR u: Buf ; f: PTR Frame.Fr ;
                      RO name: STR ; k: I64 ; RO skip: SLICE OF BOOL)
   RAISES ValueRange, Overflow, IndexError, Faults.BadArg =
-  (* the PLAIN values of the rows skip does not mark; BOOL and STR
-     columns are never handed a mask *)
+  (* PutValues writes the PLAIN values of the rows skip does not mark.
+     BOOL and STR columns are never handed a mask. *)
 VAR
   r, x : I64 ;
   v64 : SLICE OF F64 ;
@@ -501,8 +511,8 @@ BEGIN
   ELSIF k = Frame.KindI64 THEN
     vi64 := Frame.ColI64 (f, name) ;
     FOR r := 0 TO LEN (vi64) - 1 DO
-      (* two's complement LE: negatives via the 2^63 split, no
-         shifts needed *)
+      (* Write two's complement LE: negatives via the 2^63 split, no
+         shifts needed. *)
       x := vi64[r] ;
       IF NOT Kept (skip, r) THEN
       ELSIF x >= 0 THEN
@@ -565,13 +575,14 @@ END PutValues ;
 
 PROCEDURE PStrVal (VAR pool: POOL ; VAR u: Buf ; RO s: STR)
   RAISES ValueRange =
-  (* a PLAIN BYTE_ARRAY value: 4-byte BYTE length, then UTF-8 --
-     the length must count the encoded bytes, not the scalars      *)
+  (* PStrVal writes a PLAIN BYTE_ARRAY value: 4-byte BYTE length, then
+     UTF-8.  The length must count the encoded bytes, not the
+     scalars.                                                      *)
 VAR
   bb : SLICE OF BYTE ;
   i : I64 ;
 BEGIN
-  bb := DynStr.Utf8 (pool, s) ;
+  bb := OCTETS (s) ;
   PLE (pool, u, LEN (bb), 4) ;
   Room (u, LEN (bb)) ;
   FOR i := 0 TO LEN (bb) - 1 DO
@@ -585,16 +596,16 @@ PROCEDURE PageFor (VAR pool: POOL ; f: PTR Frame.Fr ;
                    RO skip: SLICE OF BOOL ; codec: I64 ;
                    VAR unc: I64) : Buf
   RAISES ValueRange, Overflow, IndexError, Faults.BadArg =
-  (* one DATA_PAGE: thrift PageHeader, then PLAIN values.  An
-     OPTIONAL column's values are preceded by its definition levels
-     (max level 1): a 4-byte length, then ONE bit-packed run of the
-     RLE/bit-packed hybrid -- header (groups * 2 + 1), groups of
-     eight levels a byte, LSB first, the last group zero-padded (the
-     format allows it: num_values says where the levels end) -- and
-     only the present values follow.  The levels and the values are
-     compressed TOGETHER by the codec (a version 1 page); unc answers
-     the page's size uncompressed, header included, for the column's
-     total_uncompressed_size. *)
+  (* PageFor builds one DATA_PAGE: thrift PageHeader, then PLAIN
+     values.  An OPTIONAL column's values are preceded by its
+     definition levels (max level 1): a 4-byte length, then ONE
+     bit-packed run of the RLE/bit-packed hybrid.  The run is a header
+     (groups * 2 + 1), then groups of eight levels a byte, LSB first,
+     the last group zero-padded.  (The format allows it: num_values
+     says where the levels end.)  Only the present values follow.  The
+     levels and the values are compressed TOGETHER by the codec (a
+     version 1 page); unc answers the page's size uncompressed, header
+     included, for the column's total_uncompressed_size. *)
 VAR
   vals, page, lv : Buf ;
   packed : SLICE OF BYTE ;
@@ -647,9 +658,9 @@ BEGIN
   RETURN page
 END PageFor ;
 
-(* ---- snappy, the writing half: a literal until four bytes are seen
-   again within 64 KiB, then a copy of as many as match (2-byte
-   offsets, at most 64 a copy).  The hash table holds the last
+(* ---- snappy, the writing half.  It writes a literal until four
+   bytes are seen again within 64 KiB, then a copy of as many as match
+   (2-byte offsets, at most 64 a copy).  The hash table holds the last
    position + 1 of each four-byte hash.  Any decoder reads it: held by
    pyarrow's (columnar.sh) and by SnappyDecode (ParquetTest). ---- *)
 
@@ -755,7 +766,7 @@ BEGIN
     PI32F (pool, u, last, 6, ColConv (k))
   END ;
   IF ns OR us THEN
-    (* logicalType = TIMESTAMP { isAdjustedToUTC, unit } --
+    (* This writes logicalType = TIMESTAMP { isAdjustedToUTC, unit }:
        SchemaElement field 10, nested unions as one-field structs,
        an empty unit struct inside (MICROS is the union's field 2,
        NANOS its field 3).  Bools in a compact struct are the field
@@ -789,7 +800,7 @@ PROCEDURE InList (RO name: STR ; RO xs: SLICE OF STR) : BOOL
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO LEN (xs) - 1 DO
-    IF DynStr.Eq (xs[i], name) THEN RETURN TRUE END
+    IF Text.Eq (xs[i], name) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END InList ;
@@ -824,7 +835,8 @@ END WriteAny ;
 PROCEDURE CheckNames (f: PTR Frame.Fr ; RO what: STR ;
                       RO xs: SLICE OF STR ; k1, k2: I64)
   RAISES Faults.BadArg, IndexError =
-  (* every name in xs is a column of kind k1 or k2 *)
+  (* CheckNames checks that every name in xs is a column of kind k1 or
+     k2. *)
 VAR
   i, k : I64 ;
 BEGIN
@@ -842,8 +854,8 @@ END CheckNames ;
 PROCEDURE CheckI8 (f: PTR Frame.Fr ; RO name: STR ; k: I64 ;
                    RO skip: SLICE OF BOOL)
   RAISES Faults.BadArg, IndexError =
-  (* every value to be written fits INT_8; a skipped (null) cell is
-     not a value *)
+  (* CheckI8 checks that every value to be written fits INT_8; a
+     skipped (null) cell is not a value. *)
 VAR
   vi32 : SLICE OF I32 ;
   vi16 : SLICE OF I16 ;
@@ -1038,8 +1050,8 @@ BEGIN
 END BytesOpt ;
 
 PROCEDURE NIL9 (VAR pool: POOL) : PTR Frame.Ts =
-  (* a placeholder Ts nothing reads: WriteAny only touches ts when
-     withTs is TRUE.  M9 has no NIL, which is the point; this is an
+  (* This is a placeholder Ts nothing reads: WriteAny only touches ts
+     when withTs is TRUE.  M9 has no NIL, which is the point; this is an
      honest empty object instead. *)
 VAR
   f : PTR Frame.Fr IN pool ;
@@ -1061,7 +1073,7 @@ VAR
   o : Options ;
   c : I64 ;
 BEGIN
-  (* time first, then the data columns, in one flat frame *)
+  (* Put time first, then the data columns, in one flat frame. *)
   f2 := Frame.New (pool, Frame.Rows (Frame.TsFrame (ts))) ;
   Frame.AddI64 (pool, f2, 'time', Frame.TsTime (ts),
                 -9223372036854775807 - 1) ;
@@ -1161,7 +1173,7 @@ BEGIN
 END RSkipBytes ;
 
 PROCEDURE RSkip (VAR r: Rd ; ct: I64) RAISES Faults.BadArg, Overflow =
-  (* skip one value of compact type ct, recursively *)
+  (* RSkip skips one value of compact type ct, recursively. *)
 VAR n, i, et, hdr : I64 ;
 BEGIN
   IF ct = CtTrue OR ct = CtFalse THEN
@@ -1205,7 +1217,7 @@ BEGIN
   END
 END RSkipStruct ;
 
-(* one struct field header; answers FALSE at stop *)
+(* RField reads one struct field header; it answers FALSE at stop. *)
 PROCEDURE RField (VAR r: Rd ; VAR last: I64 ; VAR id, ct: I64) : BOOL
   RAISES Faults.BadArg, Overflow =
 VAR b, delta : I64 ;
@@ -1227,11 +1239,11 @@ PROCEDURE RStr (VAR pool: POOL ; VAR r: Rd) : STR
   RAISES Faults.BadArg, Overflow, ValueRange =
 VAR
   n, i : I64 ;
-  s : SLICE OF CHAR ;
+  s : STR ;      (* was spelled SLICE OF CHAR, the type the switch moves *)
 BEGIN
   n := RVar (r) ;
   IF r.at + n > LEN (r.b) THEN RAISE Faults.BadArg ('truncated string') END ;
-  s := DynStr.FromUtf8 (pool, SLICE (r.b, r.at, n)) ;
+  s := UTF (pool, SLICE (r.b, r.at, n)) ;
   r.at := r.at + n ;
   RETURN s
 END RStr ;
@@ -1347,8 +1359,8 @@ BEGIN
     ELSIF id = 3 AND ct = CtI64 THEN
       m.rows := RZig (r)
     ELSIF id = 4 AND ct = CtList THEN
-      (* every row group: a column of the frame is its chunks, one
-         per group, in order (the schema, field 2, came first) *)
+      (* Read every row group.  A column of the frame is its chunks,
+         one per group, in order (the schema, field 2, came first). *)
       hdr := R8 (r) ;
       n := hdr DIV 16 ;
       IF n = 15 THEN n := RVar (r) END ;
@@ -1466,8 +1478,8 @@ END EncName ;
 
 PROCEDURE LEb (RO b: SLICE OF BYTE ; at, k: I64) : I64
   RAISES IndexError =
-  (* k little-endian bytes from b[at], unsigned; the caller has held
-     at + k to LEN (b) *)
+  (* LEb answers k little-endian bytes from b[at], unsigned; the
+     caller has held at + k to LEN (b). *)
 VAR i, v, m : I64 ;
 BEGIN
   v := 0 ;
@@ -1489,9 +1501,9 @@ END Need ;
 PROCEDURE PageBytes (VAR pool: POOL ; codec: I64 ; RO body: SLICE OF BYTE ;
                      size: I64) : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange, IndexError =
-  (* a COMPRESSED page's bytes as they were before the codec, held to
-     the size its header says; an uncompressed page the caller takes
-     as it is *)
+  (* PageBytes answers a COMPRESSED page's bytes as they were before
+     the codec, held to the size its header says.  The caller takes an
+     uncompressed page as it is. *)
 VAR out : SLICE OF BYTE ;
 BEGIN
   IF codec = CodecSnappy THEN
@@ -1550,17 +1562,17 @@ EXCEPT
 END ZstdEncode ;
 
 (* ---- snappy, the raw format (no framing): what Parquet's SNAPPY is.
-   An uncompressed length as a varint, then elements: a LITERAL (the
-   tag's two low bits 0; a length up to 60 in the tag, else in the 1
-   to 4 bytes after it) or a COPY of earlier output, by an offset of
-   11, 16 or 32 bits and a length.  github.com/google/snappy,
+   It holds an uncompressed length as a varint, then elements: a LITERAL
+   (the tag's two low bits 0; a length up to 60 in the tag, else in the
+   1 to 4 bytes after it) or a COPY of earlier output, by an offset of
+   11, 16 or 32 bits and a length.  See github.com/google/snappy,
    format_description.txt. ---- *)
 
 PROCEDURE SnappyDecode (VAR pool: POOL ; RO s: SLICE OF BYTE)
   : SLICE OF BYTE
   RAISES Faults.BadArg, IndexError =
-  (* every length and offset held to what is there: a damaged page
-     is refused, never read or written past *)
+  (* Every length and offset is held to what is there: a damaged page
+     is refused, never read or written past. *)
 VAR
   out : SLICE OF BYTE ;
   at, n, m, k, o, tag, kind, len, off, i : I64 ;
@@ -1614,7 +1626,8 @@ BEGIN
         at := at + 4
       END ;
       IF off = 0 OR off > o OR o + len > n THEN RAISE Faults.BadArg (SnapBad) END ;
-      (* forward, a byte at a time: a copy may overlap its own output *)
+      (* Copy forward, a byte at a time: a copy may overlap its own
+         output. *)
       FOR i := 0 TO len - 1 DO
         out[o + i] := out[o - off + i]
       END ;
@@ -1650,8 +1663,8 @@ END HVar ;
 PROCEDURE Hybrid (VAR pool: POOL ; RO b: SLICE OF BYTE ; VAR at: I64 ;
                   end, width, n: I64) : SLICE OF I64
   RAISES Faults.BadArg, IndexError =
-  (* n values of width bits from b[at], not past b[end]; at is left
-     after the last byte read *)
+  (* Hybrid reads n values of width bits from b[at], not past b[end];
+     at is left after the last byte read. *)
 VAR
   v : SLICE OF I64 ;
   got, hdr, cnt, groups, x, i, nb, top, acc, have, mul : I64 ;
@@ -1769,7 +1782,8 @@ END Room1 ;
 PROCEDURE Put (VAR pool: POOL ; VAR k: Sink ; RO b: SLICE OF BYTE ;
                VAR p: I64)
   RAISES Faults.BadArg, ValueRange, IndexError =
-  (* one PLAIN value from b[p] into the next row; p moves past it *)
+  (* Put reads one PLAIN value from b[p] into the next row; p moves
+     past it. *)
 VAR x, lo, hi, n : I64 ;
 BEGIN
   Room1 (k) ;
@@ -1796,7 +1810,7 @@ BEGIN
     n := LEb (b, p, 4) ;
     p := p + 4 ;
     Need (b, p, n) ;
-    k.s[k.at] := DynStr.FromUtf8 (pool, SLICE (b, p, n)) ;
+    k.s[k.at] := UTF (pool, SLICE (b, p, n)) ;
     p := p + n
   ELSIF k.kind = SkBool THEN
     RAISE Faults.BadArg ('a boolean from a dictionary')
@@ -1826,8 +1840,8 @@ BEGIN
 END PutBool ;
 
 PROCEDURE PutMissing (VAR k: Sink ; RO name: STR) RAISES Faults.BadArg =
-  (* a null: the arm's own missing value, as CSV import gives an
-     empty field *)
+  (* PutMissing puts a null: the arm's own missing value, as CSV
+     import gives an empty field. *)
 BEGIN
   Room1 (k) ;
   IF k.kind = SkF64 THEN
@@ -1854,7 +1868,8 @@ END PutMissing ;
 PROCEDURE DictPos (VAR pool: POOL ; RO d: SLICE OF BYTE ; RO ci: ColInfo ;
                    n: I64) : SLICE OF I64
   RAISES Faults.BadArg, IndexError =
-  (* where each of a PLAIN dictionary's n entries begins *)
+  (* DictPos answers where each of a PLAIN dictionary's n entries
+     begins. *)
 VAR
   pos : SLICE OF I64 ;
   i, p, w : I64 ;
@@ -1885,8 +1900,8 @@ END DictPos ;
 
 PROCEDURE ReadDph (VAR r: Rd ; VAR nvals, enc: I64)
   RAISES Faults.BadArg, Overflow =
-  (* a DataPageHeader or a DictionaryPageHeader: both say num_values
-     as field 1 and the encoding as field 2 *)
+  (* ReadDph reads a DataPageHeader or a DictionaryPageHeader: both
+     say num_values as field 1 and the encoding as field 2. *)
 VAR last, id, ct : I64 ;
 BEGIN
   last := 0 ;
@@ -1904,8 +1919,9 @@ END ReadDph ;
 PROCEDURE ReadDph2 (VAR r: Rd ; VAR nvals, enc, defLen, repLen: I64 ;
                     VAR packed: BOOL)
   RAISES Faults.BadArg, Overflow =
-  (* a DataPageHeaderV2: the levels' lengths are said here, because
-     the levels are stored uncompressed ahead of the values *)
+  (* ReadDph2 reads a DataPageHeaderV2.  The levels' lengths are said
+     here, because the levels are stored uncompressed ahead of the
+     values. *)
 VAR last, id, ct : I64 ;
 BEGIN
   last := 0 ;
@@ -1929,12 +1945,12 @@ END ReadDph2 ;
 PROCEDURE ReadColumn (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                       RO whole: SLICE OF BYTE ; RO m: Meta ; c: I64)
   RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
-  (* column c over every row group: in each chunk an optional
-     dictionary page, then data pages (version 1 or 2) until the
-     chunk's values are all read.  A value is PLAIN or an index into
-     the dictionary (RLE_DICTIONARY, and PLAIN_DICTIONARY, its old
-     name); a boolean is PLAIN or RLE.  A null is the arm's missing
-     value.  Any other encoding or codec is refused by name. *)
+  (* ReadColumn reads column c over every row group.  In each chunk an
+     optional dictionary page comes first, then data pages (version 1
+     or 2) until the chunk's values are all read.  A value is PLAIN or
+     an index into the dictionary (RLE_DICTIONARY, and PLAIN_DICTIONARY,
+     its old name); a boolean is PLAIN or RLE.  A null is the arm's
+     missing value.  Any other encoding or codec is refused by name. *)
 VAR
   ci : ColInfo ;
   ch : Chunk ;
@@ -2147,8 +2163,8 @@ BEGIN
   END
 END AddSink ;
 
-(* Add* with Frame's refusals converted: the caller of Read wants
-   Parquet's exceptions, not Frame's internals *)
+(* These are Add* with Frame's refusals converted: the caller of Read
+   wants Parquet's exceptions, not Frame's internals. *)
 PROCEDURE AddF64Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                    RO name: STR ; KEPT v: SLICE OF F64)
   RAISES Faults.BadArg =
@@ -2310,7 +2326,8 @@ BEGIN
     END
   END ;
   IF res = 0 THEN
-    (* a foreign file: the smallest gap, the stated default *)
+    (* For a foreign file, use the smallest gap, the stated
+       default. *)
     FOR r := 1 TO m.rows - 1 DO
       g := tsec[r] - tsec[r - 1] ;
       IF g > 0 AND (res = 0 OR g < res) THEN res := g END
@@ -2344,9 +2361,9 @@ END ColI64Q ;
 PROCEDURE EqS (RO a, b: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (a) - 1 DO
-    IF a[i] # b[i] THEN RETURN FALSE END
+  IF Text.BLen (a) # Text.BLen (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (a) - 1 DO
+    IF Text.BAt (a, i) # Text.BAt (b, i) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END EqS ;
@@ -2355,10 +2372,10 @@ PROCEDURE TextI64 (RO s: STR) : I64 RAISES Faults.BadArg, Overflow =
 VAR i, v : I64 ;
 BEGIN
   v := 0 ;
-  IF LEN (s) = 0 THEN RAISE Faults.BadArg ('empty number') END ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] < '0' OR s[i] > '9' THEN RAISE Faults.BadArg (s) END ;
-    v := v * 10 + (ORD (s[i]) - 48)
+  IF Text.BLen (s) = 0 THEN RAISE Faults.BadArg ('empty number') END ;
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RAISE Faults.BadArg (s) END ;
+    v := v * 10 + (I64 (Text.BAt (s, i)) - 48)
   END ;
   RETURN v
 END TextI64 ;

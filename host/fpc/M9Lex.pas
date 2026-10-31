@@ -1,8 +1,10 @@
 unit M9Lex;
 
-{ M9 lexer -- the first thousandth of the bootstrap compiler (v0 host: FPC).
+{ M9Lex is the M9 lexer, the first thousandth of the bootstrap compiler
+  (v0 host: FPC).
 
-  Lexical decisions forced by implementation, now normative for the report:
+  Implementation forced these lexical decisions.  They are now
+  normative for the report:
   - Comments: (* ... *), NESTED, per Modula tradition.
   - Strings: 'x' or "x", no escape sequences; a string cannot contain its
     own delimiter (Wirth's rule; use the other quote).
@@ -14,8 +16,9 @@ unit M9Lex;
   - A letter may never immediately follow a numeric literal. Before
     this rule 0AC lexed silently as IntLit 0 then Ident AC.
   - Wrapping arithmetic: +% -% *% are single tokens (report par 2.1).
-  - .. is the range token (slices); . is member access; ambiguity 1..5
-    resolved by longest-match on the dots, so 1..5 lexes INT DOTDOT INT.
+  - .. is the range token (slices); . is member access.  Longest-match
+    on the dots resolves the ambiguity 1..5, so 1..5 lexes INT DOTDOT
+    INT.
   - Every token carries line and column; errors are tokens, not halts,
     so the parser can recover and a tool can report many errors at once. }
 
@@ -54,8 +57,9 @@ type
     line, col : Integer;
   end;
 
-  { A comment, for callers that want the documentation rather than
-    the program.  text is VERBATIM, delimiters included.  The M9 side
+  { TComment holds a comment, for callers that want the documentation
+    rather than the program.  text is VERBATIM, delimiters included.
+    The M9 side
     is corpus/Lex.m9's Comment and comdiff holds the two to the same
     answer. }
   TComment = record
@@ -85,10 +89,10 @@ type
     { Comments are NOT tokens and never will be: a comment token kind
       would move every count in lextest.golden.  Armed, the lexer also
       records each comment it skips; the token stream is untouched.
-      Per-INSTANCE here because TLexer is a class; the M9 side keeps
-      one module-level list because its Lexer is a record and Init
-      takes no pool.  The two need not be shaped alike -- comdiff
-      holds them to the same OUTPUT. }
+      The list is per-INSTANCE here because TLexer is a class.  The M9
+      side keeps one module-level list because its Lexer is a record
+      and Init takes no pool.  The two need not be shaped alike:
+      comdiff holds them to the same OUTPUT. }
     procedure Collect (on: Boolean);
     function ComCount: Integer;
     function ComAt (i: Integer): TComment;
@@ -168,9 +172,10 @@ begin
   FPos := 1;
   FLine := 1;
   FCol := 1;
-  { a first line beginning #! names the program that runs this file
-    as a script and is not M9 (report par 2); skipped to its line
-    end, so the newline is counted and every line keeps its number }
+  { A first line beginning #! names the program that runs this file
+    as a script and is not M9 (report par 2).  The lexer skips it to
+    its line end, so the newline is counted and every line keeps its
+    number. }
   { a byte order mark (U+FEFF, EF BB BF) is skipped, the column
     stays 1 (mirrors Lex.Init) }
   if (Length (FSrc) >= 3) and (FSrc[1] = #$EF) and (FSrc[2] = #$BB) and
@@ -182,9 +187,10 @@ begin
 end;
 
 { ---- literals beyond 64 bits (mirrors Lex.m9's IntPast64, RealTooBig
-  and the hex rule; the compiler review's F1, 2026-10-21): an integer
-  literal is at most 64 bits, decimal or hex; a real does not round
-  to infinity as an F64 -- held exactly against 2^1024 - 2^970 ---- }
+  and the hex rule; the compiler review's F1, 2026-10-21).  An integer
+  literal is at most 64 bits, decimal or hex.  A real does not round
+  to infinity as an F64.  The test holds it exactly against
+  2^1024 - 2^970. ---- }
 const
   U64Top = '18446744073709551615';
   F64Top = '179769313486231580793728971405303415079934132710037826936173778980444968292764750946649017977587207096330286416692887910946555547851940402630657488671505820681908902000708383676273854845817711531764475730270069855571366959622842914819860834936475292719074168444365510704342711559699508093042880177904174497792';
@@ -422,9 +428,10 @@ begin
             Exit (MakeTok (tkError, 'hex literal beyond 64 bits', ln, cl));
           Exit (MakeTok (tkIntLit, Copy (FSrc, start, FPos - start), ln, cl));
         end;
-        { gather digits and uppercase hex letters, classify by shape:
-          ...C is a char literal, pure decimal is an int (maybe a real
-          with fraction/exponent to follow), anything else malformed }
+        { Gather digits and uppercase hex letters, and classify by
+          shape.  ...C is a char literal.  Pure decimal is an int
+          (maybe a real with fraction/exponent to follow).  Anything
+          else is malformed. }
         hasHexLetter := False;
         while Peek in ['0'..'9', 'A'..'F'] do
         begin
@@ -463,8 +470,9 @@ begin
             Exit (MakeTok (tkError, 'digit required after decimal point',
                            ln, cl));
           while Peek in ['0'..'9'] do Advance;
-          { exponent only after a decimal point; dotless 1E5 never
-            gets here (E was gathered above and rejected as malformed) }
+          { An exponent comes only after a decimal point.  Dotless 1E5
+            never gets here (E was gathered above and rejected as
+            malformed). }
           if Peek in ['e', 'E'] then
           begin
             Advance;
@@ -568,8 +576,9 @@ begin
         Exit (MakeTok (tkError,
           Format ('unexpected character 0x%2.2x', [Ord (FSrc[start])]),
           ln, cl));
-      { past ASCII the scalar the UTF-8 sequence spells, U+XXXX
-        (mirrors Lex.Next, which reads the source decoded) }
+      { Past ASCII, report the scalar the UTF-8 sequence spells, as
+        U+XXXX.  This mirrors Lex.Next, which reads the source
+        decoded. }
       cv := Ord (FSrc[start]);
       if cv >= $F0 then cv := cv and $07
       else if cv >= $E0 then cv := cv and $0F

@@ -2,17 +2,17 @@ REVIEW Http -- 73 procedures with a body, 59 of them functions; 25 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              59
-  assignments                                   499
-  arguments                                     645
+  assignments                                   494
+  arguments                                     898
   RETURN values                                 131
-  operands of a comparison or an operator       555
+  operands of a comparison or an operator       505
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                    17   Line.pool, OpenConn.scratch, Once.scratch, Follow.scratch, Fetch.scratch, Request.scratch, +11 more
+  local pools                                    16   Line.pool, OpenConn.scratch, Once.scratch, Follow.scratch, Fetch.scratch, Request.scratch, +10 more
   pool parameters                                18   SplitUrl, Cat1, OpenConn, Once, Follow, Request, +12 more
   KEPT parameters                                 0
   HEAP named                                      0
@@ -36,7 +36,7 @@ COUNTED -- how much there was to check
   CASE statements                                 0
   RAISE statements                               30
   handlers                                       15
-  NEW in the frame                                0
-  NEW in a named pool                            13
-  calls of a STR form with a UTF twin             4   Io.AppendFileBytes -> Io.AppendFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf, Io.AppendFileBytes -> Io.AppendFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf
-  STR subscripts, writes and LEN                169   len line, len name, len name, index line[i], index name[i], len line, +163 more
+  NEW in the frame                                1
+  NEW in a named pool                            11
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

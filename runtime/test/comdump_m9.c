@@ -1,5 +1,6 @@
-/* comdump_m9.c -- the M9-compiled lexer's side of the comment
-   differential: identical output format to host/fpc/comdump.pas.
+/* comdump_m9.c is the M9-compiled lexer's side of the comment
+   differential.  Its output format is identical to
+   host/fpc/comdump.pas.
 
    Comments are not tokens, so lexdump's stream never contains one.
    This walks the side channel Lex.Collect arms instead.            */
@@ -13,7 +14,6 @@ int main (int argc, char **argv)
   FILE *f;
   long len;
   char *bytes;
-  uint32_t *chars;
   long i;
   int64_t n;
   Lex_Lexer lx = {0};
@@ -28,11 +28,9 @@ int main (int argc, char **argv)
   bytes = malloc ((size_t) len + 1);
   if (fread (bytes, 1, (size_t) len, f) != (size_t) len) return 2;
   fclose (f);
-  chars = malloc (sizeof (uint32_t) * (size_t) len);
-  len = m9t_decode ((const unsigned char *) bytes, len, chars);   /* UTF-8, as m9c reads it */
 
   Lex_Collect (true, &err);
-  Lex_Init (&lx, &pool, (m9_sl_CHAR){ chars, len }, &err);
+  Lex_InitUtf (&lx, &pool, (m9_sl_UTF8){ (uint8_t *) bytes, len }, &err);   /* UTF-8, as m9c reads it */
   do {
     Lex_Next (&lx, &pool, &t, &pool, &err);
     if (err.exc) { fprintf (stderr, "lexer raised %s\n", err.exc->name); return 1; }
@@ -44,9 +42,9 @@ int main (int argc, char **argv)
     if (err.exc) { fprintf (stderr, "raised %s\n", err.exc->name); return 1; }
     printf ("%lld:%lld-%lld ", (long long) c.line, (long long) c.col,
             (long long) c.endLine);
-    /* the same escaping comdump.pas does: newlines shown, backslashes
-       doubled, so a multi-line comment stays one line and the
-       escaping is reversible */
+    /* Escape as comdump.pas does: show newlines, double backslashes.
+       A multi-line comment stays one line, and the escaping is
+       reversible. */
     m9t_put_esc_text (c.text);
     putchar ('\n');
   }

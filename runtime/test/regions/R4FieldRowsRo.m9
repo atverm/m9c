@@ -1,7 +1,7 @@
 MODULE R4FieldRowsRo ;
-(* GfFieldRows with the write one level deeper, into a character of the
-   text the RO parameter lends -- refused through the field path as
-   through a bare name *)
+(* This is GfFieldRows with the write one level deeper, into a
+   character of the text the RO parameter lends.  It is refused through
+   the field path as through a bare name. *)
 IMPORT Io, Fmt ;
 TYPE
   Strs = SLICE OF STR ;

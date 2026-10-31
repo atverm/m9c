@@ -1,8 +1,8 @@
 DEFINITION MODULE GfPw ;
 
-(* A helper for GfArrRecField: an ARRAY OF a record as a FIELD of
-   another record, both transparent, bounded by a CONST -- the shape
-   Parse.m9's Parser wanted and could not have until 2026-10-10. *)
+(* GfPw helps GfArrRecField with an ARRAY OF a record as a FIELD of
+   another record, both transparent, bounded by a CONST.  Parse.m9's
+   Parser wanted that shape and could not have it until 2026-10-10. *)
 
 CONST
   MaxErr = 4 ;

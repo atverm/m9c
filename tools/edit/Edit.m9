@@ -1,19 +1,19 @@
 STATEFUL DEFINITION MODULE Edit ;
 
-(* m9edit -- the beginner's editor as a local web app, the tutor's
+(* m9edit is the beginner's editor as a local web app, the tutor's
    little sibling (docs/editor-plan.md).
 
-   The rules it inherits are the toolchain's: the page never lexes
-   M9 -- highlighting is the compiler's own Lex, run in this process
-   over the buffer and answered as token spans -- and diagnostics
-   are m9c's own, via the same `m9c --check` contract m9lsp keeps.
+   It inherits the toolchain's rules.  The page never lexes M9:
+   highlighting is the compiler's own Lex, run in this process over
+   the buffer and answered as token spans.  Diagnostics are m9c's
+   own, via the same `m9c --check` contract m9lsp keeps.
    There is deliberately NO SANDBOX: the tutor guards our machine
    against strangers' code; m9edit runs your code on your machine,
    the same trust as invoking m9c yourself.  A timeout and an output
    cap guard against accidents, not adversaries, and the listener
    binds the loopback only.  With bubblewrap installed, a run sees
-   out/ as /tmp -- the tutor's convention, so tutorial examples
-   paste in verbatim; that bind is convention, not confinement.      *)
+   out/ as /tmp.  That is the tutor's convention, so tutorial examples
+   paste in verbatim; the bind is convention, not confinement.       *)
 
 IMPORT Io ;
 
@@ -35,12 +35,12 @@ END Edit.
 
 UNSAFE DEFINITION MODULE FOR "C" cedt ;
 
-(* The same tcpshim.c procedures csrv/csock/ctut bind -- declared
-   here as well because a FROM u IMPORT reaches only a unit in the
-   CHECKER'S closure, and `m9c --make` compiles each dependency
-   alone.  A duplicate extern declaration is legal C; the per-unit
-   [SERIAL] monitor duplication is harmless in a single-threaded
-   server (and in the owed ledger regardless).                       *)
+(* These are the same tcpshim.c procedures csrv/csock/ctut bind.  They
+   are declared here as well because a FROM u IMPORT reaches only a
+   unit in the CHECKER'S closure, and `m9c --make` compiles each
+   dependency alone.  A duplicate extern declaration is legal C; the
+   per-unit [SERIAL] monitor duplication is harmless in a
+   single-threaded server (and in the owed ledger regardless).       *)
 
 PROCEDURE Listen = "tcp_listen" (port: C.Int ; backlog: C.Int) : C.Int
   [SERIAL] ;
@@ -57,8 +57,8 @@ END cedt.
 
 UNSAFE IMPLEMENTATION MODULE Edit ;
 
-(* UNSAFE for one reason: ADR at the foreign boundary, as in the
-   tutor whose serve-loop shape this module borrows.                 *)
+(* The module is UNSAFE for one reason: ADR at the foreign boundary,
+   as in the tutor whose serve-loop shape this module borrows.       *)
 
 FROM cedt IMPORT Listen, Accept, Read, Write, Close ;
 IMPORT DynStr ;
@@ -80,9 +80,9 @@ PROCEDURE HeaderEnd (RO req: STR) : I64 =
 VAR i : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i + 3 < LEN (req) DO
-    IF req[i] = 0DC AND req[i + 1] = 0AC AND
-       req[i + 2] = 0DC AND req[i + 3] = 0AC THEN
+  WHILE i + 3 < Text.BLen (req) DO
+    IF Text.BIs (req, i, 0DC) AND Text.BIs (req, i + 1, 0AC) AND
+       Text.BIs (req, i + 2, 0DC) AND Text.BIs (req, i + 3, 0AC) THEN
       RETURN i + 4
     END ;
     i := i + 1
@@ -98,10 +98,10 @@ BEGIN
   key := 'Content-Length: ' ;
   i := Text.Find (req, key) ;
   IF i < 0 THEN RETURN 0 END ;
-  i := i + LEN (key) ;
+  i := i + Text.BLen (key) ;
   v := 0 ;
-  WHILE i < LEN (req) AND req[i] >= '0' AND req[i] <= '9' DO
-    v := v * 10 + (ORD (req[i]) - ORD ('0')) ;
+  WHILE i < Text.BLen (req) AND I64 (Text.BAt (req, i)) >= ORD ('0') AND I64 (Text.BAt (req, i)) <= ORD ('9') DO
+    v := v * 10 + (I64 (Text.BAt (req, i)) - ORD ('0')) ;
     i := i + 1
   END ;
   RETURN v
@@ -124,8 +124,9 @@ BEGIN
   CrLf (d)
 END StatusLine ;
 
-(* Latin-1 text out: headers and pages are ASCII; program OUTPUT can
-   carry any bytes and goes through RespondBytes instead *)
+(* Respond sends Latin-1 text out: headers and pages are ASCII.
+   Program OUTPUT can carry any bytes and goes through RespondBytes
+   instead. *)
 PROCEDURE Respond (fd: I64 ; status: I64 ; RO ctype: STR ;
                    RO body: STR ; headOnly: BOOL) =
 VAR
@@ -134,11 +135,11 @@ VAR
   b, bw : SLICE OF BYTE ;
   n : I64 ;
 BEGIN
-  (* the body is TEXT -- a page read by Io.ReadFile is scalars since
-     2026-10-09 -- and goes on the wire as UTF-8, its length in
-     octets; narrowed to Latin-1, as until then, the first dash
-     past U+00FF raised ValueRange and the page did not serve *)
-  bw := DynStr.Utf8 (scratch, body) ;
+  (* The body is TEXT (a page read by Io.ReadFile is scalars since
+     2026-10-09).  It goes on the wire as UTF-8, its length in
+     octets.  Narrowed to Latin-1, as until then, the first dash past
+     U+00FF raised ValueRange and the page did not serve. *)
+  bw := OCTETS (body) ;
   d := DynStr.New (scratch) ;
   StatusLine (d, status) ;
   DynStr.Append (d, 'Content-Type: ') ;
@@ -188,18 +189,18 @@ EXCEPT
     n := 0
 END RespondBytes ;
 
-(* identifier characters plus . and -, no leading dot, so a name can
-   neither climb out of out/ nor smuggle an option in *)
+(* SafeName allows identifier characters plus . and -, no leading dot,
+   so a name can neither climb out of out/ nor smuggle an option in. *)
 PROCEDURE SafeName (RO name: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (name) = 0 OR LEN (name) > 128 THEN RETURN FALSE END ;
-  IF name[0] = '.' OR name[0] = '-' THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (name) - 1 DO
-    IF NOT ((name[i] >= 'a' AND name[i] <= 'z') OR
-            (name[i] >= 'A' AND name[i] <= 'Z') OR
-            (name[i] >= '0' AND name[i] <= '9') OR
-            name[i] = '.' OR name[i] = '-') THEN
+  IF Text.BLen (name) = 0 OR Text.BLen (name) > 128 THEN RETURN FALSE END ;
+  IF Text.BIs (name, 0, '.') OR Text.BIs (name, 0, '-') THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (name) - 1 DO
+    IF NOT ((I64 (Text.BAt (name, i)) >= ORD ('a') AND I64 (Text.BAt (name, i)) <= ORD ('z')) OR
+            (I64 (Text.BAt (name, i)) >= ORD ('A') AND I64 (Text.BAt (name, i)) <= ORD ('Z')) OR
+            (I64 (Text.BAt (name, i)) >= ORD ('0') AND I64 (Text.BAt (name, i)) <= ORD ('9')) OR
+            Text.BIs (name, i, '.') OR Text.BIs (name, i, '-')) THEN
       RETURN FALSE
     END
   END ;
@@ -221,7 +222,7 @@ BEGIN
 END CTypeOf ;
 
 (* JSON out, /lex and the reading of m9c's diagnostics live in
-   corpus/Diag.m9 -- the fourth caller (the tutor's cells) arrived,
+   corpus/Diag.m9.  The fourth caller (the tutor's cells) arrived,
    and the "shared home is owed" note that stood here is paid. *)
 
 (* ---- the module name, from the first line ---- *)
@@ -231,19 +232,19 @@ VAR i, s0 : I64 ;
 BEGIN
   ok := FALSE ;
   i := 0 ;
-  WHILE i < LEN (src) AND (src[i] = ' ' OR src[i] = 0AC OR
-                           src[i] = 0DC) DO
+  WHILE i < Text.BLen (src) AND (Text.BIs (src, i, ' ') OR Text.BIs (src, i, 0AC) OR
+                           Text.BIs (src, i, 0DC)) DO
     i := i + 1
   END ;
-  IF NOT Text.StartsWith (SLICE (src, i, LEN (src) - i), 'MODULE ') THEN
+  IF NOT Text.StartsWith (SLICE (src, i, Text.BLen (src) - i), 'MODULE ') THEN
     RETURN ''
   END ;
   i := i + 7 ;
   s0 := i ;
-  WHILE i < LEN (src) AND
-        ((src[i] >= 'a' AND src[i] <= 'z') OR
-         (src[i] >= 'A' AND src[i] <= 'Z') OR
-         (src[i] >= '0' AND src[i] <= '9')) DO
+  WHILE i < Text.BLen (src) AND
+        ((I64 (Text.BAt (src, i)) >= ORD ('a') AND I64 (Text.BAt (src, i)) <= ORD ('z')) OR
+         (I64 (Text.BAt (src, i)) >= ORD ('A') AND I64 (Text.BAt (src, i)) <= ORD ('Z')) OR
+         (I64 (Text.BAt (src, i)) >= ORD ('0') AND I64 (Text.BAt (src, i)) <= ORD ('9'))) DO
     i := i + 1
   END ;
   IF i = s0 THEN RETURN '' END ;
@@ -251,12 +252,13 @@ BEGIN
   RETURN SLICE (src, s0, i - s0)
 END ModName ;
 
-(* the compiler this server repeats: $M9EDIT_M9C, else m9c on PATH *)
+(* M9cCmd answers the compiler this server repeats: $M9EDIT_M9C, else
+   m9c on PATH. *)
 PROCEDURE M9cCmd (VAR pool: POOL) : STR RAISES ValueRange =
 VAR c : STR ;
 BEGIN
   c := Io.Env (pool, 'M9EDIT_M9C') ;
-  IF LEN (c) = 0 THEN RETURN 'm9c' END ;
+  IF Text.BLen (c) = 0 THEN RETURN 'm9c' END ;
   RETURN c
 END M9cCmd ;
 
@@ -264,14 +266,15 @@ PROCEDURE FmtCmd (VAR pool: POOL) : STR RAISES ValueRange =
 VAR c : STR ;
 BEGIN
   c := Io.Env (pool, 'M9EDIT_M9FMT') ;
-  IF LEN (c) = 0 THEN RETURN 'm9fmt' END ;
+  IF Text.BLen (c) = 0 THEN RETURN 'm9fmt' END ;
   RETURN c
 END FmtCmd ;
 
-(* the canonical layout, comments kept: write the buffer, run m9fmt,
-   read it back.  m9fmt refuses what does not parse, so an
-   unparsable buffer comes back unchanged (its stderr is the check's
-   job) -- the button never eats a program it cannot format. *)
+(* FmtProg answers the canonical layout, comments kept: it writes the
+   buffer, runs m9fmt and reads it back.  m9fmt refuses what does not
+   parse, so an unparsable buffer comes back unchanged (its stderr is
+   the check's job).  The button never eats a program it cannot
+   format. *)
 PROCEDURE FmtProg (VAR pool: POOL ; RO KEPT src: STR ;
                    RO workDir: STR) : STR
   RAISES ValueRange, IndexError, Io.IOError =
@@ -284,9 +287,9 @@ VAR
 BEGIN
   name := ModName (src, ok) ;
   IF NOT ok THEN RETURN src END ;
-  (* src holds the request's OCTETS as CHARs: written as the bytes
-     they are, not encoded again (Io.WriteFile is UTF-8 since
-     2026-10-09; the tutor's rule) *)
+  (* src holds the request's OCTETS as CHARs.  They are written as
+     the bytes they are, not encoded again (Io.WriteFile is UTF-8
+     since 2026-10-09; the tutor's rule). *)
   Io.WriteFileBytes (workDir + '/' + name + '.m9', DynStr.Bytes (scratch, src, FALSE)) ;
   cmd := DynStr.New (scratch) ;
   DynStr.Append (cmd, 'cd ') ;
@@ -298,13 +301,13 @@ BEGIN
   DynStr.Append (cmd, '.m9 > fmt.txt 2>fmt.err') ;
   rc := Io.Run (DynStr.View (cmd)) ;
   IF rc # 0 THEN RETURN src END ;
-  RETURN Io.ReadFile (pool, workDir + '/fmt.txt')
+  RETURN Io.ReadFile (workDir + '/fmt.txt')
 EXCEPT
 | Io.IOError (p) : RETURN src
 END FmtProg ;
 
-(* the example programs, listed by name (SafeName-gated), and one
-   read back.  The directory is examples/ beside the page. *)
+(* ExamplesJson lists the example programs by name (SafeName-gated),
+   and reads one back.  The directory is examples/ beside the page. *)
 PROCEDURE ExamplesJson (VAR pool: POOL ; RO pageDir: STR) : STR
   RAISES ValueRange, IndexError =
 VAR
@@ -327,7 +330,7 @@ BEGIN
     END
   END ;
   DynStr.AppendChar (d, 05DC) ;
-  RETURN DynStr.View (d)
+  RETURN DynStr.ViewIn (pool, d)
 EXCEPT
 | Io.IOError (p) : RETURN '[]'
 END ExamplesJson ;
@@ -336,12 +339,12 @@ PROCEDURE StrLess (RO a: STR ; RO b: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i < LEN (a) AND i < LEN (b) DO
-    IF ORD (a[i]) < ORD (b[i]) THEN RETURN TRUE END ;
-    IF ORD (a[i]) > ORD (b[i]) THEN RETURN FALSE END ;
+  WHILE i < Text.BLen (a) AND i < Text.BLen (b) DO
+    IF I64 (Text.BAt (a, i)) < I64 (Text.BAt (b, i)) THEN RETURN TRUE END ;
+    IF I64 (Text.BAt (a, i)) > I64 (Text.BAt (b, i)) THEN RETURN FALSE END ;
     i := i + 1
   END ;
-  RETURN LEN (a) < LEN (b)
+  RETURN Text.BLen (a) < Text.BLen (b)
 END StrLess ;
 
 PROCEDURE SortStrs (VAR s: SLICE OF STR) : SLICE OF STR =
@@ -372,9 +375,9 @@ BEGIN
     RETURN Diag.Json (pool, Diag.One (pool, 1, 1,
                         'the first line must be:  MODULE Name ;'))
   END ;
-  (* src holds the request's OCTETS as CHARs: written as the bytes
-     they are, not encoded again (Io.WriteFile is UTF-8 since
-     2026-10-09; the tutor's rule) *)
+  (* src holds the request's OCTETS as CHARs.  They are written as
+     the bytes they are, not encoded again (Io.WriteFile is UTF-8
+     since 2026-10-09; the tutor's rule). *)
   Io.WriteFileBytes (workDir + '/' + name + '.m9', DynStr.Bytes (scratch, src, FALSE)) ;
   (* Diag.Check runs `(cd workDir && m9c --check NAME.m9)` and
      collects the output in workDir/ck.txt, named as seen from HERE
@@ -410,18 +413,18 @@ BEGIN
     RETURN 'exit 2' + Nl () +
            'the first line must be:  MODULE Name ;' + Nl ()
   END ;
-  (* one main per workdir: the supplied-flags link takes only the
-     closure's objects, so stale .o files are harmless -- stale .m9
-     MAINS are not, and go *)
+  (* Keep one main per workdir.  The supplied-flags link takes only the
+     closure's objects, so stale .o files are harmless.  Stale .m9
+     MAINS are not, and go. *)
   cmd := DynStr.New (scratch) ;
   DynStr.Append (cmd, 'cd ') ;
   DynStr.Append (cmd, workDir) ;
   DynStr.Append (cmd,
     ' && rm -f prog run.txt cc.txt *.m9 && rm -rf out && mkdir out') ;
   rc := Io.Run (DynStr.View (cmd)) ;
-  (* src holds the request's OCTETS as CHARs: written as the bytes
-     they are, not encoded again (Io.WriteFile is UTF-8 since
-     2026-10-09; the tutor's rule) *)
+  (* src holds the request's OCTETS as CHARs.  They are written as
+     the bytes they are, not encoded again (Io.WriteFile is UTF-8
+     since 2026-10-09; the tutor's rule). *)
   Io.WriteFileBytes (workDir + '/' + name + '.m9', DynStr.Bytes (scratch, src, FALSE)) ;
 
   cmd := DynStr.New (scratch) ;
@@ -429,8 +432,8 @@ BEGIN
   DynStr.Append (cmd, workDir) ;
   DynStr.Append (cmd, ' && timeout 60 ') ;
   DynStr.Append (cmd, M9cCmd (scratch)) ;
-  (* -g so an unhandled exception's message carries FILE:LINE --
-     a learning aid; the editor is not a hot loop *)
+  (* -g makes an unhandled exception's message carry FILE:LINE, a
+     learning aid; the editor is not a hot loop. *)
   DynStr.Append (cmd, ' --make -g -o prog ') ;
   DynStr.Append (cmd, name) ;
   DynStr.Append (cmd, '.m9 > cc.txt 2>&1') ;
@@ -438,7 +441,7 @@ BEGIN
   IF rc # 0 THEN
     DynStr.Append (d, 'compile failed' + Nl ()) ;
     AppendCapped (pool, d, workDir + '/cc.txt') ;
-    RETURN DynStr.View (d)
+    RETURN DynStr.ViewIn (pool, d)
   END ;
 
   (* run FROM out/, so whatever the program writes lands where
@@ -447,9 +450,9 @@ BEGIN
   DynStr.Append (cmd, 'cd ') ;
   DynStr.Append (cmd, workDir) ;
   IF bwrapOk THEN
-    (* the binary is BOUND to a fixed path first: a workdir that
+    (* The binary is BOUND to a fixed path first.  A workdir that
        itself lives under /tmp would otherwise be shadowed by its
-       own bind -- the tutor's recorded trap, met again *)
+       own bind: the tutor's recorded trap, met again. *)
     DynStr.Append (cmd,
       '/out && timeout 15 bwrap --die-with-parent --dev-bind / /') ;
     DynStr.Append (cmd,
@@ -488,23 +491,21 @@ BEGIN
       ' /tmp/NAME needs bubblewrap installed)') ;
     DynStr.Append (d, Nl ())
   END ;
-  RETURN DynStr.View (d)
+  RETURN DynStr.ViewIn (pool, d)
 END RunProg ;
 
-VAR
-  NlArr : ARRAY 1 OF CHAR ;
-
 PROCEDURE Nl () : STR =
+  (* Nl answers a line feed as a string. *)
 BEGIN
-  RETURN SLICE (NlArr, 0, 1)
+  RETURN '' + 0AC
 END Nl ;
 
 PROCEDURE AppendCapped (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
                         RO path: STR) RAISES ValueRange =
 VAR t : STR ;
 BEGIN
-  t := Io.ReadFile (pool, path) ;
-  IF LEN (t) > OutMax THEN
+  t := Io.ReadFile (path) ;
+  IF Text.BLen (t) > OutMax THEN
     DynStr.Append (d, SLICE (t, 0, OutMax)) ;
     DynStr.Append (d, Nl ()) ;
     DynStr.Append (d, '... output capped ...') ;
@@ -526,7 +527,7 @@ BEGIN
     Respond (fd, 404, 'text/plain', 'no such example', FALSE) ;
     RETURN
   END ;
-  src := Io.ReadFile (HEAP, pageDir + '/examples/' + name) ;
+  src := Io.ReadFile (pageDir + '/examples/' + name) ;
   Respond (fd, 200, 'text/plain; charset=utf-8', src, FALSE)
 EXCEPT
 | Io.IOError (p) :
@@ -550,9 +551,10 @@ EXCEPT
     Respond (fd, 404, 'text/plain', 'no such file', headOnly)
 END ServeOut ;
 
-(* the module reference as data: m9c --json NAME, cached under the
-   workdir, exactly the gather that feeds the VS Code extension's
-   hovers -- the page never invents documentation either *)
+(* DocJson answers the module reference as data: m9c --json NAME,
+   cached under the workdir.  It is exactly the gather that feeds the
+   VS Code extension's hovers; the page never invents documentation
+   either. *)
 PROCEDURE DocJson (fd: I64 ; RO workDir: STR ; RO name: STR)
   RAISES ValueRange, IndexError =
 VAR
@@ -560,9 +562,9 @@ VAR
   body : STR ;
 BEGIN
   body := Diag.DocJson (scratch, M9cCmd (scratch), '', workDir, name) ;
-  IF LEN (body) = 0 THEN
+  IF Text.BLen (body) = 0 THEN
     (* Diag's shared name gate refused it, or the compiler knows no
-       such module -- either way there is no document to invent *)
+       such module.  Either way there is no document to invent. *)
     Respond (fd, 404, 'text/plain', 'no such module', FALSE) ;
     RETURN
   END ;
@@ -607,13 +609,13 @@ BEGIN
     END ;
     sp1 := 0 ;
     i := 0 ;
-    WHILE i < LEN (req) AND sp1 = 0 DO
-      IF req[i] = ' ' THEN sp1 := i END ;
+    WHILE i < Text.BLen (req) AND sp1 = 0 DO
+      IF Text.BIs (req, i, ' ') THEN sp1 := i END ;
       i := i + 1
     END ;
     sp2 := 0 ;
-    WHILE i < LEN (req) AND sp2 = 0 DO
-      IF req[i] = ' ' OR req[i] = 0DC THEN sp2 := i END ;
+    WHILE i < Text.BLen (req) AND sp2 = 0 DO
+      IF Text.BIs (req, i, ' ') OR Text.BIs (req, i, 0DC) THEN sp2 := i END ;
       i := i + 1
     END ;
     IF sp1 = 0 OR sp2 = 0 THEN
@@ -626,79 +628,79 @@ BEGIN
        file name; strip it before the path reaches SafeName, or a
        request like /out/fig.svg?v=2 would 404 as a bad name *)
     i := 0 ;
-    WHILE i < LEN (path) DO
-      IF path[i] = '?' THEN path := SLICE (path, 0, i) END ;
+    WHILE i < Text.BLen (path) DO
+      IF Text.BIs (path, i, '?') THEN path := SLICE (path, 0, i) END ;
       i := i + 1
     END ;
-    isHead := DynStr.Eq (method, 'HEAD') ;
+    isHead := Text.Eq (method, 'HEAD') ;
     IF isHead THEN method := 'GET' END ;
-    body := SLICE (req, hend, LEN (req) - hend) ;
+    body := SLICE (req, hend, Text.BLen (req) - hend) ;
 
-    IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/lex') THEN
+    IF Text.Eq (method, 'POST') AND Text.Eq (path, '/lex') THEN
       Respond (fd, 200, 'application/json',
                Diag.LexJson (body), FALSE) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/check') THEN
+    IF Text.Eq (method, 'POST') AND Text.Eq (path, '/check') THEN
       Respond (fd, 200, 'application/json',
                CheckJson (scratch, body, workDir), FALSE) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/run') THEN
+    IF Text.Eq (method, 'POST') AND Text.Eq (path, '/run') THEN
       Respond (fd, 200, 'text/plain; charset=utf-8',
                RunProg (scratch, body, workDir), FALSE) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/fmt') THEN
+    IF Text.Eq (method, 'POST') AND Text.Eq (path, '/fmt') THEN
       Respond (fd, 200, 'text/plain; charset=utf-8',
                FmtProg (scratch, body, workDir), FALSE) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/examples') THEN
+    IF Text.Eq (method, 'GET') AND Text.Eq (path, '/examples') THEN
       Respond (fd, 200, 'application/json',
                ExamplesJson (scratch, pageDir), FALSE) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'GET') AND LEN (path) > 9 AND
-       DynStr.Eq (SLICE (path, 0, 9), '/example/') THEN
-      ServeExample (fd, pageDir, SLICE (path, 9, LEN (path) - 9)) ;
+    IF Text.Eq (method, 'GET') AND Text.BLen (path) > 9 AND
+       Text.Eq (SLICE (path, 0, 9), '/example/') THEN
+      ServeExample (fd, pageDir, SLICE (path, 9, Text.BLen (path) - 9)) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/kw') THEN
-      page := Io.ReadFile (scratch, pageDir + '/keywords.json') ;
+    IF Text.Eq (method, 'GET') AND Text.Eq (path, '/kw') THEN
+      page := Io.ReadFile (pageDir + '/keywords.json') ;
       Respond (fd, 200, 'application/json', page, FALSE) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/cell.js') THEN
-      (* the per-cell script (highlighting, diagnostics, the
-         debounces) -- one file, served to this page and to the
-         tutor's, so the two cannot drift *)
-      page := Io.ReadFile (scratch, pageDir + '/cell.js') ;
+    IF Text.Eq (method, 'GET') AND Text.Eq (path, '/cell.js') THEN
+      (* This serves the per-cell script (highlighting, diagnostics,
+         the debounces).  It is one file, served to this page and to
+         the tutor's, so the two cannot drift. *)
+      page := Io.ReadFile (pageDir + '/cell.js') ;
       Respond (fd, 200, 'application/javascript; charset=utf-8',
                page, isHead) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/hover.js') THEN
-      (* the hover script -- same rule as cell.js: one file, both
-         pages *)
-      page := Io.ReadFile (scratch, pageDir + '/hover.js') ;
+    IF Text.Eq (method, 'GET') AND Text.Eq (path, '/hover.js') THEN
+      (* This serves the hover script, under the same rule as cell.js:
+         one file, both pages. *)
+      page := Io.ReadFile (pageDir + '/hover.js') ;
       Respond (fd, 200, 'application/javascript; charset=utf-8',
                page, isHead) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'GET') AND LEN (path) > 5 AND
-       DynStr.Eq (SLICE (path, 0, 5), '/doc/') THEN
-      DocJson (fd, workDir, SLICE (path, 5, LEN (path) - 5)) ;
+    IF Text.Eq (method, 'GET') AND Text.BLen (path) > 5 AND
+       Text.Eq (SLICE (path, 0, 5), '/doc/') THEN
+      DocJson (fd, workDir, SLICE (path, 5, Text.BLen (path) - 5)) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'GET') AND LEN (path) > 5 AND
-       DynStr.Eq (SLICE (path, 0, 5), '/out/') THEN
-      ServeOut (fd, workDir, SLICE (path, 5, LEN (path) - 5), isHead) ;
+    IF Text.Eq (method, 'GET') AND Text.BLen (path) > 5 AND
+       Text.Eq (SLICE (path, 0, 5), '/out/') THEN
+      ServeOut (fd, workDir, SLICE (path, 5, Text.BLen (path) - 5), isHead) ;
       RETURN
     END ;
-    IF DynStr.Eq (method, 'GET') AND
-       (DynStr.Eq (path, '/') OR DynStr.Eq (path, '/index.html')) THEN
-      page := Io.ReadFile (scratch, pageDir + '/page.html') ;
+    IF Text.Eq (method, 'GET') AND
+       (Text.Eq (path, '/') OR Text.Eq (path, '/index.html')) THEN
+      page := Io.ReadFile (pageDir + '/page.html') ;
       Respond (fd, 200, 'text/html; charset=utf-8', page, isHead) ;
       RETURN
     END ;
@@ -710,9 +712,9 @@ BEGIN
        (* a missing file or a failed read is ONE request's problem,
           never the server's: answer 500 and keep serving.  A stray
           IOError otherwise unwinds out of Serve and kills the editor
-          (found by /kw with keywords.json absent).  Nested, not
-          EXCEPT+FINALLY on one block -- the generator refuses that,
-          loudly, which is how this shape was chosen. *)
+          (found by /kw with keywords.json absent).  The handler is
+          nested, not EXCEPT+FINALLY on one block.  The generator
+          refuses that, loudly, which is how this shape was chosen. *)
        Respond (fd, 500, 'text/plain', 'internal error', FALSE)
    END
   FINALLY
@@ -726,11 +728,10 @@ PROCEDURE Serve (port: I64 ; maxRequests: I64 ;
 VAR
   lfd, cfd, served, n : I64 ;
 BEGIN
-  NlArr[0] := 0AC ;
-  (* the tutor's convention, honoured when bubblewrap is present:
+  (* This honours the tutor's convention when bubblewrap is present:
      the run sees out/ AS /tmp, so a tutorial example that writes
-     /tmp/damped.svg pastes in verbatim and its figure appears.  A
-     bind for convention, not a sandbox -- the plan's trust model
+     /tmp/damped.svg pastes in verbatim and its figure appears.  It
+     is a bind for convention, not a sandbox; the plan's trust model
      stands. *)
   bwrapOk := Io.Run ('command -v bwrap >/dev/null 2>&1') = 0 ;
   lfd := I64 (Listen (C.Int (port), C.Int (Backlog))) ;

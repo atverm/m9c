@@ -1,10 +1,11 @@
-/* execlimit_driver.c -- ExecWithin's limit as poll takes it (the second
-   review's R2, 2026-10-26): the milliseconds left were handed to poll
-   through (int), so a limit past 2^31 ms wrapped -- 2^32 + 500 waited
-   half a second, 2^32 none, and a `sleep 1' was killed and reported
-   stopped.  Each limit here is longer than the child: the child must
-   finish on its own (stopped 0, status 0), and one limit shorter than
-   the child is the control that shows a stop can be seen. */
+/* execlimit_driver.c tests ExecWithin's limit as poll takes it (the
+   second review's R2, 2026-10-26).  The milliseconds left were handed
+   to poll through (int), so a limit past 2^31 ms wrapped.  2^32 + 500
+   waited half a second, 2^32 none, and a `sleep 1' was killed and
+   reported stopped.  Each limit here is longer than the child: the
+   child must finish on its own (stopped 0, status 0).  One limit
+   shorter than the child is the control that shows a stop can be
+   seen. */
 #include "m9rt.h"
 #include <stdio.h>
 

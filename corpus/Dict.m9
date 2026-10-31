@@ -1,16 +1,16 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Dict ;
 
-(* STR -> Value, insertion-ordered.
+(* Dict maps STR -> Value, insertion-ordered.
 
-   The domain this exists for -- JSON objects, YAML mappings, database
-   rows, configuration -- is heterogeneous by nature: a name maps to a
-   string or a number or a truth value.  M9 has no generics, so the
-   answer is not one dictionary per value type but one VARIANT value,
-   the shape Json.Node already uses.  Because CASE over a CASE RECORD
-   must be total, asking for a string where an integer lives is an
-   obligation the checker states at compile time rather than a
-   surprise at run time; that is the totality rule doing real work
+   This module exists for JSON objects, YAML mappings, database rows
+   and configuration.  That domain is heterogeneous by nature: a name
+   maps to a string or a number or a truth value.  M9 has no generics,
+   so the answer is not one dictionary per value type but one VARIANT
+   value, the shape Json.Node already uses.  CASE over a CASE RECORD
+   must be total.  So the checker states a request for a string where
+   an integer lives as an obligation at compile time rather than a
+   surprise at run time.  That is the totality rule doing real work
    instead of the caller remembering which flavour of table they hold.
 
    Value.Idx is the escape hatch for payloads the variant cannot
@@ -20,13 +20,13 @@ DEFINITION MODULE Dict ;
    Iteration is INSERTION-ORDERED, not hash-ordered.  That is a
    deliberate cost: every differential test in this repository
    compares bytes, and OpenApi derives a byte-identical document from
-   a table -- a container whose walk order depended on capacity could
+   a table.  A container whose walk order depended on capacity could
    not take part in that.  Python 3.7 made the same trade for the
    same reason: a compact entry array plus an index table.
 
    Keys are BORROWED, never copied.  Every intended caller holds a
-   document that outlives the dictionary -- the contract Json.Parse
-   already states about its source -- so copying would be waste with
+   document that outlives the dictionary.  Json.Parse already states
+   that contract about its source.  So copying would be waste with
    a lifetime story attached.  The retention is deliberate, declared
    here, and appears in the P3 ledger, which is where the decision to
    keep or annotate it will be made from evidence.
@@ -51,52 +51,57 @@ TYPE
 EXCEPTION NotFound (RO key: STR) ;
 
 PROCEDURE New () : PTR Dict ;
-  (* an empty table in the caller's frame.  Put grows it in the pool
-     of the variable that holds it (rule 2 of docs/pool-elision-
-     plan.md), so a table that dies with its frame is made by this
-     and one declared IN a pool by NewIn.  There is no Dispose --
-     the same lifetime story DynStr tells.  Insertion order is
-     remembered, which is what makes KeyAt/ValAt below a stable walk
-     rather than a hash order that changes when the table grows.   *)
+  (* New answers an empty table in the caller's frame.  Put grows it
+     in the pool of the variable that holds it (rule 2 of
+     docs/pool-elision-plan.md).  So New makes a table that dies with
+     its frame, and NewIn makes one declared IN a pool.  There is no
+     Dispose: DynStr tells the same lifetime story.  The table
+     remembers insertion order.  That makes KeyAt/ValAt below a stable
+     walk rather than a hash order that changes when the table grows. *)
 
 PROCEDURE NewIn (VAR pool: POOL) : PTR Dict IN pool ;
-  (* the same table with its head and entries in pool: for a variable
-     declared `PTR Dict IN pool`, whose growth Put then places there *)
+  (* NewIn answers the same table with its head and entries in pool.
+     It serves a variable declared `PTR Dict IN pool`, whose growth
+     Put then places there. *)
 
 PROCEDURE Put (VAR d: PTR Dict ; RO KEPT key: STR ; KEPT val: Value) ;
-  (* inserts, or replaces the value of an existing key.  Replacing
+  (* Put inserts, or replaces the value of an existing key.  Replacing
      keeps the key's original position in the iteration order.       *)
 
 PROCEDURE Find (d: PTR Dict ; RO key: STR ; VAR val: Value) : BOOL ;
-  (* the total form: answers whether it was there, never raises *)
+  (* Find is the total form: it answers whether the key was there and
+     never raises. *)
 
 PROCEDURE Get (d: PTR Dict ; RO key: STR) : Value RAISES NotFound ;
-  (* the assertive form, for callers who know.  Absence is an
+  (* Get is the assertive form, for callers who know.  Absence is an
      exception, not a sentinel: every Value the table can hold is a
      value some caller meant to store, so there is none to spare.    *)
 
 PROCEDURE Has (d: PTR Dict ; RO key: STR) : BOOL ;
-  (* is the key present?  Find above answers the same question AND
-     hands back the value; this one is for the caller that only
-     wants to know, and saves it declaring a Value it will not
-     read.                                                          *)
+  (* Has answers whether the key is present.  Find above answers the
+     same question AND hands back the value.  Has is for the caller
+     that only wants to know, and saves it declaring a Value it will
+     not read.                                                      *)
 
 PROCEDURE Count (d: PTR Dict) : I64 ;
-  (* how many keys are in the table; the bound for KeyAt and ValAt
-     below.  Put over an existing key does not change it, because
-     replacing keeps the key's original position.                  *)
+  (* Count answers how many keys are in the table: the bound for KeyAt
+     and ValAt below.  Put over an existing key does not change it,
+     because replacing keeps the key's original position.           *)
 
 PROCEDURE KeyAt (d: PTR Dict ; i: I64) : STR RAISES IndexError ;
 PROCEDURE ValAt (d: PTR Dict ; i: I64) : Value RAISES IndexError ;
-  (* 0 .. Count-1, in insertion order *)
+  (* KeyAt and ValAt take i in 0 .. Count-1, in insertion order. *)
 
 PROCEDURE Hash (RO key: STR) : I64 ;
-  (* exported so a test can pin the function, not just its effects *)
+  (* Hash is exported so a test can pin the function, not just its
+     effects. *)
 
 END Dict.
 
 
 IMPLEMENTATION MODULE Dict ;
+
+IMPORT Text ;
 
 CONST
   HashPrime = 1000003 ;    (* the polynomial hash lives mod this *)
@@ -117,11 +122,11 @@ TYPE
     idx  : SLICE OF I64 ;   (* open addressing: Empty or an ents index *)
   END ;
 
-(* A polynomial hash reduced mod a prime at every step.  Held below
-   the prime, the intermediate is at most 1000002 * 33 + 1114111,
-   about 3.4e7 -- so the checked multiply and add here cannot raise
-   Overflow, and the result cannot go negative, which is what makes
-   the bucket index safe without any bit operation.  M9 has wrapping
+(* Hash is a polynomial hash reduced mod a prime at every step.  Held
+   below the prime, the intermediate is at most 1000002 * 33 + 1114111,
+   about 3.4e7.  So the checked multiply and add here cannot raise
+   Overflow, and the result cannot go negative.  That makes the
+   bucket index safe without any bit operation.  M9 has wrapping
    operators (+% *%) that the usual djb2 would need; this hash does
    not need them, and staying inside checked arithmetic is worth more
    than the shift.                                                   *)
@@ -130,8 +135,8 @@ VAR
   h, i : I64 ;
 BEGIN
   h := 0 ;
-  FOR i := 0 TO LEN (key) - 1 DO
-    h := (h * HashMul + ORD (key[i])) MOD HashPrime
+  FOR i := 0 TO Text.BLen (key) - 1 DO
+    h := (h * HashMul + I64 (Text.BAt (key, i))) MOD HashPrime
   END ;
   RETURN h
 END Hash ;
@@ -139,16 +144,16 @@ END Hash ;
 PROCEDURE Eq (RO a: STR ; RO b: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (a) - 1 DO
-    IF a[i] # b[i] THEN RETURN FALSE END
+  IF Text.BLen (a) # Text.BLen (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (a) - 1 DO
+    IF Text.BAt (a, i) # Text.BAt (b, i) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END Eq ;
 
-(* the entry array and the index table of a fresh head, in the pool
-   the head lives in -- `NEW (d, T, n)` is rule 2's spelling of "the
-   pool d's object lives in", carried in with d *)
+(* Init places the entry array and the index table of a fresh head
+   in the pool the head lives in.  `NEW (d, T, n)` is rule 2's
+   spelling of "the pool d's object lives in", carried in with d. *)
 PROCEDURE Init (VAR d: PTR Dict) =
 VAR i : I64 ;
 BEGIN
@@ -174,7 +179,8 @@ BEGIN
   RETURN d
 END NewIn ;
 
-(* the slot holding key, or the first free slot on its probe path.
+(* Slot answers the slot holding key, or the first free slot on its
+   probe path.
    Linear probing: the table is never full (load factor <= 1/2), so
    the walk always terminates.                                       *)
 PROCEDURE Slot (d: PTR Dict ; RO key: STR) : I64 =
@@ -199,8 +205,9 @@ BEGIN
   cap := 2 * LEN (d.idx) ;
   d.idx := NEW (d, I64, cap) ;
   FOR i := 0 TO cap - 1 DO d.idx[i] := Empty END ;
-  (* rebuilt from the entry array, so insertion order survives a
-     rehash by construction -- there is no order to rebuild *)
+  (* The index is rebuilt from the entry array, so insertion order
+     survives a rehash by construction: there is no order to
+     rebuild. *)
   FOR i := 0 TO d.n - 1 DO
     s := Hash (d.ents[i].key) MOD cap ;
     WHILE d.idx[s] # Empty DO
@@ -227,9 +234,10 @@ BEGIN
     FOR i := 0 TO d.n - 1 DO ne[i] := d.ents[i] END ;
     d.ents := ne
   END ;
-  d.ents[d.n].key := key ;             (* borrowed, par 4.1: the
-                                          caller's document outlives
-                                          this table (ledgered)      *)
+  d.ents[d.n].key := key ;             (* The key is borrowed, par
+                                          4.1: the caller's document
+                                          outlives this table
+                                          (ledgered). *)
   d.ents[d.n].val := val ;
   d.idx[s] := d.n ;
   d.n := d.n + 1 ;

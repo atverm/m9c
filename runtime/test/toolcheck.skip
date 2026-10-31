@@ -1,0 +1,7 @@
+# toolcheck.skip: the programs under tools/ and examples/ that toolcheck
+# does not hold to a clean check, one per line, each with its reason.  A
+# line names a path or a folder (ending in /).  An entry whose path no
+# longer exists fails the gate, so the list cannot rot.
+tools/ownfuzz/golden/        ownfuzz's golden cases: refused by design, held by ownfuzz.sh
+tools/review/Shapes.m9       the review's fall-off fixture: its Bad* functions must be refused
+tools/skillsbench/tasks/     the skills bench's tasks: the module under test is the agent's to write

@@ -1,12 +1,12 @@
 MODULE PlotTest ;
 
-(* Plot's Taylor diagram, held two ways (the goldens and the two
-   figures under runtime/test/gold/taylor/ are written by
+(* This test holds Plot's Taylor diagram two ways (the goldens and the
+   two figures under runtime/test/gold/taylor/ are written by
    tools/plotgoldm9.py):
 
    THE GEOMETRY, to numpy.  For thirty-two pairs of series numpy says
    the ratio of the standard deviations, the correlation, and the
-   centred RMS difference -- from the data.  The diagram is given the
+   centred RMS difference, from the data.  The diagram is given the
    first two, and the distance from each point to REF, in the
    diagram's own units, must be the third: that is what a Taylor
    diagram is.
@@ -43,7 +43,8 @@ CONST
   EdgeNames = ['at REF', 'the origin', 'R < 0', 'a & b <c>'] ;
   EdgeCases = ['on it', 'off it', 'edges', 'four', 'five', 'six', 'seven'] ;
 
-(* the values of a golden vector as rows by cols, a row a case *)
+(* Rows answers the values of a golden vector as rows by cols, a row a
+   case. *)
 PROCEDURE Rows (RO v: SLICE OF F64 ; rows, cols: I64) : GRID 2 OF F64 =
 VAR
   g : GRID 2 OF F64 ;
@@ -91,7 +92,7 @@ BEGIN
   Check.NearF64s (t, 'the distance from a point to REF is the RMS difference numpy measures',
                   got, rms, 1.0e-12, 0.0) ;
 
-  (* what is on the diagram and what is not *)
+  (* Check what is on the diagram and what is not. *)
   ratio := Check.GoldF64s (t, gold, 'edge.ratio') ;
   corr := Check.GoldF64s (t, gold, 'edge.corr') ;
   want := Check.GoldF64s (t, gold, 'edge.on') ;
@@ -109,26 +110,26 @@ BEGIN
               NOT ok AND x = -1.0 AND y = -2.0)
 END Geometry ;
 
-(* a document against the file a second drawing wrote: its length, and
-   the first place the two part *)
+(* Same holds a document against the file a second drawing wrote: its
+   length, and the first place the two part. *)
 PROCEDURE Same (RO what: STR ; RO got: STR ; RO file: STR)
   RAISES Io.IOError, ValueRange =
 VAR
   want : STR ;
   i, first, n : I64 ;
 BEGIN
-  want := Io.ReadFile (pool, Check.GoldPath (file)) ;
-  n := LEN (got) ;
-  IF LEN (want) < n THEN n := LEN (want) END ;
+  want := Io.ReadFile (Check.GoldPath (file)) ;
+  n := Text.BLen (got) ;
+  IF Text.BLen (want) < n THEN n := Text.BLen (want) END ;
   first := -1 ;
   i := 0 ;
   WHILE i < n AND first < 0 DO
-    IF got[i] # want[i] THEN first := i END ;
+    IF Text.BAt (got, i) # Text.BAt (want, i) THEN first := i END ;
     i := i + 1
   END ;
-  IF first < 0 AND LEN (got) # LEN (want) THEN first := n END ;
-  Check.EqI64 (t, what + ': as long as the second drawing', LEN (got),
-               LEN (want)) ;
+  IF first < 0 AND Text.BLen (got) # Text.BLen (want) THEN first := n END ;
+  Check.EqI64 (t, what + ': as long as the second drawing', Text.BLen (got),
+               Text.BLen (want)) ;
   Check.EqI64 (t, what + ': the first character that differs (-1: none)',
                first, -1)
 END Same ;
@@ -143,8 +144,8 @@ BEGIN
   svg := Plot.RenderTaylor ('Annual', ratio, corr, Cases, Names) ;
   Same ('the annual figure, sixteen fields and two cases', svg,
         'taylor/annual.svg') ;
-  (* seven cases, so the colours go round; points on every edge and
-     off it; names that are markup *)
+  (* Use seven cases, so the colours go round, points on every edge
+     and off it, and names that are markup. *)
   ratio := Rows (Check.GoldF64s (t, gold, 'edge.ratio'), 7, 4) ;
   corr := Rows (Check.GoldF64s (t, gold, 'edge.corr'), 7, 4) ;
   svg := Plot.RenderTaylor ('Edges & <corners>', ratio, corr, EdgeCases,
@@ -152,8 +153,8 @@ BEGIN
   Same ('the figure of edges', svg, 'taylor/edge.svg')
 END Drawings ;
 
-(* 1000 * got + want of the SizeError a figure of this shape is
-   refused with; -1 when it is drawn *)
+(* Refused answers 1000 * got + want of the SizeError a figure of this
+   shape is refused with; -1 when it is drawn. *)
 PROCEDURE Refused (rows, cols, crows, ccols: I64 ; RO cases: SLICE OF STR ;
                    RO names: SLICE OF STR) : I64 =
 VAR
@@ -175,13 +176,13 @@ END Refused ;
 
 (* ---- the time-series chart ----
 
-   Plot.Chart over five years of made-up monthly values -- a network
-   line with its band, a station's line with a short label, a dashed
-   reference, a cloud of dots, a hover table -- held by what the
-   document SAYS (the ticks a window gets, the legend, the end label,
-   the hover columns, the empty window) and by what it LOOKS like:
-   Png.FromSvg draws it and the picture is compared with Chrome's
-   render of the same document, as the Taylor diagram is.
+   This holds Plot.Chart over five years of made-up monthly values: a
+   network line with its band, a station's line with a short label, a
+   dashed reference, a cloud of dots, a hover table.  It is held by
+   what the document SAYS (the ticks a window gets, the legend, the
+   end label, the hover columns, the empty window) and by what it
+   LOOKS like.  Png.FromSvg draws it and the picture is compared with
+   Chrome's render of the same document, as the Taylor diagram is.
 
    The document is written to /tmp/m9plottest-chart.svg every run, so
    that Chrome's picture can be made again when the chart changes:
@@ -194,7 +195,7 @@ CONST
   Months = 60 ;
   NDots = 600 ;
 
-(* the spec: the same every run *)
+(* Spec answers the spec: the same every run. *)
 PROCEDURE Spec (x0, x1: F64) : Plot.ChartSpec RAISES ValueRange =
 VAR
   s : Plot.ChartSpec ;
@@ -283,17 +284,17 @@ BEGIN
   RETURN s
 END Spec ;
 
-(* how often `needle` occurs in `hay` *)
+(* Count answers how often `needle` occurs in `hay`. *)
 PROCEDURE Count (RO hay: STR ; RO needle: STR) : I64 =
 VAR n, at, k : I64 ;
 BEGIN
   n := 0 ;
   at := 0 ;
-  WHILE at <= LEN (hay) - LEN (needle) DO
-    k := Text.Find (SLICE (hay, at, LEN (hay) - at), needle) ;
+  WHILE at <= Text.BLen (hay) - Text.BLen (needle) DO
+    k := Text.Find (SLICE (hay, at, Text.BLen (hay) - at), needle) ;
     IF k < 0 THEN RETURN n END ;
     n := n + 1 ;
-    at := at + k + LEN (needle)
+    at := at + k + Text.BLen (needle)
   END ;
   RETURN n
 END Count ;

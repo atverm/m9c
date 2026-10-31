@@ -1,9 +1,10 @@
 # Seq
 
-Growable lists and the slice-of-string operations a program would
-otherwise write again each time (2026-10-10, cp-kernel's proposal:
-its kernel wrote the count-allocate-fill pattern -- one loop counts,
-NEW, a second loop fills -- and its own Copy/Distinct/Concat).
+Seq offers growable lists and the slice-of-string operations a
+program would otherwise write again each time.  cp-kernel proposed
+it on 2026-10-10: its kernel wrote the count-allocate-fill pattern
+(one loop counts, NEW, a second loop fills) and its own
+Copy/Distinct/Concat.
 
 A list is a record the caller owns, its storage in a POOL the caller
 names at every Add, so the list lives exactly as long as that pool:
@@ -20,9 +21,9 @@ on average.  A string added is COPIED into the pool (as
 Sort.UniqueStrs copies): the list never holds the caller's view, so
 adding asks no KEPT of the caller.
 
-No generics: one record and one Add per element type -- STR, I64,
-F64 -- which is three twins of each, counted for the generics
-question as Sort's were.
+There are no generics: one record and one Add per element type
+(STR, I64, F64).  That makes three twins of each, counted for the
+generics question as Sort's were.
 
 ### TYPE Strs
 
@@ -46,8 +47,8 @@ _(documented with the group below)_
 
 ### AddF64 (VAR pool: POOL ; VAR s: F64s ; v: F64)
 
-v appended; room grown in pool when full.  Every Add on one list
-names the same pool.
+AddStr, AddI64 and AddF64 append v and grow the room in pool when
+full.  Every Add on one list names the same pool.
 
 ### LenStrs (RO s: Strs) : I64
 
@@ -71,20 +72,22 @@ _(documented with the group below)_
 
 ### F64sOf (VAR pool: POOL ; RO s: F64s) : SLICE OF F64
 
-the elements as a slice of exactly n, in pool, the strings
-copied: what a procedure taking a SLICE wants, and it outlives
-the list if pool does
+StrsOf, I64sOf and F64sOf answer the elements as a slice of
+exactly n, in pool, the strings copied.  That is what a procedure
+taking a SLICE wants, and it outlives the list if pool does.
 
 ### Copy (VAR pool: POOL ; RO xs: SLICE OF STR) : SLICE OF STR
 
-xs in its order, the slice and every string copied into pool
+Copy answers xs in its order, the slice and every string copied
+into pool.
 
 ### Concat (VAR pool: POOL ; RO a, b: SLICE OF STR) : SLICE OF STR
 
-a then b, copied into pool
+Concat answers a then b, copied into pool.
 
 ### Distinct (VAR pool: POOL ; RO xs: SLICE OF STR) : SLICE OF STR
 
-each string once, in the order first seen, copied into pool --
-Python's list (dict.fromkeys (xs)).  Sort.UniqueStrs is the SORTED
-form.  A sorted index, so n log n, not a scan per element.
+Distinct answers each string once, in the order first seen,
+copied into pool: Python's list (dict.fromkeys (xs)).
+Sort.UniqueStrs is the SORTED form.  Distinct uses a sorted
+index, so n log n, not a scan per element.

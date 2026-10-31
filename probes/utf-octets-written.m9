@@ -1,7 +1,7 @@
 (* EXPECT: the octets of a UTF (OCTETS) *)
 MODULE m ;
-(* legal forms first: the octets are read, and lent to an RO
-   parameter *)
+(* Legal forms come first: the octets are read, and lent to an RO
+   parameter. *)
 VAR
   u : UTF ;
   o : SLICE OF BYTE ;

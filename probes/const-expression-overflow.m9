@@ -1,9 +1,9 @@
 (* EXPECT: CONST Big: the expression overflows I64 or divides by zero (par 2.2.4) *)
-(* A CONST over an integer expression is folded by the generators
-   with the runtime's arithmetic (2026-10-09; it was accepted here and
-   refused by the generator as `const form unsupported yet'), so what
-   the program would raise at run time is refused here.  The legal
-   forms first; the last overflows. *)
+(* The generators fold a CONST over an integer expression with the
+   runtime's arithmetic (2026-10-09).  Before then the checker accepted
+   it and the generator refused it as `const form unsupported yet'.  So
+   the checker refuses here what the program would raise at run time.
+   The legal forms come first; the last overflows. *)
 MODULE m ;
 CONST
   A = 2 * 3 + 1 ;

@@ -1,14 +1,15 @@
-# sourced by a gate from runtime/test: M9C is a compiler built from
-# runtime/gen -- this tree's -- unless the caller named one in $M9C.
+# A gate in runtime/test sources this file.  It sets M9C to a compiler
+# built from runtime/gen (this tree's), unless the caller named one in
+# $M9C.
 #
 # Twelve gates took $M9C, then ./m9c, then ../../out/m9c, and either
-# file can be left from an earlier tree: runtime/test/m9c is gitignored
-# and outlives a pull, out/m9c is whatever build.sh last made (the UTF
+# file can be left from an earlier tree.  runtime/test/m9c is gitignored
+# and outlives a pull.  out/m9c is whatever build.sh last made (the UTF
 # port's genforms ran on a stale out/m9c, 2026-10-23; docdiff and
 # diagdiff had built their own since "THE GATES WERE TESTING STALE
-# CODE").  The binary is replaced only when it differs, so a gate in
-# another lane running it keeps its file and --run's cache, whose key
-# holds m9c's mtime, keeps its entries.
+# CODE").  The binary is replaced only when it differs.  So a gate in
+# another lane running it keeps its file, and --run's cache keeps its
+# entries; that cache's key holds m9c's mtime.
 [ -n "${COMPILERC:-}" ] || . ./lib/gen.sh
 if [ -z "${M9C:-}" ]; then
   M9CNEW=$(mktemp -d)

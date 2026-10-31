@@ -1,7 +1,7 @@
 MODULE NbUse ;
 
-(* Parquet -- and with it libzstd -- only through NbCells'
-   implementation: zstd must be on the line, and the program links *)
+(* NbUse reaches Parquet, and with it libzstd, only through NbCells'
+   implementation: zstd must be on the line, and the program links. *)
 
 IMPORT Io ;
 IMPORT Faults ;

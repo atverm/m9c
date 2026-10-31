@@ -1,10 +1,10 @@
-/* Delim.m9 -- the row cursor, in bounded memory.
+/* This tests Delim.m9, the row cursor, in bounded memory.
  *
  * The expected values are written here by hand; nothing is read back
  * from the code under test.  The fixtures are written by this driver
  * so the checks are self-contained.
  *
- * THE CASE THAT MATTERS is a line straddling a block boundary: the
+ * THE CASE THAT MATTERS is a line straddling a block boundary.  The
  * reader is opened with the SMALLEST block it accepts and given a
  * file many times that size, so lines cross reads repeatedly.  That
  * is the whole reason this module exists rather than Csv, and it is
@@ -19,11 +19,13 @@
 #include "Io.h"
 #include "Zip.h"
 
-static m9_sl_CHAR sl (const char *s, uint32_t *buf)
+/* sl copies the octets of a C string into buf.  A C literal is UTF-8
+   already, so no octet is widened. */
+static m9_sl_UTF8 sl (const char *s, uint8_t *buf)
 {
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
+  int64_t n = (int64_t) strlen (s);
+  memcpy (buf, s, (size_t) n);
+  return (m9_sl_UTF8){ buf, n };
 }
 
 static int checks = 0, fails = 0;
@@ -50,7 +52,7 @@ int main (int argc, char **argv)
 {
   m9_state errv = {0}, *err = &errv;
   m9_pool pool = {0};
-  uint32_t nb[8][256];
+  uint8_t nb[8][256];
   Delim_Reader *r;
   bool ok;
   int64_t i;
@@ -62,8 +64,8 @@ int main (int argc, char **argv)
 
   /* ---- the shape SOCAT actually has: a listing preamble, then the
      data header, then rows.  Python must read the preamble with
-     readline() because a text iterator's read-ahead swallows data
-     rows; a cursor has no read-ahead, so the preamble is just the
+     readline(), because a text iterator's read-ahead swallows data
+     rows.  A cursor has no read-ahead, so the preamble is just the
      first few Next calls. ---- */
   put (SMALL,
        "Expocode\tDataset Name\tPlatform Name\n"
@@ -172,8 +174,8 @@ int main (int argc, char **argv)
     e.exc = NULL;
   }
 
-  /* a line that cannot fit is REFUSED, never cut: a silently
-     truncated row is a wrong measurement */
+  /* A line that cannot fit is REFUSED, never cut.  A silently
+     truncated row is a wrong measurement. */
   {
     FILE *f = fopen (LONG_, "wb");
     for (i = 0; i < 20000; i++) fputc ('x', f);
@@ -193,29 +195,33 @@ int main (int argc, char **argv)
     e.exc = NULL;
   }
 
-  /* Text ALLOCATES and is the only one that does; the UTF-8 goes
-     through the strict decoder, so a field is text or it raises */
+  /* Text ALLOCATES and is the only one that does.  The UTF-8 goes
+     through the strict decoder, so a field is text or it raises.  A
+     STR is UTF-8 now.  So the check counts four code points in five
+     octets, and the last code point is U+00E9. */
   put (SMALL, "caf\xc3\xa9\tplain\n");
   r = Delim_Open (&pool, sl (SMALL, nb[0]), (uint8_t) '\t', 4096, err);
   Delim_Next (&r, &pool, err);
   {
-    m9_sl_CHAR t = Delim_Text (&pool, r, 0, err);
-    ck (err->exc == NULL && t.len == 4 && t.p[3] == 0x00e9,
+    m9_sl_UTF8 t = Delim_Text (&pool, r, 0, err);
+    int64_t at = 3;
+    ck (err->exc == NULL && t.len == 5 && m9_utf_cpcount (t) == 4
+        && m9_utf_next (t, &at) == 0x00e9 && at == 5,
         "Text decodes UTF-8 into scalars");
     ck (!Delim_Is (r, 0, sl ("cafe", nb[1]), err),
         "and Is compares OCTETS, so it does not match the ASCII spelling");
   }
 
   /* ---- PUSH mode: the same cursor over bytes the caller supplies.
-     Delim does NOT import Zip -- M9 has no procedure types, so a
-     source cannot be passed as a function, and the choice was
-     between this module dragging zlib into every program that reads
-     a plain CSV and letting the caller push.  The driver is where
-     the two meet, which is where a dependency between them belongs.
+     Delim does NOT import Zip.  M9 has no procedure types, so a
+     source cannot be passed as a function.  The choice was between
+     this module dragging zlib into every program that reads a plain
+     CSV, and letting the caller push.  The driver is where the two
+     meet, which is where a dependency between them belongs.
      ---- */
   {
-    /* first: push mode over the SAME bytes as a file, giving the
-       SAME rows -- one cursor, two sources */
+    /* First, push mode over the SAME bytes as a file must give the
+       SAME rows: one cursor, two sources. */
     static const char *doc =
       "h1\th2\th3\n" "a\t1\t2\n" "b\t3\t4\n" "c\t5\t6";
     Delim_Reader *pr = Delim_OpenPush (&pool, (uint8_t) '\t', 4096, err);
@@ -241,8 +247,8 @@ int main (int argc, char **argv)
     ck (!Delim_Hungry (pr, err), "a finished reader is not hungry");
   }
   {
-    /* Feed is refused on a file-backed reader: two protocols, and
-       mixing them would silently lose bytes */
+    /* Feed is refused on a file-backed reader.  There are two
+       protocols, and mixing them would silently lose bytes. */
     m9_state e = {0}; e.res = &pool;
     unsigned char one = 'x';
     m9_sl_BYTE part = { &one, 1 };
@@ -255,7 +261,7 @@ int main (int argc, char **argv)
   }
   {
     /* AND THE REAL TARGET: rows out of a ZIP MEMBER.  SOCAT's table
-       is 9 GB inside a zip, and this is the shape the builder uses --
+       is 9 GB inside a zip, and this is the shape the builder uses:
        inflate a block, push it, drain the rows it completed. */
     Zip_Archive *za;
     Zip_Member *zm;
@@ -332,12 +338,12 @@ int main (int argc, char **argv)
 
   /* A ROW WITH MORE FIELDS THAN THE READER ACCEPTS IS REFUSED, NOT
      CUT.  It used to stop recording at the cap and answer a short
-     Count, so every column past it read as ABSENT -- found by a
-     differential over the ICOS ecosystem store's METEOSENS product,
-     whose 588 columns put three soil-moisture sensors past the old
-     512 and made them read empty for every row.  The cap is 1024 now
-     AND the overflow raises, which are two different fixes: raising
-     a silent limit only moves where it lies. */
+     Count, so every column past it read as ABSENT.  A differential
+     over the ICOS ecosystem store's METEOSENS product found it.  Its
+     588 columns put three soil-moisture sensors past the old 512 and
+     made them read empty for every row.  The cap is 1024 now AND the
+     overflow raises, which are two different fixes.  Raising a
+     silent limit only moves where it lies. */
   {
     static const char *WIDE = "/tmp/m9delim-wide.csv";
     FILE *g = fopen (WIDE, "wb");
@@ -360,7 +366,7 @@ int main (int argc, char **argv)
       ck (ok && v == 899.0, "the LAST field is the last field");
     }
     remove (WIDE);
-    /* and past the cap it raises rather than answering short */
+    /* Past the cap it raises rather than answering short. */
     g = fopen (WIDE, "wb");
     for (q = 0; q < 1200; q++) fprintf (g, "%sc%d", q ? "," : "", q);
     fputc ('\n', g);

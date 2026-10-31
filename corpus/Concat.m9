@@ -1,9 +1,11 @@
 MODULE Concat ;
 
-(* `+` on strings, and the pool the answer lands in.
+IMPORT Text ;
 
-   Concatenation ALLOCATES, and in M9 an allocation names its pool --
-   which is why this operator did not exist for a long time: `a + b`
+(* Concat shows `+` on strings, and the pool the answer lands in.
+
+   Concatenation ALLOCATES, and in M9 an allocation names its pool.
+   For that reason this operator did not exist for a long time: `a + b`
    has nowhere to put the result.  docs/pools.md refused a default
    pool as "a leak by construction".
 
@@ -21,12 +23,13 @@ MODULE Concat ;
    with the RETURN expression built in the caller's frame so a
    function may answer with a string.  HEAP is still a pool with a
    name, still never freed, and still where a `+` goes when a C caller
-   entered without a frame -- but it is no longer where composition
-   lands by default.  What forced it: HEAP being never freed is right
-   for a tool and wrong for a server loop, and the corpus voted with
-   its feet -- Gen.m9 carried 321 hand-rolled concatenation helpers
-   against ONE `+`, and the zarr proxy banned the operator outright on
-   its request path.  docs/frame-pools.md has the measurements.
+   entered without a frame.  But it is no longer where composition
+   lands by default.  Two things forced the change.  A HEAP that is
+   never freed is right for a tool and wrong for a server loop.  And
+   the corpus voted with its feet: Gen.m9 carried 321 hand-rolled
+   concatenation helpers against ONE `+`, and the zarr proxy banned
+   the operator outright on its request path.  docs/frame-pools.md has
+   the measurements.
 
    DynStr is still for ACCUMULATION where `+` is for composition.  `s := s + x` in a loop copies the whole
    string every time; the loop below is three iterations and says so.
@@ -38,9 +41,9 @@ IMPORT Io ;
 IMPORT DynStr ;
 
 CONST
-  Bar = 07CC ;  (* '|', U+007C.  A CHAR constant -- one code point --
-                   joined to a string as `s + Bar` the way a char
-                   literal is, par 2.2 *)
+  Bar = 07CC ;  (* Bar is '|', U+007C.  It is a CHAR constant, one
+                   code point.  It joins a string as `s + Bar` the
+                   way a char literal does, par 2.2. *)
 
 PROCEDURE Greeting (RO who: STR) : STR =
 BEGIN
@@ -50,19 +53,20 @@ BEGIN
 END Greeting ;
 
 (* `+` may grow its left operand IN PLACE when that operand ends at
-   the top of the arena -- what makes `s := s + x` linear.  A VIEW of
-   the top string that stops short of its end must not be grown: the
-   rest of the string is still there and still read.  Until 2026-10-05
-   the runtime compared the ends rounded up to the arena's alignment,
-   took SLICE (ds, 0, 3) of a four-character ds for all of it, and
-   wrote the point over ds[3]: this answered '276..'.  Found by
-   Fmt.Short, whose layout is exactly this expression. *)
+   the top of the arena.  That growth makes `s := s + x` linear.  A
+   VIEW of the top string that stops short of its end must not be
+   grown: the rest of the string is still there and still read.
+   Until 2026-10-05 the runtime compared the ends rounded up to the
+   arena's alignment.  It took SLICE (ds, 0, 3) of a four-character
+   ds for all of it and wrote the point over ds[3]: this answered
+   '276..'.  Fmt.Short found it; its layout is exactly this
+   expression. *)
 PROCEDURE Point (RO a, b: STR) : STR =
 VAR ds, out : STR ;
 BEGIN
   ds := a + b ;
-  (* in THIS frame, where ds is the top: a RETURN expression is built
-     in the caller's arena and would not show it *)
+  (* ds is built in THIS frame, where it is the top.  A RETURN
+     expression is built in the caller's arena and would not show it. *)
   out := SLICE (ds, 0, 3) + '.' + SLICE (ds, 3, 1) ;
   RETURN out
 END Point ;
@@ -79,7 +83,7 @@ BEGIN
     s := s + 'ab'
   END ;
   Io.WriteLine (s) ;
-  Io.WriteI64 (LEN (s)) ;
+  Io.WriteI64 (Text.BLen (s)) ;
   Io.WriteLine ('') ;
   (* HEAP is a pool like any other, so it can be passed by name *)
   d := DynStr.New (HEAP) ;

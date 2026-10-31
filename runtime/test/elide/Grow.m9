@@ -1,11 +1,11 @@
 STATEFUL DEFINITION MODULE Grow ;
 
-(* the shapes m9elide must tell apart, one procedure each: a
-   constructor that PROMISES the pool (`: PTR List IN pool`, kept), a
-   mutator that grows an object, a slice, a string and a frame-built
+(* Grow holds the shapes m9elide must tell apart, one procedure each:
+   a constructor that PROMISES the pool (`: PTR List IN pool`, kept),
+   a mutator that grows an object, a slice, a string and a frame-built
    list answered, a wrapper that only hands its pool on, a keeper
    whose pool reaches a module table through a library call, and an
-   output slot that allocates with nothing to grow *)
+   output slot that allocates with nothing to grow. *)
 
 TYPE
   Item ;                                 (* opaque; lives in a POOL *)
@@ -18,29 +18,29 @@ TYPE
   END ;
 
 PROCEDURE NewList (VAR pool: POOL) : PTR List IN pool ;
-  (* an empty list, in pool: the IN clause is a promise the frame
-     cannot keep, so the tool leaves this pool alone *)
+  (* NewList answers an empty list, in pool: the IN clause is a promise
+     the frame cannot keep, so the tool leaves this pool alone. *)
 
 PROCEDURE Push (VAR pool: POOL ; VAR l: PTR List ; v: I64) ;
-  (* v in front of l *)
+  (* Push puts v in front of l. *)
 
 PROCEDURE Sum (l: PTR List) : I64 ;
 
 PROCEDURE Squares (VAR pool: POOL ; n: I64) : SLICE OF I64 ;
-  (* 0, 1, 4, ... *)
+  (* Squares answers 0, 1, 4, ... *)
 
 PROCEDURE Pair (VAR pool: POOL) : PTR List ;
-  (* a list holding 2 and 1; no promise about where *)
+  (* Pair answers a list holding 2 and 1; no promise about where. *)
 
 PROCEDURE Label (VAR pool: POOL ; v: I64) : STR ;
-  (* the digits of v after 'v=' *)
+  (* Label answers the digits of v after 'v='. *)
 
 PROCEDURE Remember (VAR KEPT pool: POOL ; RO s: STR) ;
-  (* keeps a copy of s in the module's table, in pool -- KEPT: the
-     caller's pool must outlive the table (the region judgement) *)
+  (* Remember keeps a copy of s in the module's table, in pool -- KEPT:
+     the caller's pool must outlive the table (the region judgement). *)
 
 PROCEDURE Count () : I64 ;
-  (* how many were remembered *)
+  (* Count answers how many were remembered. *)
 
 PROCEDURE Fill (VAR pool: POOL ; VAR out: SLICE OF I64 ; n: I64) ;
   (* out becomes n copies of n *)
@@ -161,7 +161,7 @@ BEGIN
   d := DynStr.New (pool) ;
   DynStr.Append (d, 'id-') ;
   DynStr.AppendI64 (d, v) ;
-  n.id := DynStr.View (d)
+  n.id := DynStr.ViewIn (pool, d)
 END FillId ;
 
 BEGIN

@@ -2,9 +2,12 @@
 #include "NetCDF.h"
 #include "DynStr.h"
 #include "Faults.h"
+#include "Text.h"
 
 const m9_exc NetCDF_Error = { "Error" };
 
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 extern int nc_open (const void *, int, void *);
 extern int nc_create (const void *, int, void *);
 extern int nc_close (int);
@@ -55,79 +58,79 @@ extern void * memcpy (void *, const void *, size_t);
 
 struct NetCDF_File {
   int64_t ncid;
-  m9_sl_CHAR path;
+  m9_sl_UTF8 path;
   bool open;
 };
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[7] = { 110u, 99u, 95u, 111u, 112u, 101u, 110u };
-static const uint32_t m9s1[7] = { 110u, 99u, 95u, 111u, 112u, 101u, 110u };
-static const uint32_t m9s2[9] = { 110u, 99u, 95u, 99u, 114u, 101u, 97u, 116u, 101u };
-static const uint32_t m9s3[9] = { 110u, 99u, 95u, 99u, 114u, 101u, 97u, 116u, 101u };
-static const uint32_t m9s4[8] = { 110u, 99u, 95u, 99u, 108u, 111u, 115u, 101u };
-static const uint32_t m9s5[12] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 105u, 100u };
-static const uint32_t m9s6[12] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 100u, 105u, 109u, 105u, 100u };
-static const uint32_t m9s7[13] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 100u, 105u, 109u, 108u, 101u, 110u };
-static const uint32_t m9s8[12] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 110u, 100u, 105u, 109u, 115u };
-static const uint32_t m9s9[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 100u, 105u, 109u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s10[15] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 110u, 100u, 105u, 109u, 115u };
-static const uint32_t m9s11[21] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 100u, 105u, 109u, 105u, 100u, 58u, 32u, 114u, 97u, 110u, 107u };
-static const uint32_t m9s12[15] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 100u, 105u, 109u, 105u, 100u };
-static const uint32_t m9s13[18] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s14[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 102u, 108u, 111u, 97u, 116u };
-static const uint32_t m9s15[20] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 108u, 111u, 110u, 103u, 108u, 111u, 110u, 103u };
-static const uint32_t m9s16[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 97u, 116u, 116u, 95u, 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s17[13] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u, 108u, 101u, 110u };
-static const uint32_t m9s18[15] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 97u, 116u, 116u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s19[10] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u };
-static const uint32_t m9s20[10] = { 71u, 101u, 116u, 65u, 116u, 116u, 84u, 101u, 120u, 116u };
-static const uint32_t m9s21[47] = { 97u, 110u, 32u, 78u, 67u, 95u, 83u, 84u, 82u, 73u, 78u, 71u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 111u, 102u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s22[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 97u, 116u, 116u, 95u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s23[14] = { 110u, 99u, 95u, 102u, 114u, 101u, 101u, 95u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s24[10] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u };
-static const uint32_t m9s25[15] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 110u, 97u, 116u, 116u, 115u };
-static const uint32_t m9s26[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 97u, 116u, 116u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s27[12] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 110u, 118u, 97u, 114u, 115u };
-static const uint32_t m9s28[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s29[14] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s30[21] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 100u, 105u, 109u, 105u, 100u, 58u, 32u, 114u, 97u, 110u, 107u };
-static const uint32_t m9s31[15] = { 110u, 99u, 95u, 105u, 110u, 113u, 95u, 118u, 97u, 114u, 100u, 105u, 109u, 105u, 100u };
-static const uint32_t m9s32[15] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 105u, 110u, 116u };
-static const uint32_t m9s33[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 115u, 104u, 111u, 114u, 116u };
-static const uint32_t m9s34[17] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 117u, 98u, 121u, 116u, 101u };
-static const uint32_t m9s35[10] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 100u, 105u, 109u };
-static const uint32_t m9s36[10] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u };
-static const uint32_t m9s37[15] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 97u, 116u, 116u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s38[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 97u, 116u, 116u, 95u, 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s39[15] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 97u, 116u, 116u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s40[9] = { 110u, 99u, 95u, 101u, 110u, 100u, 100u, 101u, 102u };
-static const uint32_t m9s41[18] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s42[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s43[18] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 100u, 101u, 102u, 108u, 97u, 116u, 101u };
-static const uint32_t m9s44[19] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 99u, 104u, 117u, 110u, 107u, 105u, 110u, 103u };
-static const uint32_t m9s45[16] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s46[20] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 108u, 111u, 110u, 103u, 108u, 111u, 110u, 103u };
-static const uint32_t m9s47[15] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 105u, 110u, 116u };
-static const uint32_t m9s48[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 115u, 104u, 111u, 114u, 116u };
-static const uint32_t m9s49[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 117u, 98u, 121u, 116u, 101u };
-static const uint32_t m9s50[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s51[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s52[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s53[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s54[15] = { 110u, 99u, 95u, 100u, 101u, 102u, 95u, 118u, 97u, 114u, 95u, 102u, 105u, 108u, 108u };
-static const uint32_t m9s55[16] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s56[16] = { 110u, 99u, 95u, 103u, 101u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s57[17] = { 110u, 99u, 95u, 112u, 117u, 116u, 95u, 118u, 97u, 114u, 97u, 95u, 102u, 108u, 111u, 97u, 116u };
-static const uint32_t m9s58[2] = { 105u, 100u };
-static const uint32_t m9s59[14] = { 98u, 101u, 121u, 111u, 110u, 100u, 32u, 97u, 32u, 67u, 32u, 105u, 110u, 116u };
+static const uint8_t m9s0[7] = { 110, 99, 95, 111, 112, 101, 110 };
+static const uint8_t m9s1[7] = { 110, 99, 95, 111, 112, 101, 110 };
+static const uint8_t m9s2[9] = { 110, 99, 95, 99, 114, 101, 97, 116, 101 };
+static const uint8_t m9s3[9] = { 110, 99, 95, 99, 114, 101, 97, 116, 101 };
+static const uint8_t m9s4[8] = { 110, 99, 95, 99, 108, 111, 115, 101 };
+static const uint8_t m9s5[12] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 105, 100 };
+static const uint8_t m9s6[12] = { 110, 99, 95, 105, 110, 113, 95, 100, 105, 109, 105, 100 };
+static const uint8_t m9s7[13] = { 110, 99, 95, 105, 110, 113, 95, 100, 105, 109, 108, 101, 110 };
+static const uint8_t m9s8[12] = { 110, 99, 95, 105, 110, 113, 95, 110, 100, 105, 109, 115 };
+static const uint8_t m9s9[14] = { 110, 99, 95, 105, 110, 113, 95, 100, 105, 109, 110, 97, 109, 101 };
+static const uint8_t m9s10[15] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 110, 100, 105, 109, 115 };
+static const uint8_t m9s11[21] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 100, 105, 109, 105, 100, 58, 32, 114, 97, 110, 107 };
+static const uint8_t m9s12[15] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 100, 105, 109, 105, 100 };
+static const uint8_t m9s13[18] = { 110, 99, 95, 103, 101, 116, 95, 118, 97, 114, 97, 95, 100, 111, 117, 98, 108, 101 };
+static const uint8_t m9s14[17] = { 110, 99, 95, 103, 101, 116, 95, 118, 97, 114, 97, 95, 102, 108, 111, 97, 116 };
+static const uint8_t m9s15[20] = { 110, 99, 95, 103, 101, 116, 95, 118, 97, 114, 97, 95, 108, 111, 110, 103, 108, 111, 110, 103 };
+static const uint8_t m9s16[17] = { 110, 99, 95, 103, 101, 116, 95, 97, 116, 116, 95, 100, 111, 117, 98, 108, 101 };
+static const uint8_t m9s17[13] = { 110, 99, 95, 105, 110, 113, 95, 97, 116, 116, 108, 101, 110 };
+static const uint8_t m9s18[15] = { 110, 99, 95, 103, 101, 116, 95, 97, 116, 116, 95, 116, 101, 120, 116 };
+static const uint8_t m9s19[10] = { 110, 99, 95, 105, 110, 113, 95, 97, 116, 116 };
+static const uint8_t m9s20[10] = { 71, 101, 116, 65, 116, 116, 84, 101, 120, 116 };
+static const uint8_t m9s21[47] = { 97, 110, 32, 78, 67, 95, 83, 84, 82, 73, 78, 71, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 111, 102, 32, 109, 111, 114, 101, 32, 116, 104, 97, 110, 32, 111, 110, 101, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s22[17] = { 110, 99, 95, 103, 101, 116, 95, 97, 116, 116, 95, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s23[14] = { 110, 99, 95, 102, 114, 101, 101, 95, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s24[10] = { 110, 99, 95, 105, 110, 113, 95, 97, 116, 116 };
+static const uint8_t m9s25[15] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 110, 97, 116, 116, 115 };
+static const uint8_t m9s26[14] = { 110, 99, 95, 105, 110, 113, 95, 97, 116, 116, 110, 97, 109, 101 };
+static const uint8_t m9s27[12] = { 110, 99, 95, 105, 110, 113, 95, 110, 118, 97, 114, 115 };
+static const uint8_t m9s28[14] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 110, 97, 109, 101 };
+static const uint8_t m9s29[14] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 116, 121, 112, 101 };
+static const uint8_t m9s30[21] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 100, 105, 109, 105, 100, 58, 32, 114, 97, 110, 107 };
+static const uint8_t m9s31[15] = { 110, 99, 95, 105, 110, 113, 95, 118, 97, 114, 100, 105, 109, 105, 100 };
+static const uint8_t m9s32[15] = { 110, 99, 95, 103, 101, 116, 95, 118, 97, 114, 97, 95, 105, 110, 116 };
+static const uint8_t m9s33[17] = { 110, 99, 95, 103, 101, 116, 95, 118, 97, 114, 97, 95, 115, 104, 111, 114, 116 };
+static const uint8_t m9s34[17] = { 110, 99, 95, 103, 101, 116, 95, 118, 97, 114, 97, 95, 117, 98, 121, 116, 101 };
+static const uint8_t m9s35[10] = { 110, 99, 95, 100, 101, 102, 95, 100, 105, 109 };
+static const uint8_t m9s36[10] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114 };
+static const uint8_t m9s37[15] = { 110, 99, 95, 112, 117, 116, 95, 97, 116, 116, 95, 116, 101, 120, 116 };
+static const uint8_t m9s38[17] = { 110, 99, 95, 112, 117, 116, 95, 97, 116, 116, 95, 100, 111, 117, 98, 108, 101 };
+static const uint8_t m9s39[15] = { 110, 99, 95, 112, 117, 116, 95, 97, 116, 116, 95, 116, 101, 120, 116 };
+static const uint8_t m9s40[9] = { 110, 99, 95, 101, 110, 100, 100, 101, 102 };
+static const uint8_t m9s41[18] = { 110, 99, 95, 112, 117, 116, 95, 118, 97, 114, 97, 95, 100, 111, 117, 98, 108, 101 };
+static const uint8_t m9s42[15] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114, 95, 102, 105, 108, 108 };
+static const uint8_t m9s43[18] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114, 95, 100, 101, 102, 108, 97, 116, 101 };
+static const uint8_t m9s44[19] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114, 95, 99, 104, 117, 110, 107, 105, 110, 103 };
+static const uint8_t m9s45[16] = { 110, 99, 95, 112, 117, 116, 95, 118, 97, 114, 97, 95, 116, 101, 120, 116 };
+static const uint8_t m9s46[20] = { 110, 99, 95, 112, 117, 116, 95, 118, 97, 114, 97, 95, 108, 111, 110, 103, 108, 111, 110, 103 };
+static const uint8_t m9s47[15] = { 110, 99, 95, 112, 117, 116, 95, 118, 97, 114, 97, 95, 105, 110, 116 };
+static const uint8_t m9s48[17] = { 110, 99, 95, 112, 117, 116, 95, 118, 97, 114, 97, 95, 115, 104, 111, 114, 116 };
+static const uint8_t m9s49[17] = { 110, 99, 95, 112, 117, 116, 95, 118, 97, 114, 97, 95, 117, 98, 121, 116, 101 };
+static const uint8_t m9s50[15] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114, 95, 102, 105, 108, 108 };
+static const uint8_t m9s51[15] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114, 95, 102, 105, 108, 108 };
+static const uint8_t m9s52[15] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114, 95, 102, 105, 108, 108 };
+static const uint8_t m9s53[15] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114, 95, 102, 105, 108, 108 };
+static const uint8_t m9s54[15] = { 110, 99, 95, 100, 101, 102, 95, 118, 97, 114, 95, 102, 105, 108, 108 };
+static const uint8_t m9s55[16] = { 110, 99, 95, 103, 101, 116, 95, 118, 97, 114, 97, 95, 116, 101, 120, 116 };
+static const uint8_t m9s56[16] = { 110, 99, 95, 103, 101, 116, 95, 118, 97, 114, 97, 95, 116, 101, 120, 116 };
+static const uint8_t m9s57[17] = { 110, 99, 95, 112, 117, 116, 95, 118, 97, 114, 97, 95, 102, 108, 111, 97, 116 };
+static const uint8_t m9s58[2] = { 105, 100 };
+static const uint8_t m9s59[14] = { 98, 101, 121, 111, 110, 100, 32, 97, 32, 67, 32, 105, 110, 116 };
 
 static m9_mon *m9_gate_cnc;
 
-static m9_sl_CHAR NetCDF_Message (m9_pool *pool, int64_t status, m9_state *err);
-static void NetCDF_Fail (m9_sl_CHAR op, int64_t status, m9_state *err);
-static void NetCDF_Check (m9_sl_CHAR op, int64_t status, m9_state *err);
-static m9_sl_BYTE NetCDF_CStr (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+static m9_sl_UTF8 NetCDF_Message (m9_pool *pool, int64_t status, m9_state *err);
+static void NetCDF_Fail (m9_sl_UTF8 op, int64_t status, m9_state *err);
+static void NetCDF_Check (m9_sl_UTF8 op, int64_t status, m9_state *err);
+static m9_sl_BYTE NetCDF_CStr (m9_pool *pool, m9_sl_UTF8 s, m9_state *err);
 static int NetCDF_NcId (int64_t v, m9_state *err);
 static m9_sl_U64 NetCDF_Extents (m9_sl_I64 v, m9_state *err);
 static int64_t NetCDF_Product (m9_sl_I64 v, m9_state *err);
@@ -135,7 +138,7 @@ static void NetCDF_Want (int64_t have, m9_sl_I64 count, m9_state *err);
 static m9_sl_I64 NetCDF_Zeros (int64_t n, m9_state *err);
 
 
-NetCDF_File * NetCDF_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
+NetCDF_File * NetCDF_Open (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -152,7 +155,7 @@ NetCDF_File * NetCDF_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((int) m9_i32 (NetCDF_ModeNoWrite, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_open (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_open (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a1 = (int64_t)(({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((int) m9_i32 (NetCDF_ModeNoWrite, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_open (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_open (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s0, 7 }), m9a1, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s0, 7 }), m9a1, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(f) m9v = (NetCDF_File *) m9_pool_alloc (&((*pool)), sizeof (NetCDF_File), 1, err);
@@ -176,7 +179,7 @@ L_ret: ;
   return m9ret;
 }
 
-NetCDF_File * NetCDF_OpenRW (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
+NetCDF_File * NetCDF_OpenRW (m9_pool *pool, m9_sl_UTF8 path, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -193,7 +196,7 @@ NetCDF_File * NetCDF_OpenRW (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((int) m9_i32 (NetCDF_ModeWrite, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_open (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_open (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a2 = (int64_t)(({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((int) m9_i32 (NetCDF_ModeWrite, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_open (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_open (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s1, 7 }), m9a2, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s1, 7 }), m9a2, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(f) m9v = (NetCDF_File *) m9_pool_alloc (&((*pool)), sizeof (NetCDF_File), 1, err);
@@ -217,7 +220,7 @@ L_ret: ;
   return m9ret;
 }
 
-NetCDF_File * NetCDF_Create (m9_pool *pool, m9_sl_CHAR path, bool clobber, m9_state *err)
+NetCDF_File * NetCDF_Create (m9_pool *pool, m9_sl_UTF8 path, bool clobber, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -240,7 +243,7 @@ NetCDF_File * NetCDF_Create (m9_pool *pool, m9_sl_CHAR path, bool clobber, m9_st
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((int) m9_i32 (mode, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_create (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_create (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a3 = (int64_t)(({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((int) m9_i32 (mode, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_create (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_create (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s2, 9 }), m9a3, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s2, 9 }), m9a3, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(f) m9v = (NetCDF_File *) m9_pool_alloc (&((*pool)), sizeof (NetCDF_File), 1, err);
@@ -264,7 +267,7 @@ L_ret: ;
   return m9ret;
 }
 
-NetCDF_File * NetCDF_Create4 (m9_pool *pool, m9_sl_CHAR path, bool clobber, m9_state *err)
+NetCDF_File * NetCDF_Create4 (m9_pool *pool, m9_sl_UTF8 path, bool clobber, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -291,7 +294,7 @@ NetCDF_File * NetCDF_Create4 (m9_pool *pool, m9_sl_CHAR path, bool clobber, m9_s
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((int) m9_i32 (mode, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_create (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_create (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a4 = (int64_t)(({ __auto_type m9_fam9t1 = (((void *)(pb).p)); __auto_type m9_fam9t2 = (((int) m9_i32 (mode, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_create (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_create (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s3, 9 }), m9a4, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s3, 9 }), m9a4, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(f) m9v = (NetCDF_File *) m9_pool_alloc (&((*pool)), sizeof (NetCDF_File), 1, err);
@@ -327,7 +330,7 @@ void NetCDF_Close (NetCDF_File * *f, m9_pool *f_pool, m9_state *err)
   ({ __auto_type m9g = ((*f)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open = false;
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (({ __auto_type m9g = ((*f)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ncid, err)); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_close (m9_fam9t1)) m9_gv = nc_close (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; }))) m9a5 = (int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (({ __auto_type m9g = ((*f)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ncid, err)); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_close (m9_fam9t1)) m9_gv = nc_close (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), m9a5, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s4, 8 }), m9a5, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -337,7 +340,7 @@ L_ret: ;
   return;
 }
 
-int64_t NetCDF_VarId (NetCDF_File * f, m9_sl_CHAR name, m9_state *err)
+int64_t NetCDF_VarId (NetCDF_File * f, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -353,7 +356,7 @@ int64_t NetCDF_VarId (NetCDF_File * f, m9_sl_CHAR name, m9_state *err)
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(nb).p)); __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a6 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(nb).p)); __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s5, 12 }), m9a6, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s5, 12 }), m9a6, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -367,7 +370,7 @@ L_ret: ;
   return m9ret;
 }
 
-int64_t NetCDF_DimId (NetCDF_File * f, m9_sl_CHAR name, m9_state *err)
+int64_t NetCDF_DimId (NetCDF_File * f, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -383,7 +386,7 @@ int64_t NetCDF_DimId (NetCDF_File * f, m9_sl_CHAR name, m9_state *err)
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(nb).p)); __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_dimid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_dimid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a7 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(nb).p)); __auto_type m9_fam9t3 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_dimid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_dimid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s6, 12 }), m9a7, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s6, 12 }), m9a7, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -407,7 +410,7 @@ int64_t NetCDF_DimLen (NetCDF_File * f, int64_t dimid, m9_state *err)
   m9_arr_1_uint64_t n = {0}; (void) n;
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (dimid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_dimlen (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_dimlen (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a8 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (dimid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_dimlen (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_dimlen (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s7, 13 }), m9a8, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s7, 13 }), m9a8, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -430,7 +433,7 @@ int64_t NetCDF_DimCount (NetCDF_File * f, m9_state *err)
   m9_arr_1_int32_t n = {0}; (void) n;
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_ndims (m9_fam9t1, m9_fam9t2)) m9_gv = nc_inq_ndims (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; }))) m9a9 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_ndims (m9_fam9t1, m9_fam9t2)) m9_gv = nc_inq_ndims (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s8, 12 }), m9a9, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s8, 12 }), m9a9, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -443,13 +446,13 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR NetCDF_DimName (m9_pool *pool, NetCDF_File * f, int64_t dimid, m9_state *err)
+m9_sl_UTF8 NetCDF_DimName (m9_pool *pool, NetCDF_File * f, int64_t dimid, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
   { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), NetCDF_MaxName, err);
@@ -458,7 +461,7 @@ m9_sl_CHAR NetCDF_DimName (m9_pool *pool, NetCDF_File * f, int64_t dimid, m9_sta
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (dimid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_dimname (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_dimname (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a10 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (dimid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_dimname (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_dimname (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s9, 14 }), m9a10, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s9, 14 }), m9a10, err);
   if (err->exc) goto L_ret;
   }
   n = INT64_C(0);
@@ -474,18 +477,18 @@ m9_sl_CHAR NetCDF_DimName (m9_pool *pool, NetCDF_File * f, int64_t dimid, m9_sta
   err->res = m9res;
   { __typeof__(({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a11 = ({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a11, err);
+  m9ret = DynStr_Decoded (pool, m9a11, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t NetCDF_DimLenOf (NetCDF_File * f, m9_sl_CHAR name, m9_state *err)
+int64_t NetCDF_DimLenOf (NetCDF_File * f, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -515,7 +518,7 @@ int64_t NetCDF_VarRank (NetCDF_File * f, int64_t varid, m9_state *err)
   m9_arr_1_int32_t n = {0}; (void) n;
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varndims (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varndims (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a13 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varndims (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varndims (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s10, 15 }), m9a13, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s10, 15 }), m9a13, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -544,12 +547,12 @@ m9_sl_I64 NetCDF_VarShape (NetCDF_File * f, int64_t varid, m9_state *err)
     rank = m9v;
   }
   if ((rank > NetCDF_MaxRank)) {
-    NetCDF_Fail (((m9_sl_CHAR){ (uint32_t *) m9s11, 21 }), rank, err);
+    NetCDF_Fail (((m9_sl_UTF8){ (uint8_t *) m9s11, 21 }), rank, err);
     if (err->exc) goto L_ret;
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(dims).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a14 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(dims).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s12, 15 }), m9a14, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s12, 15 }), m9a14, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, rank, err);
@@ -603,7 +606,7 @@ void NetCDF_GetF64 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a16 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s13, 18 }), m9a16, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s13, 18 }), m9a16, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -634,7 +637,7 @@ void NetCDF_GetF32 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a17 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s14, 17 }), m9a17, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s14, 17 }), m9a17, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -665,7 +668,7 @@ void NetCDF_GetI64 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a18 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s15, 20 }), m9a18, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s15, 20 }), m9a18, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -675,7 +678,7 @@ L_ret: ;
   return;
 }
 
-m9_gd2_double NetCDF_ReadGrid2 (NetCDF_File * f, m9_sl_CHAR name, m9_state *err)
+m9_gd2_double NetCDF_ReadGrid2 (NetCDF_File * f, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -748,7 +751,7 @@ L_ret: ;
   return m9ret;
 }
 
-m9_gd3_double NetCDF_ReadGrid3 (NetCDF_File * f, m9_sl_CHAR name, m9_state *err)
+m9_gd3_double NetCDF_ReadGrid3 (NetCDF_File * f, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -830,7 +833,7 @@ L_ret: ;
   return m9ret;
 }
 
-double NetCDF_GetAttF64 (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err)
+double NetCDF_GetAttF64 (NetCDF_File * f, int64_t varid, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -846,7 +849,7 @@ double NetCDF_GetAttF64 (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sta
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(v).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_get_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a21 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(v).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_get_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s16, 17 }), m9a21, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s16, 17 }), m9a21, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -860,13 +863,13 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR NetCDF_GetAttStr (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err)
+m9_sl_UTF8 NetCDF_GetAttStr (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE nb = {0}; (void) nb;
   m9_sl_BYTE buf = {0}; (void) buf;
@@ -878,7 +881,7 @@ m9_sl_CHAR NetCDF_GetAttStr (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_s
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_attlen (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_inq_attlen (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a22 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_attlen (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_inq_attlen (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s17, 13 }), m9a22, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s17, 13 }), m9a22, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(len) m9v = m9_i64_u64 ((*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err)), err);
@@ -895,7 +898,7 @@ m9_sl_CHAR NetCDF_GetAttStr (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_s
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(nb).p)); __auto_type m9_fam9t8 = (((void *)(buf).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_att_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8)) m9_gv = nc_get_att_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8); m9_mon_leave (m9_gm); m9_gv; }))) m9a23 = (int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(nb).p)); __auto_type m9_fam9t8 = (((void *)(buf).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_att_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8)) m9_gv = nc_get_att_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s18, 15 }), m9a23, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s18, 15 }), m9a23, err);
   if (err->exc) goto L_ret;
   }
   for (;;) {
@@ -910,26 +913,26 @@ m9_sl_CHAR NetCDF_GetAttStr (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_s
   err->res = m9res;
   { __typeof__(({ __auto_type m9t10 = buf; int64_t m9t10a = INT64_C(0), m9t10n = len; int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; })) m9a24 = ({ __auto_type m9t10 = buf; int64_t m9t10a = INT64_C(0), m9t10n = len; int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a24, err);
+  m9ret = DynStr_Decoded (pool, m9a24, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err)
+m9_sl_UTF8 NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE nb = {0}; (void) nb;
   m9_sl_BYTE buf = {0}; (void) buf;
@@ -944,7 +947,7 @@ m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_
   }
   { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(t).v)); __auto_type m9_fam9t5 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a25 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(t).v)); __auto_type m9_fam9t5 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s19, 10 }), m9a25, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s19, 10 }), m9a25, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(len) m9v = m9_i64_u64 ((*(uint64_t *) m9_at (n.v, INT64_C(0), INT64_C(1), sizeof (uint64_t), err)), err);
@@ -955,19 +958,13 @@ m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_
   if (err->exc) goto L_ret;
   if (m9t6) {
     err->res = m9res;
-    { __typeof__(NetCDF_GetAttStr (&(scratch), f, varid, name, err)) m9a26 = NetCDF_GetAttStr (&(scratch), f, varid, name, err);
-      if (err->exc) goto L_ret;
-    { __typeof__(DynStr_Bytes (&(scratch), m9a26, false, err)) m9a27 = DynStr_Bytes (&(scratch), m9a26, false, err);
-      if (err->exc) goto L_ret;
-    m9ret = DynStr_FromUtf8 (pool, m9a27, err);
+    m9ret = NetCDF_GetAttStr (pool, f, varid, name, err);
     if (err->exc) goto L_ret;
-    }
-    }
     goto L_ret;
   }
   if ((len != INT64_C(1))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s20, 10 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s20, 10 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s21, 47 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s21, 47 }); err->s[1].p = m9t8.p; err->s[1].len = m9t8.len; m9_pay_keep (err, 1, sizeof (*m9t8.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s20, 10 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s20, 10 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s21, 47 })) m9t8 = ((m9_sl_UTF8){ (uint8_t *) m9s21, 47 }); err->s[1].p = m9t8.p; err->s[1].len = m9t8.len; m9_pay_keep (err, 1, sizeof (*m9t8.p)); }
     err->i[0] = INT64_C(0);
     m9_raise (err, &NetCDF_Error);
     goto L_ret;
@@ -976,9 +973,9 @@ m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_
     if (err->exc) goto L_ret;
     ptrs = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t9 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t10 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t11 = (((void *)(nb).p)); __auto_type m9_fam9t12 = (((void *)(ptrs).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_att_string (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12)) m9_gv = nc_get_att_string (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12); m9_mon_leave (m9_gm); m9_gv; }))) m9a28 = (int64_t)(({ __auto_type m9_fam9t9 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t10 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t11 = (((void *)(nb).p)); __auto_type m9_fam9t12 = (((void *)(ptrs).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_att_string (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12)) m9_gv = nc_get_att_string (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t9 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t10 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t11 = (((void *)(nb).p)); __auto_type m9_fam9t12 = (((void *)(ptrs).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_att_string (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12)) m9_gv = nc_get_att_string (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12); m9_mon_leave (m9_gm); m9_gv; }))) m9a26 = (int64_t)(({ __auto_type m9_fam9t9 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t10 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t11 = (((void *)(nb).p)); __auto_type m9_fam9t12 = (((void *)(ptrs).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_att_string (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12)) m9_gv = nc_get_att_string (m9_fam9t9, m9_fam9t10, m9_fam9t11, m9_fam9t12); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s22, 17 }), m9a28, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s22, 17 }), m9a26, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), NetCDF_MaxAtt, err);
@@ -989,9 +986,9 @@ m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_
     if (err->exc) goto L_ret;
     got = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t16 = (((size_t) m9_u64 (len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t17 = (((void *)(ptrs).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_free_string (m9_fam9t16, m9_fam9t17)) m9_gv = nc_free_string (m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }))) m9a29 = (int64_t)(({ __auto_type m9_fam9t16 = (((size_t) m9_u64 (len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t17 = (((void *)(ptrs).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_free_string (m9_fam9t16, m9_fam9t17)) m9_gv = nc_free_string (m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t16 = (((size_t) m9_u64 (len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t17 = (((void *)(ptrs).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_free_string (m9_fam9t16, m9_fam9t17)) m9_gv = nc_free_string (m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }))) m9a27 = (int64_t)(({ __auto_type m9_fam9t16 = (((size_t) m9_u64 (len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t17 = (((void *)(ptrs).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_free_string (m9_fam9t16, m9_fam9t17)) m9_gv = nc_free_string (m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s23, 14 }), m9a29, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s23, 14 }), m9a27, err);
   if (err->exc) goto L_ret;
   }
   if ((got < INT64_C(0))) {
@@ -999,22 +996,22 @@ m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_
     goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(({ __auto_type m9t18 = buf; int64_t m9t18a = INT64_C(0), m9t18n = got; int64_t m9t18o = m9_chk_slice (m9t18a, m9t18n, m9t18.len, err); (__typeof__(m9t18)){ m9t18.p + m9t18o, err->exc ? 0 : m9t18n }; })) m9a30 = ({ __auto_type m9t18 = buf; int64_t m9t18a = INT64_C(0), m9t18n = got; int64_t m9t18o = m9_chk_slice (m9t18a, m9t18n, m9t18.len, err); (__typeof__(m9t18)){ m9t18.p + m9t18o, err->exc ? 0 : m9t18n }; });
+  { __typeof__(({ __auto_type m9t18 = buf; int64_t m9t18a = INT64_C(0), m9t18n = got; int64_t m9t18o = m9_chk_slice (m9t18a, m9t18n, m9t18.len, err); (__typeof__(m9t18)){ m9t18.p + m9t18o, err->exc ? 0 : m9t18n }; })) m9a28 = ({ __auto_type m9t18 = buf; int64_t m9t18a = INT64_C(0), m9t18n = got; int64_t m9t18o = m9_chk_slice (m9t18a, m9t18n, m9t18.len, err); (__typeof__(m9t18)){ m9t18.p + m9t18o, err->exc ? 0 : m9t18n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_FromUtf8 (pool, m9a30, err);
+  m9ret = DynStr_Decoded (pool, m9a28, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-bool NetCDF_HasVar (NetCDF_File * f, m9_sl_CHAR name, m9_state *err)
+bool NetCDF_HasVar (NetCDF_File * f, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1039,7 +1036,7 @@ L_ret: ;
   return m9ret;
 }
 
-bool NetCDF_HasAtt (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err)
+bool NetCDF_HasAtt (NetCDF_File * f, int64_t varid, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1065,7 +1062,7 @@ L_ret: ;
   return m9ret;
 }
 
-int64_t NetCDF_AttType (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err)
+int64_t NetCDF_AttType (NetCDF_File * f, int64_t varid, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1080,9 +1077,9 @@ int64_t NetCDF_AttType (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_stat
     if (err->exc) goto L_ret;
     nb = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(t).v)); __auto_type m9_fam9t5 = (((void *)(ln).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a31 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(t).v)); __auto_type m9_fam9t5 = (((void *)(ln).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(t).v)); __auto_type m9_fam9t5 = (((void *)(ln).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a29 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((void *)(t).v)); __auto_type m9_fam9t5 = (((void *)(ln).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_inq_att (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s24, 10 }), m9a31, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s24, 10 }), m9a29, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -1104,9 +1101,9 @@ int64_t NetCDF_AttCount (NetCDF_File * f, int64_t varid, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   m9_arr_1_int32_t n = {0}; (void) n;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varnatts (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varnatts (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a32 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varnatts (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varnatts (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varnatts (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varnatts (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a30 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varnatts (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varnatts (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s25, 15 }), m9a32, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s25, 15 }), m9a30, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -1119,13 +1116,13 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR NetCDF_AttName (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_t i, m9_state *err)
+m9_sl_UTF8 NetCDF_AttName (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_t i, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE buf = {0}; (void) buf;
   int64_t n = 0; (void) n;
@@ -1133,9 +1130,9 @@ m9_sl_CHAR NetCDF_AttName (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_
     if (err->exc) goto L_ret;
     buf = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int) m9_i32 (i, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(buf).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_attname (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_inq_attname (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a33 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int) m9_i32 (i, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(buf).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_attname (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_inq_attname (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int) m9_i32 (i, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(buf).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_attname (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_inq_attname (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a31 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int) m9_i32 (i, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(buf).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_attname (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_inq_attname (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s26, 14 }), m9a33, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s26, 14 }), m9a31, err);
   if (err->exc) goto L_ret;
   }
   n = INT64_C(0);
@@ -1149,16 +1146,16 @@ m9_sl_CHAR NetCDF_AttName (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_
     }
   }
   err->res = m9res;
-  { __typeof__(({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a34 = ({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+  { __typeof__(({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a32 = ({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a34, err);
+  m9ret = DynStr_Decoded (pool, m9a32, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -1172,9 +1169,9 @@ int64_t NetCDF_VarCount (NetCDF_File * f, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   m9_arr_1_int32_t n = {0}; (void) n;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_nvars (m9_fam9t1, m9_fam9t2)) m9_gv = nc_inq_nvars (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; }))) m9a35 = (int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_nvars (m9_fam9t1, m9_fam9t2)) m9_gv = nc_inq_nvars (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_nvars (m9_fam9t1, m9_fam9t2)) m9_gv = nc_inq_nvars (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; }))) m9a33 = (int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(n).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_nvars (m9_fam9t1, m9_fam9t2)) m9_gv = nc_inq_nvars (m9_fam9t1, m9_fam9t2); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s27, 12 }), m9a35, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s27, 12 }), m9a33, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -1187,22 +1184,22 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR NetCDF_VarName (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_state *err)
+m9_sl_UTF8 NetCDF_VarName (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
   { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), NetCDF_MaxName, err);
     if (err->exc) goto L_ret;
     b = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varname (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varname (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a36 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varname (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varname (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varname (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varname (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a34 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_varname (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_varname (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s28, 14 }), m9a36, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s28, 14 }), m9a34, err);
   if (err->exc) goto L_ret;
   }
   n = INT64_C(0);
@@ -1216,15 +1213,15 @@ m9_sl_CHAR NetCDF_VarName (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sta
     }
   }
   err->res = m9res;
-  { __typeof__(({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a37 = ({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+  { __typeof__(({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a35 = ({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a37, err);
+  m9ret = DynStr_Decoded (pool, m9a35, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1237,9 +1234,9 @@ int64_t NetCDF_VarType (NetCDF_File * f, int64_t varid, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   m9_arr_1_int32_t t = {0}; (void) t;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (NetCDF_NcId (varid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(t).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vartype (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vartype (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a38 = (int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (NetCDF_NcId (varid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(t).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vartype (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vartype (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (NetCDF_NcId (varid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(t).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vartype (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vartype (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a36 = (int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (NetCDF_NcId (varid, err)); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(t).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vartype (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vartype (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s29, 14 }), m9a38, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s29, 14 }), m9a36, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -1268,12 +1265,12 @@ m9_sl_I64 NetCDF_VarDims (NetCDF_File * f, int64_t varid, m9_state *err)
     rank = m9v;
   }
   if ((rank > NetCDF_MaxRank)) {
-    NetCDF_Fail (((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), rank, err);
+    NetCDF_Fail (((m9_sl_UTF8){ (uint8_t *) m9s30, 21 }), rank, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(dims).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a39 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(dims).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(dims).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }))) m9a37 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(dims).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3)) m9_gv = nc_inq_vardimid (m9_fam9t1, m9_fam9t2, m9_fam9t3); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s31, 15 }), m9a39, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s31, 15 }), m9a37, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(out) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, rank, err);
@@ -1322,9 +1319,9 @@ void NetCDF_GetI32 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a40 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a38 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s32, 15 }), m9a40, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s32, 15 }), m9a38, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1353,9 +1350,9 @@ void NetCDF_GetI16 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a41 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a39 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s33, 17 }), m9a41, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s33, 17 }), m9a39, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1384,9 +1381,9 @@ void NetCDF_GetBytes (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a42 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a40 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_get_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s34, 17 }), m9a42, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s34, 17 }), m9a40, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1396,7 +1393,7 @@ L_ret: ;
   return;
 }
 
-int64_t NetCDF_DefDim (NetCDF_File * f, m9_sl_CHAR name, int64_t extent, m9_state *err)
+int64_t NetCDF_DefDim (NetCDF_File * f, m9_sl_UTF8 name, int64_t extent, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1414,9 +1411,9 @@ int64_t NetCDF_DefDim (NetCDF_File * f, m9_sl_CHAR name, int64_t extent, m9_stat
     if (err->exc) goto L_ret;
     nb = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(nb).p)); __auto_type m9_fam9t3 = (((size_t) m9_u64 (extent, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_dim (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_dim (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a43 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(nb).p)); __auto_type m9_fam9t3 = (((size_t) m9_u64 (extent, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_dim (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_dim (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(nb).p)); __auto_type m9_fam9t3 = (((size_t) m9_u64 (extent, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_dim (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_dim (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a41 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((void *)(nb).p)); __auto_type m9_fam9t3 = (((size_t) m9_u64 (extent, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_dim (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_dim (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s35, 10 }), m9a43, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s35, 10 }), m9a41, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -1430,7 +1427,7 @@ L_ret: ;
   return m9ret;
 }
 
-int64_t NetCDF_DefVar (NetCDF_File * f, m9_sl_CHAR name, int64_t nctype, m9_sl_I64 dims, m9_state *err)
+int64_t NetCDF_DefVar (NetCDF_File * f, m9_sl_UTF8 name, int64_t nctype, m9_sl_I64 dims, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1463,9 +1460,9 @@ int64_t NetCDF_DefVar (NetCDF_File * f, m9_sl_CHAR name, int64_t nctype, m9_sl_I
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t2 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((int) m9_i32 (nctype, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int) m9_i32 ((dims).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((void *)(ids).p)); __auto_type m9_fam9t7 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7)) m9_gv = nc_def_var (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7); m9_mon_leave (m9_gm); m9_gv; }))) m9a44 = (int64_t)(({ __auto_type m9_fam9t2 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((int) m9_i32 (nctype, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int) m9_i32 ((dims).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((void *)(ids).p)); __auto_type m9_fam9t7 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7)) m9_gv = nc_def_var (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t2 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((int) m9_i32 (nctype, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int) m9_i32 ((dims).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((void *)(ids).p)); __auto_type m9_fam9t7 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7)) m9_gv = nc_def_var (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7); m9_mon_leave (m9_gm); m9_gv; }))) m9a42 = (int64_t)(({ __auto_type m9_fam9t2 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((int) m9_i32 (nctype, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int) m9_i32 ((dims).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((void *)(ids).p)); __auto_type m9_fam9t7 = (((void *)(id).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7)) m9_gv = nc_def_var (m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s36, 10 }), m9a44, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s36, 10 }), m9a42, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -1479,7 +1476,7 @@ L_ret: ;
   return m9ret;
 }
 
-void NetCDF_PutAttStr (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err)
+void NetCDF_PutAttStr (NetCDF_File * f, int64_t varid, m9_sl_UTF8 name, m9_sl_UTF8 value, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1492,13 +1489,10 @@ void NetCDF_PutAttStr (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sl_CH
     if (err->exc) goto L_ret;
     nb = m9v;
   }
-  { __typeof__(vb) m9v = DynStr_Bytes (&(scratch), value, false, err);
+  vb = m9_utf_octets (value);
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((vb).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(vb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a43 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((vb).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(vb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-    vb = m9v;
-  }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((vb).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(vb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a45 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((vb).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(vb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
-    if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s37, 15 }), m9a45, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s37, 15 }), m9a43, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1508,7 +1502,7 @@ L_ret: ;
   return;
 }
 
-void NetCDF_PutAttF64 (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, double value, m9_state *err)
+void NetCDF_PutAttF64 (NetCDF_File * f, int64_t varid, m9_sl_UTF8 name, double value, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1523,9 +1517,9 @@ void NetCDF_PutAttF64 (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, double v
   }
   (*(double *) m9_at (v.v, INT64_C(0), INT64_C(1), sizeof (double), err)) = value;
   if (err->exc) goto L_ret;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((int) m9_i32 (NetCDF_TypeDouble, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((size_t)(INT64_C(1)))); __auto_type m9_fam9t6 = (((void *)(v).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6)) m9_gv = nc_put_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); m9_gv; }))) m9a46 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((int) m9_i32 (NetCDF_TypeDouble, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((size_t)(INT64_C(1)))); __auto_type m9_fam9t6 = (((void *)(v).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6)) m9_gv = nc_put_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((int) m9_i32 (NetCDF_TypeDouble, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((size_t)(INT64_C(1)))); __auto_type m9_fam9t6 = (((void *)(v).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6)) m9_gv = nc_put_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); m9_gv; }))) m9a44 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((int) m9_i32 (NetCDF_TypeDouble, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((size_t)(INT64_C(1)))); __auto_type m9_fam9t6 = (((void *)(v).v)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6)) m9_gv = nc_put_att_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s38, 17 }), m9a46, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s38, 17 }), m9a44, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1535,7 +1529,7 @@ L_ret: ;
   return;
 }
 
-void NetCDF_PutAttText (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err)
+void NetCDF_PutAttText (NetCDF_File * f, int64_t varid, m9_sl_UTF8 name, m9_sl_UTF8 value, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1548,13 +1542,10 @@ void NetCDF_PutAttText (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_sl_C
     if (err->exc) goto L_ret;
     nb = m9v;
   }
-  { __typeof__(vb) m9v = DynStr_Utf8 (&(scratch), value, err);
+  vb = m9_utf_octets (value);
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((vb).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(vb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a45 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((vb).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(vb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-    vb = m9v;
-  }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((vb).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(vb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a47 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(nb).p)); __auto_type m9_fam9t4 = (((size_t) m9_u64 ((vb).len, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(vb).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_att_text (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
-    if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s39, 15 }), m9a47, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s39, 15 }), m9a45, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1570,9 +1561,9 @@ void NetCDF_EndDef (NetCDF_File * f, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_enddef (m9_fam9t1)) m9_gv = nc_enddef (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; }))) m9a48 = (int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_enddef (m9_fam9t1)) m9_gv = nc_enddef (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_enddef (m9_fam9t1)) m9_gv = nc_enddef (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; }))) m9a46 = (int64_t)(({ __auto_type m9_fam9t1 = (NetCDF_NcId (f->ncid, err)); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_enddef (m9_fam9t1)) m9_gv = nc_enddef (m9_fam9t1); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s40, 9 }), m9a48, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s40, 9 }), m9a46, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1600,9 +1591,9 @@ void NetCDF_PutF64 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(data).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a49 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(data).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(data).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a47 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(data).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_double (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s41, 18 }), m9a49, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s41, 18 }), m9a47, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1626,9 +1617,9 @@ void NetCDF_FillF32 (NetCDF_File * f, int64_t varid, float fill, m9_state *err)
   }
   (*(float *) m9_at (v.p, INT64_C(0), v.len, sizeof (float), err)) = fill;
   if (err->exc) goto L_ret;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a50 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a48 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s42, 15 }), m9a50, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s42, 15 }), m9a48, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1644,9 +1635,9 @@ void NetCDF_Deflate (NetCDF_File * f, int64_t varid, int64_t level, m9_state *er
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(1)))); __auto_type m9_fam9t4 = (((int)(INT64_C(1)))); __auto_type m9_fam9t5 = (((int) m9_i32 (level, err))); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_deflate (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_def_var_deflate (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a51 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(1)))); __auto_type m9_fam9t4 = (((int)(INT64_C(1)))); __auto_type m9_fam9t5 = (((int) m9_i32 (level, err))); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_deflate (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_def_var_deflate (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(1)))); __auto_type m9_fam9t4 = (((int)(INT64_C(1)))); __auto_type m9_fam9t5 = (((int) m9_i32 (level, err))); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_deflate (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_def_var_deflate (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a49 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(1)))); __auto_type m9_fam9t4 = (((int)(INT64_C(1)))); __auto_type m9_fam9t5 = (((int) m9_i32 (level, err))); if (err->exc) goto L_ret; m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_deflate (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_def_var_deflate (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s43, 18 }), m9a51, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s43, 18 }), m9a49, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1667,9 +1658,9 @@ void NetCDF_Chunking (NetCDF_File * f, int64_t varid, m9_sl_I64 sizes, m9_state 
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(c).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_chunking (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_chunking (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a52 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(c).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_chunking (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_chunking (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(c).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_chunking (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_chunking (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a50 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(c).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_chunking (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_chunking (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s44, 19 }), m9a52, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s44, 19 }), m9a50, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1679,7 +1670,7 @@ L_ret: ;
   return;
 }
 
-void NetCDF_PutChars (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 count, m9_sl_CHAR text, m9_state *err)
+void NetCDF_PutChars (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 count, m9_sl_UTF8 text, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1704,8 +1695,10 @@ void NetCDF_PutChars (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  if (((text).len > n)) {
-    err->i[0] = (text).len;
+  bool m9t2 = (Text_BLen (text, err) > n);
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    err->i[0] = Text_BLen (text, err);
     err->i[1] = n;
     m9_raise (err, &Faults_SizeError);
     goto L_ret;
@@ -1714,17 +1707,17 @@ void NetCDF_PutChars (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64
     if (err->exc) goto L_ret;
     b = m9v;
   }
-  { __typeof__(i) m9t2to;
+  { __typeof__(i) m9t3to;
   i = INT64_C(0);
-  m9t2to = m9_sub_i64 ((text).len, INT64_C(1), err);
+  m9t3to = m9_sub_i64 (Text_BLen (text, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t2to) for (;;) {
-    { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9v = m9_byte ((int64_t)((*(uint32_t *) m9_at (text.p, i, text.len, sizeof (uint32_t), err))), err);
+  if (i <= m9t3to) for (;;) {
+    { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9v = m9_byte ((int64_t)(Text_BAt (text, i, err)), err);
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(s) m9v = NetCDF_Extents (start, err);
@@ -1735,9 +1728,9 @@ void NetCDF_PutChars (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t3 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(s).p)); __auto_type m9_fam9t6 = (((void *)(c).p)); __auto_type m9_fam9t7 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_text (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7)) m9_gv = nc_put_vara_text (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7); m9_mon_leave (m9_gm); m9_gv; }))) m9a53 = (int64_t)(({ __auto_type m9_fam9t3 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t4 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((void *)(s).p)); __auto_type m9_fam9t6 = (((void *)(c).p)); __auto_type m9_fam9t7 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_text (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7)) m9_gv = nc_put_vara_text (m9_fam9t3, m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t4 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((void *)(s).p)); __auto_type m9_fam9t7 = (((void *)(c).p)); __auto_type m9_fam9t8 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_text (m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8)) m9_gv = nc_put_vara_text (m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8); m9_mon_leave (m9_gm); m9_gv; }))) m9a51 = (int64_t)(({ __auto_type m9_fam9t4 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t5 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((void *)(s).p)); __auto_type m9_fam9t7 = (((void *)(c).p)); __auto_type m9_fam9t8 = (((void *)(b).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_text (m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8)) m9_gv = nc_put_vara_text (m9_fam9t4, m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s45, 16 }), m9a53, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s45, 16 }), m9a51, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1766,9 +1759,9 @@ void NetCDF_PutI64 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a54 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a52 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_longlong (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s46, 20 }), m9a54, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s46, 20 }), m9a52, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1797,9 +1790,9 @@ void NetCDF_PutI32 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a55 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a53 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_int (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s47, 15 }), m9a55, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s47, 15 }), m9a53, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1828,9 +1821,9 @@ void NetCDF_PutI16 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a56 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a54 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_short (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s48, 17 }), m9a56, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s48, 17 }), m9a54, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1859,9 +1852,9 @@ void NetCDF_PutBytes (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a57 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a55 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_ubyte (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s49, 17 }), m9a57, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s49, 17 }), m9a55, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1885,9 +1878,9 @@ void NetCDF_FillF64 (NetCDF_File * f, int64_t varid, double fill, m9_state *err)
   }
   (*(double *) m9_at (v.p, INT64_C(0), v.len, sizeof (double), err)) = fill;
   if (err->exc) goto L_ret;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a58 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a56 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s50, 15 }), m9a58, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s50, 15 }), m9a56, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1911,9 +1904,9 @@ void NetCDF_FillI64 (NetCDF_File * f, int64_t varid, int64_t fill, m9_state *err
   }
   (*(int64_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (int64_t), err)) = fill;
   if (err->exc) goto L_ret;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a59 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a57 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s51, 15 }), m9a59, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s51, 15 }), m9a57, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1937,9 +1930,9 @@ void NetCDF_FillI32 (NetCDF_File * f, int64_t varid, int32_t fill, m9_state *err
   }
   (*(int32_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (int32_t), err)) = fill;
   if (err->exc) goto L_ret;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a60 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a58 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s52, 15 }), m9a60, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s52, 15 }), m9a58, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1963,9 +1956,9 @@ void NetCDF_FillI16 (NetCDF_File * f, int64_t varid, int16_t fill, m9_state *err
   }
   (*(int16_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (int16_t), err)) = fill;
   if (err->exc) goto L_ret;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a61 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a59 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s53, 15 }), m9a61, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s53, 15 }), m9a59, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1989,9 +1982,9 @@ void NetCDF_FillByte (NetCDF_File * f, int64_t varid, uint8_t fill, m9_state *er
   }
   (*(uint8_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (uint8_t), err)) = fill;
   if (err->exc) goto L_ret;
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a62 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }))) m9a60 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((int)(INT64_C(0)))); __auto_type m9_fam9t4 = (((void *)(v).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4)) m9_gv = nc_def_var_fill (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s54, 15 }), m9a62, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s54, 15 }), m9a60, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -2001,16 +1994,16 @@ L_ret: ;
   return;
 }
 
-m9_sl_m9_sl_CHAR NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_t n, int64_t width, m9_state *err)
+m9_sl_m9_sl_UTF8 NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_t n, int64_t width, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
-  m9_sl_m9_sl_CHAR m9ret = {0};
+  m9_sl_m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE raw = {0}; (void) raw;
-  m9_sl_m9_sl_CHAR out = {0}; (void) out;
+  m9_sl_m9_sl_UTF8 out = {0}; (void) out;
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
   { __typeof__(raw) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_mul_i64 (n, width, err), err);
@@ -2019,7 +2012,7 @@ m9_sl_m9_sl_CHAR NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid,
   }
   NetCDF_GetText (f, varid, INT64_C(0), n, width, raw, err);
   if (err->exc) goto L_ret;
-  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), n, err);
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), n, err);
     if (err->exc) goto L_ret;
     out = m9v;
   }
@@ -2038,11 +2031,11 @@ m9_sl_m9_sl_CHAR NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid,
         k = m9v;
       }
     }
-    { __typeof__(({ __auto_type m9t3 = raw; int64_t m9t3a = m9_mul_i64 (i, width, err), m9t3n = k; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a63 = ({ __auto_type m9t3 = raw; int64_t m9t3a = m9_mul_i64 (i, width, err), m9t3n = k; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
+    { __typeof__(({ __auto_type m9t3 = raw; int64_t m9t3a = m9_mul_i64 (i, width, err), m9t3n = k; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a61 = ({ __auto_type m9t3 = raw; int64_t m9t3a = m9_mul_i64 (i, width, err), m9t3n = k; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_Chars (pool, m9a63, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err))) m9v = DynStr_Decoded (pool, m9a61, err);
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (out.p, i, out.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
@@ -2193,9 +2186,9 @@ void NetCDF_GetText (NetCDF_File * f, int64_t varid, int64_t row, int64_t n, int
       if (err->exc) goto L_ret;
       c = m9v;
     }
-    { __typeof__((int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(s).p)); __auto_type m9_fam9t8 = (((void *)(c).p)); __auto_type m9_fam9t9 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9)) m9_gv = nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9); m9_mon_leave (m9_gm); m9_gv; }))) m9a64 = (int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(s).p)); __auto_type m9_fam9t8 = (((void *)(c).p)); __auto_type m9_fam9t9 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9)) m9_gv = nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9); m9_mon_leave (m9_gm); m9_gv; }));
+    { __typeof__((int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(s).p)); __auto_type m9_fam9t8 = (((void *)(c).p)); __auto_type m9_fam9t9 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9)) m9_gv = nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9); m9_mon_leave (m9_gm); m9_gv; }))) m9a62 = (int64_t)(({ __auto_type m9_fam9t5 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t6 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t7 = (((void *)(s).p)); __auto_type m9_fam9t8 = (((void *)(c).p)); __auto_type m9_fam9t9 = (((void *)(out).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9)) m9_gv = nc_get_vara_text (m9_fam9t5, m9_fam9t6, m9_fam9t7, m9_fam9t8, m9_fam9t9); m9_mon_leave (m9_gm); m9_gv; }));
       if (err->exc) goto L_ret;
-    NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s55, 16 }), m9a64, err);
+    NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s55, 16 }), m9a62, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -2244,9 +2237,9 @@ void NetCDF_GetText (NetCDF_File * f, int64_t varid, int64_t row, int64_t n, int
       if (err->exc) goto L_ret;
       blk = m9v;
     }
-    { __typeof__((int64_t)(({ __auto_type m9_fam9t13 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t14 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t15 = (((void *)(s).p)); __auto_type m9_fam9t16 = (((void *)(c).p)); __auto_type m9_fam9t17 = (((void *)(blk).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17)) m9_gv = nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }))) m9a65 = (int64_t)(({ __auto_type m9_fam9t13 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t14 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t15 = (((void *)(s).p)); __auto_type m9_fam9t16 = (((void *)(c).p)); __auto_type m9_fam9t17 = (((void *)(blk).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17)) m9_gv = nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }));
+    { __typeof__((int64_t)(({ __auto_type m9_fam9t13 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t14 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t15 = (((void *)(s).p)); __auto_type m9_fam9t16 = (((void *)(c).p)); __auto_type m9_fam9t17 = (((void *)(blk).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17)) m9_gv = nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }))) m9a63 = (int64_t)(({ __auto_type m9_fam9t13 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t14 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t15 = (((void *)(s).p)); __auto_type m9_fam9t16 = (((void *)(c).p)); __auto_type m9_fam9t17 = (((void *)(blk).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17)) m9_gv = nc_get_vara_text (m9_fam9t13, m9_fam9t14, m9_fam9t15, m9_fam9t16, m9_fam9t17); m9_mon_leave (m9_gm); m9_gv; }));
       if (err->exc) goto L_ret;
-    NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s56, 16 }), m9a65, err);
+    NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s56, 16 }), m9a63, err);
     if (err->exc) goto L_ret;
     }
     if ((uint64_t) m9t10to - (uint64_t) r < (uint64_t) 1) break;
@@ -2278,9 +2271,9 @@ void NetCDF_PutF32 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 c
     if (err->exc) goto L_ret;
     c = m9v;
   }
-  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(data).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a66 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(data).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
+  { __typeof__((int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(data).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }))) m9a64 = (int64_t)(({ __auto_type m9_fam9t1 = (((int) m9_i32 (f->ncid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t2 = (((int) m9_i32 (varid, err))); if (err->exc) goto L_ret; __auto_type m9_fam9t3 = (((void *)(s).p)); __auto_type m9_fam9t4 = (((void *)(c).p)); __auto_type m9_fam9t5 = (((void *)(data).p)); m9_mon *m9_gm = m9_gate (&m9_gate_cnc, "cnc"); m9_mon_enter (m9_gm); __typeof__(nc_put_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5)) m9_gv = nc_put_vara_float (m9_fam9t1, m9_fam9t2, m9_fam9t3, m9_fam9t4, m9_fam9t5); m9_mon_leave (m9_gm); m9_gv; }));
     if (err->exc) goto L_ret;
-  NetCDF_Check (((m9_sl_CHAR){ (uint32_t *) m9s57, 17 }), m9a66, err);
+  NetCDF_Check (((m9_sl_UTF8){ (uint8_t *) m9s57, 17 }), m9a64, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -2290,13 +2283,13 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR NetCDF_Message (m9_pool *pool, int64_t status, m9_state *err)
+static m9_sl_UTF8 NetCDF_Message (m9_pool *pool, int64_t status, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   const void * p = NULL; (void) p;
   void * q = NULL; (void) q;
   int64_t n = 0; (void) n;
@@ -2318,28 +2311,28 @@ static m9_sl_CHAR NetCDF_Message (m9_pool *pool, int64_t status, m9_state *err)
     q = m9v;
   }
   err->res = m9res;
-  { __typeof__(({ __auto_type m9t6 = b; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a67 = ({ __auto_type m9t6 = b; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+  { __typeof__(({ __auto_type m9t6 = b; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a65 = ({ __auto_type m9t6 = b; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a67, err);
+  m9ret = DynStr_Decoded (pool, m9a65, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void NetCDF_Fail (m9_sl_CHAR op, int64_t status, m9_state *err)
+static void NetCDF_Fail (m9_sl_UTF8 op, int64_t status, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
-  m9_sl_CHAR detail = {0}; (void) detail;
-  detail = (m9_sl_CHAR){ NULL, 0 };
+  m9_sl_UTF8 detail = {0}; (void) detail;
+  detail = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(detail) m9v = NetCDF_Message (&(scratch), status, err);
     if (err->exc) goto L_hdl_m9t1;
     detail = m9v;
@@ -2348,7 +2341,7 @@ static void NetCDF_Fail (m9_sl_CHAR op, int64_t status, m9_state *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    detail = (m9_sl_CHAR){ NULL, 0 };
+    detail = ((m9_sl_UTF8){ NULL, 0 });
     goto L_dn_m9t2;
   }
   goto L_ret;
@@ -2365,7 +2358,7 @@ L_ret: ;
   return;
 }
 
-static void NetCDF_Check (m9_sl_CHAR op, int64_t status, m9_state *err)
+static void NetCDF_Check (m9_sl_UTF8 op, int64_t status, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2381,16 +2374,36 @@ L_ret: ;
   return;
 }
 
-static m9_sl_BYTE NetCDF_CStr (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+static m9_sl_BYTE NetCDF_CStr (m9_pool *pool, m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
   m9_sl_BYTE m9ret = {0};
-  err->res = m9res;
-  m9ret = DynStr_Bytes (pool, s, true, err);
+  m9_sl_BYTE u = {0}; (void) u;
+  m9_sl_BYTE b = {0}; (void) b;
+  int64_t i = 0; (void) i;
+  u = m9_utf_octets (s);
+  { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 ((u).len, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
+  { __typeof__(i) m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((u).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
+  if (i <= m9t1to) for (;;) {
+    { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (u.p, i, u.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
+  } }
+  err->res = m9res;
+  m9ret = b;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -2414,8 +2427,8 @@ static int NetCDF_NcId (int64_t v, m9_state *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s58, 2 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s58, 2 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s59, 14 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s59, 14 }); err->s[1].p = m9t4.p; err->s[1].len = m9t4.len; m9_pay_keep (err, 1, sizeof (*m9t4.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s58, 2 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s58, 2 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s59, 14 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s59, 14 }); err->s[1].p = m9t4.p; err->s[1].len = m9t4.len; m9_pay_keep (err, 1, sizeof (*m9t4.p)); }
     err->i[0] = v;
     m9_raise (err, &NetCDF_Error);
     goto L_ret;
@@ -2556,6 +2569,7 @@ void NetCDF_m9init (m9_state *err)
   err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
+  Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9prev;
 }

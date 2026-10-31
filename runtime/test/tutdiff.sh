@@ -1,9 +1,10 @@
 #!/bin/sh
-# tutdiff: the tutorial cannot disagree with the compiler people
-# download.  Every C*.m9 example must compile, run, and print
-# exactly its checked-in expectation; every X*.m9 must be REFUSED
-# with the diagnostic its own EXPECT-ERROR line names.  The docdiff
-# principle applied to prose: examples are gated, so they cannot rot.
+# tutdiff makes sure the tutorial cannot disagree with the compiler
+# people download.  Every C*.m9 example must compile, run, and print
+# exactly its checked-in expectation.  Every X*.m9 must be REFUSED
+# with the diagnostic its own EXPECT-ERROR line names.  This is the
+# docdiff principle applied to prose: examples are gated, so they
+# cannot rot.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh
@@ -11,15 +12,17 @@ cd "$(dirname "$0")"
 M9CNEW=$(mktemp -d)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
-# replaced only when it differs: a gate in another lane running m9c keeps
-# its file, and --run's cache, whose key holds m9c's mtime, its entries
+# Replace m9c only when it differs.  So a gate in another lane running
+# m9c keeps its file, and --run's cache keeps its entries; that cache's
+# key holds m9c's mtime.
 if cmp -s "$M9CNEW/m9c" m9c; then rm -r "$M9CNEW"; else mv -f "$M9CNEW/m9c" m9c; rmdir "$M9CNEW"; fi
 
 M9C=$(pwd)/m9c
-# the public m9c repository carries docs/tutorial-plan.md and not the
-# tutorial itself (that is public in atverm/M9Tutorial); there this
-# gate has nothing to hold and says so -- BEFORE the cd below, which
-# under set -e would end the script on the missing directory
+# The public m9c repository carries docs/tutorial-plan.md and not the
+# tutorial itself (that is public in atverm/M9Tutorial).  There this
+# gate has nothing to hold and says so.  It says so BEFORE the cd
+# below, which under set -e would end the script on the missing
+# directory.
 [ -d ../../docs/tutorial/examples ] \
   || { echo "SKIP: tutdiff (no docs/tutorial in this tree)"; exit 0; }
 EXA=$(cd ../../docs/tutorial/examples && pwd)
@@ -29,7 +32,7 @@ W=$(mktemp -d "${TMPDIR:-/tmp}/m9tut.XXXXXX")   # a fixed /tmp name collided bet
 trap 'rm -rf "$W"' EXIT
 . ./lib/tutcommon.sh
 
-# the zarr chapter needs libblosc and a generatable store; CI has
+# The zarr chapter needs libblosc and a generatable store.  CI has
 # neither, so it SKIPS OUT LOUD there rather than passing quietly
 # (its quoted output is still drift-checked below, which needs no
 # libraries).  Everything else runs everywhere gcc runs.
@@ -37,14 +40,14 @@ ZARR_OK=1
 ldconfig -p 2>/dev/null | grep -q 'libblosc\.so\.1' || ZARR_OK=0
 # chapter 11 fetches over plain HTTP, but Http.m9 declares the TLS
 # shims too, so the LINK needs libssl whatever the program does.
-# Asked by linking, not by guessing at a package name.
+# The gate asks by linking, not by guessing at a package name.
 TLS_OK=1
 printf 'int main(void){return 0;}' > "$W"/m9tls.c
 gcc "$W"/m9tls.c -lssl -lcrypto -o "$W"/m9tls 2>/dev/null || TLS_OK=0
-# chapter 14 WRITES a NetCDF file, so its link needs libnetcdf -- the
-# only example that reaches a NetCDF procedure (C7Series links Frame
-# without it because -flto drops the ones nothing calls).  CI has no
-# libnetcdf; asked the same way, by linking.
+# Chapter 14 WRITES a NetCDF file, so its link needs libnetcdf.  It is
+# the only example that reaches a NetCDF procedure (C7Series links
+# Frame without it because -flto drops the ones nothing calls).  CI
+# has no libnetcdf.  The gate asks the same way, by linking.
 NETCDF_OK=1
 gcc "$W"/m9tls.c -lnetcdf -o "$W"/m9nc 2>/dev/null || NETCDF_OK=0
 
@@ -54,10 +57,10 @@ for f in "$EXA"/C*.m9; do
   m=$(basename "$f" .m9)
   # C10Icos reads the same kind of store (through TLS as well), so it
   # skips with C8Zarr.  It did not, from the renumbering (98411ba)
-  # until the public mirror's first CI run: the skip named the old
-  # C7 twin only, and CI -- which has no libblosc -- went red at
-  # "C10Icos does not compile" for every commit of a day, unnoticed
-  # because nobody looked at the private CI that day.
+  # until the public mirror's first CI run.  The skip named the old
+  # C7 twin only, and CI (which has no libblosc) went red at
+  # "C10Icos does not compile" for every commit of a day.  Nobody
+  # noticed, because nobody looked at the private CI that day.
   if { [ "$m" = C8Zarr ] || [ "$m" = C10Icos ]; } && [ "$ZARR_OK" != 1 ]; then
     echo "SKIP: $m (libblosc, and for C10Icos libssl, are absent)"
     continue
@@ -90,8 +93,8 @@ for f in "$EXA"/X*.m9; do
   m=$(basename "$f" .m9)
   want=$(sed -n 's/^(\* EXPECT-ERROR: \(.*\) \*)$/\1/p' "$f")
   [ -n "$want" ] || { echo "FAIL: $m has no EXPECT-ERROR line"; exit 1; }
-  # from the examples' directory and by the file's own name, as a
-  # reader runs it: the refusal names the file (2026-10-22) and the
+  # Check from the examples' directory and by the file's own name, as
+  # a reader runs it.  The refusal names the file (2026-10-22), and the
   # chapters quote it.  --check writes nothing there and refuses what
   # -c refuses (it runs the generator too).
   if ( cd "$EXA" && M9RUNTIME="$RT" M9LIBRARY="$LIB" \

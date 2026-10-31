@@ -1,0 +1,52 @@
+MODULE R6SplitCarrier ;
+(* The checker refuses this since 2026-10-30.  It is oneflux's
+   FrameTextLines, found porting to the UTF-8 switch, here without the
+   switch.  Read builds a frame string and hands it to Lines.  Lines
+   splits it and copies the pieces, views of it, into a pool slice.
+   The caller keeps that slice through VAR t, so the pieces dangle once
+   Read returns.  The checker refused the direct store but not the
+   helper, until it followed a carrier's ELEMENTS (Sem.LocalSelBearing).
+   0.25.4 accepted it and printed garbage. *)
+IMPORT Io, Text ;
+TYPE
+  Table = RECORD lines : SLICE OF STR END ;
+
+PROCEDURE Lines (VAR pool: POOL ; RO text: STR) : SLICE OF STR =
+VAR
+  raw, out : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  raw := Text.Split (text, 0AC) ;
+  out := NEW (pool, STR, LEN (raw)) ;
+  FOR i := 0 TO LEN (raw) - 1 DO out[i] := raw[i] END ;
+  RETURN out
+END Lines ;
+
+PROCEDURE Read (VAR pool: POOL ; RO a: STR ; VAR t: Table) =
+VAR s : STR ;
+BEGIN
+  s := a + 0AC + a ;
+  t.lines := Lines (pool, s)
+END Read ;
+
+PROCEDURE Churn (n: I64) : I64 =
+VAR
+  s : STR ;
+  i : I64 ;
+BEGIN
+  s := '' ;
+  FOR i := 1 TO n DO s := s + 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' END ;
+  RETURN LEN (s)
+END Churn ;
+
+VAR
+  pool : POOL ;
+  t : Table ;
+  n : I64 ;
+BEGIN
+  Read (pool, '2023-07-02 00:30', t) ;
+  n := Churn (1000) ;
+  Io.WriteLine ('[' + t.lines[0] + '] [' + t.lines[1] + ']')
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError')
+END R6SplitCarrier.

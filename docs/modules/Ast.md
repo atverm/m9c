@@ -1,11 +1,12 @@
 # Ast
 
-M9 abstract syntax, in M9 -- restated from host/fpc/M9AST.pas for
-the P5 self-hosted parser.  One homogeneous node: kind codes
-mirror the FPC TNodeKind order (0 File .. 80 ArgList); fixed child
-slots may be NONE and print as absence; a and b carry ident and
-literal text verbatim.  Nodes and their kid vectors live in the
-caller's pool: free the pool, free the tree -- the Json story.
+Ast states the M9 abstract syntax in M9, restated from
+host/fpc/M9AST.pas for the P5 self-hosted parser.  It has one
+homogeneous node.  Its kind codes mirror the FPC TNodeKind order
+(0 File .. 80 ArgList).  Fixed child slots may be NONE and print
+as absence.  Fields a and b carry ident and literal text verbatim.
+Nodes and their kid vectors live in the caller's pool: free the
+pool, free the tree -- the Json story.
 
 ### CONST NFile
 
@@ -329,10 +330,10 @@ _(documented with the group below)_
 
 ### CONST NArgList
 
-Appended, not inserted.  The FPC enum grew nkGridType next to
-nkArrayType, but a code that MOVES is a code no one can rely on
--- the rule Lex already states for keywords -- and nothing
-compares these numbers across the two implementations:
+These codes are appended, not inserted.  The FPC enum grew
+nkGridType next to nkArrayType.  But no one can rely on a code
+that MOVES; Lex already states that rule for keywords.  And
+nothing compares these numbers across the two implementations:
 parsediff compares printed text and gendiff compares emitted C.
 
 ### CONST NGridType
@@ -345,79 +346,87 @@ _(documented with the group below)_
 
 ### CONST NProcType
 
-PROCEDURE (params) [: T] [RAISES ...] as a TYPE;
-kids as a ProcDecl's head: [0] NParamList,
-[1] result type or NONE, [2] NRaises or NONE.
-docs/proctype-plan.md, 2026-09-27
+NProcType is PROCEDURE (params) [: T]
+[RAISES ...] as a TYPE.  Its kids are a
+ProcDecl's head: [0] NParamList, [1] result
+type or NONE, [2] NRaises or NONE.
+docs/proctype-plan.md, 2026-09-27.
 
 ### CONST NAggregate
 
-[ e1, ..., en ] as the value of a CONST: the
-kids are the elements, in order.  Only a
-ConstDecl's kid is ever one -- the parser
-reads `[' as an aggregate nowhere else -- so
+NAggregate is [ e1, ..., en ] as the value of
+a CONST.  Its kids are the elements, in order.
+Only a ConstDecl's kid is ever one: the parser
+reads `[' as an aggregate nowhere else.  So
 `[' stays what it was in an expression, a
 subscript.  docs/plan-0.14.md stage 2a,
-2026-10-01
+2026-10-01.
 
 ### CONST NGridOf
 
-GRID (s, n0, ..., nR): a grid of rank R laid
-over a slice's storage (par 2.2.1); kids[0]
-the slice, the rest the extents, so the rank
-is nkids - 1.  2026-10-08
+NGridOf is GRID (s, n0, ..., nR): a grid of
+rank R laid over a slice's storage (par
+2.2.1).  kids[0] is the slice and the rest are
+the extents, so the rank is nkids - 1.
+2026-10-08.
 
 ### CONST NLinkList
 
-LINK "w1", "w2": what a FOR "C" unit links --
-a library name, a linker word, a shim source
-beside the runtime (par 7).  The LAST kid of
+NLinkList is LINK "w1", "w2": the words a
+FOR "C" unit links.  A word is a library name,
+a linker word, or a shim source beside the
+runtime (par 7).  The list is the LAST kid of
 the Definition node, after the declarations,
 so that nothing that walks a unit by position
-moves; kids are NString nodes, a the word.
-2026-10-09
+moves.  Its kids are NString nodes, with the
+word in a.  2026-10-09.
 
 ### CONST NCallSel
 
-F (x).f, F (x)[i]: a call's answer selected
-from (par 10, Factor); kids[0] the NCallExpr,
-the rest NSelField / NSelIndex as a designator
-has them.  An expression, never a target.
-2026-10-09, cp-kernel's stages 4b and 6a
+NCallSel is F (x).f, F (x)[i]: a call's answer
+selected from (par 10, Factor).  kids[0] is
+the NCallExpr; the rest are NSelField /
+NSelIndex as a designator has them.  It is an
+expression, never a target.  2026-10-09,
+cp-kernel's stages 4b and 6a.
 
 ### CONST NForIn
 
-FOR x IN s DO ... END: a the variable, kids[0]
-the designator iterated, kids[1] the body.
-2026-10-11, cp-kernel's proposal
+NForIn is FOR x IN s DO ... END.  a holds the
+variable, kids[0] the designator iterated,
+kids[1] the body.  2026-10-11, cp-kernel's
+proposal.
 
 ### TYPE Kid
 
-named so NEW can say it;
-Node resolves lazily below
+Kid is named so NEW can
+say it.  Node resolves
+lazily below.
 
 ### TYPE Node
 
-the node's names, UTF-8 since
+au and bu hold the node's names,
+UTF-8 since
 docs/utf8-stage3-plan.md step 7
-(2026-10-23): written by SetA/SetB
-below, which copy
+(2026-10-23).  SetA/SetB below
+write them, and they copy.
 
 ### NewNode (VAR pool: POOL ; kind, line, col: I64) : PTR Node IN pool
 
-a node with no children and empty au/bu, ready for Add.
+NewNode answers a node with no children and empty au/bu, ready
+for Add.
 
-kind      -- one of the N* constants above.  They are
-             EXPORTED CONSTS with fixed values, not an
-             enumeration, because both generators and both
-             checkers agree on them by number: a code that
-             moves is a code nobody can rely on, which is why
-             NGridType was appended at 81 rather than
-             inserted where it belonged alphabetically.
-line, col -- where the construct STARTS.  There is no end
-             position on a node, which is worth knowing
-             before writing anything that wants to know how
-             far a declaration reached.
+  kind      -- one of the N* constants above.  They are
+               EXPORTED CONSTS with fixed values, not an
+               enumeration.  Both generators and both checkers
+               agree on them by number.  Nobody can rely on a
+               code that moves.  That is why NGridType was
+               appended at 81 rather than inserted where it
+               belonged alphabetically.
+  line, col -- the place where the construct STARTS.  A node
+               has no end position.  This is worth knowing
+               before writing anything that wants to know how
+               far a declaration reached.
 
 ### Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid)
 
@@ -441,15 +450,16 @@ _(documented with the group below)_
 
 ### SetBUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF)
 
-a node's name, given as either text and COPIED into pool: a node
-owns its names.  Ast.SetA (pool, n, t) reaches the UTF form by t's
-type.  The one way to write au or bu since 2026-10-23.
-  pool -- the node's, as Add takes it: NOT the object-pool form
-          NEW (n, ...), which for a local declared without IN
-          lends the caller's FRAME as the node's pool (decision
-          18's known gap) -- the first cut did, the checker
-          accepted it, and every name in the tree read as freed
-          storage
+These four set a node's name, given as either text and COPIED
+into pool: a node owns its names.  Ast.SetA (pool, n, t) reaches
+the UTF form by t's type.  They are the one way to write au or bu
+since 2026-10-23.
+  pool -- the node's, as Add takes it.  It is NOT the object-pool
+          form NEW (n, ...).  For a local declared without IN,
+          that form lends the caller's FRAME as the node's pool
+          (decision 18's known gap).  The first cut used it, the
+          checker accepted it, and every name in the tree read
+          as freed storage.
 
 ### ScalarConst (k: Kid ; VAR v: I64 ; VAR ch: BOOL) : BOOL
 
@@ -457,7 +467,8 @@ _(documented with the group below)_
 
 ### CharCode (RO lit: STR) : I64
 
-a CHAR literal's code: its hex digits, the C suffix dropped
+CharCode answers a CHAR literal's code: its hex digits, the C
+suffix dropped.
 
 ### SetType (id: I64 ; KEPT t: Kid)
 
@@ -493,15 +504,17 @@ NONE is a legal child: absence with a position
 
 ### FoldInt (k: Kid ; VAR v: I64) : BOOL
 
-the value of an integer CONSTANT EXPRESSION -- literals (decimal
-or 0x hex), parentheses, unary minus and + - * DIV MOD -- with
-the runtime's arithmetic: checked, DIV and MOD truncating.  FALSE
-for any other form, an overflow, a division by zero.  Shared by
-both checkers' refusal and both generators' folding (a CONST over
-an expression was accepted by the checker and refused by the
-generator until 2026-10-09)
+FoldInt answers the value of an integer CONSTANT EXPRESSION:
+literals (decimal or 0x hex), parentheses, unary minus and
++ - * DIV MOD.  It uses the runtime's arithmetic: checked, DIV
+and MOD truncating.  It answers FALSE for any other form, an
+overflow, a division by zero.  Both checkers' refusal and both
+generators' folding share it.  Until 2026-10-09 the checker
+accepted a CONST over an expression and the generator refused
+it.
 
 ### IntText (v: I64 ; VAR buf: ARRAY 24 OF CHAR) : I64
 
-v's decimal digits WITHOUT the sign into buf, answering how many;
-the smallest I64 has no positive twin and answers 0
+IntText writes v's decimal digits WITHOUT the sign into buf and
+answers how many.  The smallest I64 has no positive twin and
+answers 0.

@@ -3,7 +3,7 @@ REVIEW NbCells -- 17 procedures with a body, 11 of them functions; 10 headings i
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
   assignments                                    22
-  arguments                                     138
+  arguments                                     145
   RETURN values                                  17
   operands of a comparison or an operator        22
   CASE labels                                     3
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        9
   NEW in the frame                                0
   NEW in a named pool                             2
-  calls of a STR form with a UTF twin             6   Io.Env -> Io.EnvUtf, Io.Exists -> Io.ExistsUtf, Io.MkDir -> Io.MkDirUtf, Io.Exists -> Io.ExistsUtf, Io.Remove -> Io.RemoveUtf, Io.Rename -> Io.RenameUtf
-  STR subscripts, writes and LEN                  4   len v, len name, len name, index name[i]
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

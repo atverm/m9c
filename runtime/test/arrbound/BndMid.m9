@@ -1,8 +1,8 @@
 DEFINITION MODULE BndMid ;
 
-(* a second level: bounds that name BndDef's CONSTs, one of its own in
-   an expression with BndDef's, and an exported VAR whose type is
-   written in place *)
+(* BndMid is a second level: bounds that name BndDef's CONSTs, one of
+   its own in an expression with BndDef's, and an exported VAR whose
+   type is written in place. *)
 
 IMPORT BndDef ;
 

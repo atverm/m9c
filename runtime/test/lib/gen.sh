@@ -3,41 +3,43 @@
 # toolchain, which every gate that has an M9 side is BUILT FROM (the FPC
 # generator made it until 2026-10-22, when M9Gen.pas was frozen).
 #
-# This exists because six gates read it and none of them made it,
-# while the one that did (gendiff) ran last.  A gate compiled from a
-# stale gen tests the previous version of the thing being changed and
-# says PASS -- which it did, for an alias change neither semdiff nor
-# probediff had actually seen.  An artifact nobody produced in this
+# This file exists because six gates read runtime/gen and none of them
+# made it, while the one that did (gendiff) ran last.  A gate compiled
+# from a stale gen tests the previous version of the thing being
+# changed and says PASS.  It did, for an alias change neither semdiff
+# nor probediff had actually seen.  An artifact nobody produced in this
 # run is not evidence.
 #
-# Sourced, not executed (`. ./lib/gen.sh`), from inside gates that have
-# already cd'd to runtime/test.
+# Gates that have already cd'd to runtime/test source this file
+# (`. ./lib/gen.sh`); nobody executes it.
 # THE DIAGNOSTICS SURVIVE A FAILURE.  Both were >/dev/null, so a
-# generator that refused a module exited non-zero into `set -e` and
-# every caller died with NO OUTPUT AT ALL -- a zero-length log and a
-# status of 1, which reads like the shell being broken.  Cost an hour
-# on 2026-09-10, when the refusal was one line naming its own cause.
+# generator that refused a module exited non-zero into `set -e`.  Then
+# every caller died with NO OUTPUT AT ALL: a zero-length log and a
+# status of 1, which reads like the shell being broken.  That cost an
+# hour on 2026-09-10, when the refusal was one line naming its own
+# cause.
 # ONCE A ROUND, NOT ONCE A GATE (2026-10-22): every gate sourced this and
 # regenerated the same C, 4.6 s each, two minutes of a round.  It now
-# skips when it can PROVE runtime/gen is what the generator would write:
-# the hash of every input -- the corpus, this script, the module list,
-# the generator's driver --
-# equals the one recorded at the last generation, AND the hash of
-# runtime/gen equals what that generation wrote (a hand edit, a deleted
-# gen, a partial run all regenerate).  Two gates starting at once queue
-# on a lock rather than both writing runtime/gen.
+# skips when it can PROVE runtime/gen is what the generator would
+# write.  The hash of every input (the corpus, this script, the module
+# list, the generator's driver) must equal the one recorded at the last
+# generation.  AND the hash of runtime/gen must equal what that
+# generation wrote (a hand edit, a deleted gen, a partial run all
+# regenerate).  Two gates starting at once queue on a lock rather than
+# both writing runtime/gen.
 GENKEY=$(cd ../.. && pwd | cksum | cut -d' ' -f1)
 GENSTAMP="${TMPDIR:-/tmp}/m9genstamp.$GENKEY"
 GENLOCK="${TMPDIR:-/tmp}/m9genlock.$GENKEY"
 gen_inputs () { cat ../../corpus/*.m9 ./lib/gen.sh ./lib/mods.sh ./gendump_m9.c | cksum | cut -d' ' -f1; }
 gen_output () { ls ../gen 2>/dev/null | cksum | cut -d' ' -f1; cat ../gen/* 2>/dev/null | cksum | cut -d' ' -f1; }
-# the lists, before the stamp is read: a gate links $COMPILERC whether or
-# not this run regenerates (sourced inside the regeneration only, it was
-# empty on every run the stamp skipped, 2026-10-23)
+# Source the lists before the stamp is read.  A gate links $COMPILERC
+# whether or not this run regenerates.  Sourced inside the regeneration
+# only, it was empty on every run the stamp skipped (2026-10-23).
 . ./lib/mods.sh
 GENWAIT=0
 while ! mkdir "$GENLOCK" 2>/dev/null; do
-  # a gate killed while generating leaves its lock: five minutes is stale
+  # A gate killed while generating leaves its lock.  Five minutes is
+  # stale.
   GENWAIT=$((GENWAIT+1))
   [ "$GENWAIT" -lt 300 ] || { rmdir "$GENLOCK" 2>/dev/null; GENWAIT=0; }
   sleep 1
@@ -46,12 +48,13 @@ if [ -f "$GENSTAMP" ] && [ "$(cat "$GENSTAMP")" = "$(gen_inputs) $(gen_output | 
   rmdir "$GENLOCK"
 else
 # THE M9 GENERATOR MAKES IT (Alex, 2026-10-22: M9Gen.pas frozen,
-# docs/twin-plan.md).  Built from the runtime/gen there is -- the one
-# checked in, or HEAD's when the directory is gone -- and run over every
-# module until what it writes is what it was built from: the
-# bootstrap's fixpoint, reached in two passes when Gen.m9 changed (the
-# old generator writes the new one, which writes itself).  A change
-# the generator needs in its OWN source lands a commit before its use.
+# docs/twin-plan.md).  It is built from the runtime/gen there is: the
+# one checked in, or HEAD's when the directory is gone.  It runs over
+# every module until what it writes is what it was built from.  That is
+# the bootstrap's fixpoint, reached in two passes when Gen.m9 changed
+# (the old generator writes the new one, which writes itself).  A
+# change the generator needs in its OWN source lands a commit before
+# its use.
 M9GENST=0
 M9GT=$(mktemp -d "${TMPDIR:-/tmp}/m9gen.XXXXXX")   # not a fixed name: gates run at once
 M9GENTG=${TG:-}

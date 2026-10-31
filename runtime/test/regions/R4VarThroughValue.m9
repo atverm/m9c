@@ -2,8 +2,8 @@ MODULE R4VarThroughValue ;
 
 (* SanVarComponentStr with st a VALUE record in Retrieve (soundfuzz's
    mutant, 2026-10-26): st.instr[0].model is in the slice the copy shares
-   with the module, the callee's new string lives in Retrieve's frame --
-   a use-after-free, refused *)
+   with the module, and the callee's new string lives in Retrieve's
+   frame.  That is a use-after-free, and it is refused. *)
 (* Dynmd's shape: a period's pool handed down beside the run state, a
    string kept in that pool stored into the run state, read by the
    next period after the first one's pool is gone *)

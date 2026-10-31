@@ -1,21 +1,22 @@
 MODULE NumericTest ;
 
-(* Numeric against scipy: Root, Minimum, Integral, OdeStep, OdeSolve.
-   Goldens: runtime/test/gold/Numeric.gold from tools/numericgold.py,
-   which first holds Numeric's algorithms, transcribed into Python,
-   to scipy itself.
+(* NumericTest holds Numeric against scipy: Root, Minimum, Integral,
+   OdeStep, OdeSolve.  The goldens are runtime/test/gold/Numeric.gold
+   from tools/numericgold.py, which first holds Numeric's algorithms,
+   transcribed into Python, to scipy itself.
 
    The functions below are the generator's, operation for operation.
    Root and Minimum are compared TO THE BIT, and with the number of
    times they called the function: the same answer by the same path.
-   Those functions are algebraic on purpose -- + - * / and sqrt give
-   the same bits on every machine, cos and exp need not -- and the
-   comparison assumes what this compiler's C does on x86-64, that a
-   product and a sum are rounded separately.  Integral is held to
-   scipy's value within the error it reports itself; OdeSolve to
-   scipy's RK45 at 1e-9, at a LOOSE tolerance too, where the two are
-   both a thousandth off the truth and agree with each other to nine
-   digits because they are the same method. *)
+   Those functions are algebraic on purpose.  The operations + - * /
+   and sqrt give the same bits on every machine, and cos and exp need
+   not.  The comparison assumes what this compiler's C does on
+   x86-64: a product and a sum are rounded separately.  Integral is
+   held to scipy's value within the error it reports itself.
+   OdeSolve is held to scipy's RK45 at 1e-9, and at a LOOSE tolerance
+   too.  There the two are both a thousandth off the truth, and they
+   agree with each other to nine digits because they are the same
+   method. *)
 
 IMPORT Check ;
 IMPORT Faults ;
@@ -52,7 +53,8 @@ CONST
   Ones3 = [1.0, 1.0, 1.0] ;
   KoStart = [0.25, 0.39, 0.415, 0.39] ;
   KoFar = [2.5, 3.9, 4.15, 3.9] ;
-  (* the measurements of Bard's problem and of Kowalik and Osborne's *)
+  (* These are the measurements of Bard's problem and of Kowalik and
+     Osborne's. *)
   BardY = [0.14, 0.18, 0.22, 0.25, 0.29, 0.32, 0.35, 0.39, 0.37, 0.58,
            0.73, 0.96, 1.34, 2.10, 4.39] ;
   KoY = [0.1957, 0.1947, 0.1735, 0.1600, 0.0844, 0.0627, 0.0456, 0.0342,
@@ -235,15 +237,15 @@ BEGIN
   RootCase ('d.coarse', FD, P07, 0.1, 5.0, 1.0e-6) ;
   RootCase ('e.fine', FE, P2, 0.0, 9.0, 2.0e-12) ;
   RootCase ('e.coarse', FE, P2, 0.0, 9.0, 1.0e-6) ;
-  (* a step between two and three bisections long is taken on this
-     one, and on none of those above: without it the 3 in Brent's
-     test for a short step could be a 2 and nothing here said so *)
+  (* A step between two and three bisections long is taken on this
+     one, and on none of those above.  Without it the 3 in Brent's
+     test for a short step could be a 2, and nothing here said so. *)
   RootCase ('f.fine', FA, P5, 0.1, 4.0, 2.0e-12) ;
   RootCase ('f.coarse', FA, P5, 0.1, 4.0, 1.0e-6) ;
   (* a root AT an end is that end, after the two calls that look *)
   RootCase ('end.fine', FA, P4, 2.0, 5.0, 2.0e-12) ;
   RootCase ('end.coarse', FA, P4, 2.0, 5.0, 1.0e-6) ;
-  (* a triple root, found when asked for three digits *)
+  (* A triple root is found when asked for three digits. *)
   RootCase ('c', FC, P1, 0.0, 3.0, 1.0e-3) ;
   (* cos is the machine's own: within the tolerance asked, twice over *)
   x := Numeric.Root (FT, P1, 0.0, 1.0, 2.0e-12) ;
@@ -273,7 +275,7 @@ BEGIN
   MinCase ('a.coarse', GA, P2, 0.0, 5.0, 1.0e-3) ;
   MinCase ('b.fine', GB, None, -2.0, 0.0, 1.0e-8) ;
   MinCase ('b.coarse', GB, None, -2.0, 0.0, 1.0e-3) ;
-  (* a corner, where no parabola fits *)
+  (* This case is a corner, where no parabola fits. *)
   MinCase ('c.fine', GC, P13, 0.0, 4.0, 1.0e-8) ;
   MinCase ('c.coarse', GC, P13, 0.0, 4.0, 1.0e-3) ;
   MinCase ('d.fine', FB, P5, 0.0, 2.0, 1.0e-8) ;
@@ -314,9 +316,9 @@ BEGIN
   QuadCase ('back', QA, None, 3.0, 0.0) ;
   v := Numeric.Integral (QA, None, 2.0, 2.0, 1.0e-10, 1.0e-10, err) ;
   Check.EqF64 (t, 'Integral over nothing is 0.0', v, 0.0) ;
-  (* the rule is exact for a polynomial of degree 22, so a cubic is
-     integrated to rounding whatever was asked -- which holds the
-     tables of nodes and weights to more digits than 1e-10 does *)
+  (* The rule is exact for a polynomial of degree 22, so a cubic is
+     integrated to rounding whatever was asked.  That holds the
+     tables of nodes and weights to more digits than 1e-10 does. *)
   v := Numeric.Integral (QA, None, 0.0, 3.0, 1.0e-3, 1.0e-3, err) ;
   Check.Near (t, 'Integral of a cubic is exact to rounding', v, 11.25,
               0.0, 1.0e-14) ;
@@ -358,7 +360,8 @@ BEGIN
                   1.0e-9, 1.0e-9) ;
   Check.EqI64 (t, 'OdeSolve ' + name + ", tightly: in scipy's number of steps",
                steps, Check.GoldI64 (t, gold, 'ode.' + name + '.tight.steps')) ;
-  (* a hundred classical steps, t advanced as the generator advances it *)
+  (* Take a hundred classical steps, advancing t as the generator
+     advances it. *)
   y := Start (y0) ;
   h := t1 / 100.0 ;
   tt := 0.0 ;
@@ -380,12 +383,12 @@ BEGIN
   OdeCase ('spring', Spring, P4, AtRest, 5.0) ;
   OdeCase ('lotka', Prey, Lotka, Herd, 6.0) ;
   OdeCase ('back', Driven, P2, Half, -2.0) ;
-  (* a sharp pulse: steps are rejected on the way in, and a step may
-     not grow straight after a rejection -- which the four above,
-     having no such step at this tolerance, did not hold *)
+  (* A sharp pulse: steps are rejected on the way in, and a step may
+     not grow straight after a rejection.  The four above have no such
+     step at this tolerance, so they did not hold that. *)
   OdeCase ('pulse', Pulse, Sharp, None, 2.0) ;
 
-  (* and the truth, where there is a formula for it *)
+  (* Compare with the truth too, where there is a formula for it. *)
   y := Start (P1) ;
   steps := Numeric.OdeSolve (Decay, P07, 0.0, 3.0, y, 1.0e-10, 1.0e-12) ;
   Check.NearF64s (t, 'OdeSolve decay against exp (-0.7 * 3)', y,
@@ -460,8 +463,8 @@ BEGIN
   r[3] := root * (e * e)
 END RPowell ;
 
-(* three of MINPACK's own test problems.  Bard's reads its fifteen
-   measurements from p: that is what p is for. *)
+(* These are three of MINPACK's own test problems.  Bard's reads its
+   fifteen measurements from p: that is what p is for. *)
 PROCEDURE RBard (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
                  VAR r: SLICE OF F64) =
 VAR
@@ -497,9 +500,10 @@ BEGIN
   r[2] := x[0] * x[1] - 2.0
 END RBrown ;
 
-(* exact: the parameters to the bit, in scipy's number of evaluations;
-   the covariance to nine digits, being a product scipy forms through
-   LAPACK and this forms in three loops *)
+(* FitCase holds the parameters exactly, to the bit, in scipy's
+   number of evaluations.  It holds the covariance to nine digits:
+   scipy forms that product through LAPACK, and this forms it in
+   three loops. *)
 PROCEDURE FitCase (RO name: STR ; f: Numeric.Fn ; RO p0: SLICE OF F64 ;
                    exact: BOOL)
   RAISES Faults.SizeError, Faults.BadArg, Numeric.NoConverge, ValueRange =
@@ -531,8 +535,9 @@ BEGIN
               Check.GoldF64 (t, gold, 'fit.' + name + '.cost'), 0.0, 1.0e-9) ;
   Check.That (t, 'CurveFit ' + name + ': a covariance was estimated',
               r.covariance) ;
-  (* held relative to the matrix's own size: an off-diagonal entry may
-     be small beside the diagonal, and is rounded at the diagonal's size *)
+  (* The covariance is held relative to the matrix's own size.  An
+     off-diagonal entry may be small beside the diagonal, and is
+     rounded at the diagonal's size. *)
   want := Check.GoldF64s (t, gold, 'fit.' + name + '.pcov') ;
   scale := 0.0 ;
   FOR i := 0 TO LEN (want) - 1 DO
@@ -566,8 +571,9 @@ BEGIN
               Check.GoldF64 (t, gold, 'lsq.' + name + '.cost'), 1.0e-25, 1.0e-9)
 END LsqCase ;
 
-(* Powell's singular function: the evaluations run out, and x is left
-   where the search had got to -- which is where scipy's had *)
+(* PowellGivesUp runs Powell's singular function.  The evaluations run
+   out, and x is left where the search had got to, which is where
+   scipy's had. *)
 PROCEDURE PowellGivesUp () : I64 =
 VAR
   x : SLICE OF F64 ;
@@ -614,8 +620,8 @@ BEGIN
   (* exp is the machine's *)
   FitCase ('decay', MDecay, Ones, FALSE) ;
 
-  (* two points and two parameters: the line through them, and nothing
-     to estimate a variance from *)
+  (* Two points and two parameters give the line through them, and
+     nothing to estimate a variance from. *)
   p := Start (Origin) ;
   cov := NEW (F64, 4) ;
   r := Numeric.CurveFit (MLine, TwoT, TwoY, p, cov) ;
@@ -627,15 +633,17 @@ BEGIN
   LsqCase ('rosen.default', RRosen, None, RosenStart, 2, 1.49012e-8) ;
   LsqCase ('rosen.tight', RRosen, None, RosenStart, 2, 1.0e-12) ;
   LsqCase ('freud.default', RFreud, None, FreudStart, 2, 1.49012e-8) ;
-  (* asked for more than the arithmetic has: MINPACK says so, as 6 *)
+  (* This case asks for more than the arithmetic has.  MINPACK says
+     so, as 6. *)
   LsqCase ('freud.zero', RFreud, None, FreudStart, 2, 0.0) ;
   LsqCase ('bard', RBard, BardY, Ones3, 15, 1.49012e-8) ;
   LsqCase ('ko', RKo, KoY, KoStart, 11, 1.49012e-8) ;
   (* from ten times the usual start the parameter search inside one
      step runs past five rounds: this case holds its cap of ten *)
   LsqCase ('kofar', RKo, KoY, KoFar, 11, 1.49012e-8) ;
-  (* badly scaled on purpose, and the first step wants to be between
-     10 and 100 scaled units long: this case holds the 100 *)
+  (* This case is badly scaled on purpose, and the first step wants to
+     be between 10 and 100 scaled units long.  This case holds the
+     100. *)
   LsqCase ('brown', RBrown, None, Ones, 3, 1.49012e-8) ;
   Check.EqI64 (t, 'LeastSq powell: gives up after scipy gives up',
                PowellGivesUp (), Check.GoldI64 (t, gold, 'lsq.powell.nfev')) ;
@@ -743,9 +751,10 @@ BEGIN
   END
 END Spectra ;
 
-(* one record through CcgFilter against the reference: its times with
-   NaN where a day is missing, the curves at xq -- NaN outside the
-   record, in the golden file as in the answer *)
+(* Curve runs one record through CcgFilter against the reference: its
+   times with NaN where a day is missing, and the curves at xq.  The
+   curves are NaN outside the record, in the golden file as in the
+   answer. *)
 PROCEDURE Curve (RO name: STR)
   RAISES Faults.SizeError, Faults.BadArg, ValueRange =
 VAR
@@ -770,7 +779,8 @@ BEGIN
                   trend, C ('want.ccg.' + name + '.trend'), 0.0, CcgTol)
 END Curve ;
 
-(* what a call that must be refused is refused as *)
+(* FftRefusal answers what a call that must be refused is refused
+   as. *)
 PROCEDURE FftRefusal (n, m: I64) : STR =
 VAR re, im : SLICE OF F64 ;
 BEGIN
@@ -789,7 +799,8 @@ CONST
   Down5 = [2020.0, 2020.1, 2020.3, 2020.2, 2020.4] ;
   Y5 = [1.0, 2.0, 1.5, 2.5, 2.0] ;
 
-(* CcgFilter over five points: `out` answers wanted, numpoly terms *)
+(* CcgRefusal runs CcgFilter over five points, with `out` answers
+   wanted and numpoly terms. *)
 PROCEDURE CcgRefusal (RO x: SLICE OF F64 ; out, numpoly: I64 ;
                       interval: F64) : STR =
 VAR smooth, trend, xq : SLICE OF F64 ;

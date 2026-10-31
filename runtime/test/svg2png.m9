@@ -1,11 +1,13 @@
 MODULE svg2png ;
 
+IMPORT Text ;
+
 (* svg2png IN.svg OUT.png [DPI]
      -> the figure rasterised by Png.FromSvg at DPI dots an inch (72
         when not given) and written to OUT.png
 
-   A program for runtime/test/deflate.sh and for anybody with an SVG
-   from Plot: `svg2png figure.svg figure.png 300'. *)
+   It is a program for runtime/test/deflate.sh and for anybody with an
+   SVG from Plot: `svg2png figure.svg figure.png 300'. *)
 
 IMPORT Faults ;
 IMPORT Io ;
@@ -27,12 +29,12 @@ BEGIN
   IF Io.ArgCount () > 3 THEN
     arg := Io.Arg (pool, 3) ;
     v := 0 ;
-    FOR i := 0 TO LEN (arg) - 1 DO
-      IF arg[i] >= '0' AND arg[i] <= '9' THEN v := v * 10 + (I64 (arg[i]) - 48) END
+    FOR i := 0 TO Text.BLen (arg) - 1 DO
+      IF I64 (Text.BAt (arg, i)) >= ORD ('0') AND I64 (Text.BAt (arg, i)) <= ORD ('9') THEN v := v * 10 + (I64 (Text.BAt (arg, i)) - 48) END
     END ;
     dpi := F64 (v)
   END ;
-  svg := Io.ReadFile (pool, Io.Arg (pool, 1)) ;
+  svg := Io.ReadFile (Io.Arg (pool, 1)) ;
   png := Png.FromSvg (pool, svg, dpi) ;
   Io.WriteFileBytes (Io.Arg (pool, 2), png)
 EXCEPT

@@ -1,12 +1,12 @@
 #!/bin/sh
-# m9edit -- the beginner's editor, gated the tutor's way: a real
-# server, real requests, and the page's own script through node.
-# The rules under test are the plan's: /lex is the compiler's own
-# lexer (kinds and spans, string quotes included), /check is m9c
-# --check verbatim as JSON, /run compiles with the supplied flags
-# (which now carry fmtshim, so a program that PLOTS links with no
-# flags at all -- the gap this editor found), and /out is SafeName-
-# gated.  The EXIT trap carries the real status across the cleanup.
+# m9edit is the beginner's editor.  This gate holds it the tutor's
+# way: a real server, real requests, and the page's own script through
+# node.  The rules under test are the plan's.  /lex is the compiler's
+# own lexer (kinds and spans, string quotes included).  /check is m9c
+# --check verbatim as JSON.  /run compiles with the supplied flags.
+# Those now carry fmtshim, so a program that PLOTS links with no flags
+# at all (the gap this editor found).  /out is SafeName-gated.  The
+# EXIT trap carries the real status across the cleanup.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
@@ -16,15 +16,15 @@ RT=$(cd .. && pwd)
 ED=$(cd ../../tools/edit && pwd)
 W=$(mktemp -d "${TMPDIR:-/tmp}/m9edit.XXXXXX")   # a fixed /tmp name collided between runs (tier 3)
 PORT=8039
-# a stale server from an aborted run holds the port; match the
-# cmdline in /proc, never pgrep -f (which matches the shell asking)
+# A stale server from an aborted run holds the port.  Match the
+# cmdline in /proc, never pgrep -f (which matches the shell asking).
 for p in /proc/[0-9]*/cmdline; do
   if { tr '\0' ' ' < "$p" | grep -q "^[^ ]*/m9edit $PORT "; } 2>/dev/null; then
     kill "$(basename "$(dirname "$p")")" 2>/dev/null || true
   fi
 done
-# and WAIT for the port to actually free: a back-to-back run raced
-# the dying server and the first curl got an empty reply (exit 52)
+# WAIT for the port to actually free.  A back-to-back run raced the
+# dying server, and the first curl got an empty reply (exit 52).
 for i in 1 2 3 4 5 6 7 8 9 10; do
   curl -s -o /dev/null --max-time 1 http://127.0.0.1:$PORT/ || break
   sleep 0.3
@@ -43,8 +43,8 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
 cp "$ED/page.html" "$ED/cell.js" "$ED/hover.js" "$ED/keywords.json" "$W/"
 cp -r "$ED/examples" "$W/"
 
-# the page's own script must BE a script: the tutor once shipped a
-# dead page whose every button was one SyntaxError
+# The page's own script must BE a script.  The tutor once shipped a
+# dead page whose every button was one SyntaxError.
 if command -v node >/dev/null 2>&1; then
   sed -n '/<script>/,/<\/script>/p' "$ED/page.html" | sed '1d;$d' > "$W/page.js"
   node --check "$W/page.js" || { echo "edit: the page script does not parse"; exit 1; }
@@ -66,9 +66,9 @@ finish () {
   exit $s
 }
 trap finish EXIT
-# asked until it answers, ten seconds at most: one second was the whole
+# Ask until it answers, ten seconds at most.  One second was the whole
 # allowance, and with the other gates of a round on every core the
-# server was not up yet (2026-10-22, "the page does not serve")
+# server was not up yet (2026-10-22, "the page does not serve").
 up=0
 for t in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   if [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:$PORT/)" = 200 ]; then
@@ -77,13 +77,13 @@ for t in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   sleep 0.5
 done
 [ "$up" = 1 ] || { echo "edit: the page does not serve"; exit 1; }
-# the page loads its cell script from /cell.js: the bytes, verbatim
+# The page loads its cell script from /cell.js: the bytes, verbatim.
 curl -s http://127.0.0.1:$PORT/cell.js > "$W/cell.got"
 cmp -s "$W/cell.got" "$ED/cell.js" || \
   { echo "edit: /cell.js is not cell.js"; exit 1; }
 grep -q '<script src="/cell.js">' "$ED/page.html" || \
   { echo "edit: the page does not load /cell.js"; exit 1; }
-# and its hover script from /hover.js, the same rule
+# The page loads its hover script from /hover.js, by the same rule.
 curl -s http://127.0.0.1:$PORT/hover.js > "$W/hover.got"
 cmp -s "$W/hover.got" "$ED/hover.js" || \
   { echo "edit: /hover.js is not hover.js"; exit 1; }
@@ -91,7 +91,8 @@ grep -q '<script src="/hover.js">' "$ED/page.html" || \
   { echo "edit: the page does not load /hover.js"; exit 1; }
 echo "         /cell.js and /hover.js serve the scripts the page loads"
 
-# /lex: the compiler's kinds for a known line, string span property
+# /lex answers the compiler's kinds for a known line.  Check the string
+# span property.
 J=$(printf "MODULE T ;\nVAR s : STR ;\nBEGIN\n  s := 'ab'\nEND T.\n" | \
     curl -s -X POST --data-binary @- http://127.0.0.1:$PORT/lex)
 echo "$J" | grep -q '"tokens":\[\[34,1,1,6\]' || \
@@ -104,7 +105,7 @@ echo "$J" | grep -q '"comments":\[{"line":2,"col":1,"text":"(\* a note \*)"}\]' 
   { echo "edit: comments do not come back verbatim:"; echo "$J"; exit 1; }
 echo "         /lex answers the compiler's own tokens and comments"
 
-# /check: m9c's message with its position, as JSON
+# /check answers m9c's message with its position, as JSON.
 J=$(printf "MODULE B ;\nVAR i : I64 ;\nBEGIN\n  i := 'x'\nEND B.\n" | \
     curl -s -X POST --data-binary @- http://127.0.0.1:$PORT/check)
 echo "$J" | grep -q '"ok":false' || { echo "edit: /check passed a broken file"; exit 1; }
@@ -115,7 +116,7 @@ J=$(printf "MODULE G ;\nBEGIN\nEND G.\n" | \
 echo "$J" | grep -q '"ok":true' || { echo "edit: /check failed a clean file"; exit 1; }
 echo "         /check republishes m9c verbatim, both verdicts"
 
-# /run: bytes back, and a FIGURE -- through the flagless link
+# /run gives bytes back, and a FIGURE, through the flagless link.
 R=$(printf "MODULE H ;\nIMPORT Io ;\nBEGIN\n  Io.WriteLine ('hi from the gate')\nEND H.\n" | \
     curl -s -X POST --data-binary @- http://127.0.0.1:$PORT/run)
 echo "$R" | grep -q '^exit 0' || { echo "edit: hello did not run:"; echo "$R" | head -3; exit 1; }
@@ -126,20 +127,22 @@ echo "$R" | grep -q 'file: /out/f.svg' || \
   { echo "edit: the figure was not produced:"; echo "$R" | head -4; exit 1; }
 curl -s http://127.0.0.1:$PORT/out/f.svg | head -c 4 | grep -q '<svg' || \
   { echo "edit: /out does not serve the svg"; exit 1; }
-# a URL query must not reach the file name: /out/f.svg?v=2 still serves
+# A URL query must not reach the file name: /out/f.svg?v=2 still
+# serves.
 curl -s "http://127.0.0.1:$PORT/out/f.svg?v=2" | head -c 4 | grep -q '<svg' || \
   { echo "edit: a query on a figure URL 404s (query not stripped)"; exit 1; }
 echo "         a program that PLOTS compiles flaglessly and serves its figure"
 
-# -g on /run: an unhandled exception's message carries FILE:LINE
+# With -g on /run, an unhandled exception's message carries FILE:LINE.
 R=$(printf "MODULE Ov ;\nIMPORT Io ;\nVAR b, w : I64 ;\nBEGIN\n  b := MAX (I64) ;\n  w := b + 1 ;\n  Io.WriteI64 (w)\nEND Ov.\n" | \
     curl -s -X POST --data-binary @- http://127.0.0.1:$PORT/run)
 echo "$R" | grep -q "Ov.m9:6:.*unhandled Overflow" || \
   { echo "edit: an unhandled Overflow lost its location:"; echo "$R" | head -4; exit 1; }
 echo "         an unhandled exception's message carries FILE:LINE (-g)"
 
-# the tutor's /tmp convention, when bubblewrap is present: chapter
-# 9's own habit -- writing /tmp/NAME -- must land in the served out/
+# Test the tutor's /tmp convention, when bubblewrap is present.
+# Chapter 9's own habit, writing /tmp/NAME, must land in the served
+# out/.
 if command -v bwrap >/dev/null 2>&1; then
   R=$(printf "MODULE T ;\nIMPORT Io ;\nBEGIN\n  Io.WriteFile ('/tmp/conv.txt', 'via the bind')\nEXCEPT\n| ValueRange :\n    Io.Halt (1)\n| Io.IOError (p) :\n    Io.Halt (1)\nEND T.\n" | \
       curl -s -X POST --data-binary @- http://127.0.0.1:$PORT/run)
@@ -152,7 +155,7 @@ else
   echo "         (no bwrap; the /tmp convention probe is skipped OUT LOUD)"
 fi
 
-# hover's food: /doc/MODULE is the m9c --json gather, cached
+# /doc/MODULE feeds hover.  It is the m9c --json gather, cached.
 J=$(curl -s http://127.0.0.1:$PORT/doc/Io)
 echo "$J" | grep -q '"module": *"Io"' || \
   { echo "edit: /doc/Io is not the gather:"; echo "$J" | head -c 120; exit 1; }
@@ -164,9 +167,10 @@ echo "$J" | grep -q '"name": *"WriteLine"' || \
   { echo "edit: /doc traversal escaped"; exit 1; }
 echo "         /doc answers the m9c --json gather, gated both ways"
 
-# the keyword table: served, and gated against the lexer's own list --
-# by an M9 script the gate's own compiler runs (an installed m9c may
-# predate --run), so this check no longer needs python3 to happen
+# The keyword table is served, and gated against the lexer's own list.
+# An M9 script does that, run by the gate's own compiler (an installed
+# m9c may predate --run).  So this check no longer needs python3 to
+# happen.
 M9RUNTIME="$RT" M9LIBRARY="$SRC" "$W/m9c" --run ../../tools/MkKeywords.m9 --check || \
   { echo "edit: the keyword table is adrift"; exit 1; }
 J=$(curl -s http://127.0.0.1:$PORT/kw)
@@ -174,7 +178,7 @@ echo "$J" | grep -q '"KEPT":' || { echo "edit: /kw lacks KEPT"; exit 1; }
 echo "$J" | grep -q '"GRID":' || { echo "edit: /kw lacks GRID"; exit 1; }
 echo "         /kw serves all sixty-two keywords, none adrift"
 
-# examples: listed, and one served
+# The examples are listed, and one is served.
 J=$(curl -s http://127.0.0.1:$PORT/examples)
 echo "$J" | grep -q '"01-hello.m9"' || { echo "edit: /examples lacks 01-hello:"; echo "$J"; exit 1; }
 curl -s http://127.0.0.1:$PORT/example/01-hello.m9 | grep -q '^MODULE Hello' || \
@@ -185,7 +189,7 @@ curl -s http://127.0.0.1:$PORT/example/01-hello.m9 | grep -q '^MODULE Hello' || 
   { echo "edit: example traversal escaped"; exit 1; }
 echo "         /examples lists and /example serves, gated"
 
-# format: a messy but parseable buffer comes back canonical
+# Format: a messy but parseable buffer comes back canonical.
 F=$(printf "MODULE M ;\nIMPORT Io ;\nVAR x:I64;\nBEGIN\nx:=1;Io.WriteI64(x)\nEND M.\n" | \
     curl -s -X POST --data-binary @- http://127.0.0.1:$PORT/fmt)
 echo "$F" | grep -q "  x := 1 ;" || { echo "edit: /fmt did not canonicalise:"; echo "$F"; exit 1; }

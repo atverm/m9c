@@ -11,6 +11,8 @@ implicit TLS, and plain with STARTTLS required -- each writing every message it 
 OUTDIR/NNN.eml with its envelope in OUTDIR/NNN.env; until SIGTERM.
 The plain server also REFUSES a recipient named reject@ with 550 and
 answers 451 to a MAIL FROM temp@, so the driver meets a 5xx and a 4xx.
+It refuses utf8@ and latin1@ with 550 replies whose octets are UTF-8
+and Latin-1, so the driver reads a reply beyond ASCII both ways.
 
 judge: SENT is what the driver says it sent (smtpfix/SmtpFix.m9 prints
 a line per message: `sent TAG N from to,... | subject | body | attach |
@@ -45,6 +47,13 @@ class Recorder:
     async def handle_RCPT(self, server, session, envelope, address, rcpt_options):
         if self.reject and address.startswith("reject@"):
             return "550 no such user"
+        # Two replies as octets: one UTF-8, one Latin-1 (not UTF-8).
+        # Smtp reads the first as UTF-8 and the second one character
+        # per octet, so both read as the same text.
+        if self.reject and address.startswith("utf8@"):
+            return "550 Postfach \u2603 \u00e9 unbekannt".encode("utf-8")
+        if self.reject and address.startswith("latin1@"):
+            return "550 Postfach \u00e9 unbekannt".encode("latin-1")
         envelope.rcpt_tos.append(address)
         return "250 OK"
 
@@ -53,9 +62,10 @@ class Recorder:
         base = os.path.join(self.out, f"{self.tag}{self.n:03d}")
         with open(base + ".eml", "wb") as f:
             f.write(envelope.content)
-        with open(base + ".env", "w") as f:
+        with open(base + ".env", "w", encoding="utf-8") as f:
             f.write(envelope.mail_from + "\n" + " ".join(envelope.rcpt_tos) + "\n" +
-                    ("auth" if session.authenticated else "noauth") + "\n")
+                    ("auth" if session.authenticated else "noauth") + "\n" +
+                    " ".join(envelope.mail_options) + "\n")
         return "250 Message accepted for delivery"
 
 
@@ -71,16 +81,22 @@ def serve(args):
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ctx.load_cert_chain(cert, key)
     c1 = Controller(Recorder(out, "p", True), hostname="127.0.0.1", port=plain,
-                    authenticator=authenticator, auth_require_tls=False, auth_required=False)
+                    authenticator=authenticator, auth_require_tls=False, auth_required=False,
+                    enable_SMTPUTF8=False)
+    # The LOGIN server alone offers SMTPUTF8, beside the 8BITMIME
+    # aiosmtpd always offers.  Controller defaults enable_SMTPUTF8 to
+    # True, so the other three say False.
     c2 = Controller(Recorder(out, "l", False), hostname="127.0.0.1", port=login,
                     authenticator=authenticator, auth_require_tls=False, auth_required=False,
-                    auth_exclude_mechanism=["PLAIN"])
+                    auth_exclude_mechanism=["PLAIN"], enable_SMTPUTF8=True)
     # auth_require_tls=False: aiosmtpd 1.4 does not read an implicit-TLS
     # transport as encrypted and would answer AUTH with 538
     c3 = Controller(Recorder(out, "t", False), hostname="127.0.0.1", port=tls, ssl_context=ctx,
-                    authenticator=authenticator, auth_require_tls=False, auth_required=False)
+                    authenticator=authenticator, auth_require_tls=False, auth_required=False,
+                    enable_SMTPUTF8=False)
     c4 = Controller(Recorder(out, "s", False), hostname="127.0.0.1", port=starttls, tls_context=ctx,
-                    require_starttls=True, authenticator=authenticator, auth_required=False)
+                    require_starttls=True, authenticator=authenticator, auth_required=False,
+                    enable_SMTPUTF8=False)
     for c in (c1, c2, c3, c4):
         c.start()
     print("smtpfix: serving", flush=True)
@@ -129,10 +145,11 @@ def judge(args):
             frm, rcpts, hfrom, subject, body, auth = composed[name]
             raw = open(os.path.join(out, name + ".eml"), "rb").read()
             msg = email.message_from_bytes(raw, policy=email.policy.default)
-            env = open(os.path.join(out, name + ".env")).read().split("\n")
+            env = open(os.path.join(out, name + ".env"), encoding="utf-8").read().split("\n")
             ck(env[0] == frm, f"{name}: envelope from {env[0]!r}, sent {frm!r}")
             ck(env[1].split() == rcpts, f"{name}: envelope recipients {env[1]!r}, sent {rcpts}")
             ck(env[2] == auth, f"{name}: the session was {env[2]}, the driver said {auth}")
+            ck(env[3].split() == [], f"{name}: an ASCII message with MAIL FROM options {env[3]!r}")
             ck(msg["From"] == hfrom, f"{name}: From header {msg['From']!r}, composed {hfrom!r}")
             ck(msg["Subject"] == subject, f"{name}: subject {msg['Subject']!r}, composed {subject!r}")
             ck(msg["Message-ID"] == "<composed@test.org>", f"{name}: the composed Message-ID as it was")
@@ -144,10 +161,17 @@ def judge(args):
             continue
         frm, rcpts, subject, body, attach, auth = expected[name]
         msg = email.message_from_bytes(open(os.path.join(out, name + ".eml"), "rb").read(), policy=email.policy.default)
-        env = open(os.path.join(out, name + ".env")).read().split("\n")
+        env = open(os.path.join(out, name + ".env"), encoding="utf-8").read().split("\n")
         ck(env[0] == frm, f"{name}: envelope from {env[0]!r}, sent {frm!r}")
         ck(env[1].split() == rcpts, f"{name}: envelope recipients {env[1]!r}, sent {rcpts}")
         ck(env[2] == auth, f"{name}: the session was {env[2]}, the driver said {auth}")
+        # SMTPUTF8 exactly when the message or an address holds an
+        # octet past ASCII (RFC 6531), with BODY=8BITMIME beside it.
+        raw = open(os.path.join(out, name + ".eml"), "rb").read()
+        need = any(b > 127 for b in raw) or not (env[0] + env[1]).isascii()
+        opts = env[3].split()
+        ck(("SMTPUTF8" in opts) == need, f"{name}: MAIL FROM options {opts}, SMTPUTF8 needed: {need}")
+        ck(not need or "BODY=8BITMIME" in opts, f"{name}: MAIL FROM options {opts} lack BODY=8BITMIME")
         ck(msg["Subject"] == subject, f"{name}: subject {msg['Subject']!r}, sent {subject!r}")
         ck(msg["From"] == frm, f"{name}: From {msg['From']!r}")
         ck(msg["Date"] is not None and msg["Message-ID"] is not None, f"{name}: Date and Message-ID present")
@@ -155,6 +179,19 @@ def judge(args):
         head = raw.split(b"\r\n\r\n", 1)[0].split(b"\r\n")
         long_ = [l for l in head if len(l) > 78]
         ck(not long_, f"{name}: a header line over 78 (RFC 5322 par 2.1.1): {long_[:1]}")
+        # The Subject goes as RFC 2047 words, ASCII on the wire.  Python
+        # reads a raw UTF-8 Subject too (RFC 6532), so the parse alone
+        # cannot tell.
+        subj, inside = [], False
+        for l in head:
+            if l.lower().startswith(b"subject:"):
+                inside = True
+            elif not l[:1].isspace():
+                inside = False
+            if inside:
+                subj.append(l)
+        ck(subj and all(b < 128 for l in subj for b in l),
+           f"{name}: the Subject line ASCII on the wire: {subj[:1]}")
         text = msg.get_body(preferencelist=("plain",))
         got = text.get_content() if text is not None else None
         ck(got == body, f"{name}: body {got!r}, sent {body!r}")

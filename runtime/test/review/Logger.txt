@@ -3,7 +3,7 @@ REVIEW Logger -- 15 procedures with a body, 4 of them functions; 12 headings in 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               4
   assignments                                    12
-  arguments                                      70
+  arguments                                      71
   RETURN values                                   9
   operands of a comparison or an operator         3
   CASE labels                                     4
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        2
   NEW in the frame                                0
   NEW in a named pool                             0
-  calls of a STR form with a UTF twin             3   Fmt.Fixed -> Fmt.FixedUtf, Io.ErrLine -> Io.ErrLineUtf, Io.ErrLine -> Io.ErrLineUtf
-  STR subscripts, writes and LEN                  1   len v
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

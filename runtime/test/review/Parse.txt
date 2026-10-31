@@ -3,7 +3,7 @@ REVIEW Parse -- 57 procedures with a body, 46 of them functions; 9 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              46
   assignments                                   215
-  arguments                                    1833
+  arguments                                    1830
   RETURN values                                 142
   operands of a comparison or an operator       266
   CASE labels                                    37
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        0
   NEW in the frame                                0
   NEW in a named pool                             1
-  calls of a STR form with a UTF twin            14   Lex.Init -> Lex.InitUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, +8 more
+  calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

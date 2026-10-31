@@ -1,20 +1,20 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Math ;
 
-(* The elementary functions, on F64.
+(* Math holds the elementary functions, on F64.
 
    M9 had none of these.  A language whose stated audience is data
-   science and research infrastructure could not compute a logarithm,
-   which was not noticed until a Fortran kernel was transcribed and
-   the second line of it needed one.
+   science and research infrastructure could not compute a logarithm.
+   Nobody noticed until a Fortran kernel was transcribed and the
+   second line of it needed one.
 
    Everything here is libm, declared rather than assumed: each
    procedure below names the C symbol it binds, and each is
-   [REENTRANT] because POSIX says so of these functions -- they read
-   no global state and the rounding mode is per-thread.  errno is a
-   different matter and is dealt with by not depending on it: where a
-   C function's answer for a bad argument is a NaN and an errno
-   nobody reads, M9 raises instead.
+   [REENTRANT] because POSIX says so of these functions.  They read
+   no global state, and the rounding mode is per-thread.  errno is a
+   different matter, and Math deals with it by not depending on it.
+   Where a C function's answer for a bad argument is a NaN and an
+   errno nobody reads, M9 raises instead.
 
    WHAT IS AND IS NOT CHECKED.  These are the only procedures in the
    corpus whose failure is a property of the ARGUMENT rather than of
@@ -37,8 +37,9 @@ DEFINITION MODULE Math ;
        this module cannot help with.
 
    The cost of checking is one comparison on a value already in a
-   register, against a call that takes tens of cycles.  Measured
-   before it is defended, in docs/bench.md if it ever matters.
+   register, against a call that takes tens of cycles.  The cost is
+   to be measured before it is defended, in docs/bench.md if it ever
+   matters.
 
    NOT HERE, deliberately: F32 versions (convert, or ask for them
    when a caller exists); the hyperbolics, erf and the Bessels (no
@@ -47,31 +48,33 @@ DEFINITION MODULE Math ;
    people trust); complex arithmetic (no complex type).            *)
 
 CONST
-  (* to the last bit representable in F64 *)
+  (* These are exact to the last bit representable in F64. *)
   Pi = 3.14159265358979311600 ;
   E  = 2.71828182845904509080 ;
 
 PROCEDURE Abs (x: F64) : F64 RAISES ValueRange ;
-  (* |x|.  Raises on NaN, like everything here; it is the cheapest
-     place in a program to notice one.                              *)
+  (* Abs answers |x|.  It raises on NaN, like everything here; it is
+     the cheapest place in a program to notice one.                 *)
 
 PROCEDURE Fabs (x: F64) : F64 ;
-  (* |x|, total: NaN passes through, like C fabs and numpy.abs.  Abs
-     raises on NaN; this is for code where NaN is a missing value,
-     not an error (the flux processing the ONEFlux port does). *)
+  (* Fabs answers |x|, total: NaN passes through, like C fabs and
+     numpy.abs.  Abs raises on NaN; this is for code where NaN is a
+     missing value, not an error (the flux processing the ONEFlux
+     port does). *)
 
-(* The integer and real extrema, added 2026-09-27 when the review
-   counted 21 hand-rolled `IF a > b THEN a := b` clamps in the corpus
-   and the skill had to carry "Math has NO integer abs/min/max" as
-   negative knowledge (docs/agent-review-2026-09-27.md F7). *)
+(* These are the integer and real extrema, added 2026-09-27.  The
+   review had counted 21 hand-rolled `IF a > b THEN a := b` clamps in
+   the corpus, and the skill had to carry "Math has NO integer
+   abs/min/max" as negative knowledge
+   (docs/agent-review-2026-09-27.md F7). *)
 PROCEDURE AbsI64 (v: I64) : I64 ;
-  (* |v|; the one value with no absolute, MIN (I64), raises Overflow
-     as the negation it is *)
+  (* AbsI64 answers |v|.  The one value with no absolute, MIN (I64),
+     raises Overflow as the negation it is. *)
 PROCEDURE MinI64 (a: I64 ; b: I64) : I64 ;
 PROCEDURE MaxI64 (a: I64 ; b: I64) : I64 ;
 PROCEDURE ClampI64 (v: I64 ; lo: I64 ; hi: I64) : I64 ;
-  (* v held to lo .. hi; lo > hi answers lo, as the composition
-     Max (lo, Min (v, hi)) does *)
+  (* ClampI64 holds v to lo .. hi; lo > hi answers lo, as the
+     composition Max (lo, Min (v, hi)) does. *)
 PROCEDURE Min (a: F64 ; b: F64) : F64 RAISES ValueRange ;
 PROCEDURE Max (a: F64 ; b: F64) : F64 RAISES ValueRange ;
   (* a NaN operand raises, as every checked Math procedure does: the
@@ -82,33 +85,34 @@ PROCEDURE Sqrt (x: F64) : F64 RAISES ValueRange ;
   (* domain: x >= 0 *)
 
 PROCEDURE Log (x: F64) : F64 RAISES ValueRange ;
-  (* natural logarithm; domain: x > 0.  Log (0.0) is -infinity in C
-     and a raise here: a caller dividing by it gets a wrong number
-     rather than a diagnosis.                                       *)
+  (* Log is the natural logarithm; domain: x > 0.  Log (0.0) is
+     -infinity in C and a raise here: a caller dividing by it gets a
+     wrong number rather than a diagnosis.                          *)
 
 PROCEDURE Log10 (x: F64) : F64 RAISES ValueRange ;
 PROCEDURE Log2 (x: F64) : F64 RAISES ValueRange ;
-  (* logarithms in the two other bases that come up, with Log's
-     domain rule: x must be positive.  Zero and negative RAISE
-     rather than answering -inf and NaN, for the reason stated on
-     Log above -- a caller dividing by the answer gets a wrong
-     number instead of a diagnosis.                                *)
+  (* Log10 and Log2 are the logarithms in the two other bases that
+     come up, with Log's domain rule: x must be positive.  Zero and
+     negative RAISE rather than answering -inf and NaN, for the
+     reason stated on Log above.  A caller dividing by the answer
+     gets a wrong number instead of a diagnosis.                   *)
 
 PROCEDURE Exp (x: F64) : F64 RAISES ValueRange, Overflow ;
-  (* e**x.  Overflow above about 709.79; underflow to zero below
-     about -745 is an answer, not an error.                         *)
+  (* Exp answers e**x.  It overflows above about 709.79; underflow to
+     zero below about -745 is an answer, not an error.              *)
 
 PROCEDURE Pow (x, y: F64) : F64 RAISES ValueRange, Overflow ;
-  (* x**y.  Domain: x >= 0, or y integral.  The C rules here are a
-     table of fifteen special cases; this refuses the ones that
-     produce a NaN and passes the rest through.                     *)
+  (* Pow answers x**y.  Domain: x >= 0, or y integral.  The C rules
+     here are a table of fifteen special cases; this refuses the
+     ones that produce a NaN and passes the rest through.           *)
 
 PROCEDURE Sin (x: F64) : F64 RAISES ValueRange ;
 PROCEDURE Cos (x: F64) : F64 RAISES ValueRange ;
 PROCEDURE Tan (x: F64) : F64 RAISES ValueRange ;
-  (* domain: finite x.  No range reduction beyond libm's, so a very
-     large argument answers with the precision libm has, which is
-     less than the caller probably imagines.                        *)
+  (* Sin, Cos and Tan take a domain of finite x.  They do no range
+     reduction beyond libm's, so a very large argument answers with
+     the precision libm has, which is less than the caller probably
+     imagines.                                                      *)
 
 PROCEDURE Asin (x: F64) : F64 RAISES ValueRange ;
 PROCEDURE Acos (x: F64) : F64 RAISES ValueRange ;
@@ -116,48 +120,54 @@ PROCEDURE Acos (x: F64) : F64 RAISES ValueRange ;
 
 PROCEDURE Atan (x: F64) : F64 RAISES ValueRange ;
 PROCEDURE Atan2 (y, x: F64) : F64 RAISES ValueRange ;
-  (* the quadrant-correct angle; Atan2 (0.0, 0.0) is 0.0, as in C *)
+  (* Atan2 answers the quadrant-correct angle; Atan2 (0.0, 0.0) is
+     0.0, as in C. *)
 
 PROCEDURE Floor (x: F64) : F64 RAISES ValueRange ;
 PROCEDURE Ceil (x: F64) : F64 RAISES ValueRange ;
-  (* still F64: the conversion to an integer is I64 (x), which is
-     checked and raises ValueRange of its own.  Two steps, both
-     visible, rather than one step that can surprise.               *)
+  (* Floor and Ceil still answer F64: the conversion to an integer is
+     I64 (x), which is checked and raises ValueRange of its own.  That
+     makes two steps, both visible, rather than one step that can
+     surprise.                                                      *)
 
 PROCEDURE Round (x: F64) : F64 RAISES ValueRange ;
-  (* the nearest integer, a half AWAY from zero: Round (2.5) = 3.0,
-     Round (-2.5) = -3.0 (C round, Fortran ANINT).  Not Python's
-     round, which takes a half to the even neighbour.  F64 like Floor
-     and Ceil; I64 (Round (x)) for an integer.                       *)
+  (* Round answers the nearest integer, a half AWAY from zero:
+     Round (2.5) = 3.0, Round (-2.5) = -3.0 (C round, Fortran ANINT).
+     It is not Python's round, which takes a half to the even
+     neighbour.  It answers F64 like Floor and Ceil; write
+     I64 (Round (x)) for an integer.                                 *)
 
 PROCEDURE Trunc (x: F64) : I64 RAISES ValueRange ;
-  (* toward zero, as an integer: I64 (x) under a name, Trunc (-2.7)
-     = -2.  ValueRange for a NaN, an infinity or a value beyond I64
-     (museum/trunc-nan.m9).  The one rounding answering I64: what the
-     report long named TRUNC, which no compiler had (2026-10-29).   *)
+  (* Trunc rounds toward zero, as an integer: I64 (x) under a name,
+     Trunc (-2.7) = -2.  It raises ValueRange for a NaN, an infinity
+     or a value beyond I64 (museum/trunc-nan.m9).  It is the one
+     rounding answering I64: what the report long named TRUNC, which
+     no compiler had (2026-10-29).                                  *)
 
 PROCEDURE Fmod (x, y: F64) : F64 RAISES ValueRange ;
-  (* the remainder of x/y with the sign of x, which is what Fortran
-     MOD and C fmod both compute -- not the floor-based modulus.  A
-     zero divisor is a domain error and raises rather than answering
-     NaN.  Added for a map projection in the port that reduces a
-     longitude to (-180, 180]. *)
+  (* Fmod answers the remainder of x/y with the sign of x, which is
+     what Fortran MOD and C fmod both compute.  It is not the
+     floor-based modulus.  A zero divisor is a domain error and raises
+     rather than answering NaN.  Fmod was added for a map projection
+     in the port that reduces a longitude to (-180, 180]. *)
 
 PROCEDURE Hypot (x, y: F64) : F64 RAISES ValueRange, Overflow ;
-  (* sqrt (x*x + y*y) without the intermediate overflow *)
+  (* Hypot answers sqrt (x*x + y*y) without the intermediate
+     overflow. *)
 
 PROCEDURE Erf (x: F64) : F64 RAISES ValueRange ;
 PROCEDURE Erfc (x: F64) : F64 RAISES ValueRange ;
-  (* the error function and its complement.  Deferred for years as
-     "no caller"; the caller arrived with Stats -- the normal CDF is
-     (1 + Erf (x / sqrt 2)) / 2, and every p-value rests on it.
-     Total on the finite line; only a NaN argument raises. *)
+  (* Erf and Erfc are the error function and its complement.  They
+     were deferred for years as "no caller".  The caller arrived with
+     Stats: the normal CDF is (1 + Erf (x / sqrt 2)) / 2, and every
+     p-value rests on it.  They are total on the finite line; only a
+     NaN argument raises. *)
 
 PROCEDURE IsNaN (x: F64) : BOOL ;
 PROCEDURE IsFinite (x: F64) : BOOL ;
-  (* The two predicates that do NOT raise, because asking whether a
-     value is a NaN is the one question a NaN may legitimately be
-     asked.  Everything else here refuses it.                       *)
+  (* IsNaN and IsFinite are the two predicates that do NOT raise.  A
+     NaN may legitimately be asked one question: whether a value is a
+     NaN.  Everything else here refuses it.                         *)
 
 
 (* ---- the same, at single precision ----
@@ -169,8 +179,8 @@ PROCEDURE IsFinite (x: F64) : BOOL ;
    suffix is how a module DECLARES a function width-generic; it is
    not how anyone calls one.
 
-   Declared rather than hidden, because the rewrite makes a real
-   cross-module call, and because a reader asking what Math.Sqrt
+   They are declared rather than hidden, because the rewrite makes a
+   real cross-module call, and because a reader asking what Math.Sqrt
    does to a single-precision argument should find the answer in the
    definition rather than in the compiler. *)
 
@@ -205,10 +215,11 @@ END Math.
 
 UNSAFE DEFINITION MODULE FOR "C" cmath ;
 
-(* libm, verbatim.  REENTRANT: these functions keep no state between
-   calls and the rounding mode is per-thread, which is a property of
-   the C standard and of POSIX rather than an assumption made here.
-   errno is not read -- see the domain rules in Math above. *)
+(* cmath binds libm, verbatim.  REENTRANT: these functions keep no
+   state between calls and the rounding mode is per-thread, which is
+   a property of the C standard and of POSIX rather than an
+   assumption made here.  errno is not read: see the domain rules in
+   Math above. *)
 
 PROCEDURE CFmod  = "fmod"  (x: C.Double ; y: C.Double) : C.Double
   [REENTRANT] ;
@@ -241,10 +252,11 @@ END cmath.
 
 UNSAFE DEFINITION MODULE FOR "C" cmathf ;
 
-(* libm's single-precision half, verbatim, with the same REENTRANT
-   reasoning as cmath above.  Separate because sqrtf is not sqrt
-   narrowed: for a port held bit-identical to a single-precision
-   Fortran original, the difference is the whole point. *)
+(* cmathf binds libm's single-precision half, verbatim, with the same
+   REENTRANT reasoning as cmath above.  It is separate because sqrtf
+   is not sqrt narrowed: for a port held bit-identical to a
+   single-precision Fortran original, the difference is the whole
+   point. *)
 
 PROCEDURE CFmodF32  = "fmodf"  (x: C.Float ; y: C.Float) : C.Float
   [REENTRANT] ;
@@ -287,7 +299,7 @@ FROM cmathf IMPORT CSqrtF32, CLogF32, CLog10F32, CLog2F32, CExpF32,
                    CCeilF32, CRoundF32, CFabsF32, CHypotF32, CFmodF32,
                    CErfF32, CErfcF32 ;
 
-(* The three tests every answer goes through, written once.
+(* These are the three tests every answer goes through, written once.
 
    A NaN is detected by x # x, which is true of nothing else and is
    how IEEE 754 says to ask.  An infinity is detected by comparison
@@ -520,12 +532,13 @@ END Fmod ;
 
 (* ---- the single-precision half ----
 
-   Generated from the F64 procedures above by the script that added
-   them (scratchpad/mathf32.py) and then read: mechanical, so the
-   domain checks cannot drift apart, and present in the source, so
-   they can be.  Every argument goes through ArgF32, every answer
-   through AnsF32 or AnsFiniteF32, and HugeF32 is the largest finite
-   F32 rather than the largest finite F64.
+   These were generated from the F64 procedures above by the script
+   that added them (scratchpad/mathf32.py), and then read.  The
+   generation is mechanical, so the domain checks cannot drift apart.
+   The result is present in the source, so they can be read.  Every
+   argument goes through ArgF32, every answer through AnsF32 or
+   AnsFiniteF32, and HugeF32 is the largest finite F32 rather than the
+   largest finite F64.
 
    CALLERS DO NOT NAME THESE.  `Math.Sqrt (x)` with an F32 argument
    resolves to Math.SqrtF32: if the first argument of a call to
@@ -534,9 +547,9 @@ END Fmod ;
    module DECLARES that a function is width-generic; it is not how
    anyone writes one down.
 
-   WHY NOT JUST NARROW THE DOUBLE ANSWER, measured over 200,000
-   arguments -- how often (float) of the double result differs from
-   the single-precision function:
+   WHY NOT JUST NARROW THE DOUBLE ANSWER?  This table measures, over
+   200,000 arguments, how often (float) of the double result differs
+   from the single-precision function:
 
        sqrtf   0 of 200000    0.00%
        expf    90             0.04%
@@ -546,12 +559,12 @@ END Fmod ;
        atanf   8642           4.32%
 
    sqrtf is zero because IEEE 754 makes square root correctly
-   rounded and the double rounding is benign; it is the one case
-   where the cheap answer would have been right, and taking it as
-   representative would have been the mistake.  atanf disagrees with
-   the narrowed double once in every twenty-three calls, and the map
-   projections in the port are built out of atan, sin and
-   cos.  Bit-identity against a single-precision original is not
+   rounded and the double rounding is benign.  It is the one case
+   where the cheap answer would have been right, and it would have
+   been the mistake to take it as representative.  atanf disagrees
+   with the narrowed double once in every twenty-three calls, and the
+   map projections in the port are built out of atan, sin and cos.
+   Bit-identity against a single-precision original is not
    reachable through the double library. *)
 
 CONST

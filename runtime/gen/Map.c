@@ -10468,77 +10468,79 @@ static const m9_arr_10256_double CoastPts_k = { {
 static m9_arr_10256_double * const CoastPts = (m9_arr_10256_double *) &CoastPts_k;
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[25] = { 67u, 111u, 97u, 115u, 116u, 108u, 105u, 110u, 101u, 115u, 58u, 32u, 78u, 97u, 116u, 117u, 114u, 97u, 108u, 32u, 69u, 97u, 114u, 116u, 104u };
-static const uint32_t m9s1[31] = { 77u, 97u, 112u, 58u, 32u, 116u, 104u, 101u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
-static const uint32_t m9s2[35] = { 77u, 97u, 112u, 58u, 32u, 116u, 104u, 101u, 32u, 119u, 105u, 110u, 100u, 111u, 119u, 32u, 112u, 114u, 111u, 106u, 101u, 99u, 116u, 115u, 32u, 116u, 111u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u };
-static const uint32_t m9s3[100] = { 60u, 115u, 118u, 103u, 32u, 120u, 109u, 108u, 110u, 115u, 61u, 34u, 104u, 116u, 116u, 112u, 58u, 47u, 47u, 119u, 119u, 119u, 46u, 119u, 51u, 46u, 111u, 114u, 103u, 47u, 50u, 48u, 48u, 48u, 47u, 115u, 118u, 103u, 34u, 32u, 114u, 111u, 108u, 101u, 61u, 34u, 105u, 109u, 103u, 34u, 32u, 102u, 111u, 110u, 116u, 45u, 102u, 97u, 109u, 105u, 108u, 121u, 61u, 34u, 115u, 121u, 115u, 116u, 101u, 109u, 45u, 117u, 105u, 44u, 32u, 115u, 97u, 110u, 115u, 45u, 115u, 101u, 114u, 105u, 102u, 34u, 32u, 118u, 105u, 101u, 119u, 66u, 111u, 120u, 61u, 34u, 48u, 32u, 48u, 32u };
-static const uint32_t m9s4[9] = { 34u, 32u, 119u, 105u, 100u, 116u, 104u, 61u, 34u };
-static const uint32_t m9s5[10] = { 34u, 32u, 104u, 101u, 105u, 103u, 104u, 116u, 61u, 34u };
-static const uint32_t m9s6[9] = { 34u, 62u, 60u, 116u, 105u, 116u, 108u, 101u, 62u };
-static const uint32_t m9s7[3] = { 77u, 97u, 112u };
-static const uint32_t m9s8[8] = { 60u, 47u, 116u, 105u, 116u, 108u, 101u, 62u };
-static const uint32_t m9s9[39] = { 60u, 100u, 101u, 102u, 115u, 62u, 60u, 99u, 108u, 105u, 112u, 80u, 97u, 116u, 104u, 32u, 105u, 100u, 61u, 34u, 109u, 97u, 112u, 45u, 99u, 108u, 105u, 112u, 34u, 62u, 60u, 112u, 97u, 116u, 104u, 32u, 100u, 61u, 34u };
-static const uint32_t m9s10[51] = { 34u, 47u, 62u, 60u, 47u, 99u, 108u, 105u, 112u, 80u, 97u, 116u, 104u, 62u, 60u, 47u, 100u, 101u, 102u, 115u, 62u, 60u, 103u, 32u, 99u, 108u, 105u, 112u, 45u, 112u, 97u, 116u, 104u, 61u, 34u, 117u, 114u, 108u, 40u, 35u, 109u, 97u, 112u, 45u, 99u, 108u, 105u, 112u, 41u, 34u, 62u };
-static const uint32_t m9s11[77] = { 60u, 47u, 103u, 62u, 60u, 112u, 97u, 116u, 104u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 110u, 111u, 110u, 101u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 111u, 112u, 97u, 99u, 105u, 116u, 121u, 61u, 34u, 48u, 46u, 54u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 49u, 34u, 32u, 100u, 61u, 34u };
-static const uint32_t m9s12[3] = { 34u, 47u, 62u };
-static const uint32_t m9s13[9] = { 60u, 116u, 101u, 120u, 116u, 32u, 120u, 61u, 34u };
-static const uint32_t m9s14[75] = { 34u, 32u, 121u, 61u, 34u, 49u, 55u, 34u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 102u, 111u, 110u, 116u, 45u, 115u, 105u, 122u, 101u, 61u, 34u, 49u, 52u, 34u, 32u, 102u, 111u, 110u, 116u, 45u, 119u, 101u, 105u, 103u, 104u, 116u, 61u, 34u, 54u, 48u, 48u, 34u, 32u, 116u, 101u, 120u, 116u, 45u, 97u, 110u, 99u, 104u, 111u, 114u, 61u, 34u, 109u, 105u, 100u, 100u, 108u, 101u, 34u, 62u };
-static const uint32_t m9s15[7] = { 60u, 47u, 116u, 101u, 120u, 116u, 62u };
-static const uint32_t m9s16[9] = { 60u, 116u, 101u, 120u, 116u, 32u, 120u, 61u, 34u };
-static const uint32_t m9s17[5] = { 34u, 32u, 121u, 61u, 34u };
-static const uint32_t m9s18[66] = { 34u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 102u, 105u, 108u, 108u, 45u, 111u, 112u, 97u, 99u, 105u, 116u, 121u, 61u, 34u, 48u, 46u, 55u, 34u, 32u, 102u, 111u, 110u, 116u, 45u, 115u, 105u, 122u, 101u, 61u, 34u, 49u, 48u, 34u, 32u, 116u, 101u, 120u, 116u, 45u, 97u, 110u, 99u, 104u, 111u, 114u, 61u, 34u, 101u, 110u, 100u, 34u, 62u };
-static const uint32_t m9s19[7] = { 60u, 47u, 116u, 101u, 120u, 116u, 62u };
-static const uint32_t m9s20[6] = { 60u, 47u, 115u, 118u, 103u, 62u };
-static const uint32_t m9s21[33] = { 77u, 97u, 112u, 58u, 32u, 116u, 104u, 101u, 32u, 115u, 112u, 101u, 99u, 32u, 110u, 97u, 109u, 101u, 115u, 32u, 110u, 111u, 32u, 112u, 114u, 111u, 106u, 101u, 99u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s22[5] = { 38u, 97u, 109u, 112u, 59u };
-static const uint32_t m9s23[4] = { 38u, 108u, 116u, 59u };
-static const uint32_t m9s24[4] = { 38u, 103u, 116u, 59u };
-static const uint32_t m9s25[6] = { 38u, 113u, 117u, 111u, 116u, 59u };
-static const uint32_t m9s26[1] = { 48u };
-static const uint32_t m9s27[9] = { 60u, 114u, 101u, 99u, 116u, 32u, 120u, 61u, 34u };
-static const uint32_t m9s28[5] = { 34u, 32u, 121u, 61u, 34u };
-static const uint32_t m9s29[9] = { 34u, 32u, 119u, 105u, 100u, 116u, 104u, 61u, 34u };
-static const uint32_t m9s30[10] = { 34u, 32u, 104u, 101u, 105u, 103u, 104u, 116u, 61u, 34u };
-static const uint32_t m9s31[8] = { 34u, 32u, 102u, 105u, 108u, 108u, 61u, 34u };
-static const uint32_t m9s32[3] = { 34u, 47u, 62u };
-static const uint32_t m9s33[13] = { 60u, 105u, 109u, 97u, 103u, 101u, 32u, 104u, 114u, 101u, 102u, 61u, 34u };
-static const uint32_t m9s34[5] = { 34u, 32u, 120u, 61u, 34u };
-static const uint32_t m9s35[5] = { 34u, 32u, 121u, 61u, 34u };
-static const uint32_t m9s36[9] = { 34u, 32u, 119u, 105u, 100u, 116u, 104u, 61u, 34u };
-static const uint32_t m9s37[10] = { 34u, 32u, 104u, 101u, 105u, 103u, 104u, 116u, 61u, 34u };
-static const uint32_t m9s38[30] = { 34u, 32u, 112u, 114u, 101u, 115u, 101u, 114u, 118u, 101u, 65u, 115u, 112u, 101u, 99u, 116u, 82u, 97u, 116u, 105u, 111u, 61u, 34u, 110u, 111u, 110u, 101u, 34u, 47u, 62u };
-static const uint32_t m9s39[100] = { 60u, 112u, 97u, 116u, 104u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 110u, 111u, 110u, 101u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 111u, 112u, 97u, 99u, 105u, 116u, 121u, 61u, 34u, 48u, 46u, 52u, 53u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 48u, 46u, 57u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 108u, 105u, 110u, 101u, 106u, 111u, 105u, 110u, 61u, 34u, 114u, 111u, 117u, 110u, 100u, 34u, 32u, 100u, 61u, 34u };
-static const uint32_t m9s40[3] = { 34u, 47u, 62u };
-static const uint32_t m9s41[76] = { 60u, 112u, 97u, 116u, 104u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 110u, 111u, 110u, 101u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 111u, 112u, 97u, 99u, 105u, 116u, 121u, 61u, 34u, 48u, 46u, 49u, 56u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 48u, 46u, 56u, 34u, 32u, 100u, 61u, 34u };
-static const uint32_t m9s42[3] = { 34u, 47u, 62u };
-static const uint32_t m9s43[9] = { 77u, 97u, 112u, 58u, 32u, 116u, 104u, 101u, 32u };
-static const uint32_t m9s44[20] = { 32u, 99u, 101u, 110u, 116u, 114u, 101u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 97u, 115u, 99u, 101u, 110u, 100u };
-static const uint32_t m9s45[12] = { 60u, 112u, 97u, 116u, 104u, 32u, 102u, 105u, 108u, 108u, 61u, 34u };
-static const uint32_t m9s46[16] = { 34u, 32u, 102u, 105u, 108u, 108u, 45u, 111u, 112u, 97u, 99u, 105u, 116u, 121u, 61u, 34u };
-static const uint32_t m9s47[10] = { 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u };
-static const uint32_t m9s48[18] = { 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 111u, 112u, 97u, 99u, 105u, 116u, 121u, 61u, 34u };
-static const uint32_t m9s49[24] = { 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 48u, 46u, 52u, 34u, 32u, 100u, 61u, 34u };
-static const uint32_t m9s50[4] = { 90u, 34u, 47u, 62u };
-static const uint32_t m9s51[9] = { 108u, 111u, 110u, 103u, 105u, 116u, 117u, 100u, 101u };
-static const uint32_t m9s52[8] = { 108u, 97u, 116u, 105u, 116u, 117u, 100u, 101u };
-static const uint32_t m9s53[13] = { 60u, 103u, 32u, 105u, 100u, 61u, 34u, 104u, 101u, 97u, 116u, 34u, 62u };
-static const uint32_t m9s54[4] = { 60u, 47u, 103u, 62u };
-static const uint32_t m9s55[9] = { 60u, 116u, 101u, 120u, 116u, 32u, 120u, 61u, 34u };
-static const uint32_t m9s56[5] = { 34u, 32u, 121u, 61u, 34u };
-static const uint32_t m9s57[28] = { 34u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 102u, 111u, 110u, 116u, 45u, 115u, 105u, 122u, 101u, 61u, 34u, 57u, 34u, 62u };
-static const uint32_t m9s58[16] = { 60u, 47u, 116u, 101u, 120u, 116u, 62u, 60u, 116u, 101u, 120u, 116u, 32u, 120u, 61u, 34u };
-static const uint32_t m9s59[5] = { 34u, 32u, 121u, 61u, 34u };
-static const uint32_t m9s60[46] = { 34u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 102u, 111u, 110u, 116u, 45u, 115u, 105u, 122u, 101u, 61u, 34u, 57u, 34u, 32u, 116u, 101u, 120u, 116u, 45u, 97u, 110u, 99u, 104u, 111u, 114u, 61u, 34u, 101u, 110u, 100u, 34u, 62u };
-static const uint32_t m9s61[7] = { 60u, 47u, 116u, 101u, 120u, 116u, 62u };
-static const uint32_t m9s62[12] = { 60u, 99u, 105u, 114u, 99u, 108u, 101u, 32u, 99u, 120u, 61u, 34u };
-static const uint32_t m9s63[6] = { 34u, 32u, 99u, 121u, 61u, 34u };
-static const uint32_t m9s64[14] = { 34u, 32u, 114u, 61u, 34u, 53u, 34u, 32u, 102u, 105u, 108u, 108u, 61u, 34u };
-static const uint32_t m9s65[42] = { 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 49u, 46u, 53u, 34u, 62u, 60u, 116u, 105u, 116u, 108u, 101u, 62u };
-static const uint32_t m9s66[17] = { 60u, 47u, 116u, 105u, 116u, 108u, 101u, 62u, 60u, 47u, 99u, 105u, 114u, 99u, 108u, 101u, 62u };
-static const uint32_t m9s67[9] = { 60u, 116u, 101u, 120u, 116u, 32u, 120u, 61u, 34u };
-static const uint32_t m9s68[5] = { 34u, 32u, 121u, 61u, 34u };
-static const uint32_t m9s69[123] = { 34u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 35u, 102u, 102u, 102u, 34u, 32u, 102u, 111u, 110u, 116u, 45u, 115u, 105u, 122u, 101u, 61u, 34u, 49u, 50u, 34u, 32u, 102u, 111u, 110u, 116u, 45u, 119u, 101u, 105u, 103u, 104u, 116u, 61u, 34u, 54u, 48u, 48u, 34u, 32u, 112u, 97u, 105u, 110u, 116u, 45u, 111u, 114u, 100u, 101u, 114u, 61u, 34u, 115u, 116u, 114u, 111u, 107u, 101u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u, 35u, 48u, 98u, 48u, 98u, 48u, 98u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 51u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 111u, 112u, 97u, 99u, 105u, 116u, 121u, 61u, 34u, 48u, 46u, 54u, 34u, 62u };
-static const uint32_t m9s70[7] = { 60u, 47u, 116u, 101u, 120u, 116u, 62u };
+static const uint8_t m9s0[25] = { 67, 111, 97, 115, 116, 108, 105, 110, 101, 115, 58, 32, 78, 97, 116, 117, 114, 97, 108, 32, 69, 97, 114, 116, 104 };
+static const uint8_t m9s1[31] = { 77, 97, 112, 58, 32, 116, 104, 101, 32, 119, 105, 100, 116, 104, 32, 109, 117, 115, 116, 32, 98, 101, 32, 112, 111, 115, 105, 116, 105, 118, 101 };
+static const uint8_t m9s2[35] = { 77, 97, 112, 58, 32, 116, 104, 101, 32, 119, 105, 110, 100, 111, 119, 32, 112, 114, 111, 106, 101, 99, 116, 115, 32, 116, 111, 32, 110, 111, 116, 104, 105, 110, 103 };
+static const uint8_t m9s3[100] = { 60, 115, 118, 103, 32, 120, 109, 108, 110, 115, 61, 34, 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 115, 118, 103, 34, 32, 114, 111, 108, 101, 61, 34, 105, 109, 103, 34, 32, 102, 111, 110, 116, 45, 102, 97, 109, 105, 108, 121, 61, 34, 115, 121, 115, 116, 101, 109, 45, 117, 105, 44, 32, 115, 97, 110, 115, 45, 115, 101, 114, 105, 102, 34, 32, 118, 105, 101, 119, 66, 111, 120, 61, 34, 48, 32, 48, 32 };
+static const uint8_t m9s4[9] = { 34, 32, 119, 105, 100, 116, 104, 61, 34 };
+static const uint8_t m9s5[10] = { 34, 32, 104, 101, 105, 103, 104, 116, 61, 34 };
+static const uint8_t m9s6[9] = { 34, 62, 60, 116, 105, 116, 108, 101, 62 };
+static const uint8_t m9s7[3] = { 77, 97, 112 };
+static const uint8_t m9s8[8] = { 60, 47, 116, 105, 116, 108, 101, 62 };
+static const uint8_t m9s9[7] = { 35, 48, 55, 49, 51, 50, 98 };
+static const uint8_t m9s10[39] = { 60, 100, 101, 102, 115, 62, 60, 99, 108, 105, 112, 80, 97, 116, 104, 32, 105, 100, 61, 34, 109, 97, 112, 45, 99, 108, 105, 112, 34, 62, 60, 112, 97, 116, 104, 32, 100, 61, 34 };
+static const uint8_t m9s11[51] = { 34, 47, 62, 60, 47, 99, 108, 105, 112, 80, 97, 116, 104, 62, 60, 47, 100, 101, 102, 115, 62, 60, 103, 32, 99, 108, 105, 112, 45, 112, 97, 116, 104, 61, 34, 117, 114, 108, 40, 35, 109, 97, 112, 45, 99, 108, 105, 112, 41, 34, 62 };
+static const uint8_t m9s12[77] = { 60, 47, 103, 62, 60, 112, 97, 116, 104, 32, 102, 105, 108, 108, 61, 34, 110, 111, 110, 101, 34, 32, 115, 116, 114, 111, 107, 101, 61, 34, 35, 102, 102, 102, 34, 32, 115, 116, 114, 111, 107, 101, 45, 111, 112, 97, 99, 105, 116, 121, 61, 34, 48, 46, 54, 34, 32, 115, 116, 114, 111, 107, 101, 45, 119, 105, 100, 116, 104, 61, 34, 49, 34, 32, 100, 61, 34 };
+static const uint8_t m9s13[3] = { 34, 47, 62 };
+static const uint8_t m9s14[9] = { 60, 116, 101, 120, 116, 32, 120, 61, 34 };
+static const uint8_t m9s15[75] = { 34, 32, 121, 61, 34, 49, 55, 34, 32, 102, 105, 108, 108, 61, 34, 35, 102, 102, 102, 34, 32, 102, 111, 110, 116, 45, 115, 105, 122, 101, 61, 34, 49, 52, 34, 32, 102, 111, 110, 116, 45, 119, 101, 105, 103, 104, 116, 61, 34, 54, 48, 48, 34, 32, 116, 101, 120, 116, 45, 97, 110, 99, 104, 111, 114, 61, 34, 109, 105, 100, 100, 108, 101, 34, 62 };
+static const uint8_t m9s16[7] = { 60, 47, 116, 101, 120, 116, 62 };
+static const uint8_t m9s17[9] = { 60, 116, 101, 120, 116, 32, 120, 61, 34 };
+static const uint8_t m9s18[5] = { 34, 32, 121, 61, 34 };
+static const uint8_t m9s19[66] = { 34, 32, 102, 105, 108, 108, 61, 34, 35, 102, 102, 102, 34, 32, 102, 105, 108, 108, 45, 111, 112, 97, 99, 105, 116, 121, 61, 34, 48, 46, 55, 34, 32, 102, 111, 110, 116, 45, 115, 105, 122, 101, 61, 34, 49, 48, 34, 32, 116, 101, 120, 116, 45, 97, 110, 99, 104, 111, 114, 61, 34, 101, 110, 100, 34, 62 };
+static const uint8_t m9s20[7] = { 60, 47, 116, 101, 120, 116, 62 };
+static const uint8_t m9s21[6] = { 60, 47, 115, 118, 103, 62 };
+static const uint8_t m9s22[33] = { 77, 97, 112, 58, 32, 116, 104, 101, 32, 115, 112, 101, 99, 32, 110, 97, 109, 101, 115, 32, 110, 111, 32, 112, 114, 111, 106, 101, 99, 116, 105, 111, 110 };
+static const uint8_t m9s23[5] = { 38, 97, 109, 112, 59 };
+static const uint8_t m9s24[4] = { 38, 108, 116, 59 };
+static const uint8_t m9s25[4] = { 38, 103, 116, 59 };
+static const uint8_t m9s26[6] = { 38, 113, 117, 111, 116, 59 };
+static const uint8_t m9s27[1] = { 48 };
+static const uint8_t m9s28[9] = { 60, 114, 101, 99, 116, 32, 120, 61, 34 };
+static const uint8_t m9s29[5] = { 34, 32, 121, 61, 34 };
+static const uint8_t m9s30[9] = { 34, 32, 119, 105, 100, 116, 104, 61, 34 };
+static const uint8_t m9s31[10] = { 34, 32, 104, 101, 105, 103, 104, 116, 61, 34 };
+static const uint8_t m9s32[8] = { 34, 32, 102, 105, 108, 108, 61, 34 };
+static const uint8_t m9s33[3] = { 34, 47, 62 };
+static const uint8_t m9s34[13] = { 60, 105, 109, 97, 103, 101, 32, 104, 114, 101, 102, 61, 34 };
+static const uint8_t m9s35[5] = { 34, 32, 120, 61, 34 };
+static const uint8_t m9s36[5] = { 34, 32, 121, 61, 34 };
+static const uint8_t m9s37[9] = { 34, 32, 119, 105, 100, 116, 104, 61, 34 };
+static const uint8_t m9s38[10] = { 34, 32, 104, 101, 105, 103, 104, 116, 61, 34 };
+static const uint8_t m9s39[30] = { 34, 32, 112, 114, 101, 115, 101, 114, 118, 101, 65, 115, 112, 101, 99, 116, 82, 97, 116, 105, 111, 61, 34, 110, 111, 110, 101, 34, 47, 62 };
+static const uint8_t m9s40[100] = { 60, 112, 97, 116, 104, 32, 102, 105, 108, 108, 61, 34, 110, 111, 110, 101, 34, 32, 115, 116, 114, 111, 107, 101, 61, 34, 35, 102, 102, 102, 34, 32, 115, 116, 114, 111, 107, 101, 45, 111, 112, 97, 99, 105, 116, 121, 61, 34, 48, 46, 52, 53, 34, 32, 115, 116, 114, 111, 107, 101, 45, 119, 105, 100, 116, 104, 61, 34, 48, 46, 57, 34, 32, 115, 116, 114, 111, 107, 101, 45, 108, 105, 110, 101, 106, 111, 105, 110, 61, 34, 114, 111, 117, 110, 100, 34, 32, 100, 61, 34 };
+static const uint8_t m9s41[3] = { 34, 47, 62 };
+static const uint8_t m9s42[76] = { 60, 112, 97, 116, 104, 32, 102, 105, 108, 108, 61, 34, 110, 111, 110, 101, 34, 32, 115, 116, 114, 111, 107, 101, 61, 34, 35, 102, 102, 102, 34, 32, 115, 116, 114, 111, 107, 101, 45, 111, 112, 97, 99, 105, 116, 121, 61, 34, 48, 46, 49, 56, 34, 32, 115, 116, 114, 111, 107, 101, 45, 119, 105, 100, 116, 104, 61, 34, 48, 46, 56, 34, 32, 100, 61, 34 };
+static const uint8_t m9s43[3] = { 34, 47, 62 };
+static const uint8_t m9s44[9] = { 77, 97, 112, 58, 32, 116, 104, 101, 32 };
+static const uint8_t m9s45[20] = { 32, 99, 101, 110, 116, 114, 101, 115, 32, 109, 117, 115, 116, 32, 97, 115, 99, 101, 110, 100 };
+static const uint8_t m9s46[12] = { 60, 112, 97, 116, 104, 32, 102, 105, 108, 108, 61, 34 };
+static const uint8_t m9s47[16] = { 34, 32, 102, 105, 108, 108, 45, 111, 112, 97, 99, 105, 116, 121, 61, 34 };
+static const uint8_t m9s48[10] = { 34, 32, 115, 116, 114, 111, 107, 101, 61, 34 };
+static const uint8_t m9s49[18] = { 34, 32, 115, 116, 114, 111, 107, 101, 45, 111, 112, 97, 99, 105, 116, 121, 61, 34 };
+static const uint8_t m9s50[24] = { 34, 32, 115, 116, 114, 111, 107, 101, 45, 119, 105, 100, 116, 104, 61, 34, 48, 46, 52, 34, 32, 100, 61, 34 };
+static const uint8_t m9s51[4] = { 90, 34, 47, 62 };
+static const uint8_t m9s52[9] = { 108, 111, 110, 103, 105, 116, 117, 100, 101 };
+static const uint8_t m9s53[8] = { 108, 97, 116, 105, 116, 117, 100, 101 };
+static const uint8_t m9s54[13] = { 60, 103, 32, 105, 100, 61, 34, 104, 101, 97, 116, 34, 62 };
+static const uint8_t m9s55[4] = { 60, 47, 103, 62 };
+static const uint8_t m9s56[9] = { 60, 116, 101, 120, 116, 32, 120, 61, 34 };
+static const uint8_t m9s57[5] = { 34, 32, 121, 61, 34 };
+static const uint8_t m9s58[28] = { 34, 32, 102, 105, 108, 108, 61, 34, 35, 102, 102, 102, 34, 32, 102, 111, 110, 116, 45, 115, 105, 122, 101, 61, 34, 57, 34, 62 };
+static const uint8_t m9s59[16] = { 60, 47, 116, 101, 120, 116, 62, 60, 116, 101, 120, 116, 32, 120, 61, 34 };
+static const uint8_t m9s60[5] = { 34, 32, 121, 61, 34 };
+static const uint8_t m9s61[46] = { 34, 32, 102, 105, 108, 108, 61, 34, 35, 102, 102, 102, 34, 32, 102, 111, 110, 116, 45, 115, 105, 122, 101, 61, 34, 57, 34, 32, 116, 101, 120, 116, 45, 97, 110, 99, 104, 111, 114, 61, 34, 101, 110, 100, 34, 62 };
+static const uint8_t m9s62[7] = { 60, 47, 116, 101, 120, 116, 62 };
+static const uint8_t m9s63[12] = { 60, 99, 105, 114, 99, 108, 101, 32, 99, 120, 61, 34 };
+static const uint8_t m9s64[6] = { 34, 32, 99, 121, 61, 34 };
+static const uint8_t m9s65[14] = { 34, 32, 114, 61, 34, 53, 34, 32, 102, 105, 108, 108, 61, 34 };
+static const uint8_t m9s66[7] = { 35, 48, 48, 97, 98, 99, 57 };
+static const uint8_t m9s67[42] = { 34, 32, 115, 116, 114, 111, 107, 101, 61, 34, 35, 102, 102, 102, 34, 32, 115, 116, 114, 111, 107, 101, 45, 119, 105, 100, 116, 104, 61, 34, 49, 46, 53, 34, 62, 60, 116, 105, 116, 108, 101, 62 };
+static const uint8_t m9s68[17] = { 60, 47, 116, 105, 116, 108, 101, 62, 60, 47, 99, 105, 114, 99, 108, 101, 62 };
+static const uint8_t m9s69[9] = { 60, 116, 101, 120, 116, 32, 120, 61, 34 };
+static const uint8_t m9s70[5] = { 34, 32, 121, 61, 34 };
+static const uint8_t m9s71[123] = { 34, 32, 102, 105, 108, 108, 61, 34, 35, 102, 102, 102, 34, 32, 102, 111, 110, 116, 45, 115, 105, 122, 101, 61, 34, 49, 50, 34, 32, 102, 111, 110, 116, 45, 119, 101, 105, 103, 104, 116, 61, 34, 54, 48, 48, 34, 32, 112, 97, 105, 110, 116, 45, 111, 114, 100, 101, 114, 61, 34, 115, 116, 114, 111, 107, 101, 34, 32, 115, 116, 114, 111, 107, 101, 61, 34, 35, 48, 98, 48, 98, 48, 98, 34, 32, 115, 116, 114, 111, 107, 101, 45, 119, 105, 100, 116, 104, 61, 34, 51, 34, 32, 115, 116, 114, 111, 107, 101, 45, 111, 112, 97, 99, 105, 116, 121, 61, 34, 48, 46, 54, 34, 62 };
+static const uint8_t m9s72[7] = { 60, 47, 116, 101, 120, 116, 62 };
 
 static double Map_Px (double phi, m9_state *err);
 static double Map_Py (double phi, m9_state *err);
@@ -10553,22 +10555,22 @@ static bool Map_Inside (Map_Window *win, double lon, double lat, m9_state *err);
 static double Map_LonSpan (Map_Window *win, m9_state *err);
 static void Map_Edge (Map_Spec *spec, bool whole, double lon, double lat, double *x, double *y, m9_state *err);
 static int64_t Map_Outline (Map_Spec *spec, m9_sl_F64 *xs, m9_sl_F64 *ys, m9_state *err);
-static void Map_Esc (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err);
+static void Map_Esc (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 t, m9_state *err);
 static void Map_Num (DynStr_DString * *d, m9_pool *d_pool, double v, m9_state *err);
-static m9_sl_CHAR Map_Pretty (double v, m9_state *err);
+static m9_sl_UTF8 Map_Pretty (double v, m9_state *err);
 static void Map_Pt (DynStr_DString * *d, m9_pool *d_pool, bool first, double px, double py, m9_state *err);
-static void Map_Rect (DynStr_DString * *d, m9_pool *d_pool, double x, double y, double w, double h, m9_sl_CHAR fill, m9_state *err);
+static void Map_Rect (DynStr_DString * *d, m9_pool *d_pool, double x, double y, double w, double h, m9_sl_UTF8 fill, m9_state *err);
 static void Map_OutlinePath (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, m9_state *err);
 static void Map_Image (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err);
 static void Map_Line (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, int64_t n, m9_state *err);
 static void Map_Coast (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err);
 static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_state *err);
 static int64_t Map_Level (Map_Scale *scale, double lo, double hi, double v, m9_state *err);
-static m9_sl_F64 Map_Edges (m9_sl_F64 centres, m9_sl_CHAR what, m9_state *err);
-static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lonE, m9_sl_F64 latE, int64_t r, int64_t c0, int64_t c1, m9_sl_CHAR fill, m9_state *err);
+static m9_sl_F64 Map_Edges (m9_sl_F64 centres, m9_sl_UTF8 what, m9_state *err);
+static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lonE, m9_sl_F64 latE, int64_t r, int64_t c0, int64_t c1, m9_sl_UTF8 fill, m9_state *err);
 static bool Map_CellShown (Map_Spec *spec, double lon0, double lon1, double lat0, double lat1, m9_state *err);
-static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err);
-static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err);
+static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, double lo, double hi, m9_sl_m9_sl_UTF8 fills, m9_state *err);
+static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double lo, double hi, m9_sl_m9_sl_UTF8 fills, m9_state *err);
 static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_Map_Marker markers, m9_state *err);
 
 
@@ -10692,7 +10694,7 @@ Map_Spec Map_Default (m9_state *err)
   err->res = m9res;
   Map_Spec m9ret = {0};
   Map_Spec s = {0}; (void) s;
-  s.title = (m9_sl_CHAR){ NULL, 0 };
+  s.title = ((m9_sl_UTF8){ NULL, 0 });
   s.proj = Map_NaturalEarth;
   s.lon0 = 0.0;
   { __typeof__(s.window) m9v = Map_Globe (err);
@@ -10700,7 +10702,7 @@ Map_Spec Map_Default (m9_state *err)
     s.window = m9v;
   }
   s.width = INT64_C(960);
-  s.backdrop.href = (m9_sl_CHAR){ NULL, 0 };
+  s.backdrop.href = ((m9_sl_UTF8){ NULL, 0 });
   s.backdrop.x0 = 0.0;
   s.backdrop.x1 = 0.0;
   s.backdrop.y0_ = 0.0;
@@ -10711,7 +10713,7 @@ Map_Spec Map_Default (m9_state *err)
   s.scale.low = 1.0;
   s.scale.high = 99.0;
   s.scale.alpha = 0.65;
-  s.credit = ((m9_sl_CHAR){ (uint32_t *) m9s0, 25 });
+  s.credit = ((m9_sl_UTF8){ (uint8_t *) m9s0, 25 });
   err->res = m9res;
   m9ret = s;
   goto L_ret;
@@ -10812,26 +10814,26 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, m9_sl_Map_Marker markers, m9_state *err)
+m9_sl_UTF8 Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, m9_sl_Map_Marker markers, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   Map_Geo g = {0}; (void) g;
   m9_sl_F64 xs = {0}; (void) xs;
   m9_sl_F64 ys = {0}; (void) ys;
-  m9_sl_m9_sl_CHAR fills = {0}; (void) fills;
+  m9_sl_m9_sl_UTF8 fills = {0}; (void) fills;
   int64_t n = 0; (void) n;
   int64_t k = 0; (void) k;
   double lo = 0; (void) lo;
   double hi = 0; (void) hi;
   bool heat = false; (void) heat;
   if (((*spec).width <= INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 31 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 31 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 31 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 31 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -10910,11 +10912,13 @@ m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_do
     k += 1;
   } }
   if (((g.x1 <= g.x0) || (g.y1_ <= g.y0_))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 35 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 35 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 35 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 35 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  if ((((*spec).title).len > INT64_C(0))) {
+  bool m9t8 = (Text_BLen ((*spec).title, err) > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t8) {
     g.top = 24.0;
   } else {
     g.top = 0.0;
@@ -10930,39 +10934,41 @@ m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_do
       heat = m9v;
     }
   }
-  if ((heat || (((*spec).credit).len > INT64_C(0)))) {
+  bool m9t9 = (heat || (Text_BLen ((*spec).credit, err) > INT64_C(0)));
+  if (err->exc) goto L_ret;
+  if (m9t9) {
     g.bottom = 26.0;
   } else {
     g.bottom = 0.0;
   }
-  { __typeof__(fills) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, Map_Levels, err);
+  { __typeof__(fills) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, Map_Levels, err);
     if (err->exc) goto L_ret;
     fills = m9v;
   }
-  { __typeof__(k) m9t8to;
+  { __typeof__(k) m9t10to;
   k = INT64_C(0);
-  m9t8to = m9_sub_i64 (Map_Levels, INT64_C(1), err);
+  m9t10to = m9_sub_i64 (Map_Levels, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (k <= m9t8to) for (;;) {
+  if (k <= m9t10to) for (;;) {
     { __typeof__(Plot_Viridis (err)) m9a3 = Plot_Viridis (err);
       if (err->exc) goto L_ret;
     { __typeof__(((double)(k) / (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err)))) m9a4 = ((double)(k) / (double)(m9_sub_i64 (Map_Levels, INT64_C(1), err)));
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_CHAR), err))) m9v = Plot_CmapHex (m9a3, m9a4, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err))) m9v = Plot_CmapHex (m9a3, m9a4, err);
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
     }
-    if ((uint64_t) m9t8to - (uint64_t) k < (uint64_t) 1) break;
+    if ((uint64_t) m9t10to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
   { __typeof__(d) m9v = DynStr_New (&(pool), err);
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s3, 100 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s3, 100 }), err);
   if (err->exc) goto L_ret;
   Map_Num (&(d), &(pool), g.w, err);
   if (err->exc) goto L_ret;
@@ -10970,32 +10976,34 @@ m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_do
   if (err->exc) goto L_ret;
   Map_Num (&(d), &(pool), ((g.top + g.h) + g.bottom), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s4, 9 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s4, 9 }), err);
   if (err->exc) goto L_ret;
   Map_Num (&(d), &(pool), g.w, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s5, 10 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s5, 10 }), err);
   if (err->exc) goto L_ret;
   Map_Num (&(d), &(pool), ((g.top + g.h) + g.bottom), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s6, 9 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s6, 9 }), err);
   if (err->exc) goto L_ret;
-  if ((((*spec).title).len > INT64_C(0))) {
+  bool m9t11 = (Text_BLen ((*spec).title, err) > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t11) {
     Map_Esc (&(d), &(pool), (*spec).title, err);
     if (err->exc) goto L_ret;
   } else {
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s7, 3 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s7, 3 }), err);
     if (err->exc) goto L_ret;
   }
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s8, 8 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s8, 8 }), err);
   if (err->exc) goto L_ret;
-  Map_Rect (&(d), &(pool), 0.0, 0.0, g.w, ((g.top + g.h) + g.bottom), Map_Background, err);
+  Map_Rect (&(d), &(pool), 0.0, 0.0, g.w, ((g.top + g.h) + g.bottom), ((m9_sl_UTF8){ (uint8_t *) m9s9, 7 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s9, 39 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s10, 39 }), err);
   if (err->exc) goto L_ret;
   Map_OutlinePath (&(d), &(pool), &(g), xs, ys, n, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s10, 51 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s11, 51 }), err);
   if (err->exc) goto L_ret;
   Map_Image (&(d), &(pool), spec, &(g), err);
   if (err->exc) goto L_ret;
@@ -11009,11 +11017,11 @@ m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_do
     Map_Heat (&(d), &(pool), spec, &(g), lons, lats, values, lo, hi, fills, err);
     if (err->exc) goto L_ret;
   }
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s11, 77 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s12, 77 }), err);
   if (err->exc) goto L_ret;
   Map_OutlinePath (&(d), &(pool), &(g), xs, ys, n, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s12, 3 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s13, 3 }), err);
   if (err->exc) goto L_ret;
   Map_Markers (&(d), &(pool), spec, &(g), markers, err);
   if (err->exc) goto L_ret;
@@ -11021,35 +11029,39 @@ m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_do
     Map_Legend (&(d), &(pool), &(g), lo, hi, fills, err);
     if (err->exc) goto L_ret;
   }
-  if ((((*spec).title).len > INT64_C(0))) {
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s13, 9 }), err);
+  bool m9t12 = (Text_BLen ((*spec).title, err) > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t12) {
+    DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s14, 9 }), err);
     if (err->exc) goto L_ret;
     Map_Num (&(d), &(pool), (g.w / 2.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s14, 75 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s15, 75 }), err);
     if (err->exc) goto L_ret;
     Map_Esc (&(d), &(pool), (*spec).title, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s15, 7 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s16, 7 }), err);
     if (err->exc) goto L_ret;
   }
-  if ((((*spec).credit).len > INT64_C(0))) {
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s16, 9 }), err);
+  bool m9t13 = (Text_BLen ((*spec).credit, err) > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t13) {
+    DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s17, 9 }), err);
     if (err->exc) goto L_ret;
     Map_Num (&(d), &(pool), (g.w - 6.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s18, 5 }), err);
     if (err->exc) goto L_ret;
     Map_Num (&(d), &(pool), ((g.top + g.h) + 17.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s18, 66 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s19, 66 }), err);
     if (err->exc) goto L_ret;
     Map_Esc (&(d), &(pool), (*spec).credit, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s19, 7 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s20, 7 }), err);
     if (err->exc) goto L_ret;
   }
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s20, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s21, 6 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -11057,8 +11069,8 @@ m9_sl_CHAR Map_Render (Map_Spec *spec, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_do
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&pool, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&pool);
   return m9ret;
@@ -11397,7 +11409,7 @@ static void Map_ProjectRel (Map_Spec *spec, double rel, double lat, double *x, d
     f (rel, lat, x, y, err);
     if (err->exc) goto L_ret;
   } else {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s21, 33 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s21, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s22, 33 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s22, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } }
@@ -11676,7 +11688,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Map_Esc (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err)
+static void Map_Esc (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 t, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11684,21 +11696,21 @@ static void Map_Esc (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_stat
   err->res = &m9frame;
   uint32_t c = 0; (void) c;
   { __typeof__(t) m9t1s = t;
-  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; m9t1i++) { c = m9t1s.p[m9t1i];
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     if ((c == 38u)) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s22, 5 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s23, 5 }), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c == 60u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s23, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s24, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 62u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s24, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s25, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 34u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s25, 6 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s26, 6 }), err);
         if (err->exc) goto L_ret;
     } else {
       if (((int64_t)(c) < INT64_C(32))) {
@@ -11725,7 +11737,7 @@ static void Map_Num (DynStr_DString * *d, m9_pool *d_pool, double v, m9_state *e
   if (((v > (- 0.05)) && (v < 0.05))) {
     v = 0.0;
   }
-  { __typeof__(Fmt_Fixed (v, INT64_C(1), err)) m9a6 = Fmt_Fixed (v, INT64_C(1), err);
+  { __typeof__(Fmt_FixedUtf (v, INT64_C(1), err)) m9a6 = Fmt_FixedUtf (v, INT64_C(1), err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a6, err);
   if (err->exc) goto L_ret;
@@ -11737,13 +11749,13 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Map_Pretty (double v, m9_state *err)
+static m9_sl_UTF8 Map_Pretty (double v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   double a = 0; (void) a;
   int64_t decimals = 0; (void) decimals;
   { __typeof__(a) m9v = Math_Fabs (v, err);
@@ -11752,7 +11764,7 @@ static m9_sl_CHAR Map_Pretty (double v, m9_state *err)
   }
   if ((a == 0.0)) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s26, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s27, 1 });
     goto L_ret;
   }
   if (((a < 0.001) || (a >= 100000.0))) {
@@ -11772,12 +11784,12 @@ static m9_sl_CHAR Map_Pretty (double v, m9_state *err)
     decimals = INT64_C(0);
   }
   err->res = m9res;
-  m9ret = Fmt_Fixed (v, decimals, err);
+  m9ret = Fmt_FixedUtf (v, decimals, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -11808,33 +11820,33 @@ L_ret: ;
   return;
 }
 
-static void Map_Rect (DynStr_DString * *d, m9_pool *d_pool, double x, double y, double w, double h, m9_sl_CHAR fill, m9_state *err)
+static void Map_Rect (DynStr_DString * *d, m9_pool *d_pool, double x, double y, double w, double h, m9_sl_UTF8 fill, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s27, 9 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s28, 9 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, x, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s28, 5 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s29, 5 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, y, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s29, 9 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s30, 9 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, w, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s30, 10 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s31, 10 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, h, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s31, 8 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s32, 8 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, fill, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 3 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s33, 3 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -11889,34 +11901,36 @@ static void Map_Image (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map
   double px1 = 0; (void) px1;
   double py0 = 0; (void) py0;
   double py1 = 0; (void) py1;
-  if ((((*spec).backdrop.href).len == INT64_C(0))) {
+  bool m9t1 = (Text_BLen ((*spec).backdrop.href, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
     goto L_ret;
   }
   px0 = (((((*spec).backdrop.x0 - (*g).x0)) / (((*g).x1 - (*g).x0))) * (*g).w);
   px1 = (((((*spec).backdrop.x1 - (*g).x0)) / (((*g).x1 - (*g).x0))) * (*g).w);
   py0 = ((*g).top + (((((*g).y1_ - (*spec).backdrop.y1_)) / (((*g).y1_ - (*g).y0_))) * (*g).h));
   py1 = ((*g).top + (((((*g).y1_ - (*spec).backdrop.y0_)) / (((*g).y1_ - (*g).y0_))) * (*g).h));
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s33, 13 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s34, 13 }), err);
   if (err->exc) goto L_ret;
   Map_Esc (d, d_pool, (*spec).backdrop.href, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s34, 5 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s35, 5 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, px0, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s35, 5 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s36, 5 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, py0, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s36, 9 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s37, 9 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, (px1 - px0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s37, 10 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s38, 10 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, (py1 - py0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s38, 30 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s39, 30 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -12009,7 +12023,7 @@ static void Map_Coast (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map
   int64_t n = 0; (void) n;
   m9_sl_F64 lons = {0}; (void) lons;
   m9_sl_F64 lats = {0}; (void) lats;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 100 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s40, 100 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
@@ -12059,7 +12073,7 @@ static void Map_Coast (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s40, 3 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s41, 3 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -12083,7 +12097,7 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec,
   if (((*spec).graticule <= 0.0)) {
     goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s41, 76 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s42, 76 }), err);
   if (err->exc) goto L_ret;
   n = INT64_C(91);
   { __typeof__(lons) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, n, err);
@@ -12147,7 +12161,7 @@ static void Map_Graticule (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec,
     }
     lat = (lat + (*spec).graticule);
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s42, 3 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s43, 3 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -12223,7 +12237,7 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_F64 Map_Edges (m9_sl_F64 centres, m9_sl_CHAR what, m9_state *err)
+static m9_sl_F64 Map_Edges (m9_sl_F64 centres, m9_sl_UTF8 what, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12261,7 +12275,7 @@ static m9_sl_F64 Map_Edges (m9_sl_F64 centres, m9_sl_CHAR what, m9_state *err)
     bool m9t2 = ((*(double *) m9_at (centres.p, i, centres.len, sizeof (double), err)) <= (*(double *) m9_at (centres.p, m9_sub_i64 (i, INT64_C(1), err), centres.len, sizeof (double), err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s43, 9 }), what, err), ((m9_sl_CHAR){ (uint32_t *) m9s44, 20 }), err)) m9t3 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s43, 9 }), what, err), ((m9_sl_CHAR){ (uint32_t *) m9s44, 20 }), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s44, 9 }), what, err), ((m9_sl_UTF8){ (uint8_t *) m9s45, 20 }), err)) m9t3 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s44, 9 }), what, err), ((m9_sl_UTF8){ (uint8_t *) m9s45, 20 }), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
@@ -12293,7 +12307,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lonE, m9_sl_F64 latE, int64_t r, int64_t c0, int64_t c1, m9_sl_CHAR fill, m9_state *err)
+static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lonE, m9_sl_F64 latE, int64_t r, int64_t c0, int64_t c1, m9_sl_UTF8 fill, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12302,29 +12316,29 @@ static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
   int64_t c = 0; (void) c;
   double px = 0; (void) px;
   double py = 0; (void) py;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s45, 12 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s46, 12 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, fill, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 16 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s47, 16 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(Fmt_Fixed ((*spec).scale.alpha, INT64_C(2), err)) m9a14 = Fmt_Fixed ((*spec).scale.alpha, INT64_C(2), err);
+  { __typeof__(Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err)) m9a14 = Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a14, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s47, 10 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s48, 10 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, fill, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s48, 18 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s49, 18 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(Fmt_Fixed ((*spec).scale.alpha, INT64_C(2), err)) m9a15 = Fmt_Fixed ((*spec).scale.alpha, INT64_C(2), err);
+  { __typeof__(Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err)) m9a15 = Fmt_FixedUtf ((*spec).scale.alpha, INT64_C(2), err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a15, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s49, 24 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s50, 24 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(c) m9t1to;
   c = c0;
@@ -12362,7 +12376,7 @@ static void Map_Cell (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
     if ((uint64_t) c - (uint64_t) m9t2to < (uint64_t) 1) break;
     c += -1;
   } }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 4 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s51, 4 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -12408,7 +12422,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err)
+static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_Geo *g, m9_sl_F64 lons, m9_sl_F64 lats, m9_gd2_double values, double lo, double hi, m9_sl_m9_sl_UTF8 fills, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12421,15 +12435,15 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
   int64_t c0 = 0; (void) c0;
   int64_t run = 0; (void) run;
   int64_t lv = 0; (void) lv;
-  { __typeof__(lonE) m9v = Map_Edges (lons, ((m9_sl_CHAR){ (uint32_t *) m9s51, 9 }), err);
+  { __typeof__(lonE) m9v = Map_Edges (lons, ((m9_sl_UTF8){ (uint8_t *) m9s52, 9 }), err);
     if (err->exc) goto L_ret;
     lonE = m9v;
   }
-  { __typeof__(latE) m9v = Map_Edges (lats, ((m9_sl_CHAR){ (uint32_t *) m9s52, 8 }), err);
+  { __typeof__(latE) m9v = Map_Edges (lats, ((m9_sl_UTF8){ (uint8_t *) m9s53, 8 }), err);
     if (err->exc) goto L_ret;
     latE = m9v;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s53, 13 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s54, 13 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(r) m9t1to;
   r = INT64_C(0);
@@ -12465,7 +12479,7 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
         if ((run >= INT64_C(0))) {
           { __typeof__(m9_sub_i64 (c, INT64_C(1), err)) m9a25 = m9_sub_i64 (c, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(m9_sl_CHAR *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_CHAR), err))) m9a26 = (*(m9_sl_CHAR *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_CHAR), err));
+          { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err))) m9a26 = (*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err));
             if (err->exc) goto L_ret;
           Map_Cell (d, d_pool, spec, g, lonE, latE, r, c0, m9a25, m9a26, err);
           if (err->exc) goto L_ret;
@@ -12481,7 +12495,7 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
     if ((run >= INT64_C(0))) {
       { __typeof__(m9_sub_i64 ((lons).len, INT64_C(1), err)) m9a27 = m9_sub_i64 ((lons).len, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_CHAR), err))) m9a28 = (*(m9_sl_CHAR *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err))) m9a28 = (*(m9_sl_UTF8 *) m9_at (fills.p, run, fills.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
       Map_Cell (d, d_pool, spec, g, lonE, latE, r, c0, m9a27, m9a28, err);
       if (err->exc) goto L_ret;
@@ -12491,7 +12505,7 @@ static void Map_Heat (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, Map_
     if ((uint64_t) m9t1to - (uint64_t) r < (uint64_t) 1) break;
     r += 1;
   } }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s54, 4 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s55, 4 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -12500,7 +12514,7 @@ L_ret: ;
   return;
 }
 
-static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double lo, double hi, m9_sl_m9_sl_CHAR fills, m9_state *err)
+static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double lo, double hi, m9_sl_m9_sl_UTF8 fills, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12518,7 +12532,7 @@ static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double
   m9t1to = m9_sub_i64 (Map_Levels, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (k <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_CHAR), err))) m9a29 = (*(m9_sl_CHAR *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err))) m9a29 = (*(m9_sl_UTF8 *) m9_at (fills.p, k, fills.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
     Map_Rect (d, d_pool, (x + ((double)(k) * w)), y, (w + 0.3), 7.0, m9a29, err);
     if (err->exc) goto L_ret;
@@ -12526,37 +12540,37 @@ static void Map_Legend (DynStr_DString * *d, m9_pool *d_pool, Map_Geo *g, double
     if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s55, 9 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s56, 9 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, x, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s56, 5 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s57, 5 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, (y + 17.0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s57, 28 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s58, 28 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(Map_Pretty (lo, err)) m9a30 = Map_Pretty (lo, err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a30, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s58, 16 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s59, 16 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, (x + 160.0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s59, 5 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s60, 5 }), err);
   if (err->exc) goto L_ret;
   Map_Num (d, d_pool, (y + 17.0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s60, 46 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s61, 46 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(Map_Pretty (hi, err)) m9a31 = Map_Pretty (hi, err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a31, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s61, 7 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s62, 7 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -12594,58 +12608,62 @@ static void Map_Markers (DynStr_DString * *d, m9_pool *d_pool, Map_Spec *spec, M
       if (err->exc) goto L_ret;
       }
       }
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s62, 12 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s63, 12 }), err);
       if (err->exc) goto L_ret;
       Map_Num (d, d_pool, px, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s63, 6 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s64, 6 }), err);
       if (err->exc) goto L_ret;
       Map_Num (d, d_pool, py, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s64, 14 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s65, 14 }), err);
       if (err->exc) goto L_ret;
-      bool m9t3 = (((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour).len > INT64_C(0));
+      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour) m9a36 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour;
+        if (err->exc) goto L_ret;
+      bool m9t3 = (Text_BLen (m9a36, err) > INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour) m9a36 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour;
+        { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour) m9a37 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).colour;
           if (err->exc) goto L_ret;
-        Map_Esc (d, d_pool, m9a36, err);
+        Map_Esc (d, d_pool, m9a37, err);
         if (err->exc) goto L_ret;
         }
       } else {
-        DynStr_Append (d, d_pool, Map_MarkerColour, err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s66, 7 }), err);
         if (err->exc) goto L_ret;
-      }
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s65, 42 }), err);
+      } }
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s67, 42 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a37 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
+      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a38 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
         if (err->exc) goto L_ret;
-      Map_Esc (d, d_pool, m9a37, err);
+      Map_Esc (d, d_pool, m9a38, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s66, 17 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s68, 17 }), err);
       if (err->exc) goto L_ret;
-      bool m9t4 = (((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label).len > INT64_C(0));
+      { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a39 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
+        if (err->exc) goto L_ret;
+      bool m9t4 = (Text_BLen (m9a39, err) > INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t4) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s67, 9 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s69, 9 }), err);
         if (err->exc) goto L_ret;
         Map_Num (d, d_pool, (px + 9.0), err);
         if (err->exc) goto L_ret;
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s68, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s70, 5 }), err);
         if (err->exc) goto L_ret;
         Map_Num (d, d_pool, (py + 4.0), err);
         if (err->exc) goto L_ret;
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s69, 123 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s71, 123 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a38 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
+        { __typeof__((*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label) m9a40 = (*(Map_Marker *) m9_at (markers.p, i, markers.len, sizeof (Map_Marker), err)).label;
           if (err->exc) goto L_ret;
-        Map_Esc (d, d_pool, m9a38, err);
+        Map_Esc (d, d_pool, m9a40, err);
         if (err->exc) goto L_ret;
         }
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s70, 7 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s72, 7 }), err);
         if (err->exc) goto L_ret;
-      }
+      } }
     } } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;

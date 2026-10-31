@@ -22,7 +22,7 @@ TYPE
   Rs = SLICE OF R ;
   Patch = RECORD ind : Rs END ;
 
-(* a pure reader: locals and a value parameter only *)
+(* Get is a pure reader: locals and a value parameter only. *)
 PROCEDURE Get (RO r: R ; i: I64) : I64 =
 VAR s, j : I64 ;
 BEGIN
@@ -32,14 +32,15 @@ BEGIN
   RETURN s
 END Get ;
 
-(* writes through the pointer it is handed: the RO argument is copied *)
+(* PokeV writes through the pointer it is handed: the RO argument is
+   copied. *)
 PROCEDURE PokeV (RO r: R ; VAR q: PP) : I64 =
 BEGIN
   q.a.n := 99 ;
   RETURN r.n
 END PokeV ;
 
-(* writes the record its caller lends in the same call *)
+(* Bump writes the record its caller lends in the same call. *)
 PROCEDURE Bump (VAR q: PP) : I64 =
 BEGIN
   q.a.n := q.a.n + 100 ;

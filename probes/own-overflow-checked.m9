@@ -1,9 +1,9 @@
 (* EXPECT: unhandled RAISES Overflow from RAISE -- add it to this procedure's RAISES, or handle it: EXCEPT | Overflow : ... *)
-(* A module's own EXCEPTION named like a predeclared one is the module's,
-   and checked (since 2026-10-21, the compiler review's C6): the exemption
-   of Overflow, IndexError and OutOfMemory was by bare name, so a user's
-   `EXCEPTION Overflow' could be raised from a procedure declaring
-   nothing.  The legal forms first: declared, and handled. *)
+(* A module's own EXCEPTION named like a predeclared one is the
+   module's, and checked (since 2026-10-21, the compiler review's C6).
+   The exemption of Overflow, IndexError and OutOfMemory was by bare
+   name, so a user's `EXCEPTION Overflow' could be raised from a
+   procedure declaring nothing.  Declared, handled forms come first. *)
 MODULE m ;
 EXCEPTION Overflow ;
 PROCEDURE Declared () RAISES Overflow =

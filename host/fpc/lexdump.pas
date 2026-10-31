@@ -1,6 +1,7 @@
 program lexdump;
-{ P5 stage-1 oracle side: dump the FPC lexer's token stream for one
-  file, one token per line: 'line:col Kind text'.  The M9-compiled
+{ lexdump is the P5 stage-1 oracle side.  It dumps the FPC lexer's
+  token stream for one file, one token per line: 'line:col Kind
+  text'.  The M9-compiled
   lexer must produce the identical bytes (lexdiff in runtime/test). }
 {$mode objfpc}{$H+}
 uses SysUtils, Classes, M9Lex;

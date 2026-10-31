@@ -2,10 +2,10 @@ REVIEW Json -- 70 procedures with a body, 56 of them functions; 44 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              56
-  assignments                                   257
-  arguments                                     429
+  assignments                                   255
+  arguments                                     479
   RETURN values                                  82
-  operands of a comparison or an operator       188
+  operands of a comparison or an operator       187
   CASE labels                                     3
   THREAD arguments                                0
   CASE over variants, proved total                2
@@ -37,6 +37,6 @@ COUNTED -- how much there was to check
   RAISE statements                               25
   handlers                                        1
   NEW in the frame                               10
-  NEW in a named pool                            25
+  NEW in a named pool                            24
   calls of a STR form with a UTF twin             0
-  STR subscripts, writes and LEN                 40   len c.src, index c[c.pos], len c.src, len lit, len c.src, len lit, +34 more
+  STR subscripts, writes and LEN                  0

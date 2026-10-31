@@ -1,5 +1,7 @@
 MODULE httpget ;
 
+IMPORT Text ;
+
 (* httpget text|file URL [ACCEPT [COOKIE [DEST]]]
      text -> `status <n> chars <n>` then the body
      file -> `status <n> bytes <n>`
@@ -16,7 +18,7 @@ MODULE httpget ;
         milliseconds: `status <n> tries <n> <body>` on one line, or
         `transport: <why> tries <n>` when the last try failed
 
-   The program the fetch gate drives.  It prints what a checker can
+   The fetch gate drives this program.  It prints what a checker can
    compare and nothing else; the assertions live in httpget.sh.  The
    request's header lines arrive as separate arguments and are joined
    with a line feed here, because a line feed inside one shell
@@ -35,19 +37,19 @@ VAR
   fb : SLICE OF BYTE ;
   status, bytes, i, tries : I64 ;
 
-(* a count written in digits; anything else in it is skipped *)
+(* Num reads a count in digits; anything else in it is skipped. *)
 PROCEDURE Num (RO s: STR) : I64 RAISES ValueRange =
 VAR i, v : I64 ;
 BEGIN
   v := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] >= '0' AND s[i] <= '9' THEN v := v * 10 + (I64 (s[i]) - 48) END
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF I64 (Text.BAt (s, i)) >= ORD ('0') AND I64 (Text.BAt (s, i)) <= ORD ('9') THEN v := v * 10 + (I64 (Text.BAt (s, i)) - 48) END
   END ;
   RETURN v
 END Num ;
 
-(* the retry mode, with a handler of its own: how many tries a
-   FAILURE took is half of what the gate asks *)
+(* Retry is the retry mode, with a handler of its own: the number of
+   tries a FAILURE took is half of what the gate asks. *)
 PROCEDURE Retry () RAISES ValueRange =
 VAR
   none : SLICE OF BYTE ;
@@ -55,8 +57,8 @@ VAR
   why, count, millis : STR ;
 BEGIN
   tries := 0 ;
-  (* each on a statement of its own: a raising call is not made an
-     argument of another call *)
+  (* Each call stands on a statement of its own: a raising call is not
+     made an argument of another call. *)
   method := Io.Arg (pool, 2) ;
   url := Io.Arg (pool, 3) ;
   count := Io.Arg (pool, 4) ;
@@ -66,7 +68,7 @@ BEGIN
                             status, rh, tries) ;
   Io.Write ('status ') ; Io.WriteI64 (status) ;
   Io.Write (' tries ') ; Io.WriteI64 (tries) ; Io.Write (' ') ;
-  Io.WriteLine (DynStr.FromUtf8 (pool, got))
+  Io.WriteLine (UTF (pool, got))
 EXCEPT
 | Http.TransportError (m) :
     why := m ;
@@ -85,13 +87,13 @@ BEGIN
   END ;
   mode := Io.Arg (pool, 1) ;
 
-  IF DynStr.Eq (mode, 'retry') THEN
+  IF Text.Eq (mode, 'retry') THEN
     IF Io.ArgCount () < 6 THEN
       Io.ErrLine ('usage: httpget retry METHOD URL RETRIES FACTORMS') ;
       Io.Halt (2)
     END ;
     Retry ()
-  ELSIF DynStr.Eq (mode, 'session') THEN
+  ELSIF Text.Eq (mode, 'session') THEN
     cl := Http.NewClient (pool) ;
     i := 2 ;
     WHILE i < Io.ArgCount () DO
@@ -103,10 +105,10 @@ BEGIN
     END ;
     Io.Write ('kept ') ; Io.WriteI64 (Http.Kept (cl)) ; Io.WriteLine ('') ;
     Http.CloseClient (cl)
-  ELSIF DynStr.Eq (mode, 'form') THEN
-    (* Http.FormBody: two fields -- one past ASCII, one empty -- and two
-       files, one holding the first boundary the builder would try and
-       a CRLF, one a name with a quote in it; POSTed to URL *)
+  ELSIF Text.Eq (mode, 'form') THEN
+    (* Http.FormBody gets two fields (one past ASCII, one empty) and two
+       files: one holding the first boundary the builder would try and
+       a CRLF, one a name with a quote in it.  It is POSTed to URL. *)
     url := Io.Arg (pool, 2) ;
     fm := Http.NewForm (pool) ;
     Http.FormField (fm, 'title', 'CO' + 2082C + ' at Hyltemossa') ;
@@ -114,11 +116,11 @@ BEGIN
     fb := DynStr.Bytes (pool, 'before' + 0DC + 0AC + '--m9-form-boundary-0' + 0DC + 0AC + 'after', FALSE) ;
     Http.FormBytes (fm, 'data', 'obs.bin', '', fb) ;
     Http.FormBytes (fm, 'meta', 'a"b.json', 'application/json', DynStr.Bytes (pool, '{"k": 1}', FALSE)) ;
-    resp := DynStr.FromUtf8 (pool, Http.Request (pool, 'POST', url,
+    resp := UTF (pool, Http.Request (pool, 'POST', url,
                    'Content-Type: ' + Http.FormType (fm), Http.FormBody (pool, fm), 65536, status, rh)) ;
     Io.Write ('status ') ; Io.WriteI64 (status) ; Io.WriteLine ('') ;
     Io.Write (resp)
-  ELSIF DynStr.Eq (mode, 'req') THEN
+  ELSIF Text.Eq (mode, 'req') THEN
     IF Io.ArgCount () < 4 THEN
       Io.ErrLine ('usage: httpget req METHOD URL [BODY [HEADER ...]]') ;
       Io.Halt (2)
@@ -128,9 +130,9 @@ BEGIN
     body := '' ;
     IF Io.ArgCount () > 4 THEN
       body := Io.Arg (pool, 4) ;
-      IF LEN (body) > 1 AND body[0] = '@' THEN
+      IF Text.BLen (body) > 1 AND Text.BIs (body, 0, '@') THEN
         (* a body too long for an argument comes from a file *)
-        body := Io.ReadFile (pool, SLICE (body, 1, LEN (body) - 1))
+        body := Io.ReadFile (SLICE (body, 1, Text.BLen (body) - 1))
       END
       (* Io.Arg decodes the shell's UTF-8 itself since 2026-10-18; the
          hand decoding that stood here would now double-decode *)
@@ -146,7 +148,7 @@ BEGIN
     resp := Http.RequestText (pool, method, url, hdrs, body, 4194304,
                               status, rh) ;
     Io.Write ('status ') ; Io.WriteI64 (status) ;
-    Io.Write (' chars ') ; Io.WriteI64 (LEN (resp)) ; Io.WriteLine ('') ;
+    Io.Write (' chars ') ; Io.WriteI64 (Text.BLen (resp)) ; Io.WriteLine ('') ;
     (* three names in three spellings: Header compares without case *)
     Io.WriteLine ('hdr ' + Http.Header (rh, 'X-Answer') + '|'
                   + Http.Header (rh, 'content-length') + '|'
@@ -159,14 +161,14 @@ BEGIN
     IF Io.ArgCount () > 4 THEN cookie := Io.Arg (pool, 4) END ;
     IF Io.ArgCount () > 5 THEN dest := Io.Arg (pool, 5) END ;
 
-    IF DynStr.Eq (mode, 'file') THEN
+    IF Text.Eq (mode, 'file') THEN
       status := Http.GetToFile (pool, url, accept, cookie, dest, bytes) ;
       Io.Write ('status ') ; Io.WriteI64 (status) ;
       Io.Write (' bytes ') ; Io.WriteI64 (bytes) ; Io.WriteLine ('')
     ELSE
       body := Http.GetText (pool, url, accept, cookie, 4194304, status) ;
       Io.Write ('status ') ; Io.WriteI64 (status) ;
-      Io.Write (' chars ') ; Io.WriteI64 (LEN (body)) ; Io.WriteLine ('') ;
+      Io.Write (' chars ') ; Io.WriteI64 (Text.BLen (body)) ; Io.WriteLine ('') ;
       Io.WriteLine (body)
     END
   END

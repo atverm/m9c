@@ -1,11 +1,11 @@
-REVIEW Rdf -- 152 procedures with a body, 116 of them functions; 10 headings in a DEFINITION
+REVIEW Rdf -- 151 procedures with a body, 115 of them functions; 10 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             116
+  functions answering on every path             115
   assignments                                   828
-  arguments                                    3284
+  arguments                                    3550
   RETURN values                                 261
-  operands of a comparison or an operator       740
+  operands of a comparison or an operator       699
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                4
@@ -35,8 +35,8 @@ TRUSTED -- outside what the checker can see
 COUNTED -- how much there was to check
   CASE statements                                 4
   RAISE statements                               22
-  handlers                                       50
+  handlers                                       51
   NEW in the frame                                5
   NEW in a named pool                            41
-  calls of a STR form with a UTF twin           199   Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.StartsWith -> Text.StartsWithUtf, Text.StartsWith -> Text.StartsWithUtf, Text.StartsWith -> Text.StartsWithUtf, +193 more
-  STR subscripts, writes and LEN                189   len r.src, index r[r.pos], len r.src, index r[r.pos + k], len r.src, index r[r.pos], +183 more
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

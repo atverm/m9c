@@ -1,15 +1,16 @@
 MODULE RsaTest ;
 
-(* Rsa against Python's cryptography (tools/rsagold.py,
-   runtime/test/gold/Rsa.gold and gold/rsa/*.pem): three keys read
-   from PEM (SubjectPublicKeyInfo, PKCS#1) and DER with their modulus
-   and exponent as hex; 40 messages a key signed under PKCS#1 v1.5 and
-   PSS, every signature verifying under its scheme and refused under
-   the other; a bit turned in the signature or the message, a
-   signature of another message, one octet short, the modulus itself
-   and all zeros refused; Bleichenbacher's forgeries against an e = 3
-   key refused while that key's own signature verifies; what cannot
-   be read refused by name.  *)
+(* RsaTest holds Rsa against Python's cryptography (tools/rsagold.py,
+   runtime/test/gold/Rsa.gold and gold/rsa/*.pem).  It reads three
+   keys from PEM (SubjectPublicKeyInfo, PKCS#1) and DER, with their
+   modulus and exponent as hex.  Each key signed 40 messages under
+   PKCS#1 v1.5 and PSS.  Every signature verifies under its scheme and
+   is refused under the other.  These are refused: a bit turned in the
+   signature or the message, a signature of another message, one octet
+   short, the modulus itself and all zeros.  Bleichenbacher's
+   forgeries against an e = 3 key are refused while that key's own
+   signature verifies.  Anything that cannot be read is refused by
+   name.  *)
 
 IMPORT Bits ;
 IMPORT Check ;
@@ -32,14 +33,15 @@ BEGIN
 END HexVal ;
 
 PROCEDURE Octets (RO hex: STR) : SLICE OF BYTE RAISES ValueRange =
-  (* a golden hex word as octets (GoldStrs gives '' for none) *)
+  (* Octets answers a golden hex word as octets (GoldStrs gives ''
+     for none). *)
 VAR
   b : SLICE OF BYTE ;
   i : I64 ;
 BEGIN
-  b := NEW (BYTE, LEN (hex) DIV 2) ;
+  b := NEW (BYTE, Text.BLen (hex) DIV 2) ;
   FOR i := 0 TO LEN (b) - 1 DO
-    b[i] := BYTE (HexVal (hex[2 * i]) * 16 + HexVal (hex[2 * i + 1]))
+    b[i] := BYTE (HexVal (Text.BChar (hex, 2 * i)) * 16 + HexVal (Text.BChar (hex, 2 * i + 1)))
   END ;
   RETURN b
 END Octets ;
@@ -47,7 +49,7 @@ END Octets ;
 PROCEDURE Pem (RO name: STR) : STR RAISES ValueRange =
 VAR p : POOL ;
 BEGIN
-  RETURN Io.ReadFile (p, Check.GoldPath ('rsa/' + name))
+  RETURN Io.ReadFile (Check.GoldPath ('rsa/' + name))
 EXCEPT
 | Io.IOError (e) : RETURN ''
 END Pem ;
@@ -64,7 +66,7 @@ BEGIN
 END Flipped ;
 
 PROCEDURE Refusal (RO pem: STR) : STR =
-  (* the Error's text, or 'read' *)
+  (* Refusal answers the Error's text, or 'read'. *)
 VAR
   p : POOL ;
   k : PTR Rsa.Key IN p ;
@@ -92,7 +94,7 @@ BEGIN
     k := Rsa.PublicKey (pool, Pem (names[i] + '.pem')) ;
     Check.EqStr (t, names[i] + ': the modulus', Rsa.ModulusHex (k), ns[i]) ;
     Check.EqStr (t, names[i] + ': the exponent', Rsa.ExponentHex (k), es[i]) ;
-    Check.EqI64 (t, names[i] + ': the bits', Rsa.Bits (k), LEN (ns[i]) * 4)
+    Check.EqI64 (t, names[i] + ': the bits', Rsa.Bits (k), Text.BLen (ns[i]) * 4)
   END ;
   k := Rsa.PublicKey (pool, Pem ('k2048-pkcs1.pem')) ;
   Check.EqStr (t, 'PKCS#1 PEM: the same modulus', Rsa.ModulusHex (k), ns[0]) ;
@@ -101,7 +103,8 @@ BEGIN
     k2 := Rsa.PublicKeyDer (pool, der) ;
     Check.EqStr (t, 'DER: the same modulus', Rsa.ModulusHex (k2), ns[0]) ;
     Check.EqStr (t, 'DER: the same exponent', Rsa.ExponentHex (k2), es[0]) ;
-    (* the OID's third octet turned: another algorithm, refused by name *)
+    (* Turn the OID's third octet: another algorithm, refused by
+       name. *)
     why := '' ;
     BEGIN
       k2 := Rsa.PublicKeyDer (pool, Flipped (der, 10, 0))
@@ -148,21 +151,21 @@ BEGIN
     IF Rsa.VerifyMessage (k, m, s2, Rsa.Pss) THEN good := good + 1 END ;
     IF NOT Rsa.VerifyMessage (k, m, s, Rsa.Pss) THEN cross := cross + 1 END ;
     IF NOT Rsa.VerifyMessage (k, m, s2, Rsa.Pkcs1) THEN cross := cross + 1 END ;
-    (* a bit turned: first, middle and last octet of each signature *)
+    (* Turn a bit: first, middle and last octet of each signature. *)
     IF NOT Rsa.VerifyMessage (k, m, Flipped (s, 0, i MOD 8), Rsa.Pkcs1) THEN bits := bits + 1 END ;
     IF NOT Rsa.VerifyMessage (k, m, Flipped (s, LEN (s) DIV 2, i MOD 8), Rsa.Pkcs1) THEN bits := bits + 1 END ;
     IF NOT Rsa.VerifyMessage (k, m, Flipped (s, LEN (s) - 1, i MOD 8), Rsa.Pkcs1) THEN bits := bits + 1 END ;
     IF NOT Rsa.VerifyMessage (k, m, Flipped (s2, 0, i MOD 8), Rsa.Pss) THEN bits := bits + 1 END ;
     IF NOT Rsa.VerifyMessage (k, m, Flipped (s2, LEN (s2) DIV 2, i MOD 8), Rsa.Pss) THEN bits := bits + 1 END ;
     IF NOT Rsa.VerifyMessage (k, m, Flipped (s2, LEN (s2) - 1, i MOD 8), Rsa.Pss) THEN bits := bits + 1 END ;
-    (* a bit turned in the message, where there is one *)
+    (* Turn a bit in the message, where there is one. *)
     IF LEN (m) > 0 THEN
       IF NOT Rsa.VerifyMessage (k, Flipped (m, LEN (m) - 1, 0), s, Rsa.Pkcs1) THEN bits := bits + 1 END ;
       IF NOT Rsa.VerifyMessage (k, Flipped (m, 0, 7), s2, Rsa.Pss) THEN bits := bits + 1 END
     ELSE
       bits := bits + 2
     END ;
-    (* the signature of the next message *)
+    (* Try the signature of the next message. *)
     IF NOT Rsa.VerifyMessage (k, m, Octets (v15[(i + 1) MOD LEN (msgs)]), Rsa.Pkcs1) THEN other := other + 1 END ;
     IF NOT Rsa.VerifyMessage (k, m, Octets (pss[(i + 1) MOD LEN (msgs)]), Rsa.Pss) THEN other := other + 1 END
   END ;
@@ -170,8 +173,8 @@ BEGIN
   Check.EqI64 (t, name + ': none under the other scheme', cross, 2 * LEN (msgs)) ;
   Check.EqI64 (t, name + ': a bit turned is refused', bits, 8 * LEN (msgs)) ;
   Check.EqI64 (t, name + ': the signature of another message is refused', other, 2 * LEN (msgs)) ;
-  (* the shapes: a short signature, the modulus itself, zeros, the
-     digest given directly *)
+  (* These try the shapes: a short signature, the modulus itself,
+     zeros, the digest given directly. *)
   m := Octets (msgs[0]) ;
   s := Octets (v15[0]) ;
   Check.That (t, name + ': one octet short is refused', NOT Rsa.VerifyMessage (k, m, SLICE (s, 1, LEN (s) - 1), Rsa.Pkcs1)) ;

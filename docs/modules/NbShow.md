@@ -1,6 +1,6 @@
 # NbShow
 
-A value shown in a notebook cell.
+NbShow shows a value in a notebook cell.
 
 A cell holding only an expression shows its value
 (docs/kernel-show-plan.md): `m9c --show` asks the checker for the
@@ -74,17 +74,19 @@ _(documented with the group below)_
 
 ### Series (ts: PTR Frame.Ts)
 
-each prints its value; Grid, Table and Series the HTML form too
+These each print their value; Grid, Table and Series print the
+HTML form too.
 
 ### Raised (RO what: STR)
 
-the expression raised `what` instead of answering: said on the
-error stream, and the program exits 1
+Raised says on the error stream that the expression raised `what`
+instead of answering, and the program exits 1.
 
 ### StrText (RO s: STR) : STR
 
-in quotes, ' unless the string holds one; over 1000 characters
-the first 1000, then ` ... (n characters)'
+StrText puts the string in quotes, ' unless the string holds one.
+Over 1000 characters it gives the first 1000, then
+` ... (n characters)'.
 
 ### IntsText (RO v: SLICE OF I64) : STR
 
@@ -100,8 +102,9 @@ _(documented with the group below)_
 
 ### StrsText (RO v: SLICE OF STR) : STR
 
-[a, b, c]; over MaxList values the first and last 10 with
-`... n more ...` between them and the count after
+IntsText, RealsText, BoolsText and StrsText answer [a, b, c].
+Over MaxList values they give the first and last 10 with
+`... n more ...` between them and the count after.
 
 ### GridText (RO g: GRID 2 OF F64) : STR
 
@@ -125,4 +128,5 @@ _(documented with the group below)_
 
 ### SeriesHtml (ts: PTR Frame.Ts) : STR
 
-the texts the procedures above print, for a test to hold
+These answer the texts the procedures above print, for a test to
+hold.

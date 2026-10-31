@@ -1,12 +1,12 @@
 program semtest;
-{ P2 exit harness (ROADMAP):
+{ semtest is the P2 exit harness (ROADMAP):
     1. every corpus/ file passes the semantic checker with ZERO
        diagnostics;
     2. every museum/ file is REJECTED, and at least one diagnostic
        contains the file's (* EXPECT-ERROR: ... *) text verbatim.
   Museum files are checked against the corpus registry, so their
   imports (cblosc et al.) resolve to the real declarations.
-  Exit code 1 on any failure.                                        }
+  It exits with code 1 on any failure. }
 {$mode objfpc}{$H+}
 uses SysUtils, Classes, M9Lex, M9AST, M9Parse, M9Print, M9Sem;
 
@@ -106,7 +106,7 @@ begin
 
   sem := TSem.Create;
 
-  { registry pass over the whole corpus first }
+  { Run the registry pass over the whole corpus first. }
   SetLength (corpusAsts, Length (corpusNames));
   for i := 0 to High (corpusNames) do
   begin

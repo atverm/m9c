@@ -1,9 +1,9 @@
 (* EXPECT: unhandled RAISES ValueRange from C.Int conversion -- add it to this procedure's RAISES, or handle it: EXCEPT | ValueRange : ... *)
-(* A C.* conversion that NARROWS is checked like I32 (x) (2026-10-10):
+(* A C.* conversion that NARROWS is checked like I32 (x) (2026-10-10).
    C.Int (5000000000) was 705032704 and C.SizeT (-1) a size beyond any
-   buffer, silently.  The legal forms first: C.Int of an I32 and of a
-   literal, C.SizeT of a length (never below zero), a conversion whose
-   ValueRange is handled.  Then C.Int of an I64, unhandled. *)
+   buffer, silently.  The legal forms come first: C.Int of an I32 and of
+   a literal, C.SizeT of a length (never below zero), a conversion whose
+   ValueRange is handled.  Then comes C.Int of an I64, unhandled. *)
 DEFINITION MODULE m ;
 PROCEDURE Fits (x: I32 ; RO b: SLICE OF BYTE) : I64 ;
 PROCEDURE Handled (x: I64) : I64 ;

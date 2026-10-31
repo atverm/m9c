@@ -1,8 +1,8 @@
 (* EXPECT-ERROR: cannot DISPOSE r: nothing here gives it an owned pointer *)
 (* A call's answer was taken to own what it pointed to, whatever the
-   callee did.  Observed 2026-10-21 by the compiler review (O4b): Id
-   answers the pointer it was lent, so this freed p twice -- and with p
-   in a pool, DISPOSE handed pool storage to free(). *)
+   callee did.  The compiler review observed it 2026-10-21 (O4b).  Id
+   answers the pointer it was lent, so this freed p twice; with p in a
+   pool, DISPOSE handed pool storage to free(). *)
 MODULE m ;
 TYPE Node = RECORD n : I64 END ;
 PROCEDURE Id (a: PTR Node) : PTR Node =

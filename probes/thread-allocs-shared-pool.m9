@@ -1,11 +1,11 @@
 (* EXPECT: THREAD (Grow): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock *)
 MODULE m ;
-(* a record handed to several threads is shared, its pool too: what the
-   target allocates through its parameter -- a NEW on it, a callee
-   growing a builder in it -- is carved from that pool by both threads at
-   once, and the pool takes no lock (the reviews' G8: AdoptRace,
-   AdoptAppend).  Legal forms first: a target that allocates in a POOL
-   field of its own, and one that allocates nothing. *)
+(* A record handed to several threads is shared, its pool too.  The
+   target may allocate through its parameter, by a NEW on it or by a
+   callee growing a builder in it.  Both threads then carve from that
+   pool at once, and the pool takes no lock (the reviews' G8: AdoptRace,
+   AdoptAppend).  Legal forms come first: a target that allocates in a
+   POOL field of its own, and one that allocates nothing. *)
 TYPE
   Cell = RECORD n : I64 END ;
   Job = RECORD wp : POOL ; c : PTR Cell ; n : I64 END [SHARABLE] ;

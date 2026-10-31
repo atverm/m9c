@@ -1,9 +1,9 @@
 (* EXPECT: argument 1 of Grow: borrowed p is kept by the callee -- declare KEPT p (par 4.1) *)
-(* kept-pool-local one call away: a POOL parameter handed on to a KEPT
-   one is a retention its own caller must hear of, or `Fwd (scratch)'
-   reaches Grow's module variable through it -- KEPT composes upward
-   for a pool as for a reference (2026-10-28).  Legal forms first: the
-   forwarder declares KEPT. *)
+(* This is kept-pool-local one call away.  A POOL parameter handed on to
+   a KEPT one is a retention its own caller must hear of, or `Fwd
+   (scratch)' reaches Grow's module variable through it.  KEPT composes
+   upward for a pool as for a reference (2026-10-28).  Legal forms come
+   first: the forwarder declares KEPT. *)
 MODULE m ;
 TYPE Cell = RECORD v : I64 END ;
 VAR last : OPT PTR Cell ;

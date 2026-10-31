@@ -50,56 +50,56 @@ extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_
 struct Sparql_Results {
   int64_t nvars;
   int64_t nrows;
-  m9_sl_m9_sl_CHAR vars;
+  m9_sl_m9_sl_UTF8 vars;
   m9_sl_Sparql_Term cells;
 };
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[31] = { 97u, 112u, 112u, 108u, 105u, 99u, 97u, 116u, 105u, 111u, 110u, 47u, 115u, 112u, 97u, 114u, 113u, 108u, 45u, 114u, 101u, 115u, 117u, 108u, 116u, 115u, 43u, 106u, 115u, 111u, 110u };
-static const uint32_t m9s1[31] = { 97u, 112u, 112u, 108u, 105u, 99u, 97u, 116u, 105u, 111u, 110u, 47u, 115u, 112u, 97u, 114u, 113u, 108u, 45u, 114u, 101u, 115u, 117u, 108u, 116u, 115u, 43u, 106u, 115u, 111u, 110u };
-static const uint32_t m9s2[21] = { 97u, 112u, 112u, 108u, 105u, 99u, 97u, 116u, 105u, 111u, 110u, 47u, 110u, 45u, 116u, 114u, 105u, 112u, 108u, 101u, 115u };
-static const uint32_t m9s3[8] = { 110u, 111u, 116u, 32u, 74u, 83u, 79u, 78u };
-static const uint32_t m9s4[4] = { 104u, 101u, 97u, 100u };
-static const uint32_t m9s5[7] = { 110u, 111u, 32u, 104u, 101u, 97u, 100u };
-static const uint32_t m9s6[4] = { 118u, 97u, 114u, 115u };
-static const uint32_t m9s7[12] = { 110u, 111u, 32u, 104u, 101u, 97u, 100u, 46u, 118u, 97u, 114u, 115u };
-static const uint32_t m9s8[7] = { 114u, 101u, 115u, 117u, 108u, 116u, 115u };
-static const uint32_t m9s9[8] = { 98u, 105u, 110u, 100u, 105u, 110u, 103u, 115u };
-static const uint32_t m9s10[19] = { 110u, 111u, 32u, 114u, 101u, 115u, 117u, 108u, 116u, 115u, 46u, 98u, 105u, 110u, 100u, 105u, 110u, 103u, 115u };
-static const uint32_t m9s11[45] = { 110u, 111u, 32u, 114u, 101u, 115u, 117u, 108u, 116u, 115u, 58u, 32u, 97u, 110u, 32u, 65u, 83u, 75u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 100u, 32u, 98u, 121u, 32u, 80u, 97u, 114u, 115u, 101u, 65u, 115u, 107u };
-static const uint32_t m9s12[31] = { 97u, 32u, 109u, 101u, 109u, 98u, 101u, 114u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 119u, 114u, 111u, 110u, 103u, 32u, 74u, 83u, 79u, 78u, 32u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s13[22] = { 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 112u, 97u, 115u, 116u, 32u, 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s14[8] = { 110u, 111u, 116u, 32u, 74u, 83u, 79u, 78u };
-static const uint32_t m9s15[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s16[24] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s17[44] = { 110u, 111u, 32u, 98u, 111u, 111u, 108u, 101u, 97u, 110u, 58u, 32u, 97u, 32u, 83u, 69u, 76u, 69u, 67u, 84u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 100u, 32u, 98u, 121u, 32u, 80u, 97u, 114u, 115u, 101u };
-static const uint32_t m9s18[7] = { 109u, 101u, 109u, 98u, 101u, 114u, 32u };
-static const uint32_t m9s19[16] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s20[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s21[5] = { 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s22[8] = { 120u, 109u, 108u, 58u, 108u, 97u, 110u, 103u };
-static const uint32_t m9s23[8] = { 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s24[3] = { 117u, 114u, 105u };
-static const uint32_t m9s25[7] = { 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s26[13] = { 116u, 121u, 112u, 101u, 100u, 45u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s27[5] = { 98u, 110u, 111u, 100u, 101u };
-static const uint32_t m9s28[15] = { 97u, 32u, 116u, 101u, 114u, 109u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
-static const uint32_t m9s29[1] = { 38u };
-static const uint32_t m9s30[1] = { 63u };
-static const uint32_t m9s31[6] = { 113u, 117u, 101u, 114u, 121u, 61u };
-static const uint32_t m9s32[47] = { 67u, 111u, 110u, 116u, 101u, 110u, 116u, 45u, 84u, 121u, 112u, 101u, 58u, 32u, 97u, 112u, 112u, 108u, 105u, 99u, 97u, 116u, 105u, 111u, 110u, 47u, 120u, 45u, 119u, 119u, 119u, 45u, 102u, 111u, 114u, 109u, 45u, 117u, 114u, 108u, 101u, 110u, 99u, 111u, 100u, 101u, 100u };
-static const uint32_t m9s33[8] = { 65u, 99u, 99u, 101u, 112u, 116u, 58u, 32u };
-static const uint32_t m9s34[6] = { 113u, 117u, 101u, 114u, 121u, 61u };
-static const uint32_t m9s35[4] = { 80u, 79u, 83u, 84u };
+static const uint8_t m9s0[31] = { 97, 112, 112, 108, 105, 99, 97, 116, 105, 111, 110, 47, 115, 112, 97, 114, 113, 108, 45, 114, 101, 115, 117, 108, 116, 115, 43, 106, 115, 111, 110 };
+static const uint8_t m9s1[31] = { 97, 112, 112, 108, 105, 99, 97, 116, 105, 111, 110, 47, 115, 112, 97, 114, 113, 108, 45, 114, 101, 115, 117, 108, 116, 115, 43, 106, 115, 111, 110 };
+static const uint8_t m9s2[21] = { 97, 112, 112, 108, 105, 99, 97, 116, 105, 111, 110, 47, 110, 45, 116, 114, 105, 112, 108, 101, 115 };
+static const uint8_t m9s3[8] = { 110, 111, 116, 32, 74, 83, 79, 78 };
+static const uint8_t m9s4[4] = { 104, 101, 97, 100 };
+static const uint8_t m9s5[7] = { 110, 111, 32, 104, 101, 97, 100 };
+static const uint8_t m9s6[4] = { 118, 97, 114, 115 };
+static const uint8_t m9s7[12] = { 110, 111, 32, 104, 101, 97, 100, 46, 118, 97, 114, 115 };
+static const uint8_t m9s8[7] = { 114, 101, 115, 117, 108, 116, 115 };
+static const uint8_t m9s9[8] = { 98, 105, 110, 100, 105, 110, 103, 115 };
+static const uint8_t m9s10[19] = { 110, 111, 32, 114, 101, 115, 117, 108, 116, 115, 46, 98, 105, 110, 100, 105, 110, 103, 115 };
+static const uint8_t m9s11[45] = { 110, 111, 32, 114, 101, 115, 117, 108, 116, 115, 58, 32, 97, 110, 32, 65, 83, 75, 32, 97, 110, 115, 119, 101, 114, 32, 105, 115, 32, 114, 101, 97, 100, 32, 98, 121, 32, 80, 97, 114, 115, 101, 65, 115, 107 };
+static const uint8_t m9s12[31] = { 97, 32, 109, 101, 109, 98, 101, 114, 32, 111, 102, 32, 116, 104, 101, 32, 119, 114, 111, 110, 103, 32, 74, 83, 79, 78, 32, 116, 121, 112, 101 };
+static const uint8_t m9s13[22] = { 97, 110, 32, 105, 110, 100, 101, 120, 32, 112, 97, 115, 116, 32, 97, 110, 32, 97, 114, 114, 97, 121 };
+static const uint8_t m9s14[8] = { 110, 111, 116, 32, 74, 83, 79, 78 };
+static const uint8_t m9s15[7] = { 98, 111, 111, 108, 101, 97, 110 };
+static const uint8_t m9s16[24] = { 98, 111, 111, 108, 101, 97, 110, 32, 105, 115, 32, 110, 111, 116, 32, 97, 32, 98, 111, 111, 108, 101, 97, 110 };
+static const uint8_t m9s17[44] = { 110, 111, 32, 98, 111, 111, 108, 101, 97, 110, 58, 32, 97, 32, 83, 69, 76, 69, 67, 84, 32, 97, 110, 115, 119, 101, 114, 32, 105, 115, 32, 114, 101, 97, 100, 32, 98, 121, 32, 80, 97, 114, 115, 101 };
+static const uint8_t m9s18[7] = { 109, 101, 109, 98, 101, 114, 32 };
+static const uint8_t m9s19[16] = { 32, 105, 115, 32, 110, 111, 116, 32, 97, 32, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s20[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s21[5] = { 118, 97, 108, 117, 101 };
+static const uint8_t m9s22[8] = { 120, 109, 108, 58, 108, 97, 110, 103 };
+static const uint8_t m9s23[8] = { 100, 97, 116, 97, 116, 121, 112, 101 };
+static const uint8_t m9s24[3] = { 117, 114, 105 };
+static const uint8_t m9s25[7] = { 108, 105, 116, 101, 114, 97, 108 };
+static const uint8_t m9s26[13] = { 116, 121, 112, 101, 100, 45, 108, 105, 116, 101, 114, 97, 108 };
+static const uint8_t m9s27[5] = { 98, 110, 111, 100, 101 };
+static const uint8_t m9s28[15] = { 97, 32, 116, 101, 114, 109, 32, 111, 102, 32, 116, 121, 112, 101, 32 };
+static const uint8_t m9s29[1] = { 38 };
+static const uint8_t m9s30[1] = { 63 };
+static const uint8_t m9s31[6] = { 113, 117, 101, 114, 121, 61 };
+static const uint8_t m9s32[47] = { 67, 111, 110, 116, 101, 110, 116, 45, 84, 121, 112, 101, 58, 32, 97, 112, 112, 108, 105, 99, 97, 116, 105, 111, 110, 47, 120, 45, 119, 119, 119, 45, 102, 111, 114, 109, 45, 117, 114, 108, 101, 110, 99, 111, 100, 101, 100 };
+static const uint8_t m9s33[8] = { 65, 99, 99, 101, 112, 116, 58, 32 };
+static const uint8_t m9s34[6] = { 113, 117, 101, 114, 121, 61 };
+static const uint8_t m9s35[4] = { 80, 79, 83, 84 };
 
-static m9_sl_CHAR Sparql_FieldText (m9_pool *pool, Json_Node * n, m9_sl_CHAR name, m9_state *err);
+static m9_sl_UTF8 Sparql_FieldText (m9_pool *pool, Json_Node * n, m9_sl_UTF8 name, m9_state *err);
 static void Sparql_ReadTerm (m9_pool *pool, Json_Node * b, Sparql_Term *tm, m9_pool *tm_pool, m9_state *err);
 static void Sparql_Unbind (Sparql_Term *tm, m9_pool *tm_pool, m9_state *err);
-static m9_sl_CHAR Sparql_Fetch (m9_pool *pool, m9_sl_CHAR endpoint, m9_sl_CHAR query, m9_sl_CHAR accept, m9_state *err);
+static m9_sl_UTF8 Sparql_Fetch (m9_pool *pool, m9_sl_UTF8 endpoint, m9_sl_UTF8 query, m9_sl_UTF8 accept, m9_state *err);
 
 
-Sparql_Results * Sparql_Select (m9_pool *pool, m9_sl_CHAR endpoint, m9_sl_CHAR query, m9_state *err)
+Sparql_Results * Sparql_Select (m9_pool *pool, m9_sl_UTF8 endpoint, m9_sl_UTF8 query, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -107,8 +107,8 @@ Sparql_Results * Sparql_Select (m9_pool *pool, m9_sl_CHAR endpoint, m9_sl_CHAR q
   err->res = m9res;
   Sparql_Results * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
-  m9_sl_CHAR doc = {0}; (void) doc;
-  { __typeof__(doc) m9v = Sparql_Fetch (&(scratch), endpoint, query, ((m9_sl_CHAR){ (uint32_t *) m9s0, 31 }), err);
+  m9_sl_UTF8 doc = {0}; (void) doc;
+  { __typeof__(doc) m9v = Sparql_Fetch (&(scratch), endpoint, query, ((m9_sl_UTF8){ (uint8_t *) m9s0, 31 }), err);
     if (err->exc) goto L_ret;
     doc = m9v;
   }
@@ -124,7 +124,7 @@ L_ret: ;
   return m9ret;
 }
 
-bool Sparql_Ask (m9_sl_CHAR endpoint, m9_sl_CHAR query, m9_state *err)
+bool Sparql_Ask (m9_sl_UTF8 endpoint, m9_sl_UTF8 query, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -132,8 +132,8 @@ bool Sparql_Ask (m9_sl_CHAR endpoint, m9_sl_CHAR query, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
-  m9_sl_CHAR doc = {0}; (void) doc;
-  { __typeof__(doc) m9v = Sparql_Fetch (&(scratch), endpoint, query, ((m9_sl_CHAR){ (uint32_t *) m9s1, 31 }), err);
+  m9_sl_UTF8 doc = {0}; (void) doc;
+  { __typeof__(doc) m9v = Sparql_Fetch (&(scratch), endpoint, query, ((m9_sl_UTF8){ (uint8_t *) m9s1, 31 }), err);
     if (err->exc) goto L_ret;
     doc = m9v;
   }
@@ -148,25 +148,25 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Sparql_Construct (m9_pool *pool, m9_sl_CHAR endpoint, m9_sl_CHAR query, m9_state *err)
+m9_sl_UTF8 Sparql_Construct (m9_pool *pool, m9_sl_UTF8 endpoint, m9_sl_UTF8 query, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
-  m9ret = Sparql_Fetch (pool, endpoint, query, ((m9_sl_CHAR){ (uint32_t *) m9s2, 21 }), err);
+  m9ret = Sparql_Fetch (pool, endpoint, query, ((m9_sl_UTF8){ (uint8_t *) m9s2, 21 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Sparql_Results * Sparql_Parse (m9_pool *pool, m9_sl_CHAR doc, m9_state *err)
+Sparql_Results * Sparql_Parse (m9_pool *pool, m9_sl_UTF8 doc, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -190,11 +190,11 @@ Sparql_Results * Sparql_Parse (m9_pool *pool, m9_sl_CHAR doc, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_ParseError) {
-    m9_sl_CHAR msg = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) msg;
+    m9_sl_UTF8 msg = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) msg;
     int64_t line = err->i[0]; (void) line;
     int64_t col = err->i[1]; (void) col;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 8 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 8 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s3, 8 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s3, 8 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_ret;
     goto L_dn_m9t2;
@@ -205,38 +205,38 @@ L_dn_m9t2: ;
     if (err->exc) goto L_ret;
     r = m9v;
   }
-  { Json_Node * h = Json_Field (root, ((m9_sl_CHAR){ (uint32_t *) m9s4, 4 }), err);
+  { Json_Node * h = Json_Field (root, ((m9_sl_UTF8){ (uint8_t *) m9s4, 4 }), err);
   if (err->exc) goto L_hdl_m9t4;
   if (h != NULL) {
     head = h;
   } else {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 7 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 7 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s5, 7 })) m9t6 = ((m9_sl_UTF8){ (uint8_t *) m9s5, 7 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_hdl_m9t4;
   } }
-  { Json_Node * v = Json_Field (head, ((m9_sl_CHAR){ (uint32_t *) m9s6, 4 }), err);
+  { Json_Node * v = Json_Field (head, ((m9_sl_UTF8){ (uint8_t *) m9s6, 4 }), err);
   if (err->exc) goto L_hdl_m9t4;
   if (v != NULL) {
     vars = v;
   } else {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 12 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 12 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s7, 12 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s7, 12 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_hdl_m9t4;
   } }
-  { Json_Node * res = Json_Field (root, ((m9_sl_CHAR){ (uint32_t *) m9s8, 7 }), err);
+  { Json_Node * res = Json_Field (root, ((m9_sl_UTF8){ (uint8_t *) m9s8, 7 }), err);
   if (err->exc) goto L_hdl_m9t4;
   if (res != NULL) {
-    { Json_Node * bs = Json_Field (res, ((m9_sl_CHAR){ (uint32_t *) m9s9, 8 }), err);
+    { Json_Node * bs = Json_Field (res, ((m9_sl_UTF8){ (uint8_t *) m9s9, 8 }), err);
     if (err->exc) goto L_hdl_m9t4;
     if (bs != NULL) {
       bindings = bs;
     } else {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s10, 19 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s10, 19 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
+      { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s10, 19 })) m9t8 = ((m9_sl_UTF8){ (uint8_t *) m9s10, 19 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
       m9_raise (err, &Sparql_FormatError);
       goto L_hdl_m9t4;
     } }
   } else {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s11, 45 })) m9t9 = ((m9_sl_CHAR){ (uint32_t *) m9s11, 45 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s11, 45 })) m9t9 = ((m9_sl_UTF8){ (uint8_t *) m9s11, 45 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_hdl_m9t4;
   } }
@@ -248,7 +248,7 @@ L_dn_m9t2: ;
     if (err->exc) goto L_hdl_m9t4;
     r->nrows = m9v;
   }
-  { __typeof__(r->vars) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), r->nvars, err);
+  { __typeof__(r->vars) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), r->nvars, err);
     if (err->exc) goto L_hdl_m9t4;
     r->vars = m9v;
   }
@@ -261,9 +261,9 @@ L_dn_m9t2: ;
       if (err->exc) goto L_hdl_m9t4;
     { __typeof__(Json_Text (m9a1, err)) m9a2 = Json_Text (m9a1, err);
       if (err->exc) goto L_hdl_m9t4;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a2, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a2, err);
       if (err->exc) goto L_hdl_m9t4;
-      (*(m9_sl_CHAR *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_hdl_m9t4;
     }
     }
@@ -293,7 +293,7 @@ L_dn_m9t2: ;
     m9t12to = m9_sub_i64 (r->nvars, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t4;
     if (j <= m9t12to) for (;;) {
-      { Json_Node * b = Json_Field (row, (*(m9_sl_CHAR *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_CHAR), err)), err);
+      { Json_Node * b = Json_Field (row, (*(m9_sl_UTF8 *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_UTF8), err)), err);
       if (err->exc) goto L_hdl_m9t4;
       if (b != NULL) {
         Sparql_ReadTerm (pool, b, ({ __typeof__ (&((*(Sparql_Term *) m9_at (r->cells.p, m9_add_i64 (m9_mul_i64 (i, r->nvars, err), j, err), r->cells.len, sizeof (Sparql_Term), err)))) m9v = &((*(Sparql_Term *) m9_at (r->cells.p, m9_add_i64 (m9_mul_i64 (i, r->nvars, err), j, err), r->cells.len, sizeof (Sparql_Term), err))); if (err->exc) goto L_hdl_m9t4; m9v; }), &((*pool)), err);
@@ -311,16 +311,16 @@ L_dn_m9t2: ;
   goto L_dn_m9t5;
 L_hdl_m9t4: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 31 })) m9t13 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 31 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s12, 31 })) m9t13 = ((m9_sl_UTF8){ (uint8_t *) m9s12, 31 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_ret;
     goto L_dn_m9t5;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 22 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 22 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s13, 22 })) m9t14 = ((m9_sl_UTF8){ (uint8_t *) m9s13, 22 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_ret;
     goto L_dn_m9t5;
@@ -338,7 +338,7 @@ L_ret: ;
   return m9ret;
 }
 
-bool Sparql_ParseAsk (m9_sl_CHAR doc, m9_state *err)
+bool Sparql_ParseAsk (m9_sl_UTF8 doc, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -354,18 +354,18 @@ bool Sparql_ParseAsk (m9_sl_CHAR doc, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_ParseError) {
-    m9_sl_CHAR msg = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) msg;
+    m9_sl_UTF8 msg = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) msg;
     int64_t line = err->i[0]; (void) line;
     int64_t col = err->i[1]; (void) col;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 8 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 8 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s14, 8 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s14, 8 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
 L_dn_m9t2: ;
-  { Json_Node * b = Json_Field (root, ((m9_sl_CHAR){ (uint32_t *) m9s15, 7 }), err);
+  { Json_Node * b = Json_Field (root, ((m9_sl_UTF8){ (uint8_t *) m9s15, 7 }), err);
   if (err->exc) goto L_ret;
   if (b != NULL) {
     err->res = m9res;
@@ -375,9 +375,9 @@ L_dn_m9t2: ;
     goto L_dn_m9t5;
 L_hdl_m9t4: ;
     if (err->exc == &Json_TypeMismatch) {
-      m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+      m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
       err->exc = NULL;
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 24 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 24 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
+      { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s16, 24 })) m9t6 = ((m9_sl_UTF8){ (uint8_t *) m9s16, 24 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
       m9_raise (err, &Sparql_FormatError);
       goto L_ret;
       goto L_dn_m9t5;
@@ -385,7 +385,7 @@ L_hdl_m9t4: ;
     goto L_ret;
 L_dn_m9t5: ;
   } }
-  { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 44 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 44 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
+  { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s17, 44 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s17, 44 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
   m9_raise (err, &Sparql_FormatError);
   goto L_ret;
 L_ret: ;
@@ -411,13 +411,13 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Sparql_Var (Sparql_Results * r, int64_t i, m9_state *err)
+m9_sl_UTF8 Sparql_Var (Sparql_Results * r, int64_t i, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   if (((i < INT64_C(0)) || (i >= r->nvars))) {
     err->i[0] = i;
     err->i[1] = r->nvars;
@@ -425,12 +425,12 @@ m9_sl_CHAR Sparql_Var (Sparql_Results * r, int64_t i, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (*(m9_sl_CHAR *) m9_at (r->vars.p, i, r->vars.len, sizeof (m9_sl_CHAR), err));
+  m9ret = (*(m9_sl_UTF8 *) m9_at (r->vars.p, i, r->vars.len, sizeof (m9_sl_UTF8), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -451,7 +451,7 @@ L_ret: ;
   return m9ret;
 }
 
-int64_t Sparql_Column (Sparql_Results * r, m9_sl_CHAR name, m9_state *err)
+int64_t Sparql_Column (Sparql_Results * r, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -464,9 +464,9 @@ int64_t Sparql_Column (Sparql_Results * r, m9_sl_CHAR name, m9_state *err)
   m9t1to = m9_sub_i64 (r->nvars, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (j <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_CHAR), err))) m9a3 = (*(m9_sl_CHAR *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_UTF8), err))) m9a3 = (*(m9_sl_UTF8 *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a3, name, err);
+    bool m9t2 = Text_EqUtf (m9a3, name, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -518,13 +518,13 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Sparql_Value (Sparql_Results * r, int64_t row, int64_t col, m9_state *err)
+m9_sl_UTF8 Sparql_Value (Sparql_Results * r, int64_t row, int64_t col, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   Sparql_Term tm = {0}; (void) tm;
   { __typeof__(tm) m9v = Sparql_Get (r, row, col, err);
     if (err->exc) goto L_ret;
@@ -535,38 +535,38 @@ m9_sl_CHAR Sparql_Value (Sparql_Results * r, int64_t row, int64_t col, m9_state 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Sparql_FieldText (m9_pool *pool, Json_Node * n, m9_sl_CHAR name, m9_state *err)
+static m9_sl_UTF8 Sparql_FieldText (m9_pool *pool, Json_Node * n, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   { Json_Node * v = Json_Field (n, name, err);
   if (err->exc) goto L_hdl_m9t1;
   if (v != NULL) {
     err->res = m9res;
     { __typeof__(Json_Text (v, err)) m9a4 = Json_Text (v, err);
       if (err->exc) goto L_hdl_m9t1;
-    m9ret = Text_Keep (pool, m9a4, err);
+    m9ret = Text_KeepUtf (pool, m9a4, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     goto L_ret;
   } }
   err->res = m9res;
-  m9ret = (m9_sl_CHAR){ NULL, 0 };
+  m9ret = ((m9_sl_UTF8){ NULL, 0 });
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s18, 7 }), name, err), ((m9_sl_CHAR){ (uint32_t *) m9s19, 16 }), err)) m9t3 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s18, 7 }), name, err), ((m9_sl_CHAR){ (uint32_t *) m9s19, 16 }), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s18, 7 }), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s19, 16 }), err)) m9t3 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s18, 7 }), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s19, 16 }), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_ret;
     goto L_dn_m9t2;
@@ -575,7 +575,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -586,39 +586,39 @@ static void Sparql_ReadTerm (m9_pool *pool, Json_Node * b, Sparql_Term *tm, m9_p
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR ty = {0}; (void) ty;
-  { __typeof__(ty) m9v = Sparql_FieldText (pool, b, ((m9_sl_CHAR){ (uint32_t *) m9s20, 4 }), err);
+  m9_sl_UTF8 ty = {0}; (void) ty;
+  { __typeof__(ty) m9v = Sparql_FieldText (pool, b, ((m9_sl_UTF8){ (uint8_t *) m9s20, 4 }), err);
     if (err->exc) goto L_ret;
     ty = m9v;
   }
-  { __typeof__((*tm).value) m9v = Sparql_FieldText (pool, b, ((m9_sl_CHAR){ (uint32_t *) m9s21, 5 }), err);
+  { __typeof__((*tm).value) m9v = Sparql_FieldText (pool, b, ((m9_sl_UTF8){ (uint8_t *) m9s21, 5 }), err);
     if (err->exc) goto L_ret;
     (*tm).value = m9v;
   }
-  { __typeof__((*tm).lang) m9v = Sparql_FieldText (pool, b, ((m9_sl_CHAR){ (uint32_t *) m9s22, 8 }), err);
+  { __typeof__((*tm).lang) m9v = Sparql_FieldText (pool, b, ((m9_sl_UTF8){ (uint8_t *) m9s22, 8 }), err);
     if (err->exc) goto L_ret;
     (*tm).lang = m9v;
   }
-  { __typeof__((*tm).datatype) m9v = Sparql_FieldText (pool, b, ((m9_sl_CHAR){ (uint32_t *) m9s23, 8 }), err);
+  { __typeof__((*tm).datatype) m9v = Sparql_FieldText (pool, b, ((m9_sl_UTF8){ (uint8_t *) m9s23, 8 }), err);
     if (err->exc) goto L_ret;
     (*tm).datatype = m9v;
   }
-  bool m9t1 = Text_Eq (ty, ((m9_sl_CHAR){ (uint32_t *) m9s24, 3 }), err);
+  bool m9t1 = Text_EqUtf (ty, ((m9_sl_UTF8){ (uint8_t *) m9s24, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     (*tm).kind = ((Sparql_Kind){ .tag = Sparql_Kind_Iri });
   } else {
-    bool m9t2 = (Text_Eq (ty, ((m9_sl_CHAR){ (uint32_t *) m9s25, 7 }), err) || Text_Eq (ty, ((m9_sl_CHAR){ (uint32_t *) m9s26, 13 }), err));
+    bool m9t2 = (Text_EqUtf (ty, ((m9_sl_UTF8){ (uint8_t *) m9s25, 7 }), err) || Text_EqUtf (ty, ((m9_sl_UTF8){ (uint8_t *) m9s26, 13 }), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
       (*tm).kind = ((Sparql_Kind){ .tag = Sparql_Kind_Literal });
   } else {
-    bool m9t3 = Text_Eq (ty, ((m9_sl_CHAR){ (uint32_t *) m9s27, 5 }), err);
+    bool m9t3 = Text_EqUtf (ty, ((m9_sl_UTF8){ (uint8_t *) m9s27, 5 }), err);
     if (err->exc) goto L_ret;
     if (m9t3) {
       (*tm).kind = ((Sparql_Kind){ .tag = Sparql_Kind_Blank });
   } else {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s28, 15 }), ty, err)) m9t4 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s28, 15 }), ty, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 15 }), ty, err)) m9t4 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 15 }), ty, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Sparql_FormatError);
     goto L_ret;
   } } }
@@ -638,9 +638,9 @@ static void Sparql_Unbind (Sparql_Term *tm, m9_pool *tm_pool, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   (*tm).kind = ((Sparql_Kind){ .tag = Sparql_Kind_Unbound });
-  (*tm).value = (m9_sl_CHAR){ NULL, 0 };
-  (*tm).lang = (m9_sl_CHAR){ NULL, 0 };
-  (*tm).datatype = (m9_sl_CHAR){ NULL, 0 };
+  (*tm).value = ((m9_sl_UTF8){ NULL, 0 });
+  (*tm).lang = ((m9_sl_UTF8){ NULL, 0 });
+  (*tm).datatype = ((m9_sl_UTF8){ NULL, 0 });
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, tm_pool, (*tm).value.p);
@@ -650,46 +650,48 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Sparql_Fetch (m9_pool *pool, m9_sl_CHAR endpoint, m9_sl_CHAR query, m9_sl_CHAR accept, m9_state *err)
+static m9_sl_UTF8 Sparql_Fetch (m9_pool *pool, m9_sl_UTF8 endpoint, m9_sl_UTF8 query, m9_sl_UTF8 accept, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR url = {0}; (void) url;
-  m9_sl_CHAR enc = {0}; (void) enc;
-  m9_sl_CHAR sep = {0}; (void) sep;
-  m9_sl_CHAR body = {0}; (void) body;
-  m9_sl_CHAR respHeaders = {0}; (void) respHeaders;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 url = {0}; (void) url;
+  m9_sl_UTF8 enc = {0}; (void) enc;
+  m9_sl_UTF8 sep = {0}; (void) sep;
+  m9_sl_UTF8 body = {0}; (void) body;
+  m9_sl_UTF8 respHeaders = {0}; (void) respHeaders;
   int64_t status = 0; (void) status;
   { __typeof__(enc) m9v = Http_UrlEncode (query, err);
     if (err->exc) goto L_ret;
     enc = m9v;
   }
-  bool m9t1 = (Text_FindChar (endpoint, 63u, err) >= INT64_C(0));
+  bool m9t1 = (Text_FindCharUtf (endpoint, 63u, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    sep = ((m9_sl_CHAR){ (uint32_t *) m9s29, 1 });
+    sep = ((m9_sl_UTF8){ (uint8_t *) m9s29, 1 });
   } else {
-    sep = ((m9_sl_CHAR){ (uint32_t *) m9s30, 1 });
+    sep = ((m9_sl_UTF8){ (uint8_t *) m9s30, 1 });
   }
-  { __typeof__(url) m9v = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, endpoint, sep, err), ((m9_sl_CHAR){ (uint32_t *) m9s31, 6 }), err), enc, err);
+  { __typeof__(url) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, endpoint, sep, err), ((m9_sl_UTF8){ (uint8_t *) m9s31, 6 }), err), enc, err);
     if (err->exc) goto L_ret;
     url = m9v;
   }
-  if (((url).len <= Sparql_GetMax)) {
-    { __typeof__(body) m9v = Http_GetText (pool, url, accept, (m9_sl_CHAR){ NULL, 0 }, Sparql_ResultCap, &(status), err);
+  bool m9t2 = (Text_BLen (url, err) <= Sparql_GetMax);
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    { __typeof__(body) m9v = Http_GetText (pool, url, accept, ((m9_sl_UTF8){ NULL, 0 }), Sparql_ResultCap, &(status), err);
       if (err->exc) goto L_ret;
       body = m9v;
     }
   } else {
-    respHeaders = (m9_sl_CHAR){ NULL, 0 };
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s32, 47 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s33, 8 }), err), accept, err)) m9a5 = m9_cat (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s32, 47 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s33, 8 }), err), accept, err);
+    respHeaders = ((m9_sl_UTF8){ NULL, 0 });
+    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s32, 47 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s33, 8 }), err), accept, err)) m9a5 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s32, 47 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s33, 8 }), err), accept, err);
       if (err->exc) goto L_ret;
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s34, 6 }), enc, err)) m9a6 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s34, 6 }), enc, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s34, 6 }), enc, err)) m9a6 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s34, 6 }), enc, err);
       if (err->exc) goto L_ret;
-    { __typeof__(body) m9v = Http_RequestText (pool, ((m9_sl_CHAR){ (uint32_t *) m9s35, 4 }), endpoint, m9a5, m9a6, Sparql_ResultCap, &(status), &(respHeaders), err);
+    { __typeof__(body) m9v = Http_RequestText (pool, ((m9_sl_UTF8){ (uint8_t *) m9s35, 4 }), endpoint, m9a5, m9a6, Sparql_ResultCap, &(status), &(respHeaders), err);
       if (err->exc) goto L_ret;
       body = m9v;
     }
@@ -697,13 +699,15 @@ static m9_sl_CHAR Sparql_Fetch (m9_pool *pool, m9_sl_CHAR endpoint, m9_sl_CHAR q
     }
   }
   if ((status != INT64_C(200))) {
-    if (((body).len > INT64_C(200))) {
-      { __typeof__(body) m9v = ({ __auto_type m9t2 = body; int64_t m9t2a = INT64_C(0), m9t2n = INT64_C(200); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; });
+    bool m9t3 = (Text_BLen (body, err) > INT64_C(200));
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      { __typeof__(body) m9v = m9_utf_slice (body, INT64_C(0), INT64_C(200), err);
         if (err->exc) goto L_ret;
         body = m9v;
       }
     }
-    { __typeof__(body) m9t3 = body; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(body) m9t5 = body; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     err->i[0] = status;
     m9_raise (err, &Sparql_QueryError);
     goto L_ret;
@@ -713,7 +717,7 @@ static m9_sl_CHAR Sparql_Fetch (m9_pool *pool, m9_sl_CHAR endpoint, m9_sl_CHAR q
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

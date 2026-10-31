@@ -1,9 +1,9 @@
 (* EXPECT: use of q after it was consumed by SHARED *)
-(* `s := SHARED ((q))' consumed q without the M9 checker marking it,
-   since it looked at SHARED's argument without its parentheses and the
-   Pascal twin under them (2026-10-28): the two disagreed, and the M9
-   one let `q.v' read what the handle's DISPOSE freed.  Legal forms
-   first: the parenthesised SHARED, q not used after. *)
+(* `s := SHARED ((q))' consumed q without the M9 checker marking it.
+   The M9 checker looked at SHARED's argument without its parentheses,
+   and the Pascal twin under them (2026-10-28).  The two disagreed, and
+   the M9 one let `q.v' read what the handle's DISPOSE freed.  Legal
+   forms come first: the parenthesised SHARED, q not used after. *)
 MODULE m ;
 TYPE T = RECORD v : I64 END ;
 PROCEDURE Legal () =

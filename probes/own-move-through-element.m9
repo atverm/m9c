@@ -1,7 +1,7 @@
 (* EXPECT: argument 1 of Eat: cannot move through a selector of a into an OWN parameter *)
-(* own-move-through-field with an ELEMENT: `Eat (a[0])' left a[0]
-   holding what Eat freed (2026-10-28).  Legal forms first: an owned
-   pointer stored into an element and read through it. *)
+(* This is own-move-through-field with an ELEMENT.  `Eat (a[0])' left
+   a[0] holding what Eat freed (2026-10-28).  Legal forms come first: an
+   owned pointer stored into an element and read through it. *)
 MODULE m ;
 TYPE
   T = RECORD v : I64 END ;

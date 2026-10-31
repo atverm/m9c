@@ -2,10 +2,10 @@ REVIEW Io -- 54 procedures with a body, 28 of them functions; 52 headings in a D
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              28
-  assignments                                   125
-  arguments                                     227
-  RETURN values                                  42
-  operands of a comparison or an operator       107
+  assignments                                    68
+  arguments                                     111
+  RETURN values                                  25
+  operands of a comparison or an operator        58
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -29,7 +29,7 @@ TRUSTED -- outside what the checker can see
     of them [SERIAL]                              6
     of them [REENTRANT]                          17
   THREADs writing STATEFUL state                  0
-  ADR sites (C reading or writing M9 storage)    56   reads in Write, reads in WriteBytes, reads in ErrLine, reads in Err, writes or reads in Run, writes or reads in Env, +50 more
+  ADR sites (C reading or writing M9 storage)    30   reads in WriteBytes, writes or reads in ReadStdin, writes or reads in ReadFileHead, writes or reads in ReadFileAt, reads in ErrLineUtf, writes or reads in ReadFileBytesUtf, +24 more
     of them filling a descriptor ([FRESH])        1   descriptor ([FRESH]) in ReadFileUtf
 
 COUNTED -- how much there was to check

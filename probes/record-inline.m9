@@ -1,10 +1,10 @@
 (* EXPECT: a RECORD is a TYPE of its own: declare it, TYPE T = RECORD ... END, and use its name (par 2.2) *)
-(* A RECORD is declared as a TYPE and used by its name.  Written
-   inline, as a variable's or a field's type, the checker accepted it
-   and the generator refused it as `type kind unsupported yet' (the
-   fuzz review's InlineRec and InlineRecField, until 2026-10-30).
-   Legal forms first: a named record, a field of a named record type,
-   a slice of one. *)
+(* A RECORD is declared as a TYPE and used by its name.  Written inline,
+   as a variable's or a field's type, the checker accepted it and the
+   generator refused it as `type kind unsupported yet' (the fuzz
+   review's InlineRec and InlineRecField, until 2026-10-30).  Legal
+   forms come first: a named record, a field of a named record type, a
+   slice of one. *)
 MODULE m ;
 TYPE
   Inner = RECORD b : I64 END ;

@@ -1,4 +1,4 @@
-/* system_driver: corpus/System.m9 against the operating system.
+/* system_driver holds corpus/System.m9 to the operating system.
 
    Run as   ./system_test --verbose --out=x.nc a -- -b
    (build.sh does), so the three argument views have a known line to
@@ -18,8 +18,8 @@
 
 static int checks = 0, failed = 0;
 
-/* the driver's own clock: a bounded run has to be timed from outside,
-   or "it stopped" cannot be told from "it finished" */
+/* This is the driver's own clock.  A bounded run has to be timed from
+   outside, or "it stopped" cannot be told from "it finished". */
 static double now (void)
 {
   struct timeval tv;
@@ -33,34 +33,33 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-static uint32_t sbuf[4096];
+static uint8_t sbuf[16384];
 static size_t sused = 0;
 
-static m9_sl_CHAR S (const char *s)
+/* S copies a C string's bytes into the ring.  A C literal is UTF-8
+   already, so no byte is widened. */
+static m9_sl_UTF8 S (const char *s)
 {
-  size_t i, n = strlen (s);
-  uint32_t *p;
-  if (sused + n > sizeof sbuf / sizeof sbuf[0]) sused = 0;
+  size_t n = strlen (s);
+  uint8_t *p;
+  if (sused + n > sizeof sbuf) sused = 0;
   p = sbuf + sused;
   sused += n;
-  for (i = 0; i < n; i++) p[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ p, (int64_t) n };
+  memcpy (p, s, n);
+  return (m9_sl_UTF8){ p, (int64_t) n };
 }
 
-static int eq (m9_sl_CHAR s, const char *c)
+static int eq (m9_sl_UTF8 s, const char *c)
 {
-  int64_t i, n = (int64_t) strlen (c);
-  if (s.len != n) return 0;
-  for (i = 0; i < n; i++)
-    if (s.p[i] != (uint32_t) (unsigned char) c[i]) return 0;
-  return 1;
+  int64_t n = (int64_t) strlen (c);
+  return s.len == n && (n == 0 || memcmp (s.p, c, (size_t) n) == 0);
 }
 
-static int ends (m9_sl_CHAR s, const char *c)
+static int ends (m9_sl_UTF8 s, const char *c)
 {
   int64_t n = (int64_t) strlen (c);
   if (s.len < n) return 0;
-  return eq ((m9_sl_CHAR){ s.p + (s.len - n), n }, c);
+  return eq ((m9_sl_UTF8){ s.p + (s.len - n), n }, c);
 }
 
 int main (int argc, char **argv)
@@ -69,13 +68,13 @@ int main (int argc, char **argv)
   m9_args (argc, argv);                 /* what a generated main does first */
   m9_pool pool = { NULL }, mine = { NULL };
   System_Memory mem;
-  System_Result r;
-  m9_sl_m9_sl_CHAR args;
-  m9_sl_CHAR argv2[2];
+  System_ResultUtf r;
+  m9_sl_m9_sl_UTF8 args;
+  m9_sl_UTF8 argv2[2];
   int64_t before, after, i;
   int found;
-  m9_sl_CHAR noin = { NULL, 0 }, envv[1];
-  m9_sl_m9_sl_CHAR noenv = { NULL, 0 }, args0 = { NULL, 0 }, envs;
+  m9_sl_UTF8 noin = { NULL, 0 }, envv[1];
+  m9_sl_m9_sl_UTF8 noenv = { NULL, 0 }, args0 = { NULL, 0 }, envs;
 
   /* ---- the platform, as a value ---- */
 #ifdef _WIN32
@@ -86,10 +85,10 @@ int main (int argc, char **argv)
   ok ("Os is a known word", eq (System_Os (&e), "macos") || eq (System_Os (&e), "posix"));
 #endif
   {
-    /* the resolved path ends in this program's name and, unlike
-       argv[0], is absolute whatever the caller typed -- build.sh runs
-       ./system_test, so Program is relative and Executable is not */
-    m9_sl_CHAR exe = System_Executable (&pool, &e);
+    /* The resolved path ends in this program's name.  Unlike argv[0],
+       it is absolute whatever the caller typed.  build.sh runs
+       ./system_test, so Program is relative and Executable is not. */
+    m9_sl_UTF8 exe = System_ExecutableUtf (&pool, &e);
     ok ("Executable names this binary", !e.exc && ends (exe, "system_test"));
 #ifdef _WIN32
     ok ("Executable is absolute", exe.len > 2 && exe.p[1] == ':');
@@ -127,62 +126,64 @@ int main (int argc, char **argv)
 
   /* ---- Exec ---- */
   argv2[0] = S ("hello"); argv2[1] = S ("world");
-  args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
-  r = System_Exec (&pool, S ("/bin/echo"), args, noin, noenv, &e);
+  args = (m9_sl_m9_sl_UTF8){ argv2, 2 };
+  r = System_ExecUtf (&pool, S ("/bin/echo"), args, noin, noenv, &e);
   ok ("echo ran", !e.exc && r.status == 0);
   ok ("echo's stdout came back whole", eq (r.out, "hello world\n"));
   ok ("echo wrote nothing to stderr", r.err_.len == 0);
 
   argv2[0] = S ("-c"); argv2[1] = S ("echo oops 1>&2; exit 3");
-  r = System_Exec (&pool, S ("sh"), args, noin, noenv, &e);
+  r = System_ExecUtf (&pool, S ("sh"), args, noin, noenv, &e);
   ok ("sh ran and its status is 3", !e.exc && r.status == 3);
   ok ("sh's stderr came back", eq (r.err_, "oops\n"));
   ok ("sh's stdout is empty", r.out.len == 0);
 
   argv2[0] = S ("-c"); argv2[1] = S ("kill -9 $$");
-  r = System_Exec (&pool, S ("sh"), args, noin, noenv, &e);
+  r = System_ExecUtf (&pool, S ("sh"), args, noin, noenv, &e);
   ok ("a program killed by a signal answers minus the signal",
       !e.exc && r.status == -9);
 
   argv2[0] = S ("-c");
   argv2[1] = S ("i=0; while [ $i -lt 20000 ]; do echo line$i; echo err$i 1>&2; i=$((i+1)); done");
-  r = System_Exec (&pool, S ("sh"), args, noin, noenv, &e);
-  /* 20,000 lines of "lineN" and "errN": the digits of 0..19999 sum to
-     88,890, so the streams are 188,890 and 168,890 bytes exactly */
+  r = System_ExecUtf (&pool, S ("sh"), args, noin, noenv, &e);
+  /* The child writes 20,000 lines of "lineN" and "errN".  The digits
+     of 0..19999 sum to 88,890, so the streams are 188,890 and 168,890
+     bytes exactly. */
   ok ("both streams drained together, 20,000 lines each, no deadlock",
       !e.exc && r.status == 0 && r.out.len == 188890 && r.err_.len == 168890);
 
   /* ---- Exec: stdin fed in, and a merged environment ---- */
-  r = System_Exec (&pool, S ("/bin/cat"), args0, S ("piped input\n"),
+  r = System_ExecUtf (&pool, S ("/bin/cat"), args0, S ("piped input\n"),
                    noenv, &e);
   ok ("stdin is fed to the child and echoed back by cat",
       !e.exc && r.status == 0 && eq (r.out, "piped input\n"));
 
-  r = System_Exec (&pool, S ("sort"), args0, S ("3\n1\n2\n"), noenv, &e);
+  r = System_ExecUtf (&pool, S ("sort"), args0, S ("3\n1\n2\n"), noenv, &e);
   ok ("a real filter sorts the stdin we handed it",
       !e.exc && r.status == 0 && eq (r.out, "1\n2\n3\n"));
 
-  r = System_Exec (&pool, S ("/bin/cat"), args0, S (""), noenv, &e);
+  r = System_ExecUtf (&pool, S ("/bin/cat"), args0, S (""), noenv, &e);
   ok ("empty input is an immediate EOF, not this process's own stdin",
       !e.exc && r.status == 0 && r.out.len == 0);
 
   {
     int64_t bign = 262144;               /* 256 KB, well past a 64 KB pipe */
-    uint32_t *bb = malloc ((size_t) bign * sizeof *bb);
-    m9_sl_CHAR big = { bb, bign };
+    uint8_t *bb = malloc ((size_t) bign * sizeof *bb);
+    m9_sl_UTF8 big = { bb, bign };
     for (i = 0; i < bign; i++) bb[i] = 'x';
-    r = System_Exec (&pool, S ("/bin/cat"), args0, big, noenv, &e);
+    r = System_ExecUtf (&pool, S ("/bin/cat"), args0, big, noenv, &e);
     ok ("a large stdin (256 KB) echoed through cat does not deadlock the pipes",
         !e.exc && r.status == 0 && r.out.len == big.len);
-    /* cat moves 128 KB at a time, so the check above PASSED against a
-       pump that deadlocked with any child copying in small pieces: a
+    /* cat moves 128 KB at a time.  So the check above PASSED against a
+       pump that deadlocked with any child copying in small pieces.  A
        blocking 64 KB write into a pipe with less room sleeps until it
-       all fits, drains nothing meanwhile, and the child blocks on its
-       full stdout.  dd at 4 KB is that child (found 2026-09-06 by the
-       Windows twin of this driver, whose stdio child copies 4 KB). */
+       all fits and drains nothing meanwhile.  The child blocks on its
+       full stdout.  dd at 4 KB is that child.  The Windows twin of
+       this driver, whose stdio child copies 4 KB, found it
+       (2026-09-06). */
     argv2[0] = S ("bs=4096"); argv2[1] = S ("status=none");
-    args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
-    r = System_Exec (&pool, S ("dd"), args, big, noenv, &e);
+    args = (m9_sl_m9_sl_UTF8){ argv2, 2 };
+    r = System_ExecUtf (&pool, S ("dd"), args, big, noenv, &e);
     found = !e.exc && r.status == 0 && r.out.len == big.len;
     for (i = 0; found && i < bign; i++) if (r.out.p[i] != bb[i]) found = 0;
     ok ("and through dd in 4 KB pieces, every byte back in order", found);
@@ -190,37 +191,37 @@ int main (int argc, char **argv)
   }
 
   argv2[0] = S ("-c"); argv2[1] = S ("echo \"$LC_ALL\"");
-  args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
+  args = (m9_sl_m9_sl_UTF8){ argv2, 2 };
   envv[0] = S ("LC_ALL=xyz");
-  envs = (m9_sl_m9_sl_CHAR){ envv, 1 };
-  r = System_Exec (&pool, S ("sh"), args, S (""), envs, &e);
+  envs = (m9_sl_m9_sl_UTF8){ envv, 1 };
+  r = System_ExecUtf (&pool, S ("sh"), args, S (""), envs, &e);
   ok ("an env override reaches the child, and PATH survived to find sh",
       !e.exc && r.status == 0 && eq (r.out, "xyz\n"));
 
   argv2[1] = S ("echo \"$HOME\"");
-  args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
+  args = (m9_sl_m9_sl_UTF8){ argv2, 2 };
   envv[0] = S ("HOME=/tmp/zzz");
-  envs = (m9_sl_m9_sl_CHAR){ envv, 1 };
-  r = System_Exec (&pool, S ("sh"), args, S (""), envs, &e);
+  envs = (m9_sl_m9_sl_UTF8){ envv, 1 };
+  r = System_ExecUtf (&pool, S ("sh"), args, S (""), envs, &e);
   ok ("an override replaces the inherited variable, it does not duplicate it",
       !e.exc && r.status == 0 && eq (r.out, "/tmp/zzz\n"));
 
   args.len = 0;
-  r = System_Exec (&pool, S ("/no/such/program"), args, noin, noenv, &e);
+  r = System_ExecUtf (&pool, S ("/no/such/program"), args, noin, noenv, &e);
   ok ("a program that cannot start raises Io.IOError", e.exc == &Io_IOError);
   e.exc = NULL;
 
   /* ---- ExecWithin: the bound, and what it takes with it ---- */
   argv2[0] = S ("-c"); argv2[1] = S ("echo quick");
-  args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
-  r = System_ExecWithin (&pool, S ("sh"), args, noin, noenv, 5.0, &e);
+  args = (m9_sl_m9_sl_UTF8){ argv2, 2 };
+  r = System_ExecWithinUtf (&pool, S ("sh"), args, noin, noenv, 5.0, &e);
   ok ("a run that finishes inside its limit is not stopped",
       !e.exc && r.status == 0 && eq (r.out, "quick\n") && !r.stopped);
 
   argv2[1] = S ("echo before; sleep 30");
   {
     double t0 = now ();
-    r = System_ExecWithin (&pool, S ("sh"), args, noin, noenv, 0.5, &e);
+    r = System_ExecWithinUtf (&pool, S ("sh"), args, noin, noenv, 0.5, &e);
     ok ("a run past its limit is stopped, at the limit and not at its end",
         !e.exc && r.stopped && now () - t0 < 5.0);
     ok ("and what it wrote before the limit came back", eq (r.out, "before\n"));
@@ -229,8 +230,8 @@ int main (int argc, char **argv)
 
   /* THE CASE THE BOUND EXISTS FOR: the child EXITS, and something it
      started holds its stdout.  The wait is for the streams to end,
-     so without a limit this one never returns -- and the limit has
-     to take the grandchild with it or the next run meets it again. */
+     so without a limit this one never returns.  The limit has to
+     take the grandchild with it, or the next run meets it again. */
   {
     char path[128], line[256];
     double t0;
@@ -239,14 +240,14 @@ int main (int argc, char **argv)
     snprintf (line, sizeof line,
               "sh -c 'sleep 2; echo alive > %s' & exit 0", path);
     argv2[1] = S (line);
-    args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
+    args = (m9_sl_m9_sl_UTF8){ argv2, 2 };
     t0 = now ();
-    r = System_ExecWithin (&pool, S ("sh"), args, noin, noenv, 0.4, &e);
+    r = System_ExecWithinUtf (&pool, S ("sh"), args, noin, noenv, 0.4, &e);
     ok ("a child that exits leaving a grandchild on its stdout still returns",
         !e.exc && r.stopped && now () - t0 < 5.0);
     argv2[0] = S ("3");
-    args = (m9_sl_m9_sl_CHAR){ argv2, 1 };
-    (void) System_Exec (&pool, S ("sleep"), args, noin, noenv, &e);
+    args = (m9_sl_m9_sl_UTF8){ argv2, 1 };
+    (void) System_ExecUtf (&pool, S ("sleep"), args, noin, noenv, &e);
     ok ("the group went with it: the grandchild never wrote its file",
         !e.exc && access (path, F_OK) != 0);
     remove (path);

@@ -1,21 +1,21 @@
 MODULE MatTest ;
 
-(* Mat's general linear algebra against numpy.linalg: Solve, Det,
-   Inverse, Qr, LstSq, Svd, EigSym.  (The reductions and the Cholesky
-   family stay with runtime/test/mat_driver.c.)  Goldens:
-   runtime/test/gold/Mat.gold from tools/matgoldm9.py, a matrix as
-   one vector, row after row.
+(* MatTest holds Mat's general linear algebra against numpy.linalg:
+   Solve, Det, Inverse, Qr, LstSq, Svd, EigSym.  (The reductions and
+   the Cholesky family stay with runtime/test/mat_driver.c.)  The
+   goldens are runtime/test/gold/Mat.gold from tools/matgoldm9.py,
+   with a matrix as one vector, row after row.
 
-   THE TOLERANCE is 1e-13, absolute and relative, the Cholesky gate's
-   -- these matrices have entries near one and condition numbers
-   under twenty.  One matrix is held looser and says why: Hilbert's,
-   whose condition number of 4.8e5 is five digits that neither
-   answer has, numpy's or this one.
+   THE TOLERANCE is 1e-13, absolute and relative, the Cholesky gate's.
+   These matrices have entries near one and condition numbers under
+   twenty.  One matrix, Hilbert's, is held looser and says why.  Its
+   condition number of 4.8e5 is five digits that neither answer has,
+   numpy's or this one.
 
    Signs: a QR factorisation, a singular vector pair and an
    eigenvector are each unique only up to a sign.  Mat says which
-   sign it answers, the generator brings numpy's answer to the same,
-   and so the comparison is of matrices and not of magnitudes. *)
+   sign it answers, and the generator brings numpy's answer to the
+   same.  So the test compares matrices and not magnitudes. *)
 
 IMPORT Check ;
 IMPORT Faults ;
@@ -38,7 +38,7 @@ BEGIN
   RETURN Check.GoldF64s (t, gold, name)
 END F64s ;
 
-(* the golden vector `name' as a matrix of that shape *)
+(* M answers the golden vector `name' as a matrix of that shape. *)
 PROCEDURE M (RO name: STR ; rows, cols: I64) : PTR Mat.Matrix
   RAISES Faults.SizeError =
 VAR
@@ -55,7 +55,7 @@ BEGIN
   RETURN m
 END M ;
 
-(* a matrix as one vector, row after row *)
+(* Flat answers a matrix as one vector, row after row. *)
 PROCEDURE Flat (m: PTR Mat.Matrix) : SLICE OF F64 =
 VAR
   v : SLICE OF F64 ;
@@ -99,8 +99,9 @@ BEGIN
               Check.GoldF64 (t, gold, 'want.det.piv'), 0.0, Tol) ;
 
   (* Hilbert 5: the answer is all ones, and the matrix has 4.8e5 for
-     a condition number, so 1e-16 * 4.8e5 = 5e-11 is what an answer
-     may be off by -- numpy's is, by 3e-12.  Held at 1e-9. *)
+     a condition number.  So an answer may be off by 1e-16 * 4.8e5 =
+     5e-11, and numpy's is off, by 3e-12.  The test holds it at
+     1e-9. *)
   a := M ('in.h5', 5, 5) ;
   b := M ('in.bh', 5, 1) ;
   x := Mat.Solve (pool, a, b) ;
@@ -151,7 +152,7 @@ END Qrs ;
 
 (* ---- SVD ---- *)
 
-(* u diag (s) vt, as one vector *)
+(* Recomposed answers u diag (s) vt, as one vector. *)
 PROCEDURE Recomposed (u: PTR Mat.Matrix ; RO s: SLICE OF F64 ;
                       vt: PTR Mat.Matrix) : SLICE OF F64 =
 VAR
@@ -194,9 +195,9 @@ BEGIN
                     Recomposed (u, s, vt), Flat (a), Tol, Tol)
   END ;
 
-  (* rank 2 of 3: the third value is zero, to rounding in numpy and
-     here, and the vectors that go with a zero are not the matrix's
-     to determine -- so the values and the product are what is held *)
+  (* Rank 2 of 3: the third value is zero, to rounding in numpy and
+     here.  The vectors that go with a zero are not the matrix's to
+     determine, so the test holds the values and the product. *)
   a := M ('in.r2', 4, 3) ;
   s := NEW (pool, F64, 3) ;
   Mat.Svd (pool, a, u, s, vt) ;
@@ -205,7 +206,8 @@ BEGIN
   Check.NearF64s (t, 'Svd of rank 2: the product is still the matrix',
                   Recomposed (u, s, vt), Flat (a), Tol, Tol) ;
 
-  (* the matrix LstSq refuses below as Singular: Svd says how singular *)
+  (* LstSq refuses this matrix below as Singular.  Svd says how
+     singular. *)
   a := M ('in.rank2', 8, 3) ;
   Mat.Svd (pool, a, u, s, vt) ;
   Check.NearF64s (t, 'Svd of a column that is the sum of two: the last value is rounding',

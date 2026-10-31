@@ -1,12 +1,13 @@
 #!/bin/sh
-# Zip.Deflate, Compress and Gzip against somebody else's inflate.
+# This gate holds Zip.Deflate, Compress and Gzip against somebody
+# else's inflate.
 #
 # A compressor's output is not unique, so there is no golden file to
-# hold it to: it is right when zlib reads back what went in.  Python
-# writes the inputs (deflatecheck.py make), the M9 program deflateout
-# compresses each three ways, and Python's gzip and zlib read them
-# (deflatecheck.py check).  corpus/ZipTest.m9 holds the same through
-# Zip's own Gunzip; this is the outside witness.
+# hold it to.  The output is right when zlib reads back what went in.
+# Python writes the inputs (deflatecheck.py make), the M9 program
+# deflateout compresses each three ways, and Python's gzip and zlib
+# read them (deflatecheck.py check).  corpus/ZipTest.m9 holds the same
+# through Zip's own Gunzip.  This gate is the outside witness.
 set -e
 cd "$(dirname "$0")"
 
@@ -44,8 +45,9 @@ mkdir -p "$OUT/png"
 python3 deflatecheck.py png "$OUT/png"
 
 # ---- and the rasteriser: Plot's figures as Png.FromSvg draws them,
-# against headless Chrome's renders of the same SVG, checked in under
-# gold/png/ (Chrome is not on the runner; the pictures are)
+# against headless Chrome's renders of the same SVG.  The renders are
+# checked in under gold/png/ (Chrome is not on the runner; the
+# pictures are).
 cp svg2png.m9 "$OUT/"
 ( cd "$OUT" && "$M9C" --make -o svg2png svg2png.m9 >/dev/null 2>&1 ) \
   || { echo "FAIL: svg2png does not build"; exit 1; }

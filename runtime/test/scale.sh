@@ -1,27 +1,27 @@
 #!/bin/sh
 # --check GROWS LINEARLY WITH THE PROGRAM (the compiler review's F5,
 # 2026-10-22).  Each shape is checked at n and at 4n, and the second
-# may take at most RATIO times the first: a linear checker takes about
-# 4, a quadratic one about 16.  A ratio and not a time, so the gate
-# reads the same on a fast machine and a slow one; n is large enough
-# that the start-up cost is a small part of the first run.
+# may take at most RATIO times the first.  A linear checker takes about
+# 4, a quadratic one about 16.  The gate uses a ratio and not a time, so
+# it reads the same on a fast machine and a slow one.  n is large
+# enough that the start-up cost is a small part of the first run.
 #
 # Measured before the fix, on the MacBook: 20,000 locals in one
-# procedure 2.47 s (5,000: 0.19 s, ratio 13), 10,000 procedures each
-# called once 1.26 s (ratio 14 from 2,500) -- DeclOnce, ScopeFind,
-# FindProcIn, CallsAdd, the region walk's RgFind and Gen's MFind were
-# scans, and AddVarsOf walked the unit again for every procedure.
-# After: 0.08 s and 0.11 s.  The deep shapes (a flat chain past 1,000
-# operands, a type past 100 levels) are refused by the parser's bounds
-# (decision 59) and are not here.
+# procedure took 2.47 s (5,000: 0.19 s, ratio 13).  10,000 procedures
+# each called once took 1.26 s (ratio 14 from 2,500).  DeclOnce,
+# ScopeFind, FindProcIn, CallsAdd, the region walk's RgFind and Gen's
+# MFind were scans, and AddVarsOf walked the unit again for every
+# procedure.  After: 0.08 s and 0.11 s.  The deep shapes (a flat chain
+# past 1,000 operands, a type past 100 levels) are refused by the
+# parser's bounds (decision 59) and are not here.
 # A record of 10,000 fields was 0.20 s, 20,000 0.69 s (FieldTypeOf and the
-# duplicate-field check scanned); both index since 2026-10-25: 0.07 and
-# 0.17 s.
+# duplicate-field check scanned).  Both index since 2026-10-25: 0.07
+# and 0.17 s.
 # A LONG BODY (review2, 2026-10-26): the region walk sized its table by
-# the body's node count and copies it at every IF arm, so one procedure
+# the body's node count and copies it at every IF arm.  So one procedure
 # of 8,000 scalar IFs took 6.0 s (0.25.0; 2,000 0.42 s, ratio 14) where
-# the empty bodies above saw nothing; sized by the distinct names (no
-# literal counted), 117 ms, ratio 3.0 -- 0.24.0 took 119-134 ms.
+# the empty bodies above saw nothing.  Sized by the distinct names (no
+# literal counted), it takes 117 ms, ratio 3.0.  0.24.0 took 119-134 ms.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh
@@ -80,8 +80,8 @@ shape () {   # SHAPE N -> a program on stdout
   esac
 }
 
-# milliseconds of one --check, the best of three (page cache, the
-# first run's library reads)
+# ms answers the milliseconds of one --check, the best of three (page
+# cache, the first run's library reads).
 ms () {
   best=
   for r in 1 2 3; do
@@ -103,7 +103,7 @@ for spec in "locals 5000" "procs 2500" "consts 5000" "types 2500" "vars 5000" "f
   a=$(ms "$W/a.m9")
   b=$(ms "$W/b.m9")
   [ "$a" -gt 0 ] || a=1
-  # the ratio in tenths, so the shell's integers say 4.3 as 43
+  # Keep the ratio in tenths, so the shell's integers say 4.3 as 43.
   r=$(( b * 10 / a ))
   echo "scale: $1 $2 -> $(( $2 * 4 )): $a ms -> $b ms, ratio $(( r / 10 )).$(( r % 10 ))"
   if [ "$r" -gt $(( RATIO * 10 )) ]; then

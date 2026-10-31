@@ -1,39 +1,39 @@
 MODULE Lsp ;
 
-(* m9lsp -- the Language Server Protocol over standard input and
+(* m9lsp speaks the Language Server Protocol over standard input and
    output, in M9.
 
    THE RULE THIS PROGRAM EXISTS TO KEEP: no second scanner.  The
    corpus refuted editor-side relexing the day a phantom comment ate
    fifty-four lines of Gen.m9 (eighteen string literals carrying
-   comment brackets), so every diagnostic this server publishes is
-   the COMPILER's own answer: it invokes `m9c --check` -- the flag
-   built for this program: check, print, write NOTHING -- and
+   comment brackets).  So every diagnostic this server publishes is
+   the COMPILER's own answer.  It invokes `m9c --check`, the flag
+   built for this program (check, print, write NOTHING), and
    republishes the diagnostics with their line and column.  The
    server never lexes M9; it parses m9c's output lines.
 
-   Version 1, and the narrowings are stated rather than hidden:
+   This is version 1, and the narrowings are stated rather than hidden:
    - checks run on didOpen and didSave, against the file ON DISK: an
      unsaved buffer is not checked, because m9c reads files and a
      temp-file mirror would break module-name-matches-file;
-   - diagnostics only -- the VS Code extension already has hover and
-     completion from `m9c --doc`, and other editors get those when
-     the server grows its second stage;
+   - it publishes diagnostics only: the VS Code extension already has
+     hover and completion from `m9c --doc`, and other editors get those
+     when the server grows its second stage;
    - a body is taken as the UTF-8 it arrives as (ValueRange when it is
      not), and Content-Length is a UTF's byte length.
 
    The compiler invoked is $M9LSP_M9C, else `m9c` from PATH; the
-   search path is m9c's own -- $M9LIBRARY, the installed StdLib, and
+   search path is m9c's own: $M9LIBRARY, the installed StdLib, and
    the checked file's directory.                                     *)
 
 IMPORT Io ;
-IMPORT DynUtf ;
+IMPORT DynStr ;
 IMPORT Text ;
 IMPORT JsonUtf ;
 IMPORT Diag ;
 
 CONST
-  Version = '0.25.4' ;
+  Version = '0.26.0' ;
   RdCap = 65536 ;
 
 VAR
@@ -45,9 +45,10 @@ VAR
 
 (* ---- framed input ------------------------------------------------ *)
 
-(* more bytes into the window, compacting first; FALSE at end of
-   input.  The buffer doubles when a message outgrows it, so one
-   allocation serves a whole session of ordinary traffic. *)
+(* Fill moves more bytes into the window, compacting first; it
+   answers FALSE at end of input.  The buffer doubles when a message
+   outgrows it, so one allocation serves a whole session of ordinary
+   traffic. *)
 PROCEDURE Fill () : BOOL =
 VAR
   nb, got : SLICE OF BYTE ;
@@ -76,8 +77,9 @@ BEGIN
   RETURN TRUE
 END Fill ;
 
-(* one header line as text, CR and LF stripped; FALSE at end of
-   input.  Header octets are ASCII by protocol. *)
+(* ReadLine reads one header line as text, CR and LF stripped; it
+   answers FALSE at end of input.  Header octets are ASCII by
+   protocol. *)
 PROCEDURE ReadLine (VAR line: UTF) : BOOL
   RAISES ValueRange =
 VAR
@@ -102,7 +104,7 @@ BEGIN
   RETURN TRUE
 END ReadLine ;
 
-(* exactly n body octets, as the UTF they are *)
+(* ReadBody reads exactly n body octets, as the UTF they are. *)
 PROCEDURE ReadBody (n: I64 ; VAR body: UTF) : BOOL
   RAISES ValueRange =
 BEGIN
@@ -124,51 +126,53 @@ END ByteLen ;
 PROCEDURE Send (RO body: UTF) =
 VAR
   scratch : POOL ;
-  d : PTR DynUtf.DString IN scratch ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
-  d := DynUtf.New (scratch) ;
-  DynUtf.Append (d, 'Content-Length: ') ;
-  DynUtf.AppendI64 (d, ByteLen (body)) ;
-  DynUtf.AppendChar (d, 0DC) ;
-  DynUtf.AppendChar (d, 0AC) ;
-  DynUtf.AppendChar (d, 0DC) ;
-  DynUtf.AppendChar (d, 0AC) ;
-  Io.Write (DynUtf.View (d)) ;
+  d := DynStr.New (scratch) ;
+  DynStr.Append (d, 'Content-Length: ') ;
+  DynStr.AppendI64 (d, ByteLen (body)) ;
+  DynStr.AppendChar (d, 0DC) ;
+  DynStr.AppendChar (d, 0AC) ;
+  DynStr.AppendChar (d, 0DC) ;
+  DynStr.AppendChar (d, 0AC) ;
+  Io.Write (DynStr.View (d)) ;
   Io.Write (body) ;
   Io.Flush ()
 END Send ;
 
 PROCEDURE ItoA (v: I64) : UTF =
 VAR pool : POOL ;
-    d : PTR DynUtf.DString IN pool ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.AppendI64 (d, v) ;
-  RETURN DynUtf.View (d)
+  d := DynStr.New (pool) ;
+  DynStr.AppendI64 (d, v) ;
+  RETURN DynStr.View (d)
 END ItoA ;
 
 PROCEDURE Cat (RO a: UTF ; RO b: UTF) : UTF =
 VAR pool : POOL ;
-    d : PTR DynUtf.DString IN pool ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, a) ;
-  DynUtf.Append (d, b) ;
-  RETURN DynUtf.View (d)
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  RETURN DynStr.View (d)
 END Cat ;
 
 (* ---- diagnostics: m9c --check, republished ----------------------- *)
 
-(* file:///a/b%2Dc -> /a/b-c.  Only the path is wanted here; the
-   URI itself is echoed back verbatim, so this never round-trips. *)
+(* UriPath turns file:///a/b%2Dc into /a/b-c.  Only the path is wanted
+   here; the URI itself is echoed back verbatim, so this never
+   round-trips. *)
 PROCEDURE UriPath (RO uri: UTF) : UTF
   RAISES ValueRange =
 VAR
   b : SLICE OF BYTE ;
   i, n, hi, lo : I64 ;
 BEGIN
-  (* decoded into octets -- %C3%A4 is the two octets of an a-umlaut,
-     not two characters -- and validated as UTF-8 at the end *)
+  (* The path is decoded into octets and validated as UTF-8 at the
+     end.  %C3%A4 is the two octets of an a-umlaut, not two
+     characters. *)
   b := NEW (BYTE, Text.BLen (uri)) ;
   n := 0 ;
   i := 0 ;
@@ -205,38 +209,38 @@ PROCEDURE DiagJson (ln, cl: I64 ; RO msg: UTF) : UTF
   RAISES ValueRange =
 VAR
   pool : POOL ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   l0, c0 : I64 ;
 BEGIN
   l0 := ln - 1 ;
   c0 := cl - 1 ;
   IF l0 < 0 THEN l0 := 0 END ;
   IF c0 < 0 THEN c0 := 0 END ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, '{"range":{"start":{"line":') ;
-  DynUtf.AppendI64 (d, l0) ;
-  DynUtf.Append (d, ',"character":') ;
-  DynUtf.AppendI64 (d, c0) ;
-  DynUtf.Append (d, '},"end":{"line":') ;
-  DynUtf.AppendI64 (d, l0) ;
-  DynUtf.Append (d, ',"character":') ;
-  DynUtf.AppendI64 (d, c0) ;
-  DynUtf.Append (d, '}},"severity":1,"source":"m9c","message":') ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '{"range":{"start":{"line":') ;
+  DynStr.AppendI64 (d, l0) ;
+  DynStr.Append (d, ',"character":') ;
+  DynStr.AppendI64 (d, c0) ;
+  DynStr.Append (d, '},"end":{"line":') ;
+  DynStr.AppendI64 (d, l0) ;
+  DynStr.Append (d, ',"character":') ;
+  DynStr.AppendI64 (d, c0) ;
+  DynStr.Append (d, '}},"severity":1,"source":"m9c","message":') ;
   Diag.JStrUtf (d, msg) ;
-  DynUtf.AppendChar (d, 07DC) ;
-  RETURN DynUtf.View (d)
+  DynStr.AppendChar (d, 07DC) ;
+  RETURN DynStr.View (d)
 END DiagJson ;
 
-(* check the file the uri names and publish what m9c said.  A path
-   carrying a quote is refused with one diagnostic rather than
-   handed to a shell -- m9c's own rule at its own link step.  The
+(* Check checks the file the uri names and publishes what m9c said.
+   A path carrying a quote is refused with one diagnostic rather than
+   handed to a shell: m9c's own rule at its own link step.  The
    reading of m9c's lines is Diag.Check's (shared with m9edit and
-   the tutor); what is m9lsp's is the LSP envelope and the 0-based
+   the tutor).  m9lsp's own part is the LSP envelope and the 0-based
    positions. *)
 PROCEDURE Check (VAR pool: POOL ; RO uri: UTF)
   RAISES ValueRange, IndexError =
 VAR
-  body : PTR DynUtf.DString IN pool ;
+  body : PTR DynStr.DString IN pool ;
   path, one : UTF ;
   fs : SLICE OF Diag.Finding ;
   i, n : I64 ;
@@ -244,55 +248,56 @@ VAR
 BEGIN
   path := UriPath (uri) ;
   bad := Text.FindChar (path, 027C) >= 0 OR Text.FindChar (path, 022C) >= 0 ;
-  body := DynUtf.New (pool) ;
-  DynUtf.Append (body,
+  body := DynStr.New (pool) ;
+  DynStr.Append (body,
     '{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics",') ;
-  DynUtf.Append (body, '"params":{"uri":') ;
+  DynStr.Append (body, '"params":{"uri":') ;
   Diag.JStrUtf (body, uri) ;
-  DynUtf.Append (body, ',"diagnostics":[') ;
+  DynStr.Append (body, ',"diagnostics":[') ;
   n := 0 ;
   IF bad THEN
     one := DiagJson (1, 1,
       'm9lsp: a path containing a quote is not checked') ;
-    DynUtf.Append (body, one) ;
+    DynStr.Append (body, one) ;
     n := 1
   ELSE
     fs := Diag.Check (pool, m9c, '', '', STR (path), errFile) ;
     FOR i := 0 TO LEN (fs) - 1 DO
       one := DiagJson (fs[i].line, fs[i].col, fs[i].msg) ;
-      IF n > 0 THEN DynUtf.AppendChar (body, 02CC) END ;
-      DynUtf.Append (body, one) ;
+      IF n > 0 THEN DynStr.AppendChar (body, 02CC) END ;
+      DynStr.Append (body, one) ;
       n := n + 1
     END
   END ;
-  DynUtf.Append (body, ']}}') ;
-  Send (DynUtf.ViewIn (pool, body))
+  DynStr.Append (body, ']}}') ;
+  Send (DynStr.ViewIn (pool, body))
 END Check ;
 
 (* ---- the loop ---------------------------------------------------- *)
 
 PROCEDURE Respond (RO idText: UTF ; RO result: UTF) =
 VAR pool : POOL ;
-    d : PTR DynUtf.DString IN pool ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, '{"jsonrpc":"2.0","id":') ;
-  DynUtf.Append (d, idText) ;
-  DynUtf.Append (d, ',"result":') ;
-  DynUtf.Append (d, result) ;
-  DynUtf.AppendChar (d, 07DC) ;
-  Send (DynUtf.View (d))
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '{"jsonrpc":"2.0","id":') ;
+  DynStr.Append (d, idText) ;
+  DynStr.Append (d, ',"result":') ;
+  DynStr.Append (d, result) ;
+  DynStr.AppendChar (d, 07DC) ;
+  Send (DynStr.View (d))
 END Respond ;
 
-(* the request id, re-rendered: a number, or a string, per JSON-RPC *)
+(* RenderIdS re-renders the request id: a number, or a string, per
+   JSON-RPC. *)
 PROCEDURE RenderIdS (idn: PTR JsonUtf.Node) : UTF
   RAISES ValueRange =
 VAR pool : POOL ;
-    d : PTR DynUtf.DString IN pool ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
+  d := DynStr.New (pool) ;
   Diag.JStrUtf (d, JsonUtf.AsStr (idn)) ;
-  RETURN DynUtf.View (d)
+  RETURN DynStr.View (d)
 EXCEPT
 | JsonUtf.TypeMismatch (m) :
     RETURN ''
@@ -398,7 +403,7 @@ BEGIN
   inLen := 0 ;
   atEof := FALSE ;
   m9c := Io.Env (HEAP, 'M9LSP_M9C') ;
-  IF LEN (m9c) = 0 THEN m9c := 'm9c' END ;
+  IF Text.BLen (m9c) = 0 THEN m9c := 'm9c' END ;
   errFile := '/tmp/m9lsp.err' ;
   Serve ()
 EXCEPT

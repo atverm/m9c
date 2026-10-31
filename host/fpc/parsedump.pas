@@ -1,6 +1,7 @@
 program parsedump;
-{ P5 stage-1 oracle side: print(parse(FILE)) to stdout.  The
-  M9-compiled parser+printer must produce identical bytes. }
+{ parsedump is the P5 stage-1 oracle side.  It writes
+  print(parse(FILE)) to stdout.  The M9-compiled parser+printer must
+  produce identical bytes. }
 {$mode objfpc}{$H+}
 uses SysUtils, Classes, M9AST, M9Parse, M9Print;
 

@@ -1,8 +1,8 @@
 (* EXPECT-ERROR: unhandled RAISES ParseError from call to Json.Parse *)
-(* Exception names were compared BARE: a handler for one module's
+(* Exception names were compared BARE.  A handler for one module's
    ParseError was taken to catch another's, and a RAISES clause naming
-   one covered a call raising the other.  Observed 2026-10-21 by the
-   compiler review (C6, C7, C8): a program handling `EB.Error' around a
+   one covered a call raising the other.  The compiler review observed
+   it 2026-10-21 (C6, C7, C8): a program handling `EB.Error' around a
    call raising EA.Error compiled and died "unhandled Error".  Csv and
    Json both declare a ParseError, which is the shape in the library. *)
 MODULE m ;

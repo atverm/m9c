@@ -1,10 +1,10 @@
 (* EXPECT: may enter a monitor of another type while this procedure holds its own, and a procedure bound to that type may enter one of this type *)
 MODULE m ;
-(* two monitor types taken in opposite orders: a procedure bound to A
-   enters B while one bound to B enters A, and two threads deadlock (the
-   fourth review's Abba, 3 runs of 3).  Legal forms first: A entering B
-   with nothing bound to B entering A, and an unbound procedure entering
-   both in turn. *)
+(* This probe takes two monitor types in opposite orders.  A procedure
+   bound to A enters B while one bound to B enters A, and two threads
+   deadlock (the fourth review's Abba, 3 runs of 3).  Legal forms come
+   first: A entering B with nothing bound to B entering A, and an
+   unbound procedure entering both in turn. *)
 TYPE
   A = MONITOR RECORD
     n : I64 ;

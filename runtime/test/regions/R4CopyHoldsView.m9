@@ -1,8 +1,8 @@
 MODULE R4CopyHoldsView ;
-(* the copy GfScalarCopy makes of a record of numbers, made of a record
-   holding a STRING: b[i] := a[i] copies the view, so the answer holds the
-   scratch pool's text, freed when Build returns -- refused, as before the
-   scalar-element rule (2026-10-26) *)
+(* This is the copy GfScalarCopy makes of a record of numbers, made of
+   a record holding a STRING: b[i] := a[i] copies the view, so the
+   answer holds the scratch pool's text, freed when Build returns.  It
+   is refused, as before the scalar-element rule (2026-10-26). *)
 IMPORT Io, Text ;
 TYPE
   Named = RECORD key : I64 ; name : STR END ;

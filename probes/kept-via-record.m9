@@ -1,14 +1,14 @@
 (* EXPECT: undeclared retention: borrowed v (carried by c) reaches the caller through f -- declare KEPT v (par 4.1) *)
-(* A borrow kept through a RECORD LOCAL.  `c.data := v' then
-   `f.cols[n] := c' stores the caller's slice where it outlives the
-   call, and until 2026-10-08 the checker followed only a bare pointer
-   or slice on the right of a store -- a record value holding one, and
-   a field of a local record given one, were not carried.  Frame's
-   AddF64 and six siblings kept their callers' buffers without KEPT,
-   and a caller reusing one buffer for several columns read the last
-   column everywhere (NbCellsTest, 2026-10-04).  The legal forms
-   first: a record of scalars stored, and a record carrying a KEPT
-   parameter. *)
+(* This probe keeps a borrow through a RECORD LOCAL.  `c.data := v'
+   then `f.cols[n] := c' stores the caller's slice where it outlives
+   the call.  Until 2026-10-08 the checker followed only a bare
+   pointer or slice on the right of a store.  A record value holding
+   one, and a field of a local record given one, were not carried.
+   Frame's AddF64 and six siblings kept their callers' buffers without
+   KEPT, and a caller reusing one buffer for several columns read the
+   last column everywhere (NbCellsTest, 2026-10-04).  The legal forms
+   come first: a record of scalars stored, and a record carrying a
+   KEPT parameter. *)
 MODULE m ;
 TYPE
   Col = RECORD name : STR ; data : SLICE OF F64 ; n : I64 END ;

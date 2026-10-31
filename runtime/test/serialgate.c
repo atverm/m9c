@@ -1,4 +1,5 @@
-/* A deliberately unsafe library, so the gate has something to prove.
+/* This is a deliberately unsafe library, so the gate has something
+ * to prove.
  *
  * m9_serial_bump does a read-modify-write with a gap in the middle,
  * which is the shape of every global-state race the [SERIAL]
@@ -12,8 +13,8 @@ void m9_serial_bump (void)
 {
   int64_t t = m9_serial_counter;
   int spin;
-  /* widen the window so a lost update is certain rather than lucky:
-     a race that fires one time in a million is not a test */
+  /* Widen the window so a lost update is certain rather than lucky.
+     A race that fires one time in a million is not a test. */
   for (spin = 0; spin < 20000; spin++) __asm__ __volatile__ ("" ::: "memory");
   m9_serial_counter = t + 1;
 }

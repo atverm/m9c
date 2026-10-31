@@ -7,10 +7,10 @@ MODULE R5PeriodPool ;
    field: a heap-use-after-free under ASan, accepted by every compiler
    to date.  The region walk's hand-back asks whether a callee hands
    back an ARGUMENT, not whether it stores what is in its POOL parameter
-   into its VAR parameter -- that summary does not exist.  Written as a
-   repro on 2026-10-28 from the owed entry's description; the KEPT rule
-   for a POOL of that day does not reach it, since no parameter here is
-   KEPT. *)
+   into its VAR parameter: that summary does not exist.  The repro was
+   written on 2026-10-28 from the owed entry's description.  The KEPT
+   rule for a POOL of that day does not reach it, since no parameter
+   here is KEPT. *)
 IMPORT Io, Text ;
 TYPE
   Instr = RECORD model : STR END ;

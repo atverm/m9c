@@ -2,7 +2,7 @@ MODULE GfMultiArm ;
 
 (* WANT: one arm: Bad 3 Worse 4 either ValueRange other *)
 
-(* One handler arm for several exceptions, `| A, B :' (2026-10-11,
+(* One handler arm serves several exceptions, `| A, B :' (2026-10-11,
    cp-kernel's proposal): any of them enters the arm; a binder is
    allowed when every one has the same fields, and binds them alike.
    Without a binder the names may differ in their fields. *)

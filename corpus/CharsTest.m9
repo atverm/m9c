@@ -1,9 +1,9 @@
 MODULE CharsTest ;
 
-(* Chars, held to Python's str: s[x] and len(s) of a text past ASCII long
-   enough to cross four index blocks (1,000 code points: 'aé✓𝄞' 250
-   times), through Str and through the index, at every position; an
-   index made from another string refused. *)
+(* CharsTest holds Chars to Python's str: s[x] and len(s) of a text
+   past ASCII long enough to cross four index blocks (1,000 code
+   points: 'aé✓𝄞' 250 times), through Str and through the index, at
+   every position.  An index made from another string is refused. *)
 
 IMPORT Chars ;
 IMPORT Check ;
@@ -14,7 +14,7 @@ IMPORT Text ;
 VAR
   t : Check.T ;
 
-(* Python: ord(('aé✓𝄞' * 250)[x]) *)
+(* Want answers Python's ord(('aé✓𝄞' * 250)[x]). *)
 PROCEDURE Want (x: I64) : I64 =
 BEGIN
   CASE x MOD 4 OF

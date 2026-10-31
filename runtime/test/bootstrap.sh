@@ -9,14 +9,14 @@
 #            compiled from stage2
 #
 # stage2 == stage1 says the toolchain compiled from runtime/gen writes
-# runtime/gen; stage3 == stage2 says it reproduces its OWN, compiled
-# from its own output -- the fixpoint.  No FPC anywhere: stage1 was the
-# FPC host generator's output until 2026-10-22, when M9Gen.pas was
-# frozen, and this gate said so on stdout until 2026-10-29 (report M4:
-# it read as if a self-install needed FPC).
-# scratch files in a directory of this run's own: fixed /tmp names
+# runtime/gen.  stage3 == stage2 says it reproduces its OWN, compiled
+# from its own output: the fixpoint.  No FPC runs anywhere.  stage1 was
+# the FPC host generator's output until 2026-10-22, when M9Gen.pas was
+# frozen.  This gate said so on stdout until 2026-10-29 (report M4: it
+# read as if a self-install needed FPC).
+# Scratch files go in a directory of this run's own.  Fixed /tmp names
 # collided between two checkouts or two gates run at once (the compiler
-# review's tier 3, 2026-10-22)
+# review's tier 3, 2026-10-22).
 TG=$(mktemp -d "${TMPDIR:-/tmp}/m9gate.XXXXXX")
 trap 'rm -rf "$TG"' EXIT
 set -e
@@ -27,16 +27,16 @@ cd "$(dirname "$0")"
 rm -rf ../gen2 ../gen3
 
 # STAGE 1 IS MADE HERE, not found here.  This gate used to consume a
-# ../gen left behind by whoever last ran gentest, which makes the
-# comparison meaningless in both directions: a stale stage1 reports
+# ../gen left behind by whoever last ran gentest.  That makes the
+# comparison meaningless in both directions.  A stale stage1 reports
 # DIVERGES against an intact fixpoint (that is how this was noticed,
-# after Grib gained a procedure), and -- the dangerous half -- a
-# stale stage1 with a stale stage2 built from it reports a fixpoint
-# that no longer exists.  An artifact nobody produced in this run is
-# not evidence.  lib/gen.sh makes it: it runs the M9 generator, or
+# after Grib gained a procedure).  In the dangerous half, a stale
+# stage1 with a stale stage2 built from it reports a fixpoint that no
+# longer exists.  An artifact nobody produced in this run is not
+# evidence.  lib/gen.sh makes stage 1.  It runs the M9 generator, or
 # skips it when its stamp shows ../gen is byte for byte what the
-# generator writes from these sources -- and it never rewrites ../gen
-# under a gate of another lane that is compiling from it.
+# generator writes from these sources.  It never rewrites ../gen under
+# a gate of another lane that is compiling from it.
 echo "stage1: emitting C with the M9 generator built from runtime/gen ..."
 . ./lib/gen.sh
 

@@ -1,6 +1,6 @@
 DEFINITION MODULE EnumIdxDef ;
 
-(* an array type indexed by an enumeration, exported *)
+(* EnumIdxDef exports an array type indexed by an enumeration. *)
 
 TYPE
   Cover = (Urban, Crop, Forest) ;

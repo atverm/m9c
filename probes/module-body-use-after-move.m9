@@ -1,12 +1,12 @@
 (* EXPECT: use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 35 (par 4.2) *)
-(* The module body tracks ownership as a procedure does (2026-10-10):
-   its variables were no owned candidates there, so `FOR i := 1 TO 3
-   DO Eat (p) END' in a program's body handed on a pointer already
-   freed.  The legal forms first: a fresh value after each move, a
-   move the body does not use again, and a POOL allocation lent to a
-   thread and read after (nobody's to own: the programs' own shape;
-   [SHARABLE] since 2026-10-11, par 6, as a lent record must be).
-   Then the loop. *)
+(* The module body tracks ownership as a procedure does (2026-10-10).
+   Its variables were no owned candidates there, so `FOR i := 1 TO 3 DO
+   Eat (p) END' in a program's body handed on a pointer already freed.
+   The legal forms come first: a fresh value after each move, a move the
+   body does not use again, and a POOL allocation lent to a thread and
+   read after.  That allocation is nobody's to own: the programs' own
+   shape.  It is [SHARABLE] since 2026-10-11, par 6, as a lent record
+   must be.  Then comes the loop. *)
 MODULE m ;
 TYPE
   Node = RECORD v : I64 END ;

@@ -1,7 +1,7 @@
 MODULE R4ReturnRowsRo ;
-(* GfReturnRows with the write one level deeper: rows[0][0][0] is a
-   character of the text the RO parameter lends -- refused, with the
-   rows RETURNed as before *)
+(* This is GfReturnRows with the write one level deeper: rows[0][0][0]
+   is a character of the text the RO parameter lends.  It is refused,
+   with the rows RETURNed as before. *)
 IMPORT Io, Fmt ;
 TYPE
   Strs = SLICE OF STR ;

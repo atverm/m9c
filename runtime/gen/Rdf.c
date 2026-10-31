@@ -24,25 +24,25 @@ struct Rdf_Graph {
 
 typedef struct Rdf_Reader Rdf_Reader;
 struct Rdf_Reader {
-  m9_sl_CHAR src;
+  m9_sl_UTF8 src;
   int64_t pos;
   int64_t line;
   int64_t lineStart;
-  m9_sl_CHAR base;
+  m9_sl_UTF8 base;
   bool turtle;
-  m9_sl_m9_sl_CHAR pfx;
-  m9_sl_m9_sl_CHAR pfxIri;
+  m9_sl_m9_sl_UTF8 pfx;
+  m9_sl_m9_sl_UTF8 pfxIri;
   int64_t npfx;
-  m9_sl_m9_sl_CHAR blab;
-  m9_sl_m9_sl_CHAR bid;
+  m9_sl_m9_sl_UTF8 blab;
+  m9_sl_m9_sl_UTF8 bid;
   int64_t nblab;
   int64_t fresh;
 };
 
 typedef struct Rdf_Prefixes Rdf_Prefixes;
 struct Rdf_Prefixes {
-  m9_sl_m9_sl_CHAR names;
-  m9_sl_m9_sl_CHAR iris;
+  m9_sl_m9_sl_UTF8 names;
+  m9_sl_m9_sl_UTF8 iris;
   m9_sl_BOOL used;
   int64_t n;
 };
@@ -50,17 +50,17 @@ struct Rdf_Prefixes {
 typedef struct Rdf_XState Rdf_XState;
 struct Rdf_XState {
   Rdf_Reader r;
-  m9_sl_m9_sl_CHAR ids;
+  m9_sl_m9_sl_UTF8 ids;
   int64_t nids;
 };
 
 typedef struct Rdf_TermDef Rdf_TermDef;
 struct Rdf_TermDef {
-  m9_sl_CHAR term;
-  m9_sl_CHAR iri;
-  m9_sl_CHAR typeMap;
-  m9_sl_CHAR lang;
-  m9_sl_CHAR container;
+  m9_sl_UTF8 term;
+  m9_sl_UTF8 iri;
+  m9_sl_UTF8 typeMap;
+  m9_sl_UTF8 lang;
+  m9_sl_UTF8 container;
   bool hasLang;
   bool reverse;
   bool isNull;
@@ -70,16 +70,16 @@ typedef struct Rdf_Ctx Rdf_Ctx;
 struct Rdf_Ctx {
   m9_sl_Rdf_TermDef defs;
   int64_t n;
-  m9_sl_CHAR base;
-  m9_sl_CHAR vocab;
-  m9_sl_CHAR lang;
+  m9_sl_UTF8 base;
+  m9_sl_UTF8 vocab;
+  m9_sl_UTF8 lang;
   bool hasVocab;
   bool hasLang;
 };
 
 typedef struct Rdf_Defining Rdf_Defining;
 struct Rdf_Defining {
-  m9_sl_m9_sl_CHAR terms;
+  m9_sl_m9_sl_UTF8 terms;
   m9_sl_I64 state;
   int64_t n;
 };
@@ -87,595 +87,682 @@ struct Rdf_Defining {
 typedef struct Rdf_JState Rdf_JState;
 struct Rdf_JState {
   Rdf_Reader r;
-  m9_sl_CHAR docBase;
+  m9_sl_UTF8 docBase;
 };
 
 typedef struct Rdf_NodeMap Rdf_NodeMap;
 struct Rdf_NodeMap {
-  m9_sl_m9_sl_CHAR ids;
+  m9_sl_m9_sl_UTF8 ids;
   m9_sl_Json_Nodep nodes;
   int64_t n;
 };
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[30] = { 97u, 32u, 112u, 114u, 101u, 100u, 105u, 99u, 97u, 116u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 73u, 82u, 73u };
-static const uint32_t m9s1[23] = { 97u, 32u, 100u, 111u, 116u, 32u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 116u, 114u, 105u, 112u, 108u, 101u };
-static const uint32_t m9s2[36] = { 109u, 111u, 114u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 100u, 111u, 116u, 32u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 116u, 114u, 105u, 112u, 108u, 101u };
-static const uint32_t m9s3[26] = { 97u, 32u, 100u, 111u, 116u, 32u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s4[36] = { 116u, 104u, 101u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 32u, 101u, 110u, 100u, 115u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s5[5] = { 88u, 77u, 76u, 58u, 32u };
-static const uint32_t m9s6[5] = { 88u, 77u, 76u, 58u, 32u };
-static const uint32_t m9s7[3] = { 82u, 68u, 70u };
-static const uint32_t m9s8[25] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 111u, 110u, 32u, 114u, 100u, 102u, 58u, 82u, 68u, 70u, 58u, 32u };
-static const uint32_t m9s9[25] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 105u, 110u, 32u, 114u, 100u, 102u, 58u, 82u, 68u, 70u };
-static const uint32_t m9s10[6] = { 74u, 83u, 79u, 78u, 58u, 32u };
-static const uint32_t m9s11[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s12[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s13[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s14[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s15[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s16[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s17[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s18[2] = { 95u, 58u };
-static const uint32_t m9s19[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s20[2] = { 95u, 58u };
-static const uint32_t m9s21[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s22[3] = { 110u, 105u, 108u };
-static const uint32_t m9s23[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s24[3] = { 64u, 105u, 100u };
-static const uint32_t m9s25[3] = { 64u, 105u, 100u };
-static const uint32_t m9s26[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s27[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s28[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s29[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s30[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s31[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s32[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s33[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s34[7] = { 114u, 100u, 102u, 58u, 82u, 68u, 70u };
-static const uint32_t m9s35[9] = { 120u, 109u, 108u, 110u, 115u, 58u, 114u, 100u, 102u };
-static const uint32_t m9s36[8] = { 120u, 109u, 108u, 110u, 115u, 58u, 110u, 115u };
-static const uint32_t m9s37[15] = { 114u, 100u, 102u, 58u, 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s38[10] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s39[9] = { 114u, 100u, 102u, 58u, 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s40[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s41[2] = { 110u, 115u };
-static const uint32_t m9s42[1] = { 58u };
-static const uint32_t m9s43[12] = { 114u, 100u, 102u, 58u, 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s44[10] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s45[8] = { 120u, 109u, 108u, 58u, 108u, 97u, 110u, 103u };
-static const uint32_t m9s46[12] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s47[2] = { 32u, 46u };
-static const uint32_t m9s48[3] = { 114u, 100u, 102u };
-static const uint32_t m9s49[4] = { 114u, 100u, 102u, 115u };
-static const uint32_t m9s50[3] = { 120u, 115u, 100u };
-static const uint32_t m9s51[3] = { 111u, 119u, 108u };
-static const uint32_t m9s52[2] = { 32u, 59u };
-static const uint32_t m9s53[4] = { 32u, 32u, 32u, 32u };
-static const uint32_t m9s54[3] = { 32u, 44u, 32u };
-static const uint32_t m9s55[2] = { 32u, 46u };
-static const uint32_t m9s56[8] = { 64u, 112u, 114u, 101u, 102u, 105u, 120u, 32u };
-static const uint32_t m9s57[2] = { 58u, 32u };
-static const uint32_t m9s58[2] = { 32u, 46u };
-static const uint32_t m9s59[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s60[20] = { 95u, 126u, 46u, 45u, 33u, 36u, 38u, 39u, 40u, 41u, 42u, 43u, 44u, 59u, 61u, 47u, 63u, 35u, 64u, 37u };
-static const uint32_t m9s61[29] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 111u, 116u, 104u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 92u, 117u, 32u, 111u, 114u, 32u, 92u, 85u };
-static const uint32_t m9s62[35] = { 97u, 32u, 104u, 101u, 120u, 32u, 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 97u, 32u, 92u, 117u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
-static const uint32_t m9s63[29] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 110u, 97u, 109u, 105u, 110u, 103u, 32u, 110u, 111u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u };
-static const uint32_t m9s64[1] = { 60u };
-static const uint32_t m9s65[17] = { 97u, 110u, 32u, 73u, 82u, 73u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s66[31] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 97u, 110u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
-static const uint32_t m9s67[3] = { 46u, 46u, 47u };
-static const uint32_t m9s68[2] = { 46u, 47u };
-static const uint32_t m9s69[3] = { 47u, 46u, 47u };
-static const uint32_t m9s70[2] = { 47u, 46u };
-static const uint32_t m9s71[1] = { 47u };
-static const uint32_t m9s72[4] = { 47u, 46u, 46u, 47u };
-static const uint32_t m9s73[3] = { 47u, 46u, 46u };
-static const uint32_t m9s74[3] = { 47u, 46u, 46u };
-static const uint32_t m9s75[1] = { 47u };
-static const uint32_t m9s76[1] = { 46u };
-static const uint32_t m9s77[2] = { 46u, 46u };
-static const uint32_t m9s78[1] = { 47u };
-static const uint32_t m9s79[1] = { 58u };
-static const uint32_t m9s80[2] = { 47u, 47u };
-static const uint32_t m9s81[1] = { 63u };
-static const uint32_t m9s82[1] = { 35u };
-static const uint32_t m9s83[27] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 105u, 110u, 32u, 78u, 45u, 84u, 114u, 105u, 112u, 108u, 101u, 115u };
-static const uint32_t m9s84[40] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u };
-static const uint32_t m9s85[22] = { 97u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 110u, 97u, 109u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s86[29] = { 97u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 110u, 97u, 109u, 101u, 32u, 101u, 110u, 100u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 100u, 111u, 116u };
-static const uint32_t m9s87[7] = { 97u, 32u, 99u, 111u, 108u, 111u, 110u };
-static const uint32_t m9s88[34] = { 97u, 32u, 37u, 32u, 110u, 111u, 116u, 32u, 102u, 111u, 108u, 108u, 111u, 119u, 101u, 100u, 32u, 98u, 121u, 32u, 116u, 119u, 111u, 32u, 104u, 101u, 120u, 32u, 100u, 105u, 103u, 105u, 116u, 115u };
-static const uint32_t m9s89[35] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 97u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 110u, 97u, 109u, 101u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
-static const uint32_t m9s90[11] = { 116u, 104u, 101u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u };
-static const uint32_t m9s91[17] = { 58u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
-static const uint32_t m9s92[1] = { 98u };
-static const uint32_t m9s93[27] = { 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s94[34] = { 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 101u, 110u, 100u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 100u, 111u, 116u };
-static const uint32_t m9s95[31] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
-static const uint32_t m9s96[27] = { 97u, 32u, 115u, 105u, 110u, 103u, 108u, 101u, 32u, 113u, 117u, 111u, 116u, 101u, 32u, 105u, 110u, 32u, 78u, 45u, 84u, 114u, 105u, 112u, 108u, 101u, 115u };
-static const uint32_t m9s97[19] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s98[28] = { 97u, 32u, 108u, 105u, 110u, 101u, 32u, 101u, 110u, 100u, 32u, 105u, 110u, 32u, 97u, 32u, 115u, 104u, 111u, 114u, 116u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s99[23] = { 97u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 116u, 97u, 103u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s100[1] = { 45u };
-static const uint32_t m9s101[26] = { 97u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 115u, 117u, 98u, 116u, 97u, 103u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s102[1] = { 46u };
-static const uint32_t m9s103[26] = { 97u, 110u, 32u, 101u, 120u, 112u, 111u, 110u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 100u, 105u, 103u, 105u, 116u, 115u };
-static const uint32_t m9s104[17] = { 97u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s105[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s106[7] = { 100u, 101u, 99u, 105u, 109u, 97u, 108u };
-static const uint32_t m9s107[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
-static const uint32_t m9s108[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s109[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s110[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s111[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s112[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s113[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s114[15] = { 97u, 32u, 116u, 101u, 114u, 109u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s115[1] = { 40u };
-static const uint32_t m9s116[3] = { 110u, 105u, 108u };
-static const uint32_t m9s117[23] = { 97u, 32u, 99u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s118[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s119[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s120[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s121[3] = { 110u, 105u, 108u };
-static const uint32_t m9s122[1] = { 91u };
-static const uint32_t m9s123[38] = { 97u, 32u, 93u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s124[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s125[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s126[18] = { 97u, 110u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s127[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s128[20] = { 97u, 32u, 112u, 114u, 101u, 100u, 105u, 99u, 97u, 116u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s129[7] = { 64u, 112u, 114u, 101u, 102u, 105u, 120u };
-static const uint32_t m9s130[6] = { 80u, 82u, 69u, 70u, 73u, 88u };
-static const uint32_t m9s131[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s132[17] = { 97u, 32u, 100u, 111u, 116u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s133[4] = { 66u, 65u, 83u, 69u };
-static const uint32_t m9s134[19] = { 97u, 32u, 100u, 111u, 116u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 64u, 112u, 114u, 101u, 102u, 105u, 120u };
-static const uint32_t m9s135[18] = { 97u, 32u, 115u, 117u, 98u, 106u, 101u, 99u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s136[15] = { 97u, 32u, 116u, 101u, 114u, 109u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s137[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 65u, 66u, 67u, 68u, 69u, 70u };
-static const uint32_t m9s138[4] = { 92u, 117u, 48u, 48u };
-static const uint32_t m9s139[2] = { 95u, 58u };
-static const uint32_t m9s140[2] = { 92u, 34u };
-static const uint32_t m9s141[2] = { 92u, 92u };
-static const uint32_t m9s142[2] = { 92u, 110u };
-static const uint32_t m9s143[2] = { 92u, 114u };
-static const uint32_t m9s144[2] = { 92u, 116u };
-static const uint32_t m9s145[4] = { 92u, 117u, 48u, 48u };
-static const uint32_t m9s146[2] = { 94u, 94u };
-static const uint32_t m9s147[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
-static const uint32_t m9s148[7] = { 100u, 101u, 99u, 105u, 109u, 97u, 108u };
-static const uint32_t m9s149[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s150[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s151[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s152[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s153[3] = { 34u, 34u, 34u };
-static const uint32_t m9s154[2] = { 92u, 34u };
-static const uint32_t m9s155[2] = { 92u, 92u };
-static const uint32_t m9s156[2] = { 92u, 116u };
-static const uint32_t m9s157[4] = { 92u, 117u, 48u, 48u };
-static const uint32_t m9s158[3] = { 34u, 34u, 34u };
-static const uint32_t m9s159[2] = { 94u, 94u };
-static const uint32_t m9s160[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s161[2] = { 95u, 58u };
-static const uint32_t m9s162[3] = { 82u, 68u, 70u };
-static const uint32_t m9s163[2] = { 73u, 68u };
-static const uint32_t m9s164[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s165[9] = { 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u };
-static const uint32_t m9s166[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s167[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s168[8] = { 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s169[9] = { 97u, 98u, 111u, 117u, 116u, 69u, 97u, 99u, 104u };
-static const uint32_t m9s170[15] = { 97u, 98u, 111u, 117u, 116u, 69u, 97u, 99u, 104u, 80u, 114u, 101u, 102u, 105u, 120u };
-static const uint32_t m9s171[5] = { 98u, 97u, 103u, 73u, 68u };
-static const uint32_t m9s172[4] = { 98u, 97u, 115u, 101u };
-static const uint32_t m9s173[4] = { 98u, 97u, 115u, 101u };
-static const uint32_t m9s174[45] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 120u, 109u, 108u, 58u, 98u, 97u, 115u, 101u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u };
-static const uint32_t m9s175[4] = { 108u, 97u, 110u, 103u };
-static const uint32_t m9s176[4] = { 108u, 97u, 110u, 103u };
-static const uint32_t m9s177[42] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u, 58u, 32u };
-static const uint32_t m9s178[27] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s179[40] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u, 32u, 97u, 103u, 97u, 105u, 110u, 115u, 116u };
-static const uint32_t m9s180[1] = { 35u };
-static const uint32_t m9s181[19] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 117u, 115u, 101u, 100u, 32u, 116u, 119u, 105u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s182[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s183[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s184[2] = { 108u, 105u };
-static const uint32_t m9s185[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s186[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s187[28] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u };
-static const uint32_t m9s188[2] = { 108u, 105u };
-static const uint32_t m9s189[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s190[22] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s191[32] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s192[2] = { 73u, 68u };
-static const uint32_t m9s193[2] = { 73u, 68u };
-static const uint32_t m9s194[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s195[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s196[31] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s197[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s198[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s199[53] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 111u, 102u, 32u, 114u, 100u, 102u, 58u, 73u, 68u, 44u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 97u, 110u, 100u, 32u, 114u, 100u, 102u, 58u, 97u, 98u, 111u, 117u, 116u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s200[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s201[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s202[3] = { 120u, 109u, 108u };
-static const uint32_t m9s203[34] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s204[2] = { 73u, 68u };
-static const uint32_t m9s205[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s206[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s207[46] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 97u, 109u, 111u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 115u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s208[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s209[9] = { 83u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s210[7] = { 115u, 117u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s211[9] = { 112u, 114u, 101u, 100u, 105u, 99u, 97u, 116u, 101u };
-static const uint32_t m9s212[6] = { 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s213[32] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s214[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s215[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s216[26] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s217[2] = { 108u, 105u };
-static const uint32_t m9s218[1] = { 95u };
-static const uint32_t m9s219[3] = { 120u, 109u, 108u };
-static const uint32_t m9s220[34] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s221[2] = { 73u, 68u };
-static const uint32_t m9s222[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s223[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s224[8] = { 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s225[9] = { 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u };
-static const uint32_t m9s226[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s227[2] = { 108u, 105u };
-static const uint32_t m9s228[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s229[3] = { 82u, 68u, 70u };
-static const uint32_t m9s230[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s231[22] = { 32u, 111u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s232[36] = { 98u, 111u, 116u, 104u, 32u, 114u, 100u, 102u, 58u, 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u, 32u, 97u, 110u, 100u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s233[41] = { 114u, 100u, 102u, 58u, 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 111u, 116u, 104u, 101u, 114u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s234[8] = { 82u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s235[10] = { 67u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s236[30] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 105u, 110u, 32u, 97u, 32u, 99u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s237[3] = { 110u, 105u, 108u };
-static const uint32_t m9s238[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s239[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s240[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s241[3] = { 110u, 105u, 108u };
-static const uint32_t m9s242[10] = { 88u, 77u, 76u, 76u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s243[36] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s244[51] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s245[36] = { 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s246[31] = { 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s247[32] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 114u, 100u, 102u, 58u, 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s248[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s249[30] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s250[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s251[31] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s252[39] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u };
-static const uint32_t m9s253[2] = { 73u, 68u };
-static const uint32_t m9s254[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s255[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s256[5] = { 38u, 97u, 109u, 112u, 59u };
-static const uint32_t m9s257[4] = { 38u, 108u, 116u, 59u };
-static const uint32_t m9s258[4] = { 38u, 103u, 116u, 59u };
-static const uint32_t m9s259[5] = { 38u, 35u, 120u, 68u, 59u };
-static const uint32_t m9s260[5] = { 38u, 97u, 109u, 112u, 59u };
-static const uint32_t m9s261[4] = { 38u, 108u, 116u, 59u };
-static const uint32_t m9s262[6] = { 38u, 113u, 117u, 111u, 116u, 59u };
-static const uint32_t m9s263[5] = { 38u, 35u, 120u, 57u, 59u };
-static const uint32_t m9s264[5] = { 38u, 35u, 120u, 65u, 59u };
-static const uint32_t m9s265[5] = { 38u, 35u, 120u, 68u, 59u };
-static const uint32_t m9s266[8] = { 32u, 120u, 109u, 108u, 110u, 115u, 61u, 34u };
-static const uint32_t m9s267[7] = { 32u, 120u, 109u, 108u, 110u, 115u, 58u };
-static const uint32_t m9s268[2] = { 61u, 34u };
-static const uint32_t m9s269[2] = { 61u, 34u };
-static const uint32_t m9s270[2] = { 60u, 47u };
-static const uint32_t m9s271[2] = { 58u, 32u };
-static const uint32_t m9s272[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s273[3] = { 64u, 105u, 100u };
-static const uint32_t m9s274[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s275[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s276[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s277[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s278[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s279[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s280[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s281[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s282[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s283[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s284[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s285[8] = { 64u, 100u, 101u, 102u, 97u, 117u, 108u, 116u };
-static const uint32_t m9s286[6] = { 64u, 101u, 109u, 98u, 101u, 100u };
-static const uint32_t m9s287[9] = { 64u, 101u, 120u, 112u, 108u, 105u, 99u, 105u, 116u };
-static const uint32_t m9s288[12] = { 64u, 111u, 109u, 105u, 116u, 68u, 101u, 102u, 97u, 117u, 108u, 116u };
-static const uint32_t m9s289[2] = { 95u, 58u };
-static const uint32_t m9s290[1] = { 95u };
-static const uint32_t m9s291[2] = { 47u, 47u };
-static const uint32_t m9s292[18] = { 99u, 121u, 99u, 108u, 105u, 99u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s293[20] = { 107u, 101u, 121u, 119u, 111u, 114u, 100u, 32u, 114u, 101u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s294[23] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s295[13] = { 97u, 110u, 32u, 101u, 109u, 112u, 116u, 121u, 32u, 116u, 101u, 114u, 109u };
-static const uint32_t m9s296[3] = { 64u, 105u, 100u };
-static const uint32_t m9s297[3] = { 64u, 105u, 100u };
-static const uint32_t m9s298[3] = { 64u, 105u, 100u };
-static const uint32_t m9s299[23] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s300[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s301[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s302[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s303[3] = { 64u, 105u, 100u };
-static const uint32_t m9s304[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s305[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s306[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s307[3] = { 64u, 105u, 100u };
-static const uint32_t m9s308[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u };
-static const uint32_t m9s309[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s310[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s311[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s312[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s313[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s314[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s315[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s316[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u };
-static const uint32_t m9s317[3] = { 64u, 105u, 100u };
-static const uint32_t m9s318[3] = { 64u, 105u, 100u };
-static const uint32_t m9s319[3] = { 64u, 105u, 100u };
-static const uint32_t m9s320[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s321[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s322[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s323[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 107u, 101u, 121u, 119u, 111u, 114u, 100u, 32u, 97u, 108u, 105u, 97u, 115u };
-static const uint32_t m9s324[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s325[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s326[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s327[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s328[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s329[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s330[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s331[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s332[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s333[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s334[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s335[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s336[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s337[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s338[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 58u, 32u };
-static const uint32_t m9s339[27] = { 97u, 32u, 114u, 101u, 109u, 111u, 116u, 101u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u, 32u, 105u, 115u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u };
-static const uint32_t m9s340[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s341[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s342[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s343[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 98u, 97u, 115u, 101u, 32u, 73u, 82u, 73u };
-static const uint32_t m9s344[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 98u, 97u, 115u, 101u, 32u, 73u, 82u, 73u };
-static const uint32_t m9s345[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s346[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s347[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 111u, 99u, 97u, 98u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s348[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s349[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s350[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 101u, 102u, 97u, 117u, 108u, 116u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s351[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s352[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s353[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s354[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s355[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s356[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s357[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s358[3] = { 64u, 105u, 100u };
-static const uint32_t m9s359[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s360[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s361[3] = { 64u, 105u, 100u };
-static const uint32_t m9s362[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s363[3] = { 64u, 105u, 100u };
-static const uint32_t m9s364[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s365[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s366[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s367[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s368[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s369[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s370[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s371[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s372[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
-static const uint32_t m9s373[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s374[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s375[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s376[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s377[28] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 109u, 97u, 112u };
-static const uint32_t m9s378[18] = { 99u, 111u, 108u, 108u, 105u, 100u, 105u, 110u, 103u, 32u, 107u, 101u, 121u, 119u, 111u, 114u, 100u, 115u };
-static const uint32_t m9s379[3] = { 64u, 105u, 100u };
-static const uint32_t m9s380[17] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s381[3] = { 64u, 105u, 100u };
-static const uint32_t m9s382[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s383[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s384[18] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s385[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s386[18] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s387[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s388[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s389[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s390[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s391[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s392[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s393[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s394[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s395[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 45u, 116u, 97u, 103u, 103u, 101u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s396[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s397[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s398[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 105u, 110u, 100u, 101u, 120u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s399[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s400[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s401[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s402[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
-static const uint32_t m9s403[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
-static const uint32_t m9s404[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s405[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s406[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s407[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s408[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s409[22] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s410[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s411[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s412[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s413[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s414[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s415[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s416[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s417[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s418[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 109u, 97u, 112u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s419[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s420[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s421[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s422[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s423[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s424[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s425[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s426[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s427[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s428[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s429[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s430[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s431[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s432[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s433[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s434[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s435[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s436[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s437[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s438[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s439[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s440[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s441[29] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 45u, 116u, 97u, 103u, 103u, 101u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s442[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s443[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s444[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s445[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s446[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s447[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s448[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s449[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s450[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s451[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s452[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s453[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 115u, 101u, 116u, 32u, 111u, 114u, 32u, 108u, 105u, 115u, 116u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s454[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s455[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s456[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s457[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s458[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s459[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s460[3] = { 64u, 105u, 100u };
-static const uint32_t m9s461[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s462[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s463[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s464[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s465[2] = { 95u, 58u };
-static const uint32_t m9s466[2] = { 95u, 58u };
-static const uint32_t m9s467[3] = { 64u, 105u, 100u };
-static const uint32_t m9s468[3] = { 64u, 105u, 100u };
-static const uint32_t m9s469[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s470[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s471[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s472[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s473[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s474[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s475[3] = { 64u, 105u, 100u };
-static const uint32_t m9s476[3] = { 64u, 105u, 100u };
-static const uint32_t m9s477[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s478[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s479[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s480[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s481[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s482[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s483[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s484[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s485[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s486[3] = { 64u, 105u, 100u };
-static const uint32_t m9s487[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s488[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s489[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s490[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s491[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s492[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s493[1] = { 48u };
-static const uint32_t m9s494[5] = { 48u, 46u, 48u, 69u, 48u };
-static const uint32_t m9s495[1] = { 46u };
-static const uint32_t m9s496[1] = { 48u };
-static const uint32_t m9s497[1] = { 45u };
-static const uint32_t m9s498[1] = { 69u };
-static const uint32_t m9s499[5] = { 48u, 46u, 48u, 69u, 48u };
-static const uint32_t m9s500[3] = { 64u, 105u, 100u };
-static const uint32_t m9s501[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s502[3] = { 64u, 105u, 100u };
-static const uint32_t m9s503[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s504[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s505[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s506[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s507[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s508[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s509[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s510[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s511[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
-static const uint32_t m9s512[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s513[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s514[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s515[3] = { 110u, 105u, 108u };
-static const uint32_t m9s516[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s517[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s518[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s519[3] = { 110u, 105u, 108u };
-static const uint32_t m9s520[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s521[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s522[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s523[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s524[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s525[4] = { 76u, 105u, 115u, 116u };
-static const uint32_t m9s526[3] = { 64u, 105u, 100u };
-static const uint32_t m9s527[2] = { 95u, 58u };
-static const uint32_t m9s528[3] = { 64u, 105u, 100u };
-static const uint32_t m9s529[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s530[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s531[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s532[3] = { 110u, 105u, 108u };
-static const uint32_t m9s533[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s534[7] = { 47u, 35u, 58u, 63u, 64u, 91u, 93u };
-static const uint32_t m9s535[1] = { 58u };
-static const uint32_t m9s536[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s537[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s538[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s539[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s540[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s541[3] = { 64u, 105u, 100u };
-static const uint32_t m9s542[3] = { 64u, 105u, 100u };
-static const uint32_t m9s543[3] = { 64u, 105u, 100u };
-static const uint32_t m9s544[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s545[3] = { 64u, 105u, 100u };
-static const uint32_t m9s546[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s547[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s548[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s549[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s550[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s551[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s552[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s553[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s554[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s555[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s556[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s557[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s558[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s559[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s560[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s561[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s562[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint8_t m9s0[30] = { 97, 32, 112, 114, 101, 100, 105, 99, 97, 116, 101, 32, 116, 104, 97, 116, 32, 105, 115, 32, 110, 111, 116, 32, 97, 110, 32, 73, 82, 73 };
+static const uint8_t m9s1[23] = { 97, 32, 100, 111, 116, 32, 101, 110, 100, 105, 110, 103, 32, 116, 104, 101, 32, 116, 114, 105, 112, 108, 101 };
+static const uint8_t m9s2[36] = { 109, 111, 114, 101, 32, 97, 102, 116, 101, 114, 32, 116, 104, 101, 32, 100, 111, 116, 32, 101, 110, 100, 105, 110, 103, 32, 116, 104, 101, 32, 116, 114, 105, 112, 108, 101 };
+static const uint8_t m9s3[26] = { 97, 32, 100, 111, 116, 32, 101, 110, 100, 105, 110, 103, 32, 116, 104, 101, 32, 115, 116, 97, 116, 101, 109, 101, 110, 116 };
+static const uint8_t m9s4[36] = { 116, 104, 101, 32, 100, 111, 99, 117, 109, 101, 110, 116, 32, 101, 110, 100, 115, 32, 105, 110, 115, 105, 100, 101, 32, 97, 32, 115, 116, 97, 116, 101, 109, 101, 110, 116 };
+static const uint8_t m9s5[5] = { 88, 77, 76, 58, 32 };
+static const uint8_t m9s6[5] = { 88, 77, 76, 58, 32 };
+static const uint8_t m9s7[3] = { 82, 68, 70 };
+static const uint8_t m9s8[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s9[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s10[25] = { 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 111, 110, 32, 114, 100, 102, 58, 82, 68, 70, 58, 32 };
+static const uint8_t m9s11[25] = { 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 100, 97, 116, 97, 32, 105, 110, 32, 114, 100, 102, 58, 82, 68, 70 };
+static const uint8_t m9s12[6] = { 74, 83, 79, 78, 58, 32 };
+static const uint8_t m9s13[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s14[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s15[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s16[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s17[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s18[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s19[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s20[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s21[5] = { 102, 105, 114, 115, 116 };
+static const uint8_t m9s22[2] = { 95, 58 };
+static const uint8_t m9s23[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s24[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s25[2] = { 95, 58 };
+static const uint8_t m9s26[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s27[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s28[3] = { 110, 105, 108 };
+static const uint8_t m9s29[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s30[3] = { 64, 105, 100 };
+static const uint8_t m9s31[3] = { 64, 105, 100 };
+static const uint8_t m9s32[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s33[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s34[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s35[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s36[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s37[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s38[8] = { 64, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s39[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s40[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s41[7] = { 114, 100, 102, 58, 82, 68, 70 };
+static const uint8_t m9s42[9] = { 120, 109, 108, 110, 115, 58, 114, 100, 102 };
+static const uint8_t m9s43[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s44[8] = { 120, 109, 108, 110, 115, 58, 110, 115 };
+static const uint8_t m9s45[15] = { 114, 100, 102, 58, 68, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110 };
+static const uint8_t m9s46[10] = { 114, 100, 102, 58, 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s47[9] = { 114, 100, 102, 58, 97, 98, 111, 117, 116 };
+static const uint8_t m9s48[4] = { 114, 100, 102, 58 };
+static const uint8_t m9s49[2] = { 110, 115 };
+static const uint8_t m9s50[1] = { 58 };
+static const uint8_t m9s51[12] = { 114, 100, 102, 58, 114, 101, 115, 111, 117, 114, 99, 101 };
+static const uint8_t m9s52[10] = { 114, 100, 102, 58, 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s53[8] = { 120, 109, 108, 58, 108, 97, 110, 103 };
+static const uint8_t m9s54[39] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s55[12] = { 114, 100, 102, 58, 100, 97, 116, 97, 116, 121, 112, 101 };
+static const uint8_t m9s56[2] = { 32, 46 };
+static const uint8_t m9s57[3] = { 114, 100, 102 };
+static const uint8_t m9s58[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s59[4] = { 114, 100, 102, 115 };
+static const uint8_t m9s60[37] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 48, 49, 47, 114, 100, 102, 45, 115, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s61[3] = { 120, 115, 100 };
+static const uint8_t m9s62[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s63[3] = { 111, 119, 108 };
+static const uint8_t m9s64[30] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 50, 47, 48, 55, 47, 111, 119, 108, 35 };
+static const uint8_t m9s65[2] = { 32, 59 };
+static const uint8_t m9s66[4] = { 32, 32, 32, 32 };
+static const uint8_t m9s67[3] = { 32, 44, 32 };
+static const uint8_t m9s68[2] = { 32, 46 };
+static const uint8_t m9s69[8] = { 64, 112, 114, 101, 102, 105, 120, 32 };
+static const uint8_t m9s70[2] = { 58, 32 };
+static const uint8_t m9s71[2] = { 32, 46 };
+static const uint8_t m9s72[9] = { 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s73[20] = { 95, 126, 46, 45, 33, 36, 38, 39, 40, 41, 42, 43, 44, 59, 61, 47, 63, 35, 64, 37 };
+static const uint8_t m9s74[29] = { 97, 110, 32, 101, 115, 99, 97, 112, 101, 32, 111, 116, 104, 101, 114, 32, 116, 104, 97, 110, 32, 92, 117, 32, 111, 114, 32, 92, 85 };
+static const uint8_t m9s75[35] = { 97, 32, 104, 101, 120, 32, 100, 105, 103, 105, 116, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32, 105, 110, 32, 97, 32, 92, 117, 32, 101, 115, 99, 97, 112, 101 };
+static const uint8_t m9s76[29] = { 97, 110, 32, 101, 115, 99, 97, 112, 101, 32, 110, 97, 109, 105, 110, 103, 32, 110, 111, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114 };
+static const uint8_t m9s77[1] = { 60 };
+static const uint8_t m9s78[17] = { 97, 110, 32, 73, 82, 73, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s79[31] = { 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 97, 110, 32, 73, 82, 73, 32, 109, 97, 121, 32, 110, 111, 116, 32, 104, 111, 108, 100 };
+static const uint8_t m9s80[3] = { 46, 46, 47 };
+static const uint8_t m9s81[2] = { 46, 47 };
+static const uint8_t m9s82[3] = { 47, 46, 47 };
+static const uint8_t m9s83[2] = { 47, 46 };
+static const uint8_t m9s84[1] = { 47 };
+static const uint8_t m9s85[4] = { 47, 46, 46, 47 };
+static const uint8_t m9s86[3] = { 47, 46, 46 };
+static const uint8_t m9s87[3] = { 47, 46, 46 };
+static const uint8_t m9s88[1] = { 47 };
+static const uint8_t m9s89[1] = { 46 };
+static const uint8_t m9s90[2] = { 46, 46 };
+static const uint8_t m9s91[1] = { 47 };
+static const uint8_t m9s92[1] = { 58 };
+static const uint8_t m9s93[2] = { 47, 47 };
+static const uint8_t m9s94[1] = { 63 };
+static const uint8_t m9s95[1] = { 35 };
+static const uint8_t m9s96[27] = { 97, 32, 114, 101, 108, 97, 116, 105, 118, 101, 32, 73, 82, 73, 32, 105, 110, 32, 78, 45, 84, 114, 105, 112, 108, 101, 115 };
+static const uint8_t m9s97[40] = { 97, 32, 114, 101, 108, 97, 116, 105, 118, 101, 32, 73, 82, 73, 32, 97, 110, 100, 32, 110, 111, 32, 98, 97, 115, 101, 32, 116, 111, 32, 114, 101, 115, 111, 108, 118, 101, 32, 105, 116 };
+static const uint8_t m9s98[22] = { 97, 32, 112, 114, 101, 102, 105, 120, 32, 110, 97, 109, 101, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s99[29] = { 97, 32, 112, 114, 101, 102, 105, 120, 32, 110, 97, 109, 101, 32, 101, 110, 100, 115, 32, 119, 105, 116, 104, 32, 97, 32, 100, 111, 116 };
+static const uint8_t m9s100[7] = { 97, 32, 99, 111, 108, 111, 110 };
+static const uint8_t m9s101[34] = { 97, 32, 37, 32, 110, 111, 116, 32, 102, 111, 108, 108, 111, 119, 101, 100, 32, 98, 121, 32, 116, 119, 111, 32, 104, 101, 120, 32, 100, 105, 103, 105, 116, 115 };
+static const uint8_t m9s102[35] = { 97, 110, 32, 101, 115, 99, 97, 112, 101, 32, 97, 32, 108, 111, 99, 97, 108, 32, 110, 97, 109, 101, 32, 109, 97, 121, 32, 110, 111, 116, 32, 104, 111, 108, 100 };
+static const uint8_t m9s103[11] = { 116, 104, 101, 32, 112, 114, 101, 102, 105, 120, 32 };
+static const uint8_t m9s104[17] = { 58, 32, 105, 115, 32, 110, 111, 116, 32, 100, 101, 99, 108, 97, 114, 101, 100 };
+static const uint8_t m9s105[1] = { 98 };
+static const uint8_t m9s106[27] = { 97, 32, 98, 108, 97, 110, 107, 32, 110, 111, 100, 101, 32, 108, 97, 98, 101, 108, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s107[34] = { 97, 32, 98, 108, 97, 110, 107, 32, 110, 111, 100, 101, 32, 108, 97, 98, 101, 108, 32, 101, 110, 100, 115, 32, 119, 105, 116, 104, 32, 97, 32, 100, 111, 116 };
+static const uint8_t m9s108[31] = { 97, 110, 32, 101, 115, 99, 97, 112, 101, 32, 97, 32, 115, 116, 114, 105, 110, 103, 32, 109, 97, 121, 32, 110, 111, 116, 32, 104, 111, 108, 100 };
+static const uint8_t m9s109[27] = { 97, 32, 115, 105, 110, 103, 108, 101, 32, 113, 117, 111, 116, 101, 32, 105, 110, 32, 78, 45, 84, 114, 105, 112, 108, 101, 115 };
+static const uint8_t m9s110[19] = { 97, 32, 115, 116, 114, 105, 110, 103, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s111[28] = { 97, 32, 108, 105, 110, 101, 32, 101, 110, 100, 32, 105, 110, 32, 97, 32, 115, 104, 111, 114, 116, 32, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s112[23] = { 97, 32, 108, 97, 110, 103, 117, 97, 103, 101, 32, 116, 97, 103, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s113[1] = { 45 };
+static const uint8_t m9s114[26] = { 97, 32, 108, 97, 110, 103, 117, 97, 103, 101, 32, 115, 117, 98, 116, 97, 103, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s115[1] = { 46 };
+static const uint8_t m9s116[26] = { 97, 110, 32, 101, 120, 112, 111, 110, 101, 110, 116, 32, 119, 105, 116, 104, 111, 117, 116, 32, 100, 105, 103, 105, 116, 115 };
+static const uint8_t m9s117[17] = { 97, 32, 110, 117, 109, 98, 101, 114, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s118[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s119[6] = { 100, 111, 117, 98, 108, 101 };
+static const uint8_t m9s120[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s121[7] = { 100, 101, 99, 105, 109, 97, 108 };
+static const uint8_t m9s122[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s123[7] = { 105, 110, 116, 101, 103, 101, 114 };
+static const uint8_t m9s124[39] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s125[4] = { 116, 114, 117, 101 };
+static const uint8_t m9s126[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s127[7] = { 98, 111, 111, 108, 101, 97, 110 };
+static const uint8_t m9s128[4] = { 116, 114, 117, 101 };
+static const uint8_t m9s129[5] = { 102, 97, 108, 115, 101 };
+static const uint8_t m9s130[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s131[7] = { 98, 111, 111, 108, 101, 97, 110 };
+static const uint8_t m9s132[5] = { 102, 97, 108, 115, 101 };
+static const uint8_t m9s133[15] = { 97, 32, 116, 101, 114, 109, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s134[1] = { 40 };
+static const uint8_t m9s135[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s136[3] = { 110, 105, 108 };
+static const uint8_t m9s137[23] = { 97, 32, 99, 111, 108, 108, 101, 99, 116, 105, 111, 110, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s138[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s139[4] = { 114, 101, 115, 116 };
+static const uint8_t m9s140[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s141[5] = { 102, 105, 114, 115, 116 };
+static const uint8_t m9s142[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s143[4] = { 114, 101, 115, 116 };
+static const uint8_t m9s144[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s145[3] = { 110, 105, 108 };
+static const uint8_t m9s146[1] = { 91 };
+static const uint8_t m9s147[38] = { 97, 32, 93, 32, 99, 108, 111, 115, 105, 110, 103, 32, 97, 32, 98, 108, 97, 110, 107, 32, 110, 111, 100, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 108, 105, 115, 116 };
+static const uint8_t m9s148[4] = { 116, 114, 117, 101 };
+static const uint8_t m9s149[5] = { 102, 97, 108, 115, 101 };
+static const uint8_t m9s150[18] = { 97, 110, 32, 111, 98, 106, 101, 99, 116, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s151[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s152[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s153[20] = { 97, 32, 112, 114, 101, 100, 105, 99, 97, 116, 101, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s154[7] = { 64, 112, 114, 101, 102, 105, 120 };
+static const uint8_t m9s155[6] = { 80, 82, 69, 70, 73, 88 };
+static const uint8_t m9s156[5] = { 64, 98, 97, 115, 101 };
+static const uint8_t m9s157[17] = { 97, 32, 100, 111, 116, 32, 97, 102, 116, 101, 114, 32, 64, 98, 97, 115, 101 };
+static const uint8_t m9s158[4] = { 66, 65, 83, 69 };
+static const uint8_t m9s159[19] = { 97, 32, 100, 111, 116, 32, 97, 102, 116, 101, 114, 32, 64, 112, 114, 101, 102, 105, 120 };
+static const uint8_t m9s160[18] = { 97, 32, 115, 117, 98, 106, 101, 99, 116, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s161[15] = { 97, 32, 116, 101, 114, 109, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s162[16] = { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70 };
+static const uint8_t m9s163[4] = { 92, 117, 48, 48 };
+static const uint8_t m9s164[2] = { 95, 58 };
+static const uint8_t m9s165[2] = { 92, 34 };
+static const uint8_t m9s166[2] = { 92, 92 };
+static const uint8_t m9s167[2] = { 92, 110 };
+static const uint8_t m9s168[2] = { 92, 114 };
+static const uint8_t m9s169[2] = { 92, 116 };
+static const uint8_t m9s170[4] = { 92, 117, 48, 48 };
+static const uint8_t m9s171[39] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s172[2] = { 94, 94 };
+static const uint8_t m9s173[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s174[7] = { 105, 110, 116, 101, 103, 101, 114 };
+static const uint8_t m9s175[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s176[7] = { 100, 101, 99, 105, 109, 97, 108 };
+static const uint8_t m9s177[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s178[6] = { 100, 111, 117, 98, 108, 101 };
+static const uint8_t m9s179[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s180[7] = { 98, 111, 111, 108, 101, 97, 110 };
+static const uint8_t m9s181[4] = { 116, 114, 117, 101 };
+static const uint8_t m9s182[5] = { 102, 97, 108, 115, 101 };
+static const uint8_t m9s183[3] = { 34, 34, 34 };
+static const uint8_t m9s184[2] = { 92, 34 };
+static const uint8_t m9s185[2] = { 92, 92 };
+static const uint8_t m9s186[2] = { 92, 116 };
+static const uint8_t m9s187[4] = { 92, 117, 48, 48 };
+static const uint8_t m9s188[3] = { 34, 34, 34 };
+static const uint8_t m9s189[39] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s190[2] = { 94, 94 };
+static const uint8_t m9s191[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s192[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s193[2] = { 95, 58 };
+static const uint8_t m9s194[3] = { 82, 68, 70 };
+static const uint8_t m9s195[2] = { 73, 68 };
+static const uint8_t m9s196[5] = { 97, 98, 111, 117, 116 };
+static const uint8_t m9s197[9] = { 112, 97, 114, 115, 101, 84, 121, 112, 101 };
+static const uint8_t m9s198[8] = { 114, 101, 115, 111, 117, 114, 99, 101 };
+static const uint8_t m9s199[6] = { 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s200[8] = { 100, 97, 116, 97, 116, 121, 112, 101 };
+static const uint8_t m9s201[9] = { 97, 98, 111, 117, 116, 69, 97, 99, 104 };
+static const uint8_t m9s202[15] = { 97, 98, 111, 117, 116, 69, 97, 99, 104, 80, 114, 101, 102, 105, 120 };
+static const uint8_t m9s203[5] = { 98, 97, 103, 73, 68 };
+static const uint8_t m9s204[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s205[4] = { 98, 97, 115, 101 };
+static const uint8_t m9s206[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s207[4] = { 98, 97, 115, 101 };
+static const uint8_t m9s208[45] = { 97, 32, 114, 101, 108, 97, 116, 105, 118, 101, 32, 120, 109, 108, 58, 98, 97, 115, 101, 32, 97, 110, 100, 32, 110, 111, 32, 98, 97, 115, 101, 32, 116, 111, 32, 114, 101, 115, 111, 108, 118, 101, 32, 105, 116 };
+static const uint8_t m9s209[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s210[4] = { 108, 97, 110, 103 };
+static const uint8_t m9s211[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s212[4] = { 108, 97, 110, 103 };
+static const uint8_t m9s213[42] = { 97, 32, 114, 101, 108, 97, 116, 105, 118, 101, 32, 73, 82, 73, 32, 97, 110, 100, 32, 110, 111, 32, 98, 97, 115, 101, 32, 116, 111, 32, 114, 101, 115, 111, 108, 118, 101, 32, 105, 116, 58, 32 };
+static const uint8_t m9s214[27] = { 114, 100, 102, 58, 73, 68, 32, 105, 115, 32, 110, 111, 116, 32, 97, 110, 32, 88, 77, 76, 32, 110, 97, 109, 101, 58, 32 };
+static const uint8_t m9s215[40] = { 114, 100, 102, 58, 73, 68, 32, 97, 110, 100, 32, 110, 111, 32, 98, 97, 115, 101, 32, 116, 111, 32, 114, 101, 115, 111, 108, 118, 101, 32, 105, 116, 32, 97, 103, 97, 105, 110, 115, 116 };
+static const uint8_t m9s216[1] = { 35 };
+static const uint8_t m9s217[19] = { 114, 100, 102, 58, 73, 68, 32, 117, 115, 101, 100, 32, 116, 119, 105, 99, 101, 58, 32 };
+static const uint8_t m9s218[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s219[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s220[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s221[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s222[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s223[2] = { 108, 105 };
+static const uint8_t m9s224[11] = { 68, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110 };
+static const uint8_t m9s225[4] = { 114, 100, 102, 58 };
+static const uint8_t m9s226[28] = { 32, 105, 115, 32, 110, 111, 116, 32, 97, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101 };
+static const uint8_t m9s227[2] = { 108, 105 };
+static const uint8_t m9s228[4] = { 114, 100, 102, 58 };
+static const uint8_t m9s229[22] = { 32, 105, 115, 32, 110, 111, 116, 32, 97, 32, 110, 111, 100, 101, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s230[32] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 119, 105, 116, 104, 111, 117, 116, 32, 97, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 58, 32 };
+static const uint8_t m9s231[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s232[2] = { 73, 68 };
+static const uint8_t m9s233[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s234[2] = { 73, 68 };
+static const uint8_t m9s235[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s236[6] = { 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s237[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s238[6] = { 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s239[31] = { 114, 100, 102, 58, 110, 111, 100, 101, 73, 68, 32, 105, 115, 32, 110, 111, 116, 32, 97, 110, 32, 88, 77, 76, 32, 110, 97, 109, 101, 58, 32 };
+static const uint8_t m9s240[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s241[5] = { 97, 98, 111, 117, 116 };
+static const uint8_t m9s242[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s243[5] = { 97, 98, 111, 117, 116 };
+static const uint8_t m9s244[53] = { 109, 111, 114, 101, 32, 116, 104, 97, 110, 32, 111, 110, 101, 32, 111, 102, 32, 114, 100, 102, 58, 73, 68, 44, 32, 114, 100, 102, 58, 110, 111, 100, 101, 73, 68, 32, 97, 110, 100, 32, 114, 100, 102, 58, 97, 98, 111, 117, 116, 32, 111, 110, 32 };
+static const uint8_t m9s245[11] = { 68, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110 };
+static const uint8_t m9s246[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s247[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s248[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s249[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s250[3] = { 120, 109, 108 };
+static const uint8_t m9s251[34] = { 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 119, 105, 116, 104, 111, 117, 116, 32, 97, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 58, 32 };
+static const uint8_t m9s252[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s253[2] = { 73, 68 };
+static const uint8_t m9s254[6] = { 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s255[5] = { 97, 98, 111, 117, 116 };
+static const uint8_t m9s256[46] = { 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 100, 97, 116, 97, 32, 97, 109, 111, 110, 103, 32, 116, 104, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 101, 108, 101, 109, 101, 110, 116, 115, 32, 111, 102, 32 };
+static const uint8_t m9s257[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s258[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s259[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s260[9] = { 83, 116, 97, 116, 101, 109, 101, 110, 116 };
+static const uint8_t m9s261[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s262[7] = { 115, 117, 98, 106, 101, 99, 116 };
+static const uint8_t m9s263[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s264[9] = { 112, 114, 101, 100, 105, 99, 97, 116, 101 };
+static const uint8_t m9s265[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s266[6] = { 111, 98, 106, 101, 99, 116 };
+static const uint8_t m9s267[32] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 119, 105, 116, 104, 111, 117, 116, 32, 97, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 58, 32 };
+static const uint8_t m9s268[11] = { 68, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110 };
+static const uint8_t m9s269[4] = { 114, 100, 102, 58 };
+static const uint8_t m9s270[26] = { 32, 105, 115, 32, 110, 111, 116, 32, 97, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s271[2] = { 108, 105 };
+static const uint8_t m9s272[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s273[1] = { 95 };
+static const uint8_t m9s274[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s275[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s276[3] = { 120, 109, 108 };
+static const uint8_t m9s277[34] = { 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 119, 105, 116, 104, 111, 117, 116, 32, 97, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 58, 32 };
+static const uint8_t m9s278[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s279[2] = { 73, 68 };
+static const uint8_t m9s280[8] = { 114, 101, 115, 111, 117, 114, 99, 101 };
+static const uint8_t m9s281[6] = { 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s282[8] = { 100, 97, 116, 97, 116, 121, 112, 101 };
+static const uint8_t m9s283[9] = { 112, 97, 114, 115, 101, 84, 121, 112, 101 };
+static const uint8_t m9s284[5] = { 97, 98, 111, 117, 116 };
+static const uint8_t m9s285[2] = { 108, 105 };
+static const uint8_t m9s286[11] = { 68, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110 };
+static const uint8_t m9s287[3] = { 82, 68, 70 };
+static const uint8_t m9s288[4] = { 114, 100, 102, 58 };
+static const uint8_t m9s289[22] = { 32, 111, 110, 32, 97, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s290[36] = { 98, 111, 116, 104, 32, 114, 100, 102, 58, 114, 101, 115, 111, 117, 114, 99, 101, 32, 97, 110, 100, 32, 114, 100, 102, 58, 110, 111, 100, 101, 73, 68, 32, 111, 110, 32 };
+static const uint8_t m9s291[41] = { 114, 100, 102, 58, 112, 97, 114, 115, 101, 84, 121, 112, 101, 32, 98, 101, 115, 105, 100, 101, 32, 111, 116, 104, 101, 114, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 115, 32, 111, 110, 32 };
+static const uint8_t m9s292[8] = { 82, 101, 115, 111, 117, 114, 99, 101 };
+static const uint8_t m9s293[10] = { 67, 111, 108, 108, 101, 99, 116, 105, 111, 110 };
+static const uint8_t m9s294[30] = { 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 100, 97, 116, 97, 32, 105, 110, 32, 97, 32, 99, 111, 108, 108, 101, 99, 116, 105, 111, 110 };
+static const uint8_t m9s295[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s296[3] = { 110, 105, 108 };
+static const uint8_t m9s297[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s298[4] = { 114, 101, 115, 116 };
+static const uint8_t m9s299[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s300[5] = { 102, 105, 114, 115, 116 };
+static const uint8_t m9s301[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s302[4] = { 114, 101, 115, 116 };
+static const uint8_t m9s303[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s304[3] = { 110, 105, 108 };
+static const uint8_t m9s305[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s306[10] = { 88, 77, 76, 76, 105, 116, 101, 114, 97, 108 };
+static const uint8_t m9s307[36] = { 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 100, 97, 116, 97, 32, 98, 101, 115, 105, 100, 101, 32, 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 105, 110, 32 };
+static const uint8_t m9s308[51] = { 109, 111, 114, 101, 32, 116, 104, 97, 110, 32, 111, 110, 101, 32, 110, 111, 100, 101, 32, 101, 108, 101, 109, 101, 110, 116, 32, 105, 110, 32, 116, 104, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 101, 108, 101, 109, 101, 110, 116, 32 };
+static const uint8_t m9s309[36] = { 97, 116, 116, 114, 105, 98, 117, 116, 101, 115, 32, 98, 101, 115, 105, 100, 101, 32, 97, 32, 110, 111, 100, 101, 32, 101, 108, 101, 109, 101, 110, 116, 32, 111, 110, 32 };
+static const uint8_t m9s310[31] = { 97, 116, 116, 114, 105, 98, 117, 116, 101, 115, 32, 98, 101, 115, 105, 100, 101, 32, 97, 32, 108, 105, 116, 101, 114, 97, 108, 32, 111, 110, 32 };
+static const uint8_t m9s311[32] = { 114, 100, 102, 58, 100, 97, 116, 97, 116, 121, 112, 101, 32, 98, 101, 115, 105, 100, 101, 32, 114, 100, 102, 58, 114, 101, 115, 111, 117, 114, 99, 101 };
+static const uint8_t m9s312[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s313[8] = { 114, 101, 115, 111, 117, 114, 99, 101 };
+static const uint8_t m9s314[30] = { 114, 100, 102, 58, 100, 97, 116, 97, 116, 121, 112, 101, 32, 98, 101, 115, 105, 100, 101, 32, 114, 100, 102, 58, 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s315[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s316[6] = { 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s317[31] = { 114, 100, 102, 58, 110, 111, 100, 101, 73, 68, 32, 105, 115, 32, 110, 111, 116, 32, 97, 110, 32, 88, 77, 76, 32, 110, 97, 109, 101, 58, 32 };
+static const uint8_t m9s318[39] = { 114, 100, 102, 58, 100, 97, 116, 97, 116, 121, 112, 101, 32, 98, 101, 115, 105, 100, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 115 };
+static const uint8_t m9s319[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s320[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s321[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s322[2] = { 73, 68 };
+static const uint8_t m9s323[8] = { 114, 101, 115, 111, 117, 114, 99, 101 };
+static const uint8_t m9s324[6] = { 110, 111, 100, 101, 73, 68 };
+static const uint8_t m9s325[5] = { 38, 97, 109, 112, 59 };
+static const uint8_t m9s326[4] = { 38, 108, 116, 59 };
+static const uint8_t m9s327[4] = { 38, 103, 116, 59 };
+static const uint8_t m9s328[5] = { 38, 35, 120, 68, 59 };
+static const uint8_t m9s329[5] = { 38, 97, 109, 112, 59 };
+static const uint8_t m9s330[4] = { 38, 108, 116, 59 };
+static const uint8_t m9s331[6] = { 38, 113, 117, 111, 116, 59 };
+static const uint8_t m9s332[5] = { 38, 35, 120, 57, 59 };
+static const uint8_t m9s333[5] = { 38, 35, 120, 65, 59 };
+static const uint8_t m9s334[5] = { 38, 35, 120, 68, 59 };
+static const uint8_t m9s335[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s336[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s337[8] = { 32, 120, 109, 108, 110, 115, 61, 34 };
+static const uint8_t m9s338[7] = { 32, 120, 109, 108, 110, 115, 58 };
+static const uint8_t m9s339[2] = { 61, 34 };
+static const uint8_t m9s340[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s341[2] = { 61, 34 };
+static const uint8_t m9s342[2] = { 60, 47 };
+static const uint8_t m9s343[2] = { 58, 32 };
+static const uint8_t m9s344[8] = { 64, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s345[3] = { 64, 105, 100 };
+static const uint8_t m9s346[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s347[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s348[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s349[10] = { 64, 99, 111, 110, 116, 97, 105, 110, 101, 114 };
+static const uint8_t m9s350[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s351[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s352[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s353[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s354[5] = { 64, 98, 97, 115, 101 };
+static const uint8_t m9s355[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s356[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s357[8] = { 64, 100, 101, 102, 97, 117, 108, 116 };
+static const uint8_t m9s358[6] = { 64, 101, 109, 98, 101, 100 };
+static const uint8_t m9s359[9] = { 64, 101, 120, 112, 108, 105, 99, 105, 116 };
+static const uint8_t m9s360[12] = { 64, 111, 109, 105, 116, 68, 101, 102, 97, 117, 108, 116 };
+static const uint8_t m9s361[2] = { 95, 58 };
+static const uint8_t m9s362[1] = { 95 };
+static const uint8_t m9s363[2] = { 47, 47 };
+static const uint8_t m9s364[18] = { 99, 121, 99, 108, 105, 99, 32, 73, 82, 73, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s365[20] = { 107, 101, 121, 119, 111, 114, 100, 32, 114, 101, 100, 101, 102, 105, 110, 105, 116, 105, 111, 110 };
+static const uint8_t m9s366[23] = { 105, 110, 118, 97, 108, 105, 100, 32, 116, 101, 114, 109, 32, 100, 101, 102, 105, 110, 105, 116, 105, 111, 110 };
+static const uint8_t m9s367[13] = { 97, 110, 32, 101, 109, 112, 116, 121, 32, 116, 101, 114, 109 };
+static const uint8_t m9s368[3] = { 64, 105, 100 };
+static const uint8_t m9s369[3] = { 64, 105, 100 };
+static const uint8_t m9s370[3] = { 64, 105, 100 };
+static const uint8_t m9s371[23] = { 105, 110, 118, 97, 108, 105, 100, 32, 116, 101, 114, 109, 32, 100, 101, 102, 105, 110, 105, 116, 105, 111, 110 };
+static const uint8_t m9s372[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s373[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s374[20] = { 105, 110, 118, 97, 108, 105, 100, 32, 116, 121, 112, 101, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s375[3] = { 64, 105, 100 };
+static const uint8_t m9s376[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s377[20] = { 105, 110, 118, 97, 108, 105, 100, 32, 116, 121, 112, 101, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s378[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s379[3] = { 64, 105, 100 };
+static const uint8_t m9s380[24] = { 105, 110, 118, 97, 108, 105, 100, 32, 114, 101, 118, 101, 114, 115, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121 };
+static const uint8_t m9s381[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s382[19] = { 105, 110, 118, 97, 108, 105, 100, 32, 73, 82, 73, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s383[19] = { 105, 110, 118, 97, 108, 105, 100, 32, 73, 82, 73, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s384[10] = { 64, 99, 111, 110, 116, 97, 105, 110, 101, 114 };
+static const uint8_t m9s385[10] = { 64, 99, 111, 110, 116, 97, 105, 110, 101, 114 };
+static const uint8_t m9s386[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s387[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s388[24] = { 105, 110, 118, 97, 108, 105, 100, 32, 114, 101, 118, 101, 114, 115, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121 };
+static const uint8_t m9s389[3] = { 64, 105, 100 };
+static const uint8_t m9s390[3] = { 64, 105, 100 };
+static const uint8_t m9s391[3] = { 64, 105, 100 };
+static const uint8_t m9s392[19] = { 105, 110, 118, 97, 108, 105, 100, 32, 73, 82, 73, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s393[19] = { 105, 110, 118, 97, 108, 105, 100, 32, 73, 82, 73, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s394[8] = { 64, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s395[21] = { 105, 110, 118, 97, 108, 105, 100, 32, 107, 101, 121, 119, 111, 114, 100, 32, 97, 108, 105, 97, 115 };
+static const uint8_t m9s396[19] = { 105, 110, 118, 97, 108, 105, 100, 32, 73, 82, 73, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s397[19] = { 105, 110, 118, 97, 108, 105, 100, 32, 73, 82, 73, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s398[10] = { 64, 99, 111, 110, 116, 97, 105, 110, 101, 114 };
+static const uint8_t m9s399[10] = { 64, 99, 111, 110, 116, 97, 105, 110, 101, 114 };
+static const uint8_t m9s400[25] = { 105, 110, 118, 97, 108, 105, 100, 32, 99, 111, 110, 116, 97, 105, 110, 101, 114, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s401[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s402[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s403[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s404[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s405[25] = { 105, 110, 118, 97, 108, 105, 100, 32, 99, 111, 110, 116, 97, 105, 110, 101, 114, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s406[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s407[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s408[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s409[24] = { 105, 110, 118, 97, 108, 105, 100, 32, 108, 97, 110, 103, 117, 97, 103, 101, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s410[25] = { 105, 110, 118, 97, 108, 105, 100, 32, 116, 101, 114, 109, 32, 100, 101, 102, 105, 110, 105, 116, 105, 111, 110, 58, 32 };
+static const uint8_t m9s411[27] = { 97, 32, 114, 101, 109, 111, 116, 101, 32, 99, 111, 110, 116, 101, 120, 116, 32, 105, 115, 32, 114, 101, 102, 117, 115, 101, 100 };
+static const uint8_t m9s412[21] = { 105, 110, 118, 97, 108, 105, 100, 32, 108, 111, 99, 97, 108, 32, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s413[5] = { 64, 98, 97, 115, 101 };
+static const uint8_t m9s414[5] = { 64, 98, 97, 115, 101 };
+static const uint8_t m9s415[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 98, 97, 115, 101, 32, 73, 82, 73 };
+static const uint8_t m9s416[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 98, 97, 115, 101, 32, 73, 82, 73 };
+static const uint8_t m9s417[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s418[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s419[21] = { 105, 110, 118, 97, 108, 105, 100, 32, 118, 111, 99, 97, 98, 32, 109, 97, 112, 112, 105, 110, 103 };
+static const uint8_t m9s420[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s421[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s422[24] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 101, 102, 97, 117, 108, 116, 32, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s423[5] = { 64, 98, 97, 115, 101 };
+static const uint8_t m9s424[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s425[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s426[21] = { 105, 110, 118, 97, 108, 105, 100, 32, 108, 111, 99, 97, 108, 32, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s427[21] = { 105, 110, 118, 97, 108, 105, 100, 32, 108, 111, 99, 97, 108, 32, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s428[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s429[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s430[3] = { 64, 105, 100 };
+static const uint8_t m9s431[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s432[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s433[3] = { 64, 105, 100 };
+static const uint8_t m9s434[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s435[3] = { 64, 105, 100 };
+static const uint8_t m9s436[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s437[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s438[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s439[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s440[20] = { 105, 110, 118, 97, 108, 105, 100, 32, 118, 97, 108, 117, 101, 32, 111, 98, 106, 101, 99, 116 };
+static const uint8_t m9s441[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s442[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s443[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s444[13] = { 108, 105, 115, 116, 32, 111, 102, 32, 108, 105, 115, 116, 115 };
+static const uint8_t m9s445[8] = { 64, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s446[8] = { 64, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s447[8] = { 64, 99, 111, 110, 116, 101, 120, 116 };
+static const uint8_t m9s448[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s449[28] = { 105, 110, 118, 97, 108, 105, 100, 32, 114, 101, 118, 101, 114, 115, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 109, 97, 112 };
+static const uint8_t m9s450[18] = { 99, 111, 108, 108, 105, 100, 105, 110, 103, 32, 107, 101, 121, 119, 111, 114, 100, 115 };
+static const uint8_t m9s451[3] = { 64, 105, 100 };
+static const uint8_t m9s452[17] = { 105, 110, 118, 97, 108, 105, 100, 32, 64, 105, 100, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s453[3] = { 64, 105, 100 };
+static const uint8_t m9s454[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s455[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s456[18] = { 105, 110, 118, 97, 108, 105, 100, 32, 116, 121, 112, 101, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s457[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s458[18] = { 105, 110, 118, 97, 108, 105, 100, 32, 116, 121, 112, 101, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s459[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s460[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s461[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s462[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s463[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s464[26] = { 105, 110, 118, 97, 108, 105, 100, 32, 118, 97, 108, 117, 101, 32, 111, 98, 106, 101, 99, 116, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s465[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s466[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s467[30] = { 105, 110, 118, 97, 108, 105, 100, 32, 108, 97, 110, 103, 117, 97, 103, 101, 45, 116, 97, 103, 103, 101, 100, 32, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s468[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s469[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s470[20] = { 105, 110, 118, 97, 108, 105, 100, 32, 64, 105, 110, 100, 101, 120, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s471[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s472[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s473[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s474[13] = { 108, 105, 115, 116, 32, 111, 102, 32, 108, 105, 115, 116, 115 };
+static const uint8_t m9s475[13] = { 108, 105, 115, 116, 32, 111, 102, 32, 108, 105, 115, 116, 115 };
+static const uint8_t m9s476[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s477[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s478[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s479[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s480[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s481[22] = { 105, 110, 118, 97, 108, 105, 100, 32, 64, 114, 101, 118, 101, 114, 115, 101, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s482[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s483[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s484[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s485[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s486[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s487[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s488[30] = { 105, 110, 118, 97, 108, 105, 100, 32, 114, 101, 118, 101, 114, 115, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s489[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s490[26] = { 105, 110, 118, 97, 108, 105, 100, 32, 108, 97, 110, 103, 117, 97, 103, 101, 32, 109, 97, 112, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s491[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s492[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s493[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s494[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s495[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s496[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s497[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s498[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s499[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s500[30] = { 105, 110, 118, 97, 108, 105, 100, 32, 114, 101, 118, 101, 114, 115, 101, 32, 112, 114, 111, 112, 101, 114, 116, 121, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s501[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s502[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s503[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s504[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s505[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s506[20] = { 105, 110, 118, 97, 108, 105, 100, 32, 118, 97, 108, 117, 101, 32, 111, 98, 106, 101, 99, 116 };
+static const uint8_t m9s507[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s508[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s509[20] = { 105, 110, 118, 97, 108, 105, 100, 32, 118, 97, 108, 117, 101, 32, 111, 98, 106, 101, 99, 116 };
+static const uint8_t m9s510[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s511[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s512[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s513[29] = { 105, 110, 118, 97, 108, 105, 100, 32, 108, 97, 110, 103, 117, 97, 103, 101, 45, 116, 97, 103, 103, 101, 100, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s514[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s515[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s516[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s517[19] = { 105, 110, 118, 97, 108, 105, 100, 32, 116, 121, 112, 101, 100, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s518[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s519[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s520[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s521[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s522[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s523[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s524[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s525[26] = { 105, 110, 118, 97, 108, 105, 100, 32, 115, 101, 116, 32, 111, 114, 32, 108, 105, 115, 116, 32, 111, 98, 106, 101, 99, 116 };
+static const uint8_t m9s526[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s527[4] = { 64, 115, 101, 116 };
+static const uint8_t m9s528[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s529[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s530[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s531[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s532[3] = { 64, 105, 100 };
+static const uint8_t m9s533[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s534[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s535[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s536[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s537[2] = { 95, 58 };
+static const uint8_t m9s538[2] = { 95, 58 };
+static const uint8_t m9s539[3] = { 64, 105, 100 };
+static const uint8_t m9s540[3] = { 64, 105, 100 };
+static const uint8_t m9s541[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s542[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s543[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s544[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s545[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s546[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s547[3] = { 64, 105, 100 };
+static const uint8_t m9s548[3] = { 64, 105, 100 };
+static const uint8_t m9s549[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s550[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s551[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s552[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s553[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s554[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s555[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s556[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s557[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s558[3] = { 64, 105, 100 };
+static const uint8_t m9s559[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s560[8] = { 64, 114, 101, 118, 101, 114, 115, 101 };
+static const uint8_t m9s561[6] = { 64, 103, 114, 97, 112, 104 };
+static const uint8_t m9s562[6] = { 64, 105, 110, 100, 101, 120 };
+static const uint8_t m9s563[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s564[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s565[1] = { 48 };
+static const uint8_t m9s566[5] = { 48, 46, 48, 69, 48 };
+static const uint8_t m9s567[1] = { 46 };
+static const uint8_t m9s568[1] = { 48 };
+static const uint8_t m9s569[1] = { 45 };
+static const uint8_t m9s570[1] = { 69 };
+static const uint8_t m9s571[5] = { 48, 46, 48, 69, 48 };
+static const uint8_t m9s572[3] = { 64, 105, 100 };
+static const uint8_t m9s573[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s574[3] = { 64, 105, 100 };
+static const uint8_t m9s575[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s576[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s577[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s578[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s579[7] = { 98, 111, 111, 108, 101, 97, 110 };
+static const uint8_t m9s580[4] = { 116, 114, 117, 101 };
+static const uint8_t m9s581[5] = { 102, 97, 108, 115, 101 };
+static const uint8_t m9s582[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s583[6] = { 100, 111, 117, 98, 108, 101 };
+static const uint8_t m9s584[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s585[6] = { 100, 111, 117, 98, 108, 101 };
+static const uint8_t m9s586[33] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35 };
+static const uint8_t m9s587[7] = { 105, 110, 116, 101, 103, 101, 114 };
+static const uint8_t m9s588[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s589[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s590[39] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s591[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s592[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s593[3] = { 110, 105, 108 };
+static const uint8_t m9s594[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s595[4] = { 114, 101, 115, 116 };
+static const uint8_t m9s596[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s597[5] = { 102, 105, 114, 115, 116 };
+static const uint8_t m9s598[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s599[4] = { 114, 101, 115, 116 };
+static const uint8_t m9s600[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s601[3] = { 110, 105, 108 };
+static const uint8_t m9s602[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s603[16] = { 105, 110, 118, 97, 108, 105, 100, 32, 100, 111, 99, 117, 109, 101, 110, 116 };
+static const uint8_t m9s604[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s605[5] = { 102, 105, 114, 115, 116 };
+static const uint8_t m9s606[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s607[4] = { 114, 101, 115, 116 };
+static const uint8_t m9s608[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s609[4] = { 116, 121, 112, 101 };
+static const uint8_t m9s610[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s611[4] = { 76, 105, 115, 116 };
+static const uint8_t m9s612[3] = { 64, 105, 100 };
+static const uint8_t m9s613[2] = { 95, 58 };
+static const uint8_t m9s614[3] = { 64, 105, 100 };
+static const uint8_t m9s615[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s616[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s617[39] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 49, 47, 88, 77, 76, 83, 99, 104, 101, 109, 97, 35, 115, 116, 114, 105, 110, 103 };
+static const uint8_t m9s618[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s619[43] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 49, 57, 57, 57, 47, 48, 50, 47, 50, 50, 45, 114, 100, 102, 45, 115, 121, 110, 116, 97, 120, 45, 110, 115, 35 };
+static const uint8_t m9s620[3] = { 110, 105, 108 };
+static const uint8_t m9s621[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s622[7] = { 47, 35, 58, 63, 64, 91, 93 };
+static const uint8_t m9s623[1] = { 58 };
+static const uint8_t m9s624[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s625[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s626[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s627[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s628[5] = { 64, 108, 105, 115, 116 };
+static const uint8_t m9s629[3] = { 64, 105, 100 };
+static const uint8_t m9s630[3] = { 64, 105, 100 };
+static const uint8_t m9s631[3] = { 64, 105, 100 };
+static const uint8_t m9s632[6] = { 64, 118, 111, 99, 97, 98 };
+static const uint8_t m9s633[3] = { 64, 105, 100 };
+static const uint8_t m9s634[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s635[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s636[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s637[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s638[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s639[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s640[9] = { 64, 108, 97, 110, 103, 117, 97, 103, 101 };
+static const uint8_t m9s641[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s642[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s643[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s644[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s645[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s646[5] = { 64, 116, 121, 112, 101 };
+static const uint8_t m9s647[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s648[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s649[6] = { 64, 118, 97, 108, 117, 101 };
+static const uint8_t m9s650[5] = { 64, 108, 105, 115, 116 };
 
 static Rdf_Graph * Rdf_NewGraph (m9_pool *pool, m9_state *err);
 static Rdf_Term Rdf_Hold (m9_pool *pool, Rdf_Term *tm, m9_state *err);
 static void Rdf_Add (m9_pool *pool, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *s, Rdf_Term *p, Rdf_Term *o, m9_state *err);
-static Rdf_Term Rdf_IriT (m9_sl_CHAR v, m9_state *err);
-static Rdf_Term Rdf_BlankT (m9_sl_CHAR v, m9_state *err);
-static Rdf_Term Rdf_LitT (m9_sl_CHAR v, m9_sl_CHAR lang, m9_sl_CHAR dt, m9_state *err);
-static void Rdf_Fail (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR msg, m9_state *err);
+static Rdf_Term Rdf_IriT (m9_sl_UTF8 v, m9_state *err);
+static Rdf_Term Rdf_BlankT (m9_sl_UTF8 v, m9_state *err);
+static Rdf_Term Rdf_LitT (m9_sl_UTF8 v, m9_sl_UTF8 lang, m9_sl_UTF8 dt, m9_state *err);
+static void Rdf_Fail (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 msg, m9_state *err);
 static bool Rdf_AtEnd (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static uint32_t Rdf_Peek (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
 static uint32_t Rdf_PeekAt (Rdf_Reader *r, m9_pool *r_pool, int64_t k, m9_state *err);
 static void Rdf_Advance (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
 static void Rdf_SkipWs (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static void Rdf_Expect (Rdf_Reader *r, m9_pool *r_pool, uint32_t c, m9_sl_CHAR what, m9_state *err);
+static void Rdf_Expect (Rdf_Reader *r, m9_pool *r_pool, uint32_t c, m9_sl_UTF8 what, m9_state *err);
 static bool Rdf_IsHex (uint32_t c, m9_state *err);
 static int64_t Rdf_HexVal (uint32_t c, m9_state *err);
 static bool Rdf_IsPnCharsBase (uint32_t c, m9_state *err);
@@ -683,28 +770,28 @@ static bool Rdf_IsPnCharsU (uint32_t c, m9_state *err);
 static bool Rdf_IsPnChars (uint32_t c, m9_state *err);
 static bool Rdf_IsLocalEsc (uint32_t c, m9_state *err);
 static uint32_t Rdf_Uchar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Rdf_IriRef (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static int64_t Rdf_SchemeEnd (m9_sl_CHAR s, m9_state *err);
-static m9_sl_CHAR Rdf_RemoveDots (m9_sl_CHAR path, m9_state *err);
-static void Rdf_Split (m9_sl_CHAR s, m9_sl_CHAR *scheme, m9_sl_CHAR *auth, m9_sl_CHAR *path, m9_sl_CHAR *query, m9_sl_CHAR *frag, bool *hasAuth, bool *hasQuery, bool *hasFrag, m9_state *err);
-static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err);
-static m9_sl_CHAR Rdf_Absolute (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR iri, m9_state *err);
-static int64_t Rdf_PrefixOf (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR name, m9_state *err);
-static m9_sl_CHAR Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Rdf_PrefixedName (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Rdf_Fresh (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR lab, m9_state *err);
-static m9_sl_CHAR Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Rdf_IriRef (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static int64_t Rdf_SchemeEnd (m9_sl_UTF8 s, m9_state *err);
+static m9_sl_UTF8 Rdf_RemoveDots (m9_sl_UTF8 path, m9_state *err);
+static void Rdf_Split (m9_sl_UTF8 s, m9_sl_UTF8 *scheme, m9_sl_UTF8 *auth, m9_sl_UTF8 *path, m9_sl_UTF8 *query, m9_sl_UTF8 *frag, bool *hasAuth, bool *hasQuery, bool *hasFrag, m9_state *err);
+static m9_sl_UTF8 Rdf_Resolve (m9_sl_UTF8 base, m9_sl_UTF8 ref, m9_state *err);
+static m9_sl_UTF8 Rdf_Absolute (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 iri, m9_state *err);
+static int64_t Rdf_PrefixOf (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 name, m9_state *err);
+static m9_sl_UTF8 Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Rdf_PrefixedName (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Rdf_Fresh (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 lab, m9_state *err);
+static m9_sl_UTF8 Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
 static uint32_t Rdf_Echar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Rdf_Iri (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Rdf_Iri (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
 static bool Rdf_StartsIri (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
-static bool Rdf_Word (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *err);
-static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *err);
+static bool Rdf_Word (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_state *err);
+static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_state *err);
 static void Rdf_Skip (Rdf_Reader *r, m9_pool *r_pool, int64_t n, m9_state *err);
-static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m9_state *err);
+static m9_sl_UTF8 Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 *dt, m9_state *err);
 static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
 static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Graph * *g, m9_pool *g_pool, m9_state *err);
 static Rdf_Term Rdf_PropertyList (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Graph * *g, m9_pool *g_pool, m9_state *err);
@@ -713,101 +800,101 @@ static Rdf_Term Rdf_Verb (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
 static void Rdf_PredObjList (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *s, m9_state *err);
 static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
 static void Rdf_Triples (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Graph * *g, m9_pool *g_pool, m9_state *err);
-static void Rdf_NewReader (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR text, m9_sl_CHAR base, bool turtle, m9_state *err);
+static void Rdf_NewReader (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 text, m9_sl_UTF8 base, bool turtle, m9_state *err);
 static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool obj, m9_state *err);
 static void Rdf_SkipBlanks (Rdf_Reader *r, m9_pool *r_pool, m9_state *err);
 static void Rdf_Hex2 (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state *err);
-static void Rdf_PutIri (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err);
+static void Rdf_PutIri (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state *err);
 static void Rdf_PutTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Term *t, m9_state *err);
-static bool Rdf_LocalOk (m9_sl_CHAR s, m9_state *err);
-static int64_t Rdf_PrefixFor (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR iri, m9_state *err);
-static void Rdf_TtlIri (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR iri, m9_state *err);
-static bool Rdf_Digits (m9_sl_CHAR s, int64_t from, int64_t to, m9_state *err);
+static bool Rdf_LocalOk (m9_sl_UTF8 s, m9_state *err);
+static int64_t Rdf_PrefixFor (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_UTF8 iri, m9_state *err);
+static void Rdf_TtlIri (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_UTF8 iri, m9_state *err);
+static bool Rdf_Digits (m9_sl_UTF8 s, int64_t from, int64_t to, m9_state *err);
 static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err);
 static void Rdf_TtlLiteral (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m9_pool *p_pool, Rdf_Term *t, m9_state *err);
 static void Rdf_TtlTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m9_pool *p_pool, Rdf_Term *t, bool predicate, m9_state *err);
 static bool Rdf_SameTerm (Rdf_Term *a, Rdf_Term *b, m9_state *err);
-static void Rdf_AddDefault (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR name, m9_sl_CHAR iri, m9_state *err);
-static void Rdf_XFail (m9_sl_CHAR msg, m9_state *err);
-static bool Rdf_IsWs (m9_sl_CHAR s, m9_state *err);
-static bool Rdf_NcName (m9_sl_CHAR s, m9_state *err);
-static bool Rdf_IsCoreSyntax (m9_sl_CHAR local, m9_state *err);
-static bool Rdf_IsOldTerm (m9_sl_CHAR local, m9_state *err);
-static void Rdf_Scoped (Xml_Element * e, Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR *base, m9_sl_CHAR *lang, m9_state *err);
-static m9_sl_CHAR Rdf_XIri (Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err);
-static m9_sl_CHAR Rdf_NoFragment (m9_sl_CHAR iri, m9_state *err);
-static m9_sl_CHAR Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR base, m9_sl_CHAR id, m9_state *err);
+static void Rdf_AddDefault (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_UTF8 name, m9_sl_UTF8 iri, m9_state *err);
+static void Rdf_XFail (m9_sl_UTF8 msg, m9_state *err);
+static bool Rdf_IsWs (m9_sl_UTF8 s, m9_state *err);
+static bool Rdf_NcName (m9_sl_UTF8 s, m9_state *err);
+static bool Rdf_IsCoreSyntax (m9_sl_UTF8 local, m9_state *err);
+static bool Rdf_IsOldTerm (m9_sl_UTF8 local, m9_state *err);
+static void Rdf_Scoped (Xml_Element * e, Rdf_XState *st, m9_pool *st_pool, m9_sl_UTF8 *base, m9_sl_UTF8 *lang, m9_state *err);
+static m9_sl_UTF8 Rdf_XIri (Rdf_XState *st, m9_pool *st_pool, m9_sl_UTF8 base, m9_sl_UTF8 ref, m9_state *err);
+static m9_sl_UTF8 Rdf_NoFragment (m9_sl_UTF8 iri, m9_state *err);
+static m9_sl_UTF8 Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9_sl_UTF8 base, m9_sl_UTF8 id, m9_state *err);
 static bool Rdf_IsRdf (Xml_Element * e, m9_state *err);
 static bool Rdf_ContentIsElements (Xml_Element * e, m9_state *err);
-static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_CHAR ns, m9_sl_CHAR local, m9_sl_CHAR value, m9_sl_CHAR base, m9_sl_CHAR lang, m9_state *err);
-static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * e, Rdf_Graph * *g, m9_pool *g_pool, m9_sl_CHAR base0, m9_sl_CHAR lang0, m9_state *err);
-static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * e, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_CHAR base, m9_sl_CHAR lang, m9_state *err);
-static void Rdf_Reify (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, m9_sl_CHAR base, m9_sl_CHAR id, Rdf_Term *s, Rdf_Term *p, Rdf_Term *o, m9_state *err);
-static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * pe, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_CHAR base0, m9_sl_CHAR lang0, int64_t *li, m9_state *err);
-static void Rdf_EscText (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err);
-static void Rdf_EscAttr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err);
-static m9_sl_CHAR Rdf_Prefix (m9_sl_CHAR name, m9_state *err);
-static bool Rdf_StrLess (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
-static bool Rdf_Declared (m9_sl_m9_sl_CHAR dn, m9_sl_m9_sl_CHAR du, int64_t n, m9_sl_CHAR prefix, m9_sl_CHAR uri, m9_state *err);
-static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, Xml_Element * e, m9_sl_m9_sl_CHAR *dn, m9_sl_m9_sl_CHAR *du, int64_t n, m9_state *err);
-static m9_sl_CHAR Rdf_XmlLiteral (Xml_Element * pe, m9_state *err);
-static void Rdf_JFail (m9_sl_CHAR code, m9_sl_CHAR what, m9_state *err);
-static bool Rdf_IsKeyword (m9_sl_CHAR s, m9_state *err);
-static bool Rdf_IsAbsolute (m9_sl_CHAR s, m9_state *err);
-static bool Rdf_IsBlankId (m9_sl_CHAR s, m9_state *err);
-static Rdf_Ctx Rdf_NewCtx (m9_pool *pool, m9_sl_CHAR base, m9_state *err);
+static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_UTF8 ns, m9_sl_UTF8 local, m9_sl_UTF8 value, m9_sl_UTF8 base, m9_sl_UTF8 lang, m9_state *err);
+static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * e, Rdf_Graph * *g, m9_pool *g_pool, m9_sl_UTF8 base0, m9_sl_UTF8 lang0, m9_state *err);
+static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * e, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_UTF8 base, m9_sl_UTF8 lang, m9_state *err);
+static void Rdf_Reify (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, m9_sl_UTF8 base, m9_sl_UTF8 id, Rdf_Term *s, Rdf_Term *p, Rdf_Term *o, m9_state *err);
+static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * pe, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_UTF8 base0, m9_sl_UTF8 lang0, int64_t *li, m9_state *err);
+static void Rdf_EscText (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state *err);
+static void Rdf_EscAttr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state *err);
+static m9_sl_UTF8 Rdf_Prefix (m9_sl_UTF8 name, m9_state *err);
+static bool Rdf_StrLess (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err);
+static bool Rdf_Declared (m9_sl_m9_sl_UTF8 dn, m9_sl_m9_sl_UTF8 du, int64_t n, m9_sl_UTF8 prefix, m9_sl_UTF8 uri, m9_state *err);
+static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, Xml_Element * e, m9_sl_m9_sl_UTF8 *dn, m9_sl_m9_sl_UTF8 *du, int64_t n, m9_state *err);
+static m9_sl_UTF8 Rdf_XmlLiteral (Xml_Element * pe, m9_state *err);
+static void Rdf_JFail (m9_sl_UTF8 code, m9_sl_UTF8 what, m9_state *err);
+static bool Rdf_IsKeyword (m9_sl_UTF8 s, m9_state *err);
+static bool Rdf_IsAbsolute (m9_sl_UTF8 s, m9_state *err);
+static bool Rdf_IsBlankId (m9_sl_UTF8 s, m9_state *err);
+static Rdf_Ctx Rdf_NewCtx (m9_pool *pool, m9_sl_UTF8 base, m9_state *err);
 static Rdf_Ctx Rdf_CopyCtx (m9_pool *pool, Rdf_Ctx *c, m9_state *err);
-static int64_t Rdf_FindTerm (Rdf_Ctx *c, m9_sl_CHAR term, m9_state *err);
-static void Rdf_RemoveTerm (Rdf_Ctx *c, m9_pool *c_pool, m9_sl_CHAR term, m9_state *err);
+static int64_t Rdf_FindTerm (Rdf_Ctx *c, m9_sl_UTF8 term, m9_state *err);
+static void Rdf_RemoveTerm (Rdf_Ctx *c, m9_pool *c_pool, m9_sl_UTF8 term, m9_state *err);
 static void Rdf_DefineTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Rdf_TermDef *d, m9_state *err);
-static int64_t Rdf_DefState (Rdf_Defining *df, m9_sl_CHAR term, m9_state *err);
-static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, m9_sl_CHAR term, int64_t st, m9_state *err);
-static m9_sl_CHAR Rdf_JStr (Json_Node * n, m9_state *err);
+static int64_t Rdf_DefState (Rdf_Defining *df, m9_sl_UTF8 term, m9_state *err);
+static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, m9_sl_UTF8 term, int64_t st, m9_state *err);
+static m9_sl_UTF8 Rdf_JStr (Json_Node * n, m9_state *err);
 static bool Rdf_IsStr (Json_Node * n, m9_state *err);
 static bool Rdf_IsObj (Json_Node * n, m9_state *err);
 static bool Rdf_IsArr (Json_Node * n, m9_state *err);
 static bool Rdf_IsNum (Json_Node * n, m9_state *err);
 static bool Rdf_IsBool (Json_Node * n, m9_state *err);
 static bool Rdf_IsScalar (Json_Node * n, m9_state *err);
-static bool Rdf_Has (Json_Node * obj, m9_sl_CHAR key, m9_state *err);
-static Json_Node * Rdf_JGet (Json_Node * obj, m9_sl_CHAR key, m9_state *err);
+static bool Rdf_Has (Json_Node * obj, m9_sl_UTF8 key, m9_state *err);
+static Json_Node * Rdf_JGet (Json_Node * obj, m9_sl_UTF8 key, m9_state *err);
 static int64_t Rdf_Members (Json_Node * obj, m9_state *err);
 static int64_t Rdf_Items (Json_Node * arr, m9_state *err);
-static m9_sl_m9_sl_CHAR Rdf_SortedNames (Json_Node * obj, m9_state *err);
-static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_sl_CHAR value, bool docRel, bool vocab, Json_Node * local, Rdf_Defining *df, m9_pool *df_pool, bool *nul, m9_state *err);
-static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Node * local, m9_sl_CHAR term, Rdf_Defining *df, m9_pool *df_pool, m9_state *err);
+static m9_sl_m9_sl_UTF8 Rdf_SortedNames (Json_Node * obj, m9_state *err);
+static m9_sl_UTF8 Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_sl_UTF8 value, bool docRel, bool vocab, Json_Node * local, Rdf_Defining *df, m9_pool *df_pool, bool *nul, m9_state *err);
+static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Node * local, m9_sl_UTF8 term, Rdf_Defining *df, m9_pool *df_pool, m9_state *err);
 static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_Ctx *active, Json_Node * local, m9_state *err);
 static Json_Node * Rdf_Arrayified (m9_pool *pool, Json_Node * v, m9_state *err);
-static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl_CHAR key, Json_Node * v, m9_state *err);
-static void Rdf_SetKey (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl_CHAR key, Json_Node * v, m9_state *err);
+static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 key, Json_Node * v, m9_state *err);
+static void Rdf_SetKey (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 key, Json_Node * v, m9_state *err);
 static bool Rdf_IsListObj (Json_Node * n, m9_state *err);
 static bool Rdf_IsValueObj (Json_Node * n, m9_state *err);
-static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_sl_CHAR activeProp, Json_Node * value, m9_state *err);
-static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_Ctx *c0, m9_sl_CHAR activeProp, bool hasProp, Json_Node * element, m9_state *err);
-static m9_sl_CHAR Rdf_BlankFor (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, m9_sl_CHAR id, m9_state *err);
-static m9_sl_CHAR Rdf_FreshBlank (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, m9_state *err);
-static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool, m9_sl_CHAR id, m9_state *err);
+static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_sl_UTF8 activeProp, Json_Node * value, m9_state *err);
+static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_Ctx *c0, m9_sl_UTF8 activeProp, bool hasProp, Json_Node * element, m9_state *err);
+static m9_sl_UTF8 Rdf_BlankFor (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, m9_sl_UTF8 id, m9_state *err);
+static m9_sl_UTF8 Rdf_FreshBlank (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, m9_state *err);
+static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool, m9_sl_UTF8 id, m9_state *err);
 static bool Rdf_SameNode (Json_Node * a, Json_Node * b, m9_state *err);
-static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool, m9_sl_CHAR prop, Json_Node * v, m9_state *err);
-static Json_Node * Rdf_RefTo (m9_pool *pool, m9_sl_CHAR id, m9_state *err);
-static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_NodeMap *dflt, m9_pool *dflt_pool, bool inDefault, Json_Node * element, m9_sl_CHAR subject, m9_sl_CHAR prop, bool reverse, Json_Node * list, m9_state *err);
-static int64_t Rdf_IntOf (m9_sl_CHAR s, m9_state *err);
-static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err);
+static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool, m9_sl_UTF8 prop, Json_Node * v, m9_state *err);
+static Json_Node * Rdf_RefTo (m9_pool *pool, m9_sl_UTF8 id, m9_state *err);
+static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_NodeMap *dflt, m9_pool *dflt_pool, bool inDefault, Json_Node * element, m9_sl_UTF8 subject, m9_sl_UTF8 prop, bool reverse, Json_Node * list, m9_state *err);
+static int64_t Rdf_IntOf (m9_sl_UTF8 s, m9_state *err);
+static m9_sl_UTF8 Rdf_CanonDouble (double r, m9_state *err);
 static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Json_Node * item, bool *ok, m9_state *err);
 static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, Json_Node * items, m9_state *err);
-static int64_t Rdf_RefCount (Rdf_Graph * g, m9_sl_CHAR id, m9_state *err);
-static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *rest, m9_state *err);
+static int64_t Rdf_RefCount (Rdf_Graph * g, m9_sl_UTF8 id, m9_state *err);
+static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_UTF8 id, int64_t *first, int64_t *rest, m9_state *err);
 static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term *t, m9_state *err);
-static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m9_sl_BOOL *consumed, m9_state *err);
-static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx *c, m9_sl_CHAR iri, bool vocab, m9_state *err);
+static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_UTF8 head, m9_sl_BOOL *consumed, m9_state *err);
+static m9_sl_UTF8 Rdf_CompactIri (Rdf_Ctx *c, m9_sl_UTF8 iri, bool vocab, m9_state *err);
 static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_Node * v, m9_state *err);
-static int64_t Rdf_PropTerm (Rdf_Ctx *c, m9_sl_CHAR iri, bool isList, m9_state *err);
+static int64_t Rdf_PropTerm (Rdf_Ctx *c, m9_sl_UTF8 iri, bool isList, m9_state *err);
 static bool Rdf_NcStart (uint32_t c, m9_state *err);
 static bool Rdf_NcChar (uint32_t c, m9_state *err);
-static int64_t Rdf_LocalStart (m9_sl_CHAR iri, m9_state *err);
+static int64_t Rdf_LocalStart (m9_sl_UTF8 iri, m9_state *err);
 
 
-Rdf_Graph * Rdf_ParseNTriples (m9_pool *pool, m9_sl_CHAR text, m9_state *err)
+Rdf_Graph * Rdf_ParseNTriples (m9_pool *pool, m9_sl_UTF8 text, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -824,7 +911,7 @@ Rdf_Graph * Rdf_ParseNTriples (m9_pool *pool, m9_sl_CHAR text, m9_state *err)
     if (err->exc) goto L_ret;
     g = m9v;
   }
-  Rdf_NewReader (&(scratch), &(r), err->res, text, (m9_sl_CHAR){ NULL, 0 }, false, err);
+  Rdf_NewReader (&(scratch), &(r), err->res, text, ((m9_sl_UTF8){ NULL, 0 }), false, err);
   if (err->exc) goto L_ret;
   for (;;) {
     Rdf_SkipWs (&(r), err->res, err);
@@ -845,7 +932,7 @@ Rdf_Graph * Rdf_ParseNTriples (m9_pool *pool, m9_sl_CHAR text, m9_state *err)
       p = m9v;
     }
     if (((p.kind).tag != (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)) {
-      Rdf_Fail (&(r), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 30 }), err);
+      Rdf_Fail (&(r), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 30 }), err);
       if (err->exc) goto L_ret;
     }
     Rdf_SkipBlanks (&(r), err->res, err);
@@ -856,7 +943,7 @@ Rdf_Graph * Rdf_ParseNTriples (m9_pool *pool, m9_sl_CHAR text, m9_state *err)
     }
     Rdf_SkipBlanks (&(r), err->res, err);
     if (err->exc) goto L_ret;
-    Rdf_Expect (&(r), err->res, 46u, ((m9_sl_CHAR){ (uint32_t *) m9s1, 23 }), err);
+    Rdf_Expect (&(r), err->res, 46u, ((m9_sl_UTF8){ (uint8_t *) m9s1, 23 }), err);
     if (err->exc) goto L_ret;
     Rdf_SkipBlanks (&(r), err->res, err);
     if (err->exc) goto L_ret;
@@ -874,7 +961,7 @@ Rdf_Graph * Rdf_ParseNTriples (m9_pool *pool, m9_sl_CHAR text, m9_state *err)
     bool m9t4 = (((!Rdf_AtEnd (&(r), err->res, err)) && (Rdf_PeekAt (&(r), err->res, INT64_C(0), err) != 10u)) && (Rdf_PeekAt (&(r), err->res, INT64_C(0), err) != 13u));
     if (err->exc) goto L_ret;
     if (m9t4) {
-      Rdf_Fail (&(r), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s2, 36 }), err);
+      Rdf_Fail (&(r), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s2, 36 }), err);
       if (err->exc) goto L_ret;
     }
     Rdf_Add (pool, &(g), &((*pool)), &(s), &(p), &(o), err);
@@ -891,7 +978,7 @@ L_ret: ;
   return m9ret;
 }
 
-Rdf_Graph * Rdf_ParseTurtle (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, m9_state *err)
+Rdf_Graph * Rdf_ParseTurtle (m9_pool *pool, m9_sl_UTF8 text, m9_sl_UTF8 base, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -922,7 +1009,7 @@ Rdf_Graph * Rdf_ParseTurtle (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, m9
       if (err->exc) goto L_hdl_m9t1;
       Rdf_SkipWs (&(r), err->res, err);
       if (err->exc) goto L_hdl_m9t1;
-      Rdf_Expect (&(r), err->res, 46u, ((m9_sl_CHAR){ (uint32_t *) m9s3, 26 }), err);
+      Rdf_Expect (&(r), err->res, 46u, ((m9_sl_UTF8){ (uint8_t *) m9s3, 26 }), err);
       if (err->exc) goto L_hdl_m9t1;
     }
   }
@@ -930,7 +1017,7 @@ Rdf_Graph * Rdf_ParseTurtle (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, m9
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    Rdf_Fail (&(r), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s4, 36 }), err);
+    Rdf_Fail (&(r), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s4, 36 }), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -947,7 +1034,7 @@ L_ret: ;
   return m9ret;
 }
 
-Rdf_Graph * Rdf_ParseRdfXml (m9_pool *pool, m9_sl_BYTE doc, m9_sl_CHAR base, m9_state *err)
+Rdf_Graph * Rdf_ParseRdfXml (m9_pool *pool, m9_sl_BYTE doc, m9_sl_UTF8 base, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -958,9 +1045,9 @@ Rdf_Graph * Rdf_ParseRdfXml (m9_pool *pool, m9_sl_BYTE doc, m9_sl_CHAR base, m9_
   Xml_Element * root = NULL; (void) root;
   Rdf_Graph * g = NULL; (void) g;
   Rdf_XState st = {0}; (void) st;
-  m9_sl_CHAR b = {0}; (void) b;
-  m9_sl_CHAR lang = {0}; (void) lang;
-  m9_sl_CHAR m = {0}; (void) m;
+  m9_sl_UTF8 b = {0}; (void) b;
+  m9_sl_UTF8 lang = {0}; (void) lang;
+  m9_sl_UTF8 m = {0}; (void) m;
   int64_t i = 0; (void) i;
   int64_t l = 0; (void) l;
   int64_t c = 0; (void) c;
@@ -972,14 +1059,14 @@ Rdf_Graph * Rdf_ParseRdfXml (m9_pool *pool, m9_sl_BYTE doc, m9_sl_CHAR base, m9_
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Xml_SyntaxError) {
-    m9_sl_CHAR msg = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) msg;
+    m9_sl_UTF8 msg = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) msg;
     int64_t line = err->i[0]; (void) line;
     int64_t col = err->i[1]; (void) col;
     err->exc = NULL;
     m = msg;
     l = line;
     c = col;
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 5 }), m, err)) m9t3 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 5 }), m, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 5 }), m, err)) m9t3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 5 }), m, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     err->i[0] = l;
     err->i[1] = c;
     m9_raise (err, &Rdf_SyntaxError);
@@ -987,14 +1074,14 @@ L_hdl_m9t1: ;
     goto L_dn_m9t2;
   }
   if (err->exc == &Xml_Unsupported) {
-    m9_sl_CHAR msg = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) msg;
+    m9_sl_UTF8 msg = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) msg;
     int64_t line = err->i[0]; (void) line;
     int64_t col = err->i[1]; (void) col;
     err->exc = NULL;
     m = msg;
     l = line;
     c = col;
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 5 }), m, err)) m9t4 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 5 }), m, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 5 }), m, err)) m9t4 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s6, 5 }), m, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     err->i[0] = l;
     err->i[1] = c;
     m9_raise (err, &Rdf_SyntaxError);
@@ -1007,16 +1094,16 @@ L_dn_m9t2: ;
     if (err->exc) goto L_ret;
     g = m9v;
   }
-  Rdf_NewReader (pool, &(st.r), err->res, (m9_sl_CHAR){ NULL, 0 }, base, true, err);
+  Rdf_NewReader (pool, &(st.r), err->res, ((m9_sl_UTF8){ NULL, 0 }), base, true, err);
   if (err->exc) goto L_ret;
-  { __typeof__(st.ids) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__(st.ids) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     st.ids = m9v;
   }
   st.nids = INT64_C(0);
   b = base;
-  lang = (m9_sl_CHAR){ NULL, 0 };
-  bool m9t5 = (Rdf_IsRdf (root, err) && Text_Eq (root->local, ((m9_sl_CHAR){ (uint32_t *) m9s7, 3 }), err));
+  lang = ((m9_sl_UTF8){ NULL, 0 });
+  bool m9t5 = (Rdf_IsRdf (root, err) && Text_EqUtf (root->local, ((m9_sl_UTF8){ (uint8_t *) m9s7, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t5) {
     Rdf_Scoped (root, &(st), err->res, &(b), &(lang), err);
@@ -1028,31 +1115,29 @@ L_dn_m9t2: ;
     if (i <= m9t6to) for (;;) {
       { __typeof__((*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).ns) m9a1 = (*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-      bool m9t8 = (!(({ bool m9t7 = Text_Eq (m9a1, Rdf_XmlnsUri, err); if (!m9t7) { { __typeof__((*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).ns) m9a2 = (*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t7 = (Text_Eq (m9a2, Rdf_XmlNsUri, err)); } } m9t7; })));
+      bool m9t8 = (!(({ bool m9t7 = Text_EqUtf (m9a1, ((m9_sl_UTF8){ (uint8_t *) m9s8, 29 }), err); if (!m9t7) { { __typeof__((*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).ns) m9a2 = (*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t7 = (Text_EqUtf (m9a2, ((m9_sl_UTF8){ (uint8_t *) m9s9, 36 }), err)); } } m9t7; })));
       if (err->exc) goto L_ret;
       if (m9t8) {
-        m9_mark m9t9 = m9_pool_mark (err->res);
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s8, 25 }), (*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a3 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s8, 25 }), (*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).name, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s10, 25 }), (*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s10, 25 }), (*(Xml_Attr *) m9_at (root->attrs.p, i, root->attrs.len, sizeof (Xml_Attr), err)).name, err);
           if (err->exc) goto L_ret;
         Rdf_XFail (m9a3, err);
         if (err->exc) goto L_ret;
         }
-        m9_pool_release (err->res, m9t9);
       } }
       if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
-    bool m9t10 = (!Rdf_ContentIsElements (root, err));
+    bool m9t9 = (!Rdf_ContentIsElements (root, err));
     if (err->exc) goto L_ret;
-    if (m9t10) {
-      Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s9, 25 }), err);
+    if (m9t9) {
+      Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s11, 25 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(i) m9t11to;
+    { __typeof__(i) m9t10to;
     i = INT64_C(0);
-    m9t11to = m9_sub_i64 ((root->kids).len, INT64_C(1), err);
+    m9t10to = m9_sub_i64 ((root->kids).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    if (i <= m9t11to) for (;;) {
+    if (i <= m9t10to) for (;;) {
       { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (root->kids.p, i, root->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a4 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (root->kids.p, i, root->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
         if (err->exc) goto L_ret;
       { __typeof__(t) m9v = Rdf_NodeElement (pool, &(st), err->res, m9a4, &(g), &((*pool)), b, lang, err);
@@ -1060,7 +1145,7 @@ L_dn_m9t2: ;
         t = m9v;
       }
       }
-      if ((uint64_t) m9t11to - (uint64_t) i < (uint64_t) 1) break;
+      if ((uint64_t) m9t10to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   } else {
@@ -1080,7 +1165,7 @@ L_ret: ;
   return m9ret;
 }
 
-Rdf_Graph * Rdf_ParseJsonLd (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, Json_Node * context, m9_state *err)
+Rdf_Graph * Rdf_ParseJsonLd (m9_pool *pool, m9_sl_UTF8 text, m9_sl_UTF8 base, Json_Node * context, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1096,12 +1181,12 @@ Rdf_Graph * Rdf_ParseJsonLd (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, Js
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   int64_t k = 0; (void) k;
-  m9_sl_m9_sl_CHAR names = {0}; (void) names;
+  m9_sl_m9_sl_UTF8 names = {0}; (void) names;
   Rdf_Term subj = {0}; (void) subj;
   Rdf_Term o = {0}; (void) o;
   Json_Node * arr = NULL; (void) arr;
   bool ok = false; (void) ok;
-  m9_sl_CHAR m = {0}; (void) m;
+  m9_sl_UTF8 m = {0}; (void) m;
   int64_t l = 0; (void) l;
   int64_t cc = 0; (void) cc;
   { __typeof__(doc) m9v = Json_ParseIn (&(scratch), text, err);
@@ -1111,14 +1196,14 @@ Rdf_Graph * Rdf_ParseJsonLd (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, Js
   goto L_dn_m9t4;
 L_hdl_m9t3: ;
   if (err->exc == &Json_ParseError) {
-    m9_sl_CHAR msg = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) msg;
+    m9_sl_UTF8 msg = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) msg;
     int64_t line = err->i[0]; (void) line;
     int64_t col = err->i[1]; (void) col;
     err->exc = NULL;
     m = msg;
     l = line;
     cc = col;
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s10, 6 }), m, err)) m9t5 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s10, 6 }), m, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), m, err)) m9t5 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), m, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     err->i[0] = l;
     err->i[1] = cc;
     m9_raise (err, &Rdf_SyntaxError);
@@ -1131,9 +1216,9 @@ L_dn_m9t4: ;
     if (err->exc) goto L_hdl_m9t1;
     g = m9v;
   }
-  Rdf_NewReader (&(scratch), &(st.r), err->res, (m9_sl_CHAR){ NULL, 0 }, base, true, err);
+  Rdf_NewReader (&(scratch), &(st.r), err->res, ((m9_sl_UTF8){ NULL, 0 }), base, true, err);
   if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(st.docBase) m9v = Text_Keep (&(scratch), base, err);
+  { __typeof__(st.docBase) m9v = Text_KeepUtf (&(scratch), base, err);
     if (err->exc) goto L_hdl_m9t1;
     st.docBase = m9v;
   }
@@ -1148,7 +1233,7 @@ L_dn_m9t4: ;
       c = m9v;
     }
   } }
-  { __typeof__(nm.ids) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), INT64_C(16), err);
+  { __typeof__(nm.ids) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), INT64_C(16), err);
     if (err->exc) goto L_hdl_m9t1;
     nm.ids = m9v;
   }
@@ -1157,10 +1242,10 @@ L_dn_m9t4: ;
     nm.nodes = m9v;
   }
   nm.n = INT64_C(0);
-  { Json_Node * x = Rdf_Expand (&(scratch), &(st), err->res, &(c), (m9_sl_CHAR){ NULL, 0 }, false, doc, err);
+  { Json_Node * x = Rdf_Expand (&(scratch), &(st), err->res, &(c), ((m9_sl_UTF8){ NULL, 0 }), false, doc, err);
   if (err->exc) goto L_hdl_m9t1;
   if (x != NULL) {
-    Rdf_MapElement (&(scratch), &(st), err->res, &(nm), err->res, true, x, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, false, NULL, err);
+    Rdf_MapElement (&(scratch), &(st), err->res, &(nm), err->res, true, x, ((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), false, NULL, err);
     if (err->exc) goto L_hdl_m9t1;
   } }
   { __typeof__(i) m9t6to;
@@ -1168,35 +1253,38 @@ L_dn_m9t4: ;
   m9t6to = m9_sub_i64 (nm.n, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   if (i <= m9t6to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err))) m9a5 = (*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err))) m9a5 = (*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_hdl_m9t1;
     bool m9t7 = Rdf_IsBlankId (m9a5, err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t7) {
-      { __typeof__(({ __auto_type m9t8 = (*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err)); int64_t m9t8a = INT64_C(2), m9t8n = m9_sub_i64 (((*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err))).len, INT64_C(2), err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9a6 = ({ __auto_type m9t8 = (*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err)); int64_t m9t8a = INT64_C(2), m9t8n = m9_sub_i64 (((*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err))).len, INT64_C(2), err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err))) m9a6 = (*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(subj) m9v = Rdf_BlankT (m9a6, err);
+      { __typeof__(m9_utf_slice ((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err)), INT64_C(2), m9_sub_i64 (Text_BLen (m9a6, err), INT64_C(2), err), err)) m9a7 = m9_utf_slice ((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err)), INT64_C(2), m9_sub_i64 (Text_BLen (m9a6, err), INT64_C(2), err), err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(subj) m9v = Rdf_BlankT (m9a7, err);
         if (err->exc) goto L_hdl_m9t1;
         subj = m9v;
       }
       }
+      }
     } else {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err))) m9a7 = (*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err))) m9a8 = (*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(subj) m9v = Rdf_IriT (m9a7, err);
+      { __typeof__(subj) m9v = Rdf_IriT (m9a8, err);
         if (err->exc) goto L_hdl_m9t1;
         subj = m9v;
       }
       }
     } }
-    { __typeof__((*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err))) m9a8 = (*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err))) m9a9 = (*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_hdl_m9t1;
-    bool m9t10 = ({ bool m9t9 = Rdf_IsAbsolute (m9a8, err); if (!m9t9) { { __typeof__((*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err))) m9a9 = (*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t9 = (Rdf_IsBlankId (m9a9, err)); } } m9t9; });
+    bool m9t10 = ({ bool m9t9 = Rdf_IsAbsolute (m9a9, err); if (!m9t9) { { __typeof__((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err))) m9a10 = (*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_hdl_m9t1; m9t9 = (Rdf_IsBlankId (m9a10, err)); } } m9t9; });
     if (err->exc) goto L_hdl_m9t1;
     if (m9t10) {
-      { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a10 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a11 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(names) m9v = Rdf_SortedNames (m9a10, err);
+      { __typeof__(names) m9v = Rdf_SortedNames (m9a11, err);
         if (err->exc) goto L_hdl_m9t1;
         names = m9v;
       }
@@ -1206,14 +1294,14 @@ L_dn_m9t4: ;
       m9t11to = m9_sub_i64 ((names).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
       if (j <= m9t11to) for (;;) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a11 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a12 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_hdl_m9t1;
-        bool m9t12 = Text_Eq (m9a11, ((m9_sl_CHAR){ (uint32_t *) m9s11, 5 }), err);
+        bool m9t12 = Text_EqUtf (m9a12, ((m9_sl_UTF8){ (uint8_t *) m9s13, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t12) {
-          { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a12 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+          { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a13 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(arr) m9v = Rdf_JGet (m9a12, ((m9_sl_CHAR){ (uint32_t *) m9s12, 5 }), err);
+          { __typeof__(arr) m9v = Rdf_JGet (m9a13, ((m9_sl_UTF8){ (uint8_t *) m9s14, 5 }), err);
             if (err->exc) goto L_hdl_m9t1;
             arr = m9v;
           }
@@ -1223,9 +1311,9 @@ L_dn_m9t4: ;
           m9t13to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
           if (k <= m9t13to) for (;;) {
-            { __typeof__(Json_Item (arr, k, err)) m9a13 = Json_Item (arr, k, err);
+            { __typeof__(Json_Item (arr, k, err)) m9a14 = Json_Item (arr, k, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(m) m9v = Rdf_JStr (m9a13, err);
+            { __typeof__(m) m9v = Rdf_JStr (m9a14, err);
               if (err->exc) goto L_hdl_m9t1;
               m = m9v;
             }
@@ -1238,19 +1326,19 @@ L_dn_m9t4: ;
                 m = m9v;
               }
             }
-            { __typeof__(Rdf_RefTo (&(scratch), m, err)) m9a14 = Rdf_RefTo (&(scratch), m, err);
+            { __typeof__(Rdf_RefTo (&(scratch), m, err)) m9a15 = Rdf_RefTo (&(scratch), m, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(o) m9v = Rdf_ObjectToTerm (&(scratch), &(st), err->res, m9a14, &(ok), err);
+            { __typeof__(o) m9v = Rdf_ObjectToTerm (&(scratch), &(st), err->res, m9a15, &(ok), err);
               if (err->exc) goto L_hdl_m9t1;
               o = m9v;
             }
             }
             if (ok) {
-              { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s13, 4 }), err)) m9a15 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s13, 4 }), err);
+              { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s15, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s16, 4 }), err)) m9a16 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s15, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s16, 4 }), err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Rdf_IriT (m9a15, err)) m9a16 = Rdf_IriT (m9a15, err);
+              { __typeof__(Rdf_IriT (m9a16, err)) m9a17 = Rdf_IriT (m9a16, err);
                 if (err->exc) goto L_hdl_m9t1;
-              Rdf_Add (pool, &(g), &((*pool)), &(subj), &m9a16, &(o), err);
+              Rdf_Add (pool, &(g), &((*pool)), &(subj), &m9a17, &(o), err);
               if (err->exc) goto L_hdl_m9t1;
               }
               }
@@ -1259,17 +1347,17 @@ L_dn_m9t4: ;
             k += 1;
           } }
         } else {
-          { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a17 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+          { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a18 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
             if (err->exc) goto L_hdl_m9t1;
-          bool m9t17 = ({ bool m9t16 = ({ bool m9t15 = Rdf_IsKeyword (m9a17, err); if (!m9t15) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a18 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t15 = (Rdf_IsBlankId (m9a18, err)); } } m9t15; }); if (!m9t16) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a19 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t16 = ((!Rdf_IsAbsolute (m9a19, err))); } } m9t16; });
+          bool m9t17 = ({ bool m9t16 = ({ bool m9t15 = Rdf_IsKeyword (m9a18, err); if (!m9t15) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a19 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_hdl_m9t1; m9t15 = (Rdf_IsBlankId (m9a19, err)); } } m9t15; }); if (!m9t16) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a20 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_hdl_m9t1; m9t16 = ((!Rdf_IsAbsolute (m9a20, err))); } } m9t16; });
           if (err->exc) goto L_hdl_m9t1;
           if (m9t17) {
         } else {
-          { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a20 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+          { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a21 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a21 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+          { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a22 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(arr) m9v = Rdf_JGet (m9a20, m9a21, err);
+          { __typeof__(arr) m9v = Rdf_JGet (m9a21, m9a22, err);
             if (err->exc) goto L_hdl_m9t1;
             arr = m9v;
           }
@@ -1280,43 +1368,43 @@ L_dn_m9t4: ;
           m9t18to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
           if (k <= m9t18to) for (;;) {
-            { __typeof__(Json_Item (arr, k, err)) m9a22 = Json_Item (arr, k, err);
+            { __typeof__(Json_Item (arr, k, err)) m9a23 = Json_Item (arr, k, err);
               if (err->exc) goto L_hdl_m9t1;
-            bool m9t19 = Rdf_IsListObj (m9a22, err);
+            bool m9t19 = Rdf_IsListObj (m9a23, err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t19) {
-              { __typeof__(Json_Item (arr, k, err)) m9a23 = Json_Item (arr, k, err);
+              { __typeof__(Json_Item (arr, k, err)) m9a24 = Json_Item (arr, k, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Rdf_JGet (m9a23, ((m9_sl_CHAR){ (uint32_t *) m9s14, 5 }), err)) m9a24 = Rdf_JGet (m9a23, ((m9_sl_CHAR){ (uint32_t *) m9s14, 5 }), err);
+              { __typeof__(Rdf_JGet (m9a24, ((m9_sl_UTF8){ (uint8_t *) m9s17, 5 }), err)) m9a25 = Rdf_JGet (m9a24, ((m9_sl_UTF8){ (uint8_t *) m9s17, 5 }), err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(o) m9v = Rdf_ListToTerm (pool, &(st), err->res, &(g), &((*pool)), m9a24, err);
+              { __typeof__(o) m9v = Rdf_ListToTerm (pool, &(st), err->res, &(g), &((*pool)), m9a25, err);
                 if (err->exc) goto L_hdl_m9t1;
                 o = m9v;
               }
               }
               }
-              { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a25 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+              { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a26 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Rdf_IriT (m9a25, err)) m9a26 = Rdf_IriT (m9a25, err);
+              { __typeof__(Rdf_IriT (m9a26, err)) m9a27 = Rdf_IriT (m9a26, err);
                 if (err->exc) goto L_hdl_m9t1;
-              Rdf_Add (pool, &(g), &((*pool)), &(subj), &m9a26, &(o), err);
+              Rdf_Add (pool, &(g), &((*pool)), &(subj), &m9a27, &(o), err);
               if (err->exc) goto L_hdl_m9t1;
               }
               }
             } else {
-              { __typeof__(Json_Item (arr, k, err)) m9a27 = Json_Item (arr, k, err);
+              { __typeof__(Json_Item (arr, k, err)) m9a28 = Json_Item (arr, k, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(o) m9v = Rdf_ObjectToTerm (&(scratch), &(st), err->res, m9a27, &(ok), err);
+              { __typeof__(o) m9v = Rdf_ObjectToTerm (&(scratch), &(st), err->res, m9a28, &(ok), err);
                 if (err->exc) goto L_hdl_m9t1;
                 o = m9v;
               }
               }
               if (ok) {
-                { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a28 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+                { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a29 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(Rdf_IriT (m9a28, err)) m9a29 = Rdf_IriT (m9a28, err);
+                { __typeof__(Rdf_IriT (m9a29, err)) m9a30 = Rdf_IriT (m9a29, err);
                   if (err->exc) goto L_hdl_m9t1;
-                Rdf_Add (pool, &(g), &((*pool)), &(subj), &m9a29, &(o), err);
+                Rdf_Add (pool, &(g), &((*pool)), &(subj), &m9a30, &(o), err);
                 if (err->exc) goto L_hdl_m9t1;
                 }
                 }
@@ -1339,9 +1427,9 @@ L_dn_m9t4: ;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s15, 16 })) m9t20 = ((m9_sl_CHAR){ (uint32_t *) m9s15, 16 }); err->s[0].p = m9t20.p; err->s[0].len = m9t20.len; m9_pay_keep (err, 0, sizeof (*m9t20.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s18, 16 })) m9t20 = ((m9_sl_UTF8){ (uint8_t *) m9s18, 16 }); err->s[0].p = m9t20.p; err->s[0].len = m9t20.len; m9_pay_keep (err, 0, sizeof (*m9t20.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -1350,7 +1438,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 16 })) m9t21 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 16 }); err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s19, 16 })) m9t21 = ((m9_sl_UTF8){ (uint8_t *) m9s19, 16 }); err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -1367,13 +1455,13 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Rdf_JsonLd (Rdf_Graph * g, Json_Node * context, m9_state *err)
+m9_sl_UTF8 Rdf_JsonLd (Rdf_Graph * g, Json_Node * context, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   Rdf_JState st = {0}; (void) st;
   Rdf_Ctx c = {0}; (void) c;
@@ -1395,16 +1483,16 @@ m9_sl_CHAR Rdf_JsonLd (Rdf_Graph * g, Json_Node * context, m9_state *err)
   Json_Node * types = NULL; (void) types;
   Json_Node * ctxCopy = NULL; (void) ctxCopy;
   Json_Node * tv = NULL; (void) tv;
-  m9_sl_CHAR sid = {0}; (void) sid;
-  m9_sl_CHAR key = {0}; (void) key;
-  m9_sl_CHAR pname = {0}; (void) pname;
-  m9_sl_CHAR tm = {0}; (void) tm;
-  m9_sl_m9_sl_CHAR names = {0}; (void) names;
+  m9_sl_UTF8 sid = {0}; (void) sid;
+  m9_sl_UTF8 key = {0}; (void) key;
+  m9_sl_UTF8 pname = {0}; (void) pname;
+  m9_sl_UTF8 tm = {0}; (void) tm;
+  m9_sl_m9_sl_UTF8 names = {0}; (void) names;
   bool isList = false; (void) isList;
-  Rdf_NewReader (&(scratch), &(st.r), err->res, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, true, err);
+  Rdf_NewReader (&(scratch), &(st.r), err->res, ((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), true, err);
   if (err->exc) goto L_hdl_m9t1;
-  st.docBase = (m9_sl_CHAR){ NULL, 0 };
-  { __typeof__(c) m9v = Rdf_NewCtx (&(scratch), (m9_sl_CHAR){ NULL, 0 }, err);
+  st.docBase = ((m9_sl_UTF8){ NULL, 0 });
+  { __typeof__(c) m9v = Rdf_NewCtx (&(scratch), ((m9_sl_UTF8){ NULL, 0 }), err);
     if (err->exc) goto L_hdl_m9t1;
     c = m9v;
   }
@@ -1418,11 +1506,11 @@ m9_sl_CHAR Rdf_JsonLd (Rdf_Graph * g, Json_Node * context, m9_state *err)
   goto L_dn_m9t4;
 L_hdl_m9t3: ;
   if (err->exc == &Rdf_SyntaxError) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     int64_t l = err->i[0]; (void) l;
     int64_t cc = err->i[1]; (void) cc;
     err->exc = NULL;
-    { __typeof__(c) m9v = Rdf_NewCtx (&(scratch), (m9_sl_CHAR){ NULL, 0 }, err);
+    { __typeof__(c) m9v = Rdf_NewCtx (&(scratch), ((m9_sl_UTF8){ NULL, 0 }), err);
       if (err->exc) goto L_hdl_m9t1;
       c = m9v;
     }
@@ -1430,7 +1518,7 @@ L_hdl_m9t3: ;
   }
   goto L_hdl_m9t1;
 L_dn_m9t4: ;
-  { __typeof__(nm.ids) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), INT64_C(16), err);
+  { __typeof__(nm.ids) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), INT64_C(16), err);
     if (err->exc) goto L_hdl_m9t1;
     nm.ids = m9v;
   }
@@ -1456,11 +1544,9 @@ L_dn_m9t4: ;
   m9t5to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   if (i <= m9t5to) for (;;) {
-    m9_mark m9t6 = m9_pool_mark (err->res);
-    bool m9t8 = ({ bool m9t7 = ((((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag) && (!(*(bool *) m9_at (consumed.p, i, consumed.len, sizeof (bool), err)))); if (m9t7) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a30 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;   if (err->exc) goto L_hdl_m9t1; { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), err)) m9a31 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), err);   if (err->exc) goto L_hdl_m9t1; m9t7 = ((!Text_Eq (m9a30, m9a31, err))); } } } m9t7; });
+    bool m9t7 = ({ bool m9t6 = ((((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag) && (!(*(bool *) m9_at (consumed.p, i, consumed.len, sizeof (bool), err)))); if (m9t6) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a31 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;   if (err->exc) goto L_hdl_m9t1; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s20, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s21, 5 }), err)) m9a32 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s20, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s21, 5 }), err);   if (err->exc) goto L_hdl_m9t1; m9t6 = ((!Text_EqUtf (m9a31, m9a32, err))); } } } m9t6; });
     if (err->exc) goto L_hdl_m9t1;
-    m9_pool_release (err->res, m9t6);
-    if (m9t8) {
+    if (m9t7) {
       { Json_Node * lo = Rdf_ListObj (&(scratch), g, (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, &(consumed), err);
       if (err->exc) goto L_hdl_m9t1;
       if (lo != NULL) {
@@ -1473,18 +1559,18 @@ L_dn_m9t4: ;
     if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(i) m9t9to;
+  { __typeof__(i) m9t8to;
   i = INT64_C(0);
-  m9t9to = m9_sub_i64 (g->n, INT64_C(1), err);
+  m9t8to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (i <= m9t9to) for (;;) {
-    bool m9t10 = (!(*(bool *) m9_at (consumed.p, i, consumed.len, sizeof (bool), err)));
+  if (i <= m9t8to) for (;;) {
+    bool m9t9 = (!(*(bool *) m9_at (consumed.p, i, consumed.len, sizeof (bool), err)));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t10) {
-      bool m9t11 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
+    if (m9t9) {
+      bool m9t10 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t11) {
-        { __typeof__(sid) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s18, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value, err);
+      if (m9t10) {
+        { __typeof__(sid) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s22, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value, err);
           if (err->exc) goto L_hdl_m9t1;
           sid = m9v;
         }
@@ -1498,50 +1584,46 @@ L_dn_m9t4: ;
         if (err->exc) goto L_hdl_m9t1;
         node = m9v;
       }
-      m9_mark m9t12 = m9_pool_mark (err->res);
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a32 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a33 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s19, 4 }), err)) m9a33 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s19, 4 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s23, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s24, 4 }), err)) m9a34 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s23, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s24, 4 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      bool m9t13 = (Text_Eq (m9a32, m9a33, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag != (((Rdf_Kind){ .tag = Rdf_Kind_Literal })).tag));
+      bool m9t11 = (Text_EqUtf (m9a33, m9a34, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag != (((Rdf_Kind){ .tag = Rdf_Kind_Literal })).tag));
       if (err->exc) goto L_hdl_m9t1;
-      m9_pool_release (err->res, m9t12);
-      if (m9t13) {
-        bool m9t14 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
+      if (m9t11) {
+        bool m9t12 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t14) {
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s20, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, err)) m9a34 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s20, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, err);
-            if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a34, err);
-            if (err->exc) goto L_hdl_m9t1;
-            tv = m9v;
-          }
-          }
-        } else {
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a35 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+        if (m9t12) {
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, err)) m9a35 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s25, 2 }), (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, err);
             if (err->exc) goto L_hdl_m9t1;
           { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a35, err);
             if (err->exc) goto L_hdl_m9t1;
             tv = m9v;
           }
           }
+        } else {
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a36 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+            if (err->exc) goto L_hdl_m9t1;
+          { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a36, err);
+            if (err->exc) goto L_hdl_m9t1;
+            tv = m9v;
+          }
+          }
         }
-        Rdf_AddUnique (&(scratch), &(node), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s21, 5 }), tv, err);
+        Rdf_AddUnique (&(scratch), &(node), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s26, 5 }), tv, err);
         if (err->exc) goto L_hdl_m9t1;
       } else {
-        bool m9t15 = (*(bool *) m9_at (hasList.p, i, hasList.len, sizeof (bool), err));
+        bool m9t13 = (*(bool *) m9_at (hasList.p, i, hasList.len, sizeof (bool), err));
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t15) {
+        if (m9t13) {
           { __typeof__(val) m9v = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (listAt.p, i, listAt.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
             if (err->exc) goto L_hdl_m9t1;
             val = m9v;
           }
         } else {
-          m9_mark m9t16 = m9_pool_mark (err->res);
-          bool m9t18 = ({ bool m9t17 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t17) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a36 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_hdl_m9t1; { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s22, 3 }), err)) m9a37 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s22, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t17 = (Text_Eq (m9a36, m9a37, err)); } } } m9t17; });
+          bool m9t15 = ({ bool m9t14 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t14) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a37 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_hdl_m9t1; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s27, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s28, 3 }), err)) m9a38 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s27, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s28, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t14 = (Text_EqUtf (m9a37, m9a38, err)); } } } m9t14; });
           if (err->exc) goto L_hdl_m9t1;
-          m9_pool_release (err->res, m9t16);
-          if (m9t18) {
+          if (m9t15) {
             { __typeof__(val) m9v = Json_NewObjIn (&(scratch), err);
               if (err->exc) goto L_hdl_m9t1;
               val = m9v;
@@ -1550,79 +1632,79 @@ L_dn_m9t4: ;
               if (err->exc) goto L_hdl_m9t1;
               arr = m9v;
             }
-            Json_Set (&(val), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s23, 5 }), &(arr), &(scratch), err);
+            Json_Set (&(val), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s29, 5 }), &(arr), &(scratch), err);
             if (err->exc) goto L_hdl_m9t1;
         } else {
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a38 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a39 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(val) m9v = Rdf_TermObj (&(scratch), &m9a38, err);
+          { __typeof__(val) m9v = Rdf_TermObj (&(scratch), &m9a39, err);
             if (err->exc) goto L_hdl_m9t1;
             val = m9v;
           }
           }
         } }
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a39 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a40 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
           if (err->exc) goto L_hdl_m9t1;
-        Rdf_AddUnique (&(scratch), &(node), &(scratch), m9a39, val, err);
+        Rdf_AddUnique (&(scratch), &(node), &(scratch), m9a40, val, err);
         if (err->exc) goto L_hdl_m9t1;
         }
       } } }
     }
-    if ((uint64_t) m9t9to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(graph) m9v = Json_NewArrIn (&(scratch), err);
     if (err->exc) goto L_hdl_m9t1;
     graph = m9v;
   }
-  { __typeof__(i) m9t19to;
+  { __typeof__(i) m9t16to;
   i = INT64_C(0);
-  m9t19to = m9_sub_i64 (nm.n, INT64_C(1), err);
+  m9t16to = m9_sub_i64 (nm.n, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (i <= m9t19to) for (;;) {
+  if (i <= m9t16to) for (;;) {
     if (true) {
       { __typeof__(cnode) m9v = Json_NewObjIn (&(scratch), err);
         if (err->exc) goto L_hdl_m9t1;
         cnode = m9v;
       }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err))) m9a40 = (*(m9_sl_CHAR *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err))) m9a41 = (*(m9_sl_UTF8 *) m9_at (nm.ids.p, i, nm.ids.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_CompactIri (&(c), m9a40, false, err)) m9a41 = Rdf_CompactIri (&(c), m9a40, false, err);
+      { __typeof__(Rdf_CompactIri (&(c), m9a41, false, err)) m9a42 = Rdf_CompactIri (&(c), m9a41, false, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a41, err);
+      { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a42, err);
         if (err->exc) goto L_hdl_m9t1;
         tv = m9v;
       }
       }
       }
-      Json_Set (&(cnode), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s24, 3 }), &(tv), &(scratch), err);
+      Json_Set (&(cnode), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s30, 3 }), &(tv), &(scratch), err);
       if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a42 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a43 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(names) m9v = Rdf_SortedNames (m9a42, err);
+      { __typeof__(names) m9v = Rdf_SortedNames (m9a43, err);
         if (err->exc) goto L_hdl_m9t1;
         names = m9v;
       }
       }
-      { __typeof__(j) m9t20to;
+      { __typeof__(j) m9t17to;
       j = INT64_C(0);
-      m9t20to = m9_sub_i64 ((names).len, INT64_C(1), err);
+      m9t17to = m9_sub_i64 ((names).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      if (j <= m9t20to) for (;;) {
-        { __typeof__(key) m9v = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+      if (j <= m9t17to) for (;;) {
+        { __typeof__(key) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_hdl_m9t1;
           key = m9v;
         }
-        bool m9t21 = Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s25, 3 }), err);
+        bool m9t18 = Text_EqUtf (key, ((m9_sl_UTF8){ (uint8_t *) m9s31, 3 }), err);
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t21) {
+        if (m9t18) {
         } else {
-          bool m9t22 = Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s26, 5 }), err);
+          bool m9t19 = Text_EqUtf (key, ((m9_sl_UTF8){ (uint8_t *) m9s32, 5 }), err);
           if (err->exc) goto L_hdl_m9t1;
-          if (m9t22) {
-            { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a43 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+          if (m9t19) {
+            { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a44 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(types) m9v = Rdf_JGet (m9a43, ((m9_sl_CHAR){ (uint32_t *) m9s27, 5 }), err);
+            { __typeof__(types) m9v = Rdf_JGet (m9a44, ((m9_sl_UTF8){ (uint8_t *) m9s33, 5 }), err);
               if (err->exc) goto L_hdl_m9t1;
               types = m9v;
             }
@@ -1631,18 +1713,18 @@ L_dn_m9t4: ;
               if (err->exc) goto L_hdl_m9t1;
               arr = m9v;
             }
-            { __typeof__(k) m9t23to;
+            { __typeof__(k) m9t20to;
             k = INT64_C(0);
-            m9t23to = m9_sub_i64 (Rdf_Items (types, err), INT64_C(1), err);
+            m9t20to = m9_sub_i64 (Rdf_Items (types, err), INT64_C(1), err);
             if (err->exc) goto L_hdl_m9t1;
-            if (k <= m9t23to) for (;;) {
-              { __typeof__(Json_Item (types, k, err)) m9a44 = Json_Item (types, k, err);
+            if (k <= m9t20to) for (;;) {
+              { __typeof__(Json_Item (types, k, err)) m9a45 = Json_Item (types, k, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Rdf_JStr (m9a44, err)) m9a45 = Rdf_JStr (m9a44, err);
+              { __typeof__(Rdf_JStr (m9a45, err)) m9a46 = Rdf_JStr (m9a45, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Rdf_CompactIri (&(c), m9a45, true, err)) m9a46 = Rdf_CompactIri (&(c), m9a45, true, err);
+              { __typeof__(Rdf_CompactIri (&(c), m9a46, true, err)) m9a47 = Rdf_CompactIri (&(c), m9a46, true, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a46, err);
+              { __typeof__(tv) m9v = Json_NewStrIn (&(scratch), m9a47, err);
                 if (err->exc) goto L_hdl_m9t1;
                 tv = m9v;
               }
@@ -1651,34 +1733,34 @@ L_dn_m9t4: ;
               }
               Json_Add (&(arr), &(scratch), &(tv), &(scratch), err);
               if (err->exc) goto L_hdl_m9t1;
-              if ((uint64_t) m9t23to - (uint64_t) k < (uint64_t) 1) break;
+              if ((uint64_t) m9t20to - (uint64_t) k < (uint64_t) 1) break;
               k += 1;
             } }
-            bool m9t24 = (Rdf_Items (arr, err) == INT64_C(1));
+            bool m9t21 = (Rdf_Items (arr, err) == INT64_C(1));
             if (err->exc) goto L_hdl_m9t1;
-            if (m9t24) {
-              { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a47 = Json_Item (arr, INT64_C(0), err);
+            if (m9t21) {
+              { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a48 = Json_Item (arr, INT64_C(0), err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(tv) m9v = Json_CloneIn (&(scratch), m9a47, err);
+              { __typeof__(tv) m9v = Json_CloneIn (&(scratch), m9a48, err);
                 if (err->exc) goto L_hdl_m9t1;
                 tv = m9v;
               }
               }
-              Json_Set (&(cnode), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s28, 5 }), &(tv), &(scratch), err);
+              Json_Set (&(cnode), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s34, 5 }), &(tv), &(scratch), err);
               if (err->exc) goto L_hdl_m9t1;
             } else {
-              Json_Set (&(cnode), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s29, 5 }), &(arr), &(scratch), err);
+              Json_Set (&(cnode), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s35, 5 }), &(arr), &(scratch), err);
               if (err->exc) goto L_hdl_m9t1;
             }
         } else {
-          { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a48 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+          { __typeof__(({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a49 = ({ __auto_type m9n = ((*(Json_Node * *) m9_at (nm.nodes.p, i, nm.nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(arr) m9v = Rdf_JGet (m9a48, key, err);
+          { __typeof__(arr) m9v = Rdf_JGet (m9a49, key, err);
             if (err->exc) goto L_hdl_m9t1;
             arr = m9v;
           }
           }
-          { __typeof__(isList) m9v = ({ bool m9t25 = (Rdf_Items (arr, err) == INT64_C(1)); if (m9t25) { { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a49 = Json_Item (arr, INT64_C(0), err);   if (err->exc) goto L_hdl_m9t1; m9t25 = (Rdf_Has (m9a49, ((m9_sl_CHAR){ (uint32_t *) m9s30, 5 }), err)); } } m9t25; });
+          { __typeof__(isList) m9v = ({ bool m9t22 = (Rdf_Items (arr, err) == INT64_C(1)); if (m9t22) { { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a50 = Json_Item (arr, INT64_C(0), err);   if (err->exc) goto L_hdl_m9t1; m9t22 = (Rdf_Has (m9a50, ((m9_sl_UTF8){ (uint8_t *) m9s36, 5 }), err)); } } m9t22; });
             if (err->exc) goto L_hdl_m9t1;
             isList = m9v;
           }
@@ -1697,12 +1779,12 @@ L_dn_m9t4: ;
               pname = m9v;
             }
           }
-          bool m9t28 = ({ bool m9t27 = (Rdf_Items (arr, err) == INT64_C(1)); if (m9t27) { m9t27 = ((!(({ bool m9t26 = (k >= INT64_C(0)); if (m9t26) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a50 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t26 = (Text_Eq (m9a50, ((m9_sl_CHAR){ (uint32_t *) m9s31, 4 }), err)); } } m9t26; })))); } m9t27; });
+          bool m9t25 = ({ bool m9t24 = (Rdf_Items (arr, err) == INT64_C(1)); if (m9t24) { m9t24 = ((!(({ bool m9t23 = (k >= INT64_C(0)); if (m9t23) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a51 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t23 = (Text_EqUtf (m9a51, ((m9_sl_UTF8){ (uint8_t *) m9s37, 4 }), err)); } } m9t23; })))); } m9t24; });
           if (err->exc) goto L_hdl_m9t1;
-          if (m9t28) {
-            { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a51 = Json_Item (arr, INT64_C(0), err);
+          if (m9t25) {
+            { __typeof__(Json_Item (arr, INT64_C(0), err)) m9a52 = Json_Item (arr, INT64_C(0), err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(val) m9v = Rdf_CompactValue (&(scratch), &(c), k, m9a51, err);
+            { __typeof__(val) m9v = Rdf_CompactValue (&(scratch), &(c), k, m9a52, err);
               if (err->exc) goto L_hdl_m9t1;
               val = m9v;
             }
@@ -1712,40 +1794,40 @@ L_dn_m9t4: ;
               if (err->exc) goto L_hdl_m9t1;
               val = m9v;
             }
-            { __typeof__(n) m9t29to;
+            { __typeof__(n) m9t26to;
             n = INT64_C(0);
-            m9t29to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
+            m9t26to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
             if (err->exc) goto L_hdl_m9t1;
-            if (n <= m9t29to) for (;;) {
-              { __typeof__(Json_Item (arr, n, err)) m9a52 = Json_Item (arr, n, err);
+            if (n <= m9t26to) for (;;) {
+              { __typeof__(Json_Item (arr, n, err)) m9a53 = Json_Item (arr, n, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(item) m9v = Rdf_CompactValue (&(scratch), &(c), k, m9a52, err);
+              { __typeof__(item) m9v = Rdf_CompactValue (&(scratch), &(c), k, m9a53, err);
                 if (err->exc) goto L_hdl_m9t1;
                 item = m9v;
               }
               }
               Json_Add (&(val), &(scratch), &(item), &(scratch), err);
               if (err->exc) goto L_hdl_m9t1;
-              if ((uint64_t) m9t29to - (uint64_t) n < (uint64_t) 1) break;
+              if ((uint64_t) m9t26to - (uint64_t) n < (uint64_t) 1) break;
               n += 1;
             } }
           }
-          { __typeof__(Json_Name (pname, err)) m9a53 = Json_Name (pname, err);
+          { __typeof__(Json_Name (pname, err)) m9a54 = Json_Name (pname, err);
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(Text_Keep (&(scratch), m9a53, err)) m9a54 = Text_Keep (&(scratch), m9a53, err);
+          { __typeof__(Text_KeepUtf (&(scratch), m9a54, err)) m9a55 = Text_KeepUtf (&(scratch), m9a54, err);
             if (err->exc) goto L_hdl_m9t1;
-          Rdf_SetKey (&(scratch), &(cnode), &(scratch), m9a54, val, err);
+          Rdf_SetKey (&(scratch), &(cnode), &(scratch), m9a55, val, err);
           if (err->exc) goto L_hdl_m9t1;
           }
           }
         } }
-        if ((uint64_t) m9t20to - (uint64_t) j < (uint64_t) 1) break;
+        if ((uint64_t) m9t17to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
       Json_Add (&(graph), &(scratch), &(cnode), &(scratch), err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    if ((uint64_t) m9t19to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t16to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(out) m9v = Json_NewObjIn (&(scratch), err);
@@ -1758,10 +1840,10 @@ L_dn_m9t4: ;
       if (err->exc) goto L_hdl_m9t1;
       ctxCopy = m9v;
     }
-    Json_Set (&(out), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s32, 8 }), &(ctxCopy), &(scratch), err);
+    Json_Set (&(out), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s38, 8 }), &(ctxCopy), &(scratch), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
-  Json_Set (&(out), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s33, 6 }), &(graph), &(scratch), err);
+  Json_Set (&(out), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s39, 6 }), &(graph), &(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
   err->res = m9res;
   m9ret = Json_Pretty (out, err);
@@ -1770,17 +1852,17 @@ L_dn_m9t4: ;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    m9ret = ((m9_sl_UTF8){ NULL, 0 });
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    m9ret = ((m9_sl_UTF8){ NULL, 0 });
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -1788,36 +1870,36 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
+m9_sl_UTF8 Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   Xml_Writer * w = NULL; (void) w;
-  m9_sl_m9_sl_CHAR nss = {0}; (void) nss;
+  m9_sl_m9_sl_UTF8 nss = {0}; (void) nss;
   int64_t nns = 0; (void) nns;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   int64_t k = 0; (void) k;
   int64_t at = 0; (void) at;
   m9_sl_BOOL done = {0}; (void) done;
-  m9_sl_CHAR ns = {0}; (void) ns;
-  m9_sl_CHAR local = {0}; (void) local;
-  { __typeof__(nss) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), m9_add_i64 (g->n, INT64_C(1), err), err);
+  m9_sl_UTF8 ns = {0}; (void) ns;
+  m9_sl_UTF8 local = {0}; (void) local;
+  { __typeof__(nss) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), m9_add_i64 (g->n, INT64_C(1), err), err);
     if (err->exc) goto L_ret;
     nss = m9v;
   }
-  (*(m9_sl_CHAR *) m9_at (nss.p, INT64_C(0), nss.len, sizeof (m9_sl_CHAR), err)) = Rdf_RdfNs;
+  (*(m9_sl_UTF8 *) m9_at (nss.p, INT64_C(0), nss.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ (uint8_t *) m9s40, 43 });
   if (err->exc) goto L_ret;
   nns = INT64_C(1);
   { __typeof__(i) m9t1to;
@@ -1825,21 +1907,21 @@ m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
   m9t1to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a55 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a56 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
       if (err->exc) goto L_ret;
-    { __typeof__(at) m9v = Rdf_LocalStart (m9a55, err);
+    { __typeof__(at) m9v = Rdf_LocalStart (m9a56, err);
       if (err->exc) goto L_ret;
       at = m9v;
     }
     }
-    bool m9t2 = ((at == INT64_C(0)) || (at >= ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value).len));
+    bool m9t3 = ({ bool m9t2 = (at == INT64_C(0)); if (!m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a57 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;   if (err->exc) goto L_ret; m9t2 = ((at >= Text_BLen (m9a57, err))); } } m9t2; });
     if (err->exc) goto L_ret;
-    if (m9t2) {
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9t3 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    if (m9t3) {
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9t4 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
       m9_raise (err, &Rdf_NotWritable);
       goto L_ret;
     }
-    { __typeof__(ns) m9v = ({ __auto_type m9t4 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value; int64_t m9t4a = INT64_C(0), m9t4n = at; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+    { __typeof__(ns) m9v = m9_utf_slice ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value, INT64_C(0), at, err);
       if (err->exc) goto L_ret;
       ns = m9v;
     }
@@ -1847,23 +1929,23 @@ m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
       if (err->exc) goto L_ret;
       k = m9v;
     }
-    { __typeof__(j) m9t5to;
+    { __typeof__(j) m9t6to;
     j = INT64_C(0);
-    m9t5to = m9_sub_i64 (nns, INT64_C(1), err);
+    m9t6to = m9_sub_i64 (nns, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    if (j <= m9t5to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_CHAR), err))) m9a56 = (*(m9_sl_CHAR *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_CHAR), err));
+    if (j <= m9t6to) for (;;) {
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err))) m9a58 = (*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      bool m9t6 = Text_Eq (m9a56, ns, err);
+      bool m9t7 = Text_EqUtf (m9a58, ns, err);
       if (err->exc) goto L_ret;
-      if (m9t6) {
+      if (m9t7) {
         k = j;
       } }
-      if ((uint64_t) m9t5to - (uint64_t) j < (uint64_t) 1) break;
+      if ((uint64_t) m9t6to - (uint64_t) j < (uint64_t) 1) break;
       j += 1;
     } }
     if ((k < INT64_C(0))) {
-      (*(m9_sl_CHAR *) m9_at (nss.p, nns, nss.len, sizeof (m9_sl_CHAR), err)) = ns;
+      (*(m9_sl_UTF8 *) m9_at (nss.p, nns, nss.len, sizeof (m9_sl_UTF8), err)) = ns;
       if (err->exc) goto L_ret;
       { __typeof__(nns) m9v = m9_add_i64 (nns, INT64_C(1), err);
         if (err->exc) goto L_ret;
@@ -1877,87 +1959,90 @@ m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
     if (err->exc) goto L_ret;
     w = m9v;
   }
-  Xml_StartTag (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s34, 7 }), err);
+  Xml_StartTag (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s41, 7 }), err);
   if (err->exc) goto L_ret;
-  Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s35, 9 }), Rdf_RdfNs, err);
+  Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s42, 9 }), ((m9_sl_UTF8){ (uint8_t *) m9s43, 43 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(j) m9t7to;
+  { __typeof__(j) m9t8to;
   j = INT64_C(1);
-  m9t7to = m9_sub_i64 (nns, INT64_C(1), err);
+  m9t8to = m9_sub_i64 (nns, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (j <= m9t7to) for (;;) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 8 }), Fmt_I64Str (j, err), err)) m9a57 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 8 }), Fmt_I64Str (j, err), err);
+  if (j <= m9t8to) for (;;) {
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s44, 8 }), Fmt_I64Str (j, err), err)) m9a59 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s44, 8 }), Fmt_I64Str (j, err), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_CHAR), err))) m9a58 = (*(m9_sl_CHAR *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err))) m9a60 = (*(m9_sl_UTF8 *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    Xml_Attribute (&(w), &(scratch), m9a57, m9a58, err);
+    Xml_Attribute (&(w), &(scratch), m9a59, m9a60, err);
     if (err->exc) goto L_ret;
     }
     }
-    if ((uint64_t) m9t7to - (uint64_t) j < (uint64_t) 1) break;
+    if ((uint64_t) m9t8to - (uint64_t) j < (uint64_t) 1) break;
     j += 1;
   } }
   { __typeof__(done) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(scratch), g->n, err);
     if (err->exc) goto L_ret;
     done = m9v;
   }
-  { __typeof__(i) m9t8to;
+  { __typeof__(i) m9t9to;
   i = INT64_C(0);
-  m9t8to = m9_sub_i64 (g->n, INT64_C(1), err);
+  m9t9to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t8to) for (;;) {
-    bool m9t9 = (!(*(bool *) m9_at (done.p, i, done.len, sizeof (bool), err)));
+  if (i <= m9t9to) for (;;) {
+    bool m9t10 = (!(*(bool *) m9_at (done.p, i, done.len, sizeof (bool), err)));
     if (err->exc) goto L_ret;
-    if (m9t9) {
-      Xml_StartTag (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s37, 15 }), err);
+    if (m9t10) {
+      Xml_StartTag (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s45, 15 }), err);
       if (err->exc) goto L_ret;
-      bool m9t10 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
+      bool m9t11 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
       if (err->exc) goto L_ret;
-      if (m9t10) {
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a59 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
+      if (m9t11) {
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a61 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
           if (err->exc) goto L_ret;
-        Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s38, 10 }), m9a59, err);
+        Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s46, 10 }), m9a61, err);
         if (err->exc) goto L_ret;
         }
       } else {
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a60 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a62 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
           if (err->exc) goto L_ret;
-        Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s39, 9 }), m9a60, err);
+        Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s47, 9 }), m9a62, err);
         if (err->exc) goto L_ret;
         }
       }
-      { __typeof__(j) m9t11to;
+      { __typeof__(j) m9t12to;
       j = i;
-      m9t11to = m9_sub_i64 (g->n, INT64_C(1), err);
+      m9t12to = m9_sub_i64 (g->n, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      if (j <= m9t11to) for (;;) {
-        bool m9t13 = ({ bool m9t12 = ((!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))) && (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag)); if (m9t12) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a61 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) goto L_ret; { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a62 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) goto L_ret; m9t12 = (Text_Eq (m9a61, m9a62, err)); } } } m9t12; });
+      if (j <= m9t12to) for (;;) {
+        bool m9t14 = ({ bool m9t13 = ((!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))) && (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag)); if (m9t13) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a63 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) goto L_ret; { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a64 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) goto L_ret; m9t13 = (Text_EqUtf (m9a63, m9a64, err)); } } } m9t13; });
         if (err->exc) goto L_ret;
-        if (m9t13) {
+        if (m9t14) {
           (*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err)) = true;
           if (err->exc) goto L_ret;
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a63 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a65 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value;
             if (err->exc) goto L_ret;
-          { __typeof__(at) m9v = Rdf_LocalStart (m9a63, err);
+          { __typeof__(at) m9v = Rdf_LocalStart (m9a65, err);
             if (err->exc) goto L_ret;
             at = m9v;
           }
           }
-          { __typeof__(ns) m9v = ({ __auto_type m9t14 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value; int64_t m9t14a = INT64_C(0), m9t14n = at; int64_t m9t14o = m9_chk_slice (m9t14a, m9t14n, m9t14.len, err); (__typeof__(m9t14)){ m9t14.p + m9t14o, err->exc ? 0 : m9t14n }; });
+          { __typeof__(ns) m9v = m9_utf_slice ((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value, INT64_C(0), at, err);
             if (err->exc) goto L_ret;
             ns = m9v;
           }
-          { __typeof__(local) m9v = ({ __auto_type m9t15 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value; int64_t m9t15a = at, m9t15n = m9_sub_i64 (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value).len, at, err); int64_t m9t15o = m9_chk_slice (m9t15a, m9t15n, m9t15.len, err); (__typeof__(m9t15)){ m9t15.p + m9t15o, err->exc ? 0 : m9t15n }; });
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a66 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+            if (err->exc) goto L_ret;
+          { __typeof__(local) m9v = m9_utf_slice ((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value, at, m9_sub_i64 (Text_BLen (m9a66, err), at, err), err);
             if (err->exc) goto L_ret;
             local = m9v;
           }
+          }
           k = INT64_C(0);
           for (;;) {
-            { __typeof__((*(m9_sl_CHAR *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_CHAR), err))) m9a64 = (*(m9_sl_CHAR *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_UTF8 *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_UTF8), err))) m9a67 = (*(m9_sl_UTF8 *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_UTF8), err));
               if (err->exc) goto L_ret;
-            bool m9t16 = (!Text_Eq (m9a64, ns, err));
+            bool m9t17 = (!Text_EqUtf (m9a67, ns, err));
             if (err->exc) goto L_ret;
-            if (!(m9t16)) break;
+            if (!(m9t17)) break;
             { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
               if (err->exc) goto L_ret;
               k = m9v;
@@ -1965,60 +2050,64 @@ m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
             }
           }
           if ((k == INT64_C(0))) {
-            { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s40, 4 }), local, err)) m9a65 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s40, 4 }), local, err);
+            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s48, 4 }), local, err)) m9a68 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s48, 4 }), local, err);
               if (err->exc) goto L_ret;
-            Xml_StartTag (&(w), &(scratch), m9a65, err);
+            Xml_StartTag (&(w), &(scratch), m9a68, err);
             if (err->exc) goto L_ret;
             }
           } else {
-            { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s41, 2 }), Fmt_I64Str (k, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s42, 1 }), err), local, err)) m9a66 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s41, 2 }), Fmt_I64Str (k, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s42, 1 }), err), local, err);
+            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s49, 2 }), Fmt_I64Str (k, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s50, 1 }), err), local, err)) m9a69 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s49, 2 }), Fmt_I64Str (k, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s50, 1 }), err), local, err);
               if (err->exc) goto L_ret;
-            Xml_StartTag (&(w), &(scratch), m9a66, err);
+            Xml_StartTag (&(w), &(scratch), m9a69, err);
             if (err->exc) goto L_ret;
             }
           }
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.kind) m9t17 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.kind;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.kind) m9t18 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.kind;
           if (err->exc) goto L_ret;
-          switch (m9t17.tag) {
+          switch (m9t18.tag) {
           case Rdf_Kind_Iri:
           {
-            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a67 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a70 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
               if (err->exc) goto L_ret;
-            Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s43, 12 }), m9a67, err);
+            Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s51, 12 }), m9a70, err);
             if (err->exc) goto L_ret;
             }
           } break;
           case Rdf_Kind_Blank:
           {
-            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a68 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a71 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
               if (err->exc) goto L_ret;
-            Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s44, 10 }), m9a68, err);
+            Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s52, 10 }), m9a71, err);
             if (err->exc) goto L_ret;
             }
           } break;
           case Rdf_Kind_Literal:
           {
-            bool m9t18 = (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang).len > INT64_C(0));
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang) m9a72 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang;
+              if (err->exc) goto L_ret;
+            bool m9t19 = (Text_BLen (m9a72, err) > INT64_C(0));
             if (err->exc) goto L_ret;
-            if (m9t18) {
-              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang) m9a69 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang;
+            if (m9t19) {
+              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang) m9a73 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang;
                 if (err->exc) goto L_ret;
-              Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s45, 8 }), m9a69, err);
+              Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s53, 8 }), m9a73, err);
               if (err->exc) goto L_ret;
               }
             } else {
-              bool m9t20 = ({ bool m9t19 = (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype).len > INT64_C(0)); if (m9t19) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a70 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;   if (err->exc) goto L_ret; m9t19 = ((!Text_Eq (m9a70, Rdf_XsdString, err))); } } m9t19; });
+              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a74 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;
+                if (err->exc) goto L_ret;
+              bool m9t21 = ({ bool m9t20 = (Text_BLen (m9a74, err) > INT64_C(0)); if (m9t20) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a75 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;   if (err->exc) goto L_ret; m9t20 = ((!Text_EqUtf (m9a75, ((m9_sl_UTF8){ (uint8_t *) m9s54, 39 }), err))); } } m9t20; });
               if (err->exc) goto L_ret;
-              if (m9t20) {
-                { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a71 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;
+              if (m9t21) {
+                { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a76 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;
                   if (err->exc) goto L_ret;
-                Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s46, 12 }), m9a71, err);
+                Xml_Attribute (&(w), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s55, 12 }), m9a76, err);
                 if (err->exc) goto L_ret;
                 }
-            } }
-            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a72 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+            } } } }
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a77 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
               if (err->exc) goto L_ret;
-            Xml_Chars (&(w), &(scratch), m9a72, err);
+            Xml_Chars (&(w), &(scratch), m9a77, err);
             if (err->exc) goto L_ret;
             }
           } break;
@@ -2027,13 +2116,13 @@ m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
           Xml_EndTag (&(w), &(scratch), err);
           if (err->exc) goto L_ret;
         }
-        if ((uint64_t) m9t11to - (uint64_t) j < (uint64_t) 1) break;
+        if ((uint64_t) m9t12to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
       Xml_EndTag (&(w), &(scratch), err);
       if (err->exc) goto L_ret;
     }
-    if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t9to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   Xml_EndTag (&(w), &(scratch), err);
@@ -2044,8 +2133,8 @@ m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -2099,13 +2188,13 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Rdf_NTriples (Rdf_Graph * g, m9_state *err)
+m9_sl_UTF8 Rdf_NTriples (Rdf_Graph * g, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -2118,26 +2207,26 @@ m9_sl_CHAR Rdf_NTriples (Rdf_Graph * g, m9_state *err)
   m9t1to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a73 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a78 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
       if (err->exc) goto L_ret;
-    Rdf_PutTerm (&(d), &(scratch), &m9a73, err);
+    Rdf_PutTerm (&(d), &(scratch), &m9a78, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (&(d), &(scratch), 32u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p) m9a74 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p) m9a79 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p;
       if (err->exc) goto L_ret;
-    Rdf_PutTerm (&(d), &(scratch), &m9a74, err);
+    Rdf_PutTerm (&(d), &(scratch), &m9a79, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (&(d), &(scratch), 32u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a75 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a80 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
       if (err->exc) goto L_ret;
-    Rdf_PutTerm (&(d), &(scratch), &m9a75, err);
+    Rdf_PutTerm (&(d), &(scratch), &m9a80, err);
     if (err->exc) goto L_ret;
     }
-    DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s47, 2 }), err);
+    DynStr_Append (&(d), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s56, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (&(d), &(scratch), 10u, err);
     if (err->exc) goto L_ret;
@@ -2150,20 +2239,20 @@ m9_sl_CHAR Rdf_NTriples (Rdf_Graph * g, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR iris, m9_state *err)
+m9_sl_UTF8 Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_UTF8 names, m9_sl_m9_sl_UTF8 iris, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * body = NULL; (void) body;
   DynStr_DString * out = NULL; (void) out;
@@ -2178,11 +2267,11 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
   if (((iris).len < n)) {
     n = (iris).len;
   }
-  { __typeof__(p.names) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), m9_add_i64 (n, INT64_C(4), err), err);
+  { __typeof__(p.names) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), m9_add_i64 (n, INT64_C(4), err), err);
     if (err->exc) goto L_ret;
     p.names = m9v;
   }
-  { __typeof__(p.iris) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), m9_add_i64 (n, INT64_C(4), err), err);
+  { __typeof__(p.iris) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), m9_add_i64 (n, INT64_C(4), err), err);
     if (err->exc) goto L_ret;
     p.iris = m9v;
   }
@@ -2195,27 +2284,27 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    { __typeof__((*(m9_sl_CHAR *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (iris.p, i, iris.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (iris.p, i, iris.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   p.n = n;
-  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s48, 3 }), Rdf_RdfNs, err);
+  Rdf_AddDefault (&(p), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s57, 3 }), ((m9_sl_UTF8){ (uint8_t *) m9s58, 43 }), err);
   if (err->exc) goto L_ret;
-  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s49, 4 }), Rdf_Rdfs, err);
+  Rdf_AddDefault (&(p), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s59, 4 }), ((m9_sl_UTF8){ (uint8_t *) m9s60, 37 }), err);
   if (err->exc) goto L_ret;
-  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s50, 3 }), Rdf_Xsd, err);
+  Rdf_AddDefault (&(p), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s61, 3 }), ((m9_sl_UTF8){ (uint8_t *) m9s62, 33 }), err);
   if (err->exc) goto L_ret;
-  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s51, 3 }), Rdf_Owl, err);
+  Rdf_AddDefault (&(p), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s63, 3 }), ((m9_sl_UTF8){ (uint8_t *) m9s64, 30 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(body) m9v = DynStr_New (&(scratch), err);
     if (err->exc) goto L_ret;
@@ -2233,9 +2322,9 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
     bool m9t3 = (!(*(bool *) m9_at (done.p, i, done.len, sizeof (bool), err)));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a76 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a81 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
         if (err->exc) goto L_ret;
-      Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a76, false, err);
+      Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a81, false, err);
       if (err->exc) goto L_ret;
       }
       firstPred = true;
@@ -2244,30 +2333,30 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
       m9t4to = m9_sub_i64 (g->n, INT64_C(1), err);
       if (err->exc) goto L_ret;
       if (j <= m9t4to) for (;;) {
-        bool m9t6 = ({ bool m9t5 = (!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))); if (m9t5) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a77 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a78 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; m9t5 = (Rdf_SameTerm (&(*m9a77), &(*m9a78), err)); } } } m9t5; });
+        bool m9t6 = ({ bool m9t5 = (!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))); if (m9t5) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a82 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a83 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; m9t5 = (Rdf_SameTerm (&(*m9a82), &(*m9a83), err)); } } } m9t5; });
         if (err->exc) goto L_ret;
         if (m9t6) {
           if (firstPred) {
             DynStr_AppendChar (&(body), &(scratch), 32u, err);
             if (err->exc) goto L_ret;
           } else {
-            { __typeof__(m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s52, 2 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 4 }), err)) m9a79 = m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s52, 2 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 4 }), err);
+            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 2 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 4 }), err)) m9a84 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s65, 2 }), m9_utf_of_char (err->res, 10u, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s66, 4 }), err);
               if (err->exc) goto L_ret;
-            DynStr_Append (&(body), &(scratch), m9a79, err);
+            DynStr_Append (&(body), &(scratch), m9a84, err);
             if (err->exc) goto L_ret;
             }
           }
           firstPred = false;
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p) m9a80 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p) m9a85 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p;
             if (err->exc) goto L_ret;
-          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a80, true, err);
+          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a85, true, err);
           if (err->exc) goto L_ret;
           }
           DynStr_AppendChar (&(body), &(scratch), 32u, err);
           if (err->exc) goto L_ret;
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o) m9a81 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o) m9a86 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o;
             if (err->exc) goto L_ret;
-          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a81, false, err);
+          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a86, false, err);
           if (err->exc) goto L_ret;
           }
           (*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err)) = true;
@@ -2277,14 +2366,14 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
           m9t7to = m9_sub_i64 (g->n, INT64_C(1), err);
           if (err->exc) goto L_ret;
           if (k <= m9t7to) for (;;) {
-            bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = (!(*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err))); if (m9t8) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a82 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a83 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; m9t8 = (Rdf_SameTerm (&(*m9a82), &(*m9a83), err)); } } } m9t8; }); if (m9t9) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a84 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a85 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) goto L_ret; m9t9 = (Rdf_SameTerm (&(*m9a84), &(*m9a85), err)); } } } m9t9; });
+            bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = (!(*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err))); if (m9t8) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a87 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s)) m9a88 = &((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s);   if (err->exc) goto L_ret; m9t8 = (Rdf_SameTerm (&(*m9a87), &(*m9a88), err)); } } } m9t8; }); if (m9t9) { { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a89 = &((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) goto L_ret; { __typeof__(&((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p)) m9a90 = &((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p);   if (err->exc) goto L_ret; m9t9 = (Rdf_SameTerm (&(*m9a89), &(*m9a90), err)); } } } m9t9; });
             if (err->exc) goto L_ret;
             if (m9t10) {
-              DynStr_Append (&(body), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s54, 3 }), err);
+              DynStr_Append (&(body), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s67, 3 }), err);
               if (err->exc) goto L_ret;
-              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o) m9a86 = (*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o;
+              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o) m9a91 = (*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o;
                 if (err->exc) goto L_ret;
-              Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a86, false, err);
+              Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, &m9a91, false, err);
               if (err->exc) goto L_ret;
               }
               (*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err)) = true;
@@ -2297,9 +2386,9 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
         if ((uint64_t) m9t4to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
-      { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s55, 2 }), 10u, err)) m9a87 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s55, 2 }), 10u, err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }), m9_utf_of_char (err->res, 10u, err), err)) m9a92 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }), m9_utf_of_char (err->res, 10u, err), err);
         if (err->exc) goto L_ret;
-      DynStr_Append (&(body), &(scratch), m9a87, err);
+      DynStr_Append (&(body), &(scratch), m9a92, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -2318,38 +2407,38 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
     bool m9t12 = (*(bool *) m9_at (p.used.p, i, p.used.len, sizeof (bool), err));
     if (err->exc) goto L_ret;
     if (m9t12) {
-      DynStr_Append (&(out), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s56, 8 }), err);
+      DynStr_Append (&(out), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s69, 8 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_CHAR), err))) m9a88 = (*(m9_sl_CHAR *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_UTF8), err))) m9a93 = (*(m9_sl_UTF8 *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      DynStr_Append (&(out), &(scratch), m9a88, err);
+      DynStr_Append (&(out), &(scratch), m9a93, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (&(out), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s57, 2 }), err);
+      DynStr_Append (&(out), &(scratch), ((m9_sl_UTF8){ (uint8_t *) m9s70, 2 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_CHAR), err))) m9a89 = (*(m9_sl_CHAR *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_UTF8), err))) m9a94 = (*(m9_sl_UTF8 *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      Rdf_PutIri (&(out), &(scratch), m9a89, err);
+      Rdf_PutIri (&(out), &(scratch), m9a94, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 2 }), 10u, err)) m9a90 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 2 }), 10u, err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 2 }), m9_utf_of_char (err->res, 10u, err), err)) m9a95 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 2 }), m9_utf_of_char (err->res, 10u, err), err);
         if (err->exc) goto L_ret;
-      DynStr_Append (&(out), &(scratch), m9a90, err);
+      DynStr_Append (&(out), &(scratch), m9a95, err);
       if (err->exc) goto L_ret;
       }
     }
     if ((uint64_t) m9t11to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  bool m9t13 = ((DynStr_Len (out, err) > INT64_C(0)) && (g->n > INT64_C(0)));
+  bool m9t13 = ((DynStr_BLen (out, err) > INT64_C(0)) && (g->n > INT64_C(0)));
   if (err->exc) goto L_ret;
   if (m9t13) {
     DynStr_AppendChar (&(out), &(scratch), 10u, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (body, err)) m9a91 = DynStr_View (body, err);
+  { __typeof__(DynStr_View (body, err)) m9a96 = DynStr_View (body, err);
     if (err->exc) goto L_ret;
-  DynStr_Append (&(out), &(scratch), m9a91, err);
+  DynStr_Append (&(out), &(scratch), m9a96, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -2358,8 +2447,8 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -2401,15 +2490,15 @@ static Rdf_Term Rdf_Hold (m9_pool *pool, Rdf_Term *tm, m9_state *err)
   Rdf_Term m9ret = {0};
   Rdf_Term c = {0}; (void) c;
   c.kind = (*tm).kind;
-  { __typeof__(c.value) m9v = Text_Keep (pool, (*tm).value, err);
+  { __typeof__(c.value) m9v = Text_KeepUtf (pool, (*tm).value, err);
     if (err->exc) goto L_ret;
     c.value = m9v;
   }
-  { __typeof__(c.lang) m9v = Text_Keep (pool, (*tm).lang, err);
+  { __typeof__(c.lang) m9v = Text_KeepUtf (pool, (*tm).lang, err);
     if (err->exc) goto L_ret;
     c.lang = m9v;
   }
-  { __typeof__(c.datatype) m9v = Text_Keep (pool, (*tm).datatype, err);
+  { __typeof__(c.datatype) m9v = Text_KeepUtf (pool, (*tm).datatype, err);
     if (err->exc) goto L_ret;
     c.datatype = m9v;
   }
@@ -2479,7 +2568,7 @@ L_ret: ;
   return;
 }
 
-static Rdf_Term Rdf_IriT (m9_sl_CHAR v, m9_state *err)
+static Rdf_Term Rdf_IriT (m9_sl_UTF8 v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2489,8 +2578,8 @@ static Rdf_Term Rdf_IriT (m9_sl_CHAR v, m9_state *err)
   Rdf_Term t = {0}; (void) t;
   t.kind = ((Rdf_Kind){ .tag = Rdf_Kind_Iri });
   t.value = v;
-  t.lang = (m9_sl_CHAR){ NULL, 0 };
-  t.datatype = (m9_sl_CHAR){ NULL, 0 };
+  t.lang = ((m9_sl_UTF8){ NULL, 0 });
+  t.datatype = ((m9_sl_UTF8){ NULL, 0 });
   err->res = m9res;
   m9ret = t;
   goto L_ret;
@@ -2503,7 +2592,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Rdf_Term Rdf_BlankT (m9_sl_CHAR v, m9_state *err)
+static Rdf_Term Rdf_BlankT (m9_sl_UTF8 v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2513,8 +2602,8 @@ static Rdf_Term Rdf_BlankT (m9_sl_CHAR v, m9_state *err)
   Rdf_Term t = {0}; (void) t;
   t.kind = ((Rdf_Kind){ .tag = Rdf_Kind_Blank });
   t.value = v;
-  t.lang = (m9_sl_CHAR){ NULL, 0 };
-  t.datatype = (m9_sl_CHAR){ NULL, 0 };
+  t.lang = ((m9_sl_UTF8){ NULL, 0 });
+  t.datatype = ((m9_sl_UTF8){ NULL, 0 });
   err->res = m9res;
   m9ret = t;
   goto L_ret;
@@ -2527,7 +2616,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Rdf_Term Rdf_LitT (m9_sl_CHAR v, m9_sl_CHAR lang, m9_sl_CHAR dt, m9_state *err)
+static Rdf_Term Rdf_LitT (m9_sl_UTF8 v, m9_sl_UTF8 lang, m9_sl_UTF8 dt, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2551,7 +2640,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_Fail (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR msg, m9_state *err)
+static void Rdf_Fail (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 msg, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2582,29 +2671,7 @@ static bool Rdf_AtEnd (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((*r).pos >= ((*r).src).len);
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9_adopt_if (&m9frame, r_pool, (*r).src.p);
-  m9_adopt_if (&m9frame, r_pool, (*r).base.p);
-  m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
-  m9_adopt_if (&m9frame, r_pool, (*r).pfxIri.p);
-  m9_adopt_if (&m9frame, r_pool, (*r).blab.p);
-  m9_adopt_if (&m9frame, r_pool, (*r).bid.p);
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
-static uint32_t Rdf_Peek (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  uint32_t m9ret = 0;
-  err->res = m9res;
-  m9ret = (*(uint32_t *) m9_at ((*r).src.p, (*r).pos, (*r).src.len, sizeof (uint32_t), err));
+  m9ret = ((*r).pos >= Text_BLen ((*r).src, err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -2626,17 +2693,43 @@ static uint32_t Rdf_PeekAt (Rdf_Reader *r, m9_pool *r_pool, int64_t k, m9_state 
   (void) m9res;
   err->res = &m9frame;
   uint32_t m9ret = 0;
-  bool m9t1 = (m9_add_i64 ((*r).pos, k, err) >= ((*r).src).len);
-  if (err->exc) goto L_ret;
-  if (m9t1) {
+  int64_t at = 0; (void) at;
+  int64_t j = 0; (void) j;
+  uint32_t c = 0; (void) c;
+  at = (*r).pos;
+  c = 0u;
+  { __typeof__(j) m9t3to;
+  j = INT64_C(0);
+  m9t3to = k;
+  if (j <= m9t3to) for (;;) {
+    bool m9t4 = (at >= Text_BLen ((*r).src, err));
+    if (err->exc) goto L_hdl_m9t1;
+    if (m9t4) {
+      err->res = m9res;
+      m9ret = 0u;
+      goto L_ret;
+    }
+    { __typeof__(c) m9v = Text_NextCp ((*r).src, &(at), err);
+      if (err->exc) goto L_hdl_m9t1;
+      c = m9v;
+    }
+    if ((uint64_t) m9t3to - (uint64_t) j < (uint64_t) 1) break;
+    j += 1;
+  } }
+  err->res = m9res;
+  m9ret = c;
+  goto L_ret;
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &m9_exc_IndexError) {
+    err->exc = NULL;
     err->res = m9res;
     m9ret = 0u;
     goto L_ret;
+    goto L_dn_m9t2;
   }
-  err->res = m9res;
-  m9ret = (*(uint32_t *) m9_at ((*r).src.p, m9_add_i64 ((*r).pos, k, err), (*r).src.len, sizeof (uint32_t), err));
-  if (err->exc) goto L_ret;
   goto L_ret;
+L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
@@ -2655,10 +2748,14 @@ static void Rdf_Advance (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  if (((*r).pos < ((*r).src).len)) {
-    bool m9t1 = ((*(uint32_t *) m9_at ((*r).src.p, (*r).pos, (*r).src.len, sizeof (uint32_t), err)) == 10u);
+  int64_t at = 0; (void) at;
+  uint32_t c = 0; (void) c;
+  bool m9t1 = ((*r).pos < Text_BLen ((*r).src, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    bool m9t2 = Text_BIs ((*r).src, (*r).pos, 10u, err);
     if (err->exc) goto L_ret;
-    if (m9t1) {
+    if (m9t2) {
       { __typeof__((*r).line) m9v = m9_add_i64 ((*r).line, INT64_C(1), err);
         if (err->exc) goto L_ret;
         (*r).line = m9v;
@@ -2668,10 +2765,12 @@ static void Rdf_Advance (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         (*r).lineStart = m9v;
       }
     }
-    { __typeof__((*r).pos) m9v = m9_add_i64 ((*r).pos, INT64_C(1), err);
+    at = (*r).pos;
+    { __typeof__(c) m9v = Text_NextCp ((*r).src, &(at), err);
       if (err->exc) goto L_ret;
-      (*r).pos = m9v;
+      c = m9v;
     }
+    (*r).pos = at;
   }
 L_ret: ;
   err->res = m9res;
@@ -2693,8 +2792,10 @@ static void Rdf_SkipWs (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   err->res = &m9frame;
   uint32_t c = 0; (void) c;
   for (;;) {
-    if (!(((*r).pos < ((*r).src).len))) break;
-    { __typeof__(c) m9v = (*(uint32_t *) m9_at ((*r).src.p, (*r).pos, (*r).src.len, sizeof (uint32_t), err));
+    bool m9t1 = ((*r).pos < Text_BLen ((*r).src, err));
+    if (err->exc) goto L_ret;
+    if (!(m9t1)) break;
+    { __typeof__(c) m9v = Text_BChar ((*r).src, (*r).pos, err);
       if (err->exc) goto L_ret;
       c = m9v;
     }
@@ -2704,9 +2805,9 @@ static void Rdf_SkipWs (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     } else {
       if ((c == 35u)) {
         for (;;) {
-          bool m9t1 = (((*r).pos < ((*r).src).len) && ((*(uint32_t *) m9_at ((*r).src.p, (*r).pos, (*r).src.len, sizeof (uint32_t), err)) != 10u));
+          bool m9t2 = (((*r).pos < Text_BLen ((*r).src, err)) && (!Text_BIs ((*r).src, (*r).pos, 10u, err)));
           if (err->exc) goto L_ret;
-          if (!(m9t1)) break;
+          if (!(m9t2)) break;
           Rdf_Advance (r, r_pool, err);
           if (err->exc) goto L_ret;
         }
@@ -2726,7 +2827,7 @@ L_ret: ;
   return;
 }
 
-static void Rdf_Expect (Rdf_Reader *r, m9_pool *r_pool, uint32_t c, m9_sl_CHAR what, m9_state *err)
+static void Rdf_Expect (Rdf_Reader *r, m9_pool *r_pool, uint32_t c, m9_sl_UTF8 what, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2735,9 +2836,9 @@ static void Rdf_Expect (Rdf_Reader *r, m9_pool *r_pool, uint32_t c, m9_sl_CHAR w
   bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) != c);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s59, 9 }), err)) m9a92 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s59, 9 }), err);
+    { __typeof__(m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s72, 9 }), err)) m9a97 = m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s72, 9 }), err);
       if (err->exc) goto L_ret;
-    Rdf_Fail (r, r_pool, m9a92, err);
+    Rdf_Fail (r, r_pool, m9a97, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -2861,15 +2962,15 @@ static bool Rdf_IsLocalEsc (uint32_t c, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  m9_sl_CHAR esc = {0}; (void) esc;
+  m9_sl_UTF8 esc = {0}; (void) esc;
   int64_t i = 0; (void) i;
-  esc = ((m9_sl_CHAR){ (uint32_t *) m9s60, 20 });
+  esc = ((m9_sl_UTF8){ (uint8_t *) m9s73, 20 });
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((esc).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (Text_BLen (esc, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = (c == (*(uint32_t *) m9_at (esc.p, i, esc.len, sizeof (uint32_t), err)));
+    bool m9t2 = Text_BIs (esc, i, c, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -2908,7 +3009,7 @@ static uint32_t Rdf_Uchar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     if (m9t2) {
       n = INT64_C(8);
   } else {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s61, 29 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s74, 29 }), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
     m9ret = 0u;
@@ -2923,17 +3024,17 @@ static uint32_t Rdf_Uchar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   i = INT64_C(1);
   m9t3to = n;
   if (i <= m9t3to) for (;;) {
-    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a93 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
+    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a98 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
       if (err->exc) goto L_ret;
-    bool m9t4 = (!Rdf_IsHex (m9a93, err));
+    bool m9t4 = (!Rdf_IsHex (m9a98, err));
     if (err->exc) goto L_ret;
     if (m9t4) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s62, 35 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s75, 35 }), err);
       if (err->exc) goto L_ret;
     } }
-    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a94 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
+    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a99 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
       if (err->exc) goto L_ret;
-    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), Rdf_HexVal (m9a94, err), err);
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), Rdf_HexVal (m9a99, err), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
@@ -2944,7 +3045,7 @@ static uint32_t Rdf_Uchar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     i += 1;
   } }
   if (((v > INT64_C(0x10FFFF)) || (((v >= INT64_C(0xD800)) && (v <= INT64_C(0xDFFF)))))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s63, 29 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s76, 29 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -2963,23 +3064,23 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_IriRef (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_IriRef (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 s = {0}; (void) s;
   uint32_t c = 0; (void) c;
-  Rdf_Expect (r, r_pool, 60u, ((m9_sl_CHAR){ (uint32_t *) m9s64, 1 }), err);
+  Rdf_Expect (r, r_pool, 60u, ((m9_sl_UTF8){ (uint8_t *) m9s77, 1 }), err);
   if (err->exc) goto L_ret;
-  s = (m9_sl_CHAR){ NULL, 0 };
+  s = ((m9_sl_UTF8){ NULL, 0 });
   for (;;) {
     bool m9t1 = Rdf_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s65, 17 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s78, 17 }), err);
       if (err->exc) goto L_ret;
     }
     { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
@@ -3001,10 +3102,10 @@ static m9_sl_CHAR Rdf_IriRef (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       if (err->exc) goto L_ret;
     }
     if ((((((((((((int64_t)(c) <= INT64_C(0x20)) || (c == 60u)) || (c == 62u)) || (c == 34u)) || (c == 123u)) || (c == 125u)) || (c == 124u)) || (c == 94u)) || (c == 96u)) || (c == 92u))) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s66, 31 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s79, 31 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+    { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -3014,7 +3115,7 @@ static m9_sl_CHAR Rdf_IriRef (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -3025,7 +3126,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Rdf_SchemeEnd (m9_sl_CHAR s, m9_state *err)
+static int64_t Rdf_SchemeEnd (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3034,13 +3135,15 @@ static int64_t Rdf_SchemeEnd (m9_sl_CHAR s, m9_state *err)
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   uint32_t c = 0; (void) c;
-  if (((s).len == INT64_C(0))) {
+  bool m9t1 = (Text_BLen (s, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
     err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  { __typeof__(c) m9v = (*(uint32_t *) m9_at (s.p, INT64_C(0), s.len, sizeof (uint32_t), err));
+  { __typeof__(c) m9v = Text_BChar (s, INT64_C(0), err);
     if (err->exc) goto L_ret;
     c = m9v;
   }
@@ -3050,12 +3153,12 @@ static int64_t Rdf_SchemeEnd (m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  { __typeof__(i) m9t1to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(1);
-  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
+  m9t2to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t1to) for (;;) {
-    { __typeof__(c) m9v = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
+  if (i <= m9t2to) for (;;) {
+    { __typeof__(c) m9v = Text_BChar (s, i, err);
       if (err->exc) goto L_ret;
       c = m9v;
     }
@@ -3070,7 +3173,7 @@ static int64_t Rdf_SchemeEnd (m9_sl_CHAR s, m9_state *err)
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   err->res = m9res;
@@ -3083,105 +3186,107 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_RemoveDots (m9_sl_CHAR path, m9_state *err)
+static m9_sl_UTF8 Rdf_RemoveDots (m9_sl_UTF8 path, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR input = {0}; (void) input;
-  m9_sl_CHAR output = {0}; (void) output;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 input = {0}; (void) input;
+  m9_sl_UTF8 output = {0}; (void) output;
   int64_t i = 0; (void) i;
   input = path;
-  output = (m9_sl_CHAR){ NULL, 0 };
+  output = ((m9_sl_UTF8){ NULL, 0 });
   for (;;) {
-    if (!(((input).len > INT64_C(0)))) break;
-    bool m9t1 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s67, 3 }), err);
+    bool m9t1 = (Text_BLen (input, err) > INT64_C(0));
     if (err->exc) goto L_ret;
-    if (m9t1) {
-      { __typeof__(input) m9v = ({ __auto_type m9t2 = input; int64_t m9t2a = INT64_C(3), m9t2n = m9_sub_i64 ((input).len, INT64_C(3), err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; });
+    if (!(m9t1)) break;
+    bool m9t2 = Text_StartsWithUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s80, 3 }), err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__(input) m9v = m9_utf_slice (input, INT64_C(3), m9_sub_i64 (Text_BLen (input, err), INT64_C(3), err), err);
         if (err->exc) goto L_ret;
         input = m9v;
       }
     } else {
-      bool m9t3 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s68, 2 }), err);
+      bool m9t4 = Text_StartsWithUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s81, 2 }), err);
       if (err->exc) goto L_ret;
-      if (m9t3) {
-        { __typeof__(input) m9v = ({ __auto_type m9t4 = input; int64_t m9t4a = INT64_C(2), m9t4n = m9_sub_i64 ((input).len, INT64_C(2), err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+      if (m9t4) {
+        { __typeof__(input) m9v = m9_utf_slice (input, INT64_C(2), m9_sub_i64 (Text_BLen (input, err), INT64_C(2), err), err);
           if (err->exc) goto L_ret;
           input = m9v;
         }
     } else {
-      bool m9t5 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s69, 3 }), err);
+      bool m9t6 = Text_StartsWithUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s82, 3 }), err);
       if (err->exc) goto L_ret;
-      if (m9t5) {
-        { __typeof__(input) m9v = ({ __auto_type m9t6 = input; int64_t m9t6a = INT64_C(2), m9t6n = m9_sub_i64 ((input).len, INT64_C(2), err); int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+      if (m9t6) {
+        { __typeof__(input) m9v = m9_utf_slice (input, INT64_C(2), m9_sub_i64 (Text_BLen (input, err), INT64_C(2), err), err);
           if (err->exc) goto L_ret;
           input = m9v;
         }
     } else {
-      bool m9t7 = Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s70, 2 }), err);
-      if (err->exc) goto L_ret;
-      if (m9t7) {
-        input = ((m9_sl_CHAR){ (uint32_t *) m9s71, 1 });
-    } else {
-      bool m9t8 = (Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s72, 4 }), err) || Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s73, 3 }), err));
+      bool m9t8 = Text_EqUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s83, 2 }), err);
       if (err->exc) goto L_ret;
       if (m9t8) {
-        bool m9t9 = Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s74, 3 }), err);
+        input = ((m9_sl_UTF8){ (uint8_t *) m9s84, 1 });
+    } else {
+      bool m9t9 = (Text_StartsWithUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s85, 4 }), err) || Text_EqUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s86, 3 }), err));
+      if (err->exc) goto L_ret;
+      if (m9t9) {
+        bool m9t10 = Text_EqUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s87, 3 }), err);
         if (err->exc) goto L_ret;
-        if (m9t9) {
-          input = ((m9_sl_CHAR){ (uint32_t *) m9s75, 1 });
+        if (m9t10) {
+          input = ((m9_sl_UTF8){ (uint8_t *) m9s88, 1 });
         } else {
-          { __typeof__(input) m9v = ({ __auto_type m9t10 = input; int64_t m9t10a = INT64_C(3), m9t10n = m9_sub_i64 ((input).len, INT64_C(3), err); int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; });
+          { __typeof__(input) m9v = m9_utf_slice (input, INT64_C(3), m9_sub_i64 (Text_BLen (input, err), INT64_C(3), err), err);
             if (err->exc) goto L_ret;
             input = m9v;
           }
         }
-        { __typeof__(i) m9v = Text_LastChar (output, 47u, err);
+        { __typeof__(i) m9v = Text_LastCharUtf (output, 47u, err);
           if (err->exc) goto L_ret;
           i = m9v;
         }
         if ((i >= INT64_C(0))) {
-          { __typeof__(output) m9v = ({ __auto_type m9t11 = output; int64_t m9t11a = INT64_C(0), m9t11n = i; int64_t m9t11o = m9_chk_slice (m9t11a, m9t11n, m9t11.len, err); (__typeof__(m9t11)){ m9t11.p + m9t11o, err->exc ? 0 : m9t11n }; });
+          { __typeof__(output) m9v = m9_utf_slice (output, INT64_C(0), i, err);
             if (err->exc) goto L_ret;
             output = m9v;
           }
         } else {
-          output = (m9_sl_CHAR){ NULL, 0 };
+          output = ((m9_sl_UTF8){ NULL, 0 });
         }
     } else {
-      bool m9t12 = (Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s76, 1 }), err) || Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s77, 2 }), err));
-      if (err->exc) goto L_ret;
-      if (m9t12) {
-        input = (m9_sl_CHAR){ NULL, 0 };
-    } else {
-      i = INT64_C(1);
-      bool m9t13 = ((*(uint32_t *) m9_at (input.p, INT64_C(0), input.len, sizeof (uint32_t), err)) != 47u);
+      bool m9t13 = (Text_EqUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s89, 1 }), err) || Text_EqUtf (input, ((m9_sl_UTF8){ (uint8_t *) m9s90, 2 }), err));
       if (err->exc) goto L_ret;
       if (m9t13) {
+        input = ((m9_sl_UTF8){ NULL, 0 });
+    } else {
+      i = INT64_C(1);
+      bool m9t14 = (!Text_BIs (input, INT64_C(0), 47u, err));
+      if (err->exc) goto L_ret;
+      if (m9t14) {
         i = INT64_C(0);
       }
       for (;;) {
-        bool m9t14 = ((i < (input).len) && ((*(uint32_t *) m9_at (input.p, i, input.len, sizeof (uint32_t), err)) != 47u));
+        bool m9t15 = ((i < Text_BLen (input, err)) && (!Text_BIs (input, i, 47u, err)));
         if (err->exc) goto L_ret;
-        if (!(m9t14)) break;
+        if (!(m9t15)) break;
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
           if (err->exc) goto L_ret;
           i = m9v;
         }
       }
-      bool m9t15 = (((*(uint32_t *) m9_at (input.p, INT64_C(0), input.len, sizeof (uint32_t), err)) == 47u) && (i == INT64_C(0)));
+      bool m9t16 = (Text_BIs (input, INT64_C(0), 47u, err) && (i == INT64_C(0)));
       if (err->exc) goto L_ret;
-      if (m9t15) {
+      if (m9t16) {
         i = INT64_C(1);
       }
-      { __typeof__(output) m9v = m9_cat (err->res, output, ({ __auto_type m9t16 = input; int64_t m9t16a = INT64_C(0), m9t16n = i; int64_t m9t16o = m9_chk_slice (m9t16a, m9t16n, m9t16.len, err); (__typeof__(m9t16)){ m9t16.p + m9t16o, err->exc ? 0 : m9t16n }; }), err);
+      { __typeof__(output) m9v = m9_utf_cat (err->res, output, m9_utf_slice (input, INT64_C(0), i, err), err);
         if (err->exc) goto L_ret;
         output = m9v;
       }
-      { __typeof__(input) m9v = ({ __auto_type m9t17 = input; int64_t m9t17a = i, m9t17n = m9_sub_i64 ((input).len, i, err); int64_t m9t17o = m9_chk_slice (m9t17a, m9t17n, m9t17.len, err); (__typeof__(m9t17)){ m9t17.p + m9t17o, err->exc ? 0 : m9t17n }; });
+      { __typeof__(input) m9v = m9_utf_slice (input, i, m9_sub_i64 (Text_BLen (input, err), i, err), err);
         if (err->exc) goto L_ret;
         input = m9v;
       }
@@ -3192,12 +3297,12 @@ static m9_sl_CHAR Rdf_RemoveDots (m9_sl_CHAR path, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Rdf_Split (m9_sl_CHAR s, m9_sl_CHAR *scheme, m9_sl_CHAR *auth, m9_sl_CHAR *path, m9_sl_CHAR *query, m9_sl_CHAR *frag, bool *hasAuth, bool *hasQuery, bool *hasFrag, m9_state *err)
+static void Rdf_Split (m9_sl_UTF8 s, m9_sl_UTF8 *scheme, m9_sl_UTF8 *auth, m9_sl_UTF8 *path, m9_sl_UTF8 *query, m9_sl_UTF8 *frag, bool *hasAuth, bool *hasQuery, bool *hasFrag, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3206,11 +3311,11 @@ static void Rdf_Split (m9_sl_CHAR s, m9_sl_CHAR *scheme, m9_sl_CHAR *auth, m9_sl
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   int64_t e = 0; (void) e;
-  (*scheme) = (m9_sl_CHAR){ NULL, 0 };
-  (*auth) = (m9_sl_CHAR){ NULL, 0 };
-  (*path) = (m9_sl_CHAR){ NULL, 0 };
-  (*query) = (m9_sl_CHAR){ NULL, 0 };
-  (*frag) = (m9_sl_CHAR){ NULL, 0 };
+  (*scheme) = ((m9_sl_UTF8){ NULL, 0 });
+  (*auth) = ((m9_sl_UTF8){ NULL, 0 });
+  (*path) = ((m9_sl_UTF8){ NULL, 0 });
+  (*query) = ((m9_sl_UTF8){ NULL, 0 });
+  (*frag) = ((m9_sl_UTF8){ NULL, 0 });
   (*hasAuth) = false;
   (*hasQuery) = false;
   (*hasFrag) = false;
@@ -3220,7 +3325,7 @@ static void Rdf_Split (m9_sl_CHAR s, m9_sl_CHAR *scheme, m9_sl_CHAR *auth, m9_sl
     e = m9v;
   }
   if ((e >= INT64_C(0))) {
-    { __typeof__((*scheme)) m9v = ({ __auto_type m9t1 = s; int64_t m9t1a = INT64_C(0), m9t1n = e; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
+    { __typeof__((*scheme)) m9v = m9_utf_slice (s, INT64_C(0), e, err);
       if (err->exc) goto L_ret;
       (*scheme) = m9v;
     }
@@ -3229,24 +3334,24 @@ static void Rdf_Split (m9_sl_CHAR s, m9_sl_CHAR *scheme, m9_sl_CHAR *auth, m9_sl
       i = m9v;
     }
   }
-  bool m9t2 = (((m9_add_i64 (i, INT64_C(1), err) < (s).len) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 47u)) && ((*(uint32_t *) m9_at (s.p, m9_add_i64 (i, INT64_C(1), err), s.len, sizeof (uint32_t), err)) == 47u));
+  bool m9t3 = ({ bool m9t2 = ((m9_add_i64 (i, INT64_C(1), err) < Text_BLen (s, err)) && Text_BIs (s, i, 47u, err)); if (m9t2) { { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a100 = m9_add_i64 (i, INT64_C(1), err);   if (err->exc) goto L_ret; m9t2 = (Text_BIs (s, m9a100, 47u, err)); } } m9t2; });
   if (err->exc) goto L_ret;
-  if (m9t2) {
+  if (m9t3) {
     (*hasAuth) = true;
     { __typeof__(j) m9v = m9_add_i64 (i, INT64_C(2), err);
       if (err->exc) goto L_ret;
       j = m9v;
     }
     for (;;) {
-      bool m9t3 = ((((j < (s).len) && ((*(uint32_t *) m9_at (s.p, j, s.len, sizeof (uint32_t), err)) != 47u)) && ((*(uint32_t *) m9_at (s.p, j, s.len, sizeof (uint32_t), err)) != 63u)) && ((*(uint32_t *) m9_at (s.p, j, s.len, sizeof (uint32_t), err)) != 35u));
+      bool m9t4 = ((((j < Text_BLen (s, err)) && (!Text_BIs (s, j, 47u, err))) && (!Text_BIs (s, j, 63u, err))) && (!Text_BIs (s, j, 35u, err)));
       if (err->exc) goto L_ret;
-      if (!(m9t3)) break;
+      if (!(m9t4)) break;
       { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
         if (err->exc) goto L_ret;
         j = m9v;
       }
     }
-    { __typeof__((*auth)) m9v = ({ __auto_type m9t4 = s; int64_t m9t4a = m9_add_i64 (i, INT64_C(2), err), m9t4n = m9_sub_i64 (m9_sub_i64 (j, i, err), INT64_C(2), err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+    { __typeof__((*auth)) m9v = m9_utf_slice (s, m9_add_i64 (i, INT64_C(2), err), m9_sub_i64 (m9_sub_i64 (j, i, err), INT64_C(2), err), err);
       if (err->exc) goto L_ret;
       (*auth) = m9v;
     }
@@ -3254,84 +3359,84 @@ static void Rdf_Split (m9_sl_CHAR s, m9_sl_CHAR *scheme, m9_sl_CHAR *auth, m9_sl
   }
   j = i;
   for (;;) {
-    bool m9t5 = (((j < (s).len) && ((*(uint32_t *) m9_at (s.p, j, s.len, sizeof (uint32_t), err)) != 63u)) && ((*(uint32_t *) m9_at (s.p, j, s.len, sizeof (uint32_t), err)) != 35u));
+    bool m9t6 = (((j < Text_BLen (s, err)) && (!Text_BIs (s, j, 63u, err))) && (!Text_BIs (s, j, 35u, err)));
     if (err->exc) goto L_ret;
-    if (!(m9t5)) break;
+    if (!(m9t6)) break;
     { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
       if (err->exc) goto L_ret;
       j = m9v;
     }
   }
-  { __typeof__((*path)) m9v = ({ __auto_type m9t6 = s; int64_t m9t6a = i, m9t6n = m9_sub_i64 (j, i, err); int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+  { __typeof__((*path)) m9v = m9_utf_slice (s, i, m9_sub_i64 (j, i, err), err);
     if (err->exc) goto L_ret;
     (*path) = m9v;
   }
   i = j;
-  bool m9t7 = ((i < (s).len) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 63u));
+  bool m9t8 = ((i < Text_BLen (s, err)) && Text_BIs (s, i, 63u, err));
   if (err->exc) goto L_ret;
-  if (m9t7) {
+  if (m9t8) {
     (*hasQuery) = true;
     { __typeof__(j) m9v = m9_add_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
       j = m9v;
     }
     for (;;) {
-      bool m9t8 = ((j < (s).len) && ((*(uint32_t *) m9_at (s.p, j, s.len, sizeof (uint32_t), err)) != 35u));
+      bool m9t9 = ((j < Text_BLen (s, err)) && (!Text_BIs (s, j, 35u, err)));
       if (err->exc) goto L_ret;
-      if (!(m9t8)) break;
+      if (!(m9t9)) break;
       { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
         if (err->exc) goto L_ret;
         j = m9v;
       }
     }
-    { __typeof__((*query)) m9v = ({ __auto_type m9t9 = s; int64_t m9t9a = m9_add_i64 (i, INT64_C(1), err), m9t9n = m9_sub_i64 (m9_sub_i64 (j, i, err), INT64_C(1), err); int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; });
+    { __typeof__((*query)) m9v = m9_utf_slice (s, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (j, i, err), INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       (*query) = m9v;
     }
     i = j;
   }
-  bool m9t10 = ((i < (s).len) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 35u));
+  bool m9t11 = ((i < Text_BLen (s, err)) && Text_BIs (s, i, 35u, err));
   if (err->exc) goto L_ret;
-  if (m9t10) {
+  if (m9t11) {
     (*hasFrag) = true;
-    { __typeof__((*frag)) m9v = ({ __auto_type m9t11 = s; int64_t m9t11a = m9_add_i64 (i, INT64_C(1), err), m9t11n = m9_sub_i64 (m9_sub_i64 ((s).len, i, err), INT64_C(1), err); int64_t m9t11o = m9_chk_slice (m9t11a, m9t11n, m9t11.len, err); (__typeof__(m9t11)){ m9t11.p + m9t11o, err->exc ? 0 : m9t11n }; });
+    { __typeof__((*frag)) m9v = m9_utf_slice (s, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (s, err), i, err), INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       (*frag) = m9v;
     }
   }
 L_ret: ;
   err->res = m9res;
-  *scheme = m9_rehome (&m9frame, m9res, *scheme, err);
-  *auth = m9_rehome (&m9frame, m9res, *auth, err);
-  *path = m9_rehome (&m9frame, m9res, *path, err);
-  *query = m9_rehome (&m9frame, m9res, *query, err);
-  *frag = m9_rehome (&m9frame, m9res, *frag, err);
+  *scheme = m9_rehome_utf (&m9frame, m9res, *scheme, err);
+  *auth = m9_rehome_utf (&m9frame, m9res, *auth, err);
+  *path = m9_rehome_utf (&m9frame, m9res, *path, err);
+  *query = m9_rehome_utf (&m9frame, m9res, *query, err);
+  *frag = m9_rehome_utf (&m9frame, m9res, *frag, err);
   m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
+static m9_sl_UTF8 Rdf_Resolve (m9_sl_UTF8 base, m9_sl_UTF8 ref, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR rs = {0}; (void) rs;
-  m9_sl_CHAR ra = {0}; (void) ra;
-  m9_sl_CHAR rp = {0}; (void) rp;
-  m9_sl_CHAR rq = {0}; (void) rq;
-  m9_sl_CHAR rf = {0}; (void) rf;
-  m9_sl_CHAR bs = {0}; (void) bs;
-  m9_sl_CHAR ba = {0}; (void) ba;
-  m9_sl_CHAR bp = {0}; (void) bp;
-  m9_sl_CHAR bq = {0}; (void) bq;
-  m9_sl_CHAR bf = {0}; (void) bf;
-  m9_sl_CHAR ts = {0}; (void) ts;
-  m9_sl_CHAR ta = {0}; (void) ta;
-  m9_sl_CHAR tp = {0}; (void) tp;
-  m9_sl_CHAR tq = {0}; (void) tq;
-  m9_sl_CHAR out = {0}; (void) out;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 rs = {0}; (void) rs;
+  m9_sl_UTF8 ra = {0}; (void) ra;
+  m9_sl_UTF8 rp = {0}; (void) rp;
+  m9_sl_UTF8 rq = {0}; (void) rq;
+  m9_sl_UTF8 rf = {0}; (void) rf;
+  m9_sl_UTF8 bs = {0}; (void) bs;
+  m9_sl_UTF8 ba = {0}; (void) ba;
+  m9_sl_UTF8 bp = {0}; (void) bp;
+  m9_sl_UTF8 bq = {0}; (void) bq;
+  m9_sl_UTF8 bf = {0}; (void) bf;
+  m9_sl_UTF8 ts = {0}; (void) ts;
+  m9_sl_UTF8 ta = {0}; (void) ta;
+  m9_sl_UTF8 tp = {0}; (void) tp;
+  m9_sl_UTF8 tq = {0}; (void) tq;
+  m9_sl_UTF8 out = {0}; (void) out;
   bool rha = false; (void) rha;
   bool rhq = false; (void) rhq;
   bool rhf = false; (void) rhf;
@@ -3343,7 +3448,9 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
   int64_t k = 0; (void) k;
   Rdf_Split (ref, &(rs), &(ra), &(rp), &(rq), &(rf), &(rha), &(rhq), &(rhf), err);
   if (err->exc) goto L_ret;
-  if (((rs).len > INT64_C(0))) {
+  bool m9t1 = (Text_BLen (rs, err) > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
     ts = rs;
     ta = ra;
     tha = rha;
@@ -3369,7 +3476,9 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
     } else {
       ta = ba;
       tha = bha;
-      if (((rp).len == INT64_C(0))) {
+      bool m9t2 = (Text_BLen (rp, err) == INT64_C(0));
+      if (err->exc) goto L_ret;
+      if (m9t2) {
         tp = bp;
         if (rhq) {
           tq = rq;
@@ -3379,31 +3488,33 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
           thq = bhq;
         }
       } else {
-        bool m9t1 = ((*(uint32_t *) m9_at (rp.p, INT64_C(0), rp.len, sizeof (uint32_t), err)) == 47u);
+        bool m9t3 = Text_BIs (rp, INT64_C(0), 47u, err);
         if (err->exc) goto L_ret;
-        if (m9t1) {
+        if (m9t3) {
           { __typeof__(tp) m9v = Rdf_RemoveDots (rp, err);
             if (err->exc) goto L_ret;
             tp = m9v;
           }
         } else {
-          if ((bha && ((bp).len == INT64_C(0)))) {
-            { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s78, 1 }), rp, err)) m9a95 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s78, 1 }), rp, err);
+          bool m9t4 = (bha && (Text_BLen (bp, err) == INT64_C(0)));
+          if (err->exc) goto L_ret;
+          if (m9t4) {
+            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s91, 1 }), rp, err)) m9a101 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s91, 1 }), rp, err);
               if (err->exc) goto L_ret;
-            { __typeof__(tp) m9v = Rdf_RemoveDots (m9a95, err);
+            { __typeof__(tp) m9v = Rdf_RemoveDots (m9a101, err);
               if (err->exc) goto L_ret;
               tp = m9v;
             }
             }
           } else {
-            { __typeof__(k) m9v = Text_LastChar (bp, 47u, err);
+            { __typeof__(k) m9v = Text_LastCharUtf (bp, 47u, err);
               if (err->exc) goto L_ret;
               k = m9v;
             }
             if ((k >= INT64_C(0))) {
-              { __typeof__(m9_cat (err->res, ({ __auto_type m9t2 = bp; int64_t m9t2a = INT64_C(0), m9t2n = m9_add_i64 (k, INT64_C(1), err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; }), rp, err)) m9a96 = m9_cat (err->res, ({ __auto_type m9t2 = bp; int64_t m9t2a = INT64_C(0), m9t2n = m9_add_i64 (k, INT64_C(1), err); int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; }), rp, err);
+              { __typeof__(m9_utf_cat (err->res, m9_utf_slice (bp, INT64_C(0), m9_add_i64 (k, INT64_C(1), err), err), rp, err)) m9a102 = m9_utf_cat (err->res, m9_utf_slice (bp, INT64_C(0), m9_add_i64 (k, INT64_C(1), err), err), rp, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(tp) m9v = Rdf_RemoveDots (m9a96, err);
+              { __typeof__(tp) m9v = Rdf_RemoveDots (m9a102, err);
                 if (err->exc) goto L_ret;
                 tp = m9v;
               }
@@ -3421,31 +3532,33 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
       }
     }
   }
-  out = (m9_sl_CHAR){ NULL, 0 };
-  if (((ts).len > INT64_C(0))) {
-    { __typeof__(out) m9v = m9_cat (err->res, ts, ((m9_sl_CHAR){ (uint32_t *) m9s79, 1 }), err);
+  out = ((m9_sl_UTF8){ NULL, 0 });
+  bool m9t6 = (Text_BLen (ts, err) > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t6) {
+    { __typeof__(out) m9v = m9_utf_cat (err->res, ts, ((m9_sl_UTF8){ (uint8_t *) m9s92, 1 }), err);
       if (err->exc) goto L_ret;
       out = m9v;
     }
   }
   if (tha) {
-    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), err), ta, err);
+    { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s93, 2 }), err), ta, err);
       if (err->exc) goto L_ret;
       out = m9v;
     }
   }
-  { __typeof__(out) m9v = m9_cat (err->res, out, tp, err);
+  { __typeof__(out) m9v = m9_utf_cat (err->res, out, tp, err);
     if (err->exc) goto L_ret;
     out = m9v;
   }
   if (thq) {
-    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s81, 1 }), err), tq, err);
+    { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s94, 1 }), err), tq, err);
       if (err->exc) goto L_ret;
       out = m9v;
     }
   }
   if (rhf) {
-    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s82, 1 }), err), rf, err);
+    { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s95, 1 }), err), rf, err);
       if (err->exc) goto L_ret;
       out = m9v;
     }
@@ -3455,18 +3568,18 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_Absolute (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR iri, m9_state *err)
+static m9_sl_UTF8 Rdf_Absolute (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 iri, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   bool m9t1 = (Rdf_SchemeEnd (iri, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -3475,11 +3588,13 @@ static m9_sl_CHAR Rdf_Absolute (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR iri, 
     goto L_ret;
   }
   if ((!(*r).turtle)) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s83, 27 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s96, 27 }), err);
     if (err->exc) goto L_ret;
   }
-  if ((((*r).base).len == INT64_C(0))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s84, 40 }), err);
+  bool m9t2 = (Text_BLen ((*r).base, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s97, 40 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -3488,7 +3603,7 @@ static m9_sl_CHAR Rdf_Absolute (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR iri, 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -3499,7 +3614,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Rdf_PrefixOf (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR name, m9_state *err)
+static int64_t Rdf_PrefixOf (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3513,9 +3628,9 @@ static int64_t Rdf_PrefixOf (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR name, m9
   }
   for (;;) {
     if (!((i >= INT64_C(0)))) break;
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_CHAR), err))) m9a97 = (*(m9_sl_CHAR *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_UTF8), err))) m9a103 = (*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t1 = Text_Eq (m9a97, name, err);
+    bool m9t1 = Text_EqUtf (m9a103, name, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
@@ -3543,16 +3658,16 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 s = {0}; (void) s;
   uint32_t c = 0; (void) c;
-  s = (m9_sl_CHAR){ NULL, 0 };
+  s = ((m9_sl_UTF8){ NULL, 0 });
   bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) != 58u);
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -3563,10 +3678,10 @@ static m9_sl_CHAR Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     bool m9t2 = (!Rdf_IsPnCharsBase (c, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s85, 22 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s98, 22 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+    { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -3580,17 +3695,17 @@ static m9_sl_CHAR Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       bool m9t3 = Rdf_IsPnChars (c, err);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+        { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
           if (err->exc) goto L_ret;
           s = m9v;
         }
         Rdf_Advance (r, r_pool, err);
         if (err->exc) goto L_ret;
       } else {
-        bool m9t5 = ({ bool m9t4 = (c == 46u); if (m9t4) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a98 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) goto L_ret; m9t4 = (((Rdf_IsPnChars (m9a98, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u)))); } } m9t4; });
+        bool m9t5 = ({ bool m9t4 = (c == 46u); if (m9t4) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a104 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) goto L_ret; m9t4 = (((Rdf_IsPnChars (m9a104, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u)))); } } m9t4; });
         if (err->exc) goto L_ret;
         if (m9t5) {
-          { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+          { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
             if (err->exc) goto L_ret;
             s = m9v;
           }
@@ -3600,21 +3715,23 @@ static m9_sl_CHAR Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         break;
       } }
     }
-    bool m9t6 = ((*(uint32_t *) m9_at (s.p, m9_sub_i64 ((s).len, INT64_C(1), err), s.len, sizeof (uint32_t), err)) == 46u);
+    { __typeof__(m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err)) m9a105 = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+    bool m9t6 = Text_BIs (s, m9a105, 46u, err);
     if (err->exc) goto L_ret;
     if (m9t6) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s86, 29 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s99, 29 }), err);
       if (err->exc) goto L_ret;
-    }
+    } }
   }
-  Rdf_Expect (r, r_pool, 58u, ((m9_sl_CHAR){ (uint32_t *) m9s87, 7 }), err);
+  Rdf_Expect (r, r_pool, 58u, ((m9_sl_UTF8){ (uint8_t *) m9s100, 7 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = s;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -3625,17 +3742,17 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 s = {0}; (void) s;
   uint32_t c = 0; (void) c;
   bool first = false; (void) first;
-  s = (m9_sl_CHAR){ NULL, 0 };
+  s = ((m9_sl_UTF8){ NULL, 0 });
   first = true;
   for (;;) {
     { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
@@ -3643,15 +3760,15 @@ static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       c = m9v;
     }
     if ((c == 37u)) {
-      { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a99 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
+      { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a106 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      bool m9t2 = (!(({ bool m9t1 = Rdf_IsHex (m9a99, err); if (m9t1) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(2), err)) m9a100 = Rdf_PeekAt (r, r_pool, INT64_C(2), err);   if (err->exc) goto L_ret; m9t1 = (Rdf_IsHex (m9a100, err)); } } m9t1; })));
+      bool m9t2 = (!(({ bool m9t1 = Rdf_IsHex (m9a106, err); if (m9t1) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(2), err)) m9a107 = Rdf_PeekAt (r, r_pool, INT64_C(2), err);   if (err->exc) goto L_ret; m9t1 = (Rdf_IsHex (m9a107, err)); } } m9t1; })));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s88, 34 }), err);
+        Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s101, 34 }), err);
         if (err->exc) goto L_ret;
       } }
-      { __typeof__(s) m9v = m9_cat_ch (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, s, c, err), Rdf_PeekAt (r, r_pool, INT64_C(1), err), err), Rdf_PeekAt (r, r_pool, INT64_C(2), err), err);
+      { __typeof__(s) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err), m9_utf_of_char (err->res, Rdf_PeekAt (r, r_pool, INT64_C(1), err), err), err), m9_utf_of_char (err->res, Rdf_PeekAt (r, r_pool, INT64_C(2), err), err), err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
@@ -3663,15 +3780,15 @@ static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       if (err->exc) goto L_ret;
     } else {
       if ((c == 92u)) {
-        { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a101 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
+        { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a108 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        bool m9t3 = (!Rdf_IsLocalEsc (m9a101, err));
+        bool m9t3 = (!Rdf_IsLocalEsc (m9a108, err));
         if (err->exc) goto L_ret;
         if (m9t3) {
-          Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s89, 35 }), err);
+          Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s102, 35 }), err);
           if (err->exc) goto L_ret;
         } }
-        { __typeof__(s) m9v = m9_cat_ch (err->res, s, Rdf_PeekAt (r, r_pool, INT64_C(1), err), err);
+        { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, Rdf_PeekAt (r, r_pool, INT64_C(1), err), err), err);
           if (err->exc) goto L_ret;
           s = m9v;
         }
@@ -3683,7 +3800,7 @@ static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       bool m9t4 = (((Rdf_IsPnCharsU (c, err) || (c == 58u)) || (((c >= 48u) && (c <= 57u)))) || (((!first) && Rdf_IsPnChars (c, err))));
       if (err->exc) goto L_ret;
       if (m9t4) {
-        { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+        { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
           if (err->exc) goto L_ret;
           s = m9v;
         }
@@ -3691,12 +3808,12 @@ static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         if (err->exc) goto L_ret;
     } else {
       if (((c == 46u) && (!first))) {
-        { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a102 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
+        { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a109 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        bool m9t5 = ((((Rdf_IsPnChars (m9a102, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 37u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 92u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u));
+        bool m9t5 = ((((Rdf_IsPnChars (m9a109, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 37u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 92u)) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u));
         if (err->exc) goto L_ret;
         if (m9t5) {
-          { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+          { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
             if (err->exc) goto L_ret;
             s = m9v;
           }
@@ -3715,7 +3832,7 @@ static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -3726,15 +3843,15 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_PrefixedName (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_PrefixedName (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR name = {0}; (void) name;
-  m9_sl_CHAR local = {0}; (void) local;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 name = {0}; (void) name;
+  m9_sl_UTF8 local = {0}; (void) local;
   int64_t k = 0; (void) k;
   { __typeof__(name) m9v = Rdf_PnPrefix (r, r_pool, err);
     if (err->exc) goto L_ret;
@@ -3745,9 +3862,9 @@ static m9_sl_CHAR Rdf_PrefixedName (Rdf_Reader *r, m9_pool *r_pool, m9_state *er
     k = m9v;
   }
   if ((k < INT64_C(0))) {
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s90, 11 }), name, err), ((m9_sl_CHAR){ (uint32_t *) m9s91, 17 }), err)) m9a103 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s90, 11 }), name, err), ((m9_sl_CHAR){ (uint32_t *) m9s91, 17 }), err);
+    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s103, 11 }), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s104, 17 }), err)) m9a110 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s103, 11 }), name, err), ((m9_sl_UTF8){ (uint8_t *) m9s104, 17 }), err);
       if (err->exc) goto L_ret;
-    Rdf_Fail (r, r_pool, m9a103, err);
+    Rdf_Fail (r, r_pool, m9a110, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -3756,12 +3873,12 @@ static m9_sl_CHAR Rdf_PrefixedName (Rdf_Reader *r, m9_pool *r_pool, m9_state *er
     local = m9v;
   }
   err->res = m9res;
-  m9ret = m9_cat (err->res, (*(m9_sl_CHAR *) m9_at ((*r).pfxIri.p, k, (*r).pfxIri.len, sizeof (m9_sl_CHAR), err)), local, err);
+  m9ret = m9_utf_cat (err->res, (*(m9_sl_UTF8 *) m9_at ((*r).pfxIri.p, k, (*r).pfxIri.len, sizeof (m9_sl_UTF8), err)), local, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -3772,19 +3889,19 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_Fresh (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_Fresh (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (pool, err);
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s92, 1 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s105, 1 }), err);
   if (err->exc) goto L_ret;
   DynStr_AppendI64 (&(d), &((*pool)), (*r).fresh, err);
   if (err->exc) goto L_ret;
@@ -3798,7 +3915,7 @@ static m9_sl_CHAR Rdf_Fresh (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -3809,28 +3926,28 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR lab, m9_state *err)
+static m9_sl_UTF8 Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 lab, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
-  m9_sl_m9_sl_CHAR nl = {0}; (void) nl;
-  m9_sl_m9_sl_CHAR ni = {0}; (void) ni;
+  m9_sl_m9_sl_UTF8 nl = {0}; (void) nl;
+  m9_sl_m9_sl_UTF8 ni = {0}; (void) ni;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((*r).nblab, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_CHAR), err))) m9a104 = (*(m9_sl_CHAR *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_UTF8), err))) m9a111 = (*(m9_sl_UTF8 *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a104, lab, err);
+    bool m9t2 = Text_EqUtf (m9a111, lab, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
-      m9ret = (*(m9_sl_CHAR *) m9_at ((*r).bid.p, i, (*r).bid.len, sizeof (m9_sl_CHAR), err));
+      m9ret = (*(m9_sl_UTF8 *) m9_at ((*r).bid.p, i, (*r).bid.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
       goto L_ret;
     } }
@@ -3838,11 +3955,11 @@ static m9_sl_CHAR Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m
     i += 1;
   } }
   if (((*r).nblab == ((*r).blab).len)) {
-    { __typeof__(nl) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_mul_i64 (INT64_C(2), ((*r).blab).len, err), err);
+    { __typeof__(nl) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), m9_mul_i64 (INT64_C(2), ((*r).blab).len, err), err);
       if (err->exc) goto L_ret;
       nl = m9v;
     }
-    { __typeof__(ni) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_mul_i64 (INT64_C(2), ((*r).blab).len, err), err);
+    { __typeof__(ni) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), m9_mul_i64 (INT64_C(2), ((*r).blab).len, err), err);
       if (err->exc) goto L_ret;
       ni = m9v;
     }
@@ -3851,14 +3968,14 @@ static m9_sl_CHAR Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m
     m9t3to = m9_sub_i64 ((*r).nblab, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t3to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (nl.p, i, nl.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nl.p, i, nl.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at ((*r).blab.p, i, (*r).blab.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (nl.p, i, nl.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (nl.p, i, nl.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (ni.p, i, ni.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*r).bid.p, i, (*r).bid.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (ni.p, i, ni.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at ((*r).bid.p, i, (*r).bid.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (ni.p, i, ni.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (ni.p, i, ni.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
@@ -3867,14 +3984,14 @@ static m9_sl_CHAR Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m
     (*r).blab = nl;
     (*r).bid = ni;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at ((*r).blab.p, (*r).nblab, (*r).blab.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, lab, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).blab.p, (*r).nblab, (*r).blab.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, lab, err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at ((*r).blab.p, (*r).nblab, (*r).blab.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at ((*r).blab.p, (*r).nblab, (*r).blab.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at ((*r).bid.p, (*r).nblab, (*r).bid.len, sizeof (m9_sl_CHAR), err))) m9v = Rdf_Fresh (pool, r, r_pool, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).bid.p, (*r).nblab, (*r).bid.len, sizeof (m9_sl_UTF8), err))) m9v = Rdf_Fresh (pool, r, r_pool, err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at ((*r).bid.p, (*r).nblab, (*r).bid.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at ((*r).bid.p, (*r).nblab, (*r).bid.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
   { __typeof__((*r).nblab) m9v = m9_add_i64 ((*r).nblab, INT64_C(1), err);
@@ -3882,12 +3999,12 @@ static m9_sl_CHAR Rdf_Labelled (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m
     (*r).nblab = m9v;
   }
   err->res = m9res;
-  m9ret = (*(m9_sl_CHAR *) m9_at ((*r).bid.p, m9_sub_i64 ((*r).nblab, INT64_C(1), err), (*r).bid.len, sizeof (m9_sl_CHAR), err));
+  m9ret = (*(m9_sl_UTF8 *) m9_at ((*r).bid.p, m9_sub_i64 ((*r).nblab, INT64_C(1), err), (*r).bid.len, sizeof (m9_sl_UTF8), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -3898,14 +4015,14 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 s = {0}; (void) s;
   uint32_t c = 0; (void) c;
   Rdf_Advance (r, r_pool, err);
   if (err->exc) goto L_ret;
@@ -3918,10 +4035,10 @@ static m9_sl_CHAR Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
   bool m9t1 = (!((Rdf_IsPnCharsU (c, err) || (((c >= 48u) && (c <= 57u))))));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s93, 27 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s106, 27 }), err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(s) m9v = m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, c, err);
+  { __typeof__(s) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, c, err), err);
     if (err->exc) goto L_ret;
     s = m9v;
   }
@@ -3935,17 +4052,17 @@ static m9_sl_CHAR Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
     bool m9t2 = Rdf_IsPnChars (c, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+      { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
       Rdf_Advance (r, r_pool, err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t4 = ({ bool m9t3 = (c == 46u); if (m9t3) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a105 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) goto L_ret; m9t3 = (((Rdf_IsPnChars (m9a105, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u)))); } } m9t3; });
+      bool m9t4 = ({ bool m9t3 = (c == 46u); if (m9t3) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a112 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) goto L_ret; m9t3 = (((Rdf_IsPnChars (m9a112, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u)))); } } m9t3; });
       if (err->exc) goto L_ret;
       if (m9t4) {
-        { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+        { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
           if (err->exc) goto L_ret;
           s = m9v;
         }
@@ -3955,19 +4072,21 @@ static m9_sl_CHAR Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
       break;
     } }
   }
-  bool m9t5 = ((*(uint32_t *) m9_at (s.p, m9_sub_i64 ((s).len, INT64_C(1), err), s.len, sizeof (uint32_t), err)) == 46u);
+  { __typeof__(m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err)) m9a113 = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  bool m9t5 = Text_BIs (s, m9a113, 46u, err);
   if (err->exc) goto L_ret;
   if (m9t5) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s94, 34 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s107, 34 }), err);
     if (err->exc) goto L_ret;
-  }
+  } }
   err->res = m9res;
   m9ret = Rdf_Labelled (pool, r, r_pool, s, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -4030,7 +4149,7 @@ static uint32_t Rdf_Echar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     m9ret = c;
     goto L_ret;
   }
-  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s95, 31 }), err);
+  Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s108, 31 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = 0u;
@@ -4047,14 +4166,14 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 s = {0}; (void) s;
   uint32_t q = 0; (void) q;
   uint32_t c = 0; (void) c;
   bool long_ = false; (void) long_;
@@ -4063,7 +4182,7 @@ static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     q = m9v;
   }
   if (((q == 39u) && (!(*r).turtle))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s96, 27 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s109, 27 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(long_) m9v = (((*r).turtle && (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == q)) && (Rdf_PeekAt (r, r_pool, INT64_C(2), err) == q));
@@ -4081,12 +4200,12 @@ static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     Rdf_Advance (r, r_pool, err);
     if (err->exc) goto L_ret;
   }
-  s = (m9_sl_CHAR){ NULL, 0 };
+  s = ((m9_sl_UTF8){ NULL, 0 });
   for (;;) {
     bool m9t1 = Rdf_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s97, 19 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s110, 19 }), err);
       if (err->exc) goto L_ret;
     }
     { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
@@ -4112,17 +4231,17 @@ static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         break;
       }
       if (((c == 10u) || (c == 13u))) {
-        Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s98, 28 }), err);
+        Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s111, 28 }), err);
         if (err->exc) goto L_ret;
       }
     }
     if ((c == 92u)) {
-      { __typeof__(s) m9v = m9_cat_ch (err->res, s, Rdf_Echar (r, r_pool, err), err);
+      { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, Rdf_Echar (r, r_pool, err), err), err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
     } else {
-      { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+      { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
@@ -4135,7 +4254,7 @@ static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -4146,19 +4265,19 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 s = {0}; (void) s;
   uint32_t c = 0; (void) c;
   int64_t n = 0; (void) n;
   Rdf_Advance (r, r_pool, err);
   if (err->exc) goto L_ret;
-  s = (m9_sl_CHAR){ NULL, 0 };
+  s = ((m9_sl_UTF8){ NULL, 0 });
   n = INT64_C(0);
   for (;;) {
     { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
@@ -4166,7 +4285,7 @@ static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       c = m9v;
     }
     if (((((c >= 97u) && (c <= 122u))) || (((c >= 65u) && (c <= 90u))))) {
-      { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+      { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
@@ -4181,14 +4300,14 @@ static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     }
   }
   if ((n == INT64_C(0))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s99, 23 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s112, 23 }), err);
     if (err->exc) goto L_ret;
   }
   for (;;) {
     bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 45u);
     if (err->exc) goto L_ret;
     if (!(m9t1)) break;
-    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s100, 1 }), err);
+    { __typeof__(s) m9v = m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s113, 1 }), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -4201,7 +4320,7 @@ static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         c = m9v;
       }
       if ((((((c >= 97u) && (c <= 122u))) || (((c >= 65u) && (c <= 90u)))) || (((c >= 48u) && (c <= 57u))))) {
-        { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+        { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
           if (err->exc) goto L_ret;
           s = m9v;
         }
@@ -4216,7 +4335,7 @@ static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       }
     }
     if ((n == INT64_C(0))) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s101, 26 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s114, 26 }), err);
       if (err->exc) goto L_ret;
     }
   }
@@ -4225,7 +4344,7 @@ static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -4236,20 +4355,20 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_Iri (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_Iri (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 60u);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a106 = Rdf_IriRef (r, r_pool, err);
+    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a114 = Rdf_IriRef (r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_Absolute (r, r_pool, m9a106, err);
+    m9ret = Rdf_Absolute (r, r_pool, m9a114, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -4260,7 +4379,7 @@ static m9_sl_CHAR Rdf_Iri (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -4299,7 +4418,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_Word (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *err)
+static bool Rdf_Word (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4309,10 +4428,10 @@ static bool Rdf_Word (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *er
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((w).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (Text_BLen (w, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = (Rdf_PeekAt (r, r_pool, i, err) != (*(uint32_t *) m9_at (w.p, i, w.len, sizeof (uint32_t), err)));
+    bool m9t2 = (Rdf_PeekAt (r, r_pool, i, err) != Text_BChar (w, i, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -4323,10 +4442,13 @@ static bool Rdf_Word (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *er
     i += 1;
   } }
   err->res = m9res;
-  { __typeof__(Rdf_PeekAt (r, r_pool, (w).len, err)) m9a107 = Rdf_PeekAt (r, r_pool, (w).len, err);
+  { __typeof__(Text_BLen (w, err)) m9a115 = Text_BLen (w, err);
     if (err->exc) goto L_ret;
-  m9ret = (!(({ bool m9t4 = (Rdf_IsPnChars (m9a107, err) || (Rdf_PeekAt (r, r_pool, (w).len, err) == 58u)); if (!m9t4) { m9t4 = (({ bool m9t3 = (Rdf_PeekAt (r, r_pool, (w).len, err) == 46u); if (m9t3) { { __typeof__(m9_add_i64 ((w).len, INT64_C(1), err)) m9a108 = m9_add_i64 ((w).len, INT64_C(1), err);   if (err->exc) goto L_ret; { __typeof__(Rdf_PeekAt (r, r_pool, m9a108, err)) m9a109 = Rdf_PeekAt (r, r_pool, m9a108, err);   if (err->exc) goto L_ret; m9t3 = (Rdf_IsPnChars (m9a109, err)); } } } m9t3; })); } m9t4; })));
+  { __typeof__(Rdf_PeekAt (r, r_pool, m9a115, err)) m9a116 = Rdf_PeekAt (r, r_pool, m9a115, err);
+    if (err->exc) goto L_ret;
+  m9ret = (!(({ bool m9t5 = ({ bool m9t3 = Rdf_IsPnChars (m9a116, err); if (!m9t3) { { __typeof__(Text_BLen (w, err)) m9a117 = Text_BLen (w, err);   if (err->exc) goto L_ret; m9t3 = ((Rdf_PeekAt (r, r_pool, m9a117, err) == 58u)); } } m9t3; }); if (!m9t5) { { __typeof__(Text_BLen (w, err)) m9a118 = Text_BLen (w, err);   if (err->exc) goto L_ret; m9t5 = (({ bool m9t4 = (Rdf_PeekAt (r, r_pool, m9a118, err) == 46u); if (m9t4) { { __typeof__(m9_add_i64 (Text_BLen (w, err), INT64_C(1), err)) m9a119 = m9_add_i64 (Text_BLen (w, err), INT64_C(1), err);   if (err->exc) goto L_ret; { __typeof__(Rdf_PeekAt (r, r_pool, m9a119, err)) m9a120 = Rdf_PeekAt (r, r_pool, m9a119, err);   if (err->exc) goto L_ret; m9t4 = (Rdf_IsPnChars (m9a120, err)); } } } m9t4; })); } } m9t5; })));
   if (err->exc) goto L_ret;
+  }
   }
   goto L_ret;
 L_ret: ;
@@ -4341,7 +4463,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *err)
+static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4352,7 +4474,7 @@ static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *
   uint32_t c = 0; (void) c;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((w).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (Text_BLen (w, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
     { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, i, err);
@@ -4365,7 +4487,7 @@ static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *
         c = m9v;
       }
     }
-    bool m9t2 = (c != (*(uint32_t *) m9_at (w.p, i, w.len, sizeof (uint32_t), err)));
+    bool m9t2 = (!Text_BIs (w, i, c, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -4376,10 +4498,13 @@ static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *
     i += 1;
   } }
   err->res = m9res;
-  { __typeof__(Rdf_PeekAt (r, r_pool, (w).len, err)) m9a110 = Rdf_PeekAt (r, r_pool, (w).len, err);
+  { __typeof__(Text_BLen (w, err)) m9a121 = Text_BLen (w, err);
     if (err->exc) goto L_ret;
-  m9ret = (!Rdf_IsPnChars (m9a110, err));
+  { __typeof__(Rdf_PeekAt (r, r_pool, m9a121, err)) m9a122 = Rdf_PeekAt (r, r_pool, m9a121, err);
+    if (err->exc) goto L_ret;
+  m9ret = (!Rdf_IsPnChars (m9a122, err));
   if (err->exc) goto L_ret;
+  }
   }
   goto L_ret;
 L_ret: ;
@@ -4422,26 +4547,26 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m9_state *err)
+static m9_sl_UTF8 Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 *dt, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 s = {0}; (void) s;
   uint32_t c = 0; (void) c;
   int64_t digits = 0; (void) digits;
   int64_t frac = 0; (void) frac;
   bool dot = false; (void) dot;
   bool ex = false; (void) ex;
-  s = (m9_sl_CHAR){ NULL, 0 };
+  s = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
     if (err->exc) goto L_ret;
     c = m9v;
   }
   if (((c == 43u) || (c == 45u))) {
-    { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
+    { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, c, err), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -4453,7 +4578,7 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
     bool m9t1 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) >= 48u) && (Rdf_PeekAt (r, r_pool, INT64_C(0), err) <= 57u));
     if (err->exc) goto L_ret;
     if (!(m9t1)) break;
-    { __typeof__(s) m9v = m9_cat_ch (err->res, s, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err);
+    { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -4470,7 +4595,7 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
   if (err->exc) goto L_ret;
   if (m9t2) {
     dot = true;
-    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s102, 1 }), err);
+    { __typeof__(s) m9v = m9_utf_cat (err->res, s, ((m9_sl_UTF8){ (uint8_t *) m9s115, 1 }), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -4480,7 +4605,7 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
       bool m9t3 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) >= 48u) && (Rdf_PeekAt (r, r_pool, INT64_C(0), err) <= 57u));
       if (err->exc) goto L_ret;
       if (!(m9t3)) break;
-      { __typeof__(s) m9v = m9_cat_ch (err->res, s, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err);
+      { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err), err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
@@ -4497,7 +4622,7 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
   if (err->exc) goto L_ret;
   if (m9t4) {
     ex = true;
-    { __typeof__(s) m9v = m9_cat_ch (err->res, s, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err);
+    { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -4506,7 +4631,7 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
     bool m9t5 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 43u) || (Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 45u));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      { __typeof__(s) m9v = m9_cat_ch (err->res, s, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err);
+      { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err), err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
@@ -4516,14 +4641,14 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
     bool m9t6 = (!(((Rdf_PeekAt (r, r_pool, INT64_C(0), err) >= 48u) && (Rdf_PeekAt (r, r_pool, INT64_C(0), err) <= 57u))));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s103, 26 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s116, 26 }), err);
       if (err->exc) goto L_ret;
     }
     for (;;) {
       bool m9t7 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) >= 48u) && (Rdf_PeekAt (r, r_pool, INT64_C(0), err) <= 57u));
       if (err->exc) goto L_ret;
       if (!(m9t7)) break;
-      { __typeof__(s) m9v = m9_cat_ch (err->res, s, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err);
+      { __typeof__(s) m9v = m9_utf_cat (err->res, s, m9_utf_of_char (err->res, Rdf_PeekAt (r, r_pool, INT64_C(0), err), err), err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
@@ -4532,22 +4657,22 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
     }
   }
   if (((digits == INT64_C(0)) && (frac == INT64_C(0)))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s104, 17 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s117, 17 }), err);
     if (err->exc) goto L_ret;
   }
   if (ex) {
-    { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s105, 6 }), err);
+    { __typeof__((*dt)) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s118, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s119, 6 }), err);
       if (err->exc) goto L_ret;
       (*dt) = m9v;
     }
   } else {
     if (dot) {
-      { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s106, 7 }), err);
+      { __typeof__((*dt)) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s120, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s121, 7 }), err);
         if (err->exc) goto L_ret;
         (*dt) = m9v;
       }
   } else {
-    { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s107, 7 }), err);
+    { __typeof__((*dt)) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s122, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s123, 7 }), err);
       if (err->exc) goto L_ret;
       (*dt) = m9v;
     }
@@ -4557,8 +4682,8 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  *dt = m9_rehome (&m9frame, m9res, *dt, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  *dt = m9_rehome_utf (&m9frame, m9res, *dt, err);
   m9_adopt_if (&m9frame, r_pool, (*r).src.p);
   m9_adopt_if (&m9frame, r_pool, (*r).base.p);
   m9_adopt_if (&m9frame, r_pool, (*r).pfx.p);
@@ -4576,8 +4701,8 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
   (void) m9res;
   err->res = m9res;
   Rdf_Term m9ret = {0};
-  m9_sl_CHAR v = {0}; (void) v;
-  m9_sl_CHAR dt = {0}; (void) dt;
+  m9_sl_UTF8 v = {0}; (void) v;
+  m9_sl_UTF8 dt = {0}; (void) dt;
   uint32_t c = 0; (void) c;
   { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
     if (err->exc) goto L_ret;
@@ -4592,9 +4717,9 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
-      { __typeof__(Rdf_LangTag (r, r_pool, err)) m9a111 = Rdf_LangTag (r, r_pool, err);
+      { __typeof__(Rdf_LangTag (r, r_pool, err)) m9a123 = Rdf_LangTag (r, r_pool, err);
         if (err->exc) goto L_ret;
-      m9ret = Rdf_LitT (v, m9a111, (m9_sl_CHAR){ NULL, 0 }, err);
+      m9ret = Rdf_LitT (v, m9a123, ((m9_sl_UTF8){ NULL, 0 }), err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -4608,70 +4733,70 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
       if (err->exc) goto L_ret;
       if ((*r).turtle) {
         err->res = m9res;
-        { __typeof__(Rdf_Iri (r, r_pool, err)) m9a112 = Rdf_Iri (r, r_pool, err);
+        { __typeof__(Rdf_Iri (r, r_pool, err)) m9a124 = Rdf_Iri (r, r_pool, err);
           if (err->exc) goto L_ret;
-        m9ret = Rdf_LitT (v, (m9_sl_CHAR){ NULL, 0 }, m9a112, err);
+        m9ret = Rdf_LitT (v, ((m9_sl_UTF8){ NULL, 0 }), m9a124, err);
         if (err->exc) goto L_ret;
         }
         goto L_ret;
       }
       err->res = m9res;
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a113 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a125 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a113, err)) m9a114 = Rdf_Absolute (r, r_pool, m9a113, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a125, err)) m9a126 = Rdf_Absolute (r, r_pool, m9a125, err);
         if (err->exc) goto L_ret;
-      m9ret = Rdf_LitT (v, (m9_sl_CHAR){ NULL, 0 }, m9a114, err);
+      m9ret = Rdf_LitT (v, ((m9_sl_UTF8){ NULL, 0 }), m9a126, err);
       if (err->exc) goto L_ret;
       }
       }
       goto L_ret;
     }
     err->res = m9res;
-    m9ret = Rdf_LitT (v, (m9_sl_CHAR){ NULL, 0 }, Rdf_XsdString, err);
+    m9ret = Rdf_LitT (v, ((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ (uint8_t *) m9s124, 39 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t3 = ((*r).turtle && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s108, 4 }), err));
+  bool m9t3 = ((*r).turtle && Rdf_Word (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s125, 4 }), err));
   if (err->exc) goto L_ret;
   if (m9t3) {
     Rdf_Skip (r, r_pool, INT64_C(4), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s109, 7 }), err)) m9a115 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s109, 7 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s126, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s127, 7 }), err)) m9a127 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s126, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s127, 7 }), err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s110, 4 }), (m9_sl_CHAR){ NULL, 0 }, m9a115, err);
+    m9ret = Rdf_LitT (((m9_sl_UTF8){ (uint8_t *) m9s128, 4 }), ((m9_sl_UTF8){ NULL, 0 }), m9a127, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  bool m9t4 = ((*r).turtle && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s111, 5 }), err));
+  bool m9t4 = ((*r).turtle && Rdf_Word (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s129, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
     Rdf_Skip (r, r_pool, INT64_C(5), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s112, 7 }), err)) m9a116 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s112, 7 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s130, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s131, 7 }), err)) m9a128 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s130, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s131, 7 }), err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s113, 5 }), (m9_sl_CHAR){ NULL, 0 }, m9a116, err);
+    m9ret = Rdf_LitT (((m9_sl_UTF8){ (uint8_t *) m9s132, 5 }), ((m9_sl_UTF8){ NULL, 0 }), m9a128, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
   if ((*r).turtle) {
-    dt = (m9_sl_CHAR){ NULL, 0 };
+    dt = ((m9_sl_UTF8){ NULL, 0 });
     { __typeof__(v) m9v = Rdf_Numeric (r, r_pool, &(dt), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
     err->res = m9res;
-    m9ret = Rdf_LitT (v, (m9_sl_CHAR){ NULL, 0 }, dt, err);
+    m9ret = Rdf_LitT (v, ((m9_sl_UTF8){ NULL, 0 }), dt, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s114, 15 }), err);
+  Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s133, 15 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = Rdf_LitT ((m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+  m9ret = Rdf_LitT (((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -4701,12 +4826,12 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   Rdf_Term cell = {0}; (void) cell;
   Rdf_Term o = {0}; (void) o;
   bool any = false; (void) any;
-  Rdf_Expect (r, r_pool, 40u, ((m9_sl_CHAR){ (uint32_t *) m9s115, 1 }), err);
+  Rdf_Expect (r, r_pool, 40u, ((m9_sl_UTF8){ (uint8_t *) m9s134, 1 }), err);
   if (err->exc) goto L_ret;
   any = false;
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), err)) m9a117 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s135, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s136, 3 }), err)) m9a129 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s135, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s136, 3 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(head) m9v = Rdf_IriT (m9a117, err);
+  { __typeof__(head) m9v = Rdf_IriT (m9a129, err);
     if (err->exc) goto L_ret;
     head = m9v;
   }
@@ -4725,22 +4850,22 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
     bool m9t2 = Rdf_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s117, 23 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s137, 23 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a118 = Rdf_Fresh (pool, r, r_pool, err);
+    { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a130 = Rdf_Fresh (pool, r, r_pool, err);
       if (err->exc) goto L_ret;
-    { __typeof__(cell) m9v = Rdf_BlankT (m9a118, err);
+    { __typeof__(cell) m9v = Rdf_BlankT (m9a130, err);
       if (err->exc) goto L_ret;
       cell = m9v;
     }
     }
     if (any) {
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s118, 4 }), err)) m9a119 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s118, 4 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s138, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s139, 4 }), err)) m9a131 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s138, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s139, 4 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriT (m9a119, err)) m9a120 = Rdf_IriT (m9a119, err);
+      { __typeof__(Rdf_IriT (m9a131, err)) m9a132 = Rdf_IriT (m9a131, err);
         if (err->exc) goto L_ret;
-      Rdf_Add (pool, g, g_pool, &(prev), &m9a120, &(cell), err);
+      Rdf_Add (pool, g, g_pool, &(prev), &m9a132, &(cell), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -4752,26 +4877,26 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
       if (err->exc) goto L_ret;
       o = m9v;
     }
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s119, 5 }), err)) m9a121 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s119, 5 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s140, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s141, 5 }), err)) m9a133 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s140, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s141, 5 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a121, err)) m9a122 = Rdf_IriT (m9a121, err);
+    { __typeof__(Rdf_IriT (m9a133, err)) m9a134 = Rdf_IriT (m9a133, err);
       if (err->exc) goto L_ret;
-    Rdf_Add (pool, g, g_pool, &(cell), &m9a122, &(o), err);
+    Rdf_Add (pool, g, g_pool, &(cell), &m9a134, &(o), err);
     if (err->exc) goto L_ret;
     }
     }
     prev = cell;
   }
   if (any) {
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s120, 4 }), err)) m9a123 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s120, 4 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s142, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s143, 4 }), err)) m9a135 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s142, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s143, 4 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a123, err)) m9a124 = Rdf_IriT (m9a123, err);
+    { __typeof__(Rdf_IriT (m9a135, err)) m9a136 = Rdf_IriT (m9a135, err);
       if (err->exc) goto L_ret;
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s121, 3 }), err)) m9a125 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s121, 3 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s144, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s145, 3 }), err)) m9a137 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s144, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s145, 3 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a125, err)) m9a126 = Rdf_IriT (m9a125, err);
+    { __typeof__(Rdf_IriT (m9a137, err)) m9a138 = Rdf_IriT (m9a137, err);
       if (err->exc) goto L_ret;
-    Rdf_Add (pool, g, g_pool, &(prev), &m9a124, &m9a126, err);
+    Rdf_Add (pool, g, g_pool, &(prev), &m9a136, &m9a138, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -4805,11 +4930,11 @@ static Rdf_Term Rdf_PropertyList (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
   err->res = m9res;
   Rdf_Term m9ret = {0};
   Rdf_Term b = {0}; (void) b;
-  Rdf_Expect (r, r_pool, 91u, ((m9_sl_CHAR){ (uint32_t *) m9s122, 1 }), err);
+  Rdf_Expect (r, r_pool, 91u, ((m9_sl_UTF8){ (uint8_t *) m9s146, 1 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a127 = Rdf_Fresh (pool, r, r_pool, err);
+  { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a139 = Rdf_Fresh (pool, r, r_pool, err);
     if (err->exc) goto L_ret;
-  { __typeof__(b) m9v = Rdf_BlankT (m9a127, err);
+  { __typeof__(b) m9v = Rdf_BlankT (m9a139, err);
     if (err->exc) goto L_ret;
     b = m9v;
   }
@@ -4829,7 +4954,7 @@ static Rdf_Term Rdf_PropertyList (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
   if (err->exc) goto L_ret;
   Rdf_SkipWs (r, r_pool, err);
   if (err->exc) goto L_ret;
-  Rdf_Expect (r, r_pool, 93u, ((m9_sl_CHAR){ (uint32_t *) m9s123, 38 }), err);
+  Rdf_Expect (r, r_pool, 93u, ((m9_sl_UTF8){ (uint8_t *) m9s147, 38 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = b;
@@ -4868,9 +4993,9 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a128 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a140 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_BlankT (m9a128, err);
+    m9ret = Rdf_BlankT (m9a140, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -4889,9 +5014,9 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   }
   if ((c == 60u)) {
     err->res = m9res;
-    { __typeof__(Rdf_Iri (r, r_pool, err)) m9a129 = Rdf_Iri (r, r_pool, err);
+    { __typeof__(Rdf_Iri (r, r_pool, err)) m9a141 = Rdf_Iri (r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_IriT (m9a129, err);
+    m9ret = Rdf_IriT (m9a141, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -4902,7 +5027,7 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t2 = (Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 4 }), err) || Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s125, 5 }), err));
+  bool m9t2 = (Rdf_Word (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s148, 4 }), err) || Rdf_Word (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s149, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
@@ -4914,17 +5039,17 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    { __typeof__(Rdf_PrefixedName (r, r_pool, err)) m9a130 = Rdf_PrefixedName (r, r_pool, err);
+    { __typeof__(Rdf_PrefixedName (r, r_pool, err)) m9a142 = Rdf_PrefixedName (r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_IriT (m9a130, err);
+    m9ret = Rdf_IriT (m9a142, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s126, 18 }), err);
+  Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s150, 18 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = Rdf_IriT ((m9_sl_CHAR){ NULL, 0 }, err);
+  m9ret = Rdf_IriT (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -4952,15 +5077,15 @@ static Rdf_Term Rdf_Verb (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   Rdf_Term m9ret = {0};
   Rdf_SkipWs (r, r_pool, err);
   if (err->exc) goto L_ret;
-  bool m9t4 = ({ bool m9t3 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 97u); if (m9t3) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a131 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) goto L_ret; m9t3 = ((!(({ bool m9t2 = (Rdf_IsPnChars (m9a131, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u)); if (!m9t2) { m9t2 = (({ bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u); if (m9t1) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(2), err)) m9a132 = Rdf_PeekAt (r, r_pool, INT64_C(2), err);   if (err->exc) goto L_ret; m9t1 = (Rdf_IsPnChars (m9a132, err)); } } m9t1; })); } m9t2; })))); } } m9t3; });
+  bool m9t4 = ({ bool m9t3 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 97u); if (m9t3) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(1), err)) m9a143 = Rdf_PeekAt (r, r_pool, INT64_C(1), err);   if (err->exc) goto L_ret; m9t3 = ((!(({ bool m9t2 = (Rdf_IsPnChars (m9a143, err) || (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u)); if (!m9t2) { m9t2 = (({ bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 46u); if (m9t1) { { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(2), err)) m9a144 = Rdf_PeekAt (r, r_pool, INT64_C(2), err);   if (err->exc) goto L_ret; m9t1 = (Rdf_IsPnChars (m9a144, err)); } } m9t1; })); } m9t2; })))); } } m9t3; });
   if (err->exc) goto L_ret;
   if (m9t4) {
     Rdf_Advance (r, r_pool, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s127, 4 }), err)) m9a133 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s127, 4 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s151, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s152, 4 }), err)) m9a145 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s151, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s152, 4 }), err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_IriT (m9a133, err);
+    m9ret = Rdf_IriT (m9a145, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -4968,13 +5093,13 @@ static Rdf_Term Rdf_Verb (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   bool m9t5 = (!Rdf_StartsIri (r, r_pool, err));
   if (err->exc) goto L_ret;
   if (m9t5) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s128, 20 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s153, 20 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(Rdf_Iri (r, r_pool, err)) m9a134 = Rdf_Iri (r, r_pool, err);
+  { __typeof__(Rdf_Iri (r, r_pool, err)) m9a146 = Rdf_Iri (r, r_pool, err);
     if (err->exc) goto L_ret;
-  m9ret = Rdf_IriT (m9a134, err);
+  m9ret = Rdf_IriT (m9a146, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -5065,38 +5190,38 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  m9_sl_CHAR name = {0}; (void) name;
-  m9_sl_CHAR iri = {0}; (void) iri;
+  m9_sl_UTF8 name = {0}; (void) name;
+  m9_sl_UTF8 iri = {0}; (void) iri;
   bool sparql = false; (void) sparql;
   int64_t i = 0; (void) i;
-  m9_sl_m9_sl_CHAR np = {0}; (void) np;
-  m9_sl_m9_sl_CHAR ni = {0}; (void) ni;
-  bool m9t1 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 64u) && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s129, 7 }), err));
+  m9_sl_m9_sl_UTF8 np = {0}; (void) np;
+  m9_sl_m9_sl_UTF8 ni = {0}; (void) ni;
+  bool m9t1 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 64u) && Rdf_Word (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s154, 7 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     Rdf_Skip (r, r_pool, INT64_C(7), err);
     if (err->exc) goto L_ret;
     sparql = false;
   } else {
-    bool m9t2 = Rdf_WordCi (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s130, 6 }), err);
+    bool m9t2 = Rdf_WordCi (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s155, 6 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       Rdf_Skip (r, r_pool, INT64_C(6), err);
       if (err->exc) goto L_ret;
       sparql = true;
   } else {
-    bool m9t3 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 64u) && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s131, 5 }), err));
+    bool m9t3 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 64u) && Rdf_Word (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s156, 5 }), err));
     if (err->exc) goto L_ret;
     if (m9t3) {
       Rdf_Skip (r, r_pool, INT64_C(5), err);
       if (err->exc) goto L_ret;
       Rdf_SkipWs (r, r_pool, err);
       if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a135 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a147 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a135, err)) m9a136 = Rdf_Absolute (r, r_pool, m9a135, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a147, err)) m9a148 = Rdf_Absolute (r, r_pool, m9a147, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*r).base) m9v = Text_Keep (pool, m9a136, err);
+      { __typeof__((*r).base) m9v = Text_KeepUtf (pool, m9a148, err);
         if (err->exc) goto L_ret;
         (*r).base = m9v;
       }
@@ -5104,24 +5229,24 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
       }
       Rdf_SkipWs (r, r_pool, err);
       if (err->exc) goto L_ret;
-      Rdf_Expect (r, r_pool, 46u, ((m9_sl_CHAR){ (uint32_t *) m9s132, 17 }), err);
+      Rdf_Expect (r, r_pool, 46u, ((m9_sl_UTF8){ (uint8_t *) m9s157, 17 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
-    bool m9t4 = Rdf_WordCi (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s133, 4 }), err);
+    bool m9t4 = Rdf_WordCi (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s158, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t4) {
       Rdf_Skip (r, r_pool, INT64_C(4), err);
       if (err->exc) goto L_ret;
       Rdf_SkipWs (r, r_pool, err);
       if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a137 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a149 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a137, err)) m9a138 = Rdf_Absolute (r, r_pool, m9a137, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a149, err)) m9a150 = Rdf_Absolute (r, r_pool, m9a149, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*r).base) m9v = Text_Keep (pool, m9a138, err);
+      { __typeof__((*r).base) m9v = Text_KeepUtf (pool, m9a150, err);
         if (err->exc) goto L_ret;
         (*r).base = m9v;
       }
@@ -5143,19 +5268,19 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
   }
   Rdf_SkipWs (r, r_pool, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a139 = Rdf_IriRef (r, r_pool, err);
+  { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a151 = Rdf_IriRef (r, r_pool, err);
     if (err->exc) goto L_ret;
-  { __typeof__(iri) m9v = Rdf_Absolute (r, r_pool, m9a139, err);
+  { __typeof__(iri) m9v = Rdf_Absolute (r, r_pool, m9a151, err);
     if (err->exc) goto L_ret;
     iri = m9v;
   }
   }
   if (((*r).npfx == ((*r).pfx).len)) {
-    { __typeof__(np) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_mul_i64 (INT64_C(2), ((*r).pfx).len, err), err);
+    { __typeof__(np) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), m9_mul_i64 (INT64_C(2), ((*r).pfx).len, err), err);
       if (err->exc) goto L_ret;
       np = m9v;
     }
-    { __typeof__(ni) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_mul_i64 (INT64_C(2), ((*r).pfx).len, err), err);
+    { __typeof__(ni) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), m9_mul_i64 (INT64_C(2), ((*r).pfx).len, err), err);
       if (err->exc) goto L_ret;
       ni = m9v;
     }
@@ -5164,14 +5289,14 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
     m9t5to = m9_sub_i64 ((*r).npfx, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t5to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (np.p, i, np.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (np.p, i, np.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, i, (*r).pfx.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (np.p, i, np.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (np.p, i, np.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (ni.p, i, ni.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*r).pfxIri.p, i, (*r).pfxIri.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (ni.p, i, ni.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at ((*r).pfxIri.p, i, (*r).pfxIri.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (ni.p, i, ni.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (ni.p, i, ni.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
@@ -5180,14 +5305,14 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
     (*r).pfx = np;
     (*r).pfxIri = ni;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at ((*r).pfx.p, (*r).npfx, (*r).pfx.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, name, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, (*r).npfx, (*r).pfx.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, name, err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at ((*r).pfx.p, (*r).npfx, (*r).pfx.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at ((*r).pfx.p, (*r).npfx, (*r).pfx.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at ((*r).pfxIri.p, (*r).npfx, (*r).pfxIri.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, iri, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*r).pfxIri.p, (*r).npfx, (*r).pfxIri.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, iri, err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at ((*r).pfxIri.p, (*r).npfx, (*r).pfxIri.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at ((*r).pfxIri.p, (*r).npfx, (*r).pfxIri.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
   { __typeof__((*r).npfx) m9v = m9_add_i64 ((*r).npfx, INT64_C(1), err);
@@ -5197,7 +5322,7 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
   if ((!sparql)) {
     Rdf_SkipWs (r, r_pool, err);
     if (err->exc) goto L_ret;
-    Rdf_Expect (r, r_pool, 46u, ((m9_sl_CHAR){ (uint32_t *) m9s134, 19 }), err);
+    Rdf_Expect (r, r_pool, 46u, ((m9_sl_UTF8){ (uint8_t *) m9s159, 19 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -5245,9 +5370,9 @@ static void Rdf_Triples (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Grap
   bool m9t2 = ((c == 95u) && (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a140 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a152 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) goto L_ret;
-    { __typeof__(s) m9v = Rdf_BlankT (m9a140, err);
+    { __typeof__(s) m9v = Rdf_BlankT (m9a152, err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -5262,15 +5387,15 @@ static void Rdf_Triples (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Grap
     bool m9t3 = Rdf_StartsIri (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__(Rdf_Iri (r, r_pool, err)) m9a141 = Rdf_Iri (r, r_pool, err);
+      { __typeof__(Rdf_Iri (r, r_pool, err)) m9a153 = Rdf_Iri (r, r_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(s) m9v = Rdf_IriT (m9a141, err);
+      { __typeof__(s) m9v = Rdf_IriT (m9a153, err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
       }
   } else {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s135, 18 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s160, 18 }), err);
     if (err->exc) goto L_ret;
   } } }
   Rdf_PredObjList (pool, r, r_pool, g, g_pool, &(s), err);
@@ -5288,38 +5413,38 @@ L_ret: ;
   return;
 }
 
-static void Rdf_NewReader (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR text, m9_sl_CHAR base, bool turtle, m9_state *err)
+static void Rdf_NewReader (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sl_UTF8 text, m9_sl_UTF8 base, bool turtle, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__((*r).src) m9v = Text_Keep (pool, text, err);
+  { __typeof__((*r).src) m9v = Text_KeepUtf (pool, text, err);
     if (err->exc) goto L_ret;
     (*r).src = m9v;
   }
   (*r).pos = INT64_C(0);
   (*r).line = INT64_C(1);
   (*r).lineStart = INT64_C(0);
-  { __typeof__((*r).base) m9v = Text_Keep (pool, base, err);
+  { __typeof__((*r).base) m9v = Text_KeepUtf (pool, base, err);
     if (err->exc) goto L_ret;
     (*r).base = m9v;
   }
   (*r).turtle = turtle;
-  { __typeof__((*r).pfx) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__((*r).pfx) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     (*r).pfx = m9v;
   }
-  { __typeof__((*r).pfxIri) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__((*r).pfxIri) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     (*r).pfxIri = m9v;
   }
   (*r).npfx = INT64_C(0);
-  { __typeof__((*r).blab) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__((*r).blab) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     (*r).blab = m9v;
   }
-  { __typeof__((*r).bid) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__((*r).bid) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     (*r).bid = m9v;
   }
@@ -5351,11 +5476,11 @@ static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool 
   }
   if ((c == 60u)) {
     err->res = m9res;
-    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a142 = Rdf_IriRef (r, r_pool, err);
+    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a154 = Rdf_IriRef (r, r_pool, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_Absolute (r, r_pool, m9a142, err)) m9a143 = Rdf_Absolute (r, r_pool, m9a142, err);
+    { __typeof__(Rdf_Absolute (r, r_pool, m9a154, err)) m9a155 = Rdf_Absolute (r, r_pool, m9a154, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_IriT (m9a143, err);
+    m9ret = Rdf_IriT (m9a155, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -5365,9 +5490,9 @@ static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool 
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a144 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a156 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_BlankT (m9a144, err);
+    m9ret = Rdf_BlankT (m9a156, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -5378,10 +5503,10 @@ static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool 
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s136, 15 }), err);
+  Rdf_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s161, 15 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = Rdf_IriT ((m9_sl_CHAR){ NULL, 0 }, err);
+  m9ret = Rdf_IriT (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -5430,17 +5555,23 @@ static void Rdf_Hex2 (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state 
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR h = {0}; (void) h;
-  h = ((m9_sl_CHAR){ (uint32_t *) m9s137, 16 });
-  { __typeof__((*(uint32_t *) m9_at (h.p, m9_div_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err))) m9a145 = (*(uint32_t *) m9_at (h.p, m9_div_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err));
+  m9_sl_UTF8 h = {0}; (void) h;
+  h = ((m9_sl_UTF8){ (uint8_t *) m9s162, 16 });
+  { __typeof__(m9_div_i64 (v, INT64_C(16), err)) m9a157 = m9_div_i64 (v, INT64_C(16), err);
     if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendChar (d, d_pool, m9a145, err);
+  { __typeof__(Text_BChar (h, m9a157, err)) m9a158 = Text_BChar (h, m9a157, err);
+    if (err->exc) goto L_hdl_m9t1;
+  DynStr_AppendChar (d, d_pool, m9a158, err);
   if (err->exc) goto L_hdl_m9t1;
   }
-  { __typeof__((*(uint32_t *) m9_at (h.p, m9_mod_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err))) m9a146 = (*(uint32_t *) m9_at (h.p, m9_mod_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err));
+  }
+  { __typeof__(m9_mod_i64 (v, INT64_C(16), err)) m9a159 = m9_mod_i64 (v, INT64_C(16), err);
     if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendChar (d, d_pool, m9a146, err);
+  { __typeof__(Text_BChar (h, m9a159, err)) m9a160 = Text_BChar (h, m9a159, err);
+    if (err->exc) goto L_hdl_m9t1;
+  DynStr_AppendChar (d, d_pool, m9a160, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -5458,7 +5589,7 @@ L_ret: ;
   return;
 }
 
-static void Rdf_PutIri (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err)
+static void Rdf_PutIri (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5468,9 +5599,9 @@ static void Rdf_PutIri (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_s
   DynStr_AppendChar (d, d_pool, 60u, err);
   if (err->exc) goto L_ret;
   { __typeof__(s) m9t1s = s;
-  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; m9t1i++) { c = m9t1s.p[m9t1i];
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     if ((((((((((((int64_t)(c) <= INT64_C(0x20)) || (c == 60u)) || (c == 62u)) || (c == 34u)) || (c == 123u)) || (c == 125u)) || (c == 124u)) || (c == 94u)) || (c == 96u)) || (c == 92u))) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s138, 4 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s163, 4 }), err);
       if (err->exc) goto L_ret;
       Rdf_Hex2 (d, d_pool, (int64_t)(c), err);
       if (err->exc) goto L_ret;
@@ -5505,7 +5636,7 @@ static void Rdf_PutTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Term *t, m9_s
   } break;
   case Rdf_Kind_Blank:
   {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s139, 2 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s164, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, (*t).value, err);
     if (err->exc) goto L_ret;
@@ -5515,29 +5646,29 @@ static void Rdf_PutTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Term *t, m9_s
     DynStr_AppendChar (d, d_pool, 34u, err);
     if (err->exc) goto L_ret;
     { __typeof__((*t).value) m9t2s = (*t).value;
-    for (int64_t m9t2i = 0; m9t2i < m9t2s.len; m9t2i++) { c = m9t2s.p[m9t2i];
+    for (int64_t m9t2i = 0; m9t2i < m9t2s.len; ) { c = m9_utf_next (m9t2s, &m9t2i);
       if ((c == 34u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s140, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s165, 2 }), err);
         if (err->exc) goto L_ret;
       } else {
         if ((c == 92u)) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s141, 2 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s166, 2 }), err);
           if (err->exc) goto L_ret;
       } else {
         if ((c == 10u)) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s142, 2 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s167, 2 }), err);
           if (err->exc) goto L_ret;
       } else {
         if ((c == 13u)) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s143, 2 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s168, 2 }), err);
           if (err->exc) goto L_ret;
       } else {
         if ((c == 9u)) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s144, 2 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s169, 2 }), err);
           if (err->exc) goto L_ret;
       } else {
         if ((((int64_t)(c) < INT64_C(0x20)) || ((int64_t)(c) == INT64_C(0x7F)))) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s145, 4 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s170, 4 }), err);
           if (err->exc) goto L_ret;
           Rdf_Hex2 (d, d_pool, (int64_t)(c), err);
           if (err->exc) goto L_ret;
@@ -5548,16 +5679,18 @@ static void Rdf_PutTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Term *t, m9_s
     } }
     DynStr_AppendChar (d, d_pool, 34u, err);
     if (err->exc) goto L_ret;
-    if ((((*t).lang).len > INT64_C(0))) {
+    bool m9t3 = (Text_BLen ((*t).lang, err) > INT64_C(0));
+    if (err->exc) goto L_ret;
+    if (m9t3) {
       DynStr_AppendChar (d, d_pool, 64u, err);
       if (err->exc) goto L_ret;
       DynStr_Append (d, d_pool, (*t).lang, err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t3 = ((((*t).datatype).len > INT64_C(0)) && (!Text_Eq ((*t).datatype, Rdf_XsdString, err)));
+      bool m9t4 = ((Text_BLen ((*t).datatype, err) > INT64_C(0)) && (!Text_EqUtf ((*t).datatype, ((m9_sl_UTF8){ (uint8_t *) m9s171, 39 }), err)));
       if (err->exc) goto L_ret;
-      if (m9t3) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s146, 2 }), err);
+      if (m9t4) {
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s172, 2 }), err);
         if (err->exc) goto L_ret;
         Rdf_PutIri (d, d_pool, (*t).datatype, err);
         if (err->exc) goto L_ret;
@@ -5572,7 +5705,7 @@ L_ret: ;
   return;
 }
 
-static bool Rdf_LocalOk (m9_sl_CHAR s, m9_state *err)
+static bool Rdf_LocalOk (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5585,7 +5718,7 @@ static bool Rdf_LocalOk (m9_sl_CHAR s, m9_state *err)
   first = true;
   last = 32u;
   { __typeof__(s) m9t1s = s;
-  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; m9t1i++) { c = m9t1s.p[m9t1i];
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     if (first) {
       bool m9t2 = (!(((Rdf_IsPnCharsU (c, err) || (c == 58u)) || (((c >= 48u) && (c <= 57u))))));
       if (err->exc) goto L_ret;
@@ -5614,7 +5747,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Rdf_PrefixFor (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR iri, m9_state *err)
+static int64_t Rdf_PrefixFor (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_UTF8 iri, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5637,15 +5770,20 @@ static int64_t Rdf_PrefixFor (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR iri, 
   m9t1to = m9_sub_i64 ((*p).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t5 = ({ bool m9t4 = ({ bool m9t2 = ((((*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len > bestLen) && (((*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len <= (iri).len)); if (m9t2) { { __typeof__((*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err))) m9a147 = (*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_ret; m9t2 = (Text_StartsWith (iri, m9a147, err)); } } m9t2; }); if (m9t4) { { __typeof__(({ __auto_type m9t3 = iri; int64_t m9t3a = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, m9t3n = m9_sub_i64 ((iri).len, ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9a148 = ({ __auto_type m9t3 = iri; int64_t m9t3a = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, m9t3n = m9_sub_i64 ((iri).len, ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });   if (err->exc) goto L_ret; m9t4 = (Rdf_LocalOk (m9a148, err)); } } m9t4; });
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a161 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));
+      if (err->exc) goto L_ret;
+    bool m9t6 = ({ bool m9t5 = ({ bool m9t3 = ({ bool m9t2 = (Text_BLen (m9a161, err) > bestLen); if (m9t2) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a162 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_ret; m9t2 = ((Text_BLen (m9a162, err) <= Text_BLen (iri, err))); } } m9t2; }); if (m9t3) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a163 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_ret; m9t3 = (Text_StartsWithUtf (iri, m9a163, err)); } } m9t3; }); if (m9t5) { { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a164 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_ret; { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a165 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_ret; { __typeof__(m9_utf_slice (iri, Text_BLen (m9a164, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a165, err), err), err)) m9a166 = m9_utf_slice (iri, Text_BLen (m9a164, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a165, err), err), err);   if (err->exc) goto L_ret; m9t5 = (Rdf_LocalOk (m9a166, err)); } } } } m9t5; });
     if (err->exc) goto L_ret;
-    if (m9t5) {
+    if (m9t6) {
       best = i;
-      { __typeof__(bestLen) m9v = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len;
+      { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a167 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, i, (*p).iris.len, sizeof (m9_sl_UTF8), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(bestLen) m9v = Text_BLen (m9a167, err);
         if (err->exc) goto L_ret;
         bestLen = m9v;
       }
-    }
+      }
+    } }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
@@ -5661,7 +5799,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_TtlIri (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR iri, m9_state *err)
+static void Rdf_TtlIri (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_UTF8 iri, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5675,17 +5813,23 @@ static void Rdf_TtlIri (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m
   if ((k >= INT64_C(0))) {
     (*(bool *) m9_at ((*p).used.p, k, (*p).used.len, sizeof (bool), err)) = true;
     if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_CHAR), err))) m9a149 = (*(m9_sl_CHAR *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_UTF8), err))) m9a168 = (*(m9_sl_UTF8 *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, m9a149, err);
+    DynStr_Append (d, d_pool, m9a168, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (d, d_pool, 58u, err);
     if (err->exc) goto L_ret;
-    { __typeof__(({ __auto_type m9t1 = iri; int64_t m9t1a = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, m9t1n = m9_sub_i64 ((iri).len, ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, err); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a150 = ({ __auto_type m9t1 = iri; int64_t m9t1a = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, m9t1n = m9_sub_i64 ((iri).len, ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, err); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a169 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, m9a150, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err))) m9a170 = (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_UTF8), err));
+      if (err->exc) goto L_ret;
+    { __typeof__(m9_utf_slice (iri, Text_BLen (m9a169, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a170, err), err), err)) m9a171 = m9_utf_slice (iri, Text_BLen (m9a169, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen (m9a170, err), err), err);
+      if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, m9a171, err);
     if (err->exc) goto L_ret;
+    }
+    }
     }
   } else {
     Rdf_PutIri (d, d_pool, iri, err);
@@ -5701,7 +5845,7 @@ L_ret: ;
   return;
 }
 
-static bool Rdf_Digits (m9_sl_CHAR s, int64_t from, int64_t to, m9_state *err)
+static bool Rdf_Digits (m9_sl_UTF8 s, int64_t from, int64_t to, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -5719,7 +5863,7 @@ static bool Rdf_Digits (m9_sl_CHAR s, int64_t from, int64_t to, m9_state *err)
   m9t1to = m9_sub_i64 (to, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
+    bool m9t2 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -5745,63 +5889,62 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 s = {0}; (void) s;
   int64_t i = 0; (void) i;
   int64_t dot = 0; (void) dot;
   int64_t e = 0; (void) e;
-  if (((((*t).lang).len > INT64_C(0)) || (((*t).value).len == INT64_C(0)))) {
+  bool m9t1 = ((Text_BLen ((*t).lang, err) > INT64_C(0)) || (Text_BLen ((*t).value, err) == INT64_C(0)));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   s = (*t).value;
   i = INT64_C(0);
-  bool m9t1 = (((*(uint32_t *) m9_at (s.p, INT64_C(0), s.len, sizeof (uint32_t), err)) == 45u) || ((*(uint32_t *) m9_at (s.p, INT64_C(0), s.len, sizeof (uint32_t), err)) == 43u));
+  bool m9t2 = (Text_BIs (s, INT64_C(0), 45u, err) || Text_BIs (s, INT64_C(0), 43u, err));
   if (err->exc) goto L_ret;
-  if (m9t1) {
+  if (m9t2) {
     i = INT64_C(1);
   }
-  m9_mark m9t2 = m9_pool_mark (err->res);
-  { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s147, 7 }), err)) m9a151 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s147, 7 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s173, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s174, 7 }), err)) m9a172 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s173, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s174, 7 }), err);
     if (err->exc) goto L_ret;
-  bool m9t3 = Text_Eq ((*t).datatype, m9a151, err);
+  bool m9t3 = Text_EqUtf ((*t).datatype, m9a172, err);
   if (err->exc) goto L_ret;
-  m9_pool_release (err->res, m9t2);
   if (m9t3) {
     err->res = m9res;
-    m9ret = Rdf_Digits (s, i, (s).len, err);
+    { __typeof__(Text_BLen (s, err)) m9a173 = Text_BLen (s, err);
+      if (err->exc) goto L_ret;
+    m9ret = Rdf_Digits (s, i, m9a173, err);
     if (err->exc) goto L_ret;
+    }
     goto L_ret;
   } else {
-    m9_mark m9t4 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s148, 7 }), err)) m9a152 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s148, 7 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s175, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s176, 7 }), err)) m9a174 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s175, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s176, 7 }), err);
       if (err->exc) goto L_ret;
-    bool m9t5 = Text_Eq ((*t).datatype, m9a152, err);
+    bool m9t4 = Text_EqUtf ((*t).datatype, m9a174, err);
     if (err->exc) goto L_ret;
-    m9_pool_release (err->res, m9t4);
-    if (m9t5) {
-      { __typeof__(dot) m9v = Text_FindChar (s, 46u, err);
+    if (m9t4) {
+      { __typeof__(dot) m9v = Text_FindCharUtf (s, 46u, err);
         if (err->exc) goto L_ret;
         dot = m9v;
       }
       err->res = m9res;
-      m9ret = ({ bool m9t6 = ((dot >= i) && (((dot == i) || Rdf_Digits (s, i, dot, err)))); if (m9t6) { { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a153 = m9_add_i64 (dot, INT64_C(1), err);   if (err->exc) goto L_ret; m9t6 = (Rdf_Digits (s, m9a153, (s).len, err)); } } m9t6; });
+      m9ret = ({ bool m9t5 = ((dot >= i) && (((dot == i) || Rdf_Digits (s, i, dot, err)))); if (m9t5) { { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a175 = m9_add_i64 (dot, INT64_C(1), err);   if (err->exc) goto L_ret; { __typeof__(Text_BLen (s, err)) m9a176 = Text_BLen (s, err);   if (err->exc) goto L_ret; m9t5 = (Rdf_Digits (s, m9a175, m9a176, err)); } } } m9t5; });
       if (err->exc) goto L_ret;
       goto L_ret;
   } else {
-    m9_mark m9t7 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s149, 6 }), err)) m9a154 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s149, 6 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s177, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s178, 6 }), err)) m9a177 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s177, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s178, 6 }), err);
       if (err->exc) goto L_ret;
-    bool m9t8 = Text_Eq ((*t).datatype, m9a154, err);
+    bool m9t6 = Text_EqUtf ((*t).datatype, m9a177, err);
     if (err->exc) goto L_ret;
-    m9_pool_release (err->res, m9t7);
-    if (m9t8) {
-      { __typeof__(e) m9v = Text_FindChar (s, 101u, err);
+    if (m9t6) {
+      { __typeof__(e) m9v = Text_FindCharUtf (s, 101u, err);
         if (err->exc) goto L_ret;
         e = m9v;
       }
       if ((e < INT64_C(0))) {
-        { __typeof__(e) m9v = Text_FindChar (s, 69u, err);
+        { __typeof__(e) m9v = Text_FindCharUtf (s, 69u, err);
           if (err->exc) goto L_ret;
           e = m9v;
         }
@@ -5811,43 +5954,43 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
         m9ret = false;
         goto L_ret;
       }
-      { __typeof__(({ __auto_type m9t9 = s; int64_t m9t9a = INT64_C(0), m9t9n = e; int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; })) m9a155 = ({ __auto_type m9t9 = s; int64_t m9t9a = INT64_C(0), m9t9n = e; int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; });
+      { __typeof__(m9_utf_slice (s, INT64_C(0), e, err)) m9a178 = m9_utf_slice (s, INT64_C(0), e, err);
         if (err->exc) goto L_ret;
-      { __typeof__(dot) m9v = Text_FindChar (m9a155, 46u, err);
+      { __typeof__(dot) m9v = Text_FindCharUtf (m9a178, 46u, err);
         if (err->exc) goto L_ret;
         dot = m9v;
       }
       }
       if ((dot < INT64_C(0))) {
-        bool m9t10 = (!Rdf_Digits (s, i, e, err));
+        bool m9t8 = (!Rdf_Digits (s, i, e, err));
         if (err->exc) goto L_ret;
-        if (m9t10) {
+        if (m9t8) {
           err->res = m9res;
           m9ret = false;
           goto L_ret;
         }
       } else {
         if ((dot == i)) {
-          { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a156 = m9_add_i64 (dot, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a179 = m9_add_i64 (dot, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          bool m9t11 = (!Rdf_Digits (s, m9a156, e, err));
+          bool m9t9 = (!Rdf_Digits (s, m9a179, e, err));
           if (err->exc) goto L_ret;
-          if (m9t11) {
+          if (m9t9) {
             err->res = m9res;
             m9ret = false;
             goto L_ret;
           } }
       } else {
-        bool m9t12 = (!Rdf_Digits (s, i, dot, err));
+        bool m9t10 = (!Rdf_Digits (s, i, dot, err));
         if (err->exc) goto L_ret;
-        if (m9t12) {
+        if (m9t10) {
           err->res = m9res;
           m9ret = false;
           goto L_ret;
         }
-        bool m9t14 = ({ bool m9t13 = (m9_add_i64 (dot, INT64_C(1), err) < e); if (m9t13) { { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a157 = m9_add_i64 (dot, INT64_C(1), err);   if (err->exc) goto L_ret; m9t13 = ((!Rdf_Digits (s, m9a157, e, err))); } } m9t13; });
+        bool m9t12 = ({ bool m9t11 = (m9_add_i64 (dot, INT64_C(1), err) < e); if (m9t11) { { __typeof__(m9_add_i64 (dot, INT64_C(1), err)) m9a180 = m9_add_i64 (dot, INT64_C(1), err);   if (err->exc) goto L_ret; m9t11 = ((!Rdf_Digits (s, m9a180, e, err))); } } m9t11; });
         if (err->exc) goto L_ret;
-        if (m9t14) {
+        if (m9t12) {
           err->res = m9res;
           m9ret = false;
           goto L_ret;
@@ -5857,28 +6000,29 @@ static bool Rdf_ShortForm (Rdf_Term *t, m9_state *err)
         if (err->exc) goto L_ret;
         i = m9v;
       }
-      bool m9t15 = ((i < (s).len) && ((((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 43u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 45u))));
+      bool m9t13 = ((i < Text_BLen (s, err)) && ((Text_BIs (s, i, 43u, err) || Text_BIs (s, i, 45u, err))));
       if (err->exc) goto L_ret;
-      if (m9t15) {
+      if (m9t13) {
         { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
           if (err->exc) goto L_ret;
           i = m9v;
         }
       }
       err->res = m9res;
-      m9ret = Rdf_Digits (s, i, (s).len, err);
+      { __typeof__(Text_BLen (s, err)) m9a181 = Text_BLen (s, err);
+        if (err->exc) goto L_ret;
+      m9ret = Rdf_Digits (s, i, m9a181, err);
       if (err->exc) goto L_ret;
+      }
       goto L_ret;
   } else {
-    m9_mark m9t16 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s150, 7 }), err)) m9a158 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s150, 7 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s179, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s180, 7 }), err)) m9a182 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s179, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s180, 7 }), err);
       if (err->exc) goto L_ret;
-    bool m9t17 = Text_Eq ((*t).datatype, m9a158, err);
+    bool m9t14 = Text_EqUtf ((*t).datatype, m9a182, err);
     if (err->exc) goto L_ret;
-    m9_pool_release (err->res, m9t16);
-    if (m9t17) {
+    if (m9t14) {
       err->res = m9res;
-      m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s151, 4 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s152, 5 }), err));
+      m9ret = (Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s181, 4 }), err) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s182, 5 }), err));
       if (err->exc) goto L_ret;
       goto L_ret;
   } } } } } } } }
@@ -5907,33 +6051,33 @@ static void Rdf_TtlLiteral (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  { __typeof__(long_) m9v = ((Text_FindChar ((*t).value, 10u, err) >= INT64_C(0)) || (Text_FindChar ((*t).value, 13u, err) >= INT64_C(0)));
+  { __typeof__(long_) m9v = ((Text_FindCharUtf ((*t).value, 10u, err) >= INT64_C(0)) || (Text_FindCharUtf ((*t).value, 13u, err) >= INT64_C(0)));
     if (err->exc) goto L_ret;
     long_ = m9v;
   }
   if (long_) {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s153, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s183, 3 }), err);
     if (err->exc) goto L_ret;
   } else {
     DynStr_AppendChar (d, d_pool, 34u, err);
     if (err->exc) goto L_ret;
   }
   { __typeof__((*t).value) m9t2s = (*t).value;
-  for (int64_t m9t2i = 0; m9t2i < m9t2s.len; m9t2i++) { c = m9t2s.p[m9t2i];
+  for (int64_t m9t2i = 0; m9t2i < m9t2s.len; ) { c = m9_utf_next (m9t2s, &m9t2i);
     if ((c == 34u)) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s154, 2 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s184, 2 }), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c == 92u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s155, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s185, 2 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 9u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s156, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s186, 2 }), err);
         if (err->exc) goto L_ret;
     } else {
       if (((((((int64_t)(c) < INT64_C(0x20)) && (c != 10u)) && (c != 13u))) || ((int64_t)(c) == INT64_C(0x7F)))) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s157, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s187, 4 }), err);
         if (err->exc) goto L_ret;
         Rdf_Hex2 (d, d_pool, (int64_t)(c), err);
         if (err->exc) goto L_ret;
@@ -5943,22 +6087,24 @@ static void Rdf_TtlLiteral (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *
     } } } }
   } }
   if (long_) {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s158, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s188, 3 }), err);
     if (err->exc) goto L_ret;
   } else {
     DynStr_AppendChar (d, d_pool, 34u, err);
     if (err->exc) goto L_ret;
   }
-  if ((((*t).lang).len > INT64_C(0))) {
+  bool m9t3 = (Text_BLen ((*t).lang, err) > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t3) {
     DynStr_AppendChar (d, d_pool, 64u, err);
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, (*t).lang, err);
     if (err->exc) goto L_ret;
   } else {
-    bool m9t3 = ((((*t).datatype).len > INT64_C(0)) && (!Text_Eq ((*t).datatype, Rdf_XsdString, err)));
+    bool m9t4 = ((Text_BLen ((*t).datatype, err) > INT64_C(0)) && (!Text_EqUtf ((*t).datatype, ((m9_sl_UTF8){ (uint8_t *) m9s189, 39 }), err)));
     if (err->exc) goto L_ret;
-    if (m9t3) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s159, 2 }), err);
+    if (m9t4) {
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s190, 2 }), err);
       if (err->exc) goto L_ret;
       Rdf_TtlIri (d, d_pool, p, p_pool, (*t).datatype, err);
       if (err->exc) goto L_ret;
@@ -5983,11 +6129,9 @@ static void Rdf_TtlTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, 
   switch (m9t1.tag) {
   case Rdf_Kind_Iri:
   {
-    m9_mark m9t2 = m9_pool_mark (err->res);
-    bool m9t4 = ({ bool m9t3 = predicate; if (m9t3) { { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s160, 4 }), err)) m9a159 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s160, 4 }), err);   if (err->exc) goto L_ret; m9t3 = (Text_Eq ((*t).value, m9a159, err)); } } m9t3; });
+    bool m9t3 = ({ bool m9t2 = predicate; if (m9t2) { { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s192, 4 }), err)) m9a183 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s192, 4 }), err);   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf ((*t).value, m9a183, err)); } } m9t2; });
     if (err->exc) goto L_ret;
-    m9_pool_release (err->res, m9t2);
-    if (m9t4) {
+    if (m9t3) {
       DynStr_AppendChar (d, d_pool, 97u, err);
       if (err->exc) goto L_ret;
     } else {
@@ -5997,7 +6141,7 @@ static void Rdf_TtlTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, 
   } break;
   case Rdf_Kind_Blank:
   {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s161, 2 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s193, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, (*t).value, err);
     if (err->exc) goto L_ret;
@@ -6027,7 +6171,7 @@ static bool Rdf_SameTerm (Rdf_Term *a, Rdf_Term *b, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((((((*a).kind).tag == ((*b).kind).tag) && Text_Eq ((*a).value, (*b).value, err)) && Text_Eq ((*a).lang, (*b).lang, err)) && Text_Eq ((*a).datatype, (*b).datatype, err));
+  m9ret = ((((((*a).kind).tag == ((*b).kind).tag) && Text_EqUtf ((*a).value, (*b).value, err)) && Text_EqUtf ((*a).lang, (*b).lang, err)) && Text_EqUtf ((*a).datatype, (*b).datatype, err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -6036,7 +6180,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_AddDefault (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR name, m9_sl_CHAR iri, m9_state *err)
+static void Rdf_AddDefault (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_UTF8 name, m9_sl_UTF8 iri, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -6048,9 +6192,9 @@ static void Rdf_AddDefault (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR name, m
   m9t1to = m9_sub_i64 ((*p).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*p).names.p, i, (*p).names.len, sizeof (m9_sl_CHAR), err))) m9a160 = (*(m9_sl_CHAR *) m9_at ((*p).names.p, i, (*p).names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*p).names.p, i, (*p).names.len, sizeof (m9_sl_UTF8), err))) m9a184 = (*(m9_sl_UTF8 *) m9_at ((*p).names.p, i, (*p).names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a160, name, err);
+    bool m9t2 = Text_EqUtf (m9a184, name, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       goto L_ret;
@@ -6058,9 +6202,9 @@ static void Rdf_AddDefault (Rdf_Prefixes *p, m9_pool *p_pool, m9_sl_CHAR name, m
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  (*(m9_sl_CHAR *) m9_at ((*p).names.p, (*p).n, (*p).names.len, sizeof (m9_sl_CHAR), err)) = name;
+  (*(m9_sl_UTF8 *) m9_at ((*p).names.p, (*p).n, (*p).names.len, sizeof (m9_sl_UTF8), err)) = name;
   if (err->exc) goto L_ret;
-  (*(m9_sl_CHAR *) m9_at ((*p).iris.p, (*p).n, (*p).iris.len, sizeof (m9_sl_CHAR), err)) = iri;
+  (*(m9_sl_UTF8 *) m9_at ((*p).iris.p, (*p).n, (*p).iris.len, sizeof (m9_sl_UTF8), err)) = iri;
   if (err->exc) goto L_ret;
   (*(bool *) m9_at ((*p).used.p, (*p).n, (*p).used.len, sizeof (bool), err)) = false;
   if (err->exc) goto L_ret;
@@ -6077,7 +6221,7 @@ L_ret: ;
   return;
 }
 
-static void Rdf_XFail (m9_sl_CHAR msg, m9_state *err)
+static void Rdf_XFail (m9_sl_UTF8 msg, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -6094,7 +6238,7 @@ L_ret: ;
   return;
 }
 
-static bool Rdf_IsWs (m9_sl_CHAR s, m9_state *err)
+static bool Rdf_IsWs (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -6104,10 +6248,10 @@ static bool Rdf_IsWs (m9_sl_CHAR s, m9_state *err)
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = (((((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) != 32u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) != 9u)) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) != 10u)) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) != 13u));
+    bool m9t2 = ((((!Text_BIs (s, i, 32u, err)) && (!Text_BIs (s, i, 9u, err))) && (!Text_BIs (s, i, 10u, err))) && (!Text_BIs (s, i, 13u, err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -6126,7 +6270,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_NcName (m9_sl_CHAR s, m9_state *err)
+static bool Rdf_NcName (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -6137,7 +6281,7 @@ static bool Rdf_NcName (m9_sl_CHAR s, m9_state *err)
   bool first = false; (void) first;
   first = true;
   { __typeof__(s) m9t1s = s;
-  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; m9t1i++) { c = m9t1s.p[m9t1i];
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     if (first) {
       bool m9t2 = (!Rdf_IsPnCharsU (c, err));
       if (err->exc) goto L_ret;
@@ -6165,7 +6309,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_IsCoreSyntax (m9_sl_CHAR local, m9_state *err)
+static bool Rdf_IsCoreSyntax (m9_sl_UTF8 local, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -6173,7 +6317,7 @@ static bool Rdf_IsCoreSyntax (m9_sl_CHAR local, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((((((Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s162, 3 }), err) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s163, 2 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s164, 5 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s165, 9 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s166, 8 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s167, 6 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s168, 8 }), err));
+  m9ret = ((((((Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s194, 3 }), err) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s195, 2 }), err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s196, 5 }), err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s197, 9 }), err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s198, 8 }), err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s199, 6 }), err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s200, 8 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -6182,7 +6326,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_IsOldTerm (m9_sl_CHAR local, m9_state *err)
+static bool Rdf_IsOldTerm (m9_sl_UTF8 local, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -6190,7 +6334,7 @@ static bool Rdf_IsOldTerm (m9_sl_CHAR local, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s169, 9 }), err) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s170, 15 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s171, 5 }), err));
+  m9ret = ((Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s201, 9 }), err) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s202, 15 }), err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s203, 5 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -6199,47 +6343,49 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_Scoped (Xml_Element * e, Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR *base, m9_sl_CHAR *lang, m9_state *err)
+static void Rdf_Scoped (Xml_Element * e, Rdf_XState *st, m9_pool *st_pool, m9_sl_UTF8 *base, m9_sl_UTF8 *lang, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR v = {0}; (void) v;
-  bool m9t1 = Xml_HasAttr (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s172, 4 }), err);
+  m9_sl_UTF8 v = {0}; (void) v;
+  bool m9t1 = Xml_HasAttr (e, ((m9_sl_UTF8){ (uint8_t *) m9s204, 36 }), ((m9_sl_UTF8){ (uint8_t *) m9s205, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(v) m9v = Xml_AttrValue (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s173, 4 }), err);
+    { __typeof__(v) m9v = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s206, 36 }), ((m9_sl_UTF8){ (uint8_t *) m9s207, 4 }), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
-    if ((((*base)).len > INT64_C(0))) {
+    bool m9t2 = (Text_BLen ((*base), err) > INT64_C(0));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
       { __typeof__((*base)) m9v = Rdf_Resolve ((*base), v, err);
         if (err->exc) goto L_ret;
         (*base) = m9v;
       }
     } else {
-      bool m9t2 = (Rdf_SchemeEnd (v, err) > INT64_C(0));
+      bool m9t3 = (Rdf_SchemeEnd (v, err) > INT64_C(0));
       if (err->exc) goto L_ret;
-      if (m9t2) {
+      if (m9t3) {
         (*base) = v;
     } else {
-      Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s174, 45 }), err);
+      Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s208, 45 }), err);
       if (err->exc) goto L_ret;
     } }
   }
-  bool m9t3 = Xml_HasAttr (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s175, 4 }), err);
+  bool m9t4 = Xml_HasAttr (e, ((m9_sl_UTF8){ (uint8_t *) m9s209, 36 }), ((m9_sl_UTF8){ (uint8_t *) m9s210, 4 }), err);
   if (err->exc) goto L_ret;
-  if (m9t3) {
-    { __typeof__((*lang)) m9v = Xml_AttrValue (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s176, 4 }), err);
+  if (m9t4) {
+    { __typeof__((*lang)) m9v = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s211, 36 }), ((m9_sl_UTF8){ (uint8_t *) m9s212, 4 }), err);
       if (err->exc) goto L_ret;
       (*lang) = m9v;
     }
   }
 L_ret: ;
   err->res = m9res;
-  *base = m9_rehome (&m9frame, m9res, *base, err);
-  *lang = m9_rehome (&m9frame, m9res, *lang, err);
+  *base = m9_rehome_utf (&m9frame, m9res, *base, err);
+  *lang = m9_rehome_utf (&m9frame, m9res, *lang, err);
   m9_adopt_if (&m9frame, st_pool, (*st).r.src.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.base.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.pfx.p);
@@ -6251,13 +6397,13 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Rdf_XIri (Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
+static m9_sl_UTF8 Rdf_XIri (Rdf_XState *st, m9_pool *st_pool, m9_sl_UTF8 base, m9_sl_UTF8 ref, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   bool m9t1 = (Rdf_SchemeEnd (ref, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -6265,14 +6411,14 @@ static m9_sl_CHAR Rdf_XIri (Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR base, m
     m9ret = ref;
     goto L_ret;
   }
-  if (((base).len == INT64_C(0))) {
-    m9_mark m9t2 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s177, 42 }), ref, err)) m9a161 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s177, 42 }), ref, err);
+  bool m9t2 = (Text_BLen (base, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s213, 42 }), ref, err)) m9a185 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s213, 42 }), ref, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a161, err);
+    Rdf_XFail (m9a185, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t2);
   }
   err->res = m9res;
   m9ret = Rdf_Resolve (base, ref, err);
@@ -6280,7 +6426,7 @@ static m9_sl_CHAR Rdf_XIri (Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR base, m
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, st_pool, (*st).r.src.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.base.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.pfx.p);
@@ -6292,15 +6438,15 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_NoFragment (m9_sl_CHAR iri, m9_state *err)
+static m9_sl_UTF8 Rdf_NoFragment (m9_sl_UTF8 iri, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
-  { __typeof__(i) m9v = Text_FindChar (iri, 35u, err);
+  { __typeof__(i) m9v = Text_FindCharUtf (iri, 35u, err);
     if (err->exc) goto L_ret;
     i = m9v;
   }
@@ -6310,42 +6456,42 @@ static m9_sl_CHAR Rdf_NoFragment (m9_sl_CHAR iri, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t1 = iri; int64_t m9t1a = INT64_C(0), m9t1n = i; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
+  m9ret = m9_utf_slice (iri, INT64_C(0), i, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR base, m9_sl_CHAR id, m9_state *err)
+static m9_sl_UTF8 Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9_sl_UTF8 base, m9_sl_UTF8 id, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR iri = {0}; (void) iri;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 iri = {0}; (void) iri;
   int64_t i = 0; (void) i;
-  m9_sl_m9_sl_CHAR more = {0}; (void) more;
+  m9_sl_m9_sl_UTF8 more = {0}; (void) more;
   bool m9t1 = (!Rdf_NcName (id, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    m9_mark m9t2 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s178, 27 }), id, err)) m9a162 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s178, 27 }), id, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s214, 27 }), id, err)) m9a186 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s214, 27 }), id, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a162, err);
+    Rdf_XFail (m9a186, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t2);
   }
-  if (((base).len == INT64_C(0))) {
-    Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s179, 40 }), err);
+  bool m9t2 = (Text_BLen (base, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s215, 40 }), err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(iri) m9v = m9_cat (err->res, m9_cat (err->res, Rdf_NoFragment (base, err), ((m9_sl_CHAR){ (uint32_t *) m9s180, 1 }), err), id, err);
+  { __typeof__(iri) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, Rdf_NoFragment (base, err), ((m9_sl_UTF8){ (uint8_t *) m9s216, 1 }), err), id, err);
     if (err->exc) goto L_ret;
     iri = m9v;
   }
@@ -6354,45 +6500,43 @@ static m9_sl_CHAR Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9
   m9t3to = m9_sub_i64 ((*st).nids, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t3to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_CHAR), err))) m9a163 = (*(m9_sl_CHAR *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_UTF8), err))) m9a187 = (*(m9_sl_UTF8 *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t4 = Text_Eq (m9a163, iri, err);
+    bool m9t4 = Text_EqUtf (m9a187, iri, err);
     if (err->exc) goto L_ret;
     if (m9t4) {
-      m9_mark m9t5 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s181, 19 }), id, err)) m9a164 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s181, 19 }), id, err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s217, 19 }), id, err)) m9a188 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s217, 19 }), id, err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a164, err);
+      Rdf_XFail (m9a188, err);
       if (err->exc) goto L_ret;
       }
-      m9_pool_release (err->res, m9t5);
     } }
     if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   if (((*st).nids == ((*st).ids).len)) {
-    { __typeof__(more) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*st).ids).len, err), INT64_C(8), err), err);
+    { __typeof__(more) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*st).ids).len, err), INT64_C(8), err), err);
       if (err->exc) goto L_ret;
       more = m9v;
     }
-    { __typeof__(i) m9t6to;
+    { __typeof__(i) m9t5to;
     i = INT64_C(0);
-    m9t6to = m9_sub_i64 ((*st).nids, INT64_C(1), err);
+    m9t5to = m9_sub_i64 ((*st).nids, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    if (i <= m9t6to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (more.p, i, more.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_CHAR), err));
+    if (i <= m9t5to) for (;;) {
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (more.p, i, more.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (more.p, i, more.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (more.p, i, more.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
-      if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
+      if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
     (*st).ids = more;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at ((*st).ids.p, (*st).nids, (*st).ids.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, iri, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*st).ids.p, (*st).nids, (*st).ids.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, iri, err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at ((*st).ids.p, (*st).nids, (*st).ids.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at ((*st).ids.p, (*st).nids, (*st).ids.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
   { __typeof__((*st).nids) m9v = m9_add_i64 ((*st).nids, INT64_C(1), err);
@@ -6404,7 +6548,7 @@ static m9_sl_CHAR Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, st_pool, (*st).r.src.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.base.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.pfx.p);
@@ -6424,7 +6568,7 @@ static bool Rdf_IsRdf (Xml_Element * e, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = Text_Eq (e->ns, Rdf_RdfNs, err);
+  m9ret = Text_EqUtf (e->ns, ((m9_sl_UTF8){ (uint8_t *) m9s218, 43 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -6453,9 +6597,9 @@ static bool Rdf_ContentIsElements (Xml_Element * e, m9_state *err)
   m9t2to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t2to) for (;;) {
-    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a165 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
+    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a189 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
       if (err->exc) goto L_ret;
-    bool m9t3 = (!Rdf_IsWs (m9a165, err));
+    bool m9t3 = (!Rdf_IsWs (m9a189, err));
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
@@ -6474,27 +6618,27 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_CHAR ns, m9_sl_CHAR local, m9_sl_CHAR value, m9_sl_CHAR base, m9_sl_CHAR lang, m9_state *err)
+static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_UTF8 ns, m9_sl_UTF8 local, m9_sl_UTF8 value, m9_sl_UTF8 base, m9_sl_UTF8 lang, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  bool m9t1 = Text_Eq (ns, Rdf_RdfNs, err);
+  bool m9t1 = Text_EqUtf (ns, ((m9_sl_UTF8){ (uint8_t *) m9s219, 43 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s182, 4 }), err);
+    bool m9t2 = Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s220, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s183, 4 }), err)) m9a166 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s183, 4 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s221, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s222, 4 }), err)) m9a190 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s221, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s222, 4 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriT (m9a166, err)) m9a167 = Rdf_IriT (m9a166, err);
+      { __typeof__(Rdf_IriT (m9a190, err)) m9a191 = Rdf_IriT (m9a190, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_XIri (st, st_pool, base, value, err)) m9a168 = Rdf_XIri (st, st_pool, base, value, err);
+      { __typeof__(Rdf_XIri (st, st_pool, base, value, err)) m9a192 = Rdf_XIri (st, st_pool, base, value, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriT (m9a168, err)) m9a169 = Rdf_IriT (m9a168, err);
+      { __typeof__(Rdf_IriT (m9a192, err)) m9a193 = Rdf_IriT (m9a192, err);
         if (err->exc) goto L_ret;
-      Rdf_Add (pool, g, g_pool, subj, &m9a167, &m9a169, err);
+      Rdf_Add (pool, g, g_pool, subj, &m9a191, &m9a193, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -6502,25 +6646,23 @@ static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, R
       }
       goto L_ret;
     }
-    bool m9t3 = (((Rdf_IsCoreSyntax (local, err) || Rdf_IsOldTerm (local, err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s184, 2 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s185, 11 }), err));
+    bool m9t3 = (((Rdf_IsCoreSyntax (local, err) || Rdf_IsOldTerm (local, err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s223, 2 }), err)) || Text_EqUtf (local, ((m9_sl_UTF8){ (uint8_t *) m9s224, 11 }), err));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      m9_mark m9t4 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s186, 4 }), local, err), ((m9_sl_CHAR){ (uint32_t *) m9s187, 28 }), err)) m9a170 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s186, 4 }), local, err), ((m9_sl_CHAR){ (uint32_t *) m9s187, 28 }), err);
+      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s225, 4 }), local, err), ((m9_sl_UTF8){ (uint8_t *) m9s226, 28 }), err)) m9a194 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s225, 4 }), local, err), ((m9_sl_UTF8){ (uint8_t *) m9s226, 28 }), err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a170, err);
+      Rdf_XFail (m9a194, err);
       if (err->exc) goto L_ret;
       }
-      m9_pool_release (err->res, m9t4);
     }
   }
-  { __typeof__(m9_cat (err->res, ns, local, err)) m9a171 = m9_cat (err->res, ns, local, err);
+  { __typeof__(m9_utf_cat (err->res, ns, local, err)) m9a195 = m9_utf_cat (err->res, ns, local, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a171, err)) m9a172 = Rdf_IriT (m9a171, err);
+  { __typeof__(Rdf_IriT (m9a195, err)) m9a196 = Rdf_IriT (m9a195, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_LitT (value, lang, (m9_sl_CHAR){ NULL, 0 }, err)) m9a173 = Rdf_LitT (value, lang, (m9_sl_CHAR){ NULL, 0 }, err);
+  { __typeof__(Rdf_LitT (value, lang, ((m9_sl_UTF8){ NULL, 0 }), err)) m9a197 = Rdf_LitT (value, lang, ((m9_sl_UTF8){ NULL, 0 }), err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, subj, &m9a172, &m9a173, err);
+  Rdf_Add (pool, g, g_pool, subj, &m9a196, &m9a197, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -6539,16 +6681,16 @@ L_ret: ;
   return;
 }
 
-static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * e, Rdf_Graph * *g, m9_pool *g_pool, m9_sl_CHAR base0, m9_sl_CHAR lang0, m9_state *err)
+static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * e, Rdf_Graph * *g, m9_pool *g_pool, m9_sl_UTF8 base0, m9_sl_UTF8 lang0, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
   Rdf_Term m9ret = {0};
-  m9_sl_CHAR base = {0}; (void) base;
-  m9_sl_CHAR lang = {0}; (void) lang;
-  m9_sl_CHAR v = {0}; (void) v;
+  m9_sl_UTF8 base = {0}; (void) base;
+  m9_sl_UTF8 lang = {0}; (void) lang;
+  m9_sl_UTF8 v = {0}; (void) v;
   Rdf_Term subj = {0}; (void) subj;
   int64_t i = 0; (void) i;
   int64_t named = 0; (void) named;
@@ -6559,88 +6701,84 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
   bool m9t1 = Rdf_IsRdf (e, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = ((Rdf_IsCoreSyntax (e->local, err) || Rdf_IsOldTerm (e->local, err)) || Text_Eq (e->local, ((m9_sl_CHAR){ (uint32_t *) m9s188, 2 }), err));
+    bool m9t2 = ((Rdf_IsCoreSyntax (e->local, err) || Rdf_IsOldTerm (e->local, err)) || Text_EqUtf (e->local, ((m9_sl_UTF8){ (uint8_t *) m9s227, 2 }), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      m9_mark m9t3 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s189, 4 }), e->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s190, 22 }), err)) m9a174 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s189, 4 }), e->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s190, 22 }), err);
+      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s228, 4 }), e->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s229, 22 }), err)) m9a198 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s228, 4 }), e->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s229, 22 }), err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a174, err);
+      Rdf_XFail (m9a198, err);
       if (err->exc) goto L_ret;
       }
-      m9_pool_release (err->res, m9t3);
     }
   }
-  if (((e->ns).len == INT64_C(0))) {
-    m9_mark m9t4 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s191, 32 }), e->name, err)) m9a175 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s191, 32 }), e->name, err);
+  bool m9t3 = (Text_BLen (e->ns, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t3) {
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s230, 32 }), e->name, err)) m9a199 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s230, 32 }), e->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a175, err);
+    Rdf_XFail (m9a199, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t4);
   }
   named = INT64_C(0);
-  bool m9t5 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s192, 2 }), err);
+  bool m9t4 = Xml_HasAttr (e, ((m9_sl_UTF8){ (uint8_t *) m9s231, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s232, 2 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t4) {
+    { __typeof__(named) m9v = m9_add_i64 (named, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      named = m9v;
+    }
+    { __typeof__(Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s233, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s234, 2 }), err)) m9a200 = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s233, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s234, 2 }), err);
+      if (err->exc) goto L_ret;
+    { __typeof__(Rdf_IdIri (pool, st, st_pool, base, m9a200, err)) m9a201 = Rdf_IdIri (pool, st, st_pool, base, m9a200, err);
+      if (err->exc) goto L_ret;
+    { __typeof__(subj) m9v = Rdf_IriT (m9a201, err);
+      if (err->exc) goto L_ret;
+      subj = m9v;
+    }
+    }
+    }
+  }
+  bool m9t5 = Xml_HasAttr (e, ((m9_sl_UTF8){ (uint8_t *) m9s235, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s236, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     { __typeof__(named) m9v = m9_add_i64 (named, INT64_C(1), err);
       if (err->exc) goto L_ret;
       named = m9v;
     }
-    { __typeof__(Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s193, 2 }), err)) m9a176 = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s193, 2 }), err);
-      if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IdIri (pool, st, st_pool, base, m9a176, err)) m9a177 = Rdf_IdIri (pool, st, st_pool, base, m9a176, err);
-      if (err->exc) goto L_ret;
-    { __typeof__(subj) m9v = Rdf_IriT (m9a177, err);
-      if (err->exc) goto L_ret;
-      subj = m9v;
-    }
-    }
-    }
-  }
-  bool m9t6 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s194, 6 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t6) {
-    { __typeof__(named) m9v = m9_add_i64 (named, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      named = m9v;
-    }
-    { __typeof__(v) m9v = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s195, 6 }), err);
+    { __typeof__(v) m9v = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s237, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s238, 6 }), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
-    bool m9t7 = (!Rdf_NcName (v, err));
+    bool m9t6 = (!Rdf_NcName (v, err));
     if (err->exc) goto L_ret;
-    if (m9t7) {
-      m9_mark m9t8 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s196, 31 }), v, err)) m9a178 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s196, 31 }), v, err);
+    if (m9t6) {
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s239, 31 }), v, err)) m9a202 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s239, 31 }), v, err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a178, err);
+      Rdf_XFail (m9a202, err);
       if (err->exc) goto L_ret;
       }
-      m9_pool_release (err->res, m9t8);
     }
-    { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a179 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
+    { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a203 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
       if (err->exc) goto L_ret;
-    { __typeof__(subj) m9v = Rdf_BlankT (m9a179, err);
+    { __typeof__(subj) m9v = Rdf_BlankT (m9a203, err);
       if (err->exc) goto L_ret;
       subj = m9v;
     }
     }
   }
-  bool m9t9 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s197, 5 }), err);
+  bool m9t7 = Xml_HasAttr (e, ((m9_sl_UTF8){ (uint8_t *) m9s240, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s241, 5 }), err);
   if (err->exc) goto L_ret;
-  if (m9t9) {
+  if (m9t7) {
     { __typeof__(named) m9v = m9_add_i64 (named, INT64_C(1), err);
       if (err->exc) goto L_ret;
       named = m9v;
     }
-    { __typeof__(Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s198, 5 }), err)) m9a180 = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s198, 5 }), err);
+    { __typeof__(Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s242, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s243, 5 }), err)) m9a204 = Xml_AttrValue (e, ((m9_sl_UTF8){ (uint8_t *) m9s242, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s243, 5 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_XIri (st, st_pool, base, m9a180, err)) m9a181 = Rdf_XIri (st, st_pool, base, m9a180, err);
+    { __typeof__(Rdf_XIri (st, st_pool, base, m9a204, err)) m9a205 = Rdf_XIri (st, st_pool, base, m9a204, err);
       if (err->exc) goto L_ret;
-    { __typeof__(subj) m9v = Rdf_IriT (m9a181, err);
+    { __typeof__(subj) m9v = Rdf_IriT (m9a205, err);
       if (err->exc) goto L_ret;
       subj = m9v;
     }
@@ -6648,88 +6786,86 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
     }
   }
   if ((named > INT64_C(1))) {
-    m9_mark m9t10 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s199, 53 }), e->name, err)) m9a182 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s199, 53 }), e->name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s244, 53 }), e->name, err)) m9a206 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s244, 53 }), e->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a182, err);
+    Rdf_XFail (m9a206, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t10);
   }
   if ((named == INT64_C(0))) {
-    { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a183 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+    { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a207 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
       if (err->exc) goto L_ret;
-    { __typeof__(subj) m9v = Rdf_BlankT (m9a183, err);
+    { __typeof__(subj) m9v = Rdf_BlankT (m9a207, err);
       if (err->exc) goto L_ret;
       subj = m9v;
     }
     }
   }
-  bool m9t11 = (!((Rdf_IsRdf (e, err) && Text_Eq (e->local, ((m9_sl_CHAR){ (uint32_t *) m9s200, 11 }), err))));
+  bool m9t8 = (!((Rdf_IsRdf (e, err) && Text_EqUtf (e->local, ((m9_sl_UTF8){ (uint8_t *) m9s245, 11 }), err))));
   if (err->exc) goto L_ret;
-  if (m9t11) {
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s201, 4 }), err)) m9a184 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s201, 4 }), err);
+  if (m9t8) {
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s246, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s247, 4 }), err)) m9a208 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s246, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s247, 4 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a184, err)) m9a185 = Rdf_IriT (m9a184, err);
+    { __typeof__(Rdf_IriT (m9a208, err)) m9a209 = Rdf_IriT (m9a208, err);
       if (err->exc) goto L_ret;
-    { __typeof__(m9_cat (err->res, e->ns, e->local, err)) m9a186 = m9_cat (err->res, e->ns, e->local, err);
+    { __typeof__(m9_utf_cat (err->res, e->ns, e->local, err)) m9a210 = m9_utf_cat (err->res, e->ns, e->local, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a186, err)) m9a187 = Rdf_IriT (m9a186, err);
+    { __typeof__(Rdf_IriT (m9a210, err)) m9a211 = Rdf_IriT (m9a210, err);
       if (err->exc) goto L_ret;
-    Rdf_Add (pool, g, g_pool, &(subj), &m9a185, &m9a187, err);
+    Rdf_Add (pool, g, g_pool, &(subj), &m9a209, &m9a211, err);
     if (err->exc) goto L_ret;
     }
     }
     }
     }
   }
-  { __typeof__(i) m9t12to;
+  { __typeof__(i) m9t9to;
   i = INT64_C(0);
-  m9t12to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
+  m9t9to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t12to) for (;;) {
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a188 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+  if (i <= m9t9to) for (;;) {
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a212 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) goto L_ret;
-    bool m9t14 = ({ bool m9t13 = Text_Eq (m9a188, Rdf_XmlnsUri, err); if (!m9t13) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a189 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t13 = (Text_Eq (m9a189, Rdf_XmlNsUri, err)); } } m9t13; });
+    bool m9t11 = ({ bool m9t10 = Text_EqUtf (m9a212, ((m9_sl_UTF8){ (uint8_t *) m9s248, 29 }), err); if (!m9t10) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a213 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t10 = (Text_EqUtf (m9a213, ((m9_sl_UTF8){ (uint8_t *) m9s249, 36 }), err)); } } m9t10; });
     if (err->exc) goto L_ret;
-    if (m9t14) {
+    if (m9t11) {
     } else {
-      bool m9t15 = (((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns).len == INT64_C(0));
-      if (err->exc) goto L_ret;
-      if (m9t15) {
-        { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a190 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
-          if (err->exc) goto L_ret;
-        bool m9t16 = (!Text_StartsWith (m9a190, ((m9_sl_CHAR){ (uint32_t *) m9s202, 3 }), err));
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a214 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-        if (m9t16) {
-          m9_mark m9t17 = m9_pool_mark (err->res);
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s203, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a191 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s203, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err);
+      bool m9t12 = (Text_BLen (m9a214, err) == INT64_C(0));
+      if (err->exc) goto L_ret;
+      if (m9t12) {
+        { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a215 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
+          if (err->exc) goto L_ret;
+        bool m9t13 = (!Text_StartsWithUtf (m9a215, ((m9_sl_UTF8){ (uint8_t *) m9s250, 3 }), err));
+        if (err->exc) goto L_ret;
+        if (m9t13) {
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s251, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a216 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s251, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err);
             if (err->exc) goto L_ret;
-          Rdf_XFail (m9a191, err);
+          Rdf_XFail (m9a216, err);
           if (err->exc) goto L_ret;
           }
-          m9_pool_release (err->res, m9t17);
         } }
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a192 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a217 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-      bool m9t21 = ({ bool m9t20 = Text_Eq (m9a192, Rdf_RdfNs, err); if (m9t20) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a193 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t20 = ((({ bool m9t19 = ({ bool m9t18 = Text_Eq (m9a193, ((m9_sl_CHAR){ (uint32_t *) m9s204, 2 }), err); if (!m9t18) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a194 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t18 = (Text_Eq (m9a194, ((m9_sl_CHAR){ (uint32_t *) m9s205, 6 }), err)); } } m9t18; }); if (!m9t19) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a195 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t19 = (Text_Eq (m9a195, ((m9_sl_CHAR){ (uint32_t *) m9s206, 5 }), err)); } } m9t19; }))); } } m9t20; });
+      bool m9t17 = ({ bool m9t16 = Text_EqUtf (m9a217, ((m9_sl_UTF8){ (uint8_t *) m9s252, 43 }), err); if (m9t16) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a218 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t16 = ((({ bool m9t15 = ({ bool m9t14 = Text_EqUtf (m9a218, ((m9_sl_UTF8){ (uint8_t *) m9s253, 2 }), err); if (!m9t14) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a219 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t14 = (Text_EqUtf (m9a219, ((m9_sl_UTF8){ (uint8_t *) m9s254, 6 }), err)); } } m9t14; }); if (!m9t15) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a220 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t15 = (Text_EqUtf (m9a220, ((m9_sl_UTF8){ (uint8_t *) m9s255, 5 }), err)); } } m9t15; }))); } } m9t16; });
       if (err->exc) goto L_ret;
-      if (m9t21) {
+      if (m9t17) {
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a196 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a221 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a197 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a222 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;
         if (err->exc) goto L_ret;
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value) m9a198 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value) m9a223 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value;
         if (err->exc) goto L_ret;
-      Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, &(subj), m9a196, m9a197, m9a198, base, lang, err);
+      Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, &(subj), m9a221, m9a222, m9a223, base, lang, err);
       if (err->exc) goto L_ret;
       }
       }
       }
-    } } } } }
-    if ((uint64_t) m9t12to - (uint64_t) i < (uint64_t) 1) break;
+    } } } } } }
+    if ((uint64_t) m9t9to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   Rdf_PropertyElts (pool, st, st_pool, e, g, g_pool, &(subj), base, lang, err);
@@ -6754,7 +6890,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * e, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_CHAR base, m9_sl_CHAR lang, m9_state *err)
+static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * e, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_UTF8 base, m9_sl_UTF8 lang, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -6765,26 +6901,24 @@ static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, X
   bool m9t1 = (!Rdf_ContentIsElements (e, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    m9_mark m9t2 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s207, 46 }), e->name, err)) m9a199 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s207, 46 }), e->name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s256, 46 }), e->name, err)) m9a224 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s256, 46 }), e->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a199, err);
+    Rdf_XFail (m9a224, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t2);
   }
   li = INT64_C(0);
-  { __typeof__(i) m9t3to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(0);
-  m9t3to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
+  m9t2to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t3to) for (;;) {
-    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a200 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+  if (i <= m9t2to) for (;;) {
+    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a225 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) goto L_ret;
-    Rdf_PropertyElt (pool, st, st_pool, m9a200, g, g_pool, subj, base, lang, &(li), err);
+    Rdf_PropertyElt (pool, st, st_pool, m9a225, g, g_pool, subj, base, lang, &(li), err);
     if (err->exc) goto L_ret;
     }
-    if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
 L_ret: ;
@@ -6801,55 +6935,55 @@ L_ret: ;
   return;
 }
 
-static void Rdf_Reify (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, m9_sl_CHAR base, m9_sl_CHAR id, Rdf_Term *s, Rdf_Term *p, Rdf_Term *o, m9_state *err)
+static void Rdf_Reify (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Graph * *g, m9_pool *g_pool, m9_sl_UTF8 base, m9_sl_UTF8 id, Rdf_Term *s, Rdf_Term *p, Rdf_Term *o, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Rdf_Term r = {0}; (void) r;
-  { __typeof__(Rdf_IdIri (pool, st, st_pool, base, id, err)) m9a201 = Rdf_IdIri (pool, st, st_pool, base, id, err);
+  { __typeof__(Rdf_IdIri (pool, st, st_pool, base, id, err)) m9a226 = Rdf_IdIri (pool, st, st_pool, base, id, err);
     if (err->exc) goto L_ret;
-  { __typeof__(r) m9v = Rdf_IriT (m9a201, err);
+  { __typeof__(r) m9v = Rdf_IriT (m9a226, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
   }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s208, 4 }), err)) m9a202 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s208, 4 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s257, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s258, 4 }), err)) m9a227 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s257, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s258, 4 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a202, err)) m9a203 = Rdf_IriT (m9a202, err);
+  { __typeof__(Rdf_IriT (m9a227, err)) m9a228 = Rdf_IriT (m9a227, err);
     if (err->exc) goto L_ret;
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s209, 9 }), err)) m9a204 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s209, 9 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s259, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s260, 9 }), err)) m9a229 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s259, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s260, 9 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a204, err)) m9a205 = Rdf_IriT (m9a204, err);
+  { __typeof__(Rdf_IriT (m9a229, err)) m9a230 = Rdf_IriT (m9a229, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, &(r), &m9a203, &m9a205, err);
+  Rdf_Add (pool, g, g_pool, &(r), &m9a228, &m9a230, err);
   if (err->exc) goto L_ret;
   }
   }
   }
   }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s210, 7 }), err)) m9a206 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s210, 7 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s261, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s262, 7 }), err)) m9a231 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s261, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s262, 7 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a206, err)) m9a207 = Rdf_IriT (m9a206, err);
+  { __typeof__(Rdf_IriT (m9a231, err)) m9a232 = Rdf_IriT (m9a231, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, &(r), &m9a207, s, err);
+  Rdf_Add (pool, g, g_pool, &(r), &m9a232, s, err);
   if (err->exc) goto L_ret;
   }
   }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s211, 9 }), err)) m9a208 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s211, 9 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s263, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s264, 9 }), err)) m9a233 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s263, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s264, 9 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a208, err)) m9a209 = Rdf_IriT (m9a208, err);
+  { __typeof__(Rdf_IriT (m9a233, err)) m9a234 = Rdf_IriT (m9a233, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, &(r), &m9a209, p, err);
+  Rdf_Add (pool, g, g_pool, &(r), &m9a234, p, err);
   if (err->exc) goto L_ret;
   }
   }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s212, 6 }), err)) m9a210 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s212, 6 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s265, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s266, 6 }), err)) m9a235 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s265, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s266, 6 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a210, err)) m9a211 = Rdf_IriT (m9a210, err);
+  { __typeof__(Rdf_IriT (m9a235, err)) m9a236 = Rdf_IriT (m9a235, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, &(r), &m9a211, o, err);
+  Rdf_Add (pool, g, g_pool, &(r), &m9a236, o, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -6867,18 +7001,18 @@ L_ret: ;
   return;
 }
 
-static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * pe, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_CHAR base0, m9_sl_CHAR lang0, int64_t *li, m9_state *err)
+static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xml_Element * pe, Rdf_Graph * *g, m9_pool *g_pool, Rdf_Term *subj, m9_sl_UTF8 base0, m9_sl_UTF8 lang0, int64_t *li, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR base = {0}; (void) base;
-  m9_sl_CHAR lang = {0}; (void) lang;
-  m9_sl_CHAR id = {0}; (void) id;
-  m9_sl_CHAR parseType = {0}; (void) parseType;
-  m9_sl_CHAR datatype = {0}; (void) datatype;
-  m9_sl_CHAR v = {0}; (void) v;
+  m9_sl_UTF8 base = {0}; (void) base;
+  m9_sl_UTF8 lang = {0}; (void) lang;
+  m9_sl_UTF8 id = {0}; (void) id;
+  m9_sl_UTF8 parseType = {0}; (void) parseType;
+  m9_sl_UTF8 datatype = {0}; (void) datatype;
+  m9_sl_UTF8 v = {0}; (void) v;
   Rdf_Term pred = {0}; (void) pred;
   Rdf_Term obj = {0}; (void) obj;
   Rdf_Term cell = {0}; (void) cell;
@@ -6895,56 +7029,54 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
   lang = lang0;
   Rdf_Scoped (pe, st, st_pool, &(base), &(lang), err);
   if (err->exc) goto L_ret;
-  if (((pe->ns).len == INT64_C(0))) {
-    m9_mark m9t1 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s213, 32 }), pe->name, err)) m9a212 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s213, 32 }), pe->name, err);
+  bool m9t1 = (Text_BLen (pe->ns, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s267, 32 }), pe->name, err)) m9a237 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s267, 32 }), pe->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a212, err);
+    Rdf_XFail (m9a237, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t1);
   }
   bool m9t2 = Rdf_IsRdf (pe, err);
   if (err->exc) goto L_ret;
   if (m9t2) {
-    bool m9t3 = ((Rdf_IsCoreSyntax (pe->local, err) || Rdf_IsOldTerm (pe->local, err)) || Text_Eq (pe->local, ((m9_sl_CHAR){ (uint32_t *) m9s214, 11 }), err));
+    bool m9t3 = ((Rdf_IsCoreSyntax (pe->local, err) || Rdf_IsOldTerm (pe->local, err)) || Text_EqUtf (pe->local, ((m9_sl_UTF8){ (uint8_t *) m9s268, 11 }), err));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      m9_mark m9t4 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s215, 4 }), pe->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s216, 26 }), err)) m9a213 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s215, 4 }), pe->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s216, 26 }), err);
+      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s269, 4 }), pe->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s270, 26 }), err)) m9a238 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s269, 4 }), pe->local, err), ((m9_sl_UTF8){ (uint8_t *) m9s270, 26 }), err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a213, err);
+      Rdf_XFail (m9a238, err);
       if (err->exc) goto L_ret;
       }
-      m9_pool_release (err->res, m9t4);
     }
-    bool m9t5 = Text_Eq (pe->local, ((m9_sl_CHAR){ (uint32_t *) m9s217, 2 }), err);
+    bool m9t4 = Text_EqUtf (pe->local, ((m9_sl_UTF8){ (uint8_t *) m9s271, 2 }), err);
     if (err->exc) goto L_ret;
-    if (m9t5) {
+    if (m9t4) {
       { __typeof__((*li)) m9v = m9_add_i64 ((*li), INT64_C(1), err);
         if (err->exc) goto L_ret;
         (*li) = m9v;
       }
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s218, 1 }), err), Fmt_I64Str ((*li), err), err)) m9a214 = m9_cat (err->res, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s218, 1 }), err), Fmt_I64Str ((*li), err), err);
+      { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s272, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s273, 1 }), err), Fmt_I64Str ((*li), err), err)) m9a239 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s272, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s273, 1 }), err), Fmt_I64Str ((*li), err), err);
         if (err->exc) goto L_ret;
-      { __typeof__(pred) m9v = Rdf_IriT (m9a214, err);
+      { __typeof__(pred) m9v = Rdf_IriT (m9a239, err);
         if (err->exc) goto L_ret;
         pred = m9v;
       }
       }
     } else {
-      { __typeof__(m9_cat (err->res, pe->ns, pe->local, err)) m9a215 = m9_cat (err->res, pe->ns, pe->local, err);
+      { __typeof__(m9_utf_cat (err->res, pe->ns, pe->local, err)) m9a240 = m9_utf_cat (err->res, pe->ns, pe->local, err);
         if (err->exc) goto L_ret;
-      { __typeof__(pred) m9v = Rdf_IriT (m9a215, err);
+      { __typeof__(pred) m9v = Rdf_IriT (m9a240, err);
         if (err->exc) goto L_ret;
         pred = m9v;
       }
       }
     }
   } else {
-    { __typeof__(m9_cat (err->res, pe->ns, pe->local, err)) m9a216 = m9_cat (err->res, pe->ns, pe->local, err);
+    { __typeof__(m9_utf_cat (err->res, pe->ns, pe->local, err)) m9a241 = m9_utf_cat (err->res, pe->ns, pe->local, err);
       if (err->exc) goto L_ret;
-    { __typeof__(pred) m9v = Rdf_IriT (m9a216, err);
+    { __typeof__(pred) m9v = Rdf_IriT (m9a241, err);
       if (err->exc) goto L_ret;
       pred = m9v;
     }
@@ -6956,128 +7088,122 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
   hasDatatype = false;
   hasParse = false;
   props = false;
-  id = (m9_sl_CHAR){ NULL, 0 };
-  parseType = (m9_sl_CHAR){ NULL, 0 };
-  datatype = (m9_sl_CHAR){ NULL, 0 };
-  { __typeof__(i) m9t6to;
+  id = ((m9_sl_UTF8){ NULL, 0 });
+  parseType = ((m9_sl_UTF8){ NULL, 0 });
+  datatype = ((m9_sl_UTF8){ NULL, 0 });
+  { __typeof__(i) m9t5to;
   i = INT64_C(0);
-  m9t6to = m9_sub_i64 ((pe->attrs).len, INT64_C(1), err);
+  m9t5to = m9_sub_i64 ((pe->attrs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t6to) for (;;) {
-    { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a217 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+  if (i <= m9t5to) for (;;) {
+    { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a242 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) goto L_ret;
-    bool m9t8 = ({ bool m9t7 = Text_Eq (m9a217, Rdf_XmlnsUri, err); if (!m9t7) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a218 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t7 = (Text_Eq (m9a218, Rdf_XmlNsUri, err)); } } m9t7; });
+    bool m9t7 = ({ bool m9t6 = Text_EqUtf (m9a242, ((m9_sl_UTF8){ (uint8_t *) m9s274, 29 }), err); if (!m9t6) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a243 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t6 = (Text_EqUtf (m9a243, ((m9_sl_UTF8){ (uint8_t *) m9s275, 36 }), err)); } } m9t6; });
     if (err->exc) goto L_ret;
-    if (m9t8) {
+    if (m9t7) {
     } else {
-      bool m9t9 = (((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns).len == INT64_C(0));
-      if (err->exc) goto L_ret;
-      if (m9t9) {
-        { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name) m9a219 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name;
-          if (err->exc) goto L_ret;
-        bool m9t10 = (!Text_StartsWith (m9a219, ((m9_sl_CHAR){ (uint32_t *) m9s219, 3 }), err));
+      { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a244 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-        if (m9t10) {
-          m9_mark m9t11 = m9_pool_mark (err->res);
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s220, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a220 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s220, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err);
+      bool m9t8 = (Text_BLen (m9a244, err) == INT64_C(0));
+      if (err->exc) goto L_ret;
+      if (m9t8) {
+        { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name) m9a245 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name;
+          if (err->exc) goto L_ret;
+        bool m9t9 = (!Text_StartsWithUtf (m9a245, ((m9_sl_UTF8){ (uint8_t *) m9s276, 3 }), err));
+        if (err->exc) goto L_ret;
+        if (m9t9) {
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s277, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a246 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s277, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err);
             if (err->exc) goto L_ret;
-          Rdf_XFail (m9a220, err);
+          Rdf_XFail (m9a246, err);
           if (err->exc) goto L_ret;
           }
-          m9_pool_release (err->res, m9t11);
         } }
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a221 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a247 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-      bool m9t12 = Text_Eq (m9a221, Rdf_RdfNs, err);
+      bool m9t10 = Text_EqUtf (m9a247, ((m9_sl_UTF8){ (uint8_t *) m9s278, 43 }), err);
       if (err->exc) goto L_ret;
-      if (m9t12) {
+      if (m9t10) {
         { __typeof__(v) m9v = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;
           if (err->exc) goto L_ret;
           v = m9v;
         }
-        bool m9t13 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s221, 2 }), err);
+        bool m9t11 = Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s279, 2 }), err);
         if (err->exc) goto L_ret;
-        if (m9t13) {
+        if (m9t11) {
           hasId = true;
           { __typeof__(id) m9v = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
             if (err->exc) goto L_ret;
             id = m9v;
           }
         } else {
-          bool m9t14 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s222, 8 }), err);
+          bool m9t12 = Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s280, 8 }), err);
           if (err->exc) goto L_ret;
-          if (m9t14) {
+          if (m9t12) {
             hasResource = true;
         } else {
-          bool m9t15 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s223, 6 }), err);
+          bool m9t13 = Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s281, 6 }), err);
           if (err->exc) goto L_ret;
-          if (m9t15) {
+          if (m9t13) {
             hasNodeId = true;
         } else {
-          bool m9t16 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s224, 8 }), err);
+          bool m9t14 = Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s282, 8 }), err);
           if (err->exc) goto L_ret;
-          if (m9t16) {
+          if (m9t14) {
             hasDatatype = true;
             { __typeof__(datatype) m9v = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
               if (err->exc) goto L_ret;
               datatype = m9v;
             }
         } else {
-          bool m9t17 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s225, 9 }), err);
+          bool m9t15 = Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s283, 9 }), err);
           if (err->exc) goto L_ret;
-          if (m9t17) {
+          if (m9t15) {
             hasParse = true;
             { __typeof__(parseType) m9v = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
               if (err->exc) goto L_ret;
               parseType = m9v;
             }
         } else {
-          bool m9t18 = ((((Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s226, 5 }), err) || Rdf_IsOldTerm (v, err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s227, 2 }), err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s228, 11 }), err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s229, 3 }), err));
+          bool m9t16 = ((((Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s284, 5 }), err) || Rdf_IsOldTerm (v, err)) || Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s285, 2 }), err)) || Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s286, 11 }), err)) || Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s287, 3 }), err));
           if (err->exc) goto L_ret;
-          if (m9t18) {
-            m9_mark m9t19 = m9_pool_mark (err->res);
-            { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s230, 4 }), v, err), ((m9_sl_CHAR){ (uint32_t *) m9s231, 22 }), err)) m9a222 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s230, 4 }), v, err), ((m9_sl_CHAR){ (uint32_t *) m9s231, 22 }), err);
+          if (m9t16) {
+            { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s288, 4 }), v, err), ((m9_sl_UTF8){ (uint8_t *) m9s289, 22 }), err)) m9a248 = m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s288, 4 }), v, err), ((m9_sl_UTF8){ (uint8_t *) m9s289, 22 }), err);
               if (err->exc) goto L_ret;
-            Rdf_XFail (m9a222, err);
+            Rdf_XFail (m9a248, err);
             if (err->exc) goto L_ret;
             }
-            m9_pool_release (err->res, m9t19);
         } else {
           props = true;
         } } } } } }
     } else {
       props = true;
-    } } } } }
-    if ((uint64_t) m9t6to - (uint64_t) i < (uint64_t) 1) break;
+    } } } } } }
+    if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   if ((hasResource && hasNodeId)) {
-    m9_mark m9t20 = m9_pool_mark (err->res);
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s232, 36 }), pe->name, err)) m9a223 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s232, 36 }), pe->name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s290, 36 }), pe->name, err)) m9a249 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s290, 36 }), pe->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a223, err);
+    Rdf_XFail (m9a249, err);
     if (err->exc) goto L_ret;
     }
-    m9_pool_release (err->res, m9t20);
   }
   n = (pe->kids).len;
   if (hasParse) {
     if ((((hasResource || hasNodeId) || hasDatatype) || props)) {
-      m9_mark m9t21 = m9_pool_mark (err->res);
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s233, 41 }), pe->name, err)) m9a224 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s233, 41 }), pe->name, err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s291, 41 }), pe->name, err)) m9a250 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s291, 41 }), pe->name, err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a224, err);
+      Rdf_XFail (m9a250, err);
       if (err->exc) goto L_ret;
       }
-      m9_pool_release (err->res, m9t21);
     }
-    bool m9t22 = Text_Eq (parseType, ((m9_sl_CHAR){ (uint32_t *) m9s234, 8 }), err);
+    bool m9t17 = Text_EqUtf (parseType, ((m9_sl_UTF8){ (uint8_t *) m9s292, 8 }), err);
     if (err->exc) goto L_ret;
-    if (m9t22) {
-      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a225 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+    if (m9t17) {
+      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a251 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(obj) m9v = Rdf_BlankT (m9a225, err);
+      { __typeof__(obj) m9v = Rdf_BlankT (m9a251, err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -7091,81 +7217,81 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
       Rdf_PropertyElts (pool, st, st_pool, pe, g, g_pool, &(obj), base, lang, err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t23 = Text_Eq (parseType, ((m9_sl_CHAR){ (uint32_t *) m9s235, 10 }), err);
+      bool m9t18 = Text_EqUtf (parseType, ((m9_sl_UTF8){ (uint8_t *) m9s293, 10 }), err);
       if (err->exc) goto L_ret;
-      if (m9t23) {
-        bool m9t24 = (!Rdf_ContentIsElements (pe, err));
+      if (m9t18) {
+        bool m9t19 = (!Rdf_ContentIsElements (pe, err));
         if (err->exc) goto L_ret;
-        if (m9t24) {
-          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s236, 30 }), err);
+        if (m9t19) {
+          Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s294, 30 }), err);
           if (err->exc) goto L_ret;
         }
         if ((n == INT64_C(0))) {
-          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s237, 3 }), err)) m9a226 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s237, 3 }), err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s295, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s296, 3 }), err)) m9a252 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s295, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s296, 3 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(obj) m9v = Rdf_IriT (m9a226, err);
+          { __typeof__(obj) m9v = Rdf_IriT (m9a252, err);
             if (err->exc) goto L_ret;
             obj = m9v;
           }
           }
         } else {
-          { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a227 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+          { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a253 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
             if (err->exc) goto L_ret;
-          { __typeof__(obj) m9v = Rdf_BlankT (m9a227, err);
+          { __typeof__(obj) m9v = Rdf_BlankT (m9a253, err);
             if (err->exc) goto L_ret;
             obj = m9v;
           }
           }
           prev = obj;
-          { __typeof__(i) m9t25to;
+          { __typeof__(i) m9t20to;
           i = INT64_C(0);
-          m9t25to = m9_sub_i64 (n, INT64_C(1), err);
+          m9t20to = m9_sub_i64 (n, INT64_C(1), err);
           if (err->exc) goto L_ret;
-          if (i <= m9t25to) for (;;) {
+          if (i <= m9t20to) for (;;) {
             if ((i > INT64_C(0))) {
-              { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a228 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+              { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a254 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(cell) m9v = Rdf_BlankT (m9a228, err);
+              { __typeof__(cell) m9v = Rdf_BlankT (m9a254, err);
                 if (err->exc) goto L_ret;
                 cell = m9v;
               }
               }
-              { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s238, 4 }), err)) m9a229 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s238, 4 }), err);
+              { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s297, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s298, 4 }), err)) m9a255 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s297, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s298, 4 }), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Rdf_IriT (m9a229, err)) m9a230 = Rdf_IriT (m9a229, err);
+              { __typeof__(Rdf_IriT (m9a255, err)) m9a256 = Rdf_IriT (m9a255, err);
                 if (err->exc) goto L_ret;
-              Rdf_Add (pool, g, g_pool, &(prev), &m9a230, &(cell), err);
+              Rdf_Add (pool, g, g_pool, &(prev), &m9a256, &(cell), err);
               if (err->exc) goto L_ret;
               }
               }
               prev = cell;
             }
-            { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s239, 5 }), err)) m9a231 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s239, 5 }), err);
+            { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s299, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s300, 5 }), err)) m9a257 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s299, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s300, 5 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Rdf_IriT (m9a231, err)) m9a232 = Rdf_IriT (m9a231, err);
+            { __typeof__(Rdf_IriT (m9a257, err)) m9a258 = Rdf_IriT (m9a257, err);
               if (err->exc) goto L_ret;
-            { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a233 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+            { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a259 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
               if (err->exc) goto L_ret;
-            { __typeof__(Rdf_NodeElement (pool, st, st_pool, m9a233, g, g_pool, base, lang, err)) m9a234 = Rdf_NodeElement (pool, st, st_pool, m9a233, g, g_pool, base, lang, err);
+            { __typeof__(Rdf_NodeElement (pool, st, st_pool, m9a259, g, g_pool, base, lang, err)) m9a260 = Rdf_NodeElement (pool, st, st_pool, m9a259, g, g_pool, base, lang, err);
               if (err->exc) goto L_ret;
-            Rdf_Add (pool, g, g_pool, &(prev), &m9a232, &m9a234, err);
+            Rdf_Add (pool, g, g_pool, &(prev), &m9a258, &m9a260, err);
             if (err->exc) goto L_ret;
             }
             }
             }
             }
-            if ((uint64_t) m9t25to - (uint64_t) i < (uint64_t) 1) break;
+            if ((uint64_t) m9t20to - (uint64_t) i < (uint64_t) 1) break;
             i += 1;
           } }
-          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s240, 4 }), err)) m9a235 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s240, 4 }), err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s301, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s302, 4 }), err)) m9a261 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s301, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s302, 4 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Rdf_IriT (m9a235, err)) m9a236 = Rdf_IriT (m9a235, err);
+          { __typeof__(Rdf_IriT (m9a261, err)) m9a262 = Rdf_IriT (m9a261, err);
             if (err->exc) goto L_ret;
-          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s241, 3 }), err)) m9a237 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s241, 3 }), err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s303, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s304, 3 }), err)) m9a263 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s303, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s304, 3 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Rdf_IriT (m9a237, err)) m9a238 = Rdf_IriT (m9a237, err);
+          { __typeof__(Rdf_IriT (m9a263, err)) m9a264 = Rdf_IriT (m9a263, err);
             if (err->exc) goto L_ret;
-          Rdf_Add (pool, g, g_pool, &(prev), &m9a236, &m9a238, err);
+          Rdf_Add (pool, g, g_pool, &(prev), &m9a262, &m9a264, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -7179,11 +7305,11 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           if (err->exc) goto L_ret;
         }
     } else {
-      { __typeof__(Rdf_XmlLiteral (pe, err)) m9a239 = Rdf_XmlLiteral (pe, err);
+      { __typeof__(Rdf_XmlLiteral (pe, err)) m9a265 = Rdf_XmlLiteral (pe, err);
         if (err->exc) goto L_ret;
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s242, 10 }), err)) m9a240 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s242, 10 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s305, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s306, 10 }), err)) m9a266 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s305, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s306, 10 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(obj) m9v = Rdf_LitT (m9a239, (m9_sl_CHAR){ NULL, 0 }, m9a240, err);
+      { __typeof__(obj) m9v = Rdf_LitT (m9a265, ((m9_sl_UTF8){ NULL, 0 }), m9a266, err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -7198,38 +7324,32 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     } }
   } else {
     if ((n > INT64_C(0))) {
-      bool m9t26 = (!Rdf_ContentIsElements (pe, err));
+      bool m9t21 = (!Rdf_ContentIsElements (pe, err));
       if (err->exc) goto L_ret;
-      if (m9t26) {
-        m9_mark m9t27 = m9_pool_mark (err->res);
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s243, 36 }), pe->name, err)) m9a241 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s243, 36 }), pe->name, err);
+      if (m9t21) {
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s307, 36 }), pe->name, err)) m9a267 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s307, 36 }), pe->name, err);
           if (err->exc) goto L_ret;
-        Rdf_XFail (m9a241, err);
+        Rdf_XFail (m9a267, err);
         if (err->exc) goto L_ret;
         }
-        m9_pool_release (err->res, m9t27);
       }
       if ((n > INT64_C(1))) {
-        m9_mark m9t28 = m9_pool_mark (err->res);
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s244, 51 }), pe->name, err)) m9a242 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s244, 51 }), pe->name, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s308, 51 }), pe->name, err)) m9a268 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s308, 51 }), pe->name, err);
           if (err->exc) goto L_ret;
-        Rdf_XFail (m9a242, err);
+        Rdf_XFail (m9a268, err);
         if (err->exc) goto L_ret;
         }
-        m9_pool_release (err->res, m9t28);
       }
       if ((((hasResource || hasNodeId) || hasDatatype) || props)) {
-        m9_mark m9t29 = m9_pool_mark (err->res);
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s245, 36 }), pe->name, err)) m9a243 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s245, 36 }), pe->name, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s309, 36 }), pe->name, err)) m9a269 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s309, 36 }), pe->name, err);
           if (err->exc) goto L_ret;
-        Rdf_XFail (m9a243, err);
+        Rdf_XFail (m9a269, err);
         if (err->exc) goto L_ret;
         }
-        m9_pool_release (err->res, m9t29);
       }
-      { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a244 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+      { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a270 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
         if (err->exc) goto L_ret;
-      { __typeof__(obj) m9v = Rdf_NodeElement (pool, st, st_pool, m9a244, g, g_pool, base, lang, err);
+      { __typeof__(obj) m9v = Rdf_NodeElement (pool, st, st_pool, m9a270, g, g_pool, base, lang, err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -7241,26 +7361,26 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
         if (err->exc) goto L_ret;
       }
   } else {
-    if (((pe->text).len > INT64_C(0))) {
+    bool m9t22 = (Text_BLen (pe->text, err) > INT64_C(0));
+    if (err->exc) goto L_ret;
+    if (m9t22) {
       if (((hasResource || hasNodeId) || props)) {
-        m9_mark m9t30 = m9_pool_mark (err->res);
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s246, 31 }), pe->name, err)) m9a245 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s246, 31 }), pe->name, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s310, 31 }), pe->name, err)) m9a271 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s310, 31 }), pe->name, err);
           if (err->exc) goto L_ret;
-        Rdf_XFail (m9a245, err);
+        Rdf_XFail (m9a271, err);
         if (err->exc) goto L_ret;
         }
-        m9_pool_release (err->res, m9t30);
       }
       if (hasDatatype) {
-        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a246 = Rdf_XIri (st, st_pool, base, datatype, err);
+        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a272 = Rdf_XIri (st, st_pool, base, datatype, err);
           if (err->exc) goto L_ret;
-        { __typeof__(obj) m9v = Rdf_LitT (pe->text, (m9_sl_CHAR){ NULL, 0 }, m9a246, err);
+        { __typeof__(obj) m9v = Rdf_LitT (pe->text, ((m9_sl_UTF8){ NULL, 0 }), m9a272, err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
         }
       } else {
-        { __typeof__(obj) m9v = Rdf_LitT (pe->text, lang, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(obj) m9v = Rdf_LitT (pe->text, lang, ((m9_sl_UTF8){ NULL, 0 }), err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
@@ -7274,14 +7394,14 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
   } else {
     if (hasResource) {
       if (hasDatatype) {
-        Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s247, 32 }), err);
+        Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s311, 32 }), err);
         if (err->exc) goto L_ret;
       }
-      { __typeof__(Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s248, 8 }), err)) m9a247 = Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s248, 8 }), err);
+      { __typeof__(Xml_AttrValue (pe, ((m9_sl_UTF8){ (uint8_t *) m9s312, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s313, 8 }), err)) m9a273 = Xml_AttrValue (pe, ((m9_sl_UTF8){ (uint8_t *) m9s312, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s313, 8 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_XIri (st, st_pool, base, m9a247, err)) m9a248 = Rdf_XIri (st, st_pool, base, m9a247, err);
+      { __typeof__(Rdf_XIri (st, st_pool, base, m9a273, err)) m9a274 = Rdf_XIri (st, st_pool, base, m9a273, err);
         if (err->exc) goto L_ret;
-      { __typeof__(obj) m9v = Rdf_IriT (m9a248, err);
+      { __typeof__(obj) m9v = Rdf_IriT (m9a274, err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -7290,27 +7410,25 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     } else {
       if (hasNodeId) {
         if (hasDatatype) {
-          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s249, 30 }), err);
+          Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s314, 30 }), err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__(v) m9v = Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s250, 6 }), err);
+        { __typeof__(v) m9v = Xml_AttrValue (pe, ((m9_sl_UTF8){ (uint8_t *) m9s315, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s316, 6 }), err);
           if (err->exc) goto L_ret;
           v = m9v;
         }
-        bool m9t31 = (!Rdf_NcName (v, err));
+        bool m9t23 = (!Rdf_NcName (v, err));
         if (err->exc) goto L_ret;
-        if (m9t31) {
-          m9_mark m9t32 = m9_pool_mark (err->res);
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s251, 31 }), v, err)) m9a249 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s251, 31 }), v, err);
+        if (m9t23) {
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s317, 31 }), v, err)) m9a275 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s317, 31 }), v, err);
             if (err->exc) goto L_ret;
-          Rdf_XFail (m9a249, err);
+          Rdf_XFail (m9a275, err);
           if (err->exc) goto L_ret;
           }
-          m9_pool_release (err->res, m9t32);
         }
-        { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a250 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
+        { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a276 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
           if (err->exc) goto L_ret;
-        { __typeof__(obj) m9v = Rdf_BlankT (m9a250, err);
+        { __typeof__(obj) m9v = Rdf_BlankT (m9a276, err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
@@ -7318,27 +7436,27 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     } else {
       if (props) {
         if (hasDatatype) {
-          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s252, 39 }), err);
+          Rdf_XFail (((m9_sl_UTF8){ (uint8_t *) m9s318, 39 }), err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a251 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+        { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a277 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
           if (err->exc) goto L_ret;
-        { __typeof__(obj) m9v = Rdf_BlankT (m9a251, err);
+        { __typeof__(obj) m9v = Rdf_BlankT (m9a277, err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
         }
     } else {
       if (hasDatatype) {
-        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a252 = Rdf_XIri (st, st_pool, base, datatype, err);
+        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a278 = Rdf_XIri (st, st_pool, base, datatype, err);
           if (err->exc) goto L_ret;
-        { __typeof__(obj) m9v = Rdf_LitT ((m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, m9a252, err);
+        { __typeof__(obj) m9v = Rdf_LitT (((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), m9a278, err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
         }
     } else {
-      { __typeof__(obj) m9v = Rdf_LitT ((m9_sl_CHAR){ NULL, 0 }, lang, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(obj) m9v = Rdf_LitT (((m9_sl_UTF8){ NULL, 0 }), lang, ((m9_sl_UTF8){ NULL, 0 }), err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -7350,36 +7468,36 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
       if (err->exc) goto L_ret;
     }
     if (props) {
-      { __typeof__(i) m9t33to;
+      { __typeof__(i) m9t24to;
       i = INT64_C(0);
-      m9t33to = m9_sub_i64 ((pe->attrs).len, INT64_C(1), err);
+      m9t24to = m9_sub_i64 ((pe->attrs).len, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      if (i <= m9t33to) for (;;) {
-        { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a253 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+      if (i <= m9t24to) for (;;) {
+        { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a279 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
           if (err->exc) goto L_ret;
-        bool m9t35 = (({ bool m9t34 = Text_Eq (m9a253, Rdf_XmlnsUri, err); if (!m9t34) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a254 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t34 = (Text_Eq (m9a254, Rdf_XmlNsUri, err)); } } m9t34; }) || (((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns).len == INT64_C(0)));
+        bool m9t27 = ({ bool m9t26 = ({ bool m9t25 = Text_EqUtf (m9a279, ((m9_sl_UTF8){ (uint8_t *) m9s319, 29 }), err); if (!m9t25) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a280 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t25 = (Text_EqUtf (m9a280, ((m9_sl_UTF8){ (uint8_t *) m9s320, 36 }), err)); } } m9t25; }); if (!m9t26) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a281 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t26 = ((Text_BLen (m9a281, err) == INT64_C(0))); } } m9t26; });
         if (err->exc) goto L_ret;
-        if (m9t35) {
+        if (m9t27) {
         } else {
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a255 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a282 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
             if (err->exc) goto L_ret;
-          bool m9t39 = ({ bool m9t38 = Text_Eq (m9a255, Rdf_RdfNs, err); if (m9t38) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a256 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t38 = ((({ bool m9t37 = ({ bool m9t36 = Text_Eq (m9a256, ((m9_sl_CHAR){ (uint32_t *) m9s253, 2 }), err); if (!m9t36) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a257 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t36 = (Text_Eq (m9a257, ((m9_sl_CHAR){ (uint32_t *) m9s254, 8 }), err)); } } m9t36; }); if (!m9t37) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a258 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t37 = (Text_Eq (m9a258, ((m9_sl_CHAR){ (uint32_t *) m9s255, 6 }), err)); } } m9t37; }))); } } m9t38; });
+          bool m9t31 = ({ bool m9t30 = Text_EqUtf (m9a282, ((m9_sl_UTF8){ (uint8_t *) m9s321, 43 }), err); if (m9t30) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a283 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t30 = ((({ bool m9t29 = ({ bool m9t28 = Text_EqUtf (m9a283, ((m9_sl_UTF8){ (uint8_t *) m9s322, 2 }), err); if (!m9t28) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a284 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t28 = (Text_EqUtf (m9a284, ((m9_sl_UTF8){ (uint8_t *) m9s323, 8 }), err)); } } m9t28; }); if (!m9t29) { { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a285 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t29 = (Text_EqUtf (m9a285, ((m9_sl_UTF8){ (uint8_t *) m9s324, 6 }), err)); } } m9t29; }))); } } m9t30; });
           if (err->exc) goto L_ret;
-          if (m9t39) {
+          if (m9t31) {
         } else {
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a259 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a286 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
             if (err->exc) goto L_ret;
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a260 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a287 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;
             if (err->exc) goto L_ret;
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value) m9a261 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value) m9a288 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
             if (err->exc) goto L_ret;
-          Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, &(obj), m9a259, m9a260, m9a261, base, lang, err);
+          Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, &(obj), m9a286, m9a287, m9a288, base, lang, err);
           if (err->exc) goto L_ret;
           }
           }
           }
         } } } }
-        if ((uint64_t) m9t33to - (uint64_t) i < (uint64_t) 1) break;
+        if ((uint64_t) m9t24to - (uint64_t) i < (uint64_t) 1) break;
         i += 1;
       } }
     }
@@ -7398,7 +7516,7 @@ L_ret: ;
   return;
 }
 
-static void Rdf_EscText (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err)
+static void Rdf_EscText (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -7406,21 +7524,21 @@ static void Rdf_EscText (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_
   err->res = &m9frame;
   uint32_t c = 0; (void) c;
   { __typeof__(s) m9t1s = s;
-  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; m9t1i++) { c = m9t1s.p[m9t1i];
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     if ((c == 38u)) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s256, 5 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s325, 5 }), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c == 60u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s257, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s326, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 62u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s258, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s327, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 13u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s259, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s328, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       DynStr_AppendChar (d, d_pool, c, err);
@@ -7434,7 +7552,7 @@ L_ret: ;
   return;
 }
 
-static void Rdf_EscAttr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err)
+static void Rdf_EscAttr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -7442,29 +7560,29 @@ static void Rdf_EscAttr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_
   err->res = &m9frame;
   uint32_t c = 0; (void) c;
   { __typeof__(s) m9t1s = s;
-  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; m9t1i++) { c = m9t1s.p[m9t1i];
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     if ((c == 38u)) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s260, 5 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s329, 5 }), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c == 60u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s261, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s330, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 34u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s262, 6 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s331, 6 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 9u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s263, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s332, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 10u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s264, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s333, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 13u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s265, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s334, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       DynStr_AppendChar (d, d_pool, c, err);
@@ -7478,35 +7596,35 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Rdf_Prefix (m9_sl_CHAR name, m9_state *err)
+static m9_sl_UTF8 Rdf_Prefix (m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
-  { __typeof__(i) m9v = Text_FindChar (name, 58u, err);
+  { __typeof__(i) m9v = Text_FindCharUtf (name, 58u, err);
     if (err->exc) goto L_ret;
     i = m9v;
   }
   if ((i < INT64_C(0))) {
     err->res = m9res;
-    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    m9ret = ((m9_sl_UTF8){ NULL, 0 });
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t1 = name; int64_t m9t1a = INT64_C(0), m9t1n = i; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
+  m9ret = m9_utf_slice (name, INT64_C(0), i, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool Rdf_StrLess (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
+static bool Rdf_StrLess (m9_sl_UTF8 a, m9_sl_UTF8 b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -7516,17 +7634,19 @@ static bool Rdf_StrLess (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
   int64_t i = 0; (void) i;
   i = INT64_C(0);
   for (;;) {
-    if (!(((i < (a).len) && (i < (b).len)))) break;
-    bool m9t1 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) < (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
+    bool m9t1 = ((i < Text_BLen (a, err)) && (i < Text_BLen (b, err)));
     if (err->exc) goto L_ret;
-    if (m9t1) {
+    if (!(m9t1)) break;
+    bool m9t2 = (Text_BAt (a, i, err) < Text_BAt (b, i, err));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
       err->res = m9res;
       m9ret = true;
       goto L_ret;
     }
-    bool m9t2 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) > (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
+    bool m9t3 = (Text_BAt (a, i, err) > Text_BAt (b, i, err));
     if (err->exc) goto L_ret;
-    if (m9t2) {
+    if (m9t3) {
       err->res = m9res;
       m9ret = false;
       goto L_ret;
@@ -7537,7 +7657,8 @@ static bool Rdf_StrLess (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
     }
   }
   err->res = m9res;
-  m9ret = ((a).len < (b).len);
+  m9ret = (Text_BLen (a, err) < Text_BLen (b, err));
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -7545,7 +7666,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_Declared (m9_sl_m9_sl_CHAR dn, m9_sl_m9_sl_CHAR du, int64_t n, m9_sl_CHAR prefix, m9_sl_CHAR uri, m9_state *err)
+static bool Rdf_Declared (m9_sl_m9_sl_UTF8 dn, m9_sl_m9_sl_UTF8 du, int64_t n, m9_sl_UTF8 prefix, m9_sl_UTF8 uri, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -7558,9 +7679,9 @@ static bool Rdf_Declared (m9_sl_m9_sl_CHAR dn, m9_sl_m9_sl_CHAR du, int64_t n, m
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (dn.p, i, dn.len, sizeof (m9_sl_CHAR), err))) m9a262 = (*(m9_sl_CHAR *) m9_at (dn.p, i, dn.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (dn.p, i, dn.len, sizeof (m9_sl_UTF8), err))) m9a289 = (*(m9_sl_UTF8 *) m9_at (dn.p, i, dn.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t3 = ({ bool m9t2 = Text_Eq (m9a262, prefix, err); if (m9t2) { { __typeof__((*(m9_sl_CHAR *) m9_at (du.p, i, du.len, sizeof (m9_sl_CHAR), err))) m9a263 = (*(m9_sl_CHAR *) m9_at (du.p, i, du.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a263, uri, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a289, prefix, err); if (m9t2) { { __typeof__((*(m9_sl_UTF8 *) m9_at (du.p, i, du.len, sizeof (m9_sl_UTF8), err))) m9a290 = (*(m9_sl_UTF8 *) m9_at (du.p, i, du.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a290, uri, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
@@ -7579,7 +7700,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, Xml_Element * e, m9_sl_m9_sl_CHAR *dn, m9_sl_m9_sl_CHAR *du, int64_t n, m9_state *err)
+static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, Xml_Element * e, m9_sl_m9_sl_UTF8 *dn, m9_sl_m9_sl_UTF8 *du, int64_t n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -7588,66 +7709,70 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   int64_t m = 0; (void) m;
-  m9_sl_CHAR px = {0}; (void) px;
-  m9_sl_CHAR uri = {0}; (void) uri;
-  m9_sl_m9_sl_CHAR names = {0}; (void) names;
-  m9_sl_m9_sl_CHAR uris = {0}; (void) uris;
+  m9_sl_UTF8 px = {0}; (void) px;
+  m9_sl_UTF8 uri = {0}; (void) uri;
+  m9_sl_m9_sl_UTF8 names = {0}; (void) names;
+  m9_sl_m9_sl_UTF8 uris = {0}; (void) uris;
   m9_sl_I64 ai = {0}; (void) ai;
   int64_t t = 0; (void) t;
   DynStr_AppendChar (d, d_pool, 60u, err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, e->name, err);
   if (err->exc) goto L_ret;
-  { __typeof__(names) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, m9_add_i64 ((e->attrs).len, INT64_C(1), err), err);
+  { __typeof__(names) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, m9_add_i64 ((e->attrs).len, INT64_C(1), err), err);
     if (err->exc) goto L_ret;
     names = m9v;
   }
-  { __typeof__(uris) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, m9_add_i64 ((e->attrs).len, INT64_C(1), err), err);
+  { __typeof__(uris) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, m9_add_i64 ((e->attrs).len, INT64_C(1), err), err);
     if (err->exc) goto L_ret;
     uris = m9v;
   }
   m = INT64_C(0);
-  if (((e->ns).len > INT64_C(0))) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, INT64_C(0), names.len, sizeof (m9_sl_CHAR), err))) m9v = Rdf_Prefix (e->name, err);
+  bool m9t1 = (Text_BLen (e->ns, err) > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, INT64_C(0), names.len, sizeof (m9_sl_UTF8), err))) m9v = Rdf_Prefix (e->name, err);
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (names.p, INT64_C(0), names.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (names.p, INT64_C(0), names.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    (*(m9_sl_CHAR *) m9_at (uris.p, INT64_C(0), uris.len, sizeof (m9_sl_CHAR), err)) = e->ns;
+    (*(m9_sl_UTF8 *) m9_at (uris.p, INT64_C(0), uris.len, sizeof (m9_sl_UTF8), err)) = e->ns;
     if (err->exc) goto L_ret;
     m = INT64_C(1);
   }
-  { __typeof__(i) m9t1to;
+  { __typeof__(i) m9t2to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
+  m9t2to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t1to) for (;;) {
-    bool m9t4 = ({ bool m9t3 = ({ bool m9t2 = (((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns).len > INT64_C(0)); if (m9t2) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a264 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t2 = ((!Text_Eq (m9a264, Rdf_XmlnsUri, err))); } } m9t2; }); if (m9t3) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a265 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t3 = ((!Text_Eq (m9a265, Rdf_XmlNsUri, err))); } } m9t3; });
+  if (i <= m9t2to) for (;;) {
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a291 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      if (err->exc) goto L_ret;
+    bool m9t5 = ({ bool m9t4 = ({ bool m9t3 = (Text_BLen (m9a291, err) > INT64_C(0)); if (m9t3) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a292 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t3 = ((!Text_EqUtf (m9a292, ((m9_sl_UTF8){ (uint8_t *) m9s335, 29 }), err))); } } m9t3; }); if (m9t4) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a293 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t4 = ((!Text_EqUtf (m9a293, ((m9_sl_UTF8){ (uint8_t *) m9s336, 36 }), err))); } } m9t4; });
     if (err->exc) goto L_ret;
-    if (m9t4) {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a266 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
+    if (m9t5) {
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a294 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(px) m9v = Rdf_Prefix (m9a266, err);
+      { __typeof__(px) m9v = Rdf_Prefix (m9a294, err);
         if (err->exc) goto L_ret;
         px = m9v;
       }
       }
       j = INT64_C(0);
       for (;;) {
-        bool m9t6 = ({ bool m9t5 = (j < m); if (m9t5) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a267 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_ret; m9t5 = ((!Text_Eq (m9a267, px, err))); } } m9t5; });
+        bool m9t7 = ({ bool m9t6 = (j < m); if (m9t6) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a295 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_ret; m9t6 = ((!Text_EqUtf (m9a295, px, err))); } } m9t6; });
         if (err->exc) goto L_ret;
-        if (!(m9t6)) break;
+        if (!(m9t7)) break;
         { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
           if (err->exc) goto L_ret;
           j = m9v;
         }
       }
       if ((j == m)) {
-        (*(m9_sl_CHAR *) m9_at (names.p, m, names.len, sizeof (m9_sl_CHAR), err)) = px;
+        (*(m9_sl_UTF8 *) m9_at (names.p, m, names.len, sizeof (m9_sl_UTF8), err)) = px;
         if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, m, uris.len, sizeof (m9_sl_CHAR), err))) m9v = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, m, uris.len, sizeof (m9_sl_UTF8), err))) m9v = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
           if (err->exc) goto L_ret;
-          (*(m9_sl_CHAR *) m9_at (uris.p, m, uris.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          (*(m9_sl_UTF8 *) m9_at (uris.p, m, uris.len, sizeof (m9_sl_UTF8), err)) = m9v;
           if (err->exc) goto L_ret;
         }
         { __typeof__(m) m9v = m9_add_i64 (m, INT64_C(1), err);
@@ -7655,105 +7780,107 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
           m = m9v;
         }
       }
-    }
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    } }
+    if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(i) m9t7to;
+  { __typeof__(i) m9t8to;
   i = INT64_C(0);
-  m9t7to = m9_sub_i64 (m, INT64_C(1), err);
+  m9t8to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t7to) for (;;) {
-    { __typeof__(j) m9t8to;
+  if (i <= m9t8to) for (;;) {
+    { __typeof__(j) m9t9to;
     j = m9_add_i64 (i, INT64_C(1), err);
-    m9t8to = m9_sub_i64 (m, INT64_C(1), err);
+    m9t9to = m9_sub_i64 (m, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    if (j <= m9t8to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a268 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+    if (j <= m9t9to) for (;;) {
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a296 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a269 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a297 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      bool m9t9 = Rdf_StrLess (m9a268, m9a269, err);
+      bool m9t10 = Rdf_StrLess (m9a296, m9a297, err);
       if (err->exc) goto L_ret;
-      if (m9t9) {
-        { __typeof__(px) m9v = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+      if (m9t10) {
+        { __typeof__(px) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
           px = m9v;
         }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
-          (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err)) = m9v;
           if (err->exc) goto L_ret;
         }
-        (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err)) = px;
+        (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err)) = px;
         if (err->exc) goto L_ret;
-        { __typeof__(uri) m9v = (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__(uri) m9v = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
           uri = m9v;
         }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (uris.p, j, uris.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (uris.p, j, uris.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
-          (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err)) = m9v;
           if (err->exc) goto L_ret;
         }
-        (*(m9_sl_CHAR *) m9_at (uris.p, j, uris.len, sizeof (m9_sl_CHAR), err)) = uri;
+        (*(m9_sl_UTF8 *) m9_at (uris.p, j, uris.len, sizeof (m9_sl_UTF8), err)) = uri;
         if (err->exc) goto L_ret;
       } } }
-      if ((uint64_t) m9t8to - (uint64_t) j < (uint64_t) 1) break;
+      if ((uint64_t) m9t9to - (uint64_t) j < (uint64_t) 1) break;
       j += 1;
     } }
-    if ((uint64_t) m9t7to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t8to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(i) m9t10to;
+  { __typeof__(i) m9t11to;
   i = INT64_C(0);
-  m9t10to = m9_sub_i64 (m, INT64_C(1), err);
+  m9t11to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t10to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a270 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+  if (i <= m9t11to) for (;;) {
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a298 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err))) m9a271 = (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a299 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t11 = (!Rdf_Declared ((*dn), (*du), n, m9a270, m9a271, err));
+    bool m9t12 = (!Rdf_Declared ((*dn), (*du), n, m9a298, m9a299, err));
     if (err->exc) goto L_ret;
-    if (m9t11) {
-      bool m9t12 = (((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))).len == INT64_C(0));
+    if (m9t12) {
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a300 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
+        if (err->exc) goto L_ret;
+      bool m9t13 = (Text_BLen (m9a300, err) == INT64_C(0));
       if (err->exc) goto L_ret;
-      if (m9t12) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s266, 8 }), err);
+      if (m9t13) {
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s337, 8 }), err);
         if (err->exc) goto L_ret;
       } else {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s267, 7 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s338, 7 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a272 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a301 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
-        DynStr_Append (d, d_pool, m9a272, err);
+        DynStr_Append (d, d_pool, m9a301, err);
         if (err->exc) goto L_ret;
         }
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s268, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s339, 2 }), err);
         if (err->exc) goto L_ret;
-      }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err))) m9a273 = (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err));
+      } }
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a302 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      Rdf_EscAttr (d, d_pool, m9a273, err);
+      Rdf_EscAttr (d, d_pool, m9a302, err);
       if (err->exc) goto L_ret;
       }
       DynStr_AppendChar (d, d_pool, 34u, err);
       if (err->exc) goto L_ret;
       if ((n < ((*dn)).len)) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a274 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a303 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a274, err);
+        { __typeof__((*(m9_sl_UTF8 *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a303, err);
           if (err->exc) goto L_ret;
-          (*(m9_sl_CHAR *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_CHAR), err)) = m9v;
+          (*(m9_sl_UTF8 *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_UTF8), err)) = m9v;
           if (err->exc) goto L_ret;
         }
         }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err))) m9a275 = (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err))) m9a304 = (*(m9_sl_UTF8 *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a275, err);
+        { __typeof__((*(m9_sl_UTF8 *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a304, err);
           if (err->exc) goto L_ret;
-          (*(m9_sl_CHAR *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_CHAR), err)) = m9v;
+          (*(m9_sl_UTF8 *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_UTF8), err)) = m9v;
           if (err->exc) goto L_ret;
         }
         }
@@ -7763,7 +7890,7 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
         }
       }
     } } }
-    if ((uint64_t) m9t10to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t11to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   { __typeof__(ai) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, (e->attrs).len, err);
@@ -7771,16 +7898,16 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
     ai = m9v;
   }
   m = INT64_C(0);
-  { __typeof__(i) m9t13to;
+  { __typeof__(i) m9t14to;
   i = INT64_C(0);
-  m9t13to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
+  m9t14to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t13to) for (;;) {
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a276 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+  if (i <= m9t14to) for (;;) {
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a305 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) goto L_ret;
-    bool m9t14 = (!Text_Eq (m9a276, Rdf_XmlnsUri, err));
+    bool m9t15 = (!Text_EqUtf (m9a305, ((m9_sl_UTF8){ (uint8_t *) m9s340, 29 }), err));
     if (err->exc) goto L_ret;
-    if (m9t14) {
+    if (m9t15) {
       (*(int64_t *) m9_at (ai.p, m, ai.len, sizeof (int64_t), err)) = i;
       if (err->exc) goto L_ret;
       { __typeof__(m) m9v = m9_add_i64 (m, INT64_C(1), err);
@@ -7788,26 +7915,26 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
         m = m9v;
       }
     } }
-    if ((uint64_t) m9t13to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t14to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(i) m9t15to;
+  { __typeof__(i) m9t16to;
   i = INT64_C(0);
-  m9t15to = m9_sub_i64 (m, INT64_C(1), err);
+  m9t16to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t15to) for (;;) {
-    { __typeof__(j) m9t16to;
+  if (i <= m9t16to) for (;;) {
+    { __typeof__(j) m9t17to;
     j = m9_add_i64 (i, INT64_C(1), err);
-    m9t16to = m9_sub_i64 (m, INT64_C(1), err);
+    m9t17to = m9_sub_i64 (m, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    if (j <= m9t16to) for (;;) {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a277 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;
+    if (j <= m9t17to) for (;;) {
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a306 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a278 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a307 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-      bool m9t19 = ({ bool m9t18 = Rdf_StrLess (m9a277, m9a278, err); if (!m9t18) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a279 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a280 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t18 = ((({ bool m9t17 = Text_Eq (m9a279, m9a280, err); if (m9t17) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local) m9a281 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local) m9a282 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t17 = (Rdf_StrLess (m9a281, m9a282, err)); } } } m9t17; }))); } } } m9t18; });
+      bool m9t20 = ({ bool m9t19 = Rdf_StrLess (m9a306, m9a307, err); if (!m9t19) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a308 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a309 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t19 = ((({ bool m9t18 = Text_EqUtf (m9a308, m9a309, err); if (m9t18) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local) m9a310 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local) m9a311 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t18 = (Rdf_StrLess (m9a310, m9a311, err)); } } } m9t18; }))); } } } m9t19; });
       if (err->exc) goto L_ret;
-      if (m9t19) {
+      if (m9t20) {
         { __typeof__(t) m9v = (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err));
           if (err->exc) goto L_ret;
           t = m9v;
@@ -7820,59 +7947,59 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
         (*(int64_t *) m9_at (ai.p, j, ai.len, sizeof (int64_t), err)) = t;
         if (err->exc) goto L_ret;
       } } }
-      if ((uint64_t) m9t16to - (uint64_t) j < (uint64_t) 1) break;
+      if ((uint64_t) m9t17to - (uint64_t) j < (uint64_t) 1) break;
       j += 1;
     } }
-    if ((uint64_t) m9t15to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t16to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(i) m9t20to;
+  { __typeof__(i) m9t21to;
   i = INT64_C(0);
-  m9t20to = m9_sub_i64 (m, INT64_C(1), err);
+  m9t21to = m9_sub_i64 (m, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t20to) for (;;) {
+  if (i <= m9t21to) for (;;) {
     DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name) m9a283 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name) m9a312 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name;
       if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, m9a283, err);
+    DynStr_Append (d, d_pool, m9a312, err);
     if (err->exc) goto L_ret;
     }
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s269, 2 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s341, 2 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value) m9a284 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value) m9a313 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value;
       if (err->exc) goto L_ret;
-    Rdf_EscAttr (d, d_pool, m9a284, err);
+    Rdf_EscAttr (d, d_pool, m9a313, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (d, d_pool, 34u, err);
     if (err->exc) goto L_ret;
-    if ((uint64_t) m9t20to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t21to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   DynStr_AppendChar (d, d_pool, 62u, err);
   if (err->exc) goto L_ret;
   Rdf_EscText (d, d_pool, e->text, err);
   if (err->exc) goto L_ret;
-  { __typeof__(i) m9t21to;
+  { __typeof__(i) m9t22to;
   i = INT64_C(0);
-  m9t21to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
+  m9t22to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t21to) for (;;) {
-    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a285 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+  if (i <= m9t22to) for (;;) {
+    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a314 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) goto L_ret;
-    Rdf_Serialize (pool, d, d_pool, m9a285, dn, du, n, err);
+    Rdf_Serialize (pool, d, d_pool, m9a314, dn, du, n, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a286 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
+    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a315 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
       if (err->exc) goto L_ret;
-    Rdf_EscText (d, d_pool, m9a286, err);
+    Rdf_EscText (d, d_pool, m9a315, err);
     if (err->exc) goto L_ret;
     }
-    if ((uint64_t) m9t21to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t22to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s270, 2 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s342, 2 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, e->name, err);
   if (err->exc) goto L_ret;
@@ -7887,27 +8014,27 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Rdf_XmlLiteral (Xml_Element * pe, m9_state *err)
+static m9_sl_UTF8 Rdf_XmlLiteral (Xml_Element * pe, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
-  m9_sl_m9_sl_CHAR dn = {0}; (void) dn;
-  m9_sl_m9_sl_CHAR du = {0}; (void) du;
+  m9_sl_m9_sl_UTF8 dn = {0}; (void) dn;
+  m9_sl_m9_sl_UTF8 du = {0}; (void) du;
   int64_t i = 0; (void) i;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  { __typeof__(dn) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), INT64_C(64), err);
+  { __typeof__(dn) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), INT64_C(64), err);
     if (err->exc) goto L_ret;
     dn = m9v;
   }
-  { __typeof__(du) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), INT64_C(64), err);
+  { __typeof__(du) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &(scratch), INT64_C(64), err);
     if (err->exc) goto L_ret;
     du = m9v;
   }
@@ -7918,14 +8045,14 @@ static m9_sl_CHAR Rdf_XmlLiteral (Xml_Element * pe, m9_state *err)
   m9t1to = m9_sub_i64 ((pe->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a287 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a316 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) goto L_ret;
-    Rdf_Serialize (&(scratch), &(d), &(scratch), m9a287, &(dn), &(du), INT64_C(0), err);
+    Rdf_Serialize (&(scratch), &(d), &(scratch), m9a316, &(dn), &(du), INT64_C(0), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a288 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
+    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a317 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
       if (err->exc) goto L_ret;
-    Rdf_EscText (&(d), &(scratch), m9a288, err);
+    Rdf_EscText (&(d), &(scratch), m9a317, err);
     if (err->exc) goto L_ret;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -7937,27 +8064,29 @@ static m9_sl_CHAR Rdf_XmlLiteral (Xml_Element * pe, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-static void Rdf_JFail (m9_sl_CHAR code, m9_sl_CHAR what, m9_state *err)
+static void Rdf_JFail (m9_sl_UTF8 code, m9_sl_UTF8 what, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  if (((what).len == INT64_C(0))) {
-    { __typeof__(code) m9t1 = code; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+  bool m9t1 = (Text_BLen (what, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    { __typeof__(code) m9t2 = code; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
     goto L_ret;
   }
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, code, ((m9_sl_CHAR){ (uint32_t *) m9s271, 2 }), err), what, err)) m9t2 = m9_cat (err->res, m9_cat (err->res, code, ((m9_sl_CHAR){ (uint32_t *) m9s271, 2 }), err), what, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, code, ((m9_sl_UTF8){ (uint8_t *) m9s343, 2 }), err), what, err)) m9t3 = m9_utf_cat (err->res, m9_utf_cat (err->res, code, ((m9_sl_UTF8){ (uint8_t *) m9s343, 2 }), err), what, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
   err->i[0] = INT64_C(0);
   err->i[1] = INT64_C(0);
   m9_raise (err, &Rdf_SyntaxError);
@@ -7968,7 +8097,7 @@ L_ret: ;
   return;
 }
 
-static bool Rdf_IsKeyword (m9_sl_CHAR s, m9_state *err)
+static bool Rdf_IsKeyword (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -7976,7 +8105,7 @@ static bool Rdf_IsKeyword (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((((((((((((((((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s272, 8 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s273, 3 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s274, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s275, 9 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s276, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s277, 10 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s278, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s279, 4 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s280, 8 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s281, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s282, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s283, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s284, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s285, 8 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s286, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s287, 9 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s288, 12 }), err));
+  m9ret = ((((((((((((((((Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s344, 8 }), err) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s345, 3 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s346, 6 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s347, 9 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s348, 5 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s349, 10 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s350, 5 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s351, 4 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s352, 8 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s353, 6 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s354, 5 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s355, 6 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s356, 6 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s357, 8 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s358, 6 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s359, 9 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s360, 12 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -7985,7 +8114,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_IsAbsolute (m9_sl_CHAR s, m9_state *err)
+static bool Rdf_IsAbsolute (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8002,7 +8131,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_IsBlankId (m9_sl_CHAR s, m9_state *err)
+static bool Rdf_IsBlankId (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8010,7 +8139,7 @@ static bool Rdf_IsBlankId (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s289, 2 }), err);
+  m9ret = Text_StartsWithUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s361, 2 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -8019,7 +8148,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Rdf_Ctx Rdf_NewCtx (m9_pool *pool, m9_sl_CHAR base, m9_state *err)
+static Rdf_Ctx Rdf_NewCtx (m9_pool *pool, m9_sl_UTF8 base, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8032,12 +8161,12 @@ static Rdf_Ctx Rdf_NewCtx (m9_pool *pool, m9_sl_CHAR base, m9_state *err)
     c.defs = m9v;
   }
   c.n = INT64_C(0);
-  { __typeof__(c.base) m9v = Text_Keep (pool, base, err);
+  { __typeof__(c.base) m9v = Text_KeepUtf (pool, base, err);
     if (err->exc) goto L_ret;
     c.base = m9v;
   }
-  c.vocab = (m9_sl_CHAR){ NULL, 0 };
-  c.lang = (m9_sl_CHAR){ NULL, 0 };
+  c.vocab = ((m9_sl_UTF8){ NULL, 0 });
+  c.lang = ((m9_sl_UTF8){ NULL, 0 });
   c.hasVocab = false;
   c.hasLang = false;
   err->res = m9res;
@@ -8093,7 +8222,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Rdf_FindTerm (Rdf_Ctx *c, m9_sl_CHAR term, m9_state *err)
+static int64_t Rdf_FindTerm (Rdf_Ctx *c, m9_sl_UTF8 term, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8106,9 +8235,9 @@ static int64_t Rdf_FindTerm (Rdf_Ctx *c, m9_sl_CHAR term, m9_state *err)
   m9t1to = m9_sub_i64 ((*c).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a289 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a318 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a289, term, err);
+    bool m9t2 = Text_EqUtf (m9a318, term, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -8128,7 +8257,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_RemoveTerm (Rdf_Ctx *c, m9_pool *c_pool, m9_sl_CHAR term, m9_state *err)
+static void Rdf_RemoveTerm (Rdf_Ctx *c, m9_pool *c_pool, m9_sl_UTF8 term, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8216,7 +8345,7 @@ L_ret: ;
   return;
 }
 
-static int64_t Rdf_DefState (Rdf_Defining *df, m9_sl_CHAR term, m9_state *err)
+static int64_t Rdf_DefState (Rdf_Defining *df, m9_sl_UTF8 term, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8229,9 +8358,9 @@ static int64_t Rdf_DefState (Rdf_Defining *df, m9_sl_CHAR term, m9_state *err)
   m9t1to = m9_sub_i64 ((*df).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err))) m9a290 = (*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err))) m9a319 = (*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a290, term, err);
+    bool m9t2 = Text_EqUtf (m9a319, term, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -8252,23 +8381,23 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, m9_sl_CHAR term, int64_t st, m9_state *err)
+static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, m9_sl_UTF8 term, int64_t st, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   int64_t i = 0; (void) i;
-  m9_sl_m9_sl_CHAR mt = {0}; (void) mt;
+  m9_sl_m9_sl_UTF8 mt = {0}; (void) mt;
   m9_sl_I64 ms = {0}; (void) ms;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((*df).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err))) m9a291 = (*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err))) m9a320 = (*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a291, term, err);
+    bool m9t2 = Text_EqUtf (m9a320, term, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       (*(int64_t *) m9_at ((*df).state.p, i, (*df).state.len, sizeof (int64_t), err)) = st;
@@ -8279,7 +8408,7 @@ static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, 
     i += 1;
   } }
   if (((*df).n == ((*df).terms).len)) {
-    { __typeof__(mt) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*df).terms).len, err), INT64_C(8), err), err);
+    { __typeof__(mt) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*df).terms).len, err), INT64_C(8), err), err);
       if (err->exc) goto L_ret;
       mt = m9v;
     }
@@ -8292,9 +8421,9 @@ static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, 
     m9t3to = m9_sub_i64 ((*df).n, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t3to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (mt.p, i, mt.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (mt.p, i, mt.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at ((*df).terms.p, i, (*df).terms.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (mt.p, i, mt.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (mt.p, i, mt.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       { __typeof__((*(int64_t *) m9_at (ms.p, i, ms.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*df).state.p, i, (*df).state.len, sizeof (int64_t), err));
@@ -8308,9 +8437,9 @@ static void Rdf_SetDefState (m9_pool *pool, Rdf_Defining *df, m9_pool *df_pool, 
     (*df).terms = mt;
     (*df).state = ms;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at ((*df).terms.p, (*df).n, (*df).terms.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, term, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*df).terms.p, (*df).n, (*df).terms.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, term, err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at ((*df).terms.p, (*df).n, (*df).terms.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at ((*df).terms.p, (*df).n, (*df).terms.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
   (*(int64_t *) m9_at ((*df).state.p, (*df).n, (*df).state.len, sizeof (int64_t), err)) = st;
@@ -8327,13 +8456,13 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Rdf_JStr (Json_Node * n, m9_state *err)
+static m9_sl_UTF8 Rdf_JStr (Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = Json_Text (n, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -8341,10 +8470,10 @@ static m9_sl_CHAR Rdf_JStr (Json_Node * n, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    m9ret = ((m9_sl_UTF8){ NULL, 0 });
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -8352,7 +8481,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -8364,7 +8493,7 @@ static bool Rdf_IsStr (Json_Node * n, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 s = {0}; (void) s;
   { __typeof__(s) m9v = Json_AsStr (n, err);
     if (err->exc) goto L_hdl_m9t1;
     s = m9v;
@@ -8375,7 +8504,7 @@ static bool Rdf_IsStr (Json_Node * n, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = false;
@@ -8408,7 +8537,7 @@ static bool Rdf_IsObj (Json_Node * n, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = false;
@@ -8441,7 +8570,7 @@ static bool Rdf_IsArr (Json_Node * n, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = false;
@@ -8474,7 +8603,7 @@ static bool Rdf_IsNum (Json_Node * n, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = false;
@@ -8507,7 +8636,7 @@ static bool Rdf_IsBool (Json_Node * n, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = false;
@@ -8539,7 +8668,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_Has (Json_Node * obj, m9_sl_CHAR key, m9_state *err)
+static bool Rdf_Has (Json_Node * obj, m9_sl_UTF8 key, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8562,7 +8691,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Json_Node * Rdf_JGet (Json_Node * obj, m9_sl_CHAR key, m9_state *err)
+static Json_Node * Rdf_JGet (Json_Node * obj, m9_sl_UTF8 key, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8600,7 +8729,7 @@ static int64_t Rdf_Members (Json_Node * obj, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = INT64_C(0);
@@ -8629,7 +8758,7 @@ static int64_t Rdf_Items (Json_Node * arr, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = INT64_C(0);
@@ -8644,18 +8773,18 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_m9_sl_CHAR Rdf_SortedNames (Json_Node * obj, m9_state *err)
+static m9_sl_m9_sl_UTF8 Rdf_SortedNames (Json_Node * obj, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
-  m9_sl_m9_sl_CHAR m9ret = {0};
-  m9_sl_m9_sl_CHAR names = {0}; (void) names;
+  m9_sl_m9_sl_UTF8 m9ret = {0};
+  m9_sl_m9_sl_UTF8 names = {0}; (void) names;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
-  m9_sl_CHAR t = {0}; (void) t;
-  { __typeof__(names) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, Rdf_Members (obj, err), err);
+  m9_sl_UTF8 t = {0}; (void) t;
+  { __typeof__(names) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, err->res, Rdf_Members (obj, err), err);
     if (err->exc) goto L_ret;
     names = m9v;
   }
@@ -8664,23 +8793,23 @@ static m9_sl_m9_sl_CHAR Rdf_SortedNames (Json_Node * obj, m9_state *err)
   m9t1to = m9_sub_i64 ((names).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9v = Json_NameAt (obj, i, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9v = Json_NameAt (obj, i, err);
       if (err->exc) goto L_hdl_m9t2;
-      (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_hdl_m9t2;
     }
     goto L_dn_m9t3;
 L_hdl_m9t2: ;
     if (err->exc == &Json_TypeMismatch) {
-      m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+      m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
       err->exc = NULL;
-      (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
+      (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
       if (err->exc) goto L_ret;
       goto L_dn_m9t3;
     }
     if (err->exc == &m9_exc_IndexError) {
       err->exc = NULL;
-      (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
+      (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err)) = ((m9_sl_UTF8){ NULL, 0 });
       if (err->exc) goto L_ret;
       goto L_dn_m9t3;
     }
@@ -8699,23 +8828,23 @@ L_dn_m9t3: ;
     m9t5to = m9_sub_i64 ((names).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (j <= m9t5to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err))) m9a292 = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err))) m9a321 = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a293 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9a322 = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      bool m9t6 = Rdf_StrLess (m9a292, m9a293, err);
+      bool m9t6 = Rdf_StrLess (m9a321, m9a322, err);
       if (err->exc) goto L_ret;
       if (m9t6) {
-        { __typeof__(t) m9v = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__(t) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
           t = m9v;
         }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_ret;
-          (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err)) = m9v;
           if (err->exc) goto L_ret;
         }
-        (*(m9_sl_CHAR *) m9_at (names.p, j, names.len, sizeof (m9_sl_CHAR), err)) = t;
+        (*(m9_sl_UTF8 *) m9_at (names.p, j, names.len, sizeof (m9_sl_UTF8), err)) = t;
         if (err->exc) goto L_ret;
       } } }
       if ((uint64_t) m9t5to - (uint64_t) j < (uint64_t) 1) break;
@@ -8734,17 +8863,17 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_sl_CHAR value, bool docRel, bool vocab, Json_Node * local, Rdf_Defining *df, m9_pool *df_pool, bool *nul, m9_state *err)
+static m9_sl_UTF8 Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_sl_UTF8 value, bool docRel, bool vocab, Json_Node * local, Rdf_Defining *df, m9_pool *df_pool, bool *nul, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t k = 0; (void) k;
   int64_t colon = 0; (void) colon;
-  m9_sl_CHAR prefix = {0}; (void) prefix;
-  m9_sl_CHAR suffix = {0}; (void) suffix;
+  m9_sl_UTF8 prefix = {0}; (void) prefix;
+  m9_sl_UTF8 suffix = {0}; (void) suffix;
   (*nul) = false;
   bool m9t1 = Rdf_IsKeyword (value, err);
   if (err->exc) goto L_ret;
@@ -8772,7 +8901,7 @@ static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_
     if (m9t3) {
       (*nul) = true;
       err->res = m9res;
-      m9ret = (m9_sl_CHAR){ NULL, 0 };
+      m9ret = ((m9_sl_UTF8){ NULL, 0 });
       goto L_ret;
     }
     err->res = m9res;
@@ -8780,20 +8909,20 @@ static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  { __typeof__(colon) m9v = Text_FindChar (value, 58u, err);
+  { __typeof__(colon) m9v = Text_FindCharUtf (value, 58u, err);
     if (err->exc) goto L_ret;
     colon = m9v;
   }
   if ((colon >= INT64_C(0))) {
-    { __typeof__(prefix) m9v = ({ __auto_type m9t4 = value; int64_t m9t4a = INT64_C(0), m9t4n = colon; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+    { __typeof__(prefix) m9v = m9_utf_slice (value, INT64_C(0), colon, err);
       if (err->exc) goto L_ret;
       prefix = m9v;
     }
-    { __typeof__(suffix) m9v = ({ __auto_type m9t5 = value; int64_t m9t5a = m9_add_i64 (colon, INT64_C(1), err), m9t5n = m9_sub_i64 (m9_sub_i64 ((value).len, colon, err), INT64_C(1), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+    { __typeof__(suffix) m9v = m9_utf_slice (value, m9_add_i64 (colon, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (value, err), colon, err), INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       suffix = m9v;
     }
-    bool m9t6 = (Text_Eq (prefix, ((m9_sl_CHAR){ (uint32_t *) m9s290, 1 }), err) || Text_StartsWith (suffix, ((m9_sl_CHAR){ (uint32_t *) m9s291, 2 }), err));
+    bool m9t6 = (Text_EqUtf (prefix, ((m9_sl_UTF8){ (uint8_t *) m9s362, 1 }), err) || Text_StartsWithUtf (suffix, ((m9_sl_UTF8){ (uint8_t *) m9s363, 2 }), err));
     if (err->exc) goto L_ret;
     if (m9t6) {
       err->res = m9res;
@@ -8817,7 +8946,7 @@ static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_
     if (err->exc) goto L_ret;
     if (m9t8) {
       err->res = m9res;
-      m9ret = m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, suffix, err);
+      m9ret = m9_utf_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, suffix, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -8831,12 +8960,14 @@ static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_
   }
   if ((vocab && (*c).hasVocab)) {
     err->res = m9res;
-    m9ret = m9_cat (err->res, (*c).vocab, value, err);
+    m9ret = m9_utf_cat (err->res, (*c).vocab, value, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if (docRel) {
-    if ((((*c).base).len > INT64_C(0))) {
+    bool m9t10 = (Text_BLen ((*c).base, err) > INT64_C(0));
+    if (err->exc) goto L_ret;
+    if (m9t10) {
       err->res = m9res;
       m9ret = Rdf_Resolve ((*c).base, value, err);
       if (err->exc) goto L_ret;
@@ -8851,7 +8982,7 @@ static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, c_pool, (*c).defs.p);
   m9_adopt_if (&m9frame, c_pool, (*c).base.p);
   m9_adopt_if (&m9frame, c_pool, (*c).vocab.p);
@@ -8862,7 +8993,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Node * local, m9_sl_CHAR term, Rdf_Defining *df, m9_pool *df_pool, m9_state *err)
+static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Node * local, m9_sl_UTF8 term, Rdf_Defining *df, m9_pool *df_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -8875,8 +9006,8 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
   Json_Node * tv = NULL; (void) tv;
   Json_Node * idv = NULL; (void) idv;
   Rdf_TermDef d = {0}; (void) d;
-  m9_sl_CHAR s = {0}; (void) s;
-  m9_sl_CHAR prefix = {0}; (void) prefix;
+  m9_sl_UTF8 s = {0}; (void) s;
+  m9_sl_UTF8 prefix = {0}; (void) prefix;
   bool nul = false; (void) nul;
   { __typeof__(st) m9v = Rdf_DefState (&((*df)), term, err);
     if (err->exc) goto L_hdl_m9t1;
@@ -8886,7 +9017,7 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     goto L_ret;
   }
   if ((st == INT64_C(0))) {
-    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s292, 18 }), term, err);
+    Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s364, 18 }), term, err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Rdf_SetDefState (pool, df, df_pool, term, INT64_C(0), err);
@@ -8894,11 +9025,13 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
   bool m9t3 = Rdf_IsKeyword (term, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s293, 20 }), term, err);
+    Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s365, 20 }), term, err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  if (((term).len == INT64_C(0))) {
-    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s294, 23 }), ((m9_sl_CHAR){ (uint32_t *) m9s295, 13 }), err);
+  bool m9t4 = (Text_BLen (term, err) == INT64_C(0));
+  if (err->exc) goto L_hdl_m9t1;
+  if (m9t4) {
+    Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s366, 23 }), ((m9_sl_UTF8){ (uint8_t *) m9s367, 13 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Rdf_RemoveTerm (c, c_pool, term, err);
@@ -8907,20 +9040,20 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     if (err->exc) goto L_hdl_m9t1;
     value = m9v;
   }
-  { __typeof__(d.term) m9v = Text_Keep (pool, term, err);
+  { __typeof__(d.term) m9v = Text_KeepUtf (pool, term, err);
     if (err->exc) goto L_hdl_m9t1;
     d.term = m9v;
   }
-  d.iri = (m9_sl_CHAR){ NULL, 0 };
-  d.typeMap = (m9_sl_CHAR){ NULL, 0 };
-  d.lang = (m9_sl_CHAR){ NULL, 0 };
-  d.container = (m9_sl_CHAR){ NULL, 0 };
+  d.iri = ((m9_sl_UTF8){ NULL, 0 });
+  d.typeMap = ((m9_sl_UTF8){ NULL, 0 });
+  d.lang = ((m9_sl_UTF8){ NULL, 0 });
+  d.container = ((m9_sl_UTF8){ NULL, 0 });
   d.hasLang = false;
   d.reverse = false;
   d.isNull = false;
-  bool m9t6 = ({ bool m9t5 = Json_IsNull (value, err); if (!m9t5) { m9t5 = ((({ bool m9t4 = (Rdf_IsObj (value, err) && Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s296, 3 }), err)); if (m9t4) { { __typeof__(Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 }), err)) m9a294 = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t4 = (Json_IsNull (m9a294, err)); } } m9t4; }))); } m9t5; });
+  bool m9t7 = ({ bool m9t6 = Json_IsNull (value, err); if (!m9t6) { m9t6 = ((({ bool m9t5 = (Rdf_IsObj (value, err) && Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s368, 3 }), err)); if (m9t5) { { __typeof__(Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s369, 3 }), err)) m9a323 = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s369, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t5 = (Json_IsNull (m9a323, err)); } } m9t5; }))); } m9t6; });
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t6) {
+  if (m9t7) {
     d.isNull = true;
     Rdf_DefineTerm (pool, c, c_pool, &(d), err);
     if (err->exc) goto L_hdl_m9t1;
@@ -8928,9 +9061,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  bool m9t7 = Rdf_IsStr (value, err);
+  bool m9t8 = Rdf_IsStr (value, err);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t7) {
+  if (m9t8) {
     { __typeof__(s) m9v = Rdf_JStr (value, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
@@ -8943,105 +9076,105 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       if (err->exc) goto L_hdl_m9t1;
       idv = m9v;
     }
-    Json_Set (&(value), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s298, 3 }), &(idv), err->res, err);
+    Json_Set (&(value), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s370, 3 }), &(idv), err->res, err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  bool m9t8 = (!Rdf_IsObj (value, err));
-  if (err->exc) goto L_hdl_m9t1;
-  if (m9t8) {
-    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s299, 23 }), term, err);
-    if (err->exc) goto L_hdl_m9t1;
-  }
-  bool m9t9 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s300, 5 }), err);
+  bool m9t9 = (!Rdf_IsObj (value, err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t9) {
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s301, 5 }), err);
+    Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s371, 23 }), term, err);
+    if (err->exc) goto L_hdl_m9t1;
+  }
+  bool m9t10 = Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s372, 5 }), err);
+  if (err->exc) goto L_hdl_m9t1;
+  if (m9t10) {
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s373, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
-    bool m9t10 = (!Rdf_IsStr (tv, err));
+    bool m9t11 = (!Rdf_IsStr (tv, err));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t10) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s302, 20 }), term, err);
+    if (m9t11) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s374, 20 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a295 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a324 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a295, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a324, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    bool m9t11 = (nul || (!(((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s303, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s304, 6 }), err)) || Rdf_IsAbsolute (s, err)))));
+    bool m9t12 = (nul || (!(((Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s375, 3 }), err) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s376, 6 }), err)) || Rdf_IsAbsolute (s, err)))));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t11) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s305, 20 }), term, err);
+    if (m9t12) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s377, 20 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(d.typeMap) m9v = Text_Keep (pool, s, err);
+    { __typeof__(d.typeMap) m9v = Text_KeepUtf (pool, s, err);
       if (err->exc) goto L_hdl_m9t1;
       d.typeMap = m9v;
     }
   }
-  bool m9t12 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s306, 8 }), err);
+  bool m9t13 = Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s378, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t12) {
-    bool m9t13 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s307, 3 }), err);
+  if (m9t13) {
+    bool m9t14 = Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s379, 3 }), err);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t13) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s308, 24 }), term, err);
+    if (m9t14) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s380, 24 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s309, 8 }), err);
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s381, 8 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
-    bool m9t14 = (!Rdf_IsStr (tv, err));
+    bool m9t15 = (!Rdf_IsStr (tv, err));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t14) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s310, 19 }), term, err);
+    if (m9t15) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s382, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a296 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a325 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a296, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a325, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    bool m9t15 = (nul || (!((Rdf_IsAbsolute (s, err) || Rdf_IsBlankId (s, err)))));
+    bool m9t16 = (nul || (!((Rdf_IsAbsolute (s, err) || Rdf_IsBlankId (s, err)))));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t15) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s311, 19 }), term, err);
+    if (m9t16) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s383, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(d.iri) m9v = Text_Keep (pool, s, err);
+    { __typeof__(d.iri) m9v = Text_KeepUtf (pool, s, err);
       if (err->exc) goto L_hdl_m9t1;
       d.iri = m9v;
     }
-    bool m9t16 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s312, 10 }), err);
+    bool m9t17 = Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s384, 10 }), err);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t16) {
-      { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s313, 10 }), err);
+    if (m9t17) {
+      { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s385, 10 }), err);
         if (err->exc) goto L_hdl_m9t1;
         tv = m9v;
       }
-      bool m9t17 = Json_IsNull (tv, err);
+      bool m9t18 = Json_IsNull (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t17) {
+      if (m9t18) {
       } else {
-        bool m9t18 = (Rdf_IsStr (tv, err) && ((Json_StrIs (tv, ((m9_sl_CHAR){ (uint32_t *) m9s314, 4 }), err) || Json_StrIs (tv, ((m9_sl_CHAR){ (uint32_t *) m9s315, 6 }), err))));
+        bool m9t19 = (Rdf_IsStr (tv, err) && ((Json_StrIs (tv, ((m9_sl_UTF8){ (uint8_t *) m9s386, 4 }), err) || Json_StrIs (tv, ((m9_sl_UTF8){ (uint8_t *) m9s387, 6 }), err))));
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t18) {
-          { __typeof__(Rdf_JStr (tv, err)) m9a297 = Rdf_JStr (tv, err);
+        if (m9t19) {
+          { __typeof__(Rdf_JStr (tv, err)) m9a326 = Rdf_JStr (tv, err);
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(d.container) m9v = Text_Keep (pool, m9a297, err);
+          { __typeof__(d.container) m9v = Text_KeepUtf (pool, m9a326, err);
             if (err->exc) goto L_hdl_m9t1;
             d.container = m9v;
           }
           }
       } else {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s316, 24 }), term, err);
+        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s388, 24 }), term, err);
         if (err->exc) goto L_hdl_m9t1;
       } }
     }
@@ -9052,59 +9185,59 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  bool m9t20 = ({ bool m9t19 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s317, 3 }), err); if (m9t19) { { __typeof__(Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s318, 3 }), err)) m9a298 = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s318, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t19 = ((!Json_StrIs (m9a298, term, err))); } } m9t19; });
+  bool m9t21 = ({ bool m9t20 = Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s389, 3 }), err); if (m9t20) { { __typeof__(Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s390, 3 }), err)) m9a327 = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s390, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t20 = ((!Json_StrIs (m9a327, term, err))); } } m9t20; });
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t20) {
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s319, 3 }), err);
+  if (m9t21) {
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s391, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
-    bool m9t21 = (!Rdf_IsStr (tv, err));
+    bool m9t22 = (!Rdf_IsStr (tv, err));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t21) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s320, 19 }), term, err);
+    if (m9t22) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s392, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a299 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a328 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a299, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a328, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
     if (nul) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s321, 19 }), term, err);
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s393, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    bool m9t22 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s322, 8 }), err);
-    if (err->exc) goto L_hdl_m9t1;
-    if (m9t22) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s323, 21 }), term, err);
-      if (err->exc) goto L_hdl_m9t1;
-    }
-    bool m9t23 = (!(((Rdf_IsKeyword (s, err) || Rdf_IsAbsolute (s, err)) || Rdf_IsBlankId (s, err))));
+    bool m9t23 = Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s394, 8 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t23) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s324, 19 }), term, err);
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s395, 21 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(d.iri) m9v = Text_Keep (pool, s, err);
+    bool m9t24 = (!(((Rdf_IsKeyword (s, err) || Rdf_IsAbsolute (s, err)) || Rdf_IsBlankId (s, err))));
+    if (err->exc) goto L_hdl_m9t1;
+    if (m9t24) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s396, 19 }), term, err);
+      if (err->exc) goto L_hdl_m9t1;
+    }
+    { __typeof__(d.iri) m9v = Text_KeepUtf (pool, s, err);
       if (err->exc) goto L_hdl_m9t1;
       d.iri = m9v;
     }
   } else {
-    { __typeof__(colon) m9v = Text_FindChar (term, 58u, err);
+    { __typeof__(colon) m9v = Text_FindCharUtf (term, 58u, err);
       if (err->exc) goto L_hdl_m9t1;
       colon = m9v;
     }
     if ((colon >= INT64_C(0))) {
-      { __typeof__(prefix) m9v = ({ __auto_type m9t24 = term; int64_t m9t24a = INT64_C(0), m9t24n = colon; int64_t m9t24o = m9_chk_slice (m9t24a, m9t24n, m9t24.len, err); (__typeof__(m9t24)){ m9t24.p + m9t24o, err->exc ? 0 : m9t24n }; });
+      { __typeof__(prefix) m9v = m9_utf_slice (term, INT64_C(0), colon, err);
         if (err->exc) goto L_hdl_m9t1;
         prefix = m9v;
       }
-      bool m9t25 = Rdf_Has (local, prefix, err);
+      bool m9t26 = Rdf_Has (local, prefix, err);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t25) {
+      if (m9t26) {
         Rdf_CreateTerm (pool, c, c_pool, local, prefix, df, df_pool, err);
         if (err->exc) goto L_hdl_m9t1;
       }
@@ -9112,12 +9245,12 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
         if (err->exc) goto L_hdl_m9t1;
         k = m9v;
       }
-      bool m9t26 = ((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull));
+      bool m9t27 = ((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull));
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t26) {
-        { __typeof__(m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __auto_type m9t27 = term; int64_t m9t27a = m9_add_i64 (colon, INT64_C(1), err), m9t27n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; }), err)) m9a300 = m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __auto_type m9t27 = term; int64_t m9t27a = m9_add_i64 (colon, INT64_C(1), err), m9t27n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; }), err);
+      if (m9t27) {
+        { __typeof__(m9_utf_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, m9_utf_slice (term, m9_add_i64 (colon, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (term, err), colon, err), INT64_C(1), err), err), err)) m9a329 = m9_utf_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, m9_utf_slice (term, m9_add_i64 (colon, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (term, err), colon, err), INT64_C(1), err), err), err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a300, err);
+        { __typeof__(d.iri) m9v = Text_KeepUtf (pool, m9a329, err);
           if (err->exc) goto L_hdl_m9t1;
           d.iri = m9v;
         }
@@ -9127,75 +9260,75 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       }
     } else {
       if ((*c).hasVocab) {
-        { __typeof__(m9_cat (err->res, (*c).vocab, term, err)) m9a301 = m9_cat (err->res, (*c).vocab, term, err);
+        { __typeof__(m9_utf_cat (err->res, (*c).vocab, term, err)) m9a330 = m9_utf_cat (err->res, (*c).vocab, term, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a301, err);
+        { __typeof__(d.iri) m9v = Text_KeepUtf (pool, m9a330, err);
           if (err->exc) goto L_hdl_m9t1;
           d.iri = m9v;
         }
         }
     } else {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s325, 19 }), term, err);
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s397, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     } }
   }
-  bool m9t28 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s326, 10 }), err);
+  bool m9t29 = Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s398, 10 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t28) {
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s327, 10 }), err);
+  if (m9t29) {
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s399, 10 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
-    bool m9t29 = (!Rdf_IsStr (tv, err));
+    bool m9t30 = (!Rdf_IsStr (tv, err));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t29) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s328, 25 }), term, err);
+    if (m9t30) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s400, 25 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(s) m9v = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
-    bool m9t30 = (!((((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s329, 5 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s330, 4 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s331, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s332, 9 }), err))));
+    bool m9t31 = (!((((Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s401, 5 }), err) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s402, 4 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s403, 6 }), err)) || Text_EqUtf (s, ((m9_sl_UTF8){ (uint8_t *) m9s404, 9 }), err))));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t30) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s333, 25 }), term, err);
+    if (m9t31) {
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s405, 25 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(d.container) m9v = Text_Keep (pool, s, err);
+    { __typeof__(d.container) m9v = Text_KeepUtf (pool, s, err);
       if (err->exc) goto L_hdl_m9t1;
       d.container = m9v;
     }
   }
-  bool m9t31 = (Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s334, 9 }), err) && (!Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s335, 5 }), err)));
+  bool m9t32 = (Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s406, 9 }), err) && (!Rdf_Has (value, ((m9_sl_UTF8){ (uint8_t *) m9s407, 5 }), err)));
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t31) {
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s336, 9 }), err);
+  if (m9t32) {
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_UTF8){ (uint8_t *) m9s408, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
-    bool m9t32 = Json_IsNull (tv, err);
+    bool m9t33 = Json_IsNull (tv, err);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t32) {
+    if (m9t33) {
       d.hasLang = true;
-      d.lang = (m9_sl_CHAR){ NULL, 0 };
+      d.lang = ((m9_sl_UTF8){ NULL, 0 });
     } else {
-      bool m9t33 = Rdf_IsStr (tv, err);
+      bool m9t34 = Rdf_IsStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t33) {
+      if (m9t34) {
         d.hasLang = true;
-        { __typeof__(Rdf_JStr (tv, err)) m9a302 = Rdf_JStr (tv, err);
+        { __typeof__(Rdf_JStr (tv, err)) m9a331 = Rdf_JStr (tv, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Text_Lower (m9a302, err)) m9a303 = Text_Lower (m9a302, err);
+        { __typeof__(Text_LowerUtf (m9a331, err)) m9a332 = Text_LowerUtf (m9a331, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.lang) m9v = Text_Keep (pool, m9a303, err);
+        { __typeof__(d.lang) m9v = Text_KeepUtf (pool, m9a332, err);
           if (err->exc) goto L_hdl_m9t1;
           d.lang = m9v;
         }
         }
         }
     } else {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s337, 24 }), term, err);
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s409, 24 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     } }
   }
@@ -9206,9 +9339,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s338, 25 }), term, err)) m9t34 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s338, 25 }), term, err); err->s[0].p = m9t34.p; err->s[0].len = m9t34.len; m9_pay_keep (err, 0, sizeof (*m9t34.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s410, 25 }), term, err)) m9t35 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s410, 25 }), term, err); err->s[0].p = m9t35.p; err->s[0].len = m9t35.len; m9_pay_keep (err, 0, sizeof (*m9t35.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -9243,8 +9376,8 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
   Json_Node * item = NULL; (void) item;
   Json_Node * v = NULL; (void) v;
   Rdf_Defining df = {0}; (void) df;
-  m9_sl_m9_sl_CHAR names = {0}; (void) names;
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_m9_sl_UTF8 names = {0}; (void) names;
+  m9_sl_UTF8 s = {0}; (void) s;
   { __typeof__(result) m9v = Rdf_CopyCtx (pool, active, err);
     if (err->exc) goto L_hdl_m9t1;
     result = m9v;
@@ -9285,29 +9418,29 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
       bool m9t7 = Rdf_IsStr (item, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t7) {
-        { __typeof__(Rdf_JStr (item, err)) m9a304 = Rdf_JStr (item, err);
+        { __typeof__(Rdf_JStr (item, err)) m9a333 = Rdf_JStr (item, err);
           if (err->exc) goto L_hdl_m9t1;
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s339, 27 }), m9a304, err);
+        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s411, 27 }), m9a333, err);
         if (err->exc) goto L_hdl_m9t1;
         }
     } else {
       bool m9t8 = (!Rdf_IsObj (item, err));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t8) {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s340, 21 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s412, 21 }), ((m9_sl_UTF8){ NULL, 0 }), err);
         if (err->exc) goto L_hdl_m9t1;
     } else {
-      bool m9t9 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s341, 5 }), err);
+      bool m9t9 = Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s413, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t9) {
-        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s342, 5 }), err);
+        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s414, 5 }), err);
           if (err->exc) goto L_hdl_m9t1;
           v = m9v;
         }
         bool m9t10 = Json_IsNull (v, err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t10) {
-          result.base = (m9_sl_CHAR){ NULL, 0 };
+          result.base = ((m9_sl_UTF8){ NULL, 0 });
         } else {
           bool m9t11 = Rdf_IsStr (v, err);
           if (err->exc) goto L_hdl_m9t1;
@@ -9319,88 +9452,90 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
             bool m9t12 = Rdf_IsAbsolute (s, err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t12) {
-              { __typeof__(result.base) m9v = Text_Keep (pool, s, err);
+              { __typeof__(result.base) m9v = Text_KeepUtf (pool, s, err);
                 if (err->exc) goto L_hdl_m9t1;
                 result.base = m9v;
               }
             } else {
-              if (((result.base).len > INT64_C(0))) {
-                { __typeof__(Rdf_Resolve (result.base, s, err)) m9a305 = Rdf_Resolve (result.base, s, err);
+              bool m9t13 = (Text_BLen (result.base, err) > INT64_C(0));
+              if (err->exc) goto L_hdl_m9t1;
+              if (m9t13) {
+                { __typeof__(Rdf_Resolve (result.base, s, err)) m9a334 = Rdf_Resolve (result.base, s, err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(result.base) m9v = Text_Keep (pool, m9a305, err);
+                { __typeof__(result.base) m9v = Text_KeepUtf (pool, m9a334, err);
                   if (err->exc) goto L_hdl_m9t1;
                   result.base = m9v;
                 }
                 }
             } else {
-              Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s343, 16 }), s, err);
+              Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s415, 16 }), s, err);
               if (err->exc) goto L_hdl_m9t1;
             } }
         } else {
-          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s344, 16 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s416, 16 }), ((m9_sl_UTF8){ NULL, 0 }), err);
           if (err->exc) goto L_hdl_m9t1;
         } }
       }
-      bool m9t13 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s345, 6 }), err);
+      bool m9t14 = Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s417, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t13) {
-        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s346, 6 }), err);
+      if (m9t14) {
+        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s418, 6 }), err);
           if (err->exc) goto L_hdl_m9t1;
           v = m9v;
         }
-        bool m9t14 = Json_IsNull (v, err);
+        bool m9t15 = Json_IsNull (v, err);
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t14) {
+        if (m9t15) {
           result.hasVocab = false;
         } else {
-          bool m9t17 = ({ bool m9t16 = Rdf_IsStr (v, err); if (m9t16) { { __typeof__(Rdf_JStr (v, err)) m9a306 = Rdf_JStr (v, err);   if (err->exc) goto L_hdl_m9t1; m9t16 = ((({ bool m9t15 = Rdf_IsAbsolute (m9a306, err); if (!m9t15) { { __typeof__(Rdf_JStr (v, err)) m9a307 = Rdf_JStr (v, err);   if (err->exc) goto L_hdl_m9t1; m9t15 = (Rdf_IsBlankId (m9a307, err)); } } m9t15; }))); } } m9t16; });
+          bool m9t18 = ({ bool m9t17 = Rdf_IsStr (v, err); if (m9t17) { { __typeof__(Rdf_JStr (v, err)) m9a335 = Rdf_JStr (v, err);   if (err->exc) goto L_hdl_m9t1; m9t17 = ((({ bool m9t16 = Rdf_IsAbsolute (m9a335, err); if (!m9t16) { { __typeof__(Rdf_JStr (v, err)) m9a336 = Rdf_JStr (v, err);   if (err->exc) goto L_hdl_m9t1; m9t16 = (Rdf_IsBlankId (m9a336, err)); } } m9t16; }))); } } m9t17; });
           if (err->exc) goto L_hdl_m9t1;
-          if (m9t17) {
+          if (m9t18) {
             result.hasVocab = true;
-            { __typeof__(Rdf_JStr (v, err)) m9a308 = Rdf_JStr (v, err);
+            { __typeof__(Rdf_JStr (v, err)) m9a337 = Rdf_JStr (v, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(result.vocab) m9v = Text_Keep (pool, m9a308, err);
+            { __typeof__(result.vocab) m9v = Text_KeepUtf (pool, m9a337, err);
               if (err->exc) goto L_hdl_m9t1;
               result.vocab = m9v;
             }
             }
         } else {
-          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s347, 21 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s419, 21 }), ((m9_sl_UTF8){ NULL, 0 }), err);
           if (err->exc) goto L_hdl_m9t1;
         } }
       }
-      bool m9t18 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s348, 9 }), err);
+      bool m9t19 = Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s420, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t18) {
-        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s349, 9 }), err);
+      if (m9t19) {
+        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s421, 9 }), err);
           if (err->exc) goto L_hdl_m9t1;
           v = m9v;
         }
-        bool m9t19 = Json_IsNull (v, err);
+        bool m9t20 = Json_IsNull (v, err);
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t19) {
+        if (m9t20) {
           result.hasLang = false;
         } else {
-          bool m9t20 = Rdf_IsStr (v, err);
+          bool m9t21 = Rdf_IsStr (v, err);
           if (err->exc) goto L_hdl_m9t1;
-          if (m9t20) {
+          if (m9t21) {
             result.hasLang = true;
-            { __typeof__(Rdf_JStr (v, err)) m9a309 = Rdf_JStr (v, err);
+            { __typeof__(Rdf_JStr (v, err)) m9a338 = Rdf_JStr (v, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Text_Lower (m9a309, err)) m9a310 = Text_Lower (m9a309, err);
+            { __typeof__(Text_LowerUtf (m9a338, err)) m9a339 = Text_LowerUtf (m9a338, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(result.lang) m9v = Text_Keep (pool, m9a310, err);
+            { __typeof__(result.lang) m9v = Text_KeepUtf (pool, m9a339, err);
               if (err->exc) goto L_hdl_m9t1;
               result.lang = m9v;
             }
             }
             }
         } else {
-          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s350, 24 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s422, 24 }), ((m9_sl_UTF8){ NULL, 0 }), err);
           if (err->exc) goto L_hdl_m9t1;
         } }
       }
-      { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+      { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
         if (err->exc) goto L_hdl_m9t1;
         df.terms = m9v;
       }
@@ -9413,23 +9548,23 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
         if (err->exc) goto L_hdl_m9t1;
         names = m9v;
       }
-      { __typeof__(k) m9t21to;
+      { __typeof__(k) m9t22to;
       k = INT64_C(0);
-      m9t21to = m9_sub_i64 ((names).len, INT64_C(1), err);
+      m9t22to = m9_sub_i64 ((names).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      if (k <= m9t21to) for (;;) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a311 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
+      if (k <= m9t22to) for (;;) {
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a340 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_hdl_m9t1;
-        bool m9t24 = (!(({ bool m9t23 = ({ bool m9t22 = Text_Eq (m9a311, ((m9_sl_CHAR){ (uint32_t *) m9s351, 5 }), err); if (!m9t22) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a312 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t22 = (Text_Eq (m9a312, ((m9_sl_CHAR){ (uint32_t *) m9s352, 6 }), err)); } } m9t22; }); if (!m9t23) { { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a313 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));   if (err->exc) goto L_hdl_m9t1; m9t23 = (Text_Eq (m9a313, ((m9_sl_CHAR){ (uint32_t *) m9s353, 9 }), err)); } } m9t23; })));
+        bool m9t25 = (!(({ bool m9t24 = ({ bool m9t23 = Text_EqUtf (m9a340, ((m9_sl_UTF8){ (uint8_t *) m9s423, 5 }), err); if (!m9t23) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a341 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_hdl_m9t1; m9t23 = (Text_EqUtf (m9a341, ((m9_sl_UTF8){ (uint8_t *) m9s424, 6 }), err)); } } m9t23; }); if (!m9t24) { { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a342 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));   if (err->exc) goto L_hdl_m9t1; m9t24 = (Text_EqUtf (m9a342, ((m9_sl_UTF8){ (uint8_t *) m9s425, 9 }), err)); } } m9t24; })));
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t24) {
-          { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a314 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
+        if (m9t25) {
+          { __typeof__((*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err))) m9a343 = (*(m9_sl_UTF8 *) m9_at (names.p, k, names.len, sizeof (m9_sl_UTF8), err));
             if (err->exc) goto L_hdl_m9t1;
-          Rdf_CreateTerm (pool, &(result), err->res, item, m9a314, &(df), err->res, err);
+          Rdf_CreateTerm (pool, &(result), err->res, item, m9a343, &(df), err->res, err);
           if (err->exc) goto L_hdl_m9t1;
           }
         } }
-        if ((uint64_t) m9t21to - (uint64_t) k < (uint64_t) 1) break;
+        if ((uint64_t) m9t22to - (uint64_t) k < (uint64_t) 1) break;
         k += 1;
       } }
     } } }
@@ -9442,9 +9577,9 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s354, 21 })) m9t25 = ((m9_sl_CHAR){ (uint32_t *) m9s354, 21 }); err->s[0].p = m9t25.p; err->s[0].len = m9t25.len; m9_pay_keep (err, 0, sizeof (*m9t25.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s426, 21 })) m9t26 = ((m9_sl_UTF8){ (uint8_t *) m9s426, 21 }); err->s[0].p = m9t26.p; err->s[0].len = m9t26.len; m9_pay_keep (err, 0, sizeof (*m9t26.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -9453,7 +9588,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s355, 21 })) m9t26 = ((m9_sl_CHAR){ (uint32_t *) m9s355, 21 }); err->s[0].p = m9t26.p; err->s[0].len = m9t26.len; m9_pay_keep (err, 0, sizeof (*m9t26.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s427, 21 })) m9t27 = ((m9_sl_UTF8){ (uint8_t *) m9s427, 21 }); err->s[0].p = m9t27.p; err->s[0].len = m9t27.len; m9_pay_keep (err, 0, sizeof (*m9t27.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -9501,9 +9636,9 @@ static Json_Node * Rdf_Arrayified (m9_pool *pool, Json_Node * v, m9_state *err)
     m9t4to = m9_sub_i64 (Rdf_Items (v, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Json_Item (v, i, err)) m9a315 = Json_Item (v, i, err);
+      { __typeof__(Json_Item (v, i, err)) m9a344 = Json_Item (v, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(c) m9v = Json_CloneIn (pool, m9a315, err);
+      { __typeof__(c) m9v = Json_CloneIn (pool, m9a344, err);
         if (err->exc) goto L_hdl_m9t1;
         c = m9v;
       }
@@ -9527,7 +9662,7 @@ static Json_Node * Rdf_Arrayified (m9_pool *pool, Json_Node * v, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = Json_NewArrIn (pool, err);
@@ -9552,7 +9687,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl_CHAR key, Json_Node * v, m9_state *err)
+static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 key, Json_Node * v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -9561,8 +9696,8 @@ static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl
   Json_Node * a = NULL; (void) a;
   Json_Node * c = NULL; (void) c;
   int64_t i = 0; (void) i;
-  m9_sl_CHAR k = {0}; (void) k;
-  { __typeof__(k) m9v = Text_Keep (pool, key, err);
+  m9_sl_UTF8 k = {0}; (void) k;
+  { __typeof__(k) m9v = Text_KeepUtf (pool, key, err);
     if (err->exc) goto L_hdl_m9t1;
     k = m9v;
   }
@@ -9586,9 +9721,9 @@ static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl
     m9t4to = m9_sub_i64 (Rdf_Items (v, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Json_Item (v, i, err)) m9a316 = Json_Item (v, i, err);
+      { __typeof__(Json_Item (v, i, err)) m9a345 = Json_Item (v, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(c) m9v = Json_CloneIn (pool, m9a316, err);
+      { __typeof__(c) m9v = Json_CloneIn (pool, m9a345, err);
         if (err->exc) goto L_hdl_m9t1;
         c = m9v;
       }
@@ -9609,7 +9744,7 @@ static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     goto L_ret;
     goto L_dn_m9t2;
@@ -9628,15 +9763,15 @@ L_ret: ;
   return;
 }
 
-static void Rdf_SetKey (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl_CHAR key, Json_Node * v, m9_state *err)
+static void Rdf_SetKey (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl_UTF8 key, Json_Node * v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Json_Node * c = NULL; (void) c;
-  m9_sl_CHAR k = {0}; (void) k;
-  { __typeof__(k) m9v = Text_Keep (pool, key, err);
+  m9_sl_UTF8 k = {0}; (void) k;
+  { __typeof__(k) m9v = Text_KeepUtf (pool, key, err);
     if (err->exc) goto L_hdl_m9t1;
     k = m9v;
   }
@@ -9649,7 +9784,7 @@ static void Rdf_SetKey (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_s
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     goto L_ret;
     goto L_dn_m9t2;
@@ -9671,7 +9806,7 @@ static bool Rdf_IsListObj (Json_Node * n, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Rdf_IsObj (n, err) && Rdf_Has (n, ((m9_sl_CHAR){ (uint32_t *) m9s356, 5 }), err));
+  m9ret = (Rdf_IsObj (n, err) && Rdf_Has (n, ((m9_sl_UTF8){ (uint8_t *) m9s428, 5 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -9688,7 +9823,7 @@ static bool Rdf_IsValueObj (Json_Node * n, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Rdf_IsObj (n, err) && Rdf_Has (n, ((m9_sl_CHAR){ (uint32_t *) m9s357, 6 }), err));
+  m9ret = (Rdf_IsObj (n, err) && Rdf_Has (n, ((m9_sl_UTF8){ (uint8_t *) m9s429, 6 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -9697,7 +9832,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_sl_CHAR activeProp, Json_Node * value, m9_state *err)
+static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_sl_UTF8 activeProp, Json_Node * value, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -9717,10 +9852,10 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
     if (err->exc) goto L_hdl_m9t1;
     o = m9v;
   }
-  bool m9t5 = (({ bool m9t4 = (k >= INT64_C(0)); if (m9t4) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a317 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t4 = ((({ bool m9t3 = Text_Eq (m9a317, ((m9_sl_CHAR){ (uint32_t *) m9s358, 3 }), err); if (!m9t3) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a318 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t3 = (Text_Eq (m9a318, ((m9_sl_CHAR){ (uint32_t *) m9s359, 6 }), err)); } } m9t3; }))); } } m9t4; }) && Rdf_IsStr (value, err));
+  bool m9t5 = (({ bool m9t4 = (k >= INT64_C(0)); if (m9t4) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a346 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t4 = ((({ bool m9t3 = Text_EqUtf (m9a346, ((m9_sl_UTF8){ (uint8_t *) m9s430, 3 }), err); if (!m9t3) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a347 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t3 = (Text_EqUtf (m9a347, ((m9_sl_UTF8){ (uint8_t *) m9s431, 6 }), err)); } } m9t3; }))); } } m9t4; }) && Rdf_IsStr (value, err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t5) {
-    { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(1), err);
+    { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
       df.terms = m9v;
     }
@@ -9729,15 +9864,15 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
       df.state = m9v;
     }
     df.n = INT64_C(0);
-    { __typeof__(Rdf_JStr (value, err)) m9a319 = Rdf_JStr (value, err);
+    { __typeof__(Rdf_JStr (value, err)) m9a348 = Rdf_JStr (value, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a320 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a349 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Text_Eq (m9a320, ((m9_sl_CHAR){ (uint32_t *) m9s360, 6 }), err)) m9a321 = Text_Eq (m9a320, ((m9_sl_CHAR){ (uint32_t *) m9s360, 6 }), err);
+    { __typeof__(Text_EqUtf (m9a349, ((m9_sl_UTF8){ (uint8_t *) m9s432, 6 }), err)) m9a350 = Text_EqUtf (m9a349, ((m9_sl_UTF8){ (uint8_t *) m9s432, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_ExpandIri (pool, c, c_pool, m9a319, true, m9a321, NULL, &(df), err->res, &(nul), err)) m9a322 = Rdf_ExpandIri (pool, c, c_pool, m9a319, true, m9a321, NULL, &(df), err->res, &(nul), err);
+    { __typeof__(Rdf_ExpandIri (pool, c, c_pool, m9a348, true, m9a350, NULL, &(df), err->res, &(nul), err)) m9a351 = Rdf_ExpandIri (pool, c, c_pool, m9a348, true, m9a350, NULL, &(df), err->res, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a322, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a351, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -9745,53 +9880,55 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
     }
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s361, 3 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s433, 3 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s362, 6 }), value, err);
+  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s434, 6 }), value, err);
   if (err->exc) goto L_hdl_m9t1;
-  bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ((k >= INT64_C(0)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap).len > INT64_C(0))); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a323 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t6 = ((!Text_Eq (m9a323, ((m9_sl_CHAR){ (uint32_t *) m9s363, 3 }), err))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a324 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t7 = ((!Text_Eq (m9a324, ((m9_sl_CHAR){ (uint32_t *) m9s364, 6 }), err))); } } m9t7; });
+  bool m9t9 = ({ bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = (k >= INT64_C(0)); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a352 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t6 = ((Text_BLen (m9a352, err) > INT64_C(0))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a353 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t7 = ((!Text_EqUtf (m9a353, ((m9_sl_UTF8){ (uint8_t *) m9s435, 3 }), err))); } } m9t7; }); if (m9t8) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a354 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;   if (err->exc) goto L_hdl_m9t1; m9t8 = ((!Text_EqUtf (m9a354, ((m9_sl_UTF8){ (uint8_t *) m9s436, 6 }), err))); } } m9t8; });
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t8) {
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a325 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
+  if (m9t9) {
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a355 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a325, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a355, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s365, 5 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s437, 5 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
-    bool m9t9 = Rdf_IsStr (value, err);
+    bool m9t10 = Rdf_IsStr (value, err);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t9) {
-      bool m9t10 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang);
+    if (m9t10) {
+      bool m9t11 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t10) {
-        bool m9t11 = (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang).len > INT64_C(0));
+      if (m9t11) {
+        { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a356 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
+          if (err->exc) goto L_hdl_m9t1;
+        bool m9t12 = (Text_BLen (m9a356, err) > INT64_C(0));
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t11) {
-          { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a326 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
+        if (m9t12) {
+          { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a357 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(s) m9v = Json_NewStrIn (pool, m9a326, err);
+          { __typeof__(s) m9v = Json_NewStrIn (pool, m9a357, err);
             if (err->exc) goto L_hdl_m9t1;
             s = m9v;
           }
           }
-          Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s366, 9 }), &(s), &((*pool)), err);
+          Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s438, 9 }), &(s), &((*pool)), err);
           if (err->exc) goto L_hdl_m9t1;
-        }
+        } }
       } else {
         if ((*c).hasLang) {
           { __typeof__(s) m9v = Json_NewStrIn (pool, (*c).lang, err);
             if (err->exc) goto L_hdl_m9t1;
             s = m9v;
           }
-          Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s367, 9 }), &(s), &((*pool)), err);
+          Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s439, 9 }), &(s), &((*pool)), err);
           if (err->exc) goto L_hdl_m9t1;
       } }
   } }
@@ -9801,9 +9938,9 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s368, 20 })) m9t12 = ((m9_sl_CHAR){ (uint32_t *) m9s368, 20 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s440, 20 })) m9t13 = ((m9_sl_UTF8){ (uint8_t *) m9s440, 20 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -9823,7 +9960,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_Ctx *c0, m9_sl_CHAR activeProp, bool hasProp, Json_Node * element, m9_state *err)
+static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_Ctx *c0, m9_sl_UTF8 activeProp, bool hasProp, Json_Node * element, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -9844,12 +9981,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
   int64_t j = 0; (void) j;
   int64_t k = 0; (void) k;
   int64_t n = 0; (void) n;
-  m9_sl_m9_sl_CHAR names = {0}; (void) names;
-  m9_sl_m9_sl_CHAR inames = {0}; (void) inames;
-  m9_sl_CHAR key = {0}; (void) key;
-  m9_sl_CHAR prop = {0}; (void) prop;
-  m9_sl_CHAR cont = {0}; (void) cont;
-  m9_sl_CHAR lang = {0}; (void) lang;
+  m9_sl_m9_sl_UTF8 names = {0}; (void) names;
+  m9_sl_m9_sl_UTF8 inames = {0}; (void) inames;
+  m9_sl_UTF8 key = {0}; (void) key;
+  m9_sl_UTF8 prop = {0}; (void) prop;
+  m9_sl_UTF8 cont = {0}; (void) cont;
+  m9_sl_UTF8 lang = {0}; (void) lang;
   bool nul = false; (void) nul;
   bool listCtx = false; (void) listCtx;
   Rdf_Defining df = {0}; (void) df;
@@ -9864,7 +10001,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
   bool m9t4 = Rdf_IsScalar (element, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t4) {
-    bool m9t5 = ((!hasProp) || Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s369, 6 }), err));
+    bool m9t5 = ((!hasProp) || Text_EqUtf (activeProp, ((m9_sl_UTF8){ (uint8_t *) m9s441, 6 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t5) {
       err->res = m9res;
@@ -9893,7 +10030,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         k = m9v;
       }
     }
-    { __typeof__(listCtx) m9v = ({ bool m9t8 = ((hasProp && Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s370, 5 }), err))); if (!m9t8) { m9t8 = ((({ bool m9t7 = (k >= INT64_C(0)); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a327 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t7 = (Text_Eq (m9a327, ((m9_sl_CHAR){ (uint32_t *) m9s371, 5 }), err)); } } m9t7; }))); } m9t8; });
+    { __typeof__(listCtx) m9v = ({ bool m9t8 = ((hasProp && Text_EqUtf (activeProp, ((m9_sl_UTF8){ (uint8_t *) m9s442, 5 }), err))); if (!m9t8) { m9t8 = ((({ bool m9t7 = (k >= INT64_C(0)); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container) m9a358 = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t7 = (Text_EqUtf (m9a358, ((m9_sl_UTF8){ (uint8_t *) m9s443, 5 }), err)); } } m9t7; }))); } m9t8; });
       if (err->exc) goto L_hdl_m9t1;
       listCtx = m9v;
     }
@@ -9908,7 +10045,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         bool m9t10 = (listCtx && ((Rdf_IsArr (x, err) || Rdf_IsListObj (x, err))));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t10) {
-          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s372, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s444, 13 }), ((m9_sl_UTF8){ NULL, 0 }), err);
           if (err->exc) goto L_hdl_m9t1;
         }
         bool m9t11 = Rdf_IsArr (x, err);
@@ -9919,9 +10056,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           m9t12to = m9_sub_i64 (Rdf_Items (x, err), INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
           if (j <= m9t12to) for (;;) {
-            { __typeof__(Json_Item (x, j, err)) m9a328 = Json_Item (x, j, err);
+            { __typeof__(Json_Item (x, j, err)) m9a359 = Json_Item (x, j, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(item) m9v = Json_CloneIn (pool, m9a328, err);
+            { __typeof__(item) m9v = Json_CloneIn (pool, m9a359, err);
               if (err->exc) goto L_hdl_m9t1;
               item = m9v;
             }
@@ -9944,12 +10081,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
     m9ret = result;
     goto L_ret;
   }
-  bool m9t13 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s373, 8 }), err);
+  bool m9t13 = Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s445, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t13) {
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s374, 8 }), err)) m9a329 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s374, 8 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s446, 8 }), err)) m9a360 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s446, 8 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(c) m9v = Rdf_ProcessContext (pool, st, st_pool, &(c), m9a329, err);
+    { __typeof__(c) m9v = Rdf_ProcessContext (pool, st, st_pool, &(c), m9a360, err);
       if (err->exc) goto L_hdl_m9t1;
       c = m9v;
     }
@@ -9959,7 +10096,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
     if (err->exc) goto L_hdl_m9t1;
     result = m9v;
   }
-  { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(1), err);
+  { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     df.terms = m9v;
   }
@@ -9977,7 +10114,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
   m9t14to = m9_sub_i64 ((names).len, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   if (i <= m9t14to) for (;;) {
-    { __typeof__(key) m9v = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__(key) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_hdl_m9t1;
       key = m9v;
     }
@@ -9985,7 +10122,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
       if (err->exc) goto L_hdl_m9t1;
       value = m9v;
     }
-    bool m9t15 = Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s375, 8 }), err);
+    bool m9t15 = Text_EqUtf (key, ((m9_sl_UTF8){ (uint8_t *) m9s447, 8 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t15) {
     } else {
@@ -9993,64 +10130,64 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         if (err->exc) goto L_hdl_m9t1;
         prop = m9v;
       }
-      bool m9t16 = ((nul || ((prop).len == INT64_C(0))) || (!(((Text_FindChar (prop, 58u, err) >= INT64_C(0)) || Rdf_IsKeyword (prop, err)))));
+      bool m9t16 = ((nul || (Text_BLen (prop, err) == INT64_C(0))) || (!(((Text_FindCharUtf (prop, 58u, err) >= INT64_C(0)) || Rdf_IsKeyword (prop, err)))));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t16) {
       } else {
         bool m9t17 = Rdf_IsKeyword (prop, err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t17) {
-          bool m9t18 = (hasProp && Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s376, 8 }), err));
+          bool m9t18 = (hasProp && Text_EqUtf (activeProp, ((m9_sl_UTF8){ (uint8_t *) m9s448, 8 }), err));
           if (err->exc) goto L_hdl_m9t1;
           if (m9t18) {
-            Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s377, 28 }), (m9_sl_CHAR){ NULL, 0 }, err);
+            Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s449, 28 }), ((m9_sl_UTF8){ NULL, 0 }), err);
             if (err->exc) goto L_hdl_m9t1;
           }
           bool m9t19 = Rdf_Has (result, prop, err);
           if (err->exc) goto L_hdl_m9t1;
           if (m9t19) {
-            Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s378, 18 }), prop, err);
+            Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s450, 18 }), prop, err);
             if (err->exc) goto L_hdl_m9t1;
           }
-          bool m9t20 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s379, 3 }), err);
+          bool m9t20 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s451, 3 }), err);
           if (err->exc) goto L_hdl_m9t1;
           if (m9t20) {
             bool m9t21 = (!Rdf_IsStr (value, err));
             if (err->exc) goto L_hdl_m9t1;
             if (m9t21) {
-              Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s380, 17 }), (m9_sl_CHAR){ NULL, 0 }, err);
+              Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s452, 17 }), ((m9_sl_UTF8){ NULL, 0 }), err);
               if (err->exc) goto L_hdl_m9t1;
             }
-            { __typeof__(Rdf_JStr (value, err)) m9a330 = Rdf_JStr (value, err);
+            { __typeof__(Rdf_JStr (value, err)) m9a361 = Rdf_JStr (value, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a330, true, false, NULL, &(df), err->res, &(nul), err)) m9a331 = Rdf_ExpandIri (pool, &(c), err->res, m9a330, true, false, NULL, &(df), err->res, &(nul), err);
+            { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a361, true, false, NULL, &(df), err->res, &(nul), err)) m9a362 = Rdf_ExpandIri (pool, &(c), err->res, m9a361, true, false, NULL, &(df), err->res, &(nul), err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(s) m9v = Json_NewStrIn (pool, m9a331, err);
+            { __typeof__(s) m9v = Json_NewStrIn (pool, m9a362, err);
               if (err->exc) goto L_hdl_m9t1;
               s = m9v;
             }
             }
             }
-            Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s381, 3 }), &(s), &((*pool)), err);
+            Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s453, 3 }), &(s), &((*pool)), err);
             if (err->exc) goto L_hdl_m9t1;
           } else {
-            bool m9t22 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s382, 5 }), err);
+            bool m9t22 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s454, 5 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t22) {
               bool m9t23 = Rdf_IsStr (value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (m9t23) {
-                { __typeof__(Rdf_JStr (value, err)) m9a332 = Rdf_JStr (value, err);
+                { __typeof__(Rdf_JStr (value, err)) m9a363 = Rdf_JStr (value, err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a332, true, true, NULL, &(df), err->res, &(nul), err)) m9a333 = Rdf_ExpandIri (pool, &(c), err->res, m9a332, true, true, NULL, &(df), err->res, &(nul), err);
+                { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a363, true, true, NULL, &(df), err->res, &(nul), err)) m9a364 = Rdf_ExpandIri (pool, &(c), err->res, m9a363, true, true, NULL, &(df), err->res, &(nul), err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(s) m9v = Json_NewStrIn (pool, m9a333, err);
+                { __typeof__(s) m9v = Json_NewStrIn (pool, m9a364, err);
                   if (err->exc) goto L_hdl_m9t1;
                   s = m9v;
                 }
                 }
                 }
-                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s383, 5 }), &(s), &((*pool)), err);
+                Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s455, 5 }), &(s), &((*pool)), err);
                 if (err->exc) goto L_hdl_m9t1;
               } else {
                 bool m9t24 = Rdf_IsArr (value, err);
@@ -10065,21 +10202,21 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   m9t25to = m9_sub_i64 (Rdf_Items (value, err), INT64_C(1), err);
                   if (err->exc) goto L_hdl_m9t1;
                   if (j <= m9t25to) for (;;) {
-                    { __typeof__(Json_Item (value, j, err)) m9a334 = Json_Item (value, j, err);
+                    { __typeof__(Json_Item (value, j, err)) m9a365 = Json_Item (value, j, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    bool m9t26 = (!Rdf_IsStr (m9a334, err));
+                    bool m9t26 = (!Rdf_IsStr (m9a365, err));
                     if (err->exc) goto L_hdl_m9t1;
                     if (m9t26) {
-                      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s384, 18 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s456, 18 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                       if (err->exc) goto L_hdl_m9t1;
                     } }
-                    { __typeof__(Json_Item (value, j, err)) m9a335 = Json_Item (value, j, err);
+                    { __typeof__(Json_Item (value, j, err)) m9a366 = Json_Item (value, j, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_JStr (m9a335, err)) m9a336 = Rdf_JStr (m9a335, err);
+                    { __typeof__(Rdf_JStr (m9a366, err)) m9a367 = Rdf_JStr (m9a366, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a336, true, true, NULL, &(df), err->res, &(nul), err)) m9a337 = Rdf_ExpandIri (pool, &(c), err->res, m9a336, true, true, NULL, &(df), err->res, &(nul), err);
+                    { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a367, true, true, NULL, &(df), err->res, &(nul), err)) m9a368 = Rdf_ExpandIri (pool, &(c), err->res, m9a367, true, true, NULL, &(df), err->res, &(nul), err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a337, err);
+                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a368, err);
                       if (err->exc) goto L_hdl_m9t1;
                       s = m9v;
                     }
@@ -10091,84 +10228,84 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                     if ((uint64_t) m9t25to - (uint64_t) j < (uint64_t) 1) break;
                     j += 1;
                   } }
-                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s385, 5 }), &(arr), &((*pool)), err);
+                  Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s457, 5 }), &(arr), &((*pool)), err);
                   if (err->exc) goto L_hdl_m9t1;
               } else {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s386, 18 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s458, 18 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                 if (err->exc) goto L_hdl_m9t1;
               } }
           } else {
-            bool m9t27 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s387, 6 }), err);
+            bool m9t27 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s459, 6 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t27) {
-              { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), ((m9_sl_CHAR){ (uint32_t *) m9s388, 6 }), true, value, err);
+              { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), ((m9_sl_UTF8){ (uint8_t *) m9s460, 6 }), true, value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (x != NULL) {
                 { __typeof__(ev) m9v = Rdf_Arrayified (pool, x, err);
                   if (err->exc) goto L_hdl_m9t1;
                   ev = m9v;
                 }
-                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s389, 6 }), &(ev), &((*pool)), err);
+                Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s461, 6 }), &(ev), &((*pool)), err);
                 if (err->exc) goto L_hdl_m9t1;
               } else {
                 { __typeof__(ev) m9v = Json_NewArrIn (pool, err);
                   if (err->exc) goto L_hdl_m9t1;
                   ev = m9v;
                 }
-                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s390, 6 }), &(ev), &((*pool)), err);
+                Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s462, 6 }), &(ev), &((*pool)), err);
                 if (err->exc) goto L_hdl_m9t1;
               } }
           } else {
-            bool m9t28 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s391, 6 }), err);
+            bool m9t28 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s463, 6 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t28) {
               bool m9t29 = (!((Rdf_IsScalar (value, err) || Json_IsNull (value, err))));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t29) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s392, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s464, 26 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              Rdf_SetKey (pool, &(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s393, 6 }), value, err);
+              Rdf_SetKey (pool, &(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s465, 6 }), value, err);
               if (err->exc) goto L_hdl_m9t1;
           } else {
-            bool m9t30 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s394, 9 }), err);
+            bool m9t30 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s466, 9 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t30) {
               bool m9t31 = (!Rdf_IsStr (value, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t31) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s395, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s467, 30 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              { __typeof__(Rdf_JStr (value, err)) m9a338 = Rdf_JStr (value, err);
+              { __typeof__(Rdf_JStr (value, err)) m9a369 = Rdf_JStr (value, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Text_Lower (m9a338, err)) m9a339 = Text_Lower (m9a338, err);
+              { __typeof__(Text_LowerUtf (m9a369, err)) m9a370 = Text_LowerUtf (m9a369, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a339, err);
+              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a370, err);
                 if (err->exc) goto L_hdl_m9t1;
                 s = m9v;
               }
               }
               }
-              Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s396, 9 }), &(s), &((*pool)), err);
+              Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s468, 9 }), &(s), &((*pool)), err);
               if (err->exc) goto L_hdl_m9t1;
           } else {
-            bool m9t32 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s397, 6 }), err);
+            bool m9t32 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s469, 6 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t32) {
               bool m9t33 = (!Rdf_IsStr (value, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t33) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s398, 20 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s470, 20 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              Rdf_SetKey (pool, &(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s399, 6 }), value, err);
+              Rdf_SetKey (pool, &(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s471, 6 }), value, err);
               if (err->exc) goto L_hdl_m9t1;
           } else {
-            bool m9t34 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s400, 5 }), err);
+            bool m9t34 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s472, 5 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t34) {
-              bool m9t35 = (hasProp && (!Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s401, 6 }), err)));
+              bool m9t35 = (hasProp && (!Text_EqUtf (activeProp, ((m9_sl_UTF8){ (uint8_t *) m9s473, 6 }), err)));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t35) {
                 { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), activeProp, hasProp, value, err);
@@ -10177,7 +10314,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   bool m9t36 = Rdf_IsListObj (x, err);
                   if (err->exc) goto L_hdl_m9t1;
                   if (m9t36) {
-                    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s402, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                    Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s474, 13 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                     if (err->exc) goto L_hdl_m9t1;
                   }
                   bool m9t37 = Rdf_IsArr (x, err);
@@ -10188,12 +10325,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                     m9t38to = m9_sub_i64 (Rdf_Items (x, err), INT64_C(1), err);
                     if (err->exc) goto L_hdl_m9t1;
                     if (j <= m9t38to) for (;;) {
-                      { __typeof__(Json_Item (x, j, err)) m9a340 = Json_Item (x, j, err);
+                      { __typeof__(Json_Item (x, j, err)) m9a371 = Json_Item (x, j, err);
                         if (err->exc) goto L_hdl_m9t1;
-                      bool m9t39 = Rdf_IsListObj (m9a340, err);
+                      bool m9t39 = Rdf_IsListObj (m9a371, err);
                       if (err->exc) goto L_hdl_m9t1;
                       if (m9t39) {
-                        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s403, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s475, 13 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                         if (err->exc) goto L_hdl_m9t1;
                       } }
                       if ((uint64_t) m9t38to - (uint64_t) j < (uint64_t) 1) break;
@@ -10204,45 +10341,45 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                     if (err->exc) goto L_hdl_m9t1;
                     ev = m9v;
                   }
-                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s404, 5 }), &(ev), &((*pool)), err);
+                  Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s476, 5 }), &(ev), &((*pool)), err);
                   if (err->exc) goto L_hdl_m9t1;
                 } else {
                   { __typeof__(ev) m9v = Json_NewArrIn (pool, err);
                     if (err->exc) goto L_hdl_m9t1;
                     ev = m9v;
                   }
-                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s405, 5 }), &(ev), &((*pool)), err);
+                  Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s477, 5 }), &(ev), &((*pool)), err);
                   if (err->exc) goto L_hdl_m9t1;
                 } }
               }
           } else {
-            bool m9t40 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s406, 4 }), err);
+            bool m9t40 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s478, 4 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t40) {
               { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), activeProp, hasProp, value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (x != NULL) {
                 ev = x;
-                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s407, 4 }), &(ev), &((*pool)), err);
+                Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s479, 4 }), &(ev), &((*pool)), err);
                 if (err->exc) goto L_hdl_m9t1;
               } }
           } else {
-            bool m9t41 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s408, 8 }), err);
+            bool m9t41 = Text_EqUtf (prop, ((m9_sl_UTF8){ (uint8_t *) m9s480, 8 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t41) {
               bool m9t42 = (!Rdf_IsObj (value, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t42) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s409, 22 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s481, 22 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), ((m9_sl_CHAR){ (uint32_t *) m9s410, 8 }), true, value, err);
+              { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), ((m9_sl_UTF8){ (uint8_t *) m9s482, 8 }), true, value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (x != NULL) {
-                bool m9t43 = Rdf_Has (x, ((m9_sl_CHAR){ (uint32_t *) m9s411, 8 }), err);
+                bool m9t43 = Rdf_Has (x, ((m9_sl_UTF8){ (uint8_t *) m9s483, 8 }), err);
                 if (err->exc) goto L_hdl_m9t1;
                 if (m9t43) {
-                  { __typeof__(inner) m9v = Rdf_JGet (x, ((m9_sl_CHAR){ (uint32_t *) m9s412, 8 }), err);
+                  { __typeof__(inner) m9v = Rdf_JGet (x, ((m9_sl_UTF8){ (uint8_t *) m9s484, 8 }), err);
                     if (err->exc) goto L_hdl_m9t1;
                     inner = m9v;
                   }
@@ -10255,13 +10392,13 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   m9t44to = m9_sub_i64 ((inames).len, INT64_C(1), err);
                   if (err->exc) goto L_hdl_m9t1;
                   if (j <= m9t44to) for (;;) {
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a341 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a372 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a342 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a373 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_JGet (inner, m9a342, err)) m9a343 = Rdf_JGet (inner, m9a342, err);
+                    { __typeof__(Rdf_JGet (inner, m9a373, err)) m9a374 = Rdf_JGet (inner, m9a373, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    Rdf_AddTo (pool, &(result), &((*pool)), m9a341, m9a343, err);
+                    Rdf_AddTo (pool, &(result), &((*pool)), m9a372, m9a374, err);
                     if (err->exc) goto L_hdl_m9t1;
                     }
                     }
@@ -10279,12 +10416,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 m9t45to = m9_sub_i64 ((inames).len, INT64_C(1), err);
                 if (err->exc) goto L_hdl_m9t1;
                 if (j <= m9t45to) for (;;) {
-                  { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a344 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                  { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a375 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                     if (err->exc) goto L_hdl_m9t1;
-                  bool m9t46 = (!Text_Eq (m9a344, ((m9_sl_CHAR){ (uint32_t *) m9s413, 8 }), err));
+                  bool m9t46 = (!Text_EqUtf (m9a375, ((m9_sl_UTF8){ (uint8_t *) m9s485, 8 }), err));
                   if (err->exc) goto L_hdl_m9t1;
                   if (m9t46) {
-                    { Json_Node * rm = Json_Field (result, ((m9_sl_CHAR){ (uint32_t *) m9s414, 8 }), err);
+                    { Json_Node * rm = Json_Field (result, ((m9_sl_UTF8){ (uint8_t *) m9s486, 8 }), err);
                     if (err->exc) goto L_hdl_m9t1;
                     if (rm != NULL) {
                       rev = rm;
@@ -10293,12 +10430,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                         if (err->exc) goto L_hdl_m9t1;
                         rev = m9v;
                       }
-                      Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s415, 8 }), &(rev), &((*pool)), err);
+                      Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s487, 8 }), &(rev), &((*pool)), err);
                       if (err->exc) goto L_hdl_m9t1;
                     } }
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a345 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a376 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(ev) m9v = Rdf_JGet (x, m9a345, err);
+                    { __typeof__(ev) m9v = Rdf_JGet (x, m9a376, err);
                       if (err->exc) goto L_hdl_m9t1;
                       ev = m9v;
                     }
@@ -10315,12 +10452,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                       bool m9t48 = (Rdf_IsValueObj (item, err) || Rdf_IsListObj (item, err));
                       if (err->exc) goto L_hdl_m9t1;
                       if (m9t48) {
-                        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s416, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s488, 30 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                         if (err->exc) goto L_hdl_m9t1;
                       }
-                      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a346 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                      { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a377 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                         if (err->exc) goto L_hdl_m9t1;
-                      Rdf_AddTo (pool, &(rev), &((*pool)), m9a346, item, err);
+                      Rdf_AddTo (pool, &(rev), &((*pool)), m9a377, item, err);
                       if (err->exc) goto L_hdl_m9t1;
                       }
                       if ((uint64_t) m9t47to - (uint64_t) k < (uint64_t) 1) break;
@@ -10338,14 +10475,14 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           if (err->exc) goto L_hdl_m9t1;
           k = m9v;
         }
-        cont = (m9_sl_CHAR){ NULL, 0 };
+        cont = ((m9_sl_UTF8){ NULL, 0 });
         if ((k >= INT64_C(0))) {
           { __typeof__(cont) m9v = (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container;
             if (err->exc) goto L_hdl_m9t1;
             cont = m9v;
           }
         }
-        bool m9t49 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s417, 9 }), err) && Rdf_IsObj (value, err));
+        bool m9t49 = (Text_EqUtf (cont, ((m9_sl_UTF8){ (uint8_t *) m9s489, 9 }), err) && Rdf_IsObj (value, err));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t49) {
           { __typeof__(ev) m9v = Json_NewArrIn (pool, err);
@@ -10361,11 +10498,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           m9t50to = m9_sub_i64 ((inames).len, INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
           if (j <= m9t50to) for (;;) {
-            { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a347 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a378 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Rdf_JGet (value, m9a347, err)) m9a348 = Rdf_JGet (value, m9a347, err);
+            { __typeof__(Rdf_JGet (value, m9a378, err)) m9a379 = Rdf_JGet (value, m9a378, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a348, err);
+            { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a379, err);
               if (err->exc) goto L_hdl_m9t1;
               arr = m9v;
             }
@@ -10383,26 +10520,26 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               bool m9t52 = (!Rdf_IsStr (item, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t52) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s418, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s490, 26 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                 if (err->exc) goto L_hdl_m9t1;
               }
               { __typeof__(langObj) m9v = Json_NewObjIn (pool, err);
                 if (err->exc) goto L_hdl_m9t1;
                 langObj = m9v;
               }
-              Rdf_SetKey (pool, &(langObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s419, 6 }), item, err);
+              Rdf_SetKey (pool, &(langObj), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s491, 6 }), item, err);
               if (err->exc) goto L_hdl_m9t1;
-              { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a349 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+              { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a380 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Text_Lower (m9a349, err)) m9a350 = Text_Lower (m9a349, err);
+              { __typeof__(Text_LowerUtf (m9a380, err)) m9a381 = Text_LowerUtf (m9a380, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a350, err);
+              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a381, err);
                 if (err->exc) goto L_hdl_m9t1;
                 s = m9v;
               }
               }
               }
-              Json_Set (&(langObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s420, 9 }), &(s), &((*pool)), err);
+              Json_Set (&(langObj), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s492, 9 }), &(s), &((*pool)), err);
               if (err->exc) goto L_hdl_m9t1;
               Json_Add (&(ev), &((*pool)), &(langObj), &((*pool)), err);
               if (err->exc) goto L_hdl_m9t1;
@@ -10413,7 +10550,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
             j += 1;
           } }
         } else {
-          bool m9t53 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s421, 6 }), err) && Rdf_IsObj (value, err));
+          bool m9t53 = (Text_EqUtf (cont, ((m9_sl_UTF8){ (uint8_t *) m9s493, 6 }), err) && Rdf_IsObj (value, err));
           if (err->exc) goto L_hdl_m9t1;
           if (m9t53) {
             { __typeof__(ev) m9v = Json_NewArrIn (pool, err);
@@ -10429,7 +10566,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
             m9t54to = m9_sub_i64 ((inames).len, INT64_C(1), err);
             if (err->exc) goto L_hdl_m9t1;
             if (j <= m9t54to) for (;;) {
-              { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), key, true, Rdf_Arrayified (pool, Rdf_JGet (value, (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err)), err), err), err);
+              { Json_Node * x = Rdf_Expand (pool, st, st_pool, &(c), key, true, Rdf_Arrayified (pool, Rdf_JGet (value, (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err)), err), err), err);
               if (err->exc) goto L_hdl_m9t1;
               if (x != NULL) {
                 { __typeof__(arr) m9v = Rdf_Arrayified (pool, x, err);
@@ -10441,24 +10578,24 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 m9t55to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
                 if (err->exc) goto L_hdl_m9t1;
                 if (n <= m9t55to) for (;;) {
-                  { __typeof__(Json_Item (arr, n, err)) m9a351 = Json_Item (arr, n, err);
+                  { __typeof__(Json_Item (arr, n, err)) m9a382 = Json_Item (arr, n, err);
                     if (err->exc) goto L_hdl_m9t1;
-                  { __typeof__(item) m9v = Json_CloneIn (pool, m9a351, err);
+                  { __typeof__(item) m9v = Json_CloneIn (pool, m9a382, err);
                     if (err->exc) goto L_hdl_m9t1;
                     item = m9v;
                   }
                   }
-                  bool m9t56 = (!Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s422, 6 }), err));
+                  bool m9t56 = (!Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s494, 6 }), err));
                   if (err->exc) goto L_hdl_m9t1;
                   if (m9t56) {
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a352 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err))) m9a383 = (*(m9_sl_UTF8 *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_UTF8), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a352, err);
+                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a383, err);
                       if (err->exc) goto L_hdl_m9t1;
                       s = m9v;
                     }
                     }
-                    Json_Set (&(item), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s423, 6 }), &(s), &((*pool)), err);
+                    Json_Set (&(item), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s495, 6 }), &(s), &((*pool)), err);
                     if (err->exc) goto L_hdl_m9t1;
                   }
                   Json_Add (&(ev), &((*pool)), &(item), &((*pool)), err);
@@ -10486,7 +10623,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         if (err->exc) goto L_hdl_m9t1;
         if (m9t57) {
         } else {
-          bool m9t58 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s424, 5 }), err) && (!Rdf_IsListObj (ev, err)));
+          bool m9t58 = (Text_EqUtf (cont, ((m9_sl_UTF8){ (uint8_t *) m9s496, 5 }), err) && (!Rdf_IsListObj (ev, err)));
           if (err->exc) goto L_hdl_m9t1;
           if (m9t58) {
             { __typeof__(arr) m9v = Rdf_Arrayified (pool, ev, err);
@@ -10497,13 +10634,13 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               if (err->exc) goto L_hdl_m9t1;
               ev = m9v;
             }
-            Json_Set (&(ev), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s425, 5 }), &(arr), &((*pool)), err);
+            Json_Set (&(ev), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s497, 5 }), &(arr), &((*pool)), err);
             if (err->exc) goto L_hdl_m9t1;
           }
           bool m9t59 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).reverse);
           if (err->exc) goto L_hdl_m9t1;
           if (m9t59) {
-            { Json_Node * rm = Json_Field (result, ((m9_sl_CHAR){ (uint32_t *) m9s426, 8 }), err);
+            { Json_Node * rm = Json_Field (result, ((m9_sl_UTF8){ (uint8_t *) m9s498, 8 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (rm != NULL) {
               rev = rm;
@@ -10512,7 +10649,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 if (err->exc) goto L_hdl_m9t1;
                 rev = m9v;
               }
-              Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s427, 8 }), &(rev), &((*pool)), err);
+              Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s499, 8 }), &(rev), &((*pool)), err);
               if (err->exc) goto L_hdl_m9t1;
             } }
             { __typeof__(arr) m9v = Rdf_Arrayified (pool, ev, err);
@@ -10531,7 +10668,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               bool m9t61 = (Rdf_IsValueObj (item, err) || Rdf_IsListObj (item, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t61) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s428, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s500, 30 }), ((m9_sl_UTF8){ NULL, 0 }), err);
                 if (err->exc) goto L_hdl_m9t1;
               }
               Rdf_AddTo (pool, &(rev), &((*pool)), prop, item, err);
@@ -10549,7 +10686,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
     if ((uint64_t) m9t14to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  bool m9t62 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s429, 6 }), err);
+  bool m9t62 = Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s501, 6 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t62) {
     { __typeof__(n) m9v = Rdf_Members (result, err);
@@ -10565,119 +10702,119 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         if (err->exc) goto L_hdl_m9t1;
         key = m9v;
       }
-      bool m9t64 = (!((((Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s430, 6 }), err) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s431, 9 }), err)) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s432, 5 }), err)) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s433, 6 }), err))));
+      bool m9t64 = (!((((Text_EqUtf (key, ((m9_sl_UTF8){ (uint8_t *) m9s502, 6 }), err) || Text_EqUtf (key, ((m9_sl_UTF8){ (uint8_t *) m9s503, 9 }), err)) || Text_EqUtf (key, ((m9_sl_UTF8){ (uint8_t *) m9s504, 5 }), err)) || Text_EqUtf (key, ((m9_sl_UTF8){ (uint8_t *) m9s505, 6 }), err))));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t64) {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s434, 20 }), key, err);
+        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s506, 20 }), key, err);
         if (err->exc) goto L_hdl_m9t1;
       }
       if ((uint64_t) m9t63to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
-    bool m9t65 = (Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s435, 9 }), err) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s436, 5 }), err));
+    bool m9t65 = (Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s507, 9 }), err) && Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s508, 5 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t65) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s437, 20 }), (m9_sl_CHAR){ NULL, 0 }, err);
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s509, 20 }), ((m9_sl_UTF8){ NULL, 0 }), err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s438, 6 }), err)) m9a353 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s438, 6 }), err);
+    { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s510, 6 }), err)) m9a384 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s510, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    bool m9t66 = Json_IsNull (m9a353, err);
+    bool m9t66 = Json_IsNull (m9a384, err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t66) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     } }
-    { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s439, 6 }), err)) m9a354 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s439, 6 }), err);
+    { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s511, 6 }), err)) m9a385 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s511, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    bool m9t67 = ((!Rdf_IsStr (m9a354, err)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s440, 9 }), err));
+    bool m9t67 = ((!Rdf_IsStr (m9a385, err)) && Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s512, 9 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t67) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s441, 29 }), (m9_sl_CHAR){ NULL, 0 }, err);
+      Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s513, 29 }), ((m9_sl_UTF8){ NULL, 0 }), err);
       if (err->exc) goto L_hdl_m9t1;
     } }
-    bool m9t68 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s442, 5 }), err);
+    bool m9t68 = Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s514, 5 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t68) {
-      { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s443, 5 }), err)) m9a355 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s443, 5 }), err);
+      { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s515, 5 }), err)) m9a386 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s515, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      bool m9t70 = ({ bool m9t69 = (!Rdf_IsStr (m9a355, err)); if (!m9t69) { { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s444, 5 }), err)) m9a356 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s444, 5 }), err);   if (err->exc) goto L_hdl_m9t1; { __typeof__(Rdf_JStr (m9a356, err)) m9a357 = Rdf_JStr (m9a356, err);   if (err->exc) goto L_hdl_m9t1; m9t69 = ((!Rdf_IsAbsolute (m9a357, err))); } } } m9t69; });
+      bool m9t70 = ({ bool m9t69 = (!Rdf_IsStr (m9a386, err)); if (!m9t69) { { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s516, 5 }), err)) m9a387 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s516, 5 }), err);   if (err->exc) goto L_hdl_m9t1; { __typeof__(Rdf_JStr (m9a387, err)) m9a388 = Rdf_JStr (m9a387, err);   if (err->exc) goto L_hdl_m9t1; m9t69 = ((!Rdf_IsAbsolute (m9a388, err))); } } } m9t69; });
       if (err->exc) goto L_hdl_m9t1;
       if (m9t70) {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s445, 19 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s517, 19 }), ((m9_sl_UTF8){ NULL, 0 }), err);
         if (err->exc) goto L_hdl_m9t1;
       } }
     }
   } else {
-    bool m9t72 = ({ bool m9t71 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s446, 5 }), err); if (m9t71) { { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s447, 5 }), err)) m9a358 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s447, 5 }), err);   if (err->exc) goto L_hdl_m9t1; m9t71 = ((!Rdf_IsArr (m9a358, err))); } } m9t71; });
+    bool m9t72 = ({ bool m9t71 = Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s518, 5 }), err); if (m9t71) { { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s519, 5 }), err)) m9a389 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s519, 5 }), err);   if (err->exc) goto L_hdl_m9t1; m9t71 = ((!Rdf_IsArr (m9a389, err))); } } m9t71; });
     if (err->exc) goto L_hdl_m9t1;
     if (m9t72) {
-      { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 5 }), err)) m9a359 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 5 }), err);
+      { __typeof__(Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s520, 5 }), err)) m9a390 = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s520, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a359, err);
+      { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a390, err);
         if (err->exc) goto L_hdl_m9t1;
         arr = m9v;
       }
       }
-      Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s449, 5 }), &(arr), &((*pool)), err);
+      Json_Set (&(result), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s521, 5 }), &(arr), &((*pool)), err);
       if (err->exc) goto L_hdl_m9t1;
   } else {
-    bool m9t73 = (Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s450, 4 }), err) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s451, 5 }), err));
+    bool m9t73 = (Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s522, 4 }), err) || Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s523, 5 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t73) {
       { __typeof__(n) m9v = Rdf_Members (result, err);
         if (err->exc) goto L_hdl_m9t1;
         n = m9v;
       }
-      bool m9t74 = ((n > INT64_C(2)) || (((n == INT64_C(2)) && (!Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s452, 6 }), err)))));
+      bool m9t74 = ((n > INT64_C(2)) || (((n == INT64_C(2)) && (!Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s524, 6 }), err)))));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t74) {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s453, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        Rdf_JFail (((m9_sl_UTF8){ (uint8_t *) m9s525, 26 }), ((m9_sl_UTF8){ NULL, 0 }), err);
         if (err->exc) goto L_hdl_m9t1;
       }
-      bool m9t75 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s454, 4 }), err);
+      bool m9t75 = Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s526, 4 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t75) {
         err->res = m9res;
-        m9ret = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s455, 4 }), err);
+        m9ret = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s527, 4 }), err);
         if (err->exc) goto L_hdl_m9t1;
         goto L_ret;
       }
   } } }
-  bool m9t76 = ((Rdf_Members (result, err) == INT64_C(1)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s456, 9 }), err));
+  bool m9t76 = ((Rdf_Members (result, err) == INT64_C(1)) && Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s528, 9 }), err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t76) {
     err->res = m9res;
     m9ret = NULL;
     goto L_ret;
   }
-  bool m9t77 = ((!hasProp) || Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s457, 6 }), err));
+  bool m9t77 = ((!hasProp) || Text_EqUtf (activeProp, ((m9_sl_UTF8){ (uint8_t *) m9s529, 6 }), err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t77) {
     { __typeof__(n) m9v = Rdf_Members (result, err);
       if (err->exc) goto L_hdl_m9t1;
       n = m9v;
     }
-    bool m9t78 = (((n == INT64_C(0)) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s458, 6 }), err)) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s459, 5 }), err));
+    bool m9t78 = (((n == INT64_C(0)) || Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s530, 6 }), err)) || Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s531, 5 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t78) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     }
-    bool m9t79 = ((n == INT64_C(1)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s460, 3 }), err));
+    bool m9t79 = ((n == INT64_C(1)) && Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s532, 3 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t79) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     }
-    bool m9t80 = (((!hasProp) && (n == INT64_C(1))) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s461, 6 }), err));
+    bool m9t80 = (((!hasProp) && (n == INT64_C(1))) && Rdf_Has (result, ((m9_sl_UTF8){ (uint8_t *) m9s533, 6 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t80) {
       err->res = m9res;
-      m9ret = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s462, 6 }), err);
+      m9ret = Rdf_JGet (result, ((m9_sl_UTF8){ (uint8_t *) m9s534, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
       goto L_ret;
     }
@@ -10688,9 +10825,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s463, 16 })) m9t81 = ((m9_sl_CHAR){ (uint32_t *) m9s463, 16 }); err->s[0].p = m9t81.p; err->s[0].len = m9t81.len; m9_pay_keep (err, 0, sizeof (*m9t81.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s535, 16 })) m9t81 = ((m9_sl_UTF8){ (uint8_t *) m9s535, 16 }); err->s[0].p = m9t81.p; err->s[0].len = m9t81.len; m9_pay_keep (err, 0, sizeof (*m9t81.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -10699,7 +10836,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s464, 16 })) m9t82 = ((m9_sl_CHAR){ (uint32_t *) m9s464, 16 }); err->s[0].p = m9t82.p; err->s[0].len = m9t82.len; m9_pay_keep (err, 0, sizeof (*m9t82.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s536, 16 })) m9t82 = ((m9_sl_UTF8){ (uint8_t *) m9s536, 16 }); err->s[0].p = m9t82.p; err->s[0].len = m9t82.len; m9_pay_keep (err, 0, sizeof (*m9t82.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -10722,23 +10859,23 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_BlankFor (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, m9_sl_CHAR id, m9_state *err)
+static m9_sl_UTF8 Rdf_BlankFor (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, m9_sl_UTF8 id, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
-  { __typeof__(({ __auto_type m9t1 = id; int64_t m9t1a = INT64_C(2), m9t1n = m9_sub_i64 ((id).len, INT64_C(2), err); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a360 = ({ __auto_type m9t1 = id; int64_t m9t1a = INT64_C(2), m9t1n = m9_sub_i64 ((id).len, INT64_C(2), err); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
+  { __typeof__(m9_utf_slice (id, INT64_C(2), m9_sub_i64 (Text_BLen (id, err), INT64_C(2), err), err)) m9a391 = m9_utf_slice (id, INT64_C(2), m9_sub_i64 (Text_BLen (id, err), INT64_C(2), err), err);
     if (err->exc) goto L_ret;
-  m9ret = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s465, 2 }), Rdf_Labelled (pool, &((*st).r), st_pool, m9a360, err), err);
+  m9ret = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s537, 2 }), Rdf_Labelled (pool, &((*st).r), st_pool, m9a391, err), err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, st_pool, (*st).r.src.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.base.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.pfx.p);
@@ -10750,20 +10887,20 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_FreshBlank (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, m9_state *err)
+static m9_sl_UTF8 Rdf_FreshBlank (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
-  m9ret = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s466, 2 }), Rdf_Fresh (pool, &((*st).r), st_pool, err), err);
+  m9ret = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s538, 2 }), Rdf_Fresh (pool, &((*st).r), st_pool, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, st_pool, (*st).r.src.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.base.p);
   m9_adopt_if (&m9frame, st_pool, (*st).r.pfx.p);
@@ -10775,7 +10912,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool, m9_sl_CHAR id, m9_state *err)
+static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool, m9_sl_UTF8 id, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -10785,16 +10922,16 @@ static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool
   int64_t i = 0; (void) i;
   Json_Node * o = NULL; (void) o;
   Json_Node * s = NULL; (void) s;
-  m9_sl_m9_sl_CHAR mi = {0}; (void) mi;
+  m9_sl_m9_sl_UTF8 mi = {0}; (void) mi;
   m9_sl_Json_Nodep mn = {0}; (void) mn;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((*nm).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_CHAR), err))) m9a361 = (*(m9_sl_CHAR *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_UTF8), err))) m9a392 = (*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a361, id, err);
+    bool m9t2 = Text_EqUtf (m9a392, id, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -10806,7 +10943,7 @@ static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool
     i += 1;
   } }
   if (((*nm).n == ((*nm).ids).len)) {
-    { __typeof__(mi) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*nm).ids).len, err), INT64_C(8), err), err);
+    { __typeof__(mi) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*nm).ids).len, err), INT64_C(8), err), err);
       if (err->exc) goto L_ret;
       mi = m9v;
     }
@@ -10819,9 +10956,9 @@ static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool
     m9t3to = m9_sub_i64 ((*nm).n, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t3to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (mi.p, i, mi.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (mi.p, i, mi.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, i, (*nm).ids.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (mi.p, i, mi.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (mi.p, i, mi.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       { __typeof__((*(Json_Node * *) m9_at (mn.p, i, mn.len, sizeof (Json_Node *), err))) m9v = ({ __auto_type m9n = ((*(Json_Node * *) m9_at ((*nm).nodes.p, i, (*nm).nodes.len, sizeof (Json_Node *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
@@ -10843,12 +10980,12 @@ static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool
     if (err->exc) goto L_hdl_m9t4;
     s = m9v;
   }
-  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s467, 3 }), &(s), &((*pool)), err);
+  Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s539, 3 }), &(s), &((*pool)), err);
   if (err->exc) goto L_hdl_m9t4;
   goto L_dn_m9t5;
 L_hdl_m9t4: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     goto L_dn_m9t5;
   }
@@ -10858,9 +10995,9 @@ L_hdl_m9t4: ;
   }
   goto L_ret;
 L_dn_m9t5: ;
-  { __typeof__((*(m9_sl_CHAR *) m9_at ((*nm).ids.p, (*nm).n, (*nm).ids.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, id, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, (*nm).n, (*nm).ids.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, id, err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at ((*nm).ids.p, (*nm).n, (*nm).ids.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at ((*nm).ids.p, (*nm).n, (*nm).ids.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
   (*(Json_Node * *) m9_at ((*nm).nodes.p, (*nm).n, (*nm).nodes.len, sizeof (Json_Node *), err)) = o;
@@ -10889,11 +11026,11 @@ static bool Rdf_SameNode (Json_Node * a, Json_Node * b, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  { __typeof__(Json_CompactSorted (a, err)) m9a362 = Json_CompactSorted (a, err);
+  { __typeof__(Json_CompactSorted (a, err)) m9a393 = Json_CompactSorted (a, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Json_CompactSorted (b, err)) m9a363 = Json_CompactSorted (b, err);
+  { __typeof__(Json_CompactSorted (b, err)) m9a394 = Json_CompactSorted (b, err);
     if (err->exc) goto L_hdl_m9t1;
-  m9ret = Text_Eq (m9a362, m9a363, err);
+  m9ret = Text_EqUtf (m9a393, m9a394, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   }
@@ -10901,7 +11038,7 @@ static bool Rdf_SameNode (Json_Node * a, Json_Node * b, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = false;
@@ -10930,7 +11067,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool, m9_sl_CHAR prop, Json_Node * v, m9_state *err)
+static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool, m9_sl_UTF8 prop, Json_Node * v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -10939,8 +11076,8 @@ static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool,
   Json_Node * a = NULL; (void) a;
   Json_Node * c = NULL; (void) c;
   int64_t i = 0; (void) i;
-  m9_sl_CHAR k = {0}; (void) k;
-  { __typeof__(k) m9v = Text_Keep (pool, prop, err);
+  m9_sl_UTF8 k = {0}; (void) k;
+  { __typeof__(k) m9v = Text_KeepUtf (pool, prop, err);
     if (err->exc) goto L_hdl_m9t1;
     k = m9v;
   }
@@ -10961,9 +11098,9 @@ static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool,
   m9t3to = m9_sub_i64 (Rdf_Items (a, err), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   if (i <= m9t3to) for (;;) {
-    { __typeof__(Json_Item (a, i, err)) m9a364 = Json_Item (a, i, err);
+    { __typeof__(Json_Item (a, i, err)) m9a395 = Json_Item (a, i, err);
       if (err->exc) goto L_hdl_m9t1;
-    bool m9t4 = Rdf_SameNode (m9a364, v, err);
+    bool m9t4 = Rdf_SameNode (m9a395, v, err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
       goto L_ret;
@@ -10980,7 +11117,7 @@ static void Rdf_AddUnique (m9_pool *pool, Json_Node * *node, m9_pool *node_pool,
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     goto L_ret;
     goto L_dn_m9t2;
@@ -10999,7 +11136,7 @@ L_ret: ;
   return;
 }
 
-static Json_Node * Rdf_RefTo (m9_pool *pool, m9_sl_CHAR id, m9_state *err)
+static Json_Node * Rdf_RefTo (m9_pool *pool, m9_sl_UTF8 id, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11016,7 +11153,7 @@ static Json_Node * Rdf_RefTo (m9_pool *pool, m9_sl_CHAR id, m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     s = m9v;
   }
-  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s468, 3 }), &(s), &((*pool)), err);
+  Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s540, 3 }), &(s), &((*pool)), err);
   if (err->exc) goto L_hdl_m9t1;
   err->res = m9res;
   m9ret = o;
@@ -11024,7 +11161,7 @@ static Json_Node * Rdf_RefTo (m9_pool *pool, m9_sl_CHAR id, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = Json_NewObjIn (pool, err);
@@ -11041,7 +11178,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_NodeMap *dflt, m9_pool *dflt_pool, bool inDefault, Json_Node * element, m9_sl_CHAR subject, m9_sl_CHAR prop, bool reverse, Json_Node * list, m9_state *err)
+static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf_NodeMap *dflt, m9_pool *dflt_pool, bool inDefault, Json_Node * element, m9_sl_UTF8 subject, m9_sl_UTF8 prop, bool reverse, Json_Node * list, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11049,9 +11186,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
   err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
-  m9_sl_CHAR id = {0}; (void) id;
-  m9_sl_CHAR s = {0}; (void) s;
-  m9_sl_CHAR k = {0}; (void) k;
+  m9_sl_UTF8 id = {0}; (void) id;
+  m9_sl_UTF8 s = {0}; (void) s;
+  m9_sl_UTF8 k = {0}; (void) k;
   Json_Node * node = NULL; (void) node;
   Json_Node * ref = NULL; (void) ref;
   Json_Node * item = NULL; (void) item;
@@ -11062,8 +11199,8 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
   Json_Node * inner = NULL; (void) inner;
   Json_Node * g = NULL; (void) g;
   Json_Node * lp = NULL; (void) lp;
-  m9_sl_m9_sl_CHAR names = {0}; (void) names;
-  m9_sl_m9_sl_CHAR inames = {0}; (void) inames;
+  m9_sl_m9_sl_UTF8 names = {0}; (void) names;
+  m9_sl_m9_sl_UTF8 inames = {0}; (void) inames;
   bool m9t3 = Rdf_IsArr (element, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
@@ -11072,9 +11209,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     m9t4to = m9_sub_i64 (Rdf_Items (element, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Json_Item (element, i, err)) m9a365 = Json_Item (element, i, err);
+      { __typeof__(Json_Item (element, i, err)) m9a396 = Json_Item (element, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a365, subject, prop, reverse, list, err);
+      Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a396, subject, prop, reverse, list, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
@@ -11087,7 +11224,7 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
   if (m9t5) {
     goto L_ret;
   }
-  bool m9t6 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s469, 6 }), err);
+  bool m9t6 = Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s541, 6 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t6) {
     { Json_Node * l = list;
@@ -11097,10 +11234,12 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         item = m9v;
       }
       lp = l;
-      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s470, 5 }), item, err);
+      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s542, 5 }), item, err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
-      if ((((subject).len > INT64_C(0)) && inDefault)) {
+      bool m9t7 = ((Text_BLen (subject, err) > INT64_C(0)) && inDefault);
+      if (err->exc) goto L_hdl_m9t1;
+      if (m9t7) {
         { __typeof__(node) m9v = Rdf_NodeFor (pool, dflt, dflt_pool, subject, err);
           if (err->exc) goto L_hdl_m9t1;
           node = m9v;
@@ -11111,9 +11250,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     } }
     goto L_ret;
   }
-  bool m9t7 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s471, 5 }), err);
+  bool m9t8 = Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s543, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t7) {
+  if (m9t8) {
     { __typeof__(listObj) m9v = Json_NewObjIn (pool, err);
       if (err->exc) goto L_hdl_m9t1;
       listObj = m9v;
@@ -11122,20 +11261,22 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       if (err->exc) goto L_hdl_m9t1;
       arr = m9v;
     }
-    Json_Set (&(listObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s472, 5 }), &(arr), &((*pool)), err);
+    Json_Set (&(listObj), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s544, 5 }), &(arr), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s473, 5 }), err)) m9a366 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s473, 5 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s545, 5 }), err)) m9a397 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s545, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a366, subject, prop, reverse, listObj, err);
+    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a397, subject, prop, reverse, listObj, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     { Json_Node * l = list;
     if (l != NULL) {
       lp = l;
-      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s474, 5 }), listObj, err);
+      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s546, 5 }), listObj, err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
-      if ((((subject).len > INT64_C(0)) && inDefault)) {
+      bool m9t9 = ((Text_BLen (subject, err) > INT64_C(0)) && inDefault);
+      if (err->exc) goto L_hdl_m9t1;
+      if (m9t9) {
         { __typeof__(node) m9v = Rdf_NodeFor (pool, dflt, dflt_pool, subject, err);
           if (err->exc) goto L_hdl_m9t1;
           node = m9v;
@@ -11146,19 +11287,19 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     } }
     goto L_ret;
   }
-  bool m9t8 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s475, 3 }), err);
+  bool m9t10 = Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s547, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t8) {
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err)) m9a367 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err);
+  if (m9t10) {
+    { __typeof__(Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s548, 3 }), err)) m9a398 = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s548, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(id) m9v = Rdf_JStr (m9a367, err);
+    { __typeof__(id) m9v = Rdf_JStr (m9a398, err);
       if (err->exc) goto L_hdl_m9t1;
       id = m9v;
     }
     }
-    bool m9t9 = Rdf_IsBlankId (id, err);
+    bool m9t11 = Rdf_IsBlankId (id, err);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t9) {
+    if (m9t11) {
       { __typeof__(id) m9v = Rdf_BlankFor (pool, st, st_pool, id, err);
         if (err->exc) goto L_hdl_m9t1;
         id = m9v;
@@ -11176,7 +11317,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       node = m9v;
     }
   }
-  if (((subject).len > INT64_C(0))) {
+  bool m9t12 = (Text_BLen (subject, err) > INT64_C(0));
+  if (err->exc) goto L_hdl_m9t1;
+  if (m9t12) {
     if (reverse) {
       if (inDefault) {
         { __typeof__(ref) m9v = Rdf_RefTo (pool, subject, err);
@@ -11194,7 +11337,7 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       { Json_Node * l = list;
       if (l != NULL) {
         lp = l;
-        Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s477, 5 }), ref, err);
+        Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s549, 5 }), ref, err);
         if (err->exc) goto L_hdl_m9t1;
       } else {
         if (inDefault) {
@@ -11215,35 +11358,35 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         ref = m9v;
       }
       lp = l;
-      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s478, 5 }), ref, err);
+      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s550, 5 }), ref, err);
       if (err->exc) goto L_hdl_m9t1;
     } }
   }
-  bool m9t10 = (Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s479, 5 }), err) && inDefault);
+  bool m9t13 = (Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s551, 5 }), err) && inDefault);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t10) {
-    { __typeof__(types) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s480, 5 }), err);
+  if (m9t13) {
+    { __typeof__(types) m9v = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s552, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
       types = m9v;
     }
-    { __typeof__(i) m9t11to;
+    { __typeof__(i) m9t14to;
     i = INT64_C(0);
-    m9t11to = m9_sub_i64 (Rdf_Items (types, err), INT64_C(1), err);
+    m9t14to = m9_sub_i64 (Rdf_Items (types, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    if (i <= m9t11to) for (;;) {
-      { __typeof__(Json_Item (types, i, err)) m9a368 = Json_Item (types, i, err);
+    if (i <= m9t14to) for (;;) {
+      { __typeof__(Json_Item (types, i, err)) m9a399 = Json_Item (types, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_AddUnique (pool, &(node), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s481, 5 }), m9a368, err);
+      Rdf_AddUnique (pool, &(node), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s553, 5 }), m9a399, err);
       if (err->exc) goto L_hdl_m9t1;
       }
-      if ((uint64_t) m9t11to - (uint64_t) i < (uint64_t) 1) break;
+      if ((uint64_t) m9t14to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   }
-  bool m9t12 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s482, 8 }), err);
+  bool m9t15 = Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s554, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t12) {
-    { __typeof__(inner) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s483, 8 }), err);
+  if (m9t15) {
+    { __typeof__(inner) m9v = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s555, 8 }), err);
       if (err->exc) goto L_hdl_m9t1;
       inner = m9v;
     }
@@ -11251,96 +11394,96 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       if (err->exc) goto L_hdl_m9t1;
       inames = m9v;
     }
-    { __typeof__(i) m9t13to;
+    { __typeof__(i) m9t16to;
     i = INT64_C(0);
-    m9t13to = m9_sub_i64 ((inames).len, INT64_C(1), err);
+    m9t16to = m9_sub_i64 ((inames).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
-    if (i <= m9t13to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a369 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
+    if (i <= m9t16to) for (;;) {
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err))) m9a400 = (*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(arr) m9v = Rdf_JGet (inner, m9a369, err);
+      { __typeof__(arr) m9v = Rdf_JGet (inner, m9a400, err);
         if (err->exc) goto L_hdl_m9t1;
         arr = m9v;
       }
       }
-      { __typeof__(j) m9t14to;
+      { __typeof__(j) m9t17to;
       j = INT64_C(0);
-      m9t14to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
+      m9t17to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      if (j <= m9t14to) for (;;) {
-        { __typeof__(Json_Item (arr, j, err)) m9a370 = Json_Item (arr, j, err);
+      if (j <= m9t17to) for (;;) {
+        { __typeof__(Json_Item (arr, j, err)) m9a401 = Json_Item (arr, j, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a371 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err))) m9a402 = (*(m9_sl_UTF8 *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_UTF8), err));
           if (err->exc) goto L_hdl_m9t1;
-        Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a370, id, m9a371, true, NULL, err);
+        Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a401, id, m9a402, true, NULL, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
-        if ((uint64_t) m9t14to - (uint64_t) j < (uint64_t) 1) break;
+        if ((uint64_t) m9t17to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
-      if ((uint64_t) m9t13to - (uint64_t) i < (uint64_t) 1) break;
+      if ((uint64_t) m9t16to - (uint64_t) i < (uint64_t) 1) break;
       i += 1;
     } }
   }
-  bool m9t15 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s484, 6 }), err);
+  bool m9t18 = Rdf_Has (element, ((m9_sl_UTF8){ (uint8_t *) m9s556, 6 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t15) {
-    { __typeof__(g) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s485, 6 }), err);
+  if (m9t18) {
+    { __typeof__(g) m9v = Rdf_JGet (element, ((m9_sl_UTF8){ (uint8_t *) m9s557, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
       g = m9v;
     }
-    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, false, g, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, false, NULL, err);
+    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, false, g, ((m9_sl_UTF8){ NULL, 0 }), ((m9_sl_UTF8){ NULL, 0 }), false, NULL, err);
     if (err->exc) goto L_hdl_m9t1;
   }
   { __typeof__(names) m9v = Rdf_SortedNames (element, err);
     if (err->exc) goto L_hdl_m9t1;
     names = m9v;
   }
-  { __typeof__(i) m9t16to;
+  { __typeof__(i) m9t19to;
   i = INT64_C(0);
-  m9t16to = m9_sub_i64 ((names).len, INT64_C(1), err);
+  m9t19to = m9_sub_i64 ((names).len, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (i <= m9t16to) for (;;) {
-    { __typeof__(k) m9v = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+  if (i <= m9t19to) for (;;) {
+    { __typeof__(k) m9v = (*(m9_sl_UTF8 *) m9_at (names.p, i, names.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_hdl_m9t1;
       k = m9v;
     }
-    bool m9t17 = (!(((((Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s486, 3 }), err) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s487, 5 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s488, 8 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s489, 6 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s490, 6 }), err))));
+    bool m9t20 = (!(((((Text_EqUtf (k, ((m9_sl_UTF8){ (uint8_t *) m9s558, 3 }), err) || Text_EqUtf (k, ((m9_sl_UTF8){ (uint8_t *) m9s559, 5 }), err)) || Text_EqUtf (k, ((m9_sl_UTF8){ (uint8_t *) m9s560, 8 }), err)) || Text_EqUtf (k, ((m9_sl_UTF8){ (uint8_t *) m9s561, 6 }), err)) || Text_EqUtf (k, ((m9_sl_UTF8){ (uint8_t *) m9s562, 6 }), err))));
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t17) {
-      bool m9t18 = Rdf_IsKeyword (k, err);
+    if (m9t20) {
+      bool m9t21 = Rdf_IsKeyword (k, err);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t18) {
+      if (m9t21) {
       } else {
         { __typeof__(arr) m9v = Rdf_JGet (element, k, err);
           if (err->exc) goto L_hdl_m9t1;
           arr = m9v;
         }
-        { __typeof__(j) m9t19to;
+        { __typeof__(j) m9t22to;
         j = INT64_C(0);
-        m9t19to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
+        m9t22to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
-        if (j <= m9t19to) for (;;) {
-          { __typeof__(Json_Item (arr, j, err)) m9a372 = Json_Item (arr, j, err);
+        if (j <= m9t22to) for (;;) {
+          { __typeof__(Json_Item (arr, j, err)) m9a403 = Json_Item (arr, j, err);
             if (err->exc) goto L_hdl_m9t1;
-          Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a372, id, k, false, NULL, err);
+          Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a403, id, k, false, NULL, err);
           if (err->exc) goto L_hdl_m9t1;
           }
-          if ((uint64_t) m9t19to - (uint64_t) j < (uint64_t) 1) break;
+          if ((uint64_t) m9t22to - (uint64_t) j < (uint64_t) 1) break;
           j += 1;
         } }
       }
     }
-    if ((uint64_t) m9t16to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t19to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s491, 16 })) m9t20 = ((m9_sl_CHAR){ (uint32_t *) m9s491, 16 }); err->s[0].p = m9t20.p; err->s[0].len = m9t20.len; m9_pay_keep (err, 0, sizeof (*m9t20.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s563, 16 })) m9t23 = ((m9_sl_UTF8){ (uint8_t *) m9s563, 16 }); err->s[0].p = m9t23.p; err->s[0].len = m9t23.len; m9_pay_keep (err, 0, sizeof (*m9t23.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -11349,7 +11492,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s492, 16 })) m9t21 = ((m9_sl_CHAR){ (uint32_t *) m9s492, 16 }); err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s564, 16 })) m9t24 = ((m9_sl_UTF8){ (uint8_t *) m9s564, 16 }); err->s[0].p = m9t24.p; err->s[0].len = m9t24.len; m9_pay_keep (err, 0, sizeof (*m9t24.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -11373,7 +11516,7 @@ L_ret: ;
   return;
 }
 
-static int64_t Rdf_IntOf (m9_sl_CHAR s, m9_state *err)
+static int64_t Rdf_IntOf (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11386,10 +11529,10 @@ static int64_t Rdf_IntOf (m9_sl_CHAR s, m9_state *err)
   v = INT64_C(0);
   sign = INT64_C(1);
   i = INT64_C(0);
-  bool m9t1 = (((s).len > INT64_C(0)) && ((((*(uint32_t *) m9_at (s.p, INT64_C(0), s.len, sizeof (uint32_t), err)) == 45u) || ((*(uint32_t *) m9_at (s.p, INT64_C(0), s.len, sizeof (uint32_t), err)) == 43u))));
+  bool m9t1 = ((Text_BLen (s, err) > INT64_C(0)) && ((Text_BIs (s, INT64_C(0), 45u, err) || Text_BIs (s, INT64_C(0), 43u, err))));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = ((*(uint32_t *) m9_at (s.p, INT64_C(0), s.len, sizeof (uint32_t), err)) == 45u);
+    bool m9t2 = Text_BIs (s, INT64_C(0), 45u, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       { __typeof__(sign) m9v = m9_neg_i64 (INT64_C(1), err);
@@ -11400,11 +11543,13 @@ static int64_t Rdf_IntOf (m9_sl_CHAR s, m9_state *err)
     i = INT64_C(1);
   }
   for (;;) {
-    if (!((i < (s).len))) break;
-    bool m9t3 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 48u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 57u));
+    bool m9t3 = (i < Text_BLen (s, err));
     if (err->exc) goto L_ret;
-    if (m9t3) {
-      { __typeof__(v) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), err), INT64_C(48), err);
+    if (!(m9t3)) break;
+    bool m9t4 = (((int64_t)(Text_BAt (s, i, err)) >= (int64_t)(48u)) && ((int64_t)(Text_BAt (s, i, err)) <= (int64_t)(57u)));
+    if (err->exc) goto L_ret;
+    if (m9t4) {
+      { __typeof__(v) m9v = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (int64_t)(Text_BAt (s, i, err)), err), INT64_C(48), err);
         if (err->exc) goto L_ret;
         v = m9v;
       }
@@ -11424,16 +11569,16 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
+static m9_sl_UTF8 Rdf_CanonDouble (double r, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
-  m9_sl_CHAR digits = {0}; (void) digits;
-  m9_sl_CHAR mant = {0}; (void) mant;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 s = {0}; (void) s;
+  m9_sl_UTF8 digits = {0}; (void) digits;
+  m9_sl_UTF8 mant = {0}; (void) mant;
   int64_t e = 0; (void) e;
   int64_t exp_ = 0; (void) exp_;
   int64_t dot = 0; (void) dot;
@@ -11444,46 +11589,49 @@ static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     s = m9v;
   }
-  { __typeof__(neg) m9v = (((s).len > INT64_C(0)) && ((*(uint32_t *) m9_at (s.p, INT64_C(0), s.len, sizeof (uint32_t), err)) == 45u));
+  { __typeof__(neg) m9v = ((Text_BLen (s, err) > INT64_C(0)) && Text_BIs (s, INT64_C(0), 45u, err));
     if (err->exc) goto L_hdl_m9t1;
     neg = m9v;
   }
   if (neg) {
-    { __typeof__(s) m9v = ({ __auto_type m9t3 = s; int64_t m9t3a = INT64_C(1), m9t3n = m9_sub_i64 ((s).len, INT64_C(1), err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
+    { __typeof__(s) m9v = m9_utf_slice (s, INT64_C(1), m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
   }
-  { __typeof__(e) m9v = Text_FindChar (s, 101u, err);
+  { __typeof__(e) m9v = Text_FindCharUtf (s, 101u, err);
     if (err->exc) goto L_hdl_m9t1;
     e = m9v;
   }
   exp_ = INT64_C(0);
   if ((e >= INT64_C(0))) {
-    { __typeof__(({ __auto_type m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9a373 = ({ __auto_type m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+    { __typeof__(m9_utf_slice (s, m9_add_i64 (e, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (s, err), e, err), INT64_C(1), err), err)) m9a404 = m9_utf_slice (s, m9_add_i64 (e, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (s, err), e, err), INT64_C(1), err), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(exp_) m9v = Rdf_IntOf (m9a373, err);
+    { __typeof__(exp_) m9v = Rdf_IntOf (m9a404, err);
       if (err->exc) goto L_hdl_m9t1;
       exp_ = m9v;
     }
     }
-    { __typeof__(s) m9v = ({ __auto_type m9t5 = s; int64_t m9t5a = INT64_C(0), m9t5n = e; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+    { __typeof__(s) m9v = m9_utf_slice (s, INT64_C(0), e, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
   }
-  { __typeof__(dot) m9v = Text_FindChar (s, 46u, err);
+  { __typeof__(dot) m9v = Text_FindCharUtf (s, 46u, err);
     if (err->exc) goto L_hdl_m9t1;
     dot = m9v;
   }
   if ((dot < INT64_C(0))) {
-    dot = (s).len;
+    { __typeof__(dot) m9v = Text_BLen (s, err);
+      if (err->exc) goto L_hdl_m9t1;
+      dot = m9v;
+    }
   }
-  digits = (m9_sl_CHAR){ NULL, 0 };
+  digits = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(s) m9t6s = s;
-  for (int64_t m9t6i = 0; m9t6i < m9t6s.len; m9t6i++) { c = m9t6s.p[m9t6i];
+  for (int64_t m9t6i = 0; m9t6i < m9t6s.len; ) { c = m9_utf_next (m9t6s, &m9t6i);
     if ((c != 46u)) {
-      { __typeof__(digits) m9v = m9_cat_ch (err->res, digits, c, err);
+      { __typeof__(digits) m9v = m9_utf_cat (err->res, digits, m9_utf_of_char (err->res, c, err), err);
         if (err->exc) goto L_hdl_m9t1;
         digits = m9v;
       }
@@ -11495,7 +11643,7 @@ static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
   }
   lead = INT64_C(0);
   for (;;) {
-    bool m9t7 = ((lead < m9_sub_i64 ((digits).len, INT64_C(1), err)) && ((*(uint32_t *) m9_at (digits.p, lead, digits.len, sizeof (uint32_t), err)) == 48u));
+    bool m9t7 = ((lead < m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err)) && Text_BIs (digits, lead, 48u, err));
     if (err->exc) goto L_hdl_m9t1;
     if (!(m9t7)) break;
     { __typeof__(lead) m9v = m9_add_i64 (lead, INT64_C(1), err);
@@ -11503,7 +11651,7 @@ static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
       lead = m9v;
     }
   }
-  { __typeof__(digits) m9v = ({ __auto_type m9t8 = digits; int64_t m9t8a = lead, m9t8n = m9_sub_i64 ((digits).len, lead, err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; });
+  { __typeof__(digits) m9v = m9_utf_slice (digits, lead, m9_sub_i64 (Text_BLen (digits, err), lead, err), err);
     if (err->exc) goto L_hdl_m9t1;
     digits = m9v;
   }
@@ -11512,44 +11660,46 @@ static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
     exp_ = m9v;
   }
   for (;;) {
-    bool m9t9 = (((digits).len > INT64_C(1)) && ((*(uint32_t *) m9_at (digits.p, m9_sub_i64 ((digits).len, INT64_C(1), err), digits.len, sizeof (uint32_t), err)) == 48u));
+    bool m9t10 = ({ bool m9t9 = (Text_BLen (digits, err) > INT64_C(1)); if (m9t9) { { __typeof__(m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err)) m9a405 = m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err);   if (err->exc) goto L_hdl_m9t1; m9t9 = (Text_BIs (digits, m9a405, 48u, err)); } } m9t9; });
     if (err->exc) goto L_hdl_m9t1;
-    if (!(m9t9)) break;
-    { __typeof__(digits) m9v = ({ __auto_type m9t10 = digits; int64_t m9t10a = INT64_C(0), m9t10n = m9_sub_i64 ((digits).len, INT64_C(1), err); int64_t m9t10o = m9_chk_slice (m9t10a, m9t10n, m9t10.len, err); (__typeof__(m9t10)){ m9t10.p + m9t10o, err->exc ? 0 : m9t10n }; });
+    if (!(m9t10)) break;
+    { __typeof__(digits) m9v = m9_utf_slice (digits, INT64_C(0), m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err), err);
       if (err->exc) goto L_hdl_m9t1;
       digits = m9v;
     }
   }
-  bool m9t11 = Text_Eq (digits, ((m9_sl_CHAR){ (uint32_t *) m9s493, 1 }), err);
+  bool m9t12 = Text_EqUtf (digits, ((m9_sl_UTF8){ (uint8_t *) m9s565, 1 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t11) {
+  if (m9t12) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s494, 5 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s566, 5 });
     goto L_ret;
   }
-  { __typeof__(mant) m9v = m9_cat (err->res, ({ __auto_type m9t12 = digits; int64_t m9t12a = INT64_C(0), m9t12n = INT64_C(1); int64_t m9t12o = m9_chk_slice (m9t12a, m9t12n, m9t12.len, err); (__typeof__(m9t12)){ m9t12.p + m9t12o, err->exc ? 0 : m9t12n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s495, 1 }), err);
+  { __typeof__(mant) m9v = m9_utf_cat (err->res, m9_utf_slice (digits, INT64_C(0), INT64_C(1), err), ((m9_sl_UTF8){ (uint8_t *) m9s567, 1 }), err);
     if (err->exc) goto L_hdl_m9t1;
     mant = m9v;
   }
-  if (((digits).len > INT64_C(1))) {
-    { __typeof__(mant) m9v = m9_cat (err->res, mant, ({ __auto_type m9t13 = digits; int64_t m9t13a = INT64_C(1), m9t13n = m9_sub_i64 ((digits).len, INT64_C(1), err); int64_t m9t13o = m9_chk_slice (m9t13a, m9t13n, m9t13.len, err); (__typeof__(m9t13)){ m9t13.p + m9t13o, err->exc ? 0 : m9t13n }; }), err);
+  bool m9t14 = (Text_BLen (digits, err) > INT64_C(1));
+  if (err->exc) goto L_hdl_m9t1;
+  if (m9t14) {
+    { __typeof__(mant) m9v = m9_utf_cat (err->res, mant, m9_utf_slice (digits, INT64_C(1), m9_sub_i64 (Text_BLen (digits, err), INT64_C(1), err), err), err);
       if (err->exc) goto L_hdl_m9t1;
       mant = m9v;
     }
   } else {
-    { __typeof__(mant) m9v = m9_cat (err->res, mant, ((m9_sl_CHAR){ (uint32_t *) m9s496, 1 }), err);
+    { __typeof__(mant) m9v = m9_utf_cat (err->res, mant, ((m9_sl_UTF8){ (uint8_t *) m9s568, 1 }), err);
       if (err->exc) goto L_hdl_m9t1;
       mant = m9v;
     }
   }
   if (neg) {
-    { __typeof__(mant) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s497, 1 }), mant, err);
+    { __typeof__(mant) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s569, 1 }), mant, err);
       if (err->exc) goto L_hdl_m9t1;
       mant = m9v;
     }
   }
   err->res = m9res;
-  m9ret = m9_cat (err->res, m9_cat (err->res, mant, ((m9_sl_CHAR){ (uint32_t *) m9s498, 1 }), err), Fmt_I64Str (exp_, err), err);
+  m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, mant, ((m9_sl_UTF8){ (uint8_t *) m9s570, 1 }), err), Fmt_I64Str (exp_, err), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_ret;
   goto L_dn_m9t2;
@@ -11557,7 +11707,7 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s499, 5 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s571, 5 });
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -11565,7 +11715,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -11579,16 +11729,16 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   Rdf_Term m9ret = {0};
   Json_Node * v = NULL; (void) v;
   Json_Node * tv = NULL; (void) tv;
-  m9_sl_CHAR s = {0}; (void) s;
-  m9_sl_CHAR dt = {0}; (void) dt;
+  m9_sl_UTF8 s = {0}; (void) s;
+  m9_sl_UTF8 dt = {0}; (void) dt;
   Rdf_Term t = {0}; (void) t;
   (*ok) = true;
-  bool m9t3 = (Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s500, 3 }), err) && (!Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s501, 6 }), err)));
+  bool m9t3 = (Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s572, 3 }), err) && (!Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s573, 6 }), err)));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err)) m9a374 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err);
+    { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s574, 3 }), err)) m9a406 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s574, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_JStr (m9a374, err);
+    { __typeof__(s) m9v = Rdf_JStr (m9a406, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -11597,9 +11747,9 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
       err->res = m9res;
-      { __typeof__(({ __auto_type m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a375 = ({ __auto_type m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+      { __typeof__(m9_utf_slice (s, INT64_C(2), m9_sub_i64 (Text_BLen (s, err), INT64_C(2), err), err)) m9a407 = m9_utf_slice (s, INT64_C(2), m9_sub_i64 (Text_BLen (s, err), INT64_C(2), err), err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Rdf_BlankT (m9a375, err);
+      m9ret = Rdf_BlankT (m9a407, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
@@ -11618,17 +11768,17 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s503, 6 }), err);
+  { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s575, 6 }), err);
     if (err->exc) goto L_hdl_m9t1;
     v = m9v;
   }
-  dt = (m9_sl_CHAR){ NULL, 0 };
-  bool m9t7 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s504, 5 }), err);
+  dt = ((m9_sl_UTF8){ NULL, 0 });
+  bool m9t7 = Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s576, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
-    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s505, 5 }), err)) m9a376 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s505, 5 }), err);
+    { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s577, 5 }), err)) m9a408 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s577, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(dt) m9v = Rdf_JStr (m9a376, err);
+    { __typeof__(dt) m9v = Rdf_JStr (m9a408, err);
       if (err->exc) goto L_hdl_m9t1;
       dt = m9v;
     }
@@ -11637,112 +11787,118 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   bool m9t8 = Rdf_IsBool (v, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t8) {
-    if (((dt).len == INT64_C(0))) {
-      { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s506, 7 }), err);
+    bool m9t9 = (Text_BLen (dt, err) == INT64_C(0));
+    if (err->exc) goto L_hdl_m9t1;
+    if (m9t9) {
+      { __typeof__(dt) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s578, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s579, 7 }), err);
         if (err->exc) goto L_hdl_m9t1;
         dt = m9v;
       }
     }
-    bool m9t9 = Json_AsBool (v, err);
+    bool m9t10 = Json_AsBool (v, err);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t9) {
+    if (m9t10) {
       err->res = m9res;
-      m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s507, 4 }), (m9_sl_CHAR){ NULL, 0 }, dt, err);
+      m9ret = Rdf_LitT (((m9_sl_UTF8){ (uint8_t *) m9s580, 4 }), ((m9_sl_UTF8){ NULL, 0 }), dt, err);
       if (err->exc) goto L_hdl_m9t1;
       goto L_ret;
     } else {
       err->res = m9res;
-      m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s508, 5 }), (m9_sl_CHAR){ NULL, 0 }, dt, err);
+      m9ret = Rdf_LitT (((m9_sl_UTF8){ (uint8_t *) m9s581, 5 }), ((m9_sl_UTF8){ NULL, 0 }), dt, err);
       if (err->exc) goto L_hdl_m9t1;
       goto L_ret;
     }
   } else {
-    bool m9t10 = Rdf_IsNum (v, err);
+    bool m9t11 = Rdf_IsNum (v, err);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t10) {
+    if (m9t11) {
       { __typeof__(s) m9v = Json_NumText (v, err);
         if (err->exc) goto L_hdl_m9t1;
         s = m9v;
       }
-      m9_mark m9t11 = m9_pool_mark (err->res);
-      bool m9t13 = ({ bool m9t12 = (((Text_FindChar (s, 46u, err) >= INT64_C(0)) || (Text_FindChar (s, 101u, err) >= INT64_C(0))) || (Text_FindChar (s, 69u, err) >= INT64_C(0))); if (!m9t12) { { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), err)) m9a377 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), err);   if (err->exc) goto L_hdl_m9t1; m9t12 = (Text_Eq (dt, m9a377, err)); } } m9t12; });
+      bool m9t13 = ({ bool m9t12 = (((Text_FindCharUtf (s, 46u, err) >= INT64_C(0)) || (Text_FindCharUtf (s, 101u, err) >= INT64_C(0))) || (Text_FindCharUtf (s, 69u, err) >= INT64_C(0))); if (!m9t12) { { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s582, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s583, 6 }), err)) m9a409 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s582, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s583, 6 }), err);   if (err->exc) goto L_hdl_m9t1; m9t12 = (Text_EqUtf (dt, m9a409, err)); } } m9t12; });
       if (err->exc) goto L_hdl_m9t1;
-      m9_pool_release (err->res, m9t11);
       if (m9t13) {
-        if (((dt).len == INT64_C(0))) {
-          { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s510, 6 }), err);
+        bool m9t14 = (Text_BLen (dt, err) == INT64_C(0));
+        if (err->exc) goto L_hdl_m9t1;
+        if (m9t14) {
+          { __typeof__(dt) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s584, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s585, 6 }), err);
             if (err->exc) goto L_hdl_m9t1;
             dt = m9v;
           }
         }
         err->res = m9res;
-        { __typeof__(Json_AsF64 (v, err)) m9a378 = Json_AsF64 (v, err);
+        { __typeof__(Json_AsF64 (v, err)) m9a410 = Json_AsF64 (v, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Rdf_CanonDouble (m9a378, err)) m9a379 = Rdf_CanonDouble (m9a378, err);
+        { __typeof__(Rdf_CanonDouble (m9a410, err)) m9a411 = Rdf_CanonDouble (m9a410, err);
           if (err->exc) goto L_hdl_m9t1;
-        m9ret = Rdf_LitT (m9a379, (m9_sl_CHAR){ NULL, 0 }, dt, err);
+        m9ret = Rdf_LitT (m9a411, ((m9_sl_UTF8){ NULL, 0 }), dt, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
         goto L_ret;
       }
-      if (((dt).len == INT64_C(0))) {
-        { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s511, 7 }), err);
+      bool m9t15 = (Text_BLen (dt, err) == INT64_C(0));
+      if (err->exc) goto L_hdl_m9t1;
+      if (m9t15) {
+        { __typeof__(dt) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s586, 33 }), ((m9_sl_UTF8){ (uint8_t *) m9s587, 7 }), err);
           if (err->exc) goto L_hdl_m9t1;
           dt = m9v;
         }
       }
       err->res = m9res;
-      { __typeof__(Json_AsI64 (v, err)) m9a380 = Json_AsI64 (v, err);
+      { __typeof__(Json_AsI64 (v, err)) m9a412 = Json_AsI64 (v, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Fmt_I64Str (m9a380, err)) m9a381 = Fmt_I64Str (m9a380, err);
+      { __typeof__(Fmt_I64Str (m9a412, err)) m9a413 = Fmt_I64Str (m9a412, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Rdf_LitT (m9a381, (m9_sl_CHAR){ NULL, 0 }, dt, err);
+      m9ret = Rdf_LitT (m9a413, ((m9_sl_UTF8){ NULL, 0 }), dt, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
       goto L_ret;
   } else {
-    bool m9t14 = Rdf_IsStr (v, err);
+    bool m9t16 = Rdf_IsStr (v, err);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t14) {
+    if (m9t16) {
       { __typeof__(s) m9v = Rdf_JStr (v, err);
         if (err->exc) goto L_hdl_m9t1;
         s = m9v;
       }
-      bool m9t15 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s512, 9 }), err);
+      bool m9t17 = Rdf_Has (item, ((m9_sl_UTF8){ (uint8_t *) m9s588, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t15) {
+      if (m9t17) {
         err->res = m9res;
-        { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err)) m9a382 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err);
+        { __typeof__(Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s589, 9 }), err)) m9a414 = Rdf_JGet (item, ((m9_sl_UTF8){ (uint8_t *) m9s589, 9 }), err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Rdf_JStr (m9a382, err)) m9a383 = Rdf_JStr (m9a382, err);
+        { __typeof__(Rdf_JStr (m9a414, err)) m9a415 = Rdf_JStr (m9a414, err);
           if (err->exc) goto L_hdl_m9t1;
-        m9ret = Rdf_LitT (s, m9a383, (m9_sl_CHAR){ NULL, 0 }, err);
+        m9ret = Rdf_LitT (s, m9a415, ((m9_sl_UTF8){ NULL, 0 }), err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
         goto L_ret;
       }
-      if (((dt).len == INT64_C(0))) {
-        dt = Rdf_XsdString;
+      bool m9t18 = (Text_BLen (dt, err) == INT64_C(0));
+      if (err->exc) goto L_hdl_m9t1;
+      if (m9t18) {
+        dt = ((m9_sl_UTF8){ (uint8_t *) m9s590, 39 });
       }
       err->res = m9res;
-      m9ret = Rdf_LitT (s, (m9_sl_CHAR){ NULL, 0 }, dt, err);
+      m9ret = Rdf_LitT (s, ((m9_sl_UTF8){ NULL, 0 }), dt, err);
       if (err->exc) goto L_hdl_m9t1;
       goto L_ret;
   } } }
   (*ok) = false;
   err->res = m9res;
-  m9ret = Rdf_IriT ((m9_sl_CHAR){ NULL, 0 }, err);
+  m9ret = Rdf_IriT (((m9_sl_UTF8){ NULL, 0 }), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s514, 16 })) m9t16 = ((m9_sl_CHAR){ (uint32_t *) m9s514, 16 }); err->s[0].p = m9t16.p; err->s[0].len = m9t16.len; m9_pay_keep (err, 0, sizeof (*m9t16.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s591, 16 })) m9t19 = ((m9_sl_UTF8){ (uint8_t *) m9s591, 16 }); err->s[0].p = m9t19.p; err->s[0].len = m9t19.len; m9_pay_keep (err, 0, sizeof (*m9t19.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -11787,16 +11943,16 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   }
   if ((n == INT64_C(0))) {
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), err)) m9a384 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s592, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s593, 3 }), err)) m9a416 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s592, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s593, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    m9ret = Rdf_IriT (m9a384, err);
+    m9ret = Rdf_IriT (m9a416, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     goto L_ret;
   }
-  { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a385 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+  { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a417 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(head) m9v = Rdf_BlankT (m9a385, err);
+  { __typeof__(head) m9v = Rdf_BlankT (m9a417, err);
     if (err->exc) goto L_hdl_m9t1;
     head = m9v;
   }
@@ -11808,36 +11964,36 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   if (err->exc) goto L_hdl_m9t1;
   if (i <= m9t3to) for (;;) {
     if ((i > INT64_C(0))) {
-      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a386 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a418 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(cell) m9v = Rdf_BlankT (m9a386, err);
+      { __typeof__(cell) m9v = Rdf_BlankT (m9a418, err);
         if (err->exc) goto L_hdl_m9t1;
         cell = m9v;
       }
       }
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 }), err)) m9a387 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s594, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s595, 4 }), err)) m9a419 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s594, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s595, 4 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_IriT (m9a387, err)) m9a388 = Rdf_IriT (m9a387, err);
+      { __typeof__(Rdf_IriT (m9a419, err)) m9a420 = Rdf_IriT (m9a419, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_Add (pool, g, g_pool, &(prev), &m9a388, &(cell), err);
+      Rdf_Add (pool, g, g_pool, &(prev), &m9a420, &(cell), err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
       prev = cell;
     }
-    { __typeof__(Json_Item (items, i, err)) m9a389 = Json_Item (items, i, err);
+    { __typeof__(Json_Item (items, i, err)) m9a421 = Json_Item (items, i, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(o) m9v = Rdf_ObjectToTerm (pool, st, st_pool, m9a389, &(ok), err);
+    { __typeof__(o) m9v = Rdf_ObjectToTerm (pool, st, st_pool, m9a421, &(ok), err);
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
     }
     if (ok) {
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s517, 5 }), err)) m9a390 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s517, 5 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s596, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s597, 5 }), err)) m9a422 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s596, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s597, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_IriT (m9a390, err)) m9a391 = Rdf_IriT (m9a390, err);
+      { __typeof__(Rdf_IriT (m9a422, err)) m9a423 = Rdf_IriT (m9a422, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_Add (pool, g, g_pool, &(prev), &m9a391, &(o), err);
+      Rdf_Add (pool, g, g_pool, &(prev), &m9a423, &(o), err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -11845,15 +12001,15 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
     if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), err)) m9a392 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s598, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s599, 4 }), err)) m9a424 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s598, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s599, 4 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Rdf_IriT (m9a392, err)) m9a393 = Rdf_IriT (m9a392, err);
+  { __typeof__(Rdf_IriT (m9a424, err)) m9a425 = Rdf_IriT (m9a424, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err)) m9a394 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s600, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s601, 3 }), err)) m9a426 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s600, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s601, 3 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Rdf_IriT (m9a394, err)) m9a395 = Rdf_IriT (m9a394, err);
+  { __typeof__(Rdf_IriT (m9a426, err)) m9a427 = Rdf_IriT (m9a426, err);
     if (err->exc) goto L_hdl_m9t1;
-  Rdf_Add (pool, g, g_pool, &(prev), &m9a393, &m9a395, err);
+  Rdf_Add (pool, g, g_pool, &(prev), &m9a425, &m9a427, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   }
@@ -11865,9 +12021,9 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s520, 16 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s520, 16 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s602, 16 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s602, 16 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -11876,7 +12032,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s521, 16 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s521, 16 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s603, 16 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s603, 16 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -11902,7 +12058,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Rdf_RefCount (Rdf_Graph * g, m9_sl_CHAR id, m9_state *err)
+static int64_t Rdf_RefCount (Rdf_Graph * g, m9_sl_UTF8 id, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11917,7 +12073,7 @@ static int64_t Rdf_RefCount (Rdf_Graph * g, m9_sl_CHAR id, m9_state *err)
   m9t1to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a396 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a396, id, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a428 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a428, id, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
       { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
@@ -11937,7 +12093,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *rest, m9_state *err)
+static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_UTF8 id, int64_t *first, int64_t *rest, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -11964,48 +12120,42 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *r
   m9t1to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a397 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a397, id, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag); if (m9t2) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a429 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a429, id, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
-      m9_mark m9t4 = m9_pool_mark (err->res);
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a398 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a430 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
         if (err->exc) goto L_ret;
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s522, 5 }), err)) m9a399 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s522, 5 }), err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s604, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s605, 5 }), err)) m9a431 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s604, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s605, 5 }), err);
         if (err->exc) goto L_ret;
-      bool m9t5 = Text_Eq (m9a398, m9a399, err);
+      bool m9t4 = Text_EqUtf (m9a430, m9a431, err);
       if (err->exc) goto L_ret;
-      m9_pool_release (err->res, m9t4);
-      if (m9t5) {
+      if (m9t4) {
         { __typeof__(nf) m9v = m9_add_i64 (nf, INT64_C(1), err);
           if (err->exc) goto L_ret;
           nf = m9v;
         }
         (*first) = i;
       } else {
-        m9_mark m9t6 = m9_pool_mark (err->res);
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a400 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a432 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
           if (err->exc) goto L_ret;
-        { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s523, 4 }), err)) m9a401 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s523, 4 }), err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s606, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s607, 4 }), err)) m9a433 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s606, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s607, 4 }), err);
           if (err->exc) goto L_ret;
-        bool m9t7 = Text_Eq (m9a400, m9a401, err);
+        bool m9t5 = Text_EqUtf (m9a432, m9a433, err);
         if (err->exc) goto L_ret;
-        m9_pool_release (err->res, m9t6);
-        if (m9t7) {
+        if (m9t5) {
           { __typeof__(nr) m9v = m9_add_i64 (nr, INT64_C(1), err);
             if (err->exc) goto L_ret;
             nr = m9v;
           }
           (*rest) = i;
       } else {
-        m9_mark m9t8 = m9_pool_mark (err->res);
-        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a402 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a434 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
           if (err->exc) goto L_ret;
-        { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s524, 4 }), err)) m9a403 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s524, 4 }), err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s608, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s609, 4 }), err)) m9a435 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s608, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s609, 4 }), err);
           if (err->exc) goto L_ret;
-        bool m9t10 = ({ bool m9t9 = (Text_Eq (m9a402, m9a403, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)); if (m9t9) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a404 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_ret; { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s525, 4 }), err)) m9a405 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s525, 4 }), err);   if (err->exc) goto L_ret; m9t9 = (Text_Eq (m9a404, m9a405, err)); } } } m9t9; });
+        bool m9t7 = ({ bool m9t6 = (Text_EqUtf (m9a434, m9a435, err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)); if (m9t6) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a436 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_ret; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s610, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s611, 4 }), err)) m9a437 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s610, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s611, 4 }), err);   if (err->exc) goto L_ret; m9t6 = (Text_EqUtf (m9a436, m9a437, err)); } } } m9t6; });
         if (err->exc) goto L_ret;
-        m9_pool_release (err->res, m9t8);
-        if (m9t10) {
+        if (m9t7) {
       } else {
         { __typeof__(other) m9v = m9_add_i64 (other, INT64_C(1), err);
           if (err->exc) goto L_ret;
@@ -12047,19 +12197,19 @@ static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term *t, m9_state *err)
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s526, 3 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s612, 3 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Rdf_Kind_Blank:
   {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s527, 2 }), (*t).value, err)) m9a406 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s527, 2 }), (*t).value, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s613, 2 }), (*t).value, err)) m9a438 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s613, 2 }), (*t).value, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a406, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a438, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s528, 3 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s614, 3 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Rdf_Kind_Literal:
@@ -12068,24 +12218,26 @@ static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term *t, m9_state *err)
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s529, 6 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s615, 6 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
-    if ((((*t).lang).len > INT64_C(0))) {
+    bool m9t4 = (Text_BLen ((*t).lang, err) > INT64_C(0));
+    if (err->exc) goto L_hdl_m9t1;
+    if (m9t4) {
       { __typeof__(s) m9v = Json_NewStrIn (pool, (*t).lang, err);
         if (err->exc) goto L_hdl_m9t1;
         s = m9v;
       }
-      Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s530, 9 }), &(s), &((*pool)), err);
+      Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s616, 9 }), &(s), &((*pool)), err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
-      bool m9t4 = ((((*t).datatype).len > INT64_C(0)) && (!Text_Eq ((*t).datatype, Rdf_XsdString, err)));
+      bool m9t5 = ((Text_BLen ((*t).datatype, err) > INT64_C(0)) && (!Text_EqUtf ((*t).datatype, ((m9_sl_UTF8){ (uint8_t *) m9s617, 39 }), err)));
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t4) {
+      if (m9t5) {
         { __typeof__(s) m9v = Json_NewStrIn (pool, (*t).datatype, err);
           if (err->exc) goto L_hdl_m9t1;
           s = m9v;
         }
-        Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s531, 5 }), &(s), &((*pool)), err);
+        Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s618, 5 }), &(s), &((*pool)), err);
         if (err->exc) goto L_hdl_m9t1;
     } }
   } break;
@@ -12097,7 +12249,7 @@ static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term *t, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = Json_NewObjIn (pool, err);
@@ -12114,7 +12266,7 @@ L_ret: ;
   return m9ret;
 }
 
-static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m9_sl_BOOL *consumed, m9_state *err)
+static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_UTF8 head, m9_sl_BOOL *consumed, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12124,7 +12276,7 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
   Json_Node * o = NULL; (void) o;
   Json_Node * arr = NULL; (void) arr;
   Json_Node * item = NULL; (void) item;
-  m9_sl_CHAR id = {0}; (void) id;
+  m9_sl_UTF8 id = {0}; (void) id;
   int64_t first = 0; (void) first;
   int64_t rest = 0; (void) rest;
   int64_t n = 0; (void) n;
@@ -12155,25 +12307,23 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
       if (err->exc) goto L_hdl_m9t1;
       n = m9v;
     }
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o) m9a407 = (*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o) m9a439 = (*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(item) m9v = Rdf_TermObj (pool, &m9a407, err);
+    { __typeof__(item) m9v = Rdf_TermObj (pool, &m9a439, err);
       if (err->exc) goto L_hdl_m9t1;
       item = m9v;
     }
     }
     Json_Add (&(arr), &((*pool)), &(item), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
-    m9_mark m9t4 = m9_pool_mark (err->res);
-    bool m9t6 = ({ bool m9t5 = (((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t5) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a408 = (*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_hdl_m9t1; { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), err)) m9a409 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t5 = (Text_Eq (m9a408, m9a409, err)); } } } m9t5; });
+    bool m9t5 = ({ bool m9t4 = (((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag); if (m9t4) { { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a440 = (*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value;   if (err->exc) goto L_hdl_m9t1; { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s619, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s620, 3 }), err)) m9a441 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s619, 43 }), ((m9_sl_UTF8){ (uint8_t *) m9s620, 3 }), err);   if (err->exc) goto L_hdl_m9t1; m9t4 = (Text_EqUtf (m9a440, m9a441, err)); } } } m9t4; });
     if (err->exc) goto L_hdl_m9t1;
-    m9_pool_release (err->res, m9t4);
-    if (m9t6) {
+    if (m9t5) {
       break;
     }
-    bool m9t7 = (((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag != (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
+    bool m9t6 = (((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag != (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t7) {
+    if (m9t6) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
@@ -12182,29 +12332,29 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
       if (err->exc) goto L_hdl_m9t1;
       id = m9v;
     }
-    bool m9t8 = (m9_add_i64 (n, INT64_C(2), err) > (cells).len);
+    bool m9t7 = (m9_add_i64 (n, INT64_C(2), err) > (cells).len);
     if (err->exc) goto L_hdl_m9t1;
-    if (m9t8) {
+    if (m9t7) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     }
   }
-  { __typeof__(first) m9t9to;
+  { __typeof__(first) m9t8to;
   first = INT64_C(0);
-  m9t9to = m9_sub_i64 (n, INT64_C(1), err);
+  m9t8to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
-  if (first <= m9t9to) for (;;) {
+  if (first <= m9t8to) for (;;) {
     (*(bool *) m9_at ((*consumed).p, (*(int64_t *) m9_at (cells.p, first, cells.len, sizeof (int64_t), err)), (*consumed).len, sizeof (bool), err)) = true;
     if (err->exc) goto L_hdl_m9t1;
-    if ((uint64_t) m9t9to - (uint64_t) first < (uint64_t) 1) break;
+    if ((uint64_t) m9t8to - (uint64_t) first < (uint64_t) 1) break;
     first += 1;
   } }
   { __typeof__(o) m9v = Json_NewObjIn (pool, err);
     if (err->exc) goto L_hdl_m9t1;
     o = m9v;
   }
-  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s533, 5 }), &(arr), &((*pool)), err);
+  Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s621, 5 }), &(arr), &((*pool)), err);
   if (err->exc) goto L_hdl_m9t1;
   err->res = m9res;
   m9ret = o;
@@ -12212,7 +12362,7 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = NULL;
@@ -12236,13 +12386,13 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx *c, m9_sl_CHAR iri, bool vocab, m9_state *err)
+static m9_sl_UTF8 Rdf_CompactIri (Rdf_Ctx *c, m9_sl_UTF8 iri, bool vocab, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
   int64_t best = 0; (void) best;
   int64_t bestLen = 0; (void) bestLen;
@@ -12252,7 +12402,7 @@ static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx *c, m9_sl_CHAR iri, bool vocab, m9_sta
     m9t1to = m9_sub_i64 ((*c).n, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t1to) for (;;) {
-      bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a410 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a410, iri, err)); } } m9t2; });
+      bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a442 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a442, iri, err)); } } m9t2; });
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
@@ -12274,13 +12424,16 @@ static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx *c, m9_sl_CHAR iri, bool vocab, m9_sta
   m9t4to = m9_sub_i64 ((*c).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t4to) for (;;) {
-    bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ({ bool m9t5 = ((((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len > bestLen)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len < (iri).len)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a411 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t5 = (Text_StartsWith (iri, m9a411, err)); } } m9t5; }); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a412 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;   if (err->exc) goto L_ret; m9t6 = ((Text_FindChar (m9a412, 58u, err) < INT64_C(0))); } } m9t6; }); if (m9t7) { { __typeof__((*(uint32_t *) m9_at (({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).p, m9_sub_i64 (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len, INT64_C(1), err), ({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint32_t), err))) m9a413 = (*(uint32_t *) m9_at (({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).p, m9_sub_i64 (((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len, INT64_C(1), err), ({ m9_sl_CHAR m9g = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t7 = ((Text_FindChar (((m9_sl_CHAR){ (uint32_t *) m9s534, 7 }), m9a413, err) >= INT64_C(0))); } } m9t7; });
+    bool m9t10 = ({ bool m9t9 = ({ bool m9t8 = ({ bool m9t7 = ({ bool m9t6 = ({ bool m9t5 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a443 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t5 = ((Text_BLen (m9a443, err) > bestLen)); } } m9t5; }); if (m9t6) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a444 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t6 = ((Text_BLen (m9a444, err) < Text_BLen (iri, err))); } } m9t6; }); if (m9t7) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a445 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t7 = (Text_StartsWithUtf (iri, m9a445, err)); } } m9t7; }); if (m9t8) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term) m9a446 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).term;   if (err->exc) goto L_ret; m9t8 = ((Text_FindCharUtf (m9a446, 58u, err) < INT64_C(0))); } } m9t8; }); if (m9t9) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a447 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a448 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; { __typeof__(m9_sub_i64 (Text_BLen (m9a448, err), INT64_C(1), err)) m9a449 = m9_sub_i64 (Text_BLen (m9a448, err), INT64_C(1), err);   if (err->exc) goto L_ret; { __typeof__(Text_BChar (m9a447, m9a449, err)) m9a450 = Text_BChar (m9a447, m9a449, err);   if (err->exc) goto L_ret; m9t9 = ((Text_FindCharUtf (((m9_sl_UTF8){ (uint8_t *) m9s622, 7 }), m9a450, err) >= INT64_C(0))); } } } } } m9t9; });
     if (err->exc) goto L_ret;
-    if (m9t8) {
+    if (m9t10) {
       best = i;
-      { __typeof__(bestLen) m9v = ((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri).len;
+      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a451 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;
+        if (err->exc) goto L_ret;
+      { __typeof__(bestLen) m9v = Text_BLen (m9a451, err);
         if (err->exc) goto L_ret;
         bestLen = m9v;
+      }
       }
     }
     if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
@@ -12288,15 +12441,15 @@ static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx *c, m9_sl_CHAR iri, bool vocab, m9_sta
   } }
   if ((best >= INT64_C(0))) {
     err->res = m9res;
-    m9ret = m9_cat (err->res, m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, best, (*c).defs.len, sizeof (Rdf_TermDef), err)).term, ((m9_sl_CHAR){ (uint32_t *) m9s535, 1 }), err), ({ __auto_type m9t9 = iri; int64_t m9t9a = bestLen, m9t9n = m9_sub_i64 ((iri).len, bestLen, err); int64_t m9t9o = m9_chk_slice (m9t9a, m9t9n, m9t9.len, err); (__typeof__(m9t9)){ m9t9.p + m9t9o, err->exc ? 0 : m9t9n }; }), err);
+    m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, best, (*c).defs.len, sizeof (Rdf_TermDef), err)).term, ((m9_sl_UTF8){ (uint8_t *) m9s623, 1 }), err), m9_utf_slice (iri, bestLen, m9_sub_i64 (Text_BLen (iri, err), bestLen, err), err), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t10 = (((vocab && (*c).hasVocab) && (((*c).vocab).len < (iri).len)) && Text_StartsWith (iri, (*c).vocab, err));
+  bool m9t12 = (((vocab && (*c).hasVocab) && (Text_BLen ((*c).vocab, err) < Text_BLen (iri, err))) && Text_StartsWithUtf (iri, (*c).vocab, err));
   if (err->exc) goto L_ret;
-  if (m9t10) {
+  if (m9t12) {
     err->res = m9res;
-    m9ret = ({ __auto_type m9t11 = iri; int64_t m9t11a = ((*c).vocab).len, m9t11n = m9_sub_i64 ((iri).len, ((*c).vocab).len, err); int64_t m9t11o = m9_chk_slice (m9t11a, m9t11n, m9t11.len, err); (__typeof__(m9t11)){ m9t11.p + m9t11o, err->exc ? 0 : m9t11n }; });
+    m9ret = m9_utf_slice (iri, Text_BLen ((*c).vocab, err), m9_sub_i64 (Text_BLen (iri, err), Text_BLen ((*c).vocab, err), err), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -12305,7 +12458,7 @@ static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx *c, m9_sl_CHAR iri, bool vocab, m9_sta
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -12322,19 +12475,19 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   Json_Node * arr = NULL; (void) arr;
   Json_Node * item = NULL; (void) item;
   int64_t i = 0; (void) i;
-  m9_sl_CHAR tm = {0}; (void) tm;
-  m9_sl_CHAR lg = {0}; (void) lg;
-  m9_sl_CHAR dt = {0}; (void) dt;
-  m9_sl_CHAR id = {0}; (void) id;
-  tm = (m9_sl_CHAR){ NULL, 0 };
-  lg = (m9_sl_CHAR){ NULL, 0 };
+  m9_sl_UTF8 tm = {0}; (void) tm;
+  m9_sl_UTF8 lg = {0}; (void) lg;
+  m9_sl_UTF8 dt = {0}; (void) dt;
+  m9_sl_UTF8 id = {0}; (void) id;
+  tm = ((m9_sl_UTF8){ NULL, 0 });
+  lg = ((m9_sl_UTF8){ NULL, 0 });
   if ((k >= INT64_C(0))) {
     { __typeof__(tm) m9v = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) goto L_hdl_m9t1;
       tm = m9v;
     }
   }
-  bool m9t3 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s536, 5 }), err);
+  bool m9t3 = Rdf_Has (v, ((m9_sl_UTF8){ (uint8_t *) m9s624, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
     { __typeof__(arr) m9v = Json_NewArrIn (pool, err);
@@ -12343,16 +12496,16 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     }
     { __typeof__(i) m9t4to;
     i = INT64_C(0);
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s537, 5 }), err)) m9a414 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s537, 5 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s625, 5 }), err)) m9a452 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s625, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    m9t4to = m9_sub_i64 (Rdf_Items (m9a414, err), INT64_C(1), err);
+    m9t4to = m9_sub_i64 (Rdf_Items (m9a452, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     if (i <= m9t4to) for (;;) {
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err)) m9a415 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s626, 5 }), err)) m9a453 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s626, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Json_Item (m9a415, i, err)) m9a416 = Json_Item (m9a415, i, err);
+      { __typeof__(Json_Item (m9a453, i, err)) m9a454 = Json_Item (m9a453, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(item) m9v = Rdf_CompactValue (pool, c, k, m9a416, err);
+      { __typeof__(item) m9v = Rdf_CompactValue (pool, c, k, m9a454, err);
         if (err->exc) goto L_hdl_m9t1;
         item = m9v;
       }
@@ -12364,7 +12517,7 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       i += 1;
     } }
     }
-    bool m9t6 = ({ bool m9t5 = (k >= INT64_C(0)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a417 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t5 = (Text_Eq (m9a417, ((m9_sl_CHAR){ (uint32_t *) m9s539, 5 }), err)); } } m9t5; });
+    bool m9t6 = ({ bool m9t5 = (k >= INT64_C(0)); if (m9t5) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a455 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;   if (err->exc) goto L_hdl_m9t1; m9t5 = (Text_EqUtf (m9a455, ((m9_sl_UTF8){ (uint8_t *) m9s627, 5 }), err)); } } m9t5; });
     if (err->exc) goto L_hdl_m9t1;
     if (m9t6) {
       err->res = m9res;
@@ -12375,40 +12528,40 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s540, 5 }), &(arr), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s628, 5 }), &(arr), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  bool m9t7 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s541, 3 }), err);
+  bool m9t7 = Rdf_Has (v, ((m9_sl_UTF8){ (uint8_t *) m9s629, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err)) m9a418 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s630, 3 }), err)) m9a456 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s630, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(id) m9v = Rdf_JStr (m9a418, err);
+    { __typeof__(id) m9v = Rdf_JStr (m9a456, err);
       if (err->exc) goto L_hdl_m9t1;
       id = m9v;
     }
     }
-    bool m9t8 = Text_Eq (tm, ((m9_sl_CHAR){ (uint32_t *) m9s543, 3 }), err);
+    bool m9t8 = Text_EqUtf (tm, ((m9_sl_UTF8){ (uint8_t *) m9s631, 3 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t8) {
       err->res = m9res;
-      { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a419 = Rdf_CompactIri (c, id, false, err);
+      { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a457 = Rdf_CompactIri (c, id, false, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a419, err);
+      m9ret = Json_NewStrIn (pool, m9a457, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
     }
-    bool m9t9 = Text_Eq (tm, ((m9_sl_CHAR){ (uint32_t *) m9s544, 6 }), err);
+    bool m9t9 = Text_EqUtf (tm, ((m9_sl_UTF8){ (uint8_t *) m9s632, 6 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t9) {
       err->res = m9res;
-      { __typeof__(Rdf_CompactIri (c, id, true, err)) m9a420 = Rdf_CompactIri (c, id, true, err);
+      { __typeof__(Rdf_CompactIri (c, id, true, err)) m9a458 = Rdf_CompactIri (c, id, true, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a420, err);
+      m9ret = Json_NewStrIn (pool, m9a458, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
@@ -12417,52 +12570,52 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a421 = Rdf_CompactIri (c, id, false, err);
+    { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a459 = Rdf_CompactIri (c, id, false, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a421, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a459, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s545, 3 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s633, 3 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  bool m9t10 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s546, 9 }), err);
+  bool m9t10 = Rdf_Has (v, ((m9_sl_UTF8){ (uint8_t *) m9s634, 9 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t10) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s547, 9 }), err)) m9a422 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s547, 9 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s635, 9 }), err)) m9a460 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s635, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(lg) m9v = Rdf_JStr (m9a422, err);
+    { __typeof__(lg) m9v = Rdf_JStr (m9a460, err);
       if (err->exc) goto L_hdl_m9t1;
       lg = m9v;
     }
     }
-    bool m9t12 = ({ bool m9t11 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t11) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a423 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) goto L_hdl_m9t1; m9t11 = (Text_Eq (m9a423, lg, err)); } } m9t11; });
+    bool m9t12 = ({ bool m9t11 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t11) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a461 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) goto L_hdl_m9t1; m9t11 = (Text_EqUtf (m9a461, lg, err)); } } m9t11; });
     if (err->exc) goto L_hdl_m9t1;
     if (m9t12) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err)) m9a424 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s636, 6 }), err)) m9a462 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s636, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a424, err)) m9a425 = Rdf_JStr (m9a424, err);
+      { __typeof__(Rdf_JStr (m9a462, err)) m9a463 = Rdf_JStr (m9a462, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a425, err);
+      m9ret = Json_NewStrIn (pool, m9a463, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
       goto L_ret;
     }
-    bool m9t13 = (((((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang)) && (*c).hasLang) && Text_Eq ((*c).lang, lg, err)) && ((tm).len == INT64_C(0)));
+    bool m9t13 = (((((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang)) && (*c).hasLang) && Text_EqUtf ((*c).lang, lg, err)) && (Text_BLen (tm, err) == INT64_C(0)));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t13) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), err)) m9a426 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s637, 6 }), err)) m9a464 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s637, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a426, err)) m9a427 = Rdf_JStr (m9a426, err);
+      { __typeof__(Rdf_JStr (m9a464, err)) m9a465 = Rdf_JStr (m9a464, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a427, err);
+      m9ret = Json_NewStrIn (pool, m9a465, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -12472,40 +12625,40 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s550, 6 }), err)) m9a428 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s550, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s638, 6 }), err)) m9a466 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s638, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s551, 6 }), m9a428, err);
+    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s639, 6 }), m9a466, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(s) m9v = Json_NewStrIn (pool, lg, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s552, 9 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s640, 9 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  bool m9t14 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s553, 5 }), err);
+  bool m9t14 = Rdf_Has (v, ((m9_sl_UTF8){ (uint8_t *) m9s641, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t14) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s554, 5 }), err)) m9a429 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s554, 5 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s642, 5 }), err)) m9a467 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s642, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(dt) m9v = Rdf_JStr (m9a429, err);
+    { __typeof__(dt) m9v = Rdf_JStr (m9a467, err);
       if (err->exc) goto L_hdl_m9t1;
       dt = m9v;
     }
     }
-    bool m9t15 = Text_Eq (tm, dt, err);
+    bool m9t15 = Text_EqUtf (tm, dt, err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t15) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err)) m9a430 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s643, 6 }), err)) m9a468 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s643, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a430, err)) m9a431 = Rdf_JStr (m9a430, err);
+      { __typeof__(Rdf_JStr (m9a468, err)) m9a469 = Rdf_JStr (m9a468, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a431, err);
+      m9ret = Json_NewStrIn (pool, m9a469, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -12515,33 +12668,33 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s556, 6 }), err)) m9a432 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s556, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s644, 6 }), err)) m9a470 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s644, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s557, 6 }), m9a432, err);
+    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s645, 6 }), m9a470, err);
     if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_CompactIri (c, dt, true, err)) m9a433 = Rdf_CompactIri (c, dt, true, err);
+    { __typeof__(Rdf_CompactIri (c, dt, true, err)) m9a471 = Rdf_CompactIri (c, dt, true, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a433, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a471, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s558, 5 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s646, 5 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  bool m9t16 = (((tm).len == INT64_C(0)) && ((((((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang).len == INT64_C(0)))) || (!(*c).hasLang))));
+  bool m9t18 = ({ bool m9t17 = (Text_BLen (tm, err) == INT64_C(0)); if (m9t17) { m9t17 = ((((({ bool m9t16 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).hasLang); if (m9t16) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a472 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;   if (err->exc) goto L_hdl_m9t1; m9t16 = ((Text_BLen (m9a472, err) == INT64_C(0))); } } m9t16; })) || (!(*c).hasLang)))); } m9t17; });
   if (err->exc) goto L_hdl_m9t1;
-  if (m9t16) {
+  if (m9t18) {
     err->res = m9res;
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err)) m9a434 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s647, 6 }), err)) m9a473 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s647, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_JStr (m9a434, err)) m9a435 = Rdf_JStr (m9a434, err);
+    { __typeof__(Rdf_JStr (m9a473, err)) m9a474 = Rdf_JStr (m9a473, err);
       if (err->exc) goto L_hdl_m9t1;
-    m9ret = Json_NewStrIn (pool, m9a435, err);
+    m9ret = Json_NewStrIn (pool, m9a474, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     }
@@ -12551,9 +12704,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
     if (err->exc) goto L_hdl_m9t1;
     o = m9v;
   }
-  { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), err)) m9a436 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), err);
+  { __typeof__(Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s648, 6 }), err)) m9a475 = Rdf_JGet (v, ((m9_sl_UTF8){ (uint8_t *) m9s648, 6 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s561, 6 }), m9a436, err);
+  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s649, 6 }), m9a475, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   err->res = m9res;
@@ -12562,7 +12715,7 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx *c, int64_t k, Json_
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
-    m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
+    m9_sl_UTF8 m = { (uint8_t *) m9_pay_take (err, 0, sizeof (uint8_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
     err->res = m9res;
     m9ret = Json_NewNullIn (pool, err);
@@ -12587,7 +12740,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Rdf_PropTerm (Rdf_Ctx *c, m9_sl_CHAR iri, bool isList, m9_state *err)
+static int64_t Rdf_PropTerm (Rdf_Ctx *c, m9_sl_UTF8 iri, bool isList, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -12605,12 +12758,12 @@ static int64_t Rdf_PropTerm (Rdf_Ctx *c, m9_sl_CHAR iri, bool isList, m9_state *
   m9t1to = m9_sub_i64 ((*c).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a437 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a437, iri, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = ((!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).reverse)); if (m9t2) { { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri) m9a476 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri;   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a476, iri, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a438 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;
+      { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container) m9a477 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, i, (*c).defs.len, sizeof (Rdf_TermDef), err)).container;
         if (err->exc) goto L_ret;
-      bool m9t4 = (isList == Text_Eq (m9a438, ((m9_sl_CHAR){ (uint32_t *) m9s562, 5 }), err));
+      bool m9t4 = (isList == Text_EqUtf (m9a477, ((m9_sl_UTF8){ (uint8_t *) m9s650, 5 }), err));
       if (err->exc) goto L_ret;
       if (m9t4) {
         err->res = m9res;
@@ -12666,34 +12819,41 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Rdf_LocalStart (m9_sl_CHAR iri, m9_state *err)
+static int64_t Rdf_LocalStart (m9_sl_UTF8 iri, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   int64_t m9ret = 0;
-  int64_t i = 0; (void) i;
+  int64_t at = 0; (void) at;
+  int64_t p = 0; (void) p;
   int64_t best = 0; (void) best;
-  best = (iri).len;
-  { __typeof__(i) m9v = m9_sub_i64 ((iri).len, INT64_C(1), err);
+  int64_t n = 0; (void) n;
+  uint32_t c = 0; (void) c;
+  { __typeof__(n) m9v = Text_BLen (iri, err);
     if (err->exc) goto L_ret;
-    i = m9v;
+    n = m9v;
   }
+  best = n;
+  at = INT64_C(0);
   for (;;) {
-    bool m9t2 = ({ bool m9t1 = (i >= INT64_C(0)); if (m9t1) { { __typeof__((*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err))) m9a439 = (*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t1 = (Rdf_NcChar (m9a439, err)); } } m9t1; });
-    if (err->exc) goto L_ret;
-    if (!(m9t2)) break;
-    { __typeof__((*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err))) m9a440 = (*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err));
+    if (!((at < n))) break;
+    p = at;
+    { __typeof__(c) m9v = Text_NextCp (iri, &(at), err);
       if (err->exc) goto L_ret;
-    bool m9t3 = Rdf_NcStart (m9a440, err);
+      c = m9v;
+    }
+    bool m9t1 = Rdf_NcChar (c, err);
     if (err->exc) goto L_ret;
-    if (m9t3) {
-      best = i;
-    } }
-    { __typeof__(i) m9v = m9_sub_i64 (i, INT64_C(1), err);
+    if (m9t1) {
+      bool m9t2 = ((best == n) && Rdf_NcStart (c, err));
       if (err->exc) goto L_ret;
-      i = m9v;
+      if (m9t2) {
+        best = p;
+      }
+    } else {
+      best = n;
     }
   }
   err->res = m9res;

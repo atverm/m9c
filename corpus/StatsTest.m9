@@ -1,23 +1,22 @@
 MODULE StatsTest ;
 
-(* Stats against numpy, scipy and pandas.
+(* StatsTest holds Stats against numpy, scipy and pandas.
 
-   Two things are held here.  What was added on 2026-10-02 --
-   histogram and binning, rolling windows, linear interpolation,
-   covariance and correlation -- and the rule the whole module took
-   the same day: A NaN IS A MISSING VALUE, every statistic is over
-   the values that are there, and every count it answers is the count
-   of those.  (The older half without gaps -- moments, percentiles,
-   regression, t-tests, the random stream -- stays with
-   runtime/test/stats_driver.c.)
+   Two things are held here: the additions of 2026-10-02 (histogram
+   and binning, rolling windows, linear interpolation, covariance and
+   correlation), and the rule the whole module took the same day.  A
+   NaN IS A MISSING VALUE, every statistic is over the values that
+   are there, and every count it answers is the count of those.  (The
+   older half without gaps stays with runtime/test/stats_driver.c:
+   moments, percentiles, regression, t-tests, the random stream.)
 
-   Goldens: runtime/test/gold/Stats.gold from tools/statsgoldm9.py,
-   which says how closely each is held and why.  Exact: histogram,
-   rolling extremes and counts, rolling sums (against math.fsum of
-   each window), interpolation, the median.  Within 1e-12: what
-   numpy and scipy themselves compute by a route whose last digits
-   are not anyone's to reproduce -- a pairwise mean, a BLAS product,
-   a p-value. *)
+   The goldens are runtime/test/gold/Stats.gold from
+   tools/statsgoldm9.py, which says how closely each is held and why.
+   These are exact: histogram, rolling extremes and counts, rolling
+   sums (against math.fsum of each window), interpolation, the median.
+   These are held within 1e-12: the values numpy and scipy themselves
+   compute by a route whose last digits are not anyone's to
+   reproduce, such as a pairwise mean, a BLAS product, a p-value. *)
 
 IMPORT Check ;
 IMPORT Faults ;
@@ -53,7 +52,8 @@ BEGIN
 END I64s ;
 
 
-(* a grid from its row-major values and its shape, and back *)
+(* Grid makes a grid from its row-major values and its shape, and
+   Flat goes back. *)
 PROCEDURE Grid (RO flat: SLICE OF F64 ; rows, cols: I64) : GRID 2 OF F64 =
 VAR
   g : GRID 2 OF F64 ;
@@ -324,11 +324,11 @@ BEGIN
      present, which is what pandas' cov and corr do *)
   shape := I64s ('in.c.gn.shape') ;
   g := Grid (F64s ('in.c.gn'), shape[0], shape[1]) ;
-  (* an absolute tolerance beside the relative one: the covariance of
-     two columns that have nothing to do with each other is a sum that
-     cancels to nearly nothing, and what is left of it agrees with
-     pandas to 1e-15 of the columns' scale, not to twelve digits of
-     itself.  The first run of this test said so: 4.42904998118e-5
+  (* This uses an absolute tolerance beside the relative one.  The
+     covariance of two columns that have nothing to do with each other
+     is a sum that cancels to nearly nothing, and the remainder agrees
+     with pandas to 1e-15 of the columns' scale, not to twelve digits
+     of itself.  The first run of this test said so: 4.42904998118e-5
      here, 4.42904998130e-5 there. *)
   m := Stats.CovMatrix (g) ;
   Check.NearF64s (t, 'CovMatrix with gaps is pairwise, as pandas',
@@ -340,14 +340,15 @@ END Covariance ;
 
 (* ---- the distributions, against scipy.stats over a grid ----
 
-   Densities and cumulatives within 1e-12 of the value, inverses
-   within 1e-10: series and continued fractions stopped at double
-   precision, a log-gamma good to fifteen digits, a root found inside
-   a bracket.  1e-300 absolute beside it, for the one grid point
-   (38 standard deviations out) whose answer is a denormal number and
-   has no twelve digits to agree on.  And 1e-15 absolute for the
-   inverses, for one point: the median of Student's t is zero, Stats
-   answers 0.0, and scipy answers 8e-17. *)
+   Densities and cumulatives are held within 1e-12 of the value,
+   inverses within 1e-10: series and continued fractions stopped at
+   double precision, a log-gamma good to fifteen digits, a root found
+   inside a bracket.  A tolerance of 1e-300 absolute stands beside
+   it, for the one grid point (38 standard deviations out) whose
+   answer is a denormal number and has no twelve digits to agree on.
+   And a tolerance of 1e-15 absolute serves the inverses, for one
+   point: the median of Student's t is zero, Stats answers 0.0, and
+   scipy answers 8e-17. *)
 PROCEDURE Distributions () RAISES Faults.BadArg, ValueRange, Overflow =
 VAR
   x, p, dofs, cx, rx, rp, rc : SLICE OF F64 ;
@@ -413,8 +414,8 @@ BEGIN
                 I64s ('want.s.choice.5.5')) ;
   c := Stats.Choice (st, 7, 0) ;
   Check.EqI64s (t, 'Choice of none', c, I64s ('want.s.choice.7.0')) ;
-  (* 6000 shuffles of three from seed 7, counted by the order that
-     came out: (0,1,2) is 0 ... (2,1,0) is 5 *)
+  (* This makes 6000 shuffles of three from seed 7, counted by the
+     order that came out: (0,1,2) is 0 ... (2,1,0) is 5. *)
   st := Stats.Seed (7) ;
   counts := NEW (I64, 6) ;
   three := NEW (I64, 3) ;
@@ -467,7 +468,8 @@ EXCEPT
 END DofRefused ;
 
 (* a sample of nothing but NaN is TooFew, and `got` is the count of
-   values, not the length: answers got, or -1 if nothing was raised *)
+   values, not the length.  AllNaNGot answers got, or -1 if nothing
+   was raised. *)
 PROCEDURE AllNaNGot () : I64 =
 VAR
   xs : SLICE OF F64 ;
@@ -529,9 +531,10 @@ EXCEPT
 | Faults.SizeError : RETURN FALSE
 END UnsortedRefused ;
 
-(* Stats.Taylor: the three numbers of a Taylor diagram against
-   numpy's, from the data -- complete, with gaps, and for a model so
-   close to its reference that the difference is the eighth digit *)
+(* Taylors holds Stats.Taylor, the three numbers of a Taylor diagram,
+   against numpy's, from the data: complete, with gaps, and for a
+   model so close to its reference that the difference is the eighth
+   digit. *)
 PROCEDURE Taylors ()
   RAISES Stats.TooFew, Faults.SizeError, Faults.BadArg, ValueRange =
 VAR
@@ -557,9 +560,9 @@ BEGIN
   got[0] := ratio ; got[1] := corr ; got[2] := rms ;
   Check.NearF64s (t, 'Taylor with gaps: over the pairs that are both there',
                   got, F64s ('want.t.m'), 0.0, Tol) ;
-  (* the difference is 1e-7 of fields near 400: what numpy and this
-     both keep of it is about seven digits, and the triangle would
-     keep none *)
+  (* The difference is 1e-7 of fields near 400: numpy and this both
+     keep about seven digits of it, and the triangle would keep
+     none. *)
   x := F64s ('in.c.x') ;
   y := F64s ('in.t.near') ;
   want := F64s ('want.t.near') ;

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Install the M9 kernel for Jupyter, for this user.  install.py does
-# the work, the same on Linux, macOS and Windows; this keeps the
+# the work, the same on Linux, macOS and Windows.  This script keeps the
 # command line it always had:
 #
 #   tools/jupyter/install.sh [PYTHON]   the kernel runs under PYTHON
@@ -10,8 +10,8 @@
 #                                       `uv run --with ipykernel`
 #
 # Anything after those goes to install.py: --check, --highlight,
-# --m9c PATH, --uninstall ... (python3 install.py --help).  It does
-# not ask: run install.py itself for the questions.
+# --m9c PATH, --uninstall ... (python3 install.py --help).  This script
+# does not ask.  Run install.py itself for the questions.
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 if [ "$1" = "--uv" ]; then

@@ -1,0 +1,972 @@
+#!/usr/bin/env -S m9c --run
+MODULE Sabotage ;
+
+(* Sabotage shows a gate ABLE TO FAIL.  Each entry of a list is one
+   small edit to a COPY of a file.  The edit breaks one property the
+   gate claims to hold.  For each entry this program edits the copy,
+   runs the gate against it, and requires the gate to FAIL.  A sabotage
+   the gate passes is a property the gate does not hold.  This program
+   then exits 1 and names it.
+
+     runtime/test/Sabotage.m9 srvfix|smtp|rdf M9C PY [NAME-PART]
+     runtime/test/Sabotage.m9 pg|regex|rsa|xml M9C [NAME-PART]
+
+   Run it from the repository root, or name the root with --root=DIR.
+   M9C is the compiler.  PY is a Python with h11 (srvfix), with
+   aiosmtpd (smtp) or with rdflib (rdf).  NAME-PART runs only the
+   entries whose name holds it.  --data=FILE reads another list.
+   --list prints the entries as read and runs nothing.  --check makes
+   each edit and checks the edited module with m9c --check, and runs no
+   gate: it finds a stale @new in seconds.  The kinds that take PY take
+   it with --check too; it is not used.
+
+   The gates and their lists:
+
+     srvfix  runtime/test/srvfix/sabotage.txt, default file
+             corpus/HttpServer.m9.  The program copies corpus/ and the
+             runtime (without test/ and gen/), builds SrvFix against the
+             copies and runs srvfix.py on it.  SRVFIX_PORT gives each
+             slot a port block of 100 from 21000.
+             docs/httpserver-plan.md, stages 1 to 3.
+     smtp    runtime/test/smtpfix/sabotage.txt, default file
+             corpus/Smtp.m9.  The program copies corpus/ and runs
+             smtp.sh with the copy as M9LIBRARY_OVERRIDE, a folder of
+             its own as SMTP_W and SMTP_PORT = 31000 + 10 * slot.
+             docs/library-plan-2.md, item 6.
+     pg      runtime/test/pgsabotage.txt, default file corpus/Pg.m9.
+             The program builds PgTest against a copy of corpus/ and
+             runs it from the root on runtime/test/gold, 120 s.  It
+             talks to the server libpq's PG* variables name (PGHOST and
+             the rest, from the caller).  Its fixture is a TEMP table,
+             one per session, so the slots run side by side.
+     regex   runtime/test/regexsabotage.txt, default file
+             corpus/Regex.m9.  RegexTest against a copy of corpus/, run
+             from the root, 600 s.
+     xml     runtime/test/xmlsabotage.txt, default file corpus/Xml.m9.
+             XmlTest against a copy of corpus/, run from the root with
+             M9_XMLCONF naming the W3C suite where xml.sh unpacks it,
+             600 s.  The program refuses to start without the suite.
+     rsa     runtime/test/rsasabotage.txt, default file corpus/Rsa.m9;
+             some entries edit runtime/tlsshim.c.  RsaTest against
+             copies of corpus/ and the runtime, run from the root, 120 s.
+             docs/library-plan-2.md, section 13.
+     rdf     runtime/test/rdfsabotage.txt, default file corpus/Rdf.m9.
+             RdfTest and RdfConv are built against a copy of corpus/.
+             RdfTest runs from the root, 300 s.  RdfConv converts the
+             W3C suites that runtime/test/gold/Rdf.gold lists into a
+             folder of the entry's own, and PY runs rdfjudge.py on it.
+             At least one of the two must go red; the line says which.
+     The test kinds (pg, regex, xml, rsa, rdf) write no files of their
+     own outside the entry's folder, so every kind runs side by side.
+     docs/datalib-plan.md for pg, regex, xml and rdf.
+
+   The entries run SABOTAGE_JOBS at a time (half the cores by default).
+   Each of that many threads is one slot: it takes the next entry from
+   a monitor, runs it, and reports the verdict through the monitor.  A
+   gate stopped at its limit is red for srvfix and smtp (the gate hung
+   on the break).  For the test kinds it is HUNG and held: the test did
+   not judge.  An entry is HELD when its text is not in the file
+   exactly once (stale), when the copy does not build, when the gate
+   passes, or when its own run raises.  A held entry is printed at once, never dropped: RAISES is
+   proved complete, so the thread's handler below sees every exception
+   a run can raise.  The Python drivers this replaces lost a thread's
+   exception until the end (srvfix, 2026-10-31: a missing fuser).
+
+   Not run by CI.  The full lists take long, so they run on a Linux
+   box.  This is a helper, so it is in M9 (Alex, 2026-10-04). *)
+
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Seq ;
+IMPORT System ;
+IMPORT Text ;
+
+CONST
+  Srv = 0 ;          (* the kinds, in the order of Kinds *)
+  Smtp = 1 ;
+  Pg = 2 ;
+  Rdf = 3 ;
+  Regex = 4 ;
+  Rsa = 5 ;
+  Xml = 6 ;
+  Kinds = ['srvfix', 'smtp', 'pg', 'rdf', 'regex', 'rsa', 'xml'] ;
+  Suite = '/runtime/test/xmlconf/xmlconf' ;
+  JldBase = 'https://w3c.github.io/json-ld-api/tests/' ;
+  SrvPort0 = 21000 ;
+  SrvStep = 100 ;
+  SmtpPort0 = 31000 ;
+  SmtpStep = 10 ;
+  Limit = 240.0 ;   (* a gate run; a normal srvfix run takes about 60 s *)
+  Excluded = ['test', 'gen'] ;   (* runtime folders the copy leaves out *)
+
+TYPE
+  Entry = RECORD
+    name, file, old, new : STR ;
+  END ;
+
+  Board = MONITOR RECORD
+    next : I64 ;     (* the next entry to deal out *)
+    slot : I64 ;     (* the next slot number to hand a thread *)
+    done : I64 ;     (* threads finished *)
+    held : I64 ;     (* entries held *)
+  END ;
+
+  Job = RECORD
+    b : Board ;
+    kind : I64 ;
+    root, m9c, py : STR ;
+    todo : SLICE OF Entry ;
+    checkOnly : BOOL ;   (* --check: check the edited module, run no gate *)
+  END [SHARABLE] ;
+
+EXCEPTION
+  Malformed (line: I64 ; why: STR) ;
+  Failed (why: STR) ;
+
+VAR
+  pool : POOL ;   (* the list and the job, for the whole run *)
+  code : I64 ;
+
+(* The bound procedures hold the lock for their whole body, so each is
+   short.  Say prints under the lock, so two verdicts never mix. *)
+
+PROCEDURE Take (VAR b: Board ; n: I64) : I64 =
+VAR k : I64 ;
+BEGIN
+  IF b.next >= n THEN RETURN -1 END ;
+  k := b.next ;
+  b.next := b.next + 1 ;
+  RETURN k
+END Take ;
+
+PROCEDURE Slot (VAR b: Board) : I64 =
+VAR k : I64 ;
+BEGIN
+  k := b.slot ;
+  b.slot := b.slot + 1 ;
+  RETURN k
+END Slot ;
+
+PROCEDURE Say (VAR b: Board ; RO line: STR ; hold: BOOL) =
+BEGIN
+  Io.WriteLine (line) ;
+  Io.Flush () ;
+  IF hold THEN b.held := b.held + 1 END
+END Say ;
+
+PROCEDURE Finish (VAR b: Board) =
+BEGIN
+  b.done := b.done + 1 ;
+  SIGNAL (b)
+END Finish ;
+
+PROCEDURE AwaitAll (VAR b: Board ; n: I64) =
+BEGIN
+  WHILE b.done < n DO WAIT (b) END
+END AwaitAll ;
+
+PROCEDURE Held (VAR b: Board) : I64 =
+BEGIN
+  RETURN b.held
+END Held ;
+
+(* Count answers how often t occurs in s, never overlapping (Python's
+   str.count).  An empty t counts as absent. *)
+PROCEDURE Count (RO s, t: STR) : I64 =
+VAR n, at, k : I64 ;
+BEGIN
+  IF Text.BLen (t) = 0 THEN RETURN 0 END ;
+  n := 0 ;
+  at := 0 ;
+  LOOP
+    k := Text.Find (SLICE (s, at, Text.BLen (s) - at), t) ;
+    IF k < 0 THEN EXIT END ;
+    n := n + 1 ;
+    at := at + k + Text.BLen (t)
+  END ;
+  RETURN n
+END Count ;
+
+(* Cut answers s cut to at most n octets.  The cut backs off to the
+   start of a character, so the answer stays UTF-8. *)
+PROCEDURE Cut (RO s: STR ; n: I64) : STR =
+VAR k : I64 ;
+BEGIN
+  IF Text.BLen (s) <= n THEN RETURN s END ;
+  k := n ;
+  WHILE k > 0 AND I64 (Text.BAt (s, k)) DIV 64 = 2 DO k := k - 1 END ;
+  RETURN SLICE (s, 0, k)
+END Cut ;
+
+(* Tail answers the last n lines of s, joined by newlines. *)
+PROCEDURE Tail (RO s: STR ; n: I64) : STR =
+VAR
+  lines : SLICE OF STR ;
+  k : I64 ;
+BEGIN
+  lines := Text.Split (Text.TrimUtf (s), 0AC) ;
+  k := LEN (lines) - n ;
+  IF k < 0 THEN k := 0 END ;
+  RETURN Text.Join (SLICE (lines, k, LEN (lines) - k), '' + 0AC)
+END Tail ;
+
+(* Verdict answers the line that says why the gate went red, cut to n
+   octets.  The line is the first that starts with fail (or holds it,
+   when anywhere), else the last line. *)
+PROCEDURE Verdict (RO out, fail: STR ; anywhere: BOOL ; n: I64) : STR =
+VAR
+  lines : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  lines := Text.Split (Text.TrimUtf (out), 0AC) ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF Text.StartsWith (lines[i], fail) OR (anywhere AND Text.Contains (lines[i], fail)) THEN
+      RETURN Cut (lines[i], n)
+    END
+  END ;
+  IF Text.BLen (out) = 0 THEN RETURN '(nothing)' END ;
+  RETURN Cut (lines[LEN (lines) - 1], n)
+END Verdict ;
+
+(* Run runs prog with args and an env overlay and answers its result.
+   It raises Failed when prog cannot start. *)
+PROCEDURE Run (VAR p: POOL ; RO prog: STR ; RO args, env: SLICE OF STR ; seconds: F64)
+  : System.Result RAISES ValueRange, Failed =
+BEGIN
+  RETURN System.ExecWithin (p, prog, args, '', env, seconds)
+EXCEPT
+| Io.IOError (m) : RAISE Failed ('cannot start ' + prog + ': ' + m)
+END Run ;
+
+(* RunIn is Run in the folder dir.  Exec takes no working folder, so sh
+   changes into dir first and then becomes prog. *)
+PROCEDURE RunIn (VAR p: POOL ; RO dir, prog: STR ; RO args, env: SLICE OF STR ;
+                 seconds: F64) : System.Result RAISES ValueRange, Failed =
+VAR
+  a : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  a := NEW (p, STR, LEN (args) + 5) ;
+  a[0] := '-c' ;
+  a[1] := 'cd "$1" && shift && exec "$@"' ;
+  a[2] := 'sabotage' ;
+  a[3] := Text.Keep (p, dir) ;
+  a[4] := Text.Keep (p, prog) ;
+  FOR i := 0 TO LEN (args) - 1 DO a[i + 5] := Text.Keep (p, args[i]) END ;
+  RETURN Run (p, 'sh', a, env, seconds)
+END RunIn ;
+
+(* Build builds src into out with m9c, in the folder w, against the
+   runtime rt and the library lib. *)
+PROCEDURE Build (VAR p: POOL ; RO m9c, w, rt, lib, out, src: STR)
+  : System.Result RAISES ValueRange, Failed =
+VAR args, env : SLICE OF STR ;
+BEGIN
+  args := Four (p, '--make', '-o', out, src) ;
+  env := NEW (p, STR, 2) ;
+  env[0] := Text.Keep (p, 'M9RUNTIME=' + rt) ;
+  env[1] := Text.Keep (p, 'M9LIBRARY=' + lib) ;
+  RETURN RunIn (p, w, m9c, args, env, 0.0)
+END Build ;
+
+(* Four answers the four strings as a slice in p. *)
+PROCEDURE Four (VAR p: POOL ; RO a, b, c, d: STR) : SLICE OF STR =
+VAR s : SLICE OF STR ;
+BEGIN
+  s := NEW (p, STR, 4) ;
+  s[0] := Text.Keep (p, a) ;
+  s[1] := Text.Keep (p, b) ;
+  s[2] := Text.Keep (p, c) ;
+  s[3] := Text.Keep (p, d) ;
+  RETURN s
+END Four ;
+
+(* Must runs prog and raises Failed unless it exits 0. *)
+PROCEDURE Must (VAR p: POOL ; RO prog: STR ; RO args: SLICE OF STR)
+  RAISES ValueRange, Failed =
+VAR r : System.Result ;
+BEGIN
+  r := Run (p, prog, args, NEW (p, STR, 0), 0.0) ;
+  IF r.status # 0 THEN
+    RAISE Failed (prog + ' exited ' + Fmt.I64Str (r.status) + ': ' + Tail (r.err, 3))
+  END
+END Must ;
+
+(* MakeTemp answers a fresh empty folder (mktemp -d). *)
+PROCEDURE MakeTemp (VAR p: POOL) : STR RAISES ValueRange, Failed =
+VAR
+  r : System.Result ;
+  args : SLICE OF STR ;
+BEGIN
+  args := NEW (p, STR, 1) ;
+  args[0] := '-d' ;
+  r := Run (p, 'mktemp', args, NEW (p, STR, 0), 0.0) ;
+  IF r.status # 0 THEN RAISE Failed ('mktemp -d: ' + Tail (r.err, 3)) END ;
+  RETURN Text.Keep (p, Text.TrimUtf (r.out))
+END MakeTemp ;
+
+(* Remove removes the folder w and all in it.  It raises nothing: it
+   runs after the verdict, which is already printed. *)
+PROCEDURE Remove (RO w: STR) =
+VAR
+  p : POOL ;
+  args : SLICE OF STR ;
+  r : System.Result ;
+BEGIN
+  args := NEW (p, STR, 2) ;
+  args[0] := '-rf' ;
+  args[1] := w ;
+  BEGIN
+    r := Run (p, 'rm', args, NEW (p, STR, 0), 0.0)
+  EXCEPT
+  | ValueRange :
+  | Failed (m) :
+  END
+END Remove ;
+
+(* FreePorts kills what a run left listening on its slot's ports.  A
+   hung or broken run can leave its servers there, and the slot's next
+   entry would go red for that.  The ports are freed by number (fuser),
+   never by a pattern.  A machine without fuser skips this. *)
+PROCEDURE FreePorts (base, n: I64) =
+VAR
+  p : POOL ;
+  args : SLICE OF STR ;
+  r : System.Result ;
+  i : I64 ;
+BEGIN
+  args := NEW (p, STR, n + 1) ;
+  args[0] := '-k' ;
+  FOR i := 0 TO n - 1 DO
+    args[i + 1] := Text.Keep (p, Fmt.I64Str (base + i) + '/tcp')
+  END ;
+  BEGIN
+    r := Run (p, 'fuser', args, NEW (p, STR, 0), 0.0)
+  EXCEPT
+  | ValueRange :
+  | Failed (m) :
+  END
+END FreePorts ;
+
+(* CopiesRuntime says whether a kind edits a copy of the runtime too:
+   srvfix (m9rt.c) and rsa (tlsshim.c). *)
+PROCEDURE CopiesRuntime (kind: I64) : BOOL =
+BEGIN
+  RETURN kind = Srv OR kind = Rsa
+END CopiesRuntime ;
+
+(* CopyTrees copies corpus/ to lib.  For srvfix and rsa it copies the
+   runtime without test/ and gen/ to rt. *)
+PROCEDURE CopyTrees (VAR p: POOL ; RO root, lib, rt: STR ; kind: I64)
+  RAISES ValueRange, IndexError, Io.IOError, Failed =
+VAR
+  args, names : SLICE OF STR ;
+  i, n : I64 ;
+BEGIN
+  args := NEW (p, STR, 3) ;
+  args[0] := '-R' ;
+  args[1] := Text.Keep (p, root + '/corpus') ;
+  args[2] := lib ;
+  Must (p, 'cp', args) ;
+  IF NOT CopiesRuntime (kind) THEN RETURN END ;
+  Io.MkDir (rt) ;
+  names := Io.ListDir (p, root + '/runtime') ;
+  args := NEW (p, STR, LEN (names) + 2) ;
+  args[0] := '-R' ;
+  n := 1 ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    IF NOT Text.OneOf (names[i], Excluded) THEN
+      args[n] := Text.Keep (p, root + '/runtime/' + names[i]) ;
+      n := n + 1
+    END
+  END ;
+  args[n] := rt ;
+  Must (p, 'cp', SLICE (args, 0, n + 1))
+END CopyTrees ;
+
+(* GateSrv builds SrvFix against the copies in w and runs srvfix.py on
+   it.  It prints the verdict. *)
+PROCEDURE GateSrv (VAR j: Job ; RO name, w: STR ; slot: I64)
+  RAISES ValueRange, Failed =
+VAR
+  p : POOL ;
+  args, env : SLICE OF STR ;
+  r : System.Result ;
+  base : I64 ;
+BEGIN
+  (* sh changes into w first: Exec takes no working folder, and the
+     build writes its intermediate files where it runs. *)
+  args := NEW (p, STR, 9) ;
+  args[0] := '-c' ;
+  args[1] := 'cd "$1" && shift && exec "$@"' ;
+  args[2] := 'sabotage' ;
+  args[3] := w ;
+  args[4] := j.m9c ;
+  args[5] := '--make' ;
+  args[6] := '-o' ;
+  args[7] := Text.Keep (p, w + '/srv') ;
+  args[8] := Text.Keep (p, j.root + '/runtime/test/srvfix/SrvFix.m9') ;
+  env := NEW (p, STR, 2) ;
+  env[0] := Text.Keep (p, 'M9RUNTIME=' + w + '/rt') ;
+  env[1] := Text.Keep (p, 'M9LIBRARY=' + w + '/lib') ;
+  r := Run (p, 'sh', args, env, 0.0) ;
+  IF r.status # 0 THEN
+    Say (j.b, "sabotage: '" + name + "' does not build -- not a sabotage:" + 0AC
+              + Tail (r.err + r.out, 10), TRUE) ;
+    RETURN
+  END ;
+  base := SrvPort0 + SrvStep * slot ;
+  args := NEW (p, STR, 2) ;
+  args[0] := Text.Keep (p, j.root + '/runtime/test/srvfix/srvfix.py') ;
+  args[1] := Text.Keep (p, w + '/srv') ;
+  env := NEW (p, STR, 1) ;
+  env[0] := Text.Keep (p, 'SRVFIX_PORT=' + Fmt.I64Str (base)) ;
+  BEGIN
+    r := Run (p, j.py, args, env, Limit)
+  FINALLY
+    FreePorts (base, SrvStep)
+  END ;
+  IF r.stopped THEN
+    Say (j.b, 'sabotage: red, as it must be: ' + name + ' -- the gate hung for 240 s', FALSE)
+  ELSIF r.status = 0 THEN
+    Say (j.b, 'sabotage: PASSED (the gate missed it): ' + name, TRUE)
+  ELSE
+    Say (j.b, 'sabotage: red, as it must be: ' + name + ' -- ' + Verdict (r.out, 'FAIL:', FALSE, 150), FALSE)
+  END
+END GateSrv ;
+
+(* GateSmtp runs smtp.sh with the copied library.  It prints the
+   verdict, with the gate's last lines when the gate passed. *)
+PROCEDURE GateSmtp (VAR j: Job ; RO name, w: STR ; slot: I64)
+  RAISES ValueRange, Failed =
+VAR
+  p : POOL ;
+  env : SLICE OF STR ;
+  r : System.Result ;
+  base : I64 ;
+BEGIN
+  base := SmtpPort0 + SmtpStep * slot ;
+  env := NEW (p, STR, 5) ;
+  env[0] := Text.Keep (p, 'M9C=' + j.m9c) ;
+  env[1] := Text.Keep (p, 'SMTPFIX_PY=' + j.py) ;
+  env[2] := Text.Keep (p, 'M9LIBRARY_OVERRIDE=' + w + '/lib') ;
+  env[3] := Text.Keep (p, 'SMTP_W=' + w + '/work') ;
+  env[4] := Text.Keep (p, 'SMTP_PORT=' + Fmt.I64Str (base)) ;
+  BEGIN
+    r := Run (p, j.root + '/runtime/test/smtp.sh', NEW (p, STR, 0), env, Limit)
+  FINALLY
+    FreePorts (base, SmtpStep)
+  END ;
+  IF r.stopped THEN
+    Say (j.b, 'sabotage: red, as it must be: ' + name + ' -- the gate hung for 240 s', FALSE)
+  ELSIF r.status = 0 THEN
+    Say (j.b, 'sabotage: PASSED (the gate missed it): ' + name + 0AC + Tail (r.out, 20), TRUE)
+  ELSE
+    Say (j.b, 'sabotage: red, as it must be: ' + name + ' -- ' + Verdict (r.out, 'FAIL:', FALSE, 150), FALSE)
+  END
+END GateSmtp ;
+
+(* CheckOnly checks the edited module with m9c --check and runs no
+   gate.  It finds a stale @new fast, without the test or a server.  An
+   edit to a C file is not checked here. *)
+PROCEDURE CheckOnly (VAR j: Job ; RO name, w, rt, lib, target: STR)
+  RAISES ValueRange, Failed =
+VAR
+  p : POOL ;
+  args, env : SLICE OF STR ;
+  r : System.Result ;
+BEGIN
+  IF NOT Text.EndsWith (target, '.m9') THEN
+    Say (j.b, 'sabotage: not checked (C): ' + name, FALSE) ;
+    RETURN
+  END ;
+  args := NEW (p, STR, 2) ;
+  args[0] := '--check' ;
+  args[1] := Text.Keep (p, target) ;
+  env := NEW (p, STR, 2) ;
+  env[0] := Text.Keep (p, 'M9RUNTIME=' + rt) ;
+  env[1] := Text.Keep (p, 'M9LIBRARY=' + lib) ;
+  r := RunIn (p, w, j.m9c, args, env, 0.0) ;
+  IF r.status # 0 THEN
+    Say (j.b, "sabotage: '" + name + "' does not check:" + 0AC + Tail (r.err + r.out, 6), TRUE)
+  ELSE
+    Say (j.b, 'sabotage: checks: ' + name, FALSE)
+  END
+END CheckOnly ;
+
+(* TestOf answers the test program of a test kind. *)
+PROCEDURE TestOf (kind: I64) : STR =
+BEGIN
+  CASE kind OF
+  | Pg : RETURN 'PgTest'
+  | Regex : RETURN 'RegexTest'
+  | Rsa : RETURN 'RsaTest'
+  | Xml : RETURN 'XmlTest'
+  ELSE RETURN 'RdfTest'
+  END
+END TestOf ;
+
+(* Seconds answers how long a test kind's test may run. *)
+PROCEDURE Seconds (kind: I64) : F64 =
+BEGIN
+  CASE kind OF
+  | Pg, Rsa : RETURN 120.0
+  | Rdf : RETURN 300.0
+  ELSE RETURN 600.0
+  END
+END Seconds ;
+
+(* GateTest builds the kind's test against the copies and runs it from
+   the root.  It prints the verdict.  pg's test reads the goldens
+   folder named on its command line; xml's reads the suite M9_XMLCONF
+   names. *)
+PROCEDURE GateTest (VAR j: Job ; RO name, w, rt, lib: STR)
+  RAISES ValueRange, Failed =
+VAR
+  p : POOL ;
+  args, env : SLICE OF STR ;
+  r : System.Result ;
+BEGIN
+  r := Build (p, j.m9c, w, rt, lib, w + '/t', lib + '/' + TestOf (j.kind) + '.m9') ;
+  IF r.status # 0 THEN
+    Say (j.b, "sabotage: '" + name + "' does not build -- not a sabotage:" + 0AC
+              + Tail (r.err + r.out, 10), TRUE) ;
+    RETURN
+  END ;
+  args := NEW (p, STR, 0) ;
+  IF j.kind = Pg THEN
+    args := NEW (p, STR, 1) ;
+    args[0] := Text.Keep (p, j.root + '/runtime/test/gold')
+  END ;
+  env := NEW (p, STR, 0) ;
+  IF j.kind = Xml THEN
+    env := NEW (p, STR, 1) ;
+    env[0] := Text.Keep (p, 'M9_XMLCONF=' + j.root + Suite)
+  END ;
+  r := RunIn (p, j.root, w + '/t', args, env, Seconds (j.kind)) ;
+  IF r.stopped THEN
+    Say (j.b, 'sabotage: HUNG (' + Fmt.Short (Seconds (j.kind)) + ' s), not judged: ' + name, TRUE)
+  ELSIF r.status = 0 THEN
+    Say (j.b, 'sabotage: PASSED (' + TestOf (j.kind) + ' missed it): ' + name, TRUE)
+  ELSIF j.kind = Pg AND Text.Contains (r.out, 'FAIL a server to test against') THEN
+    (* PgTest fails without a server.  That red says nothing about the
+       break, so the entry is held. *)
+    Say (j.b, 'sabotage: NOT JUDGED (PgTest reached no server; set PGHOST and the rest): '
+              + name, TRUE)
+  ELSE
+    Say (j.b, 'sabotage: red, as it must be: ' + name + ' -- '
+              + Verdict (r.out, 'FAIL', FALSE, 120), FALSE)
+  END
+END GateTest ;
+
+(* List answers the paths on the line of gold whose first field is key:
+   its fields from the fourth on (rdf.sh's lists).  A later line with
+   the same key wins. *)
+PROCEDURE List (VAR p: POOL ; RO gold: SLICE OF STR ; RO key: STR) : SLICE OF STR =
+VAR
+  f, ans : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  ans := NEW (p, STR, 0) ;
+  FOR i := 0 TO LEN (gold) - 1 DO
+    IF NOT Text.StartsWith (gold[i], '#') THEN
+      f := Text.Fields (gold[i], ' ') ;
+      IF LEN (f) >= 3 AND Text.Eq (f[0], key) THEN
+        ans := Seq.Copy (p, SLICE (f, 3, LEN (f) - 3))
+      END
+    END
+  END ;
+  RETURN ans
+END List ;
+
+(* Dir answers the folder part of a path: '' when it has none. *)
+PROCEDURE Dir (RO path: STR) : STR =
+VAR k : I64 ;
+BEGIN
+  k := Text.LastChar (path, '/') ;
+  IF k < 0 THEN RETURN '' END ;
+  RETURN SLICE (path, 0, k)
+END Dir ;
+
+(* MkDirsFor makes out/sub/DIR for the folder of every path. *)
+PROCEDURE MkDirsFor (RO out, sub: STR ; RO paths: SLICE OF STR)
+  RAISES ValueRange, Io.IOError =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (paths) - 1 DO
+    Io.MkDirs (out + '/' + sub + '/' + Dir (paths[i]))
+  END
+END MkDirsFor ;
+
+(* Conv runs RdfConv in the test folder and says whether it went red. *)
+PROCEDURE Conv (VAR p: POOL ; RO test, conv: STR ; RO args: SLICE OF STR) : BOOL
+  RAISES ValueRange, Failed =
+VAR r : System.Result ;
+BEGIN
+  r := RunIn (p, test, conv, args, NEW (p, STR, 0), Limit) ;
+  RETURN r.status # 0
+END Conv ;
+
+(* GateRdf runs Rdf's two gates against the copy: RdfTest, and RdfConv
+   over the W3C suites judged by rdflib (rdfjudge.py).  At least one
+   must go red.  It prints the verdict and says which went red. *)
+PROCEDURE GateRdf (VAR j: Job ; RO name, w, rt, lib: STR)
+  RAISES ValueRange, IndexError, Io.IOError, Failed =
+VAR
+  p : POOL ;
+  gold, args, pos, bases, more : SLICE OF STR ;
+  r, rj : System.Result ;
+  test, out, conv, by, first : STR ;
+  testRed, judgeRed : BOOL ;
+  i : I64 ;
+BEGIN
+  test := Text.Keep (p, j.root + '/runtime/test') ;
+  conv := Text.Keep (p, w + '/conv') ;
+  r := Build (p, j.m9c, w, rt, lib, w + '/t', lib + '/RdfTest.m9') ;
+  IF r.status = 0 THEN
+    r := Build (p, j.m9c, w, rt, lib, conv, test + '/rdffix/RdfConv.m9')
+  END ;
+  IF r.status # 0 THEN
+    Say (j.b, "sabotage: '" + name + "' does not build -- not a sabotage:" + 0AC
+              + Tail (r.err + r.out, 10), TRUE) ;
+    RETURN
+  END ;
+  r := RunIn (p, j.root, w + '/t', NEW (p, STR, 0), NEW (p, STR, 0), Seconds (Rdf)) ;
+  IF r.stopped THEN
+    Say (j.b, 'sabotage: HUNG (300 s), not judged: ' + name, TRUE) ;
+    RETURN
+  END ;
+  testRed := r.status # 0 ;
+  gold := Text.Split (Io.ReadFile (test + '/gold/Rdf.gold'), 0AC) ;
+  out := Text.Keep (p, w + '/out') ;
+  Io.MkDirs (out + '/ttl') ;
+  Io.MkDirs (out + '/nt') ;
+  judgeRed := FALSE ;
+  (* Turtle, then N-Triples *)
+  args := Four (p, 'ttl', 'rdf-tests/rdf-turtle', List (p, gold, 'ttl.base')[0], out + '/ttl') ;
+  args := Seq.Concat (p, args, List (p, gold, 'ttl.eval.action')) ;
+  args := Seq.Concat (p, args, List (p, gold, 'ttl.pos')) ;
+  args := Seq.Concat (p, args, List (p, gold, 'ttl.neg')) ;
+  IF Conv (p, test, conv, args) THEN judgeRed := TRUE END ;
+  args := Four (p, 'nt', 'rdf-tests/rdf-n-triples', '', out + '/nt') ;
+  args := Seq.Concat (p, args, List (p, gold, 'nt.pos')) ;
+  args := Seq.Concat (p, args, List (p, gold, 'nt.neg')) ;
+  IF Conv (p, test, conv, args) THEN judgeRed := TRUE END ;
+  (* RDF/XML: the suite sits in subfolders, and the output mirrors them *)
+  more := Seq.Concat (p, List (p, gold, 'xml.eval.action'), List (p, gold, 'xml.neg')) ;
+  MkDirsFor (out, 'xml', more) ;
+  args := Four (p, 'xml', 'rdf-tests/rdf-xml', List (p, gold, 'xml.base')[0], out + '/xml') ;
+  args := Seq.Concat (p, args, more) ;
+  IF Conv (p, test, conv, args) THEN judgeRed := TRUE END ;
+  (* JSON-LD: one run a document, against its own base *)
+  pos := List (p, gold, 'jld.pos.action') ;
+  bases := List (p, gold, 'jld.pos.base') ;
+  more := Seq.Concat (p, List (p, gold, 'jld.neg'), List (p, gold, 'jld.syntax')) ;
+  MkDirsFor (out, 'jld', pos) ;
+  MkDirsFor (out, 'jld', more) ;
+  FOR i := 0 TO LEN (pos) - 1 DO
+    IF i < LEN (bases) THEN
+      args := Four (p, 'jld', 'jsonld-tests', bases[i], out + '/jld') ;
+      args := Seq.Concat (p, args, SLICE (pos, i, 1)) ;
+      IF Conv (p, test, conv, args) THEN judgeRed := TRUE END
+    END
+  END ;
+  FOR i := 0 TO LEN (more) - 1 DO
+    args := Four (p, 'jld', 'jsonld-tests', JldBase + more[i], out + '/jld') ;
+    args := Seq.Concat (p, args, SLICE (more, i, 1)) ;
+    IF Conv (p, test, conv, args) THEN judgeRed := TRUE END
+  END ;
+  args := Four (p, 'rdfjudge.py', test + '/gold/Rdf.gold', 'rdf-tests', out) ;
+  rj := RunIn (p, test, j.py, args, NEW (p, STR, 0), Limit) ;
+  IF rj.status # 0 THEN judgeRed := TRUE END ;
+  IF NOT testRed AND NOT judgeRed THEN
+    Say (j.b, 'sabotage: PASSED (neither gate saw it): ' + name, TRUE) ;
+    RETURN
+  END ;
+  by := 'RdfTest and rdflib' ;
+  IF NOT judgeRed THEN by := 'RdfTest' ELSIF NOT testRed THEN by := 'rdflib' END ;
+  first := Verdict (r.out + rj.out, 'FAIL', TRUE, 110) ;
+  Say (j.b, 'sabotage: red, as it must be, by ' + by + ': ' + name + ' -- ' + first, FALSE)
+END GateRdf ;
+
+(* Judge runs entry i in slot `slot' and prints its verdict.  Every
+   exception it raises is the thread's to report. *)
+PROCEDURE Judge (VAR j: Job ; i, slot: I64)
+  RAISES ValueRange, IndexError, Io.IOError, Failed =
+VAR
+  p : POOL ;
+  e : Entry ;
+  src, edited, w, lib, rt, target : STR ;
+  n, at, cut : I64 ;
+BEGIN
+  e := j.todo[i] ;
+  src := Io.ReadFile (j.root + '/' + e.file) ;
+  n := Count (src, e.old) ;
+  IF n # 1 THEN
+    Say (j.b, "sabotage: STALE -- '" + e.name + "': its text is in " + e.file + ' '
+              + Fmt.I64Str (n) + ' times', TRUE) ;
+    RETURN
+  END ;
+  at := Text.Find (src, e.old) ;
+  cut := at + Text.BLen (e.old) ;
+  edited := SLICE (src, 0, at) + e.new + SLICE (src, cut, Text.BLen (src) - cut) ;
+  w := MakeTemp (p) ;
+  BEGIN
+    lib := Text.Keep (p, w + '/lib') ;
+    rt := Text.Keep (p, w + '/rt') ;
+    IF NOT CopiesRuntime (j.kind) THEN rt := Text.Keep (p, j.root + '/runtime') END ;
+    CopyTrees (p, j.root, lib, rt, j.kind) ;
+    IF Text.StartsWith (e.file, 'corpus/') THEN
+      target := Text.Keep (p, lib + '/' + Base (e.file))
+    ELSIF CopiesRuntime (j.kind) THEN
+      target := Text.Keep (p, rt + '/' + Base (e.file))
+    ELSE
+      RAISE Failed (e.file + ' is outside corpus/, and this kind copies only corpus/')
+    END ;
+    Io.WriteFile (target, edited) ;
+    IF j.checkOnly THEN
+      CheckOnly (j, e.name, w, rt, lib, target) ;
+      RETURN
+    END ;
+    CASE j.kind OF
+    | Srv : GateSrv (j, e.name, w, slot)
+    | Smtp : GateSmtp (j, e.name, w, slot)
+    | Rdf : GateRdf (j, e.name, w, rt, lib)
+    ELSE GateTest (j, e.name, w, rt, lib)
+    END
+  FINALLY
+    Remove (w)
+  END
+END Judge ;
+
+(* Base answers the part of a path after its last slash. *)
+PROCEDURE Base (RO path: STR) : STR =
+VAR k : I64 ;
+BEGIN
+  k := Text.LastChar (path, '/') ;
+  RETURN SLICE (path, k + 1, Text.BLen (path) - k - 1)
+END Base ;
+
+(* Worker is one slot.  It takes entries until none is left.  An entry
+   whose run raises is printed as held, with the exception's name. *)
+PROCEDURE Worker (VAR j: Job) =
+VAR
+  slot, i : I64 ;
+  name : STR ;
+BEGIN
+  slot := Slot (j.b) ;
+  LOOP
+    i := Take (j.b, LEN (j.todo)) ;
+    IF i < 0 THEN EXIT END ;
+    name := "'" + j.todo[i].name + "'" ;
+    BEGIN
+      Judge (j, i, slot)
+    EXCEPT
+    | ValueRange :
+        Say (j.b, 'sabotage: ERROR in ' + name + ': ValueRange', TRUE)
+    | IndexError :
+        Say (j.b, 'sabotage: ERROR in ' + name + ': IndexError', TRUE)
+    | Io.IOError (path) :
+        Say (j.b, 'sabotage: ERROR in ' + name + ': IOError on ' + path, TRUE)
+    | Failed (why) :
+        Say (j.b, 'sabotage: ERROR in ' + name + ': ' + why, TRUE)
+    END
+  END ;
+  Finish (j.b)
+END Worker ;
+
+(* Lines answers lines[a .. b-1] joined by newlines, kept in pool. *)
+PROCEDURE Lines (VAR pool: POOL ; RO lines: SLICE OF STR ; a, b: I64) : STR =
+BEGIN
+  RETURN Text.Keep (pool, Text.Join (SLICE (lines, a, b - a), '' + 0AC))
+END Lines ;
+
+(* Block answers the index of the first line from k on that is exactly
+   one of the markers, or raises Malformed. *)
+PROCEDURE Block (RO lines: SLICE OF STR ; k: I64 ; RO marker: STR) : I64
+  RAISES Malformed =
+VAR i : I64 ;
+BEGIN
+  FOR i := k TO LEN (lines) - 1 DO
+    IF Text.Eq (lines[i], marker) THEN RETURN i END ;
+    IF Text.StartsWith (lines[i], '@name ') THEN
+      RAISE Malformed (i + 1, 'a new entry before ' + marker)
+    END
+  END ;
+  RAISE Malformed (LEN (lines), 'the file ends before ' + marker)
+END Block ;
+
+(* Parse reads a list (the form is in the list's own header) and
+   answers the entries whose name holds only. *)
+PROCEDURE Parse (VAR pool: POOL ; RO text, dflt, only: STR) : SLICE OF Entry
+  RAISES Malformed =
+VAR
+  lines : SLICE OF STR ;
+  es : SLICE OF Entry ;
+  e : Entry ;
+  i, n, o, nw, en : I64 ;
+BEGIN
+  lines := Text.Split (text, 0AC) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF Text.StartsWith (lines[i], '@name ') THEN n := n + 1 END
+  END ;
+  es := NEW (pool, Entry, n) ;
+  n := 0 ;
+  i := 0 ;
+  WHILE i < LEN (lines) DO
+    IF Text.BLen (lines[i]) = 0 OR Text.StartsWith (lines[i], '#') THEN
+      i := i + 1
+    ELSIF Text.StartsWith (lines[i], '@name ') THEN
+      e.name := Text.Keep (pool, SLICE (lines[i], 6, Text.BLen (lines[i]) - 6)) ;
+      e.file := dflt ;
+      i := i + 1 ;
+      IF i < LEN (lines) AND Text.StartsWith (lines[i], '@file ') THEN
+        e.file := Text.Keep (pool, SLICE (lines[i], 6, Text.BLen (lines[i]) - 6)) ;
+        i := i + 1
+      END ;
+      IF i >= LEN (lines) OR NOT Text.Eq (lines[i], '@old') THEN
+        RAISE Malformed (i + 1, '@old expected after @name')
+      END ;
+      o := i ;
+      nw := Block (lines, o + 1, '@new') ;
+      en := Block (lines, nw + 1, '@end') ;
+      e.old := Lines (pool, lines, o + 1, nw) ;
+      e.new := Lines (pool, lines, nw + 1, en) ;
+      IF Text.Contains (e.name, only) THEN
+        es[n] := e ;
+        n := n + 1
+      END ;
+      i := en + 1
+    ELSE
+      RAISE Malformed (i + 1, 'a line outside an entry that is not a comment')
+    END
+  END ;
+  RETURN SLICE (es, 0, n)
+END Parse ;
+
+(* Absolute answers path made absolute against root when it names a
+   file by a relative path.  A bare name stays, for PATH to find. *)
+PROCEDURE Absolute (VAR pool: POOL ; RO root, path: STR) : STR =
+BEGIN
+  IF Text.StartsWith (path, '/') OR Text.FindChar (path, '/') < 0 THEN
+    RETURN path
+  END ;
+  RETURN Text.Keep (pool, root + '/' + path)
+END Absolute ;
+
+(* Jobs answers SABOTAGE_JOBS, or half the cores when it is unset. *)
+PROCEDURE Jobs () : I64 =
+VAR
+  p : POOL ;
+  s : STR ;
+  n : I64 ;
+BEGIN
+  n := System.Cores () DIV 2 ;
+  BEGIN
+    s := Io.Env (p, 'SABOTAGE_JOBS') ;
+    IF Text.BLen (s) > 0 THEN n := Io.ParseI64 (s) END
+  EXCEPT
+  | ValueRange : Io.ErrLine ('sabotage: SABOTAGE_JOBS is not a number; half the cores run')
+  END ;
+  IF n < 1 THEN n := 1 END ;
+  RETURN n
+END Jobs ;
+
+(* Main reads the arguments and the list, runs the entries and answers
+   the exit status: 0 when every entry went red, 1 when one is held, 2
+   for a wrong command line. *)
+PROCEDURE Main () : I64 RAISES ValueRange, IndexError, Io.IOError, Malformed =
+VAR
+  j : PTR Job ;
+  pos, none : SLICE OF STR ;
+  r : System.Result ;
+  root, data, dflt, only : STR ;
+  i, jobs, held, np : I64 ;
+BEGIN
+  pos := System.Positional (pool) ;
+  IF LEN (pos) > 0 THEN i := Text.IndexOf (Kinds, pos[0]) ELSE i := -1 END ;
+  np := 2 ;
+  IF i = Srv OR i = Smtp OR i = Rdf THEN np := 3 END ;
+  IF i < 0 OR LEN (pos) < np OR LEN (pos) > np + 1 THEN
+    Io.ErrLine ('usage: Sabotage.m9 srvfix|smtp|rdf M9C PY [NAME-PART] [--root=DIR] [--data=FILE] [--list]') ;
+    Io.ErrLine ('       Sabotage.m9 pg|regex|rsa|xml M9C [NAME-PART] [--root=DIR] [--data=FILE] [--list]') ;
+    RETURN 2
+  END ;
+  j := NEW (pool, Job) ;
+  j.kind := i ;
+  none := NEW (pool, STR, 0) ;
+  root := System.Value ('--root', '') ;
+  IF Text.BLen (root) = 0 THEN
+    r := System.Exec (pool, 'pwd', none, '', none) ;
+    root := Text.TrimUtf (r.out)
+  END ;
+  j.root := Text.Keep (pool, root) ;
+  CASE j.kind OF
+  | Srv :
+      data := 'runtime/test/srvfix/sabotage.txt' ;
+      dflt := 'corpus/HttpServer.m9'
+  | Smtp :
+      data := 'runtime/test/smtpfix/sabotage.txt' ;
+      dflt := 'corpus/Smtp.m9'
+  | Pg : data := 'runtime/test/pgsabotage.txt' ; dflt := 'corpus/Pg.m9'
+  | Rdf : data := 'runtime/test/rdfsabotage.txt' ; dflt := 'corpus/Rdf.m9'
+  | Regex : data := 'runtime/test/regexsabotage.txt' ; dflt := 'corpus/Regex.m9'
+  | Rsa : data := 'runtime/test/rsasabotage.txt' ; dflt := 'corpus/Rsa.m9'
+  ELSE data := 'runtime/test/xmlsabotage.txt' ; dflt := 'corpus/Xml.m9'
+  END ;
+  data := Absolute (pool, j.root, System.Value ('--data', data)) ;
+  j.m9c := Absolute (pool, j.root, pos[1]) ;
+  j.py := '' ;
+  IF np = 3 THEN j.py := Absolute (pool, j.root, pos[2]) END ;
+  only := '' ;
+  IF LEN (pos) = np + 1 THEN only := pos[np] END ;
+  IF j.kind = Xml AND NOT System.Flag ('--list') AND NOT System.Flag ('--check')
+     AND NOT Io.Exists (j.root + Suite + '/xmlconf.xml') THEN
+    Io.ErrLine ('sabotage: no suite at ' + j.root + Suite + ' -- run runtime/test/xml.sh first') ;
+    RETURN 2
+  END ;
+  j.todo := Parse (pool, Io.ReadFile (data), dflt, only) ;
+  j.checkOnly := System.Flag ('--check') ;
+  IF System.Flag ('--list') THEN
+    FOR i := 0 TO LEN (j.todo) - 1 DO
+      Io.WriteLine ('== ' + j.todo[i].name) ;
+      Io.WriteLine ('-- ' + j.todo[i].file) ;
+      Io.WriteLine ('-- old') ;
+      Io.WriteLine (j.todo[i].old) ;
+      Io.WriteLine ('-- new') ;
+      Io.WriteLine (j.todo[i].new)
+    END ;
+    RETURN 0
+  END ;
+  jobs := Jobs () ;
+  IF jobs > LEN (j.todo) THEN jobs := LEN (j.todo) END ;
+  FOR i := 0 TO jobs - 1 DO
+    THREAD (Worker, j)
+  END ;
+  AwaitAll (j.b, jobs) ;
+  held := Held (j.b) ;
+  IF j.checkOnly THEN
+    Io.WriteLine ('sabotage: ' + Fmt.I64Str (LEN (j.todo) - held) + ' of '
+                  + Fmt.I64Str (LEN (j.todo)) + ' check')
+  ELSE
+    Io.WriteLine ('sabotage: ' + Fmt.I64Str (LEN (j.todo) - held) + ' of '
+                  + Fmt.I64Str (LEN (j.todo)) + ' red')
+  END ;
+  IF held > 0 THEN RETURN 1 END ;
+  RETURN 0
+END Main ;
+
+BEGIN
+  code := 2 ;
+  BEGIN
+    code := Main ()
+  EXCEPT
+  | ValueRange : Io.ErrLine ('sabotage: ValueRange')
+  | IndexError : Io.ErrLine ('sabotage: IndexError')
+  | Io.IOError (path) : Io.ErrLine ('sabotage: cannot read ' + path)
+  | Malformed (line, why) :
+      Io.ErrLine ('sabotage: the list, line ' + Fmt.I64Str (line) + ': ' + why)
+  END ;
+  Io.Halt (code)
+END Sabotage.

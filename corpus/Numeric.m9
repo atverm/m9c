@@ -1,15 +1,15 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Numeric ;
 
-(* Numerical methods over a function the caller writes: the root of
-   it, its minimum, its integral, and the solution of a differential
-   equation whose right-hand side it is.  The oracle is scipy, in
-   corpus/NumericTest.m9.
+(* Numeric provides numerical methods over a function the caller
+   writes: the root of it, its minimum, its integral, and the solution
+   of a differential equation whose right-hand side it is.  The oracle
+   is scipy, in corpus/NumericTest.m9.
 
    THE FUNCTION IS A PROCEDURE VALUE (report par 2.2.3): a top-level
-   procedure, with no capture.  So whatever else it needs -- the
-   coefficients of the curve, the rate constants -- travels beside
-   it as `p', a slice of reals that Numeric hands to every call and
+   procedure, with no capture.  So anything else it needs (the
+   coefficients of the curve, the rate constants) travels beside it
+   as `p', a slice of reals that Numeric hands to every call and
    never reads.  That is scipy's `args', made the only way.
 
    The types here say RAISES ValueRange because that is what Math's
@@ -20,71 +20,73 @@ DEFINITION MODULE Numeric ;
    Root, Minimum and OdeSolve are TRANSCRIPTIONS of scipy's brentq,
    its bounded scalar minimiser and its RK45, held to scipy in
    tools/numericgold.py before a golden is written: the first two to
-   the bit and the count of calls over thousands of problems.  What
-   they answer for a given function and tolerance is what scipy
-   answers.  Integral is not scipy's QUADPACK; it is held to scipy's
-   value, within the error it reports. *)
+   the bit and the count of calls over thousands of problems.  For a
+   given function and tolerance they answer what scipy answers.
+   Integral is not scipy's QUADPACK; it is held to scipy's value,
+   within the error it reports. *)
 
 IMPORT Faults ;
 
 TYPE
   Fn = PROCEDURE (x: F64 ; RO p: SLICE OF F64) : F64 RAISES ValueRange ;
-  (* a function of one real *)
+  (* An Fn is a function of one real. *)
 
   Rhs = PROCEDURE (t: F64 ; RO y: SLICE OF F64 ; RO p: SLICE OF F64 ;
                    VAR dy: SLICE OF F64) RAISES ValueRange ;
-  (* the right-hand side of y' = f (t, y): it writes dy, which has
-     y's length *)
+  (* An Rhs is the right-hand side of y' = f (t, y): it writes dy,
+     which has y's length. *)
 
 EXCEPTION
   NoBracket (fa, fb: F64) ;
-  (* the function has the same sign at both ends, these two values:
-     nothing says a root lies between *)
+  (* NoBracket says the function has the same sign at both ends,
+     these two values: nothing says a root lies between. *)
   NoConverge (evals: I64) ;
-  (* the method gave up after this many evaluations (Root, Minimum,
-     Integral) or steps (OdeSolve), with the tolerance not met *)
+  (* NoConverge says the method gave up after this many evaluations
+     (Root, Minimum, Integral) or steps (OdeSolve), with the tolerance
+     not met. *)
 
 PROCEDURE Root (f: Fn ; RO p: SLICE OF F64 ; a, b, xtol: F64) : F64
   RAISES NoBracket, NoConverge, ValueRange ;
-  (* an x between a and b where f changes sign, by Brent's method
-     (scipy.optimize.brentq with its default rtol): f (a) and f (b)
-     must differ in sign, and the answer is within xtol + 4 epsilon
-     |x| of a crossing.  At most 100 iterations: a function that is
-     flat where it crosses (a triple root) may need more than that
-     for a small xtol, and is NoConverge. *)
+  (* Root answers an x between a and b where f changes sign, by
+     Brent's method (scipy.optimize.brentq with its default rtol):
+     f (a) and f (b) must differ in sign, and the answer is within
+     xtol + 4 epsilon |x| of a crossing.  It takes at most 100
+     iterations: a function that is flat where it crosses (a triple
+     root) may need more than that for a small xtol, and is
+     NoConverge. *)
 
 PROCEDURE Minimum (f: Fn ; RO p: SLICE OF F64 ; a, b, xatol: F64) : F64
   RAISES Faults.BadArg, NoConverge, ValueRange ;
-  (* an x between a and b where f is smallest NEARBY, by Brent's
-     golden-section and parabola method (scipy.optimize
-     .minimize_scalar, method 'bounded'), to within about xatol.  A
-     local minimum: a function with several is searched from the
-     golden point of the interval, and which one is found is the
-     method's affair.  a > b is Faults.BadArg; 500 evaluations at
-     most. *)
+  (* Minimum answers an x between a and b where f is smallest NEARBY,
+     by Brent's golden-section and parabola method (scipy.optimize
+     .minimize_scalar, method 'bounded'), to within about xatol.  It
+     finds a local minimum: a function with several is searched from
+     the golden point of the interval, and the method decides which
+     one is found.  a > b is Faults.BadArg.  Minimum makes 500
+     evaluations at most. *)
 
 PROCEDURE Integral (f: Fn ; RO p: SLICE OF F64 ; a, b, epsabs, epsrel: F64 ;
                     VAR abserr: F64) : F64
   RAISES NoConverge, ValueRange ;
-  (* the integral of f from a to b, by the 15-point Gauss-Kronrod
-     rule on intervals halved where the error is largest, until the
-     estimated error is under the larger of epsabs and epsrel times
-     the value.  abserr receives that estimate, which a caller should
-     read: it is the method's own account of its answer.  b below a
-     is the integral negated.
+  (* Integral answers the integral of f from a to b, by the 15-point
+     Gauss-Kronrod rule on intervals halved where the error is largest,
+     until the estimated error is under the larger of epsabs and epsrel
+     times the value.  abserr receives that estimate, which a caller
+     should read: it is the method's own account of its answer.  b below
+     a is the integral negated.
 
      The ends are never evaluated, so a function that is infinite
-     there can be asked -- but one whose integral converges slowly,
+     there can be asked.  But one whose integral converges slowly,
      like 1 / sqrt (x) at 0, is not finished in the 50 intervals
-     allowed and is NoConverge.  No infinite range, no
-     extrapolation: this is QUADPACK's QAG, not its QAGS. *)
+     allowed and is NoConverge.  Integral takes no infinite range and
+     does no extrapolation: this is QUADPACK's QAG, not its QAGS. *)
 
 PROCEDURE OdeStep (f: Rhs ; RO p: SLICE OF F64 ; t, h: F64 ;
                    VAR y: SLICE OF F64)
   RAISES ValueRange ;
   (* y at t becomes y at t + h by ONE step of the classical
-     fourth-order Runge-Kutta method.  No error control: the step is
-     the caller's, and so is advancing t. *)
+     fourth-order Runge-Kutta method.  OdeStep has no error control:
+     the step is the caller's, and so is advancing t. *)
 
 PROCEDURE OdeSolve (f: Rhs ; RO p: SLICE OF F64 ; t0, t1: F64 ;
                     VAR y: SLICE OF F64 ; rtol, atol: F64) : I64
@@ -93,29 +95,29 @@ PROCEDURE OdeSolve (f: Rhs ; RO p: SLICE OF F64 ; t0, t1: F64 ;
      the step chosen so that the estimated local error of each
      component stays under atol + rtol |y| (scipy.integrate
      .solve_ivp, method 'RK45', its initial step and its controller).
-     Answers the number of steps taken.  t1 below t0 integrates
-     backwards.  For values along the way, solve from one to the
-     next.  An explicit method: a stiff system takes it a very long
-     time, and after a million steps, or a step too small to move t,
-     it is NoConverge. *)
+     OdeSolve answers the number of steps taken.  t1 below t0
+     integrates backwards.  For values along the way, solve from one
+     to the next.  It is an explicit method: a stiff system takes it a
+     very long time, and after a million steps, or a step too small
+     to move t, it is NoConverge. *)
 
 (* ---- least squares: the parameters that make a model fit ---- *)
 
 TYPE
   Residuals = PROCEDURE (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
                          VAR r: SLICE OF F64) RAISES ValueRange ;
-  (* what is to be made small: for the parameters x it writes the m
-     residuals r.  p is the caller's own, as for Fn -- here usually
-     the data. *)
+  (* A Residuals procedure writes what is to be made small: for the
+     parameters x it writes the m residuals r.  p is the caller's own,
+     as for Fn: here usually the data. *)
 
   Fitted = RECORD
     info : I64 ;
-    (* why the search stopped, in MINPACK's numbering.  1: the sum of
-       squares no longer falls by more than the tolerance; 2: the
+    (* info says why the search stopped, in MINPACK's numbering.  1: the
+       sum of squares no longer falls by more than the tolerance; 2: the
        parameters no longer move by more than it; 3: both; 4: the
        residuals are orthogonal to the model's slopes, a minimum
        exactly.  6, 7, 8: the same three, at the limit of the
-       arithmetic -- the tolerance asked was smaller than F64 has. *)
+       arithmetic; the tolerance asked was smaller than F64 has. *)
     nfev : I64 ;               (* how often the function was asked *)
     cost : F64 ;               (* the sum of the squared residuals *)
     covariance : BOOL ;        (* CurveFit only: cov could be estimated *)
@@ -124,20 +126,20 @@ TYPE
 PROCEDURE LeastSq (f: Residuals ; RO p: SLICE OF F64 ; VAR x: SLICE OF F64 ;
                    m: I64 ; tol: F64) : Fitted
   RAISES Faults.BadArg, NoConverge, ValueRange ;
-  (* the x that makes the sum of the squares of f's m residuals
-     smallest NEARBY, from the x given, by Levenberg-Marquardt with
-     slopes taken by differences: MINPACK's lmdif, which is
-     scipy.optimize.leastsq, with ftol and xtol both tol and the rest
-     at scipy's defaults.  A LOCAL minimum, the one the start leads
-     to.  m below LEN (x), or tol below zero, is Faults.BadArg.
-     After 200 (LEN (x) + 1) evaluations without stopping it is
-     NoConverge, and x holds where it had got to. *)
+  (* LeastSq answers the x that makes the sum of the squares of f's m
+     residuals smallest NEARBY, from the x given, by
+     Levenberg-Marquardt with slopes taken by differences: MINPACK's
+     lmdif, which is scipy.optimize.leastsq, with ftol and xtol both
+     tol and the rest at scipy's defaults.  It finds a LOCAL minimum,
+     the one the start leads to.  m below LEN (x), or tol below zero, is
+     Faults.BadArg.  After 200 (LEN (x) + 1) evaluations without
+     stopping it is NoConverge, and x holds where it had got to. *)
 
 PROCEDURE CurveFit (f: Fn ; RO t, y: SLICE OF F64 ; VAR params: SLICE OF F64 ;
                     VAR cov: SLICE OF F64) : Fitted
   RAISES Faults.SizeError, Faults.BadArg, NoConverge, ValueRange ;
-  (* the params for which f (t[i], params) comes closest to y[i] in
-     the least-squares sense, from the params given
+  (* CurveFit answers the params for which f (t[i], params) comes
+     closest to y[i] in the least-squares sense, from the params given
      (scipy.optimize.curve_fit, with its default tolerance of
      1.49012e-8).  The model is an Fn whose x is t and whose p is the
      parameters being fitted.
@@ -145,8 +147,8 @@ PROCEDURE CurveFit (f: Fn ; RO t, y: SLICE OF F64 ; VAR params: SLICE OF F64 ;
      cov, of LEN (params) squared, receives their covariance matrix,
      row after row, scaled by the residuals' own variance: the
      square roots of its diagonal are the standard errors.  Where it
-     cannot be estimated -- no more points than parameters, or a
-     parameter the data do not determine -- it is filled with NaN and
+     cannot be estimated (no more points than parameters, or a
+     parameter the data do not determine), it is filled with NaN and
      the answer's `covariance' is FALSE; scipy fills it with
      infinity. *)
 
@@ -156,24 +158,24 @@ PROCEDURE CurveFit (f: Fn ; RO t, y: SLICE OF F64 ; VAR params: SLICE OF F64 ;
 
 PROCEDURE Fft (VAR re, im: SLICE OF F64 ; inverse: BOOL)
   RAISES Faults.SizeError, Faults.BadArg, ValueRange ;
-  (* the discrete Fourier transform of the complex series re + i im,
-     in place: numpy.fft.fft, and with `inverse` numpy.fft.ifft,
-     which divides by the length -- so the one undoes the other.
-     Radix two: the length must be a power of two (Faults.BadArg; a
-     caller pads with zeros, as CcgFilter does), and re and im of one
-     length (Faults.SizeError). *)
+  (* Fft answers the discrete Fourier transform of the complex series
+     re + i im, in place: numpy.fft.fft, and with `inverse`
+     numpy.fft.ifft, which divides by the length.  So the one undoes
+     the other.  Fft is radix two: the length must be a power of two
+     (Faults.BadArg; a caller pads with zeros, as CcgFilter does), and
+     re and im of one length (Faults.SizeError). *)
 
 PROCEDURE CcgFilter (RO xp, yp: SLICE OF F64 ; RO xq: SLICE OF F64 ;
                      interval, shortterm, longterm: F64 ;
                      numpoly, numharm: I64 ;
                      VAR smooth, trend: SLICE OF F64)
   RAISES Faults.SizeError, Faults.BadArg, ValueRange ;
-  (* the curve fit and filter of Thoning, Tans and Komhyr (1989), as
-     NOAA GML's ccg_filter.py computes it -- what the CO2 records of
-     Mauna Loa and of ICOS are smoothed with.  Four steps: a
-     polynomial plus yearly harmonics is fitted to the data by least
-     squares; the residuals are interpolated to an even spacing and
-     padded with zeros; their spectrum is cut by a low-pass filter,
+  (* CcgFilter is the curve fit and filter of Thoning, Tans and Komhyr
+     (1989), as NOAA GML's ccg_filter.py computes it: what the CO2
+     records of Mauna Loa and of ICOS are smoothed with.  It takes four
+     steps: a polynomial plus yearly harmonics is fitted to the data by
+     least squares; the residuals are interpolated to an even spacing
+     and padded with zeros; their spectrum is cut by a low-pass filter,
      once at each cutoff; the function is added back.
 
        xp, yp    -- the data: times in DECIMAL YEARS, ascending, and
@@ -192,20 +194,20 @@ PROCEDURE CcgFilter (RO xp, yp: SLICE OF F64 ; RO xq: SLICE OF F64 ;
                     both NaN where xq lies outside the span of xp, as
                     the reference answers.
 
-     Faults.SizeError when yp is not as long as xp, or smooth or
-     trend not as long as xq.  Faults.BadArg for times that are not
-     ascending, for fewer observations than the fit has terms plus
-     one, for terms the times cannot tell apart (a record of a few
-     days and four harmonics), and for an interval or a cutoff that
-     is not positive.
+     It raises Faults.SizeError when yp is not as long as xp, or
+     smooth or trend not as long as xq.  It raises Faults.BadArg for
+     times that are not ascending, for fewer observations than the fit
+     has terms plus one, for terms the times cannot tell apart (a record
+     of a few days and four harmonics), and for an interval or a cutoff
+     that is not positive.
 
-     Stated differences from the reference, none of which the test
-     can see: the fit is SOLVED (it is linear in its coefficients;
-     the reference iterates towards the same answer and stops within
-     2e-8 of it); the padded length is the smallest power of two that
-     holds the series, by counting; and the number of harmonics is
-     the caller's, where the reference lowers it for a sampling
-     interval longer than half a year divided by it. *)
+     These are the stated differences from the reference, none of
+     which the test can see: the fit is SOLVED (it is linear in its
+     coefficients; the reference iterates towards the same answer and
+     stops within 2e-8 of it); the padded length is the smallest power
+     of two that holds the series, by counting; and the number of
+     harmonics is the caller's, where the reference lowers it for a
+     sampling interval longer than half a year divided by it. *)
 
 END Numeric.
 
@@ -400,10 +402,10 @@ END Minimum ;
 (* ---- Integral ---- *)
 
 CONST
-  (* QUADPACK's qk15: the seven positive nodes of the 15-point Kronrod
-     rule and its centre, their weights, and the weights of the
+  (* These are QUADPACK's qk15: the seven positive nodes of the 15-point
+     Kronrod rule and its centre, their weights, and the weights of the
      7-point Gauss rule, whose nodes are the Kronrod rule's 2nd, 4th,
-     6th and centre *)
+     6th and centre. *)
   Xgk = [0.991455371120812639206854697526329,
          0.949107912342758524526189684047851,
          0.864864423359769072789712788640926,
@@ -425,10 +427,10 @@ CONST
         0.381830050505118944950369775488975,
         0.417959183673469387755102040816327] ;
 
-(* the Kronrod estimate of the integral over one interval, and in
-   abserr how far the Gauss estimate is from it, scaled as QUADPACK
-   scales it: a difference that is small beside the function's own
-   variation is believed to be smaller still *)
+(* Qk15 answers the Kronrod estimate of the integral over one interval,
+   and in abserr how far the Gauss estimate is from it, scaled as
+   QUADPACK scales it: a difference that is small beside the function's
+   own variation is believed to be smaller still. *)
 PROCEDURE Qk15 (f: Fn ; RO p: SLICE OF F64 ; a, b: F64 ; VAR abserr: F64) : F64
   RAISES ValueRange =
 VAR
@@ -557,7 +559,7 @@ BEGIN
   END
 END OdeStep ;
 
-(* the root mean square of v, scipy's norm *)
+(* Rms answers the root mean square of v, scipy's norm. *)
 PROCEDURE Rms (RO v: SLICE OF F64) : F64 RAISES ValueRange =
 VAR
   i : I64 ;
@@ -568,9 +570,9 @@ BEGIN
   RETURN Math.Sqrt (acc / F64 (LEN (v)))
 END Rms ;
 
-(* the Dormand-Prince tableau as scipy writes it: quotients of
-   integers, each rounded once.  ta is 6 rows of 5, row s the
-   weights of the stages before stage s. *)
+(* Tableau fills in the Dormand-Prince tableau as scipy writes it:
+   quotients of integers, each rounded once.  ta is 6 rows of 5, row s
+   the weights of the stages before stage s. *)
 PROCEDURE Tableau (VAR ta, tb, tc, te: SLICE OF F64) =
 BEGIN
   tc[1] := 1.0 / 5.0 ;
@@ -606,9 +608,9 @@ BEGIN
   te[6] := 1.0 / 40.0
 END Tableau ;
 
-(* scipy/integrate/_ivp/common.py, select_initial_step: the size of
-   the first step, from how fast y and y' change at t0.  fcur is
-   f (t0, y); order is the error estimator's, 4. *)
+(* FirstStep is scipy/integrate/_ivp/common.py, select_initial_step: it
+   answers the size of the first step, from how fast y and y' change at
+   t0.  fcur is f (t0, y); order is the error estimator's, 4. *)
 PROCEDURE FirstStep (f: Rhs ; RO p: SLICE OF F64 ; t0: F64 ;
                      RO y, fcur: SLICE OF F64 ; span, direction: F64 ;
                      rtol, atol: F64) : F64
@@ -766,12 +768,12 @@ END OdeSolve ;
 
 (* ---- least squares: MINPACK's lmdif ----
 
-   Lifted from the ONEFlux port (OneFlux/src/Lmdif.m9), where it was
-   transcribed operation for operation from scipy's own copy of
-   MINPACK -- lmdif, fdjac2, qrfac, lmpar, qrsolv, enorm -- and held
-   to scipy there fit by fit.  With the constants of scipy >= 1.13's
-   C translation (epsmch = 2^-52, rgiant = 2^63.5), which is the scipy
-   the gate here runs.
+   This is lifted from the ONEFlux port (OneFlux/src/Lmdif.m9), where
+   it was transcribed operation for operation from scipy's own copy
+   of MINPACK (lmdif, fdjac2, qrfac, lmpar, qrsolv, enorm) and held
+   to scipy there fit by fit.  It uses the constants of scipy >=
+   1.13's C translation (epsmch = 2^-52, rgiant = 2^63.5), which is
+   the scipy the gate here runs.
 
    It is a STATE MACHINE, as it was written when M9 had no procedure
    values: LmNext answers TRUE when it wants the residuals at
@@ -809,8 +811,8 @@ CONST
   StTrialGot = 7 ;
   StDone = 8 ;
 
-(* the Fortran's sqrt: NaN for NaN and for a negative, no trap.  The
-   iteration meets both once a trial step overflows the model (a
+(* Fsqrt is the Fortran's sqrt: NaN for NaN and for a negative, no trap.
+   The iteration meets both once a trial step overflows the model (a
    residual of inf, then inf - inf); MINPACK rejects that step on
    comparisons a NaN fails, where Math.Sqrt would have raised first. *)
 PROCEDURE Fsqrt (x: F64) : F64 RAISES ValueRange =
@@ -836,9 +838,9 @@ BEGIN
   RETURN b
 END Fmin ;
 
-(* enorm: the euclidean norm of x[from .. from + n - 1], summed in
-   three ranges so that neither the squares of the large overflow nor
-   those of the small vanish *)
+(* Enorm (MINPACK's enorm) answers the euclidean norm of
+   x[from .. from + n - 1], summed in three ranges so that neither the
+   squares of the large overflow nor those of the small vanish. *)
 PROCEDURE Enorm (RO x: SLICE OF F64 ; from, n: I64 ; rdwarf, rgiant: F64) : F64
   RAISES ValueRange =
 VAR
@@ -888,7 +890,7 @@ BEGIN
   RETURN r
 END Enorm ;
 
-(* qrfac with pivoting over the m x n column-major a *)
+(* Qrfac is qrfac with pivoting over the m x n column-major a. *)
 PROCEDURE Qrfac (m, n: I64 ; VAR a: SLICE OF F64 ; VAR ipvt: SLICE OF I64 ;
                  VAR rdiag, acnorm, wa: SLICE OF F64 ; rdwarf, rgiant: F64)
   RAISES ValueRange =
@@ -950,7 +952,8 @@ BEGIN
   END
 END Qrfac ;
 
-(* qrsolv: r is n x n in the m x n column-major fjac (ldr = m) *)
+(* Qrsolv is qrsolv: r is n x n in the m x n column-major fjac
+   (ldr = m). *)
 PROCEDURE Qrsolv (n, ldr: I64 ; VAR r: SLICE OF F64 ; RO ipvt: SLICE OF I64 ;
                   RO diag, qtb: SLICE OF F64 ; VAR x, sdiag, wa: SLICE OF F64)
   RAISES ValueRange =
@@ -1022,7 +1025,8 @@ BEGIN
   END
 END Qrsolv ;
 
-(* lmpar: the Levenberg-Marquardt parameter for a step of length delta *)
+(* Lmpar is lmpar: it answers the Levenberg-Marquardt parameter for a
+   step of length delta. *)
 PROCEDURE Lmpar (n, ldr: I64 ; VAR r: SLICE OF F64 ; RO ipvt: SLICE OF I64 ;
                  RO diag, qtb: SLICE OF F64 ; delta: F64 ; VAR par: F64 ;
                  VAR x, sdiag, wa1, wa2: SLICE OF F64 ; rdwarf, rgiant: F64)
@@ -1346,7 +1350,8 @@ BEGIN
   END
 END LmNext ;
 
-(* what the machine found, as the caller is told it *)
+(* LmReport answers what the machine found, as the caller is told
+   it. *)
 PROCEDURE LmReport (RO s: Lm ; VAR x: SLICE OF F64) : Fitted
   RAISES Faults.BadArg, NoConverge =
 VAR
@@ -1380,10 +1385,10 @@ BEGIN
   RETURN LmReport (s, x)
 END LeastSq ;
 
-(* scipy's cov_x: with R the triangle the last factorisation left in
-   fjac and P its column permutation, the inverse of R, its rows
-   carried to where P sends them, times its own transpose.  FALSE
-   when R has a zero on its diagonal. *)
+(* LmCov computes scipy's cov_x: with R the triangle the last
+   factorisation left in fjac and P its column permutation, the
+   inverse of R, its rows carried to where P sends them, times its own
+   transpose.  It answers FALSE when R has a zero on its diagonal. *)
 PROCEDURE LmCov (RO s: Lm ; VAR cov: SLICE OF F64) : BOOL =
 VAR
   inv, moved : SLICE OF F64 ;       (* n x n, row after row *)
@@ -1461,11 +1466,11 @@ END CurveFit ;
 
 (* ---- a spectrum, and the curve fit of Thoning et al. ----------------
 
-   Lifted from m9curve's Ccg.m9 (2026-10-02), where the whole of it
-   was held to NOAA's ccg_filter.py over seven real records.  Kept as
-   it was verified: its own least squares and its own interpolation,
-   private, rather than Mat's and Stats's -- and so Numeric still
-   imports Math and Faults and nothing else. *)
+   This is lifted from m9curve's Ccg.m9 (2026-10-02), where the whole
+   of it was held to NOAA's ccg_filter.py over seven real records.  It
+   is kept as it was verified: its own least squares and its own
+   interpolation, private, rather than Mat's and Stats's.  So Numeric
+   still imports Math and Faults and nothing else. *)
 
 PROCEDURE Fft (VAR re, im: SLICE OF F64 ; inverse: BOOL)
   RAISES Faults.SizeError, Faults.BadArg, ValueRange =
@@ -1482,7 +1487,8 @@ BEGIN
   IF bit # n THEN
     RAISE Faults.BadArg ('Fft takes a length that is a power of two')
   END ;
-  (* each element to the place its index read backwards names *)
+  (* This moves each element to the place its index read backwards
+     names. *)
   j := 0 ;
   FOR i := 1 TO n - 1 DO
     bit := n DIV 2 ;
@@ -1496,9 +1502,9 @@ BEGIN
       t := im[i] ; im[i] := im[j] ; im[j] := t
     END
   END ;
-  (* every twiddle from sin and cos directly: a rotation multiplied
-     up through 2^15 steps would carry its own rounding into the
-     top bins *)
+  (* Every twiddle comes from sin and cos directly: a rotation
+     multiplied up through 2^15 steps would carry its own rounding
+     into the top bins. *)
   half := n DIV 2 ;
   cw := NEW (F64, half) ;
   sw := NEW (F64, half) ;
@@ -1536,8 +1542,8 @@ BEGIN
   END
 END Fft ;
 
-(* term k of the fitted function at x: the polynomial terms first,
-   then sine and cosine of each harmonic *)
+(* CcgBasis answers term k of the fitted function at x: the
+   polynomial terms first, then sine and cosine of each harmonic. *)
 PROCEDURE CcgBasis (k: I64 ; x: F64 ; numpoly: I64) : F64
   RAISES ValueRange =
 VAR
@@ -1586,10 +1592,10 @@ BEGIN
   RETURN CcgPoly (params, x, numpoly) + s
 END CcgFunc ;
 
-(* least squares by Householder QR: a is n rows of m, row-major, and
-   is destroyed; b is the n right-hand sides, destroyed; x receives
-   the m coefficients.  FALSE when a column is zero or explained by
-   the ones before it. *)
+(* CcgSolve does least squares by Householder QR: a is n rows of m,
+   row-major, and is destroyed; b is the n right-hand sides,
+   destroyed; x receives the m coefficients.  It answers FALSE when a
+   column is zero or explained by the ones before it. *)
 PROCEDURE CcgSolve (a, b: SLICE OF F64 ; n, m: I64 ; x: SLICE OF F64) : BOOL
   RAISES ValueRange =
 VAR
@@ -1645,8 +1651,9 @@ BEGIN
   RETURN TRUE
 END CcgSolve ;
 
-(* the low-pass weight at frequency k of an n-point series sampled
-   every dint years: 1 / 2^((f/fc)^6), the exponent clipped at 20 *)
+(* CcgWeight answers the low-pass weight at frequency k of an n-point
+   series sampled every dint years: 1 / 2^((f/fc)^6), the exponent
+   clipped at 20. *)
 PROCEDURE CcgWeight (k, n: I64 ; dint, cutoff: F64) : F64
   RAISES ValueRange =
 VAR f, z : F64 ;
@@ -1657,8 +1664,9 @@ BEGIN
   RETURN 1.0 / Math.Pow (2.0, z)
 END CcgWeight ;
 
-(* the padded series filtered at one cutoff: fr, fi is its spectrum
-   and stays untouched; the answer is the real part back in time *)
+(* CcgLowPass answers the padded series filtered at one cutoff: fr,
+   fi is its spectrum and stays untouched; the answer is the real part
+   back in time. *)
 PROCEDURE CcgLowPass (RO fr, fi: SLICE OF F64 ; dint, cutoff: F64)
   : SLICE OF F64
   RAISES Faults.SizeError, Faults.BadArg, ValueRange =
@@ -1683,8 +1691,9 @@ BEGIN
   RETURN re
 END CcgLowPass ;
 
-(* scipy's interp1d, linear: the segment is the one ENDING at the
-   first x not below xq, and outside the span the answer is NaN *)
+(* CcgInterp is scipy's interp1d, linear: the segment is the one
+   ENDING at the first x not below xq, and outside the span the answer
+   is NaN. *)
 PROCEDURE CcgInterp (RO x, y: SLICE OF F64 ; xq: F64) : F64 =
 VAR
   lo, hi, mid, n : I64 ;
@@ -1708,8 +1717,8 @@ BEGIN
   RETURN slope * (xq - x[lo - 1]) + y[lo - 1]
 END CcgInterp ;
 
-(* the line a + b x through points by least squares:
-   scipy.stats.linregress's intercept and slope *)
+(* CcgLine fits the line a + b x through points by least squares:
+   scipy.stats.linregress's intercept and slope. *)
 PROCEDURE CcgLine (RO x, y: SLICE OF F64 ; VAR a, b: F64) =
 VAR
   mx, my, sxx, sxy : F64 ;
@@ -1762,7 +1771,8 @@ BEGIN
     RAISE Faults.BadArg ('CcgFilter: one polynomial term at least, and no negative number of harmonics')
   END ;
 
-  (* the observations that are there, their times in order *)
+  (* This keeps the observations that are there, their times in
+     order. *)
   work := NEW (F64, LEN (xp)) ;
   val := NEW (F64, LEN (xp)) ;
   n := 0 ;
@@ -1805,9 +1815,9 @@ BEGIN
     resid[i] := val[i] - ys
   END ;
 
-  (* 2: a line through the two ends of the residuals -- a quarter of
-     the long cutoff at each -- is removed so the padded series
-     starts and stops near zero; too short a record keeps its ends *)
+  (* 2: a line through the two ends of the residuals (a quarter of
+     the long cutoff at each) is removed so the padded series starts
+     and stops near zero; too short a record keeps its ends. *)
   ca := 0.0 ;
   cb := 0.0 ;
   IF NOT (work[n - 1] - work[0] < longterm / 365.0) THEN
@@ -1862,8 +1872,8 @@ BEGIN
     RAISE Faults.BadArg ('CcgFilter: every observation is at one time')
   END ;
 
-  (* evenly spaced, numpy.arange's count, the last point pinned to
-     the last datum *)
+  (* The points are evenly spaced, numpy.arange's count, the last
+     point pinned to the last datum. *)
   dint := interval / 365.0 ;
   ni := I64 (Math.Ceil ((work[n - 1] + dint / 2.0 - work[0]) / dint)) ;
   IF ni < 2 THEN

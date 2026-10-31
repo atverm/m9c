@@ -11,18 +11,18 @@
 # The bootstrap question, stated plainly: this builds m9c from the C
 # in runtime/gen, which is checked in.  That C was produced by m9c
 # itself and reproduces byte for byte (runtime/test/bootstrap.sh), so
-# a source tree needs a C compiler and nothing else -- no FPC, no
+# a source tree needs a C compiler and nothing else: no FPC, no
 # previous m9c.  The FPC host tooling in host/fpc is the historical
 # bootstrap and the differential oracle; it is not needed to build.
 set -e
 cd "$(dirname "$0")"
 
 CC=${CC:-cc}
-# A packager's flags are HONOURED, all three of them: dpkg-buildpackage
+# A packager's flags are HONOURED, all three of them.  dpkg-buildpackage
 # and rpmbuild export CFLAGS, CPPFLAGS and LDFLAGS (hardening lives in
-# CPPFLAGS' -D_FORTIFY_SOURCE and LDFLAGS' -z now), and lintian flagged
-# m9c for missing exactly those two because only CFLAGS was read.  The
-# C standard is ours and stays outside them.
+# CPPFLAGS' -D_FORTIFY_SOURCE and LDFLAGS' -z now).  lintian flagged m9c
+# for missing exactly those two, because only CFLAGS was read.  The C
+# standard is ours and stays outside them.
 CFLAGS=${CFLAGS:--O2}
 CPPFLAGS=${CPPFLAGS:-}
 LDFLAGS=${LDFLAGS:-}
@@ -35,8 +35,9 @@ WARN="-std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter"
 # variable assigned to itself) and gcc does not.  After -Wall, because
 # clang's -Wall turns them back on.
 # And macOS ships no OpenSSL headers, so tlsshim.c needs telling where
-# Homebrew's are -- the same two places m9c looks (OsslDir), and only
-# when the packager's CPPFLAGS have not already said.
+# Homebrew's are.  The script names the same two places m9c looks
+# (OsslDir), and only when the packager's CPPFLAGS have not already
+# said.
 case $(uname -s) in
   Darwin)
     WARN="$WARN -Wno-parentheses-equality -Wno-self-assign"
@@ -50,16 +51,18 @@ case $(uname -s) in
     esac ;;
 esac
 
-# the modules m9c itself is made of, in dependency order
+# COMPILER lists the modules m9c itself is made of, in dependency
+# order.
 COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc DynUtf Review M9c"
 
-# everything else a program may import: the standard library, shipped
-# as source (M9 has no binary module format -- the .m9 IS the
-# interface, and a second one could disagree with it).  Lsp and M9fmt
-# are PROGRAMS, shipped the same way so that `m9c --make -o m9lsp Lsp`
-# works against the installed library -- 0.4.1's changelog said it
-# did, and /usr/lib/m9 of that release held no Lsp.m9: the claim had
-# no gate.  debian/tests/compile-a-program builds both now.
+# LIBRARY lists everything else a program may import: the standard
+# library, shipped as source.  M9 has no binary module format: the .m9
+# IS the interface, and a second one could disagree with it.  Lsp and
+# M9fmt are PROGRAMS, shipped the same way so that
+# `m9c --make -o m9lsp Lsp` works against the installed library.
+# 0.4.1's changelog said it did, and /usr/lib/m9 of that release held
+# no Lsp.m9: the claim had no gate.  debian/tests/compile-a-program
+# builds both now.
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
          Json JsonUtf Chars DynUtf Dict Faults Mat Math Bits Sort Seq Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
@@ -81,13 +84,13 @@ $CC $CPPFLAGS $CFLAGS $WARN -iquote runtime -c runtime/m9rt.c -o "$OUT/m9rt.o"
 # shellcheck disable=SC2086
 $CC $CPPFLAGS $CFLAGS $WARN -iquote runtime -c runtime/tcpshim.c -o "$OUT/tcpshim.o"
 $CC $CPPFLAGS $CFLAGS $WARN -iquote runtime -c runtime/fmtshim.c -o "$OUT/fmtshim.o"
-# The TLS half of csock (OpenSSL) is a member since 0.12: Http binds its
-# four symbols unconditionally, so a program making any request -- over
-# plain http too -- failed to link against the packaged archive on
+# The TLS half of csock (OpenSSL) is a member since 0.12.  Http binds
+# its four symbols unconditionally.  So a program making any request,
+# over plain http too, failed to link against the packaged archive on
 # undefined tls_connect/read/write/close (2026-09-28).  The archive
 # therefore needs OpenSSL's headers to build and its libraries to link
 # against, and the packages say so (libssl-dev / openssl-devel /
-# openssl); m9c's flagless line adds -lssl -lcrypto as-needed.
+# openssl).  m9c's flagless line adds -lssl -lcrypto as-needed.
 $CC $CPPFLAGS $CFLAGS $WARN -iquote runtime -c runtime/tlsshim.c -o "$OUT/tlsshim.o"
 ar rcs "$OUT/libm9rt.a" "$OUT/m9rt.o" "$OUT/tcpshim.o" "$OUT/tlsshim.o" "$OUT/fmtshim.o"
 
@@ -103,10 +106,11 @@ install -d "$DESTDIR/usr/bin" "$DESTDIR/usr/lib/m9" \
 install -m 755 "$OUT/m9c"        "$DESTDIR/usr/bin/m9c"
 install -m 644 "$OUT/libm9rt.a"  "$DESTDIR/usr/lib/libm9rt.a"
 install -m 644 runtime/m9rt.h    "$DESTDIR/usr/include/m9/m9rt.h"
-# the runtime as SOURCES too, for `m9c --cell' (the notebook session),
-# which compiles it position-independent and builds the session host:
-# its own tree, NOT beside the header in include/m9, where sources would
-# win over the archive and every flagless link would compile them
+# Install the runtime as SOURCES too, for `m9c --cell' (the notebook
+# session).  That compiles it position-independent and builds the
+# session host.  The sources get their own tree, NOT beside the header
+# in include/m9.  There they would win over the archive, and every
+# flagless link would compile them.
 install -d "$DESTDIR/usr/share/m9/runtime"
 for f in m9rt.h m9rt.c m9powfive.h m9powten.h tcpshim.c fmtshim.c tlsshim.c m9session.c pgshim.c sha256shim.c; do
   install -m 644 "runtime/$f" "$DESTDIR/usr/share/m9/runtime/$f"
@@ -114,7 +118,7 @@ done
 
 # The standard library, as M9 SOURCE.  m9c searches /usr/lib/m9 last,
 # so an installed compiler finds these without anyone setting a
-# variable -- an installed compiler that cannot find its own library
+# variable.  An installed compiler that cannot find its own library
 # is a compiler nobody installs twice.
 for m in $LIBRARY; do
   install -m 644 "corpus/$m.m9" "$DESTDIR/usr/lib/m9/$m.m9"
@@ -133,14 +137,14 @@ install -m 644 man/m9c.1         "$DESTDIR/usr/share/man/man1/m9c.1"
 # The report, pools.md and the VS Code extension are in the private
 # development tree and the release tarball, NOT in the public
 # atverm/m9c (corpus, host/fpc, runtime, the man page and the module
-# reference only -- Alex, 2026-08-30).  An install from that tree says
+# reference only; Alex, 2026-08-30).  An install from that tree says
 # what it is not installing instead of failing on the first of them.
 for d in docs/M9-report.md docs/pools.md docs/bench.md; do
   if [ -f "$d" ]; then install -m 644 "$d" "$DESTDIR/usr/share/doc/m9/$(basename "$d")"
   else echo "note: no $d in this tree; not installed"; fi
 done
 if [ -d tools/vscode-m9 ]; then
-# The VS Code extension: syntax highlighting plus docstring hovers
+# The VS Code extension gives syntax highlighting plus docstring hovers
 # and completion (fed by m9c --doc).  Extensions are per-user, so
 # the package ships the files and the user links them in once:
 #   ln -s /usr/share/m9/vscode-m9 ~/.vscode/extensions/atverm.m9-lang-0.2.0
@@ -152,7 +156,8 @@ for f in package.json extension.js language-configuration.json; do
 done
 install -m 644 tools/vscode-m9/syntaxes/*.json \
     "$DESTDIR/usr/share/m9/vscode-m9/syntaxes/"
-# the M9 mark: the extension's icon and a .m9 file's (tools/MkLogo.m9)
+# Install the M9 mark: the extension's icon and a .m9 file's
+# (tools/MkLogo.m9).
 install -m 644 tools/vscode-m9/images/* "$DESTDIR/usr/share/m9/vscode-m9/images/"
 printf '%s\n' \
   "To use the M9 VS Code extension from this package:" \
@@ -164,9 +169,9 @@ printf '%s\n' \
 else
   echo "note: no tools/vscode-m9 in this tree; the extension is not installed"
 fi
-# The Jupyter kernel (since 0.15.0): a Python wrapper around m9c,
-# per-user like the editor extension -- the package ships the files,
-# the user registers the kernel once with
+# The Jupyter kernel (since 0.15.0) is a Python wrapper around m9c,
+# per-user like the editor extension.  The package ships the files,
+# and the user registers the kernel once with
 #   /usr/share/m9/jupyter/install.sh        (or install.sh --uv)
 # Its highlighting extension installs with pip from highlight/.
 if [ -d tools/jupyter ]; then

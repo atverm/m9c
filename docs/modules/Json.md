@@ -1,8 +1,8 @@
 # Json
 
-JSON parsing for M9.  The 2026-08-20 Modula-2 version leaked every
-node by design and capped strings at 255 characters; here the pool
-owns the tree and slices are unbounded.  Failure is in the
+Json parses JSON for M9.  The 2026-08-20 Modula-2 version leaked
+every node by design and capped strings at 255 characters; here the
+pool owns the tree and slices are unbounded.  Failure is in the
 signature, not in a JErrorK node the caller can forget to check.
 
 ### TYPE Node
@@ -24,14 +24,15 @@ a RAISES clause may only cite an exception the reader can find
 
 ### Parse (RO src: STR) : PTR Node RAISES ParseError
 
-the whole tree is built in the caller's frame (par 4.3): it lives
-as long as the caller does, and a caller that must keep it longer
-Clones it into a pool.
-ParseError carries line and column -- errors are values.
+Parse builds the whole tree in the caller's frame (par 4.3): it
+lives as long as the caller does, and a caller that must keep it
+longer Clones it into a pool.
+ParseError carries line and column: errors are values.
 
 ### Field (obj: PTR Node ; RO name: STR) : OPT PTR Node
 
-absence is OPT, not NIL: the caller must guard before use.
+Field answers absence as OPT, not NIL: the caller must guard
+before use.
 
 ### Item (arr: PTR Node ; i: I64) : PTR Node RAISES TypeMismatch, IndexError
 
@@ -40,42 +41,44 @@ to hide behind, so the confusion is named in the signature.
 
 ### Count (arr: PTR Node) : I64 RAISES TypeMismatch
 
-how many elements an array has, so a walk is a FOR over it.
+Count answers how many elements an array has, so a walk is a FOR
+over it.
 
-arr -- must BE an array.  Asking an object or a string how
-       many elements it has is a question about the document's
-       shape that the caller got wrong, so it raises rather
-       than answering 0 -- an empty array and a value that is
-       not an array are different, and 0 would merge them.
+  arr -- must BE an array.  A caller that asks an object or a
+         string how many elements it has got the document's
+         shape wrong.  So Count raises rather than answering 0.
+         An empty array and a value that is not an array are
+         different, and 0 would merge them.
 
 ### MemberCount (obj: PTR Node) : I64 RAISES TypeMismatch
 
-how many members an Object has -- the object twin of Count,
-with the same refusal for a non-object.
+MemberCount answers how many members an Object has: the object
+twin of Count, with the same refusal for a non-object.
 
 ### NameAt (obj: PTR Node ; i: I64) : STR RAISES TypeMismatch, IndexError
 
-the i-th member's NAME, document order -- with MemberAt this is
-the walk Field cannot do: reading an object whose keys are data
-(the proxy's host map).
+NameAt answers the i-th member's NAME, in document order.  With
+MemberAt it makes the walk Field cannot do: reading an object
+whose keys are data (the proxy's host map).
 
 ### MemberAt (obj: PTR Node ; i: I64) : PTR Node RAISES TypeMismatch, IndexError
 
-the i-th member's value node, document order.
+MemberAt answers the i-th member's value node, in document
+order.
 
 ### AsI64 (n: PTR Node) : I64 RAISES TypeMismatch, ValueRange
 
-TypeMismatch if not Num; ValueRange if a float value is
-non-finite or beyond I64 -- the Trunc(NaN) crash and numpy's
-silent INT64_MIN, both named in the contract.
+AsI64 raises TypeMismatch if n is not Num, and ValueRange if a
+float value is non-finite or beyond I64.  The contract names both
+the Trunc(NaN) crash and numpy's silent INT64_MIN.
 
 ### AsF64 (n: PTR Node) : F64 RAISES TypeMismatch
 
-the numeric value as it was parsed.  Unlike AsI64 this cannot
-raise ValueRange: every JSON number has an F64 value, and it is
-only the narrowing to an integer that can fail.  Reach for this
-one when the document says 3.5 and for AsI64 when it says a
-count.
+AsF64 answers the numeric value as it was parsed.  Unlike AsI64
+this cannot raise ValueRange: every JSON number has an F64 value,
+and it is only the narrowing to an integer that can fail.  Reach
+for this one when the document says 3.5 and for AsI64 when it says
+a count.
 
 ### AsBool (n: PTR Node) : BOOL RAISES TypeMismatch
 
@@ -86,41 +89,42 @@ no" from "the option is not there".
 
 ### AsStr (n: PTR Node) : STR RAISES TypeMismatch
 
-the TEXT of a JSON string.  A VIEW into the document the tree
-was parsed from -- nothing is copied and nothing is unescaped,
-which is exactly what Parse promises about the source it retains
--- so a caller that outlives the source must copy it, the same
-contract Parse already states.
+AsStr answers the TEXT of a JSON string.  It is a VIEW into the
+document the tree was parsed from: nothing is copied and nothing
+is unescaped, which is exactly what Parse promises about the
+source it retains.  So a caller that outlives the source must
+copy it, the same contract Parse already states.
 
 Until this existed a document's strings could only be COMPARED,
 through StrIs, so a configuration could ask "is the mode 'fast'"
-and could not read a path out of the file.  Found by the ported model's
-pathnames moving into the options document.
+and could not read a path out of the file.  The need showed when
+the ported model's pathnames moved into the options document.
 
 ### ParseIn (VAR pool: POOL ; RO src: STR) : PTR Node IN pool RAISES ParseError
 
-Parse with the tree in pool: for a document a module keeps past
-the frame that read it.  String payloads are VIEWS into src, as
-Parse's are, so src must outlive the tree -- a file read into
-the same pool, or a literal.
+ParseIn is Parse with the tree in pool: for a document a module
+keeps past the frame that read it.  String payloads are VIEWS
+into src, as Parse's are, so src must outlive the tree: a file
+read into the same pool, or a literal.
 
 ### Text (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
-the DECODED text of a JSON string: escapes resolved the way
-json.loads resolves them -- quote, backslash, slash, the five
-control shorthands, unicode escapes with surrogate pairs
-combined.  A string holding no backslash answers the same VIEW
-AsStr does, nothing copied, so the escape-free common case
-stays free; a malformed escape raises TypeMismatch naming it,
-and a LONE surrogate is refused the same way where Python would
-carry the unpaired code unit -- stated, since no real document
-wants one.  Demanded by the zarr proxy's ledger: AsStr's raw
-view is right for comparing and wrong for READING a value
-somebody escaped.
+Text answers the DECODED text of a JSON string, with escapes
+resolved the way json.loads resolves them: quote, backslash,
+slash, the five control shorthands, unicode escapes with
+surrogate pairs combined.  A string holding no backslash answers
+the same VIEW AsStr does, nothing copied, so the escape-free
+common case stays free.  A malformed escape raises TypeMismatch
+naming it.  A LONE surrogate is refused the same way, where
+Python would carry the unpaired code unit; this is stated, since
+no real document wants one.  The zarr proxy's ledger demanded
+it: AsStr's raw view is right for comparing and wrong for
+READING a value somebody escaped.
 
 ### StrIs (n: PTR Node ; RO s: STR) : BOOL
 
-is n a string equal to s?  Total, and deliberately so: it
+StrIs asks whether n is a string equal to s.  It is total, and
+deliberately so: it
 answers FALSE for a number, an object or a missing member, so a
 caller testing `"type" is "array"` writes one call and no
 handler.  Comparison against a value the caller supplies cannot
@@ -132,45 +136,49 @@ _(documented with the group below)_
 
 ### CompactSorted (n: PTR Node) : STR RAISES TypeMismatch, ValueRange, IndexError
 
-Compact with every object's members sorted by name -- the
-json.dumps(sort_keys=True, separators=(",", ":")) rendering the
-proxy's passportSha256 canonicalises over.  Same float refusal
-as Compact.
+CompactSorted is Compact with every object's members sorted by
+name: the json.dumps(sort_keys=True, separators=(",", ":"))
+rendering the proxy's passportSha256 canonicalises over.  It has
+the same float refusal as Compact.
 
 ### Pretty (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
-json.dumps(indent=2): document order, two-space indentation,
-": " after keys, one element per line, empty containers inline
--- the rendering the proxy's saved passport files use.
+Pretty renders json.dumps(indent=2): document order, two-space
+indentation, ": " after keys, one element per line, empty
+containers inline.  It is the rendering the proxy's saved
+passport files use.
 
 ### ReprText (r: F64) : STR RAISES ValueRange
 
-a bare F64 exactly as json.dumps renders it -- Python repr for
-finite values, the NaN / Infinity tokens otherwise.  For
-composers that hold the value, not a Node.
+ReprText renders a bare F64 exactly as json.dumps renders it:
+Python repr for finite values, the NaN / Infinity tokens
+otherwise.  It is for composers that hold the value, not a Node.
 
 ReprText ALLOCATES: it carves a DString to hold one number and
-answers a view of it.  In a loop that is a pool block per value --
+answers a view of it.  In a loop that is a pool block per value:
 the zarr proxy measured five million of them emitting a million
-ndjson rows -- so a composer that already HAS a buffer should call
+ndjson rows.  So a composer that already HAS a buffer should call
 AppendF64 below and copy nothing.
 
 ### AppendF64 (VAR d: PTR DynStr.DString ; r: F64) RAISES ValueRange
 
-ReprText's own body, appending straight into d.  Identical bytes,
-no intermediate string: this is what a row emitter wants.
+AppendF64 is ReprText's own body, appending straight into d.  It
+gives identical bytes and no intermediate string: this is what a
+row emitter wants.
 
 ### NumText (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
-the number as Python str() renders it -- the digits for an
-integer, repr for a float.  TypeMismatch when n is not Num.
+NumText answers the number as Python str() renders it: the
+digits for an integer, repr for a float.  It raises TypeMismatch
+when n is not Num.
 
 ### AppendJString (VAR d: PTR DynStr.DString ; RO t: STR) RAISES ValueRange
 
-t appended as a JSON string literal, quotes included -- the
-same escaping Compact uses, exported for callers composing
-JSON documents directly (the proxy's catalog builder).  The
-declared raise is conversion accounting; it cannot fire.
+AppendJString appends t as a JSON string literal, quotes
+included.  It uses the same escaping Compact uses, exported for
+callers composing JSON documents directly (the proxy's catalog
+builder).  The declared raise is conversion accounting; it cannot
+fire.
 
 ### NewObj () : PTR Node
 
@@ -183,12 +191,12 @@ _(documented with the group below)_
 ### NewStr (RO s: STR) : PTR Node RAISES ValueRange
 
 s is the string's VALUE, not document text.  It is escaped
-here, because a Node's Str payload is always DOCUMENT text --
-Text decodes it, Compact decodes it and re-escapes -- so a
-value carrying a literal backslash stored raw would be read
-back as an escape and could fail to parse at all.  Escaping at
-construction keeps built and parsed nodes indistinguishable,
-which is what lets one tree mix them.
+here, because a Node's Str payload is always DOCUMENT text: Text
+decodes it, Compact decodes it and re-escapes.  A value carrying
+a literal backslash stored raw would be read back as an escape
+and could fail to parse at all.  NewStr escapes at construction,
+and that keeps built and parsed nodes indistinguishable, which
+is what lets one tree mix them.
 
 ### NewI64 (v: I64) : PTR Node
 
@@ -216,7 +224,8 @@ _(documented with the group below)_
 
 ### NewStrIn (VAR pool: POOL ; RO s: STR) : PTR Node IN pool RAISES ValueRange
 
-NewStr with the node and its escaped payload in pool
+NewStrIn is NewStr with the node and its escaped payload in
+pool.
 
 ### NewI64In (VAR pool: POOL ; v: I64) : PTR Node IN pool
 
@@ -232,16 +241,17 @@ _(documented with the group below)_
 
 ### NewRawIn (VAR pool: POOL ; RO text: STR) : PTR Node IN pool RAISES ParseError, TypeMismatch
 
-a NUMBER written exactly as `text' says it -- `1.0E-5', `2.50',
-`1e400' -- where NewF64 would write the double's shortest repr.
-For an output whose numbers follow another program's printing
-(Java's Double.toString, a fixed number of decimals).  text must
-be one JSON number: anything else raises ParseError, a JSON value
-of another kind TypeMismatch, so a document stays JSON.  The node
-is a Num like any other -- AsF64 and AsI64 read its value -- and
-Compact, Pretty, NumText and Clone keep the text (2026-10-10,
-cp-kernel's proposal: its view printed numbers through a JSON
-builder of its own).
+NewRaw and NewRawIn make a NUMBER written exactly as `text' says
+it (`1.0E-5', `2.50', `1e400'), where NewF64 would write the
+double's shortest repr.  They serve an output whose numbers
+follow another program's printing (Java's Double.toString, a
+fixed number of decimals).  text must be one JSON number:
+anything else raises ParseError, and a JSON value of another kind
+raises TypeMismatch, so a document stays JSON.  The node is a Num
+like any other: AsF64 and AsI64 read its value.  Compact, Pretty,
+NumText and Clone keep the text (2026-10-10, cp-kernel's
+proposal: its view printed numbers through a JSON builder of its
+own).
 
 ### NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool
 
@@ -253,55 +263,57 @@ _(documented with the group below)_
 
 ### Name (RO s: STR) : STR RAISES ValueRange
 
-the DOCUMENT spelling of a member name whose VALUE is s -- what
-Set and Field expect, since a name inside a Node is document
-text exactly as a Str payload is.  A literal name needs none of
-this; a name that comes from DATA does: the FLUXNET shuttle's
-BADM export put a Windows path into a group name, and
+Name answers the DOCUMENT spelling of a member name whose VALUE
+is s: what Set and Field expect, since a name inside a Node is
+document text exactly as a Str payload is.  A literal name needs
+none of this; a name that comes from DATA does.  The FLUXNET
+shuttle's BADM export put a Windows path into a group name, and
 `badm_c:\users\...` set raw was read back as a broken escape.
-Escaped exactly as NewStr escapes a value, so a name built here
-and one parsed from a document compare equal.
+Name escapes exactly as NewStr escapes a value, so a name built
+here and one parsed from a document compare equal.
 
 ### Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ; VAR KEPT v: PTR Node) RAISES TypeMismatch
 
-append v under name, or put it where a member of that name
-already stands.  TypeMismatch when obj is not an object.
+Set appends v under name, or puts it where a member of that name
+already stands.  It raises TypeMismatch when obj is not an
+object.
 
 BOTH POINTERS ARE VAR, and that is par 4.1 rather than a
 preference: linking WRITES through them, and a value PTR
 parameter is a shared borrow the checker will not let a
 procedure write through.  So a member is a named local, not an
-argument spelled inline -- `n := NewStr (p, s) ; Set (o, k, n)`
--- and a composer that wants the one-liner back wraps these in
-its own helper, where the skip-blanks policy belongs anyway.
+argument spelled inline: `n := NewStr (p, s) ; Set (o, k, n)`.
+A composer that wants the one-liner back wraps these in its own
+helper, where the skip-blanks policy belongs anyway.
 
 ### Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node) RAISES TypeMismatch
 
-append to an array, count kept.
+Add appends to an array, count kept.
 
 ### CloneIn (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool RAISES TypeMismatch
 
-Clone with every node, payload and member name in pool
+CloneIn is Clone with every node, payload and member name in
+pool.
 
 ### Clone (n: PTR Node) : PTR Node RAISES TypeMismatch
 
-a DEEP copy, in the caller's frame.  A node belongs to at most one parent --
-Set and Add relink the node they are given -- so a subtree that
-is to appear in a second document is cloned, never linked twice.
-Merging a shared vocabulary into a per-store document is exactly
-that case, and linking would quietly corrupt the vocabulary for
-every later store.
+Clone makes a DEEP copy, in the caller's frame.  A node belongs
+to at most one parent: Set and Add relink the node they are
+given.  So a subtree that is to appear in a second document is
+cloned, never linked twice.  A shared vocabulary merged into a
+per-store document is exactly that case, and a link would
+quietly corrupt the vocabulary for every later store.
 
-Deep rather than shallow on purpose: a shallow copy would share
-the child chain, so a later Set on the copy would reach into the
-original.  These documents are tens of members; the copy is not
-worth being clever about.
+The copy is deep rather than shallow on purpose: a shallow copy
+would share the child chain, so a later Set on the copy would
+reach into the original.  These documents are tens of members;
+the copy is not worth being clever about.
 
 STRING PAYLOADS AND MEMBER NAMES ARE COPIED TOO, which is what
 makes a clone that outlives its source document safe.  A Str's
-text is a VIEW -- of the document when the node came from Parse,
-of a builder's buffer when it came from NewStr -- so a clone
-that kept the view would dangle the moment the source pool went
+text is a VIEW: of the document when the node came from Parse,
+of a builder's buffer when it came from NewStr.  A clone that
+kept the view would dangle the moment the source pool went
 away.  Nothing in the type system can see that: a POOL is not
 part of a STR's type.
 
@@ -314,19 +326,19 @@ on one line.  Same escaping, same float spelling, same order.
 It exists because that is the spelling zarr-python 3 writes a
 consolidated `.zmetadata` in, and the one icos_ingest.finalize
 writes a slim root in.  A store's metadata is otherwise NOT
-byte-comparable across implementations at all -- measured
-2026-09-09: zarr 2.18.7 indents by four and sorts its keys,
-zarr 3.3.0 indents by two and keeps insertion order, and the
+byte-comparable across implementations at all.  A measurement on
+2026-09-09 showed it: zarr 2.18.7 indents by four and sorts its
+keys, zarr 3.3.0 indents by two and keeps insertion order, and the
 live ICOS stores carry BOTH because one store is rebuilt nightly
 and the others are not.  The one-line spaced form is the only
 spelling two of those three agree on.
 
 ### Compact (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
-the tree re-serialised COMPACT, python-json.dumps style:
+Compact re-serialises the tree COMPACT, python-json.dumps style:
 member order preserved (the parser keeps document order),
 separators bare, floats as Python repr (shortest round-trip,
-m9_repr_double -- held to repr digit for digit over 300k
+m9_repr_double, held to repr digit for digit over 300k
 values), non-finite values as dumps' NaN/Infinity tokens,
 strings escaped exactly as ensure_ascii=False
 escapes them (quote, backslash, the five control shorthands,
@@ -334,13 +346,14 @@ escapes them (quote, backslash, the five control shorthands,
 wire).  Tree strings are DECODED first (Text's rules) and
 re-escaped, which is exactly loads-then-dumps: a document
 spelling a quote as \" emits \" again, not the doubled
-re-escape a raw pass would make of it.  Demanded by the zarr
-proxy, whose reference answers json.loads-then-JSONResponse
-and must be matched byte for byte.
+re-escape a raw pass would make of it.  The zarr proxy demanded
+it: its reference answers json.loads-then-JSONResponse and must
+be matched byte for byte.
 
-m9rt's shortest-round-trip float printer: CPython's repr(float),
-probed with %.*e and judged by strtod.  REENTRANT -- all state on
-the caller's stack.  buf needs 32 bytes; answers the length.
+ReprF64 is m9rt's shortest-round-trip float printer:
+CPython's repr(float), probed with %.*e and judged by strtod.  It
+is REENTRANT: all state is on the caller's stack.  buf needs 32
+bytes; ReprF64 answers the length.
 
 ### ReprF64 (v: C.Double ; buf: C.MutPtr) : C.SSizeT [REENTRANT]
 

@@ -2,8 +2,8 @@ MODULE GfVarSliceSorted ;
 
 (* WANT: sorted *)
 
-(* the same through Sort.Strs, which writes elements but never the slice
-  (H1) *)
+(* The same holds through Sort.Strs, which writes elements but never
+  the slice (H1). *)
 IMPORT Io, Sort ;
 VAR pool : POOL ; names : SLICE OF STR ;
 PROCEDURE Open () =

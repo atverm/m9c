@@ -1,10 +1,10 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Regex ;
 
-(* Regular expressions: the subset Python's re and RE2 share, matched
-   by a Pike VM -- the NFA simulation RE2 uses -- in time linear in
-   the subject whatever the pattern, so that no pattern can hang the
-   program that runs it (docs/datalib-plan.md par 3).
+(* Regex matches regular expressions: the subset Python's re and RE2
+   share.  A Pike VM, the NFA simulation RE2 uses, matches them in
+   time linear in the subject whatever the pattern, so that no pattern
+   can hang the program that runs it (docs/datalib-plan.md par 3).
 
    THE LANGUAGE is Python's, and a match is the one Python's re finds:
    literals and escapes (\n \t \x41 é ...), . and classes with
@@ -14,7 +14,7 @@ DEFINITION MODULE Regex ;
    the flags i m s and u -- as letters to Compile, inline at the
    start (?ims), or scoped (?i:...) (?-i:...).  Leftmost-first, with
    Python's rule for a loop whose body matched nothing: the loop ends
-   there.  Held to re on 3,135 searches, 845 find-alls, 645
+   there.  It is held to re on 3,135 searches, 845 find-alls, 645
    substitutions and 445 splits, of generated patterns and written
    ones (RegexTest).
 
@@ -49,49 +49,52 @@ EXCEPTION
 
 PROCEDURE Compile (VAR pool: POOL ; RO pattern: STR ; RO flags: STR)
   : PTR Re IN pool RAISES BadPattern ;
-  (* pattern compiled; flags is letters from imsu, '' for none:
-     i caseless, m ^ and $ at every line, s . matches a line feed
-     too, u Unicode classes *)
+  (* Compile answers the pattern compiled; flags is letters from imsu,
+     '' for none: i caseless, m ^ and $ at every line, s . matches a
+     line feed too, u Unicode classes. *)
 
 PROCEDURE Groups (re: PTR Re) : I64 ;
-  (* how many capturing groups the pattern has *)
+  (* Groups answers how many capturing groups the pattern has. *)
 
 PROCEDURE GroupIndex (re: PTR Re ; RO name: STR) : I64 ;
-  (* the number of the group named so, or -1 *)
+  (* GroupIndex answers the number of the group named so, or -1. *)
 
 PROCEDURE Search (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found ;
-  (* the first match at or after from (clamped to 0 .. LEN (s)) *)
+  (* Search answers the first match at or after from (clamped to
+     0 .. LEN (s)). *)
 
 PROCEDURE Match (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found ;
-  (* a match that starts at from *)
+  (* Match answers a match that starts at from. *)
 
 PROCEDURE FullMatch (re: PTR Re ; RO s: STR) : OPT PTR Found ;
-  (* a match of the whole of s *)
+  (* FullMatch answers a match of the whole of s. *)
 
 PROCEDURE Start (m: PTR Found ; k: I64) : I64 RAISES IndexError ;
 PROCEDURE End (m: PTR Found ; k: I64) : I64 RAISES IndexError ;
 PROCEDURE Took (m: PTR Found ; k: I64) : BOOL RAISES IndexError ;
-  (* group k's start, end, and whether it took part *)
+  (* Start, End and Took answer group k's start, end, and whether it
+     took part. *)
 
 PROCEDURE Group (RO s: STR ; m: PTR Found ; k: I64) : STR
   RAISES IndexError ;
-  (* the text group k matched in s, the subject m was found in; '' for
-     a group that took no part (Took says which) *)
+  (* Group answers the text group k matched in s, the subject m was
+     found in; '' for a group that took no part (Took says which). *)
 
 PROCEDURE FindAll (re: PTR Re ; RO s: STR) : SLICE OF PTR Found ;
-  (* every match, left to right, as Python's finditer: an empty match
-     may follow a non-empty one where it ends, never another empty one *)
+  (* FindAll answers every match, left to right, as Python's finditer:
+     an empty match may follow a non-empty one where it ends, never
+     another empty one. *)
 
 PROCEDURE Sub (re: PTR Re ; RO s: STR ; RO repl: STR ; count: I64) : STR
   RAISES BadPattern ;
-  (* s with the first count matches (0 for all) replaced by repl, in
-     which \g<0> \g<name> \g<n> and \1 .. \99 name a group's text ('' if
-     it took no part), and \n \t \r \\ are escapes *)
+  (* Sub answers s with the first count matches (0 for all) replaced by
+     repl.  In repl \g<0> \g<name> \g<n> and \1 .. \99 name a group's
+     text ('' if it took no part), and \n \t \r \\ are escapes. *)
 
 PROCEDURE Split (re: PTR Re ; RO s: STR ; maxsplit: I64) : SLICE OF STR ;
-  (* s cut at the first maxsplit matches (0 for all), each match's
-     groups between the pieces -- '' for one that took no part, where
-     Python says None *)
+  (* Split answers s cut at the first maxsplit matches (0 for all),
+     each match's groups between the pieces: '' for one that took no
+     part, where Python says None. *)
 
 END Regex.
 
@@ -172,7 +175,8 @@ TYPE
   NodeP = PTR Node ;
   FoundP = PTR Found ;
 
-  (* a set of code points under construction: ranges, not yet sorted *)
+  (* Set is a set of code points under construction: ranges, not yet
+     sorted. *)
   Set = RECORD
     lo, hi : SLICE OF I64 ;
     n : I64 ;
@@ -400,7 +404,8 @@ BEGIN
 END SetAddTable ;
 
 PROCEDURE SetNormal (VAR st: Set) =
-  (* sorted by start, overlapping and adjacent ranges merged *)
+  (* SetNormal sorts by start and merges overlapping and adjacent
+     ranges. *)
 VAR i, j, k, a, b : I64 ;
 BEGIN
   FOR i := 1 TO st.n - 1 DO
@@ -429,7 +434,8 @@ BEGIN
 END SetNormal ;
 
 PROCEDURE SetNegate (VAR sp: POOL ; VAR st: Set) =
-  (* every code point the normal set does not hold *)
+  (* SetNegate makes the set every code point the normal set does not
+     hold. *)
 VAR
   out : Set ;
   i, next : I64 ;
@@ -445,7 +451,7 @@ BEGIN
 END SetNegate ;
 
 PROCEDURE SetCaseless (VAR sp: POOL ; VAR st: Set) =
-  (* the ASCII letters' other case added *)
+  (* SetCaseless adds the ASCII letters' other case. *)
 VAR i, n, a, b : I64 ;
 BEGIN
   n := st.n ;
@@ -465,7 +471,8 @@ END SetCaseless ;
 
 PROCEDURE InTable (RO lo: SLICE OF I64 ; RO hi: SLICE OF I64 ;
                    at, n, c: I64) : BOOL =
-  (* c in one of the n sorted ranges from index at: a binary search *)
+  (* InTable answers whether c is in one of the n sorted ranges from
+     index at: a binary search. *)
 VAR a, b, m : I64 ;
 BEGIN
   a := at ;
@@ -545,7 +552,7 @@ BEGIN
 END NewRe ;
 
 PROCEDURE AddClass (VAR re: PTR Re ; RO st: Set) : I64 =
-  (* a normal set kept as the pattern's next class *)
+  (* AddClass keeps a normal set as the pattern's next class. *)
 VAR
   nl, nh : SLICE OF I64 ;
   na, nn : SLICE OF I64 ;
@@ -591,8 +598,7 @@ BEGIN
     re.names := nn ;
     re.nameGroup := ng
   END ;
-  re.names[re.nnames] := NEW (re, CHAR, LEN (name)) ;
-  FOR i := 0 TO LEN (name) - 1 DO re.names[re.nnames][i] := name[i] END ;
+  re.names[re.nnames] := UTF (re, name) ;      (* a copy in re's pool *)
   re.nameGroup[re.nnames] := group ;
   re.nnames := re.nnames + 1
 END AddName ;
@@ -658,21 +664,72 @@ END Fail ;
 
 PROCEDURE AtEnd (VAR ps: Parser) : BOOL =
 BEGIN
-  RETURN ps.pos >= LEN (ps.p)
+  RETURN ps.pos >= Text.BLen (ps.p)
 END AtEnd ;
 
+(* The pattern is read as Rdf's reader reads its text: POSITIONED BY
+   BYTE, READ BY CHARACTER.  Cur decodes the code point at pos, At (k)
+   the one k whole characters on, Advance moves pos past one -- so a
+   literal `é' in a pattern is one node, and a BadPattern's pos is a
+   byte offset, as every position in Text is. *)
 PROCEDURE Cur (VAR ps: Parser) : CHAR =
-  (* the character at pos, NUL past the end *)
+  (* Cur answers the character at pos, NUL past the end. *)
+VAR at : I64 ;
 BEGIN
-  IF ps.pos >= LEN (ps.p) THEN RETURN 00C END ;
-  RETURN ps.p[ps.pos]
+  IF ps.pos >= Text.BLen (ps.p) THEN RETURN 00C END ;
+  at := ps.pos ;
+  RETURN Text.NextCp (ps.p, at)
 END Cur ;
 
 PROCEDURE At (VAR ps: Parser ; k: I64) : CHAR =
+VAR
+  at, j : I64 ;
+  c : CHAR ;
 BEGIN
-  IF ps.pos + k >= LEN (ps.p) THEN RETURN 00C END ;
-  RETURN ps.p[ps.pos + k]
+  at := ps.pos ;
+  c := 00C ;
+  FOR j := 0 TO k DO
+    IF at >= Text.BLen (ps.p) THEN RETURN 00C END ;
+    c := Text.NextCp (ps.p, at)
+  END ;
+  RETURN c
+EXCEPT
+| IndexError : RETURN 00C
 END At ;
+
+PROCEDURE Advance (VAR ps: Parser) =
+  (* pos past one character, one to four octets *)
+VAR
+  at : I64 ;
+  c : CHAR ;
+BEGIN
+  IF ps.pos < Text.BLen (ps.p) THEN
+    at := ps.pos ;
+    c := Text.NextCp (ps.p, at) ;
+    ps.pos := at
+  END
+END Advance ;
+
+(* the code point that ENDS at byte offset pos (for \b: the character
+   before the position), -1 at the start *)
+PROCEDURE CpBefore (RO s: STR ; pos: I64) : I64 =
+VAR at : I64 ;
+BEGIN
+  IF pos <= 0 THEN RETURN -1 END ;
+  at := pos - 1 ;
+  (* back over continuation octets, 10xxxxxx, to the character's start *)
+  WHILE at > 0 AND I64 (Text.BAt (s, at)) >= 128 AND I64 (Text.BAt (s, at)) < 192 DO at := at - 1 END ;
+  RETURN ORD (Text.NextCp (s, at))
+END CpBefore ;
+
+(* the code point that starts at byte offset pos, its end in next; -1
+   at the end *)
+PROCEDURE CpAt (RO s: STR ; pos: I64 ; VAR next: I64) : I64 =
+BEGIN
+  next := pos ;
+  IF pos >= Text.BLen (s) THEN RETURN -1 END ;
+  RETURN ORD (Text.NextCp (s, next))
+END CpAt ;
 
 PROCEDURE IsDigit (c: CHAR) : BOOL =
 BEGIN
@@ -685,7 +742,7 @@ BEGIN
 END IsOct ;
 
 PROCEDURE HexVal (c: CHAR) : I64 =
-  (* the digit's value, -1 for no hex digit *)
+  (* HexVal answers the digit's value, -1 for no hex digit. *)
 BEGIN
   IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 END ;
   IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - 87 END ;
@@ -699,7 +756,7 @@ BEGIN
 END IsAsciiLetter ;
 
 PROCEDURE Hex (VAR ps: Parser ; n, at: I64) : I64 RAISES BadPattern =
-  (* exactly n hex digits at pos *)
+  (* Hex reads exactly n hex digits at pos. *)
 VAR i, v, d : I64 ;
 BEGIN
   v := 0 ;
@@ -707,7 +764,7 @@ BEGIN
     d := HexVal (Cur (ps)) ;
     IF d < 0 THEN Fail (ps, 'incomplete escape', at) END ;
     v := v * 16 + d ;
-    ps.pos := ps.pos + 1
+    Advance (ps)
   END ;
   IF v > MaxCode THEN Fail (ps, 'bad escape: past U+10FFFF', at) END ;
   IF v >= 0xD800 AND v <= 0xDFFF THEN
@@ -718,8 +775,9 @@ END Hex ;
 
 PROCEDURE CharEscape (VAR ps: Parser ; c: CHAR ; at: I64 ; VAR code: I64)
   : BOOL RAISES BadPattern =
-  (* the escapes that name one character, in a class and out of one;
-     pos is past the letter.  FALSE: c is not one of them *)
+  (* CharEscape reads the escapes that name one character, in a class
+     and out of one; pos is past the letter.  It answers FALSE when c
+     is not one of them. *)
 VAR v : I64 ;
 BEGIN
   IF c = 'a' THEN code := 7
@@ -738,10 +796,10 @@ BEGIN
     v := 0 ;
     IF IsOct (Cur (ps)) THEN
       v := ORD (Cur (ps)) - 48 ;
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       IF IsOct (Cur (ps)) THEN
         v := v * 8 + ORD (Cur (ps)) - 48 ;
-        ps.pos := ps.pos + 1
+        Advance (ps)
       END
     END ;
     code := v
@@ -753,7 +811,8 @@ END CharEscape ;
 
 PROCEDURE CharNode (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re ; code: I64)
   : PTR Node IN sp =
-  (* one character: a class of its two cases under i *)
+  (* CharNode makes one character: a class of its two cases under
+     i. *)
 VAR st : Set ;
 BEGIN
   IF ps.ci AND ((code >= 65 AND code <= 90) OR (code >= 97 AND code <= 122)) THEN
@@ -768,17 +827,17 @@ END CharNode ;
 
 PROCEDURE Escape (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re)
   : PTR Node IN sp RAISES BadPattern =
-  (* at a backslash outside a class *)
+  (* Escape parses at a backslash outside a class. *)
 VAR
   at, code, v : I64 ;
   c : CHAR ;
   st : Set ;
 BEGIN
   at := ps.pos ;
-  ps.pos := ps.pos + 1 ;
+  Advance (ps) ;
   IF AtEnd (ps) THEN Fail (ps, 'bad escape (end of pattern)', at) END ;
   c := Cur (ps) ;
-  ps.pos := ps.pos + 1 ;
+  Advance (ps) ;
   IF c = 'A' THEN RETURN Mk (sp, NAssert, ABot) END ;
   IF c = 'Z' THEN RETURN Mk (sp, NAssert, AEot) END ;
   IF c = 'b' THEN RETURN Mk (sp, NAssert, AWord) END ;
@@ -794,7 +853,7 @@ BEGIN
     (* three octal digits are a character; anything else a group *)
     IF IsOct (c) AND IsOct (Cur (ps)) AND IsOct (At (ps, 1)) THEN
       v := (ORD (c) - 48) * 64 + (ORD (Cur (ps)) - 48) * 8 + ORD (At (ps, 1)) - 48 ;
-      ps.pos := ps.pos + 2 ;
+      Advance (ps) ; Advance (ps) ;
       IF v > 255 THEN Fail (ps, 'octal escape value outside of range 0-0o377', at) END ;
       RETURN CharNode (sp, ps, re, v)
     END ;
@@ -806,19 +865,20 @@ END Escape ;
 
 PROCEDURE ClassItem (VAR sp: POOL ; VAR ps: Parser ; VAR one: Set ;
                      VAR code: I64) : BOOL RAISES BadPattern =
-  (* one item of a class at pos: TRUE and its code for one character,
-     FALSE and the set in one for \d \w \s and their negations *)
+  (* ClassItem reads one item of a class at pos.  It answers TRUE and
+     its code for one character, FALSE and the set in one for \d \w \s
+     and their negations. *)
 VAR
   at : I64 ;
   c : CHAR ;
 BEGIN
   at := ps.pos ;
   c := Cur (ps) ;
-  ps.pos := ps.pos + 1 ;
+  Advance (ps) ;
   IF c # '\' THEN code := ORD (c) ; RETURN TRUE END ;
   IF AtEnd (ps) THEN Fail (ps, 'bad escape (end of pattern)', at) END ;
   c := Cur (ps) ;
-  ps.pos := ps.pos + 1 ;
+  Advance (ps) ;
   IF c = 'd' OR c = 'D' OR c = 's' OR c = 'S' OR c = 'w' OR c = 'W' THEN
     SetNew (sp, one) ;
     SetAddEscape (sp, one, c, ps.uni) ;
@@ -830,10 +890,10 @@ BEGIN
     code := ORD (c) - 48 ;
     IF IsOct (Cur (ps)) THEN
       code := code * 8 + ORD (Cur (ps)) - 48 ;
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       IF IsOct (Cur (ps)) THEN
         code := code * 8 + ORD (Cur (ps)) - 48 ;
-        ps.pos := ps.pos + 1
+        Advance (ps)
       END
     END ;
     IF code > 255 THEN Fail (ps, 'octal escape value outside of range 0-0o377', at) END ;
@@ -847,32 +907,32 @@ END ClassItem ;
 
 PROCEDURE ParseClass (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re)
   : PTR Node IN sp RAISES BadPattern =
-  (* at [ -- Python's own loop: a ] first is a character, a - next to
-     ] or after a range is a character *)
+  (* ParseClass parses at [ with Python's own loop: a ] first is a
+     character, and a - next to ] or after a range is a character. *)
 VAR
   st, one, two : Set ;
   at, a, b : I64 ;
   neg, single1, single2 : BOOL ;
 BEGIN
   at := ps.pos ;
-  ps.pos := ps.pos + 1 ;
+  Advance (ps) ;
   neg := FALSE ;
-  IF Cur (ps) = '^' THEN neg := TRUE ; ps.pos := ps.pos + 1 END ;
+  IF Cur (ps) = '^' THEN neg := TRUE ; Advance (ps) END ;
   SetNew (sp, st) ;
   LOOP
     IF AtEnd (ps) THEN Fail (ps, 'unterminated character set', at) END ;
     (* a ] closes the set once it holds something: every item adds *)
-    IF Cur (ps) = ']' AND st.n > 0 THEN ps.pos := ps.pos + 1 ; EXIT END ;
+    IF Cur (ps) = ']' AND st.n > 0 THEN Advance (ps) ; EXIT END ;
     single1 := ClassItem (sp, ps, one, a) ;
     IF Cur (ps) = '-' THEN
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       IF AtEnd (ps) THEN Fail (ps, 'unterminated character set', at) END ;
       IF Cur (ps) = ']' THEN
         IF single1 THEN SetAdd (sp, st, a, a)
         ELSE SetAddTable (sp, st, SLICE (one.lo, 0, one.n), SLICE (one.hi, 0, one.n))
         END ;
         SetAdd (sp, st, 45, 45) ;
-        ps.pos := ps.pos + 1 ;
+        Advance (ps) ;
         EXIT
       END ;
       single2 := ClassItem (sp, ps, two, b) ;
@@ -893,7 +953,7 @@ END ParseClass ;
 
 PROCEDURE Flags (VAR ps: Parser ; c: CHAR ; on: BOOL ; at: I64 ; scoped: BOOL)
   RAISES BadPattern =
-  (* one inline flag letter *)
+  (* Flags reads one inline flag letter. *)
 BEGIN
   IF c = 'i' THEN
     IF on AND ps.uni THEN
@@ -916,7 +976,8 @@ BEGIN
 END Flags ;
 
 PROCEDURE GroupName (VAR ps: Parser ; at: I64) : STR RAISES BadPattern =
-  (* at the name's first character; pos past the closing > *)
+  (* GroupName reads from the name's first character; pos ends past
+     the closing >. *)
 VAR
   s : STR ;
   c : CHAR ;
@@ -925,9 +986,9 @@ BEGIN
   LOOP
     IF AtEnd (ps) THEN Fail (ps, 'missing >, unterminated name', at) END ;
     c := Cur (ps) ;
-    ps.pos := ps.pos + 1 ;
+    Advance (ps) ;
     IF c = '>' THEN EXIT END ;
-    IF NOT (IsAsciiLetter (c) OR c = '_' OR (IsDigit (c) AND LEN (s) > 0)) THEN
+    IF NOT (IsAsciiLetter (c) OR c = '_' OR (IsDigit (c) AND Text.BLen (s) > 0)) THEN
       IF ORD (c) > 127 THEN
         Fail (ps, 'a group name outside ASCII: letters, digits and _ only', at)
       END ;
@@ -935,13 +996,14 @@ BEGIN
     END ;
     s := s + c
   END ;
-  IF LEN (s) = 0 THEN Fail (ps, 'missing group name', at) END ;
+  IF Text.BLen (s) = 0 THEN Fail (ps, 'missing group name', at) END ;
   RETURN s
 END GroupName ;
 
 PROCEDURE ParseGroup (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re ; first: BOOL ;
                  VAR some: BOOL) : PTR Node IN sp RAISES BadPattern =
-  (* at (; some FALSE for a group that is no item: flags, a comment *)
+  (* ParseGroup parses at (; some is FALSE for a group that is no
+     item: flags, a comment. *)
 VAR
   at, k, i : I64 ;
   c : CHAR ;
@@ -951,16 +1013,16 @@ VAR
   off : BOOL ;
 BEGIN
   at := ps.pos ;
-  ps.pos := ps.pos + 1 ;
+  Advance (ps) ;
   some := TRUE ;
   k := -1 ;
   IF Cur (ps) = '?' THEN
-    ps.pos := ps.pos + 1 ;
+    Advance (ps) ;
     c := Cur (ps) ;
     IF c = ':' THEN
-      ps.pos := ps.pos + 1
+      Advance (ps)
     ELSIF c = 'P' AND At (ps, 1) = '<' THEN
-      ps.pos := ps.pos + 2 ;
+      Advance (ps) ; Advance (ps) ;
       name := GroupName (ps, at) ;
       FOR i := 0 TO re.nnames - 1 DO
         IF Text.Eq (re.names[i], name) THEN Fail (ps, 'redefinition of group name', at) END
@@ -979,21 +1041,21 @@ BEGIN
     ELSIF c = '(' THEN
       Fail (ps, 'a conditional group: it needs backtracking, which this engine does not do', at)
     ELSIF c = '#' THEN
-      WHILE NOT AtEnd (ps) AND Cur (ps) # ')' DO ps.pos := ps.pos + 1 END ;
+      WHILE NOT AtEnd (ps) AND Cur (ps) # ')' DO Advance (ps) END ;
       IF AtEnd (ps) THEN Fail (ps, 'missing ), unterminated comment', at) END ;
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       some := FALSE ;
       RETURN Mk (sp, NEmpty, 0)
     ELSIF IsAsciiLetter (c) OR c = '-' THEN
       (* flags: global (?ims) at the start, or scoped (?i-s:...) *)
-      (* the letters read first, applied once it is known whether
-         the group is global -- (?u) -- or scoped -- (?i:...) *)
+      (* Read the letters first, and apply them once it is known
+         whether the group is global, (?u), or scoped, (?i:...). *)
       save := ps ;
       off := FALSE ;
       LOOP
         IF AtEnd (ps) THEN Fail (ps, 'missing -, : or )', at) END ;
         c := Cur (ps) ;
-        ps.pos := ps.pos + 1 ;
+        Advance (ps) ;
         IF c = ')' OR c = ':' THEN EXIT END ;
         IF c = '-' THEN
           IF off THEN Fail (ps, 'unknown flag', at) END ;
@@ -1008,8 +1070,8 @@ BEGIN
       END ;
       off := FALSE ;
       FOR i := at + 2 TO ps.pos - 2 DO
-        IF ps.p[i] = '-' THEN off := TRUE
-        ELSE Flags (ps, ps.p[i], NOT off, at, c = ':')
+        IF Text.BIs (ps.p, i, '-') THEN off := TRUE
+        ELSE Flags (ps, Text.BChar (ps.p, i), NOT off, at, c = ':')
         END
       END ;
       IF c = ')' THEN
@@ -1018,7 +1080,7 @@ BEGIN
       END ;
       body := Alt (sp, ps, re, FALSE) ;
       IF Cur (ps) # ')' THEN Fail (ps, 'missing ), unterminated subpattern', at) END ;
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       ps.ci := save.ci ; ps.ml := save.ml ; ps.da := save.da ; ps.uni := save.uni ;
       g := Mk (sp, NGroup, -1) ;
       AddKid (sp, g, body) ;
@@ -1032,15 +1094,15 @@ BEGIN
   END ;
   body := Alt (sp, ps, re, FALSE) ;
   IF Cur (ps) # ')' OR AtEnd (ps) THEN Fail (ps, 'missing ), unterminated subpattern', at) END ;
-  ps.pos := ps.pos + 1 ;
+  Advance (ps) ;
   g := Mk (sp, NGroup, k) ;
   AddKid (sp, g, body) ;
   RETURN g
 END ParseGroup ;
 
 PROCEDURE Quant (VAR ps: Parser ; VAR min, max, width: I64) : BOOL =
-  (* a quantifier at pos, not consumed: * + ? or a {..} Python reads as
-     one (any other { is a character) *)
+  (* Quant reads a quantifier at pos, not consumed: * + ? or a {..}
+     Python reads as one (any other { is a character). *)
 VAR
   c : CHAR ;
   i, lo, hi : I64 ;
@@ -1058,21 +1120,21 @@ BEGIN
   hasLo := FALSE ;
   hasHi := FALSE ;
   comma := FALSE ;
-  WHILE i < LEN (ps.p) AND IsDigit (ps.p[i]) DO
-    IF lo < 100000000 THEN lo := lo * 10 + ORD (ps.p[i]) - 48 END ;
+  WHILE i < Text.BLen (ps.p) AND IsDigit (Text.BChar (ps.p, i)) DO
+    IF lo < 100000000 THEN lo := lo * 10 + I64 (Text.BAt (ps.p, i)) - 48 END ;
     hasLo := TRUE ;
     i := i + 1
   END ;
-  IF i < LEN (ps.p) AND ps.p[i] = ',' THEN
+  IF i < Text.BLen (ps.p) AND Text.BIs (ps.p, i, ',') THEN
     comma := TRUE ;
     i := i + 1 ;
-    WHILE i < LEN (ps.p) AND IsDigit (ps.p[i]) DO
-      IF hi < 100000000 THEN hi := hi * 10 + ORD (ps.p[i]) - 48 END ;
+    WHILE i < Text.BLen (ps.p) AND IsDigit (Text.BChar (ps.p, i)) DO
+      IF hi < 100000000 THEN hi := hi * 10 + I64 (Text.BAt (ps.p, i)) - 48 END ;
       hasHi := TRUE ;
       i := i + 1
     END
   END ;
-  IF i >= LEN (ps.p) OR ps.p[i] # '}' THEN RETURN FALSE END ;
+  IF i >= Text.BLen (ps.p) OR NOT Text.BIs (ps.p, i, '}') THEN RETURN FALSE END ;
   IF i = ps.pos + 1 THEN RETURN FALSE END ;          (* {} *)
   min := 0 ;
   IF hasLo THEN min := lo END ;
@@ -1088,8 +1150,8 @@ END Quant ;
 
 PROCEDURE Seq (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re ; top: BOOL)
   : PTR Node IN sp RAISES BadPattern =
-  (* items up to | or ) or the end; top: the pattern's first branch,
-     where global flags may stand *)
+  (* Seq parses items up to | or ) or the end; top marks the pattern's
+     first branch, where global flags may stand. *)
 VAR
   cat, item, rep : PTR Node IN sp ;
   at, min, max, width : I64 ;
@@ -1108,23 +1170,24 @@ BEGIN
     ELSIF c = '[' THEN
       item := ParseClass (sp, ps, re)
     ELSIF c = '.' THEN
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       item := Mk (sp, NAny, 0) ;
       IF ps.da THEN item.v := 1 END
     ELSIF c = '^' THEN
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       IF ps.ml THEN item := Mk (sp, NAssert, ABol) ELSE item := Mk (sp, NAssert, ABot) END
     ELSIF c = '$' THEN
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       IF ps.ml THEN item := Mk (sp, NAssert, AEol) ELSE item := Mk (sp, NAssert, AEotNl) END
     ELSIF c = '\' THEN
       item := Escape (sp, ps, re)
     ELSIF Quant (ps, min, max, width) THEN
-      (* RAISE written out, not Fail (...): a call is never an ending,
-         and this arm gives item no value (definite assignment) *)
+      (* RAISE is written out, not Fail (...): a call is never an
+         ending, and this arm gives item no value (definite
+         assignment). *)
       RAISE BadPattern ('nothing to repeat', at)
     ELSE
-      ps.pos := ps.pos + 1 ;
+      Advance (ps) ;
       item := CharNode (sp, ps, re, ORD (c))
     END ;
     IF Quant (ps, min, max, width) THEN
@@ -1136,7 +1199,7 @@ BEGIN
         Fail (ps, 'a repetition count above 1000', at + 1)
       END ;
       lazy := FALSE ;
-      IF Cur (ps) = '?' AND NOT AtEnd (ps) THEN lazy := TRUE ; ps.pos := ps.pos + 1
+      IF Cur (ps) = '?' AND NOT AtEnd (ps) THEN lazy := TRUE ; Advance (ps)
       ELSIF Cur (ps) = '+' AND NOT AtEnd (ps) THEN
         Fail (ps, 'a possessive quantifier: it needs backtracking, which this engine does not do', at)
       END ;
@@ -1165,7 +1228,7 @@ BEGIN
   alt := Mk (sp, NAlt, 0) ;
   AddKid (sp, alt, first) ;
   WHILE Cur (ps) = '|' AND NOT AtEnd (ps) DO
-    ps.pos := ps.pos + 1 ;
+    Advance (ps) ;
     AddKid (sp, alt, Seq (sp, ps, re, FALSE))
   END ;
   RETURN alt
@@ -1174,7 +1237,7 @@ END Alt ;
 (* ---- the compiler ------------------------------------------------- *)
 
 PROCEDURE Nullable (nd: PTR Node) : BOOL =
-  (* the node can match the empty string *)
+  (* Nullable answers whether the node can match the empty string. *)
 VAR i : I64 ;
 BEGIN
   IF nd.kind = NEmpty OR nd.kind = NAssert THEN RETURN TRUE END ;
@@ -1238,17 +1301,18 @@ BEGIN
 END Gen ;
 
 PROCEDURE GenRep (VAR re: PTR Re ; nd: PTR Node) RAISES BadPattern =
-  (* the mandatory passes written out, then the optional ones.  A body
-     that can match nothing gets sre's guard, the way Python's
+  (* GenRep writes the mandatory passes out, then the optional ones.
+     A body that can match nothing gets sre's guard, the way Python's
      MAX_UNTIL and MIN_UNTIL keep it: a pass that ended where it began
-     is kept, and the loop ends there -- straight to the exit.
+     is kept, and the loop ends there, straight to the exit.
 
      An unbounded loop with such a body is written TWICE, the passes
      taking the two copies in turn.  Python tries one more pass where a
      pass ended, and keeps it when it matches nothing: a starred group
-     of a starred a, on aaa, leaves the group at 3..3.  That pass runs through the instructions
-     the ending pass has just visited at the same place, and a Pike VM
-     drops a second visit; in the other copy it is a first one *)
+     of a starred a, on aaa, leaves the group at 3..3.  That pass runs
+     through the instructions the ending pass has just visited at the
+     same place, and a Pike VM drops a second visit; in the other copy
+     it is a first one. *)
 VAR
   i, j, slot, sp, body, exit, k, copies : I64 ;
   splits, checks, tops : SLICE OF I64 ;
@@ -1309,8 +1373,8 @@ BEGIN
   ps.ml := FALSE ;
   ps.da := FALSE ;
   ps.uni := FALSE ;
-  FOR i := 0 TO LEN (flags) - 1 DO
-    c := flags[i] ;
+  FOR i := 0 TO Text.BLen (flags) - 1 DO
+    c := Text.BChar (flags, i) ;
     IF c = 'u' THEN ps.uni := TRUE
     ELSIF c = 'i' THEN ps.ci := TRUE
     ELSIF c = 'm' THEN ps.ml := TRUE
@@ -1351,8 +1415,8 @@ END GroupIndex ;
 (* ---- the machine -------------------------------------------------- *)
 
 TYPE
-  (* a thread list: the program counters of one position's threads in
-     priority order, and each one's slots *)
+  (* List is a thread list: the program counters of one position's
+     threads in priority order, and each one's slots. *)
   List = RECORD
     pc : SLICE OF I64 ;
     caps : SLICE OF I64 ;      (* n threads times nslots *)
@@ -1369,26 +1433,27 @@ TYPE
 
 PROCEDURE Holds (re: PTR Re ; RO s: STR ; pos, kind: I64) : BOOL =
 VAR
-  n : I64 ;
+  n, nx : I64 ;
   a, b : BOOL ;
 BEGIN
-  n := LEN (s) ;
+  n := Text.BLen (s) ;
   IF kind = ABot THEN RETURN pos = 0 END ;
-  IF kind = ABol THEN RETURN pos = 0 OR s[pos - 1] = 0AC END ;
+  IF kind = ABol THEN RETURN pos = 0 OR Text.BIs (s, pos - 1, 0AC) END ;
   IF kind = AEot THEN RETURN pos = n END ;
-  IF kind = AEotNl THEN RETURN pos = n OR (pos = n - 1 AND s[pos] = 0AC) END ;
-  IF kind = AEol THEN RETURN pos = n OR s[pos] = 0AC END ;
-  a := pos > 0 AND IsWord (ORD (s[pos - 1]), re.uni) ;
-  b := pos < n AND IsWord (ORD (s[pos]), re.uni) ;
+  IF kind = AEotNl THEN RETURN pos = n OR (pos = n - 1 AND Text.BIs (s, pos, 0AC)) END ;
+  IF kind = AEol THEN RETURN pos = n OR Text.BIs (s, pos, 0AC) END ;
+  a := pos > 0 AND IsWord (CpBefore (s, pos), re.uni) ;
+  b := pos < n AND IsWord (CpAt (s, pos, nx), re.uni) ;
   IF kind = AWord THEN RETURN a # b END ;
   RETURN a = b
 END Holds ;
 
 PROCEDURE AddThread (re: PTR Re ; RO s: STR ; VAR vm: Vm ; VAR l: List ;
                      pc0, pos: I64) =
-  (* the threads pc0 leads to without consuming a character, onto l
-     in priority order; vm.work holds the slots on the way.  A job is a
-     program counter, or (pc -1) a slot to put back *)
+  (* AddThread puts the threads pc0 leads to without consuming a
+     character onto l, in priority order; vm.work holds the slots on
+     the way.  A job is a program counter, or (pc -1) a slot to put
+     back. *)
 VAR
   sp, pc, slot, k, ns : I64 ;
 BEGIN
@@ -1437,7 +1502,7 @@ BEGIN
 END AddThread ;
 
 PROCEDURE Step (re: PTR Re ; pc: I64 ; c: I64) : BOOL =
-  (* the thread at pc takes the character c *)
+  (* Step answers whether the thread at pc takes the character c. *)
 VAR k, at : I64 ;
 BEGIN
   k := re.op[pc] ;
@@ -1453,20 +1518,20 @@ END Step ;
 
 PROCEDURE Run (re: PTR Re ; RO s: STR ; from: I64 ; anchored, full, advance: BOOL)
   : OPT PTR Found =
-  (* the leftmost-first match from from, as sre finds it: anchored, a
-     match must start there; full, it must end at the end of s;
-     advance, it must not end where it started (finditer after an empty
-     match) *)
+  (* Run answers the leftmost-first match from from, as sre finds it:
+     anchored, a match must start there; full, it must end at the end of
+     s; advance, it must not end where it started (finditer after an
+     empty match). *)
 VAR
   scratch : POOL ;
   vm : Vm ;
   cl, nl, tl : List ;
-  pos, i, j, ns, n, c, pc, f : I64 ;
+  pos, nx, i, j, ns, n, c, pc, f : I64 ;
   best : SLICE OF I64 ;
   matched : BOOL ;
   m : PTR Found ;
 BEGIN
-  n := LEN (s) ;
+  n := Text.BLen (s) ;
   f := from ;
   IF f < 0 THEN f := 0 END ;
   IF f > n THEN f := n END ;
@@ -1498,8 +1563,13 @@ BEGIN
     vm.stamps := vm.stamps + 1 ;
     nl.n := 0 ;
     nl.stamp := vm.stamps ;
+    (* one CODE POINT a step: c the character at pos, nx past it --
+       the subject is positioned by byte and read by character, as the
+       pattern is, so `.' and a class match a whole character and a
+       span's ends are byte offsets at character boundaries *)
+    nx := pos ;
     c := -1 ;
-    IF pos < n THEN c := ORD (s[pos]) END ;
+    IF pos < n THEN c := CpAt (s, pos, nx) END ;
     i := 0 ;
     WHILE i < cl.n DO
       pc := cl.pc[i] ;
@@ -1513,7 +1583,7 @@ BEGIN
         END
       ELSIF c >= 0 AND Step (re, pc, c) THEN
         FOR j := 0 TO ns - 1 DO vm.work[j] := cl.caps[i * ns + j] END ;
-        AddThread (re, s, vm, nl, pc + 1, pos + 1)
+        AddThread (re, s, vm, nl, pc + 1, nx)
       END ;
       i := i + 1
     END ;
@@ -1521,7 +1591,7 @@ BEGIN
     tl := cl ;
     cl := nl ;
     nl := tl ;
-    pos := pos + 1
+    pos := nx
   END ;
   IF NOT matched THEN RETURN NONE END ;
   m := NEW (Found) ;
@@ -1610,41 +1680,48 @@ END FindAll ;
 
 PROCEDURE Expand (re: PTR Re ; RO s: STR ; RO repl: STR ; m: PTR Found ;
                   VAR d: PTR DynStr.DString) RAISES BadPattern =
-  (* repl with its group references filled in from m, onto d *)
+  (* Expand writes repl onto d with its group references filled in
+     from m. *)
+  (* the text between escapes goes over as RUNS, SLICE (repl, from, i -
+     from), the ends at a backslash or after an escape -- ASCII, so at
+     character boundaries; the character after a backslash is read
+     whole (NextCp), since an unknown escape keeps it *)
 VAR
-  i, k, g : I64 ;
+  i, k, g, from, at : I64 ;
   c : CHAR ;
   name : STR ;
 BEGIN
   i := 0 ;
-  WHILE i < LEN (repl) DO
-    c := repl[i] ;
-    i := i + 1 ;
-    IF c # '\' THEN
-      DynStr.AppendChar (d, c)
-    ELSIF i >= LEN (repl) THEN
+  from := 0 ;
+  WHILE i < Text.BLen (repl) DO
+    IF NOT Text.BIs (repl, i, '\') THEN
+      i := i + 1
+    ELSIF i + 1 >= Text.BLen (repl) THEN
       RAISE BadPattern ('bad escape (end of pattern) in the replacement', -1)
     ELSE
-      c := repl[i] ;
-      i := i + 1 ;
+      DynStr.Append (d, SLICE (repl, from, i - from)) ;
+      at := i + 1 ;
+      c := Text.NextCp (repl, at) ;
+      i := at ;
       g := -1 ;
       IF c = 'g' THEN
-        IF i >= LEN (repl) OR repl[i] # '<' THEN
+        IF i >= Text.BLen (repl) OR NOT Text.BIs (repl, i, '<') THEN
           RAISE BadPattern ('missing < in the replacement', -1)
         END ;
         i := i + 1 ;
-        name := '' ;
-        WHILE i < LEN (repl) AND repl[i] # '>' DO name := name + repl[i] ; i := i + 1 END ;
-        IF i >= LEN (repl) THEN RAISE BadPattern ('missing > in the replacement', -1) END ;
+        at := i ;
+        WHILE i < Text.BLen (repl) AND NOT Text.BIs (repl, i, '>') DO i := i + 1 END ;
+        name := SLICE (repl, at, i - at) ;
+        IF i >= Text.BLen (repl) THEN RAISE BadPattern ('missing > in the replacement', -1) END ;
         i := i + 1 ;
-        IF LEN (name) = 0 THEN RAISE BadPattern ('missing group name in the replacement', -1) END ;
-        IF IsDigit (name[0]) THEN
+        IF Text.BLen (name) = 0 THEN RAISE BadPattern ('missing group name in the replacement', -1) END ;
+        IF IsDigit (Text.BChar (name, 0)) THEN
           g := 0 ;
-          FOR k := 0 TO LEN (name) - 1 DO
-            IF NOT IsDigit (name[k]) THEN
+          FOR k := 0 TO Text.BLen (name) - 1 DO
+            IF NOT IsDigit (Text.BChar (name, k)) THEN
               RAISE BadPattern ('bad character in group name ' + name, -1)
             END ;
-            IF g < 100000 THEN g := g * 10 + ORD (name[k]) - 48 END
+            IF g < 100000 THEN g := g * 10 + I64 (Text.BAt (name, k)) - 48 END
           END
         ELSE
           g := GroupIndex (re, name) ;
@@ -1652,8 +1729,8 @@ BEGIN
         END
       ELSIF IsDigit (c) AND c # '0' THEN
         g := ORD (c) - 48 ;
-        IF i < LEN (repl) AND IsDigit (repl[i]) THEN
-          g := g * 10 + ORD (repl[i]) - 48 ;
+        IF i < Text.BLen (repl) AND IsDigit (Text.BChar (repl, i)) THEN
+          g := g * 10 + I64 (Text.BAt (repl, i)) - 48 ;
           i := i + 1
         END
       ELSIF c = 'n' THEN DynStr.AppendChar (d, 0AC)
@@ -1671,9 +1748,11 @@ BEGIN
         IF m.span[2 * g] >= 0 THEN
           DynStr.Append (d, SLICE (s, m.span[2 * g], m.span[2 * g + 1] - m.span[2 * g]))
         END
-      END
+      END ;
+      from := i
     END
-  END
+  END ;
+  DynStr.Append (d, SLICE (repl, from, i - from))
 END Expand ;
 
 PROCEDURE Sub (re: PTR Re ; RO s: STR ; RO repl: STR ; count: I64) : STR
@@ -1704,7 +1783,7 @@ BEGIN
       EXIT
     END
   END ;
-  DynStr.Append (d, SLICE (s, last, LEN (s) - last)) ;
+  DynStr.Append (d, SLICE (s, last, Text.BLen (s) - last)) ;
   RETURN DynStr.View (d)
 END Sub ;
 
@@ -1752,7 +1831,7 @@ BEGIN
     FOR i := 0 TO n - 1 DO more[i] := out[i] END ;
     out := more
   END ;
-  out[n] := SLICE (s, last, LEN (s) - last) ;
+  out[n] := SLICE (s, last, Text.BLen (s) - last) ;
   RETURN SLICE (out, 0, n + 1)
 END Split ;
 

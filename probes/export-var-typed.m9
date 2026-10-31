@@ -1,7 +1,7 @@
 (* EXPECT: cannot assign a real literal to I64 *)
-(* an exported module variable is TYPED in its importer (decision 28;
-   until 2026-10-04 the client's Lib.count passed the checker untyped
-   and the generator refused it).  Everything before the last
+(* An exported module variable is TYPED in its importer (decision 28).
+   Until 2026-10-04 the client's Lib.count passed the checker untyped
+   and the generator refused it.  Everything before the last
    assignment is what must NOT be refused: a read, a write of the
    scalar, of an element, of a field through the exported pointer, an
    RO export lent to an RO parameter.  The last assigns a real to the

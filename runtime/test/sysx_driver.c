@@ -1,22 +1,22 @@
-/* sysx_driver: corpus/System.m9's Exec, on EITHER platform.
+/* sysx_driver tests corpus/System.m9's Exec, on EITHER platform.
 
    system_driver is the Linux one and reaches for sh, cat, dd and
-   sleep; this one drives sysx_child, which is built for whichever
-   platform is under test, so the same eighteen checks run on Linux
-   and on Windows and a divergence is one platform failing a check the
-   other passes.  It was written on 2026-09-06 to find the Windows
-   half's bugs and lived in a scratchpad until now, which is why the
+   sleep.  This one drives sysx_child, which is built for whichever
+   platform is under test.  So the same eighteen checks run on Linux
+   and on Windows, and a divergence is one platform failing a check
+   the other passes.  It was written on 2026-09-06 to find the Windows
+   half's bugs and lived in a scratchpad until now.  That is why the
    pump deadlock it found had to be reproduced by hand.
 
    Run as   sysx_test PATH-TO-sysx_child
 
-   What it holds Exec to: the arguments arrive as they were written
+   It holds Exec to these.  The arguments arrive as they were written
    (Windows re-quotes every one of them for the child's own CRT to
-   split again), both streams come back whole and drained together,
-   stdin is fed while they drain, an environment override merges
-   rather than replaces, a program that cannot start raises IOError --
-   and, since 2026-09-07, a bounded run stops AT its limit, keeps what
-   was written before it, and takes the child's children with it.  */
+   split again).  Both streams come back whole and drained together.
+   Stdin is fed while they drain.  An environment override merges
+   rather than replaces.  A program that cannot start raises IOError.
+   Since 2026-09-07, a bounded run stops AT its limit, keeps what was
+   written before it, and takes the child's children with it.  */
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200809L         /* nanosleep */
 #endif
@@ -66,27 +66,26 @@ static double now (void)
 #endif
 }
 
-static uint32_t sbuf[8192];
+static uint8_t sbuf[32768];
 static size_t sused = 0;
 
-static m9_sl_CHAR S (const char *s)
+/* S copies a C string's bytes into the ring.  A C literal is UTF-8
+   already, so no byte is widened. */
+static m9_sl_UTF8 S (const char *s)
 {
-  size_t i, n = strlen (s);
-  uint32_t *p;
-  if (sused + n > sizeof sbuf / sizeof sbuf[0]) sused = 0;
+  size_t n = strlen (s);
+  uint8_t *p;
+  if (sused + n > sizeof sbuf) sused = 0;
   p = sbuf + sused;
   sused += n;
-  for (i = 0; i < n; i++) p[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ p, (int64_t) n };
+  memcpy (p, s, n);
+  return (m9_sl_UTF8){ p, (int64_t) n };
 }
 
-static int eq (m9_sl_CHAR s, const char *c)
+static int eq (m9_sl_UTF8 s, const char *c)
 {
-  int64_t i, n = (int64_t) strlen (c);
-  if (s.len != n) return 0;
-  for (i = 0; i < n; i++)
-    if (s.p[i] != (uint32_t) (unsigned char) c[i]) return 0;
-  return 1;
+  int64_t n = (int64_t) strlen (c);
+  return s.len == n && (n == 0 || memcmp (s.p, c, (size_t) n) == 0);
 }
 
 static int there (const char *path)
@@ -101,10 +100,10 @@ int main (int argc, char **argv)
 {
   m9_state e = { 0 };
   m9_pool pool = { NULL };
-  System_Result r;
-  m9_sl_CHAR child, av[5], ev[1];
-  m9_sl_m9_sl_CHAR args = { NULL, 0 }, noenv = { NULL, 0 }, env1;
-  m9_sl_CHAR noin = { NULL, 0 };
+  System_ResultUtf r;
+  m9_sl_UTF8 child, av[5], ev[1];
+  m9_sl_m9_sl_UTF8 args = { NULL, 0 }, noenv = { NULL, 0 }, env1;
+  m9_sl_UTF8 noin = { NULL, 0 };
   char grandchild[256];
   double t0;
   int64_t i;
@@ -121,8 +120,8 @@ int main (int argc, char **argv)
   av[2] = S ("say \"hi\"");             /* quotes: escaped, and the CRT undoes it */
   av[3] = S ("back\\slash\\");          /* a run of backslashes before the closing quote */
   av[4] = S ("");                       /* empty: quoted, or it would vanish */
-  args = (m9_sl_m9_sl_CHAR){ av, 5 };
-  r = System_Exec (&pool, child, args, noin, noenv, &e);
+  args = (m9_sl_m9_sl_UTF8){ av, 5 };
+  r = System_ExecUtf (&pool, child, args, noin, noenv, &e);
   ok ("the child ran", !e.exc && r.status == 0);
   ok ("every argument arrived exactly as written",
       eq (r.out, "a b\nsay \"hi\"\nback\\slash\\\n\n"));
@@ -130,36 +129,36 @@ int main (int argc, char **argv)
   ok ("an unbounded run is never reported stopped", !r.stopped);
 
   av[0] = S ("status"); av[1] = S ("7");
-  args = (m9_sl_m9_sl_CHAR){ av, 2 };
-  r = System_Exec (&pool, child, args, noin, noenv, &e);
+  args = (m9_sl_m9_sl_UTF8){ av, 2 };
+  r = System_ExecUtf (&pool, child, args, noin, noenv, &e);
   ok ("the exit status comes back", !e.exc && r.status == 7);
 
   av[0] = S ("err");
-  args = (m9_sl_m9_sl_CHAR){ av, 1 };
-  r = System_Exec (&pool, child, args, noin, noenv, &e);
+  args = (m9_sl_m9_sl_UTF8){ av, 1 };
+  r = System_ExecUtf (&pool, child, args, noin, noenv, &e);
   ok ("stderr comes back on its own stream, with the status",
       !e.exc && r.status == 3 && eq (r.err_, "oops\n") && r.out.len == 0);
 
   /* ---- both streams drained together ---- */
   av[0] = S ("lines"); av[1] = S ("20000");
-  args = (m9_sl_m9_sl_CHAR){ av, 2 };
-  r = System_Exec (&pool, child, args, noin, noenv, &e);
-  /* the digits of 0..19999 sum to 88,890, so "lineN" is 188,890 bytes
-     and "errN" 168,890 -- a pump that drains one stream at a time
-     never gets here, the child blocks on the other */
+  args = (m9_sl_m9_sl_UTF8){ av, 2 };
+  r = System_ExecUtf (&pool, child, args, noin, noenv, &e);
+  /* The digits of 0..19999 sum to 88,890, so "lineN" is 188,890 bytes
+     and "errN" 168,890.  A pump that drains one stream at a time
+     never gets here: the child blocks on the other. */
   ok ("20,000 lines on each stream, drained together",
       !e.exc && r.status == 0 && r.out.len == 188890 && r.err_.len == 168890);
 
   /* ---- stdin fed while they drain ---- */
   {
     int64_t bign = 262144;              /* 256 KB, well past any pipe */
-    uint32_t *bb = (uint32_t *) malloc ((size_t) bign * sizeof *bb);
-    m9_sl_CHAR big = { bb, bign };
+    uint8_t *bb = (uint8_t *) malloc ((size_t) bign * sizeof *bb);
+    m9_sl_UTF8 big = { bb, bign };
     int same = 1;
-    for (i = 0; i < bign; i++) bb[i] = (uint32_t) ('a' + (i % 26));
+    for (i = 0; i < bign; i++) bb[i] = (uint8_t) ('a' + (i % 26));
     av[0] = S ("cat4k");
-    args = (m9_sl_m9_sl_CHAR){ av, 1 };
-    r = System_Exec (&pool, child, args, big, noenv, &e);
+    args = (m9_sl_m9_sl_UTF8){ av, 1 };
+    r = System_ExecUtf (&pool, child, args, big, noenv, &e);
     for (i = 0; i < r.out.len && i < bign; i++)
       if (r.out.p[i] != bb[i]) same = 0;
     ok ("256 KB of stdin copied back 4 KB at a time, every byte in order",
@@ -168,56 +167,56 @@ int main (int argc, char **argv)
   }
 
   av[0] = S ("cat4k");
-  args = (m9_sl_m9_sl_CHAR){ av, 1 };
-  r = System_Exec (&pool, child, args, S (""), noenv, &e);
+  args = (m9_sl_m9_sl_UTF8){ av, 1 };
+  r = System_ExecUtf (&pool, child, args, S (""), noenv, &e);
   ok ("empty input is an immediate EOF, not this process's own stdin",
       !e.exc && r.status == 0 && r.out.len == 0);
 
   /* ---- the environment is MERGED, not replaced ---- */
   av[0] = S ("env"); av[1] = S ("M9SYSX");
-  args = (m9_sl_m9_sl_CHAR){ av, 2 };
+  args = (m9_sl_m9_sl_UTF8){ av, 2 };
   ev[0] = S ("M9SYSX=xyz");
-  env1 = (m9_sl_m9_sl_CHAR){ ev, 1 };
-  r = System_Exec (&pool, child, args, noin, env1, &e);
+  env1 = (m9_sl_m9_sl_UTF8){ ev, 1 };
+  r = System_ExecUtf (&pool, child, args, noin, env1, &e);
   ok ("an override reaches the child", !e.exc && eq (r.out, "xyz\n"));
 
   av[1] = S ("PATH");
-  args = (m9_sl_m9_sl_CHAR){ av, 2 };
-  r = System_Exec (&pool, child, args, noin, env1, &e);
+  args = (m9_sl_m9_sl_UTF8){ av, 2 };
+  r = System_ExecUtf (&pool, child, args, noin, env1, &e);
   ok ("and the rest of the environment survived it",
       !e.exc && r.out.len > 1 && !eq (r.out, "(unset)\n"));
 
   args.len = 0;
-  r = System_Exec (&pool, S ("no-such-program-anywhere"), args, noin, noenv, &e);
+  r = System_ExecUtf (&pool, S ("no-such-program-anywhere"), args, noin, noenv, &e);
   ok ("a program that cannot start raises Io.IOError", e.exc == &Io_IOError);
   e.exc = NULL;
 
   /* ---- the bound ---- */
   av[0] = S ("status"); av[1] = S ("0");
-  args = (m9_sl_m9_sl_CHAR){ av, 2 };
-  r = System_ExecWithin (&pool, child, args, noin, noenv, 10.0, &e);
+  args = (m9_sl_m9_sl_UTF8){ av, 2 };
+  r = System_ExecWithinUtf (&pool, child, args, noin, noenv, 10.0, &e);
   ok ("a run that finishes inside its limit is not stopped",
       !e.exc && r.status == 0 && !r.stopped);
 
   av[0] = S ("spin");
-  args = (m9_sl_m9_sl_CHAR){ av, 1 };
+  args = (m9_sl_m9_sl_UTF8){ av, 1 };
   t0 = now ();
-  r = System_ExecWithin (&pool, child, args, noin, noenv, 0.5, &e);
+  r = System_ExecWithinUtf (&pool, child, args, noin, noenv, 0.5, &e);
   ok ("a run past its limit is stopped, at the limit and not at its end",
       !e.exc && r.stopped && now () - t0 < 10.0);
   ok ("and what it wrote before the limit came back", eq (r.out, "before\n"));
 
   /* THE CASE THE BOUND EXISTS FOR: the child exits and a grandchild
-     holds its stdout.  What is waited on is the streams ending, so
-     without a limit this one never returns -- and the limit has to
-     take the grandchild with it, or the next run meets it again. */
+     holds its stdout.  The wait is for the streams to end, so
+     without a limit this one never returns.  The limit has to take
+     the grandchild with it, or the next run meets it again. */
   av[0] = S ("orphan");
   av[1] = child;
   av[2] = S (grandchild);
   av[3] = S ("2000");
-  args = (m9_sl_m9_sl_CHAR){ av, 4 };
+  args = (m9_sl_m9_sl_UTF8){ av, 4 };
   t0 = now ();
-  r = System_ExecWithin (&pool, child, args, noin, noenv, 0.5, &e);
+  r = System_ExecWithinUtf (&pool, child, args, noin, noenv, 0.5, &e);
   ok ("a child that exits leaving a grandchild on its stdout still returns",
       !e.exc && r.stopped && now () - t0 < 10.0);
 

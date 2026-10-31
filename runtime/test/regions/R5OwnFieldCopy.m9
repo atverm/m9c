@@ -1,10 +1,10 @@
 MODULE R5OwnFieldCopy ;
-(* A pointer copied out of a field, then the field moved into an OWN
-   parameter, which freed it, and the copy read: accepted by 0.25.1, a
-   heap-use-after-free under ASan (2026-10-28, the ownership probe's
-   P2).  The move itself is refused by par 4.2's OWN rule; the read of
-   the copy by the owner walk, on its own: a move through a selector
-   kills every owner stored into the root's components. *)
+(* A pointer is copied out of a field, then the field is moved into an
+   OWN parameter, which frees it, and the copy is read.  0.25.1 accepted
+   it: a heap-use-after-free under ASan (2026-10-28, the ownership
+   probe's P2).  Par 4.2's OWN rule refuses the move itself; the owner
+   walk refuses the read of the copy on its own: a move through a
+   selector kills every owner stored into the root's components. *)
 IMPORT Io, Fmt ;
 TYPE
   T = RECORD v : I64 END ;

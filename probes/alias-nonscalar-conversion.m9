@@ -5,10 +5,10 @@ VAR x : I64 ;
 PROCEDURE F () =
 VAR p : Pair ;
 BEGIN
-  (* an alias for a SCALAR converts under its own name; a RECORD named
-     like a call is its aggregate (report par 2.2.4, since 2026-10-05:
-     until then `unknown procedure: Pair'), which one value does not
-     fill -- there is no conversion to a record *)
+  (* An alias for a SCALAR converts under its own name.  A RECORD named
+     like a call is its aggregate (report par 2.2.4, since 2026-10-05;
+     until then `unknown procedure: Pair').  One value does not fill
+     that aggregate: there is no conversion to a record. *)
   p := Pair (x)
 END F ;
 END m.

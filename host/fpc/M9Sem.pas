@@ -1,13 +1,18 @@
 unit M9Sem;
-{ P2 semantic core, pass 3.
+{ M9Sem is FROZEN since 2026-10-31 (Alex, before m9's UTF-8 switch).
+  No gate builds it against Sem.m9 any more: runtime/test/semcheck.sh
+  holds the M9 checker to the rules semtest, semprobe and ownledger
+  held this one to.  It stays as the history of the checker.
+
+  M9Sem is the P2 semantic core, pass 3.
   Pass-1/2 checks kept: foreign signatures C.*-only with mandatory
   [SERIAL]/[REENTRANT]; def/impl signature conformance and
   completeness; STATEFUL required for module vars; CASE totality
   over CASE RECORD; RAISES accounting with full call resolution;
   OPT and CASE RECORD selector misuse; ADR only in UNSAFE units;
   THREAD roots may not reach a [SERIAL] foreign proc.
-  Pass-3 additions -- expression/assignment typing over canonical
-  type strings ('I64', 'PTR Json.Node', 'SLICE OF CHAR', ...):
+  Pass 3 adds expression/assignment typing over canonical type
+  strings ('I64', 'PTR Json.Node', 'SLICE OF CHAR', ...):
     - records/monitors/opaque types are NOMINAL (Mod.Name); aliases
       chase to structure; IN-pool and [RO] are not part of the
       type identity (they are P3 ownership facts);
@@ -137,11 +142,12 @@ type
     utfNode : TNode;                   { the SLICE OF <u8> that UTF names }
     tyCHAR : TNode;                    { its element }
     ansMemo : TStringList;             { AnswersFrame: Module.Proc=yes|no|busy|redo }
-    { the memo's iteration at a cycle's head (mirrors Sem.AnsFind/AnsYes/
-      AnsSet, the third review's summaries advice): per entry the depth it
-      was opened at and whether a descendant read it while busy; per open
-      depth the lowest depth it leaned on, where its provisional entries
-      start, and whether an assumption proved wrong }
+    { These hold the memo's iteration at a cycle's head (mirrors
+      Sem.AnsFind/AnsYes/AnsSet, the third review's summaries advice).
+      Per entry they hold the depth it was opened at and whether a
+      descendant read it while busy.  Per open depth they hold the
+      lowest depth it leaned on, where its provisional entries start,
+      and whether an assumption proved wrong. }
     ansDep : array of Integer;
     ansRB : array of Boolean;
     ansLow, ansBase : array of Integer;
@@ -185,6 +191,7 @@ type
     function ParamSelType (d, e: TNode; const modn: string;
                            out beyond, known: Boolean): TNode;
     function ParamViewBearing (d, e: TNode; const modn: string): Boolean;
+    function LocalSelBearing (d, e: TNode): Boolean;
     function ParamSelBeyond (d, e: TNode; const modn: string): Boolean;
     function HandsBackDeep (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
     function PoolValue (k: TNode; const pn: string): Boolean;
@@ -275,8 +282,9 @@ type
     Errors : TStringList;
     RoCand : TStringList;              { VAR params never written }
     RoProcs : Integer;
-    { P3 contortion ledger: places where corpus code retains a
-      borrow.  Measured, not asserted -- the kill-gate reads this. }
+    { Ledger is the P3 contortion ledger: places where corpus code
+      retains a borrow.  It is measured, not asserted: the kill-gate
+      reads this. }
     Ledger : TStringList;
     constructor Create;
     destructor Destroy; override;
@@ -288,7 +296,8 @@ implementation
 
 const UtfTy = 'SLICE OF <u8>';   { the canonical type UTF names }
 
-{ the SLICE OF <u8> that UTF names, by its element (Sem.IsUtfNode) }
+{ IsUtfNode recognises the SLICE OF <u8> that UTF names, by its
+  element (Sem.IsUtfNode). }
 function IsUtfNode (r: TNode): Boolean;
 begin
   Result := (r <> nil) and (r.kind = nkSliceType) and (Length (r.kids) > 0) and
@@ -328,9 +337,10 @@ begin
   Result := False;
 end;
 
-{ the dotted callee name of a call's designator -- the nested
-  DesigName of CheckBody, for the helpers outside it (RoAnswerOf,
-  MroAnswer); a leading index or deref stops it the same way }
+{ CallName answers the dotted callee name of a call's designator.  It
+  is the nested DesigName of CheckBody, for the helpers outside it
+  (RoAnswerOf, MroAnswer).  A leading index or deref stops it the
+  same way. }
 function CallName (d: TNode): string;
 var i : Integer;
 begin
@@ -365,8 +375,9 @@ begin
   if p > 0 then Result := Copy (s, p + 4, MaxInt) else Result := '';
 end;
 
-{ 'GRID 3 OF F64': the rank is part of the type so that subscript
-  arity is a compile-time question.  0 means "not a grid". }
+{ GridRank answers the rank of a type like 'GRID 3 OF F64'.  The rank
+  is part of the type so that subscript arity is a compile-time
+  question.  0 means "not a grid". }
 function GridRank (const s: string): Integer;
 var p : Integer;
 begin
@@ -388,7 +399,7 @@ begin
   Result := 'GRID ' + IntToStr (rank) + ' OF ' + elem;
 end;
 
-{ human name for a canonical type in diagnostics }
+{ TyName answers a human name for a canonical type in diagnostics. }
 function TyName (const s: string): string;
 begin
   if s = '<int>' then Exit ('an integer literal');
@@ -401,12 +412,13 @@ begin
   Result := s;
 end;
 
-{ assignment compatibility: may a src value land where dst is
-  expected?  '' (unknown) is compatible with everything: softness
-  is the contract.  Literals adapt; nothing else converts.          }
-{ the range of an integer width a literal is stored into; False for a
-  type that is not a narrow integer -- I64 holds every literal the
-  lexer accepts, and U64's upper half cannot be spelled as one }
+{ Assignment compatibility asks whether a src value may land where
+  dst is expected.  '' (unknown) is compatible with everything:
+  softness is the contract.  Literals adapt; nothing else converts. }
+{ LitRange answers the range of an integer width a literal is stored
+  into.  It answers False for a type that is not a narrow integer:
+  I64 holds every literal the lexer accepts, and U64's upper half
+  cannot be spelled as one. }
 function LitRange (const t: string; out lo, hi: Int64): Boolean;
 begin
   lo := 0; hi := 0;
@@ -421,9 +433,9 @@ begin
   Result := False;
 end;
 
-{ a decimal literal node's value, negated when asked; False for a hex
-  literal (a bit pattern, left to the width it names) or one too long
-  to hold }
+{ LitVal answers a decimal literal node's value, negated when asked.
+  It answers False for a hex literal (a bit pattern, left to the width
+  it names) or one too long to hold. }
 function LitVal (lit: TNode; neg: Boolean; out v: Int64): Boolean;
 var
   i : Integer;
@@ -442,7 +454,7 @@ end;
   it.  `s := 40000` for an I16 passed this checker and the C
   conversion stored -25536 until 2026-09-27 -- the same silence as
   the narrow arithmetic fixed the same day
-  (docs/agent-review-2026-09-27.md F1).  Mirrors Sem.LitOut. }
+  (docs/agent-review-2026-09-27.md F1).  LitOut mirrors Sem.LitOut. }
 function LitOut (n: TNode; const t: string; out v: Int64): Boolean;
 var
   lo, hi : Int64;
@@ -462,13 +474,14 @@ begin
   Result := (v < lo) or (v > hi);
 end;
 
-{ par 3 rule 4: a function answers on every path.  Can control pass
-  this statement?  Structural and conservative -- a WHILE or FOR can
-  be passed, a LOOP only by an EXIT of its own, an IF when a branch
-  can be or there is no ELSE, a CASE when an arm can be, a block when
-  its statements or a handler can be, and a call is never an ending.
-  Mirrors Sem.EndsStmt / EndsSeq / HasExit, where the rule and its
-  measurement are written down. }
+{ par 3 rule 4: a function answers on every path.  These ask whether
+  control can pass this statement.  The test is structural and
+  conservative: a WHILE or FOR can be passed, a LOOP only by an EXIT
+  of its own, an IF when a branch can be or there is no ELSE, a CASE
+  when an arm can be, a block when its statements or a handler can
+  be, and a call is never an ending.  They mirror Sem.EndsStmt /
+  EndsSeq / HasExit, where the rule and its measurement are written
+  down. }
 function EndsSeq (k: TNode): Boolean; forward;
 
 function HasExit (k: TNode): Boolean;
@@ -559,9 +572,9 @@ end;
   it does (par 2.2.3, relaxed 2026-10-02).  corpus/Sem.m9's ProcFits
   says why; these are the same three, on 1-based strings. ---- }
 
-{ how many characters of a procedure type's canonical text come before
-  its own RAISES clause: all of them when it has none, -1 when s is
-  not a procedure type }
+{ ProcHead answers how many characters of a procedure type's
+  canonical text come before its own RAISES clause.  That is all of
+  them when it has none, and -1 when s is not a procedure type. }
 function ProcHead (const s: string): Integer;
 var i, depth, shut : Integer;
 begin
@@ -591,8 +604,8 @@ end;
 
 function ExcCovers (const k, raisedKey: string): Boolean; forward;
 
-{ two lists as they stand after RAISES, 'A, B': is every name of src
-  one of dst's? }
+{ RaisesWithin takes two lists as they stand after RAISES, 'A, B',
+  and asks whether every name of src is one of dst's. }
 function RaisesWithin (const src, dst: string): Boolean;
 var
   a, b, ea, eb : Integer;
@@ -655,21 +668,22 @@ begin
   { a shared handle lends like a plain borrow (par 4.1) }
   if StartsWithS (dst, 'PTR ') and (src = 'SHARED ' + dst) then
     Exit (True);
-  { a procedure that raises no more than the type allows, bare or as
-    the OPT a variable of procedure type must be }
+  { A procedure fits when it raises no more than the type allows,
+    bare or as the OPT a variable of procedure type must be. }
   if ProcFits (dst, src) then Exit (True);
   if StartsWithS (dst, 'OPT ') and StartsWithS (src, 'OPT ') then
     Exit (ProcFits (Copy (dst, 5, MaxInt), Copy (src, 5, MaxInt)));
   Result := False;
 end;
 
-{ the type one element of an aggregate has (par 2.2.4): a literal, or
-  a negated numeric literal.  An integer is an I64, a real an F64, a
-  string a STR whatever its length -- a table has one element type
-  and nothing in it adapts.  '' for anything else. }
-{ the checker a record aggregate in a CONST is asked of: AggElemType
-  and LitType are plain functions and a record's type is the module
-  tables' (Sem.RecordConstType) }
+{ AggElemType answers the type one element of an aggregate has
+  (par 2.2.4): a literal, or a negated numeric literal.  An integer is
+  an I64, a real an F64, a string a STR whatever its length.  A table
+  has one element type and nothing in it adapts.  It answers '' for
+  anything else. }
+{ recSem is the checker a record aggregate in a CONST is asked of.
+  AggElemType and LitType are plain functions, and a record's type is
+  the module tables' (Sem.RecordConstType). }
 var recSem : TSem = nil;
 
 function AggElemType (e: TNode): string;
@@ -696,9 +710,9 @@ begin
   end;
 end;
 
-{ [ e1, ..., en ] is an ARRAY n OF T, T being what every element is;
-  unknown ('') when the elements do not agree, which CheckAggregate
-  says by name }
+{ AggType types [ e1, ..., en ] as an ARRAY n OF T, T being what
+  every element is.  It answers unknown ('') when the elements do not
+  agree, which CheckAggregate says by name. }
 function AggType (e: TNode): string;
 var
   i : Integer;
@@ -713,9 +727,9 @@ begin
   Result := 'ARRAY ' + IntToStr (Length (e.kids)) + ' OF ' + t;
 end;
 
-{ type of a module-level CONST expression: literals and literal
-  arithmetic, an aggregate of literals; anything fancier stays
-  unknown }
+{ LitType answers the type of a module-level CONST expression:
+  literals and literal arithmetic, an aggregate of literals.  Anything
+  fancier stays unknown. }
 function IsStrLit (const t: string): Boolean;
 begin
   Result := (t = '<str1>') or (t = 'SLICE OF CHAR') or (t = 'CHAR');
@@ -866,8 +880,9 @@ begin
   Result := nil;
 end;
 
-{ ---- does a procedure ANSWER frame storage?  A memoised summary of
-  its body; Sem.AnswersFrame says why the signature cannot tell.  A
+{ ---- AnswersFrame asks whether a procedure ANSWERS frame storage.
+  It is a memoised summary of its body; Sem.AnswersFrame says why the
+  signature cannot tell.  A
   frame NEW, a `+` in a function that answers a string, a local POOL
   in one, or a call to a procedure that answers frame storage is the
   evidence; a cycle adds none. ---- }
@@ -896,9 +911,10 @@ begin
   Result := True;
 end;
 
-{ is the NEW's storage the frame's?  A type's name first is the frame
-  form, a variable's a pool; decided without the procedure's scope.
-  Mirrors Sem.NewIsFrameIn. }
+{ NewIsFrameIn asks whether the NEW's storage is the frame's.  A
+  type's name first is the frame form, a variable's a pool.  It
+  decides without the procedure's scope.  It mirrors
+  Sem.NewIsFrameIn. }
 function TSem.NewIsFrameIn (e: TNode; const modn: string): Boolean;
 var
   d : TNode;
@@ -921,7 +937,8 @@ begin
   end;
 end;
 
-{ does any `NAME := rhs` under K have frame evidence on its right? }
+{ AssignEvidence asks whether any `NAME := rhs` under K has frame
+  evidence on its right. }
 function TSem.AssignEvidence (k: TNode; const name, modn: string;
   isStr: Boolean; body: TNode; depth: Integer): Boolean;
 var i : Integer;
@@ -937,7 +954,8 @@ begin
       Exit (True);
 end;
 
-{ is the value of expression K frame storage?  Mirrors Sem.ExprEvidence. }
+{ ExprEvidence asks whether the value of expression K is frame
+  storage.  It mirrors Sem.ExprEvidence. }
 function TSem.ExprEvidence (k: TNode; const modn: string; isStr: Boolean;
   body: TNode; depth: Integer): Boolean;
 var
@@ -980,9 +998,10 @@ begin
     Result := AssignEvidence (body, k.a, modn, isStr, body, depth + 1);
 end;
 
-{ the evidence for a procedure of module MODN whose body is K: a
-  RETURN whose expression is frame storage, or -- for a string
-  answer -- a local POOL, whose strings are re-homed out at exit }
+{ FrameEvidence finds the evidence for a procedure of module MODN
+  whose body is K.  That is a RETURN whose expression is frame
+  storage, or, for a string answer, a local POOL, whose strings are
+  re-homed out at exit. }
 function TSem.FrameEvidence (k: TNode; const modn: string; isStr: Boolean;
   body: TNode; scratchCounts: Boolean): Boolean;
 var i : Integer;
@@ -1001,9 +1020,10 @@ begin
     if FrameEvidence (k.kids[i], modn, isStr, body, scratchCounts) then Exit (True);
 end;
 
-{ par 6: SHARABLE (mirrors Sem.ShareWhy, 2026-10-11): the type a
-  THREAD's unmoved argument shares, when it is a RECORD neither a
-  MONITOR nor marked [SHARABLE]; '' otherwise }
+{ par 6: SHARABLE (mirrors Sem.ShareWhy, 2026-10-11).  ShareWhy
+  answers the type a THREAD's unmoved argument shares, when it is a
+  RECORD neither a MONITOR nor marked [SHARABLE].  It answers ''
+  otherwise. }
 function TSem.ShareWhy (const aTy: string; anyRecord: Boolean): string;
 var
   t, mn, tn : string;
@@ -1057,9 +1077,10 @@ begin
   Result := t;
 end;
 
-{ the first SHARED field of the record a type names whose target
-  ShareWhy names, or '' (mirrors Sem.SharedFieldWhy: the field types
-  read in the module the type is written in) }
+{ SharedFieldWhy answers the first SHARED field of the record a type
+  names whose target ShareWhy names, or ''.  It mirrors
+  Sem.SharedFieldWhy: the field types are read in the module the type
+  is written in. }
 function TSem.SharedFieldWhy (const aTy: string): string;
 var
   t, mn, tn, ft, w, was : string;
@@ -1145,8 +1166,9 @@ begin
   if provTop + 1 >= Length (provIx) then SetLength (provIx, 2 * Length (provIx) + 256);
 end;
 
-{ a memo read: FALSE when the key is absent or must be asked again; a read
-  of an entry in progress answers no and records that the reader leaned on it }
+{ AnsGet is a memo read.  It answers FALSE when the key is absent or
+  must be asked again.  A read of an entry in progress answers no and
+  records that the reader leaned on it. }
 function TSem.AnsGet (const key: string; out res: Boolean): Boolean;
 var i : Integer;
 begin
@@ -1236,8 +1258,8 @@ begin
            (pl.kids[g].kids[1].kind = nkQualident) and
            (pl.kids[g].kids[1].a = 'POOL') and (pl.kids[g].kids[1].b = '') then
           hasPool := True;
-    { ... but only for what it returns; a local POOL is evidence only
-      in a pool-less string function (Sem.AnswersFrame says why) }
+    { That holds only for what it returns.  A local POOL is evidence
+      only in a pool-less string function (Sem.AnswersFrame says why). }
     isStr := (pr.body.kids[1] <> nil) and
              ((CanonT (pr.body.kids[1], 0) = 'SLICE OF CHAR') or
               (CanonT (pr.body.kids[1], 0) = UtfTy));
@@ -1248,10 +1270,11 @@ begin
   else AnsPut (qual, 'no');
 end;
 
-{ Sem.AnswersRo: may the function answer READ-ONLY storage -- a string
-  literal, a CONST of its module, a view of one of its RO parameters,
-  or what another such function answers?  Read off its RETURNs,
-  memoised in ansMemo under 'ro Module.Proc' (2026-10-10). }
+{ Sem.AnswersRo asks whether the function may answer READ-ONLY
+  storage: a string literal, a CONST of its module, a view of one of
+  its RO parameters, or what another such function answers.  It is
+  read off its RETURNs, memoised in ansMemo under 'ro Module.Proc'
+  (2026-10-10). }
 function IsRoParamOfD (d: TNode; const nm: string): Boolean;
 var a, b : Integer;
 begin
@@ -1319,10 +1342,10 @@ begin
   else AnsPut (key, 'no');
 end;
 
-{ Sem.AnswersView: does the callee answer a VIEW of one of its own
-  parameters -- a RETURN of one, a SLICE or GRID over one, or another
-  such callee's answer handed one?  Memoised under 'view Module.Proc'
-  (2026-10-11). }
+{ Sem.AnswersView asks whether the callee answers a VIEW of one of its
+  own parameters: a RETURN of one, a SLICE or GRID over one, or
+  another such callee's answer handed one.  It is memoised under
+  'view Module.Proc' (2026-10-11). }
 function IsParamOfD (d: TNode; const nm: string): Boolean;
 var a, b : Integer;
 begin
@@ -1336,7 +1359,8 @@ end;
 
 function FieldTypeOf (rec: TNode; const fname: string): TNode; forward;
 
-{ the J-th parameter's name, '' past the end (Sem.ParamNameAt) }
+{ ParamNameAt answers the J-th parameter's name, '' past the end
+  (Sem.ParamNameAt). }
 function ParamNameAt (d: TNode; j: Integer): string;
 var g, b, k : Integer; grp, ids : TNode;
 begin
@@ -1360,8 +1384,8 @@ begin
   end;
 end;
 
-{ the J-th parameter's name when it is a VAR parameter, else ''
-  (Sem.VarParamAt) }
+{ VarParamAt answers the J-th parameter's name when it is a VAR
+  parameter, else '' (Sem.VarParamAt). }
 function VarParamAt (d: TNode; j: Integer): string;
 var g, b, k : Integer; grp, ids : TNode;
 begin
@@ -1386,11 +1410,12 @@ begin
   end;
 end;
 
-{ is expression K, in the body D of a procedure of module MODN, a
-  VIEW of D's parameter NM: NM itself or a viewable component of it,
-  under SLICE, GRID or parentheses; a local that CARRIES it; or the
-  answer of a callee that views the argument that is one.  Per
-  parameter since 2026-10-18.  Mirrors Sem.ViewExprEvidence }
+{ ViewExprEvidence asks whether expression K, in the body D of a
+  procedure of module MODN, is a VIEW of D's parameter NM.  That is NM
+  itself or a viewable component of it, under SLICE, GRID or
+  parentheses; a local that CARRIES it; or the answer of a callee that
+  views the argument that is one.  It works per parameter since
+  2026-10-18.  It mirrors Sem.ViewExprEvidence. }
 function TSem.ViewExprEvidence (k, d: TNode; const modn: string; depth: Integer;
                                 const nm: string): Boolean;
 var pr : TProcInfo; i : Integer;
@@ -1407,6 +1432,9 @@ begin
     if k.a = nm then Exit (ParamViewBearing (d, k, modn));
     if IsParamOfD (d, k.a) then Exit;
     if Length (k.kids) = 0 then Exit (ViewCarrier (k.a, d, modn, depth + 1, nm));
+    { An element of such a local carries it too, when it can still view
+      (mirrors Sem). }
+    if LocalSelBearing (d, k) then Exit (ViewCarrier (k.a, d, modn, depth + 1, nm));
     Exit;
   end;
   if (k.kind = nkCallExpr) and (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) then
@@ -1417,12 +1445,12 @@ begin
           if ViewExprEvidence (k.kids[1].kids[i], d, modn, depth + 1, nm) then Exit (True);
 end;
 
-{ does the body store a view of parameter NM under the name CN: an
-  assignment to CN bare or through a selector, an IS SOME binder or a
-  FOR IN variable named CN, from the parameter, a carrier or a
-  view-answering call; or CN handed as a VAR argument to a callee that
-  fills that parameter with a view of another argument -- mirrors
-  Sem.CarrierEvidence }
+{ CarrierEvidence asks whether the body stores a view of parameter NM
+  under the name CN.  That is an assignment to CN bare or through a
+  selector, an IS SOME binder or a FOR IN variable named CN, from the
+  parameter, a carrier or a view-answering call.  Or it is CN handed
+  as a VAR argument to a callee that fills that parameter with a view
+  of another argument.  It mirrors Sem.CarrierEvidence. }
 function TSem.CarrierEvidence (k: TNode; const cn: string; d: TNode; const modn: string;
                                depth: Integer; const nm: string; deep: Boolean): Boolean;
 var
@@ -1483,10 +1511,11 @@ begin
   Result := CarrierEvidence (d.kids[4], cn, d, modn, depth, nm, False);
 end;
 
-{ can a value of this type carry a pointer?  Gen.HasPtr's twin;
-  mirrors Sem.PtrBearing }
-{ can a value of type T hold a POINTER: PtrBearing's walk, a slice or a
-  grid counting only by its element (mirrors Sem.CarriesPtr, 2026-10-28) }
+{ PtrBearing asks whether a value of this type can carry a pointer.
+  It is Gen.HasPtr's twin and mirrors Sem.PtrBearing. }
+{ CarriesPtr asks whether a value of type T can hold a POINTER:
+  PtrBearing's walk, a slice or a grid counting only by its element
+  (mirrors Sem.CarriesPtr, 2026-10-28). }
 function TSem.CarriesPtr (t: TNode; depth: Integer): Boolean;
 var
   r, fs, g, arm, afs, ag : TNode;
@@ -1526,8 +1555,8 @@ begin
   end;
 end;
 
-{ can the J-th parameter of D, of module MODN, hold a pointer?  Mirrors
-  Sem.ParamCarriesPtr }
+{ ParamCarriesPtr asks whether the J-th parameter of D, of module
+  MODN, can hold a pointer.  It mirrors Sem.ParamCarriesPtr. }
 function TSem.ParamCarriesPtr (d: TNode; const modn: string; j: Integer): Boolean;
 var g, k : Integer; was : string;
 begin
@@ -1590,10 +1619,11 @@ begin
   end;
 end;
 
-{ the type under designator E -- a parameter of D, of module MODN,
-  bare or selected -- walked from the declared type with the component
-  types qualified in their declaring module; BEYOND says a reference
-  was crossed, KNOWN that every step resolved.  Mirrors Sem.ParamSelType }
+{ ParamSelType answers the type under designator E (a parameter of D,
+  of module MODN, bare or selected).  It walks from the declared type
+  with the component types qualified in their declaring module.
+  BEYOND says a reference was crossed, KNOWN that every step
+  resolved.  It mirrors Sem.ParamSelType. }
 function TSem.ParamSelType (d, e: TNode; const modn: string;
                             out beyond, known: Boolean): TNode;
 var
@@ -1664,10 +1694,67 @@ begin
   Result := tq;
 end;
 
-{ can designator E -- a parameter of D, bare or selected -- be viewed
-  at all: a reference, a string, a record holding one?  A scalar is
-  copied (`buf[i] := s[i]').  A type this checker cannot resolve is
-  taken as bearing.  Mirrors Sem.ParamViewBearing }
+{ LocalSelBearing answers True when an index selection from a local of D
+  can still view.  Only a type KNOWN to bear a reference answers True.
+  It mirrors Sem.LocalSelBearing (oneflux's FrameTextLines, 2026-10-30). }
+function TSem.LocalSelBearing (d, e: TNode): Boolean;
+var cur, rn, sect, vd, ids, sel : TNode; a, b, j, i : Integer; found : Boolean; cq : string;
+begin
+  Result := False;
+  found := False;
+  cur := nil;
+  if (d = nil) or (Length (d.kids) <= 4) or (d.kids[4] = nil) then Exit;
+  for a := 0 to High (d.kids[4].kids) do
+  begin
+    sect := d.kids[4].kids[a];
+    if (sect = nil) or (sect.kind <> nkVarSection) then continue;
+    for b := 0 to High (sect.kids) do
+    begin
+      vd := sect.kids[b];
+      if (vd = nil) or (vd.kids[0] = nil) then continue;
+      ids := vd.kids[0];
+      for j := 0 to High (ids.kids) do
+        if (not found) and (ids.kids[j] <> nil) and (ids.kids[j].a = e.a) then
+        begin
+          cur := vd.kids[1];
+          found := True;
+        end;
+    end;
+  end;
+  if not found then Exit;
+  for i := 0 to High (e.kids) do
+  begin
+    rn := ResolveType (cur);
+    if rn = nil then Exit;
+    if rn.kind = nkPtrType then
+    begin
+      rn := ResolveType (rn.kids[0]);
+      if rn = nil then Exit;
+    end;
+    sel := e.kids[i];
+    if sel = nil then Exit;
+    if (sel.kind = nkSelIndex) and (rn.kind = nkSliceType) then cur := rn.kids[0]
+    else if (sel.kind = nkSelIndex) and (rn.kind = nkArrayType) then cur := rn.kids[1]
+    else Exit;
+  end;
+  if (cur <> nil) and (cur.kind = nkQualident) then
+  begin
+    if cur.b = '' then
+    begin
+      if InList (cur.a, BuiltinTypes) then Exit;
+      cq := CanonQual ('', cur.a, 0);
+    end
+    else cq := CanonQual (cur.a, cur.b, 0);
+    if InList (cq, BuiltinTypes) then Exit;
+  end;
+  if ResolveType (cur) <> nil then Result := PtrBearing (cur, 0);
+end;
+
+{ ParamViewBearing asks whether designator E (a parameter of D, bare
+  or selected) can be viewed at all: a reference, a string, a record
+  holding one.  A scalar is copied (`buf[i] := s[i]').  A type this
+  checker cannot resolve is taken as bearing.  It mirrors
+  Sem.ParamViewBearing. }
 function TSem.ParamViewBearing (d, e: TNode; const modn: string): Boolean;
 var tn : TNode; cq : string; beyond, known : Boolean;
 begin
@@ -1675,12 +1762,13 @@ begin
   if not IsParamOfD (d, e.a) then Exit;
   tn := ParamSelType (d, e, modn, beyond, known);
   if not known then Exit (True);
-  { a builtin scalar resolves to nothing, being nothing's alias -- and
-    so does a NAME for one, `Kind.FlexFloat = F32`: chased to the
-    builtin it abbreviates as Sem.ScalarAlias chases a conversion's
-    name (2026-10-18, pull request 23: the FLEXPART port's
-    Getfields.Adopt copying elements of a SLICE OF Kind.FlexFloat read
-    as a borrow handed back, and its callers were asked for KEPT) }
+  { A builtin scalar resolves to nothing, being nothing's alias.  So
+    does a NAME for one, `Kind.FlexFloat = F32`: it is chased to the
+    builtin it abbreviates, as Sem.ScalarAlias chases a conversion's
+    name (2026-10-18, pull request 23).  The FLEXPART port's
+    Getfields.Adopt, copying elements of a SLICE OF Kind.FlexFloat,
+    read as a borrow handed back, and its callers were asked for
+    KEPT. }
   if (tn <> nil) and (tn.kind = nkQualident) then
   begin
     if tn.b = '' then
@@ -1695,9 +1783,9 @@ begin
   Result := True;
 end;
 
-{ does a store into designator E -- a parameter of D, selected -- land
-  beyond the frame holding the parameter?  Unknown is taken as beyond.
-  Mirrors Sem.ParamSelBeyond }
+{ ParamSelBeyond asks whether a store into designator E (a parameter
+  of D, selected) lands beyond the frame holding the parameter.
+  Unknown is taken as beyond.  It mirrors Sem.ParamSelBeyond. }
 function TSem.ParamSelBeyond (d, e: TNode; const modn: string): Boolean;
 var tn : TNode; beyond, known : Boolean;
 begin
@@ -1708,10 +1796,11 @@ begin
   Result := beyond;
 end;
 
-{ does the callee fill its I-th parameter, a VAR one, with a view of
-  its J-th?  Then the argument handed to I CARRIES the borrow of the
-  argument handed to J in the caller's frame: handed back, not kept.
-  Memoised; 'busy' breaks a cycle as FALSE.  Mirrors Sem.HandsBackFrom }
+{ HandsBackFrom asks whether the callee fills its I-th parameter, a
+  VAR one, with a view of its J-th.  Then the argument handed to I
+  CARRIES the borrow of the argument handed to J in the caller's
+  frame: handed back, not kept.  It is memoised; 'busy' breaks a
+  cycle as FALSE.  It mirrors Sem.HandsBackFrom. }
 function TSem.HandsBackFrom (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
 var ix : Integer; key, cn, src : string;
 begin
@@ -1731,9 +1820,10 @@ begin
   else AnsPut (key, 'no');
 end;
 
-{ HandsBackFrom's question with the store BEYOND the frame: into what
-  the I-th parameter points to, or a slice's storage, rather than the
-  variable itself.  Mirrors Sem.HandsBackDeep }
+{ HandsBackDeep asks HandsBackFrom's question with the store BEYOND
+  the frame: into what the I-th parameter points to, or a slice's
+  storage, rather than the variable itself.  It mirrors
+  Sem.HandsBackDeep. }
 function TSem.HandsBackDeep (const qual: string; const pr: TProcInfo; i, j: Integer): Boolean;
 var ix : Integer; key, cn, src : string;
 begin
@@ -1753,9 +1843,10 @@ begin
   else AnsPut (key, 'no');
 end;
 
-{ decision 83: does the callee store what it allocates in its J-th
-  parameter, a POOL, into its I-th, a VAR one?  Mirrors Sem.PoolInto,
-  Sem.PintoWalk and Sem.PoolValue (the owed R5PeriodPool). }
+{ decision 83: these ask whether the callee stores what it allocates
+  in its J-th parameter, a POOL, into its I-th, a VAR one.  They
+  mirror Sem.PoolInto, Sem.PintoWalk and Sem.PoolValue (the owed
+  R5PeriodPool). }
 function TSem.PoolValue (k: TNode; const pn: string): Boolean;
 var a : Integer; x : TNode;
 begin
@@ -1865,9 +1956,9 @@ begin
     if ViewEvidence (k.kids[i], d, modn, nm) then Exit (True);
 end;
 
-{ does the callee answer a VIEW of its J-th parameter?  Then its answer
-  CARRIES the argument handed to J.  Memoised per parameter.  Mirrors
-  Sem.AnswersViewAt }
+{ AnswersViewAt asks whether the callee answers a VIEW of its J-th
+  parameter.  Then its answer CARRIES the argument handed to J.  It is
+  memoised per parameter.  It mirrors Sem.AnswersViewAt. }
 function TSem.AnswersViewAt (const qual: string; const pr: TProcInfo; j: Integer): Boolean;
 var ix : Integer; key, t, nm : string;
 begin
@@ -1886,8 +1977,8 @@ begin
   else AnsPut (key, 'no');
 end;
 
-{ the parameters a parameter list declares (the pass's CountParams is
-  nested there and out of reach here) }
+{ CountParamsOf counts the parameters a parameter list declares (the
+  pass's CountParams is nested there and out of reach here). }
 function CountParamsOf (pl: TNode): Integer;
 var g : Integer;
 begin
@@ -1898,8 +1989,8 @@ begin
       Inc (Result, Length (pl.kids[g].kids[0].kids));
 end;
 
-{ does the callee answer a view of ANY of its parameters?  Mirrors
-  Sem.AnswersViewAny }
+{ AnswersViewAny asks whether the callee answers a view of ANY of its
+  parameters.  It mirrors Sem.AnswersViewAny. }
 function TSem.AnswersViewAny (const qual: string; const pr: TProcInfo): Boolean;
 var j, n : Integer;
 begin
@@ -1910,7 +2001,8 @@ begin
     if AnswersViewAt (qual, pr, j) then Exit (True);
 end;
 
-{ is the J-th parameter OWN?  Mirrors Sem.ParamOwnAt }
+{ ParamOwnAt asks whether the J-th parameter is OWN.  It mirrors
+  Sem.ParamOwnAt. }
 function ParamOwnAt (d: TNode; j: Integer): Boolean;
 var g, k : Integer;
 begin
@@ -1926,12 +2018,13 @@ begin
     end;
 end;
 
-{ does a RETURN under k answer a call -- through parens and SOME -- whose
-  callee answers a borrow, with an argument rooted at nm?  Mirrors
-  Sem.ReturnBorrows (decision 61's open half, 2026-10-25) }
+{ ReturnBorrows asks whether a RETURN under k answers a call (through
+  parens and SOME) whose callee answers a borrow, with an argument
+  rooted at nm.  It mirrors Sem.ReturnBorrows (decision 61's open
+  half, 2026-10-25). }
 function TSem.ReturnBorrows (k: TNode; const nm: string): Boolean;
 var i : Integer; r : TNode; pr : TProcInfo;
-  { CheckBody's EscRootOf, which is nested there }
+  { RootOf is CheckBody's EscRootOf, which is nested there. }
   function RootOf (e: TNode): string;
   var cn : string;
   begin
@@ -1972,8 +2065,9 @@ begin
     if ReturnBorrows (k.kids[i], nm) then Exit (True);
 end;
 
-{ does the callee answer a POINTER it was lent?  Then its answer is a
-  borrow, not an owner (the review's O4b).  Mirrors Sem.AnswersBorrowAny }
+{ AnswersBorrowAny asks whether the callee answers a POINTER it was
+  lent.  Then its answer is a borrow, not an owner (the review's
+  O4b).  It mirrors Sem.AnswersBorrowAny. }
 function TSem.AnswersBorrowAny (const qual: string; const pr: TProcInfo): Boolean;
 var ix, j, n : Integer; key, t, nm : string;
 begin
@@ -2005,12 +2099,13 @@ begin
   else AnsPut (key, 'no');
 end;
 
-{ the call under K -- through parens, SOME, SLICE and GRID -- when its
-  callee answers a view of some parameter; nil otherwise.  Mirrors
-  Sem.ViewCallOf }
-{ the UTF builtins (mirrors Sem.UtfName/UtfBuiltin/OctetsArg): UTF (s),
-  UTF (b), STR (u), OCTETS (u), by the callee's bare name and one
-  argument; a procedure of the program's own by the name is not one }
+{ ViewCallOf answers the call under K (through parens, SOME, SLICE
+  and GRID) when its callee answers a view of some parameter, and nil
+  otherwise.  It mirrors Sem.ViewCallOf. }
+{ These recognise the UTF builtins (mirrors
+  Sem.UtfName/UtfBuiltin/OctetsArg): UTF (s), UTF (b), STR (u),
+  OCTETS (u), by the callee's bare name and one argument.  A
+  procedure of the program's own by the name is not one. }
 function TSem.UtfName (const nm: string): Boolean;
 var pr : TProcInfo;
 begin
@@ -2062,8 +2157,8 @@ begin
         Result := k;
 end;
 
-{ does the callee of call VC view its J-th argument -- the one the
-  answer carries?  Mirrors Sem.ViewArgOf }
+{ ViewArgOf asks whether the callee of call VC views its J-th
+  argument, the one the answer carries.  It mirrors Sem.ViewArgOf. }
 function TSem.ViewArgOf (vc: TNode; j: Integer): Boolean;
 var pr : TProcInfo;
 begin
@@ -2073,8 +2168,8 @@ begin
     Result := AnswersViewAt (pr.modName + '.' + pr.name, pr, j);
 end;
 
-{ Sem.RoAnswerOf's text for a callee: '' when its answer is not
-  read-only storage }
+{ RoAnswerText answers Sem.RoAnswerOf's text for a callee: '' when
+  its answer is not read-only storage. }
 function TSem.RoAnswerText (const name: string; const pr: TProcInfo): string;
 begin
   Result := '';
@@ -2085,8 +2180,9 @@ begin
       ', which may be read-only storage (a literal, a CONST or a view of an RO parameter)';
 end;
 
-{ Does this call answer FRAME storage -- the callee's name, or ''?
-  Mirrors Sem.CallAnswersFrame: not foreign, no POOL parameter, a
+{ CallAnswersFrame asks whether this call answers FRAME storage, and
+  answers the callee's name or ''.  It mirrors Sem.CallAnswersFrame:
+  not foreign, no POOL parameter, a
   pointer-bearing answer that is not RO, and AnswersFrame's evidence. }
 function TSem.CallAnswersFrame (dn: TNode): string;
 var
@@ -2121,8 +2217,9 @@ begin
   if ref then Result := name;
 end;
 
-{ par 2.2.4: what an aggregate CONST must be -- literals of one type,
-  at module level, in a module's own part.
+{ CheckAggregate checks par 2.2.4: what an aggregate CONST must be.
+  It must be literals of one type, at module level, in a module's own
+  part.
     where -- 0 a module's own, 1 exported by a DEFINITION, 2 local to
              a procedure }
 procedure TSem.CheckAggregate (cd: TNode; const ctx: string;
@@ -2193,7 +2290,7 @@ begin
 end;
 
 
-{ the dotted name a call names: `Row', `Mod.Row' }
+{ CalleeOf answers the dotted name a call names: `Row', `Mod.Row'. }
 function CalleeOf (e: TNode): string;
 var i : Integer;
 begin
@@ -2207,8 +2304,8 @@ begin
       Exit (e.kids[0].a);
 end;
 
-{ Sem.RecordNamed: the RECORD a callee names, through aliases; om the
-  module that wrote it, canon its canonical type name }
+{ Sem.RecordNamed answers the RECORD a callee names, through aliases.
+  om is the module that wrote it, canon its canonical type name. }
 function TSem.RecordNamed (const name: string; out om, canon: string): TNode;
 var
   dot : Integer;
@@ -2263,7 +2360,8 @@ begin
   Result := canon;
 end;
 
-{ Sem.ConstFieldType: field f of the record named rec, canonically }
+{ Sem.ConstFieldType answers field f of the record named rec,
+  canonically. }
 function TSem.ConstFieldType (const rec, f: string): string;
 var
   om, canon : string;
@@ -2279,8 +2377,8 @@ begin
   canonCtx := '';
 end;
 
-{ Sem.CheckRecordConst: every field a literal of its field's type, as
-  many as the record has }
+{ Sem.CheckRecordConst checks that every field is a literal of its
+  field's type, as many as the record has. }
 procedure TSem.CheckRecordConst (el: TNode; const ctx, what: string);
 var
   name, om, canon, pTy, aTy : string;
@@ -2366,8 +2464,9 @@ begin
       Result[i] := p.kids[2].kids[i].a;
 end;
 
-{ a RAISES clause's names as SPELLED, `A.E' or `E', for the accounting
-  (mirrors Sem.RaisesSpelled; RaisesOf's bare names stay the signature) }
+{ RaisesSpelled answers a RAISES clause's names as SPELLED, `A.E' or
+  `E', for the accounting (mirrors Sem.RaisesSpelled; RaisesOf's bare
+  names stay the signature). }
 function TSem.RaisesSpelled (p: TNode): TStringArray;
 var i : Integer;
 begin
@@ -2381,8 +2480,9 @@ begin
       Result[i] := p.kids[2].kids[i].a;
 end;
 
-{ an exception's KEY in the RAISES accounting: module and name (mirrors
-  Sem.ExcKey; the compiler review's C6, second half) }
+{ ExcKey answers an exception's KEY in the RAISES accounting: module
+  and name (mirrors Sem.ExcKey; the compiler review's C6, second
+  half). }
 function TSem.ExcKey (const md, spelled: string): string;
 var m : TModuleInfo; i : Integer;
 begin
@@ -2394,7 +2494,7 @@ begin
   Result := spelled;
 end;
 
-{ a key's bare name, for the message }
+{ ExcBare answers a key's bare name, for the message. }
 function ExcBare (const key: string): string;
 var i : Integer;
 begin
@@ -2403,13 +2503,14 @@ begin
   Result := Copy (key, i + 1, Length (key) - i);
 end;
 
-{ does a handler's or a clause's key cover a raised key (mirrors
-  Sem.ExcCovers): the same key, or a bare key and the raised bare name }
+{ ExcCovers asks whether a handler's or a clause's key covers a raised
+  key (mirrors Sem.ExcCovers): the same key, or a bare key and the
+  raised bare name. }
 { a procedure bound to a monitor calling another bound to the SAME
   monitor waits for its own lock.  Mirrors Sem.SameMonitorCall; the
   binding test is CheckFile's nested BoundMonitorOf, copied here }
-{ the monitor TYPE a procedure is bound to, as its type node (mirrors
-  Sem.MonIdOf) }
+{ MonIdOf answers the monitor TYPE a procedure is bound to, as its
+  type node (mirrors Sem.MonIdOf). }
 function TSem.MonIdOf (d: TNode; const modn: string): TNode;
 var grp, rt : TNode; was : string;
 begin
@@ -2450,7 +2551,8 @@ begin
     if MonReachWalk (k.kids[i], modn, mon) then Exit (True);
 end;
 
-{ may a call of pr enter a monitor of the type mon (mirrors Sem.MonReach) }
+{ MonReach asks whether a call of pr may enter a monitor of the type
+  mon (mirrors Sem.MonReach). }
 function TSem.MonReach (const pr: TProcInfo; mon: TNode): Boolean;
 var key : string;
 begin
@@ -2463,7 +2565,8 @@ begin
   if Result then AnsPut (key, 'yes') else AnsPut (key, 'no');
 end;
 
-{ may a call of pr WAIT, at any depth (mirrors Sem.MonWaits) }
+{ MonWaitWalk asks whether a call of pr may WAIT, at any depth
+  (mirrors Sem.MonWaits). }
 function TSem.MonWaitWalk (k: TNode; const modn: string): Boolean;
 var i : Integer; cn : string; cpr : TProcInfo;
 begin
@@ -2501,7 +2604,8 @@ begin
   if Result then AnsPut (key, 'yes') else AnsPut (key, 'no');
 end;
 
-{ a lock-order cycle across two monitor types (mirrors Sem.MonCycle) }
+{ MonCycle finds a lock-order cycle across two monitor types (mirrors
+  Sem.MonCycle). }
 function TSem.MonCycle (const pr: TProcInfo; mon: TNode): Boolean;
 var m, i : Integer; t : TNode;
 begin
@@ -2561,7 +2665,8 @@ begin
     end;
 end;
 
-{ the name a refusal shows for a raised key.  Mirrors Sem.ExcShown }
+{ ExcShown answers the name a refusal shows for a raised key.  It
+  mirrors Sem.ExcShown. }
 function TSem.ExcShown (const key: string): string;
 var bare : string;
 begin
@@ -2583,14 +2688,15 @@ end;
   the generator's ExcRef does: a qualified name in the module it
   names, a bare name locally, predeclared, or declared in some loaded
   module (both direct and transitive deps register their exceptions).
-  A name found nowhere is accepted by neither -- catch it HERE. }
+  A name found nowhere is accepted by neither.  Catch it HERE. }
 function QualifyTypeIn (t: TNode; const modName: string): TNode; forward;
 
-{ the EXCEPTION declaration a handler names and the module that
-  declares it: qualified, that module; bare, the current module first,
-  then any (as ExcKnown finds it); nil for a predeclared one }
-{ the predeclared payload, as EXCEPTION IndexError (index, length : I64)
-  would parse (mirrors Sem.Setup) }
+{ ExcDeclOf answers the EXCEPTION declaration a handler names and the
+  module that declares it.  A qualified name looks in that module.  A
+  bare name looks in the current module first, then any (as ExcKnown
+  finds it).  It answers nil for a predeclared one. }
+{ IxDecl answers the predeclared payload, as EXCEPTION IndexError
+  (index, length : I64) would parse (mirrors Sem.Setup). }
 function TSem.IxDecl: TNode;
 var xd, fs, g, il, i1, i2, ty : TNode;
 begin
@@ -2637,16 +2743,18 @@ begin
       if mods[j].exNames[i] = nm then begin owner := mods[j].name; Exit (mods[j].exDecls[i]); end;
 end;
 
-{ the type of the k-th payload field, qualified in its module; nil past
-  the fields or for a bare declaration }
-{ an exception as the program spelled it (Sem.ExcSpelled) }
+{ ExcFieldType answers the type of the k-th payload field, qualified
+  in its module.  It answers nil past the fields or for a bare
+  declaration. }
+{ ExcSpelledP answers an exception as the program spelled it
+  (Sem.ExcSpelled). }
 function ExcSpelledP (q: TNode): string;
 begin
   if q.b <> '' then Result := q.a + '.' + q.b else Result := q.a;
 end;
 
-{ an exception's fields as one text, `(I64, STR)' (mirrors
-  Sem.ExcFieldsText) }
+{ ExcFieldsText answers an exception's fields as one text,
+  `(I64, STR)' (mirrors Sem.ExcFieldsText). }
 function TSem.ExcFieldsText (q: TNode): string;
 var
   owner, r : string;
@@ -2728,14 +2836,14 @@ end;
   because a bare name found nowhere may simply be a missing IMPORT,
   and a checker that guesses produces diagnostics nobody can act on.
   But `DynStr.Dstring' names a module that IS loaded and a type it
-  does not declare.  That is a typo, not softness -- and it rode
-  through --check without a word to surface as cc's `unknown type
-  name DynStr_Dstring', the M9 name mangled and the M9 line gone
-  (2026-09-15).  Same rule as ExcKnown above: only a known,
-  non-foreign module lacking the name is an error.
+  does not declare.  That is a typo, not softness.  It rode through
+  --check without a word, to surface as cc's `unknown type name
+  DynStr_Dstring', the M9 name mangled and the M9 line gone
+  (2026-09-15).  The rule is the same as ExcKnown's above: only a
+  known, non-foreign module lacking the name is an error.
 
-  Checked ONCE, at the declaration, in declaration order; every
-  lookup that follows stays soft, so nothing cascades. }
+  It is checked ONCE, at the declaration, in declaration order.
+  Every lookup that follows stays soft, so nothing cascades. }
 
 function TSem.TypeKnown (const qual, nm: string): Boolean;
 var m : TModuleInfo;
@@ -2763,9 +2871,10 @@ begin
     (nm = 'OutOfMemory') or (nm = 'ValueRange');
 end;
 
-{ Sem.ModImports (curRoot, curMod, name): does this module, either part,
-  IMPORT name -- an imported module whose definition was not loaded is
-  no unknown name (2026-10-30, checkfuzz's GfJv) }
+{ ImportedHere is Sem.ModImports (curRoot, curMod, name).  It asks
+  whether this module, either part, IMPORTs name.  An imported module
+  whose definition was not loaded is no unknown name (2026-10-30,
+  checkfuzz's GfJv). }
 function TSem.ImportedHere (const name: string): Boolean;
 var
   a, b, c : Integer;
@@ -2791,9 +2900,10 @@ begin
   Result := False;
 end;
 
-{ Sem.ArrayCountForm: the part of an array count outside its grammar
-  (a literal, a name, parentheses, unary minus, + - * DIV MOD, never by
-  a literal 0); '' when it is in it (2026-10-29) }
+{ Sem.ArrayCountForm answers the part of an array count outside its
+  grammar (a literal, a name, parentheses, unary minus, + - * DIV MOD,
+  never by a literal 0).  It answers '' when it is in it
+  (2026-10-29). }
 function TSem.ArrayCountForm (e: TNode): string;
 var v : Int64; ch : Boolean; r : string; mi : TModuleInfo; j : Integer;
 begin
@@ -2841,8 +2951,8 @@ begin
   Result := ExprText (e);
 end;
 
-{ Sem.CountIsConst: a count that is a CONST expression, not an
-  enumeration -- a literal, an operator, a CONST's name }
+{ Sem.CountIsConst asks whether a count is a CONST expression, not an
+  enumeration: a literal, an operator, a CONST's name. }
 function TSem.CountIsConst (e: TNode): Boolean;
 var mi : TModuleInfo; j : Integer;
 begin
@@ -2870,8 +2980,9 @@ begin
 end;
 
 procedure TSem.CheckTypeNode (t: TNode; const ctx: string);
-{ every qualident reachable through PTR, OPT, SHARED, SLICE, ARRAY,
-  GRID and the fields of a record, monitor or case record }
+{ CheckTypeNode checks every qualident reachable through PTR, OPT,
+  SHARED, SLICE, ARRAY, GRID and the fields of a record, monitor or
+  case record. }
 var
   i : Integer;
   cv : Int64;
@@ -2996,7 +3107,8 @@ begin
 end;
 
 procedure TSem.CheckVarTypes (holder: TNode; const ctx: string);
-{ the VAR and TYPE sections directly under a unit or a procedure body }
+{ CheckVarTypes checks the VAR and TYPE sections directly under a
+  unit or a procedure body. }
 var a, b : Integer;
 begin
   if holder = nil then Exit;
@@ -3032,7 +3144,8 @@ begin
     end;
 end;
 
-{ the TYPE names a procedure body declares, for TypeNowhere }
+{ LocalTypes collects the TYPE names a procedure body declares, for
+  TypeNowhere. }
 procedure TSem.LocalTypes (body: TNode);
 var a, b : Integer;
 begin
@@ -3063,9 +3176,10 @@ begin
 end;
 
 procedure TSem.CheckDeclTypes (u: TNode);
-{ one pass over a unit, in declaration order: its TYPE and VAR
-  sections under the unit's own name, then each procedure's
-  parameters, return type and locals under the procedure's }
+{ CheckDeclTypes makes one pass over a unit, in declaration order: its
+  TYPE and VAR sections under the unit's own name, then each
+  procedure's parameters, return type and locals under the
+  procedure's. }
 var
   i, a : Integer;
   d, pl : TNode;
@@ -3093,8 +3207,9 @@ end;
 
 { ---- registry ---- }
 
-{ QualifiedIn at unit level, for CollectUnit's exported variables
-  (decision 28); the same rules as the nested one CheckFile uses }
+{ QualifyTypeIn is QualifiedIn at unit level, for CollectUnit's
+  exported variables (decision 28).  It follows the same rules as the
+  nested one CheckFile uses. }
 function QualifyTypeIn (t: TNode; const modName: string): TNode;
 var n, b, d, sf : TNode; mi : TModuleInfo; j : Integer;
 begin
@@ -3121,10 +3236,11 @@ begin
       if Length (t.kids) >= 2 then
       begin
         n := TNode.Create (t.kind);
-        { the bound as written unless it is a bare CONST of modName:
-          then modName.N, as Sem.QualifiedBound does it -- the
-          generators read this node (2026-10-10, Parse's errs).  A
-          plain function: the module table through recSem }
+        { Keep the bound as written unless it is a bare CONST of
+          modName; then it becomes modName.N, as Sem.QualifiedBound
+          does it.  The generators read this node (2026-10-10, Parse's
+          errs).  This is a plain function, so the module table comes
+          through recSem. }
         b := t.kids[0];
         if (t.kind = nkArrayType) and (b <> nil) and (b.kind = nkDesignator)
            and (Length (b.kids) = 0) and (recSem <> nil) then
@@ -3154,13 +3270,13 @@ end;
 
 { ---- the module a designator's type was written in ----
 
-  A component type -- a record's field, a pointer's target, a slice's
-  or an array's element -- is written in the module that declared the
-  aggregate, and a bare name in it means that module's type.  The two
+  A component type (a record's field, a pointer's target, a slice's
+  or an array's element) is written in the module that declared the
+  aggregate.  A bare name in it means that module's type.  The two
   designator walks (DesigDeclType, CheckWrite) took such a node and
   resolved it in the CURRENT module, so `tm.kind' with tm a
   Sparql.Term and kind a bare `Kind' resolved to Csv.Kind, the first
-  Kind on the search path; the M9 checker qualifies through
+  Kind on the search path.  The M9 checker qualifies through
   QualifiedIn and accepted it (semtest, 2026-10-07: the canonCtx
   class, the fourth of its kind).  NoteMod remembers the module of
   the last QUALIFIED type the walk passed; InMod qualifies a component
@@ -3230,9 +3346,9 @@ begin
           end;
         end;
       nkExcSection :
-        { the declared exceptions: RAISE/RAISES/handler may only cite
-          a name the reader can find -- one declared here, one
-          predeclared, or one qualified into the module that owns it }
+        { Record the declared exceptions.  RAISE/RAISES/handler may
+          only cite a name the reader can find: one declared here, one
+          predeclared, or one qualified into the module that owns it. }
         for j := 0 to High (d.kids) do
         begin
           SetLength (m.exNames, Length (m.exNames) + 1);
@@ -3327,8 +3443,8 @@ begin
   for i := 0 to High (n.kids) do NanWalk (n.kids[i]);
 end;
 
-{ FOR x IN s: the loop's assignment x := s[0] written down as kids[2]
-  (mirrors Sem.ForInWalk) }
+{ ForInWalk writes the loop's assignment x := s[0] of FOR x IN s down
+  as kids[2] (mirrors Sem.ForInWalk). }
 procedure ForInWalk (n: TNode);
 var i, j : Integer;
   asg, lhs, rhs, sel, ix, s : TNode;
@@ -3409,7 +3525,8 @@ begin
   Result := True;
 end;
 
-{ the variant set of a KNOWN selector type ('Json.Value').  Two
+{ VariantOfType answers the variant set of a KNOWN selector type
+  ('Json.Value').  Two
   modules may declare a variant type of the same name -- Json and
   Dict both have Value -- so totality must be judged against the
   selector's own type, never against the first module that happens
@@ -3437,10 +3554,11 @@ function TSem.VariantOwner (const vname: string;
   out vi: TVariantInfo): Boolean;
 var i, j, k, pass : Integer;
 begin
-  { the module being checked first, then the others: a bare variant
-    name meant the first module LOADED that declares it, so JsonUtf's
-    `Str (t)' took Json's `Str : RO s: STR' (semtest loads every corpus
-    module; 2026-10-23, the canonCtx class) -- as Sem.m9's lookup does }
+  { Look in the module being checked first, then the others, as
+    Sem.m9's lookup does.  A bare variant name meant the first module
+    LOADED that declares it, so JsonUtf's `Str (t)' took Json's
+    `Str : RO s: STR' (semtest loads every corpus module; 2026-10-23,
+    the canonCtx class). }
   for pass := 0 to 1 do
     for i := 0 to High (mods) do
       if (pass = 1) <> (mods[i].name = curMod) then
@@ -3539,9 +3657,9 @@ begin
   if (Result <> nil) and (Result.kind = nkQualident) then Result := nil;
 end;
 
-{ the variant of a type in EXACTLY the module named: the three-part
-  constructor Mod.Type.Variant (args) looks here and nowhere else,
-  which is what the qualification says }
+{ VariantIn answers the variant of a type in EXACTLY the module
+  named.  The three-part constructor Mod.Type.Variant (args) looks
+  here and nowhere else, which is what the qualification says. }
 function TSem.VariantIn (const mn, tn, vn: string; out ownerMod: string;
   out fields: TNode): Boolean;
 var
@@ -3608,8 +3726,8 @@ begin
   fields := nil;
   { a bare Value.Null resolves in its OWN module first: Json and Dict
     both declare a variant type named Value, and load order must not
-    decide which one a constructor means -- the same rule CanonQual
-    already applies to bare type names }
+    decide which one a constructor means.  This is the same rule
+    CanonQual already applies to bare type names. }
   if canonCtx <> '' then Result := TryMod (FindMod (canonCtx))
   else Result := TryMod (FindMod (curMod));
   if Result then Exit;
@@ -3620,12 +3738,14 @@ begin
   end;
 end;
 
-{ canonical type of a named type.  Records, case records, monitors,
-  and opaque types are nominal -- 'Mod.Name'; aliases chase to their
-  structure.  '' when the name cannot be found (softness).           }
-{ integer -> enumeration (or payload-less case record), the checked
-  inverse of ORD; RAISES ValueRange out of 0..n-1.  Answers the
-  canonical type, or '' (docs/enum-plan.md, part 2). }
+{ A named type has a canonical type.  Records, case records,
+  monitors, and opaque types are nominal: 'Mod.Name'.  Aliases chase
+  to their structure.  The canonical type is '' when the name cannot
+  be found (softness). }
+{ EnumConvType types integer -> enumeration (or payload-less case
+  record), the checked inverse of ORD.  The conversion RAISES
+  ValueRange out of 0..n-1.  EnumConvType answers the canonical type,
+  or '' (docs/enum-plan.md, part 2). }
 function TSem.AllPayloadless (n: TNode): Boolean;
 var i : Integer;
 begin
@@ -3642,8 +3762,9 @@ begin
 end;
 
 function TSem.IsTagged (const canon: string): Boolean;
-{ the canonical name (Mod.Type) resolves to an enumeration or a case
-  record -- a value CASE reaches by tag, which is what NAME can name }
+{ IsTagged asks whether the canonical name (Mod.Type) resolves to an
+  enumeration or a case record: a value CASE reaches by tag, which is
+  what NAME can name. }
 var dot : Integer; t : TNode;
 begin
   Result := False;
@@ -3709,13 +3830,14 @@ begin
   end;
 end;
 
-{ the canonical text of a procedure type, or of a procedure's head
-  (par 2.2.3): the parameter modes and types with no names, the result
+{ ProcSig answers the canonical text of a procedure type, or of a
+  procedure's head (par 2.2.3): the parameter modes and types with no
+  names, the result
   with its RO, and the RAISES names bare and sorted.  Two procedure
   types are the same type exactly when this text is the same; a
   procedure FITS a procedure type when its head renders the same up
   to RAISES and it raises no more than the type allows (ProcFits).
-  Mirrors Sem.ProcSig. }
+  It mirrors Sem.ProcSig. }
 function TSem.ProcSig (pl, rt: TNode; ro: Boolean; rs: TNode;
                        depth: Integer): string;
 var
@@ -3782,7 +3904,8 @@ begin
   end;
 end;
 
-{ does a declared type resolve to a bare procedure type?  The four
+{ OptOverValue asks whether a declared type resolves to a bare
+  procedure type.  The four
   refusals of par 2.2.3 ask this: a variable or field of procedure
   type must be OPT, because a procedure value has no zero. }
 function TSem.OptOverValue (t: TNode): Boolean;
@@ -3801,9 +3924,10 @@ begin
   Result := (r <> nil) and (r.kind = nkProcType);
 end;
 
-{ Sem.BoundText: an array bound read in the declaration of another
-  module, its bare names that module declares -- a CONST, a type -- as
-  `Mod.N', through parentheses and operators (Sem.BoundQual).  The
+{ Sem.BoundText answers an array bound read in the declaration of
+  another module.  The bare names that module declares (a CONST, a
+  type) become `Mod.N', through parentheses and operators
+  (Sem.BoundQual).  The
   synthetic nodes are never freed, as QualifiedIn's are not. }
 function TSem.BoundText (b: TNode): string;
 var mi : TModuleInfo;
@@ -3850,7 +3974,8 @@ begin
   Result := ExprText (b);
 end;
 
-{ Sem.SetConstVal: a CONST's literal beside its LitType in constMap }
+{ Sem.SetConstVal stores a CONST's literal beside its LitType in
+  constMap. }
 procedure TSem.SetConstVal (const nm: string; v: TNode);
 var i : Integer;
 begin
@@ -3859,9 +3984,9 @@ begin
   else constVals.Objects[i] := v;
 end;
 
-{ Sem.CountValue: the value of an array count -- literals, CONSTs (bare
-  in m, else this module; or Mod.N), + - * DIV MOD, unary minus,
-  parentheses (Alex, 2026-10-30, report M8) }
+{ Sem.CountValue answers the value of an array count: literals,
+  CONSTs (bare in m, else this module; or Mod.N), + - * DIV MOD, unary
+  minus, parentheses (Alex, 2026-10-30, report M8). }
 {$PUSH}{$Q+}  { an overflowing count has no value, as in Sem (Overflow) }
 function TSem.CountValue (e: TNode; const m: string; depth: Integer; var v: Int64): Boolean;
 var a, b : Int64; i, j : Integer; mi : TModuleInfo; ch : Boolean;
@@ -3952,10 +4077,11 @@ begin
       else if t.a = '<u8>' then
         Result := '<u8>'
       else if t.a = 'POOL' then
-        { a type like any other to the comparison of an argument with
-          its parameter; until 2026-10-01 it had no canonical form and
-          both sides of every pool argument were unknown.  Mirrors
-          Sem.CanonT, where the measurement is written down. }
+        { POOL is a type like any other to the comparison of an
+          argument with its parameter.  Until 2026-10-01 it had no
+          canonical form, and both sides of every pool argument were
+          unknown.  This mirrors Sem.CanonT, where the measurement is
+          written down. }
         Result := 'POOL'
       else
         Result := CanonQual ('', t.a, depth);
@@ -4010,7 +4136,8 @@ begin
   Result := FieldSeqType (rec.kids[1], fname);
 end;
 
-{ is this field declared RO?  A record or variant field holding a
+{ FieldSeqRO asks whether this field is declared RO.  A record or
+  variant field holding a
   borrowed slice says so with the same mode a parameter uses, and it
   must bite the same way: Json.Value.Str views the caller's document,
   and writing through it would corrupt the input the parser was
@@ -4109,7 +4236,8 @@ begin
         'opaque type not defined in the implementation');
 end;
 
-{ the Levenshtein distance of two names (Sem.EditDist) }
+{ EditDist answers the Levenshtein distance of two names
+  (Sem.EditDist). }
 function EditDist (const a, b: string): Integer;
 var
   prev, cur : array of Integer;
@@ -4142,31 +4270,34 @@ var
   i : Integer;
   { ---- par 4.1, DIRECTIONAL: the ledger names stores; these decide
     which stores anyone outside the frame can still see.  Per local
-    (or binder, or value param -- all frame storage) a list of escape
-    TARGETS: a reference parameter's name, '<module>', '<return>' or
-    '<call>'.  Aliasing (local := local, views, binders) is a
+    (or binder, or value param: all frame storage) they keep a list of
+    escape TARGETS: a reference parameter's name, '<module>',
+    '<return>' or '<call>'.  Aliasing (local := local, views, binders)
+    is a
     symmetric edge and targets close over the edges, so the
     approximation can keep an entry in the ledger that a finer
     analysis would drop, never drop one it should keep.  Ledger
     entries are PENDED during the walk and classified at the end,
     once every escape of the destination has been seen. }
   escSet, escEdges : TStringList;
-  { par 4.1 value provenance: which BORROWS a local or binder
-    carries -- a copied reference, a binder's view, a sub-slice.
-    'local=borrow' pairs, plus directed copy edges closed at flush
-    (carries of the edge's source flow to its destination).  No kill
-    on reassignment: the approximation errs into the ledger. }
+  { par 4.1 value provenance: these record which BORROWS a local or
+    binder carries (a copied reference, a binder's view, a
+    sub-slice).  They hold 'local=borrow' pairs, plus directed copy
+    edges closed at flush (carries of the edge's source flow to its
+    destination).  There is no kill on reassignment: the
+    approximation errs into the ledger. }
   carryPair, carryEdge : TStringList;
   pendLn, pendCl : array of Integer;
   pendSrc, pendDst : array of string;
   pendN : Integer;
-  { par 2.3: locals/binders that currently hold a FRAME-SCOPED string
-    -- a concatenation, which lives in this frame's arena and dies
-    with it.  Escaping one (to a module var, through a reference
-    parameter, or via RETURN of the holding name) is the use-after-
-    free the frame model would otherwise permit silently.  Tainted on
-    assignment of a concatenation, cleared when the name is given a
-    durable value again (so a reused local never false-positives). }
+  { par 2.3: fval lists the locals/binders that currently hold a
+    FRAME-SCOPED string.  That is a concatenation, which lives in this
+    frame's arena and dies with it.  An escape of one (to a module
+    var, through a reference parameter, or via RETURN of the holding
+    name) is the use-after-free the frame model would otherwise permit
+    silently.  A name is tainted on assignment of a concatenation, and
+    cleared when it is given a durable value again (so a reused local
+    never false-positives). }
   fval : TStringList;
   fvalKind : TStringList;   { parallel to fval: what each name holds }
   pval : TStringList;       { bare names holding a POOL allocation: a copy out is no move (mirrors Sem) }
@@ -4190,15 +4321,16 @@ var
     if ix >= 0 then binderFrom.Delete (ix);
   end;
 
-  { a type node from module MODNAME made self-contained: its bare
-    type names qualified, so canonicalising it later -- from whichever
-    module the binder is used in -- resolves them where they were
-    declared (the canonCtx lesson, applied to binders).  Pool and
+  { QualifiedIn makes a type node from module MODNAME self-contained:
+    its bare type names are qualified.  So canonicalising it later,
+    from whichever module the binder is used in, resolves them where
+    they were declared (the canonCtx lesson, applied to binders).
+    Pool and
     attribute components are dropped, neither being part of type
     identity.  The synthetic nodes are never freed: a handful per
     check, in a one-shot process, like tyCHAR and strNode. }
-  { Sem.QualifiedBound: a bound that is a bare CONST of modName, as
-    modName.N; any other bound as it is }
+  { Sem.QualifiedBound answers a bound that is a bare CONST of modName
+    as modName.N, and any other bound as it is. }
   function QualifiedBound (b: TNode; const modName: string): TNode;
   var d, sf : TNode; mi : TModuleInfo; j : Integer;
   begin
@@ -4265,7 +4397,8 @@ var
     Result := scope.ValueFromIndex[ix];
   end;
 
-  { was the name, as it is seen here, declared `VAR RO'? }
+  { ScopeRo asks whether the name, as it is seen here, was declared
+    `VAR RO'. }
   function ScopeRo (const nm: string): Boolean;
   var ix : Integer;
   begin
@@ -4273,8 +4406,9 @@ var
     Result := (ix >= 0) and (roScope.IndexOf (IntToStr (ix)) >= 0);
   end;
 
-  { the read-only storage the name was given by an assignment in this
-    procedure ('a string literal (line 12)'), or '' -- Sem.ScopeRoFrom }
+  { ScopeRoFrom answers the read-only storage the name was given by an
+    assignment in this procedure ('a string literal (line 12)'), or ''
+    (Sem.ScopeRoFrom). }
   function ScopeRoFrom (const nm: string): string;
   var ix : Integer; v : string;
   begin
@@ -4286,19 +4420,21 @@ var
               Copy (v, Pos ('|', v) + 1, Length (v)) + ')';
   end;
 
-  { is this name, HERE, a constant?  A parameter, a local or a module
-    variable of the same name shadows it, as it does in the generated
-    C -- the lookup that forgot that typed a parameter named like a
-    module CONST as the constant (found 2026-10-01). }
+  { IsConstHere asks whether this name, HERE, is a constant.  A
+    parameter, a local or a module variable of the same name shadows
+    it, as it does in the generated C.  The lookup that forgot that
+    typed a parameter named like a module CONST as the constant (found
+    2026-10-01). }
   function IsConstHere (const nm: string): Boolean;
   begin
     Result := (ScopeMode (nm) = '') and (constMap.IndexOfName (nm) >= 0);
   end;
 
-  { a designator naming a CONST whose value is a string literal -- this
-    module's bare name, or an imported Mod.C -- adapts to a UTF as the
-    literal does (decision 66, 2026-10-23; mirrors Sem.StrConstDesig):
-    a CONST's recorded type is its literal's, SLICE OF CHAR or <str1> }
+  { StrConstDesig recognises a designator naming a CONST whose value
+    is a string literal (this module's bare name, or an imported
+    Mod.C).  Such a designator adapts to a UTF as the literal does
+    (decision 66, 2026-10-23; mirrors Sem.StrConstDesig).  A CONST's
+    recorded type is its literal's, SLICE OF CHAR or <str1>. }
   function StrConstDesig (k: TNode): Boolean;
   var
     t : string;
@@ -4327,15 +4463,17 @@ var
     Result := (t = 'SLICE OF CHAR') or (t = '<str1>');
   end;
 
-  { AdaptLit with the CONST rule: the plain function knows literals only }
+  { AdaptLitC is AdaptLit with the CONST rule: the plain function
+    knows literals only. }
   function AdaptLitC (k: TNode; const dst, src: string): string;
   begin
     if (dst = UtfTy) and StrConstDesig (k) then Result := UtfTy
     else Result := AdaptLit (k, dst, src);
   end;
 
-  { a FOR step that is a constant: what ScalarConst folds, or a name --
-    this module's CONST, or an imported Mod.N (mirrors Sem.StepConst) }
+  { StepConst asks whether a FOR step is a constant: what ScalarConst
+    folds, or a name (this module's CONST, or an imported Mod.N).  It
+    mirrors Sem.StepConst. }
   function StepConst (s: TNode): Boolean;
   var
     v : Int64;
@@ -4356,7 +4494,8 @@ var
     end;
   end;
 
-  { ... and a constant TABLE, the value of an aggregate (par 2.2.4) }
+  { IsAggConst asks the same for a constant TABLE, the value of an
+    aggregate (par 2.2.4). }
   function IsAggConst (const nm: string): Boolean;
   begin
     Result := IsConstHere (nm) and
@@ -4364,7 +4503,7 @@ var
   end;
 
   { par 2.2.4: a constant table is read-only DATA, so its whole value
-    goes only where nothing can write through it -- indexed, under
+    goes only where nothing can write through it: indexed, under
     LEN, or lent to an RO parameter (the call check holds that last
     one, argument by argument).  Anything else that names it bare
     would make an alias: s := Primes, SLICE (Primes, 0, 2), RETURN
@@ -4386,18 +4525,20 @@ var
       if n.kids[i] <> nil then AggWalk (n.kids[i], n.kind);
   end;
 
-  { the name under a destination or target: '>tg' marks a store into
-    the VAR parameter tg's OWN storage, a hand-back to the caller
-    rather than a retention (StoreRef; mirrors Sem.TgtName) }
+  { TgtName answers the name under a destination or target.  '>tg'
+    marks a store into the VAR parameter tg's OWN storage, a hand-back
+    to the caller rather than a retention (StoreRef; mirrors
+    Sem.TgtName). }
   function TgtName (const t: string): string;
   begin
     if (Length (t) > 0) and (t[1] = '>') then Exit (Copy (t, 2, MaxInt));
     Result := t;
   end;
 
-  { name NM's storage is reachable from outside the frame via TGT.
-    Append-if-absent, so target order is first-encounter order --
-    the M9 checker must reproduce it, and semdiff holds both to it }
+  { EscTarget records that name NM's storage is reachable from outside
+    the frame via TGT.  It appends if absent, so target order is
+    first-encounter order.  The M9 checker must reproduce it, and
+    semdiff holds both to it. }
   procedure EscTarget (const nm, tgt: string);
   begin
     if escSet.IndexOf (nm + '=' + tgt) < 0 then
@@ -4411,13 +4552,13 @@ var
       escEdges.Add (a + '=' + b);
   end;
 
-  { the frame-storage root a reference expression views: through
-    SOME and parens, and through SLICE/VIEW/SHARED/GRID,
+  { EscRootOf answers the frame-storage root a reference expression
+    views: through SOME and parens, and through SLICE/VIEW/SHARED/GRID,
     whose answers alias their first argument's storage.  SLICE,
     SHARED and GRID are nodes of their own (nkSliceOf3, nkSharedExpr,
-    nkGridOf), not calls: the call branch below never met one, and
+    nkGridOf), not calls.  The call branch below never met one, and
     `RETURN SLICE (out, 0, n)` escaped unrooted (Sem.EscRootOf says
-    the rest; 2026-10-18) }
+    the rest; 2026-10-18). }
   function EscRootOf (e: TNode): string;
   var nm : string;
   begin
@@ -4440,8 +4581,8 @@ var
     end;
   end;
 
-  { the name of the RO FIELD a designator ends at, resolved as
-    CheckWrite resolves a write, or '' (Sem.RoFieldOf) }
+  { RoFieldOf answers the name of the RO FIELD a designator ends at,
+    resolved as CheckWrite resolves a write, or '' (Sem.RoFieldOf). }
   function RoFieldOf (d: TNode): string;
   var
     j : Integer;
@@ -4483,8 +4624,8 @@ var
     end;
   end;
 
-  { `the RO answer of F' when call E names a procedure whose result is
-    declared RO, else '' (Sem.RoAnswerOf) }
+  { RoAnswerOf answers `the RO answer of F' when call E names a
+    procedure whose result is declared RO, else '' (Sem.RoAnswerOf). }
   function RoAnswerOf (e: TNode): string;
   var pr : TProcInfo; name : string;
   begin
@@ -4498,10 +4639,11 @@ var
 
   function DesigPath (d: TNode): string; forward;
 
-  { par 2.4, the copy: is the value of expression K read-only storage
-    -- a string literal, what an RO parameter or an RO variable views,
-    a CONST, or a name that was itself given such storage -- seen
-    through SLICE, VIEW and parentheses?  Mirrors Sem.RoWhatOf. }
+  { par 2.4, the copy: RoWhatOf asks whether the value of expression K
+    is read-only storage, seen through SLICE, VIEW and parentheses.
+    That is a string literal, what an RO parameter or an RO variable
+    views, a CONST, or a name that was itself given such storage.  It
+    mirrors Sem.RoWhatOf. }
   function RoWhatOf (k: TNode): string;
   var r, v : string; ix : Integer;
   begin
@@ -4535,9 +4677,10 @@ var
     if IsConstHere (r) then Exit ('the CONST ' + r);
   end;
 
-  { one pass over the assignments under K: a bare local or parameter
-    of slice or grid type given read-only storage is marked with what
-    it holds and where.  Mirrors Sem.RoSeedWalk. }
+  { RoSeedWalk makes one pass over the assignments under K.  A bare
+    local or parameter of slice or grid type given read-only storage
+    is marked with what it holds and where.  It mirrors
+    Sem.RoSeedWalk. }
   function RoSeedWalk (k: TNode): Boolean;
   var
     ix, j : Integer;
@@ -4578,13 +4721,14 @@ var
 
   { par 2.4, the copy (2026-10-08): a local or parameter of slice or
     grid type that an assignment anywhere in the procedure gives
-    read-only storage holds it for the whole procedure -- a write
+    read-only storage holds it for the whole procedure.  A write
     through the name and a lend of it to a writable parameter are
-    refused by CheckWrite and the call check.  Mirrors Sem.RoSeed. }
-  { a FIELD of a record copy given storage that is not read-only
+    refused by CheckWrite and the call check.  This mirrors
+    Sem.RoSeed. }
+  { A FIELD of a record copy given storage that is not read-only
     (`d := c ; d.defs := NEW (...) ; d.defs[i] := ...', Rdf.CopyCtx)
-    is REFRESHED: recorded as the path `d.defs'.  Mirrors
-    Sem.RoFreshWalk. }
+    is REFRESHED: RoFreshWalk records it as the path `d.defs'.  It
+    mirrors Sem.RoFreshWalk. }
   procedure RoFreshWalk (k: TNode);
   var
     j : Integer;
@@ -4609,8 +4753,8 @@ var
     for j := 0 to High (k.kids) do RoFreshWalk (k.kids[j]);
   end;
 
-  { does the designator write through a refreshed field?  Mirrors
-    Sem.RoRefreshed. }
+  { RoRefreshed asks whether the designator writes through a
+    refreshed field.  It mirrors Sem.RoRefreshed. }
   function RoRefreshed (d: TNode): Boolean;
   var
     i : Integer;
@@ -4642,9 +4786,9 @@ var
     Result := (m = 'l') or (m = 'b') or (m = 'p');
   end;
 
-  { the LOCAL pool a kind names -- 'an allocation in pool P' or 'a
-    view into pool P' (FrameWhat, par 4.3) -- or '' for a frame kind
-    (mirrors Sem.KindPool) }
+  { KindPool answers the LOCAL pool a kind names ('an allocation in
+    pool P' or 'a view into pool P'; FrameWhat, par 4.3), or '' for a
+    frame kind (mirrors Sem.KindPool). }
   function KindPool (const what: string): string;
   begin
     { a view of storage in P is storage in P (Sem.KindPool, 2026-10-18) }
@@ -4657,13 +4801,15 @@ var
     Result := '';
   end;
 
-  { does this right-hand side yield a FRAME-SCOPED string (par 2.3)?
-    A concatenation is one -- it is built in the frame arena -- and so
-    is a bare name that already holds one (fval).  Through parens and
-    SOME.  `u` is the RHS's type, so a numeric `+` (not SLICE OF CHAR)
-    is not mistaken for a concatenation. }
-  { what the name holds: 'a concatenation', 'a frame allocation', or
-    '' when it is not tainted.  The kind rides in fval's Objects. }
+  { This asks whether a right-hand side yields a FRAME-SCOPED string
+    (par 2.3).  A concatenation is one, since it is built in the frame
+    arena, and so is a bare name that already holds one (fval).  The
+    test looks through parens and SOME.  `u` is the RHS's type, so a
+    numeric `+` (not SLICE OF CHAR) is not mistaken for a
+    concatenation. }
+  { FvalKindOf answers what the name holds: 'a concatenation', 'a
+    frame allocation', or '' when it is not tainted.  The kind rides
+    in fval's Objects. }
   function FvalKindOf (const nm: string): string;
   var ix : Integer;
   begin
@@ -4689,16 +4835,17 @@ var
     fvalKind.Add (what);
   end;
 
-  { Is this NEW the FRAME form -- `NEW (T)` or `NEW (T, n...)`, no
-    pool named (docs/pool-elision-plan.md, rule 1)?  Decided by NAME:
-    a first argument that is a variable in scope, HEAP, or OWN is not
-    the frame form.  Quiet; NewForm is the one that diagnoses. }
+  { NewIsFrame asks whether this NEW is the FRAME form: `NEW (T)` or
+    `NEW (T, n...)`, no pool named (docs/pool-elision-plan.md, rule
+    1).  It decides by NAME: a first argument that is a variable in
+    scope, HEAP, or OWN is not the frame form.  It is quiet; NewForm
+    is the one that diagnoses. }
   function DesigName (d: TNode): string; forward;
 
   function NewIsFrame (e: TNode): Boolean; forward;
 
-  { a NEW from a named pool or an object's pool: not the frame form,
-    not OWN (mirrors Sem.IsPoolNew) }
+  { IsPoolNew recognises a NEW from a named pool or an object's pool:
+    not the frame form, not OWN (mirrors Sem.IsPoolNew). }
   function IsPoolNew (e: TNode): Boolean;
   begin
     Result := False;
@@ -4708,7 +4855,8 @@ var
     Result := not NewIsFrame (e);
   end;
 
-  { HEAP, or a name declared POOL in scope (mirrors Sem.IsPoolName) }
+  { IsPoolName recognises HEAP, or a name declared POOL in scope
+    (mirrors Sem.IsPoolName). }
   function IsPoolName (const nm: string): Boolean;
   var q : TNode;
   begin
@@ -4718,10 +4866,11 @@ var
               (q.b = '');
   end;
 
-  { the pool an allocation on the right-hand side names, for the
-    declared-pool check (mirrors Sem.AllocPoolOf): NEW (Q, T) with Q
-    a pool in scope or HEAP, or a call whose result type promises
-    `IN r` with a bare name Q handed to r; '' otherwise }
+  { AllocPoolOf answers the pool an allocation on the right-hand side
+    names, for the declared-pool check (mirrors Sem.AllocPoolOf).
+    That is NEW (Q, T) with Q a pool in scope or HEAP, or a call whose
+    result type promises `IN r` with a bare name Q handed to r.  It
+    answers '' otherwise. }
   function AllocPoolOf (e: TNode): string;
   var
     pr : TProcInfo;
@@ -4766,7 +4915,7 @@ var
               Inc (ix);
             end;
     end;
-    { no promise: a procedure that takes a POOL answers in it, so a
+    { With no promise, a procedure that takes a POOL answers in it, so a
       pointer-bearing answer lives in the first POOL argument
       (corpus/Sem.m9 says what found it, 2026-10-07) }
     if (want < 0) and PtrBearing (rt, 0) then
@@ -4799,15 +4948,16 @@ var
     Result := ScopeMode (e.kids[0].a) = '';
   end;
 
-  { what the frame-scoped value IS, for the diagnostic and the taint:
-    'a concatenation', 'a frame allocation' (a NEW with no pool), or
-    '' when the right-hand side is neither and holds neither }
+  { FrameWhat, below, answers what the frame-scoped value IS, for the
+    diagnostic and the taint: 'a concatenation', 'a frame allocation'
+    (a NEW with no pool), or '' when the right-hand side is neither
+    and holds neither. }
   function DeclPool (t: TNode): TNode; forward;
   function FrameWhat (e: TNode; const u: string): string; forward;
 
-  { the designator's component path for the taint table: the root,
-    `.field' per field selector, `[]' per index (corpus/Sem.m9's
-    DesigPath) }
+  { DesigPath answers the designator's component path for the taint
+    table: the root, `.field' per field selector, `[]' per index
+    (corpus/Sem.m9's DesigPath). }
   function DesigPath (d: TNode): string;
   var a : Integer;
   begin
@@ -4820,10 +4970,11 @@ var
           Result := Result + '[]';
   end;
 
-  { the LOCAL pool an expression's storage lives in, by its shape: the
-    pool a NEW names or a call's `IN r` promise names (AllocPoolOf),
-    or the IN clause of a bare name -- when that pool is a local of
-    this procedure (mirrors Sem.LocalPoolOf) }
+  { LocalPoolOf answers the LOCAL pool an expression's storage lives
+    in, by its shape: the pool a NEW names or a call's `IN r` promise
+    names (AllocPoolOf), or the IN clause of a bare name.  It answers
+    only when that pool is a local of this procedure (mirrors
+    Sem.LocalPoolOf). }
   function LocalPoolOf (e: TNode): string;
   var p : string;
   begin
@@ -4839,8 +4990,9 @@ var
     if (p <> '') and (ScopeMode (p) = 'l') then Result := p;
   end;
 
-  { the local pool a VIEW looks into: a callee that answers RO
-    answers a view of its arguments (DynStr.View), so an argument
+  { ViewedPool answers the local pool a VIEW looks into.  A callee
+    that answers RO answers a view of its arguments (DynStr.View), so
+    an argument
     whose storage is in a local pool makes the answer live there too
     (mirrors Sem.ViewedPool) }
   function ViewedPool (dn, args: TNode): string;
@@ -4862,7 +5014,8 @@ var
     end;
   end;
 
-  { the frame storage a call's answer views (mirrors Sem.ViewedFrame) }
+  { ViewedFrame answers the frame storage a call's answer views
+    (mirrors Sem.ViewedFrame). }
   function ViewedFrame (dn, args: TNode): string;
   var
     pr : TProcInfo;
@@ -4883,11 +5036,12 @@ var
       end;
   end;
 
-  { what the frame-scoped value IS: 'a concatenation', 'a frame
-    allocation', 'the answer of F', 'an allocation in pool P' or 'a
-    view into pool P' for a LOCAL pool P (par 4.3: dies with the
-    frame as the others do, but is neither re-homed nor adopted at
-    exit), or '' (mirrors Sem.FrameWhat) }
+  { FrameWhat answers what the frame-scoped value IS: 'a
+    concatenation', 'a frame allocation', 'the answer of F', 'an
+    allocation in pool P' or 'a view into pool P' for a LOCAL pool P,
+    or ''.  A LOCAL pool dies with the frame as the others do, but is
+    neither re-homed nor adopted at exit (par 4.3).  It mirrors
+    Sem.FrameWhat. }
   function FrameWhat (e: TNode; const u: string): string;
   var nm, p : string;
   begin
@@ -4954,8 +5108,9 @@ var
     Result := FrameWhat (e, u) <> '';
   end;
 
-  { a designator with at most one field selector as the qualident it
-    spells, for the type position of a NEW; nil for anything else }
+  { AsQual answers a designator with at most one field selector as the
+    qualident it spells, for the type position of a NEW.  It answers
+    nil for anything else. }
   function AsQual (d: TNode): TNode;
   begin
     Result := nil;
@@ -5020,10 +5175,10 @@ var
     Result := 'the caller through ' + TgtName (t);
   end;
 
-  { classify ONE resolved store -- SRC is the borrow, CARRIER the
-    local or binder it travelled through ('' when direct) -- and
-    write the ledger line, the undeclared-retention error, and the
-    KEPT justification }
+  { EmitPend classifies ONE resolved store and writes the ledger line,
+    the undeclared-retention error, and the KEPT justification.  SRC
+    is the borrow, CARRIER the local or binder it travelled through
+    ('' when direct). }
   procedure EmitPend (ln, cl: Integer; const src, carrier, dst: string);
   var
     tl : TStringList;
@@ -5048,8 +5203,8 @@ var
     end
     else tl.Add ('<unknown>');
     { the source among the targets is the destination escaping only
-      into the borrow itself -- a tree growing through its own node
-      is not a kept borrow }
+      into the borrow itself.  A tree growing through its own node is
+      not a kept borrow. }
     selfHit := False;
     j2 := 0;
     while j2 < tl.Count do
@@ -5081,16 +5236,17 @@ var
         dn + ' -- reaches ' + msg2 + ' (par 4.1/4.2)';
       { the CHECK behind the measurement: a retention must be in the
         signature, the way a raise must be in RAISES.  '<call>' alone
-        does not fire it -- whether a callee keeps its argument is
-        that callee's declaration to make, and the caller check reads
-        it there (par 4.1). }
+        does not fire it: the callee's own declaration says whether it
+        keeps its argument, and the caller check reads it there
+        (par 4.1). }
       msgE := '';
       used := False;
-      { nor '<return>': a borrow that reaches the answer is handed
-        back, not kept -- the answer carries it; nor a VAR parameter's
-        own storage ('>tg'): handed back through the argument, which
-        carries it in the caller (Sem.EmitPend, 2026-10-18).  Neither
-        justifies a KEPT either; a callee's declared keeping does. }
+      { Nor does '<return>' fire it: a borrow that reaches the answer
+        is handed back, not kept, and the answer carries it.  Nor does
+        a VAR parameter's own storage ('>tg'): the borrow is handed
+        back through the argument, which carries it in the caller
+        (Sem.EmitPend, 2026-10-18).  Neither justifies a KEPT either;
+        a callee's declared keeping does. }
       for j2 := 0 to tl.Count - 1 do
         if (tl[j2] <> '<return>') and (TgtName (tl[j2]) = tl[j2]) then
         begin
@@ -5113,8 +5269,9 @@ var
   end;
 
   { ---- P3 pass 2: owned-pointer state (par 4.2) ----
-    Tracked: locals and OWN params of type PTR T (no IN -- the pool
-    owns those) and SHARED PTR T.  Absent from ownState = alive.
+    The pass tracks locals and OWN params of type PTR T (no IN: the
+    pool owns those) and SHARED PTR T.  A name absent from ownState is
+    alive.
     Flow is per-procedure: branches merge conservatively (moved in
     any arm counts as moved after the join); a move inside a loop
     carries into the next turn (LoopCarry, 2026-10-10).              }
@@ -5136,10 +5293,10 @@ var
 
   { DISPOSE frees only a name that may OWN what it holds (mirrors
     Sem.OwnFedSeed, 2026-10-10) }
-  { is the callee DN a procedure value -- a parameter or an IS SOME
-    binder of a procedure type?  0 when not; 1 when no parameter of the
-    type can carry a reference; 2 when one can.  Mirrors Sem.ProcValKind
-    (2026-10-28). }
+  { ProcValKind asks whether the callee DN is a procedure value: a
+    parameter or an IS SOME binder of a procedure type.  It answers 0
+    when not, 1 when no parameter of the type can carry a reference,
+    and 2 when one can.  It mirrors Sem.ProcValKind (2026-10-28). }
   function ProcValKind (dn: TNode): Integer;
   var sty, ptn, pl : TNode; g : Integer; was : string;
   begin
@@ -5190,9 +5347,9 @@ var
                 (ownFed.IndexOf (r.a) >= 0);
   end;
 
-  { a name that cannot own what it points to: DISPOSE's refusal, asked
-    by every operation that consumes an owner.  Mirrors Sem.OwnsNothing
-    (2026-10-28). }
+  { OwnsNothing recognises a name that cannot own what it points to.
+    It is DISPOSE's refusal, asked by every operation that consumes an
+    owner.  It mirrors Sem.OwnsNothing (2026-10-28). }
   function OwnsNothing (const nm: string): Boolean;
   begin
     Result := ((ScopeMode (nm) = 'l') or (ownModule and (ScopeMode (nm) = 'm'))) and
@@ -5370,9 +5527,10 @@ var
   end;
 
   function DesigName (d: TNode): string;
-  { the dotted callee name: `P', `Mod.P', `Type.Variant', and -- since
-    2026-09-15 -- `Mod.Type.Variant', the three-part imported variant
-    constructor.  Every field selector joins; a call target is only
+  { DesigName answers the dotted callee name: `P', `Mod.P',
+    `Type.Variant', and, since 2026-09-15, `Mod.Type.Variant', the
+    three-part imported variant constructor.  Every field selector
+    joins; a call target is only
     ever one of these shapes, because F(x).field does not parse and a
     field chain cannot be called.  A leading index or deref stops it. }
   var i : Integer;
@@ -5394,16 +5552,18 @@ var
       NEW (pool, T ...)   the named pool, as it always was
       NEW (OWN, T)        one owned T: DISPOSE, SHARED, THREAD (par 4.2)
 
-    Answers 'frame', 'pool' or 'own', or '' after diagnosing.  ty is
-    the type's node and ext0 the index of the first extent, whose kid
-    is nil when there is none.  Mirrors Sem.NewForm. }
-  { PtrBearing -- can a value of this type carry a pointer? -- is a
-    method of TSem since 2026-10-18, so that ParamBearing can ask it
-    from the view-evidence walks; see TSem.PtrBearing }
+    NewForm answers 'frame', 'pool' or 'own', or '' after diagnosing.
+    ty is the type's node and ext0 the index of the first extent,
+    whose kid is nil when there is none.  It mirrors Sem.NewForm. }
+  { PtrBearing, which asks whether a value of this type can carry a
+    pointer, is a method of TSem since 2026-10-18, so that
+    ParamBearing can ask it from the view-evidence walks.  See
+    TSem.PtrBearing. }
 
-  { does a VAR parameter of this type carry its object's pool as a
-    hidden argument (docs/pool-elision-plan.md, rule 2)?  Mirrors
-    Sem.PtrParamTy: PTR and OPT PTR by node kind, a pointer-bearing
+  { PtrParamTy asks whether a VAR parameter of this type carries its
+    object's pool as a hidden argument (docs/pool-elision-plan.md,
+    rule 2).  It mirrors Sem.PtrParamTy: PTR and OPT PTR by node kind,
+    a pointer-bearing
     record, monitor, array or variant by resolution, never a bare
     slice or grid. }
   function PtrParamTy (t: TNode): Boolean;
@@ -5425,8 +5585,9 @@ var
       Result := PtrBearing (t, 0);
   end;
 
-  { the pool a declared type names: the IN clause of `PTR T IN p` or
-    `OPT PTR T IN p`, through a type name; nil for anything else }
+  { DeclPool answers the pool a declared type names: the IN clause of
+    `PTR T IN p` or `OPT PTR T IN p`, through a type name.  It answers
+    nil for anything else. }
   function DeclPool (t: TNode): TNode;
   var r : TNode;
   begin
@@ -5437,15 +5598,26 @@ var
     if r.kind = nkPtrType then Result := r.kids[1];
   end;
 
-  { may the callee allocate THROUGH its VAR pointer parameter j: a NEW
-    on it, or it handed on as VAR to a callee that does (mirrors
-    Sem.AllocsThrough; memoised in ansMemo as `alloc Mod.Proc#j') }
+  { AllocsThrough asks whether the callee may allocate THROUGH its VAR
+    pointer parameter j: a NEW on it, or it handed on as VAR to a
+    callee that does (mirrors Sem.AllocsThrough; memoised in ansMemo
+    as `alloc Mod.Proc#j'). }
   function AllocsThrough (const pr: TProcInfo; j: Integer): Boolean;
   var
     key, nm, wasCtx : string;
     ix, g, b, q : Integer;
     mon : Boolean;
     rt : TNode;
+    { IsPoolField asks whether designator d selects a POOL field, by
+      the type recorded for its last step (mirrors Sem.PoolField). }
+    function IsPoolField (d: TNode): Boolean;
+    var t : TNode;
+    begin
+      Result := False;
+      if Length (d.kids) = 0 then Exit;
+      t := M9AST.TypeAt (d.kids[High (d.kids)]);
+      Result := (t <> nil) and (t.kind = nkQualident) and (t.a = 'POOL') and (t.b = '');
+    end;
     function Walk (k: TNode): Boolean;
     var
       i, g, b, a : Integer;
@@ -5470,7 +5642,10 @@ var
       if (k.kind = nkCallExpr) and (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) and
          (Length (k.kids[0].kids) = 0) and (k.kids[0].a = 'UTF') and (k.kids[1] <> nil) and
          (Length (k.kids[1].kids) = 2) and (k.kids[1].kids[0] <> nil) and
-         (k.kids[1].kids[0].kind = nkDesignator) and (k.kids[1].kids[0].a = nm) then Exit (True);
+         (k.kids[1].kids[0].kind = nkDesignator) and (k.kids[1].kids[0].a = nm) and
+         { UTF (d.p, s) on a pool field is exempt as NEW (d.p, T) is
+           (mirrors Sem.UtfPoolField) }
+         not ((allocNoPool or mon) and IsPoolField (k.kids[1].kids[0])) then Exit (True);
       if ((k.kind = nkCallExpr) or (k.kind = nkCallStmt)) and (k.kids[0] <> nil) and
          (k.kids[0].kind = nkDesignator) then
       begin
@@ -5483,11 +5658,13 @@ var
             cn := k.kids[0].a;
             break;
           end;
-        { a call through a procedure value handed the parameter or a
-          component of it (mirrors Sem.AllocWalk; the fourth review's
-          AllocValue) }
+        { This covers a call through a procedure value handed the
+          parameter or a component of it (mirrors Sem.AllocWalk; the
+          fourth review's AllocValue). }
         if not ProcNamed (pr.modName, cn, cpr) and
            not ((Length (k.kids[0].kids) = 0) and InList (cn, ScalarFnNames)) and
+           { the UTF builtin is no procedure value (mirrors Sem) }
+           not ((Length (k.kids[0].kids) = 0) and (cn = 'UTF')) and
            (k.kids[1] <> nil) then
           for i := 0 to High (k.kids[1].kids) do
             if (k.kids[1].kids[i] <> nil) and (k.kids[1].kids[i].kind = nkDesignator) and
@@ -5506,7 +5683,9 @@ var
                 begin
                   if (a <= High (al.kids)) and pl.kids[g].f1 and (al.kids[a] <> nil) and
                      (al.kids[a].kind = nkDesignator) and (al.kids[a].a = nm) and
-                     not (allocNoPool and (pl.kids[g].kids[1] <> nil) and
+                     { a POOL parameter handed d.p: a THREAD's own pool, or
+                       a MONITOR's under its lock (mirrors Sem.AllocWalk) }
+                     not ((allocNoPool or mon) and (pl.kids[g].kids[1] <> nil) and
                           (pl.kids[g].kids[1].kind = nkQualident) and
                           (pl.kids[g].kids[1].a = 'POOL') and (pl.kids[g].kids[1].b = '')) then
                     if AllocsThrough (cpr, a) then Exit (True);
@@ -5524,7 +5703,8 @@ var
     if AnsGet (key, Result) then Exit;
     AnsPut (key, 'busy');
     Result := False;
-    { is parameter j of a MONITOR type, read in the callee's module }
+    { Ask whether parameter j is of a MONITOR type, read in the
+      callee's module. }
     mon := False;
     q := 0;
     if (pr.node <> nil) and (pr.node.kids[0] <> nil) then
@@ -5550,8 +5730,8 @@ var
     if Result then AnsPut (key, 'yes') else AnsPut (key, 'no');
   end;
 
-  { AllocsThrough for a THREAD's target, a POOL argument its own pool
-    (mirrors Sem.CheckThread's allocNoPool) }
+  { ThreadAllocs is AllocsThrough for a THREAD's target, a POOL
+    argument its own pool (mirrors Sem.CheckThread's allocNoPool). }
   function ThreadAllocs (const pr: TProcInfo; perWorker: Boolean): Boolean;
   begin
     { a POOL field or argument is the worker's own only when each thread
@@ -5561,10 +5741,10 @@ var
     allocNoPool := False;
   end;
 
-  { the pool of the object a designator names, as a call handing the
-    object to a VAR pointer parameter needs it (rule 2): '' when the
-    generator can name it from the ROOT, else why not.  Mirrors
-    Sem.ObjPoolIssue. }
+  { ObjPoolIssue answers the pool of the object a designator names, as
+    a call handing the object to a VAR pointer parameter needs it
+    (rule 2).  It answers '' when the generator can name it from the
+    ROOT, else why not.  It mirrors Sem.ObjPoolIssue. }
   function ObjPoolIssue (a: TNode): string;
   var
     m, root : string;
@@ -5621,10 +5801,10 @@ var
     Result := '';
   end;
 
-  { a name a KNOWN module does not declare, a type nobody declares in
-    a NEW, a bare name on the left of `:=' declared nowhere: typos,
-    said with the generator's wording (corpus/Sem.m9 says what found
-    each, 2026-10-08) }
+  { These catch typos: a name a KNOWN module does not declare, a type
+    nobody declares in a NEW, a bare name on the left of `:=' declared
+    nowhere.  They say them with the generator's wording (corpus/Sem.m9
+    says what found each, 2026-10-08). }
   function ModHasName (const modName, nm: string): Boolean;
   var
     m : TModuleInfo;
@@ -5704,8 +5884,9 @@ var
       if isVar and (Length (d.kids) = 0) and (ScopeMode (d.a) = 'v') and
          PtrParamTy (ScopeType (d.a)) then
       begin
-        { `NEW (d, T)`: the pool d's object lives in, carried in by
-          rule 2 -- how a VAR pointer parameter grows its object }
+        { `NEW (d, T)` allocates in the pool d's object lives in,
+          carried in by rule 2.  That is how a VAR pointer parameter
+          grows its object. }
         ty := AsQual (e.kids[1]);
         if ty <> nil then
         begin
@@ -5759,14 +5940,15 @@ var
 
   { THE LOOP VARIABLE IS A VARIABLE: declared, of a type its bounds
     can count in, and of that type inside the loop.  Until 2026-10-02
-    FOR bound the name afresh -- as an I64 here, with no type at all
-    in Sem.m9 -- over whatever had been declared, so both checkers
+    FOR bound the name afresh (as an I64 here, with no type at all in
+    Sem.m9) over whatever had been declared, so both checkers
     accepted a loop variable nobody declared, or one declared F64,
     and Sem.m9 passed over every use of every loop variable.
       bound -- the bounds' type when they are an enumeration's
       enum  -- whether they are }
-  { a FOR inside a FOR over the SAME control variable (mirrors Sem's
-    NFor arm, cp-kernel's issue 3, 2026-10-09) }
+  { CheckForNest catches a FOR inside a FOR over the SAME control
+    variable (mirrors Sem's NFor arm, cp-kernel's issue 3,
+    2026-10-09). }
   procedure CheckForNest (st: TNode);
   var j : Integer;
   begin
@@ -5791,7 +5973,7 @@ var
     SetLength (forLines, Length (forLines) - 1);
     SetLength (forPlain, Length (forPlain) - 1);
   end;
-  { FOR x IN s (mirrors Sem.CheckForIn, 2026-10-11) }
+  { CheckForIn checks FOR x IN s (mirrors Sem.CheckForIn, 2026-10-11). }
   function CheckForIn (st: TNode): Boolean;
   var t, elem, vt : string; at : Integer;
   begin
@@ -5874,11 +6056,11 @@ var
     end;
   end;
 
-  { each integer bound held to the loop variable's type, as an
-    assignment's right side is (mirrors Sem.CheckForFit): the variable
-    takes both values, and the generator compares in its type, so a
-    bound it cannot hold -- an I64 for an I32, 300 for an I8 -- was
-    truncated in C (2026-10-21, the compiler review's G5) }
+  { CheckForFit holds each integer bound to the loop variable's type,
+    as an assignment's right side is (mirrors Sem.CheckForFit).  The
+    variable takes both values, and the generator compares in its
+    type.  So a bound it cannot hold (an I64 for an I32, 300 for an
+    I8) was truncated in C (2026-10-21, the compiler review's G5). }
   procedure CheckForFit (st: TNode; const lo, hi: string);
   var vt, bt : string; k : Integer; b : TNode; lv : Int64;
   begin
@@ -5899,8 +6081,9 @@ var
     end;
   end;
 
-  { the canonical enumeration (or case-record) type an ARRAY bound
-    names, or '' when the bound is an integer.  ARRAY Colour OF T is
+  { ArrEnumBoundOf answers the canonical enumeration (or case-record)
+    type an ARRAY bound names, or '' when the bound is an integer.
+    ARRAY Colour OF T is
     indexed by the type: its subscript is a member, not an ordinal, so
     the index check wants the enumeration here (docs/enum-plan.md
     part 2). }
@@ -5926,15 +6109,15 @@ var
     if IsTagged (canon) then Result := canon;
   end;
 
-  { the designator walk over DECLARED type nodes; guard mode is the
-    operand of IS, where the final OPT component is legal.  Errors
+  { The designator walk goes over DECLARED type nodes.  Guard mode is
+    the operand of IS, where the final OPT component is legal.  Errors
     fire only when a selector is applied THROUGH an OPT or CASE
     RECORD component; the walk goes soft (nil) on anything unknown. }
-  { a selector the type it is applied to cannot take (mirrors
-    Sem.SelRefuse): a field of a slice, an array, an enumeration or a
-    scalar, a subscript of a record, a monitor, an enumeration or a
-    scalar -- passed by the checker, refused by the generator as
-    `unsupported yet' until 2026-10-22 }
+  { SelRefuse refuses a selector the type it is applied to cannot take
+    (mirrors Sem.SelRefuse): a field of a slice, an array, an
+    enumeration or a scalar, a subscript of a record, a monitor, an
+    enumeration or a scalar.  Until 2026-10-22 the checker passed
+    these and the generator refused them as `unsupported yet'. }
   procedure SelRefuse (d: TNode; const ctx: string; sel, ty: TNode);
   var whole : string;
   begin
@@ -5949,9 +6132,10 @@ var
         TypeText (ty) + ' is no array, slice, grid or string');
   end;
 
-  { the selectors of d from kid FROM on, walked from the type START
-    (mirrors Sem.SelWalk): a designator's from its name, a call's
-    answer -- F (x).f, nkCallSel -- from the callee's declared result }
+  { SelWalk walks the selectors of d from kid FROM on, from the type
+    START (mirrors Sem.SelWalk).  A designator's selectors start from
+    its name.  A call's answer (F (x).f, nkCallSel) starts from the
+    callee's declared result. }
   function SelWalk (d: TNode; guard: Boolean; start: TNode;
                     from: Integer): TNode;
   var
@@ -6091,8 +6275,9 @@ var
             declN := nil;
           end;
       end;
-      { the typed tree: what this selector reaches, qualified where it
-        was declared, for the generator to read (M9AST.SetType) }
+      { Record the typed tree: what this selector reaches, qualified
+        where it was declared, for the generator to read
+        (M9AST.SetType). }
       SetType (sel, declN);
     end;
     Result := declN;
@@ -6103,16 +6288,18 @@ var
     Result := SelWalk (d, guard, ScopeType (d.a), 0);
   end;
 
-  { the declared result type of the procedure a call names, qualified
-    in the callee's module; nil for a call through a procedure value
-    or a callee the checker does not know (mirrors Sem.CallResultNode) }
+  { CallResultNode answers the declared result type of the procedure a
+    call names, qualified in the callee's module.  It answers nil for
+    a call through a procedure value or a callee the checker does not
+    know (mirrors Sem.CallResultNode). }
   function CallResultNode (ce: TNode): TNode;
   var pr : TProcInfo; nm : string; i : Integer; any : Boolean;
   begin
     Result := nil;
     if (ce = nil) or (ce.kind <> nkCallExpr) or (ce.kids[0] = nil) then Exit;
-    { the procedure the call IS: a UTF argument sends it to its Utf twin,
-      read from the recorded types (mirrors Sem.CallResultNode) }
+    { Find the procedure the call IS.  A UTF argument sends it to its
+      Utf twin, read from the recorded types (mirrors
+      Sem.CallResultNode). }
     nm := DesigName (ce.kids[0]);
     any := False;
     if ce.kids[1] <> nil then
@@ -6129,13 +6316,13 @@ var
     Result := InMod (pr.node.kids[1], pr.modName);
   end;
 
-  { a designator as an expression: module CONSTs and payload-less
-    variant constructors (Type.Variant) included }
-  { is a BARE name one the checker knows -- in scope (any mode,
-    including a nil-typed IS SOME binder), a local/impl CONST, a
-    def-module CONST referenced across the pair, a predeclared
-    identifier, a builtin or user type name, or a module?  If none
-    of these, it is undefined, not merely unknown-typed. }
+  { This types a designator as an expression, module CONSTs and
+    payload-less variant constructors (Type.Variant) included. }
+  { BareNameKnown asks whether a BARE name is one the checker knows:
+    in scope (any mode, including a nil-typed IS SOME binder), a
+    local/impl CONST, a def-module CONST referenced across the pair, a
+    predeclared identifier, a builtin or user type name, or a module.
+    If none of these, it is undefined, not merely unknown-typed. }
   function BareNameKnown (const nm: string): Boolean;
   var mi2, j2 : Integer;
   begin
@@ -6193,9 +6380,10 @@ var
         of its own so that using it anywhere but a VIEW axis is a
         type error naming ALL rather than an unknown name. }
       if (d.a = 'ALL') and (Length (d.kids) = 0) then Exit ('<all>');
-      { HEAP, the same way: a predeclared POOL that outlives the
-        program's frames and is never freed.  Named rather than
-        implicit, so `PTR T IN HEAP` still says which pool, and so a
+      { HEAP works the same way: it is a predeclared POOL that
+        outlives the program's frames and is never freed.  It is named
+        rather than implicit, so `PTR T IN HEAP` still says which
+        pool, and so a
         program that must not grow can grep for it (par 4.3). }
       if (d.a = 'HEAP') and (Length (d.kids) = 0) then Exit ('POOL');
       ci := constMap.IndexOfName (d.a);
@@ -6226,12 +6414,13 @@ var
       if (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) and
          FindVariant (d.a, d.kids[0].a, om, fn) then
         Exit (om + '.' + d.a);
-      { Mod.Type.Variant with no payload: the cross-module twin of the
-        two-part form, Palette.Hue.Warm.  d.a is a module (not in
+      { Mod.Type.Variant with no payload is the cross-module twin of
+        the two-part form, Palette.Hue.Warm.  d.a is a module (not in
         scope, or ScopeType would not be nil), the first selector its
-        enumeration or case-record type, the second a member.  Typing
-        it is what lets FOR over an imported enumeration reach the enum
-        branch instead of the integer path (docs/enum-plan.md part 2). }
+        enumeration or case-record type, the second a member.  Its
+        type is what lets FOR over an imported enumeration reach the
+        enum branch instead of the integer path (docs/enum-plan.md
+        part 2). }
       if (Length (d.kids) = 2) and (d.kids[0].kind = nkSelField) and
          (d.kids[1].kind = nkSelField) and
          VariantIn (d.a, d.kids[0].a, d.kids[1].a, om, fn) then
@@ -6248,12 +6437,13 @@ var
     Result := CT (DesigDeclType (d, guard));
   end;
 
-  { P3 pass 1: is this assignment target legal to write, and does
-    the write land beyond the current frame?  A value parameter of
-    pointer type is a shared read-only borrow (par 4.1): writing
-    through it is an error.  A [RO] slice never accepts a
-    write.  Returns True when the write dereferences a pointer or
-    lands in slice storage -- i.e. outlives the frame.               }
+  { P3 pass 1: CheckWrite0 asks whether this assignment target is
+    legal to write, and whether the write lands beyond the current
+    frame.  A value parameter of pointer type is a shared read-only
+    borrow (par 4.1): a write through it is an error.  A [RO] slice
+    never accepts a write.  CheckWrite0 returns True when the write
+    dereferences a pointer or lands in slice storage, i.e. outlives
+    the frame. }
   function CheckWrite0 (d: TNode): Boolean; forward;
 
   { a write THROUGH a name given read-only storage (RoSeed) is refused
@@ -6292,8 +6482,8 @@ var
         ' (par 2.4)');
     { par 3.2: a PURE procedure has no observable effect, so the two
       ways a body can be observed from outside its own frame are
-      refused -- writing through a caller's binding, and writing the
-      module's state.  Writing a local or a value parameter is
+      refused: a write through a caller's binding, and a write to the
+      module's state.  A write to a local or a value parameter is
       invisible to everyone and stays legal. }
     if curPure then
     begin
@@ -6331,9 +6521,9 @@ var
       case sel.kind of
         nkSelField :
           { RO on a FIELD annotates the view, not the slot: the field
-            holds a borrowed slice, so writing THROUGH it is refused
-            while assigning the field itself -- which is how the
-            record gets filled at all -- stays legal.  C says the
+            holds a borrowed slice, so a write THROUGH it is refused.
+            An assignment to the field itself stays legal, since that
+            is how the record gets filled at all.  C says the
             same thing with `const char *p`.  On a PARAMETER, RO
             forbids both, as Ada's `in` does: there is no
             construction step to make room for. }
@@ -6380,9 +6570,10 @@ var
     end;
   end;
 
-  { CheckWrite0's answer alone -- does a store into designator D land
-    beyond the frame -- with none of its refusals, for a VAR argument
-    a callee fills with a view (the hand-back; mirrors Sem.DerefBeyond) }
+  { DerefBeyond gives CheckWrite0's answer alone, with none of its
+    refusals: whether a store into designator D lands beyond the
+    frame.  It serves a VAR argument a callee fills with a view (the
+    hand-back; mirrors Sem.DerefBeyond). }
   function DerefBeyond (d: TNode): Boolean;
   var
     j : Integer;
@@ -6432,8 +6623,8 @@ var
     end;
   end;
 
-  { the base name a stored reference is borrowed from, if the source
-    is a plain designator (possibly under SOME/parens) }
+  { IsRefTy asks whether a type, OPT stripped, is a reference: a PTR,
+    a SHARED PTR or a SLICE. }
   function IsRefTy (const s0: string): Boolean;
   var s : string;
   begin
@@ -6443,9 +6634,10 @@ var
               StartsWithS (s, 'SLICE OF ');
   end;
 
-  { does a value of canonical type U carry a reference: a pointer or
-    slice itself (IsRefTy), or a record, case record, array or OPT
-    that holds one by resolution (PtrBearing)?  Mirrors Sem.TyBearing. }
+  { TyBearing asks whether a value of canonical type U carries a
+    reference: a pointer or slice itself (IsRefTy), or a record, case
+    record, array or OPT that holds one by resolution (PtrBearing).  It
+    mirrors Sem.TyBearing. }
   function TyBearing (const u: string): Boolean;
   var dot : Integer; t : TNode;
   begin
@@ -6460,18 +6652,19 @@ var
     Result := PtrBearing (t, 0);
   end;
 
-  { one reference-valued source stored by an assignment: pended when
-    the destination outlives the frame, carried by a local or binder,
-    an escape fact when rooted in frame storage.  Mirrors Sem.StoreRef. }
+  { StoreRef handles one reference-valued source stored by an
+    assignment.  It is pended when the destination outlives the frame,
+    carried by a local or binder, and an escape fact when rooted in
+    frame storage.  It mirrors Sem.StoreRef. }
   procedure StoreRef (st, lhs: TNode; const vname: string; beyond: Boolean;
                       const lhsMode: string);
   var m, dst : string;
   begin
     m := ScopeMode (vname);
-    { a store into a VAR parameter's OWN storage -- not beyond -- hands
-      the borrow back to the caller through that parameter; marked
+    { A store into a VAR parameter's OWN storage (not beyond) hands the
+      borrow back to the caller through that parameter.  It is marked
       '>' so that EmitPend records the reach without demanding KEPT
-      (Sem.StoreRef, 2026-10-18) }
+      (Sem.StoreRef, 2026-10-18). }
     dst := lhs.a;
     if (lhsMode = 'v') and not beyond then dst := '>' + lhs.a;
     if ((m = 'p') or (m = 'v') or (m = 'r') or (m = 'l') or (m = 'b')) and
@@ -6488,10 +6681,10 @@ var
     if IsFrameMode (m) then EscStore (dst, Length (lhs.kids) > 0, vname);
   end;
 
-  { the fields, flattened, of the variant or record a call CONSTRUCTS
-    -- `Data.F64s (v, miss)', `Mod.T.Arm (...)', `Row (a, b)' -- and
-    their module in OM; False when the call constructs nothing.
-    Mirrors Sem.CtorFields. }
+  { CtorFlat answers the fields, flattened, of the variant or record a
+    call CONSTRUCTS (`Data.F64s (v, miss)', `Mod.T.Arm (...)',
+    `Row (a, b)'), and their module in OM.  It answers False when the
+    call constructs nothing.  It mirrors Sem.CtorFields. }
   function CtorFlat (e: TNode; out om: string; out flat: TNodeArr): Boolean;
   var
     dn, fields, rn : TNode;
@@ -6538,8 +6731,8 @@ var
     Result := True;
   end;
 
-  { the borrows a CONSTRUCTOR on the right-hand side wraps, each
-    stored as the borrow itself would be.  Mirrors the loop in
+  { CtorStores stores the borrows a CONSTRUCTOR on the right-hand side
+    wraps, each as the borrow itself would be.  It mirrors the loop in
     Sem.CheckAssign. }
   procedure CtorStores (st: TNode; beyond: Boolean; const lhsMode: string);
   var
@@ -6567,7 +6760,8 @@ var
       end;
   end;
 
-  { par 4.1, one root handed to a KEPT parameter -- Sem.KeptRoot }
+  { KeptRoot checks par 4.1 for one root handed to a KEPT parameter
+    (Sem.KeptRoot). }
   procedure KeptRoot (site: TNode; const ctx, name: string; k: Integer;
                       const aroot: string);
   var amode : string;
@@ -6586,12 +6780,13 @@ var
       EscTarget (aroot, '<call>');
   end;
 
-  { par 4.1 for a POOL handed to a KEPT parameter: KeptRoot's rule
-    applied to the pool by the root of its designator.  HEAP and a
+  { KeptPool applies par 4.1 to a POOL handed to a KEPT parameter:
+    KeptRoot's rule applied to the pool by the root of its
+    designator.  HEAP and a
     module's pools outlive the callee's state; a pool reached from a
     parameter is a borrow the caller declares KEPT in turn; a local
     pool, or a pool field of a local, a binder or an owned object, is
-    refused.  Mirrors Sem.KeptPool (2026-10-28). }
+    refused.  It mirrors Sem.KeptPool (2026-10-28). }
   procedure KeptPool (site: TNode; const ctx, name: string; k: Integer;
                       an: TNode);
   var a : TNode; amode, why : string;
@@ -6619,7 +6814,8 @@ var
       [k + 1, name, DesigName (a), why]));
   end;
 
-  { does this designator's declared base type resolve to a pointer? }
+  { BaseIsPtr asks whether this designator's declared base type
+    resolves to a pointer. }
   function BaseIsPtr (d: TNode): Boolean;
   var res : TNode;
   begin
@@ -6636,8 +6832,9 @@ var
       Result := Result + Length (pl.kids[a].kids[0].kids);
   end;
 
-  { one function for every call site: RAISES accounting, resolution,
-    arity, argument typing, and the result type.  '<void>' is a call
+  { CallType is one function for every call site: RAISES accounting,
+    resolution, arity, argument typing, and the result type.  '<void>'
+    is a call
     that returns nothing; '' is a call whose result is unknown.      }
   function CallType (dnode, argl, site: TNode): string;
   var
@@ -6672,8 +6869,9 @@ var
           [name, want, nargs]));
     end;
 
-    { is the pool P itself one of the arguments?  Then the callee
-      keeps in P what it keeps (mirrors Sem.PoolAmong) }
+    { PoolAmong asks whether the pool P itself is one of the
+      arguments.  Then the callee keeps in P what it keeps (mirrors
+      Sem.PoolAmong). }
     function PoolAmong (const p: string): Boolean;
     var i : Integer;
     begin
@@ -6685,8 +6883,8 @@ var
           Exit (True);
     end;
 
-    { COPY (to, from): two slices or arrays of one scalar element type,
-      `to' writable (mirrors Sem.CheckCopy) }
+    { CopyCheck checks COPY (to, from): two slices or arrays of one
+      scalar element type, `to' writable (mirrors Sem.CheckCopy). }
     procedure CopyCheck (const toTy, fromTy: string; toArg: TNode);
     var
       te, fe, w : string;
@@ -6771,8 +6969,8 @@ var
     if argl <> nil then nargs := Length (argl.kids);
     SetLength (aTy, nargs);
     SetLength (aNode, nargs);
-    { MAX (I64), SizeOf (T): a type is the argument; LEN refuses one in
-      its own words (mirrors Sem) }
+    { In MAX (I64) and SizeOf (T) a type is the argument; LEN refuses
+      one in its own words (mirrors Sem). }
     typeArgOk := (name = 'MAX') or (name = 'SizeOf') or (name = 'LEN');
     for j := 0 to nargs - 1 do
     begin
@@ -6786,8 +6984,8 @@ var
     if (nargs = 2) and (name = 'UTF') and UtfName (name) then
     begin
       calls.Add (name);
-      { the pool as NEW takes it: a POOL, or a VAR pointer parameter whose
-        object's pool it is (mirrors Sem.ObjPoolArg) }
+      { The pool goes as NEW takes it: a POOL, or a VAR pointer
+        parameter whose object's pool it is (mirrors Sem.ObjPoolArg). }
       if (aTy[0] <> '') and (aTy[0] <> 'POOL') and
          not ((aNode[0] <> nil) and (aNode[0].kind = nkDesignator) and
               (Length (aNode[0].kids) = 0) and (ScopeMode (aNode[0].a) = 'v') and
@@ -6828,8 +7026,8 @@ var
       argument is `Math.SqrtF32 (x)`, because sqrtf's answer is not
       sqrt's answer narrowed and a port held bit-identical to a
       single-precision original needs the single-precision libm.  The
-      twin has to EXIST -- the suffix is how a module declares a
-      function width-generic -- so nothing changes for a module that
+      twin has to EXIST (the suffix is how a module declares a
+      function width-generic), so nothing changes for a module that
       declares none. }
     if (nargs >= 1) and (Length (name) > 3) and
        (Copy (name, Length (name) - 2, 3) <> 'F32') then
@@ -6865,9 +7063,9 @@ var
       { I64 of a NARROWER integer is TOTAL: every BYTE, I8..I32 and
         U8..U32 value is an I64 value, as are C.Int and C.SSizeT,
         so the conversion has no failing case
-        and must not be made to declare one.  Requiring RAISES here
-        would push a ValueRange nobody can trigger up through every
-        caller of a foreign wrapper -- the accounting would stop
+        and must not be made to declare one.  A RAISES requirement
+        here would push a ValueRange nobody can trigger up through
+        every caller of a foreign wrapper.  The accounting would stop
         describing what can actually happen, which is the only thing
         that makes exhaustive RAISES worth having.  (par 2 pass 4,
         pre-registered; narrowing conversions still raise.) }
@@ -6891,10 +7089,12 @@ var
       if not curUnsafe then
         ErrN (site, ctx, 'ADR exists only inside UNSAFE modules');
       Arity (1);
-      { of read-only storage or of a UTF: a const pointer, which no
-        C.MutPtr parameter takes (mirrors Sem; the third review's T4, T6) }
-      { of a variable whose type holds a reference, unless the procedure
-        states [FRESH] (mirrors Sem; the second review's S9) }
+      { ADR of read-only storage or of a UTF answers a const pointer,
+        which no C.MutPtr parameter takes (mirrors Sem; the third
+        review's T4, T6). }
+      { ADR of a variable whose type holds a reference is refused,
+        unless the procedure states [FRESH] (mirrors Sem; the second
+        review's S9). }
       if (nargs = 1) and not curFresh and (aTy[0] <> '') and
          not StartsWithS (aTy[0], 'SLICE OF ') and not StartsWithS (aTy[0], 'ARRAY ') and
          not StartsWithS (aTy[0], 'GRID ') and (aTy[0] <> UtfTy) and TyBearing (aTy[0]) then
@@ -6919,8 +7119,8 @@ var
     if name = 'LEN' then
     begin
       { LEN (s) on a slice or array; LEN (g, axis) on a grid, because
-        a grid has one length per axis and answering "the length"
-        would be answering a question nobody asked }
+        a grid has one length per axis.  An answer of "the length"
+        would answer a question nobody asked. }
       if nargs = 2 then
       begin
         if GridRank (aTy[0]) = 0 then
@@ -6966,8 +7166,8 @@ var
     end;
   if name = 'NAME' then
   begin
-    { the identifier text of an enumeration member (or any case-record
-      variant), as a STR: NAME (Colour.Red) is 'Red' }
+    { NAME answers the identifier text of an enumeration member (or any
+      case-record variant), as a STR: NAME (Colour.Red) is 'Red'. }
     Arity (1);
     if (nargs = 1) and not IsTagged (aTy[0]) and (aTy[0] <> '') then
       ErrN (site, ctx, 'NAME needs an enumeration or a case record, not '
@@ -6976,8 +7176,9 @@ var
   end;
     if name = 'VIEW' then
     begin
-      { VIEW (g, i, ALL, ...) -- one argument per axis: an index drops
-        that axis, ALL keeps it.  The rank of the answer is therefore
+      { VIEW (g, i, ALL, ...) takes one argument per axis: an index
+        drops that axis, ALL keeps it.  The rank of the answer is
+        therefore
         computable here, which is what lets a view be typed at all. }
       if nargs < 2 then
       begin
@@ -7021,10 +7222,10 @@ var
         Exit (aNode[0].a);
       Exit ('');
     end;
-    { SizeOf (x): the byte size of x's type (I64).  Accepts a type
-      name or a value; a slice's SizeOf is its descriptor, the data
-      is ByteSize.  In-memory only -- a wire uses the exact-width
-      types and ToBytesLE. }
+    { SizeOf (x) answers the byte size of x's type (I64).  It accepts a
+      type name or a value; a slice's SizeOf is its descriptor, the
+      data is ByteSize.  It is in-memory only: a wire uses the
+      exact-width types and ToBytesLE. }
     if name = 'SizeOf' then
     begin
       Arity (1);
@@ -7051,7 +7252,7 @@ var
     if (Length (name) > 2) and (Copy (name, 1, 2) = 'C.') then
     begin
       Arity (1);
-      { Sem.CTotal: a C.* conversion that narrows raises ValueRange --
+      { Sem.CTotal: a C.* conversion that narrows raises ValueRange:
         C.Int of what a 32-bit int does not hold, C.SizeT of a signed
         integer, C.Float of an F64 (2026-10-10) }
       { a length is never below zero: C.SizeT (LEN (b)) takes it whole }
@@ -7068,11 +7269,12 @@ var
           raised.Values['ValueRange'] := name + ' conversion';
       Exit (name);
     end;
-    { a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or an
-      IS SOME binder whose type is a procedure type.  The type's own
-      head stands in for the callee's declaration and the same checks
-      run over it; nothing is known about which procedure runs, so a
-      PURE body may not make the call.  Mirrors Sem.CallType. }
+    { This is a call THROUGH A PROCEDURE VALUE (par 2.2.3): a
+      parameter or an IS SOME binder whose type is a procedure type.
+      The type's own head stands in for the callee's declaration and
+      the same checks run over it.  Nothing is known about which
+      procedure runs, so a PURE body may not make the call.  This
+      mirrors Sem.CallType. }
     haveHead := False;
     sty := ScopeType (name);
     if sty <> nil then
@@ -7095,9 +7297,10 @@ var
         SetLength (pr.raises, 0);
         if ptn.kids[2] <> nil then
         begin
-          { keyed in the module that DECLARES the type (ResolveType's last
-            lookup, through any alias), an inline type in the caller's:
-            the qualifier alone missed `TYPE F = Pk.Mk'.  Mirrors Sem.NoteCall }
+          { The raises are keyed in the module that DECLARES the type
+            (ResolveType's last lookup, through any alias), and an
+            inline type in the caller's.  The qualifier alone missed
+            `TYPE F = Pk.Mk'.  This mirrors Sem.NoteCall. }
           SetLength (pr.raises, Length (ptn.kids[2].kids));
           for j := 0 to High (ptn.kids[2].kids) do
             if ptn.kids[2].kids[j].b <> '' then
@@ -7120,7 +7323,8 @@ var
       pl := pr.node.kids[0];
       Arity (CountParams (pl));
       if Length (aNode) > 0 then SameMonitorCall (ctx, name, pr.node, aNode[0]);
-      { and what the call may reach (mirrors Sem; the reviews' S11) }
+      { Check what the call may reach as well (mirrors Sem; the
+        reviews' S11). }
       if (boundMonNode <> nil) and
          not ((Length (aNode) > 0) and (boundMon <> '') and (aNode[0] <> nil) and
               (aNode[0].kind = nkDesignator) and (Length (aNode[0].kids) = 0) and
@@ -7139,9 +7343,9 @@ var
               (aNode[0].a = boundMon) and (MonIdOf (pr.node, pr.modName) <> nil)) and
          MonWaits (pr) then
         ErrN (site, ctx, 'a call of ' + name + ' may WAIT on another monitor while this procedure holds its own: the wait releases only that one, and what would SIGNAL it may need the lock held here -- wait from a procedure that is not bound (par 6)');
-      { how many VAR or KEPT arguments are FRAME values: a frame value
-        handed to a KEPT parameter is refused unless another frame
-        value is the keeper (mirrors Sem.CallType) }
+      { Count how many VAR or KEPT arguments are FRAME values.  A frame
+        value handed to a KEPT parameter is refused unless another
+        frame value is the keeper (mirrors Sem.CallType). }
       nFrameKept := 0;
       k := 0;
       if pl <> nil then
@@ -7167,8 +7371,8 @@ var
           begin
             if k < nargs then
             begin
-              { an argument that names a constant: it cannot be a VAR
-                or OWN argument (there is nothing to write), and a
+              { An argument that names a constant cannot be a VAR or
+                OWN argument (there is nothing to write), and a
                 constant table goes only to an RO parameter
                 (par 2.2.4) }
               if (aNode[k] <> nil) and (aNode[k].kind = nkDesignator) and
@@ -7186,14 +7390,14 @@ var
                     ' only to an RO parameter (par 2.2.4)',
                     [k + 1, name, aNode[k].a]));
               end;
-              { par 2.4: read-only storage -- a string literal, what
-                an RO parameter views, a CONST -- is lent only to an
-                RO parameter.  A by-value SLICE or GRID parameter can
+              { par 2.4: read-only storage (a string literal, what an
+                RO parameter views, a CONST) is lent only to an RO
+                parameter.  A by-value SLICE or GRID parameter can
                 be written through, and `Up ('abc')` with `s[0] :=
                 'X'` inside was accepted and died with SIGSEGV until
                 2026-10-01 (museum/write-through-literal.m9). }
-              { nothing writes through a UTF -- it has no subscript --
-                so read-only storage may be lent to any UTF parameter }
+              { Nothing writes through a UTF (it has no subscript), so
+                read-only storage may be lent to any UTF parameter. }
               if (not isVar) and (not grp.f3) and (aNode[k] <> nil) and
                  (pTy <> UtfTy) and
                  (StartsWithS (pTy, 'SLICE OF') or
@@ -7252,8 +7456,8 @@ var
                   'argument %d of %s: cannot lend the value parameter ' +
                   '%s as VAR (shared borrow, par 4.1)',
                   [k + 1, name, aNode[k].a]))
-              { and what it points to, `q.s' (mirrors Sem.CheckArg;
-                the second review's gen N3, 2026-10-26) }
+              { The same holds for what it points to, `q.s' (mirrors
+                Sem.CheckArg; the second review's gen N3, 2026-10-26). }
               else if isVar and (aNode[k].kind = nkDesignator) and
                  (Length (aNode[k].kids) > 0) and
                  (ScopeMode (aNode[k].a) = 'p') and
@@ -7268,8 +7472,8 @@ var
                   [k + 1, name, aNode[k].a]));
               { rule 2: the callee may allocate in the object's pool,
                 which the generator names from the ROOT of this
-                designator's declaration -- so the root must have one
-                to name (mirrors Sem.CheckArg) }
+                designator's declaration.  So the root must have one
+                to name (mirrors Sem.CheckArg). }
               if grp.f1 and (aNode[k].kind = nkDesignator) and
                  PtrParamTy (grp.kids[1]) and (pr.foreign = '') then
               begin
@@ -7285,8 +7489,8 @@ var
                     ' and the callee may allocate in it -- %s (par 4.3)',
                     [k + 1, name, aNode[k].a, why]));
               end;
-              { RO measurement: lending a VAR param onward as VAR or
-                OWN is a potential write -- conservatively not RO }
+              { RO measurement: a VAR param lent onward as VAR or OWN
+                is a potential write, so conservatively not RO. }
               if (grp.f1 or grp.f2) and (aNode[k].kind = nkDesignator)
                  and (varParams.IndexOf (aNode[k].a) >= 0) then
                 varWritten.Add (aNode[k].a);
@@ -7347,12 +7551,12 @@ var
               { par 4.1, the caller side of KEPT.  A parameter's KEPT
                 is read HERE, which is what narrows the old blanket
                 every-callee-may-keep '<call>' fact to the parameters
-                that declare it.  Two refusals, the RAISES-style
-                upward composition: what is handed to a KEPT
-                parameter must survive the call, so a concatenation
-                (frame storage, par 2.3) is refused outright, and a
-                borrow is a retention the CALLER must declare in
-                turn. }
+                that declare it.  There are two refusals, the
+                RAISES-style upward composition.  Anything handed to a
+                KEPT parameter must survive the call, so a
+                concatenation (frame storage, par 2.3) is refused
+                outright, and a borrow is a retention the CALLER must
+                declare in turn. }
               if grp.f4 and (pTy = 'POOL') then
                 KeptPool (site, ctx, name, k, aNode[k])
               else if grp.f4 then
@@ -7409,9 +7613,10 @@ var
             Inc (k);
           end;
         end;
-      { decision 83: a callee that stores what it allocates in a POOL
-        parameter into a VAR one, handed a pool local to this procedure
-        and storage that outlives its frame (mirrors Sem.PoolIntoCheck) }
+      { decision 83: this checks a callee that stores what it allocates
+        in a POOL parameter into a VAR one, when it is handed a pool
+        local to this procedure and storage that outlives its frame
+        (mirrors Sem.PoolIntoCheck). }
       if (pr.foreign = '') and (pr.node <> nil) and (pr.node.kids[0] <> nil) and (argl <> nil) then
       begin
         n2 := Length (argl.kids);
@@ -7517,11 +7722,11 @@ var
       if pr.node.kids[1] <> nil then Exit ('');
       Exit ('<void>');
     end;
-    { a variant constructor with payload: Type.Variant (args), or
-      Mod.Type.Variant (args) from another module.  The three-part
-      form was read as a two-part one -- type `Csv', variant
-      `Kind.Stamp' -- and refused as `unknown procedure: Csv' until
-      2026-09-15; nobody had written one, so nothing knew.  With a
+    { This is a variant constructor with payload: Type.Variant (args),
+      or Mod.Type.Variant (args) from another module.  The three-part
+      form was read as a two-part one (type `Csv', variant
+      `Kind.Stamp') and refused as `unknown procedure: Csv' until
+      2026-09-15.  Nobody had written one, so nothing knew.  With a
       module named, the variant is looked for THERE and nowhere else. }
     dot := Pos ('.', name);
     isVar := False;
@@ -7566,8 +7771,8 @@ var
       canonCtx := '';
       Exit (om + '.' + t);
     end;
-    { the integer-to-enumeration conversion: returns the type and
-      raises ValueRange, like every other narrowing }
+    { The integer-to-enumeration conversion returns the type and
+      raises ValueRange, like every other narrowing. }
     t := EnumConvType (name);
     if t <> '' then
     begin
@@ -7580,9 +7785,9 @@ var
         raised.Values['ValueRange'] := name + ' conversion';
       Exit (t);
     end;
-    { a RECORD AGGREGATE: Row (200, 'OK'), or Mod.Row (...) for an
-      imported type -- every field, in declaration order, each held
-      to its field's type (Sem.RecordNamed) }
+    { A RECORD AGGREGATE is Row (200, 'OK'), or Mod.Row (...) for an
+      imported type.  Every field comes in declaration order, each
+      held to its field's type (Sem.RecordNamed). }
     rec := nil;
     dcl := nil;
     dot := Pos ('.', name);
@@ -7687,9 +7892,9 @@ var
       Result := (s = 'SLICE OF CHAR') or (s = '<str1>');
     end;
 
-    { a value two of which no single operator compares: a slice, an
-      array, a grid, a record, a monitor, a case record that carries
-      a payload -- what the C has no == for }
+    { IsComposite recognises a value two of which no single operator
+      compares: a slice, an array, a grid, a record, a monitor, a case
+      record that carries a payload.  The C has no == for these. }
     function IsComposite (const t: string): Boolean;
     var
       dot : Integer;
@@ -7764,11 +7969,11 @@ var
     end;
     { string concatenation, before the arithmetic rules: `+` on two
       strings answers a string, allocated in HEAP (par 4.3).  A CHAR
-      on either side is one code point appended or prepended -- a
-      CHAR converts to nothing implicitly, so there is nothing for
-      `s + c` to decide silently (the rule used to refuse it, on a
-      Pascal/C worry M9 does not have; revised 2026-09-06).  Anything
-      else -- a number, a record -- must be formatted first. }
+      on either side is one code point appended or prepended.  A CHAR
+      converts to nothing implicitly, so there is nothing for `s + c`
+      to decide silently (the rule used to refuse it, on a Pascal/C
+      worry M9 does not have; revised 2026-09-06).  Anything else (a
+      number, a record) must be formatted first. }
     { a UTF concatenates with a UTF, a CHAR or a string literal (which
       adapts); a STR does not join a UTF (mirrors Sem) }
     if (op = '+') and ((lt = UtfTy) or (rt = UtfTy)) then
@@ -7892,10 +8097,10 @@ var
       nkNewExpr :
         begin
           { THE SHAPE: pool FIRST, then the type.  `NEW (Point, pool)`
-            used to type-check in silence -- the pool position holds a
-            name that is not a value, so it types as unknown, and
-            unknown never diagnoses -- and only the GENERATOR objected,
-            with `unknown name: Point`.  A tutorial reader followed
+            used to type-check in silence, and only the GENERATOR
+            objected, with `unknown name: Point`.  The pool position
+            holds a name that is not a value, so it types as unknown,
+            and unknown never diagnoses.  A tutorial reader followed
             chapter 4's own example into exactly this (2026-08-29).
             A checker softer than the generator is a checker that
             misses; the second argument BEING a pool is conclusive. }
@@ -7903,10 +8108,11 @@ var
           if form = '' then Exit ('');
           if form = 'pool' then
           begin
-            { par 3.2: allocating from a pool the CALLER owns consumes
-              the caller's storage and answers a slice into the
-              caller's arena -- an effect, and the one a PURE body
-              could still have, since NEW is a builtin (rule 3 does
+            { par 3.2: an allocation from a pool the CALLER owns
+              consumes the caller's storage and answers a slice into
+              the caller's arena.  That is an effect, and the one a
+              PURE body could still have, since NEW is a builtin (rule
+              3 does
               not see it) and not an assignment target (rules 1 and 2
               do not either).  A pool declared LOCAL is invisible
               outside the frame and stays legal, and so is the frame
@@ -8034,10 +8240,10 @@ var
                 BindName (e.kids[1].a, nil);
               end;
               { par 4.1 direction: the binder is a VIEW of the
-                operand -- storing into the binder stores into the
+                operand.  A store into the binder stores into the
                 operand's storage, so the binder inherits the
-                operand's reach (dst = operand, src = binder) --
-                and, provenance, the binder CARRIES the operand }
+                operand's reach (dst = operand, src = binder).  For
+                provenance, the binder CARRIES the operand. }
               EscStore (e.kids[0].a, True, e.kids[1].a);
               CarryFrom (e.kids[1].a, e.kids[0].a);
               { Sem.BindFrom: the root it was bound from names its pool }
@@ -8203,8 +8409,9 @@ var
   end;
 
 
-  { the typed tree's stage 3: every expression's type, recorded as the
-    checker computes it, for the generator to read (M9AST.SetTyStr) }
+  { ExprType is the typed tree's stage 3.  It records every
+    expression's type as the checker computes it, for the generator
+    to read (M9AST.SetTyStr). }
   function ExprType (e: TNode): string;
   begin
     Result := ExprType0 (e);
@@ -8240,8 +8447,9 @@ var
     end;
   end;
 
-  { mirrors Sem.DaGives: an assignment to the bare name, or the name
-    handed on as an argument (the second review's S10) }
+  { DaGives mirrors Sem.DaGives.  It finds an assignment to the bare
+    name, or the name handed on as an argument (the second review's
+    S10). }
   function DaGives (k: TNode; const nm: string): Boolean;
   var i : Integer;
   begin
@@ -8537,8 +8745,8 @@ var
       else
         BindName (lbl.kids[0].kids[n].a, nil);
       { par 4.1 direction: a pattern binder views the selector's
-        payload, so it inherits the selector's reach -- and,
-        provenance, carries the selector }
+        payload, so it inherits the selector's reach.  For
+        provenance, it carries the selector. }
       if selRoot <> '' then
       begin
         EscStore (selRoot, True, lbl.kids[0].kids[n].a);
@@ -8547,8 +8755,9 @@ var
     end;
   end;
 
-  { a RAISE's payload held to its EXCEPTION's fields: the count, and
-    each value against its field's type (mirrors Sem.CheckRaisePayload) }
+  { CheckRaisePayload holds a RAISE's payload to its EXCEPTION's
+    fields: the count, and each value against its field's type
+    (mirrors Sem.CheckRaisePayload). }
   procedure CheckRaisePayload (xn, args: TNode);
   var
     decl : TNode;
@@ -8587,8 +8796,8 @@ var
       end;
   end;
 
-  { a handler's name qualified by a name in scope: `| v.E' with v a
-    variable (mirrors Sem.HandlerQualVar) }
+  { HandlerQualVar refuses a handler's name qualified by a name in
+    scope: `| v.E' with v a variable (mirrors Sem.HandlerQualVar). }
   procedure HandlerQualVar (n: TNode);
   begin
     if (n <> nil) and (n.b <> '') and (ScopeMode (n.a) <> '') then
@@ -8635,9 +8844,9 @@ var
         begin
           ForVarWrite (st.kids[0], ctx, False);
           t := DesigStrType (st.kids[0], False);
-          { a bare name on the left declared nowhere: `x := 1' with no x;
-            a procedure is declared, and is no variable: `P := 1',
-            `Io.WriteLine := s' }
+          { This catches a bare name on the left declared nowhere:
+            `x := 1' with no x.  A procedure is declared, and is no
+            variable: `P := 1', `Io.WriteLine := s'. }
           if (Length (st.kids[0].kids) = 0) and (ScopeMode (st.kids[0].a) = '') and
              (FindMod (curMod) <> nil) and
              (FindMod (curMod).FindProc (st.kids[0].a) >= 0) then
@@ -8671,8 +8880,8 @@ var
             frame-mode destination merely inherits the taint and is
             cleared when given a durable value. }
           what := FrameWhat (st.kids[1], u);
-          { the CALLER's pool kept in a module variable (mirrors
-            Sem.CheckAssign, 2026-10-10) }
+          { This catches the CALLER's pool kept in a module variable
+            (mirrors Sem.CheckAssign, 2026-10-10). }
           if (what = '') and (Length (st.kids[0].kids) = 0) and
              (ScopeMode (st.kids[0].a) = 'm') and not curInBody and
              (st.kids[1] <> nil) and
@@ -8730,10 +8939,10 @@ var
             end
             else if (Length (st.kids[0].kids) > 0) and (dmode = 'l') then
             begin
-              { a COMPONENT of a local: declared IN a pool the target
-                outlives the frame; otherwise the local carries the
-                taint (mirrors Sem.CheckAssign, stage 5 of the pool
-                elision) }
+              { For a COMPONENT of a local declared IN a pool, the
+                target outlives the frame; otherwise the local carries
+                the taint (mirrors Sem.CheckAssign, stage 5 of the pool
+                elision). }
               if DeclPool (ScopeType (st.kids[0].a)) <> nil then
               begin
                 if (KindPool (what) = '') or
@@ -8745,7 +8954,7 @@ var
               else
               begin
                 FvalAdd (st.kids[0].a, what);
-                { and the component itself, by its path }
+                { Taint the component itself as well, by its path. }
                 FvalAdd (DesigPath (st.kids[0]), what);
               end;
             end;
@@ -8785,9 +8994,10 @@ var
                 DeclPool (ScopeType (st.kids[0].a)).a +
                 ' but allocated in ' + apool + ' (par 4.3)');
           end;
-          { anchored at the RIGHT-HAND SIDE, not the statement: a
-            value on its own line used to be reported one line too
-            high, at the := (found by the first m9edit user) }
+          { The diagnostic is anchored at the RIGHT-HAND SIDE, not the
+            statement.  A value on its own line used to be reported one
+            line too high, at the := (found by the first m9edit
+            user). }
           u := AdaptLitC (st.kids[1], t, u);
           if u = '<void>' then
             ErrN (st.kids[1], ctx, 'the right-hand side returns no value')
@@ -8798,9 +9008,9 @@ var
           else if LitOut (st.kids[1], t, lv) then
             ErrN (st.kids[1], ctx, 'integer literal ' + IntToStr (lv)
               + ' does not fit ' + TyName (t));
-          { P3: borrow-write legality, then the retention ledger --
-            a borrowed reference param stored beyond the frame is
-            measured, not (yet) rejected: the kill-gate reads it }
+          { P3: check borrow-write legality, then the retention
+            ledger.  A borrowed reference param stored beyond the frame
+            is measured, not (yet) rejected: the kill-gate reads it. }
           if Length (st.kids[0].kids) > 0 then
             NoteUse (st.kids[0]);
           beyond := CheckWrite (st.kids[0]);
@@ -8808,16 +9018,17 @@ var
             stored beyond the frame retains the borrow just as the
             whole of it would }
           vname := EscRootOf (st.kids[1]);
-          { SHARED handles are excluded: copying one IS the sanctioned
-            retention -- refcounted, created explicitly (par 4.2).
-            PENDED, not emitted: the class -- retention, self-store,
-            frame-store -- needs every escape of the destination, so
-            the walk finishes first; a local or binder may CARRY a
-            borrow, resolved at flush.  A RECORD value that holds a
-            reference (TyBearing) is stored as the reference would be
-            -- until 2026-10-08 only a bare pointer or slice was, and
-            a record local whose field viewed a borrow went through a
-            VAR parameter's component unseen (Frame.AddF64). }
+          { SHARED handles are excluded: a copy of one IS the
+            sanctioned retention, refcounted and created explicitly
+            (par 4.2).  The store is PENDED, not emitted.  Its class
+            (retention, self-store, frame-store) needs every escape of
+            the destination, so the walk finishes first; a local or
+            binder may CARRY a borrow, resolved at flush.  A RECORD
+            value that holds a reference (TyBearing) is stored as the
+            reference would be.  Until 2026-10-08 only a bare pointer
+            or slice was, and a record local whose field viewed a
+            borrow went through a VAR parameter's component unseen
+            (Frame.AddF64). }
           if (vname <> '') and TyBearing (u) and
              not StartsWithS (u, 'SHARED PTR ') and
              not StartsWithS (u, 'OPT SHARED PTR ') then
@@ -8846,8 +9057,8 @@ var
           { moves: a bare owned pointer on the right moves out; a
             bare name on the left is (re)initialized }
           dcl := StripParens (st.kids[1]);
-          { a name holding a FRAME allocation is not owned -- the
-            frame is -- so copying it is a copy, not a move }
+          { A name holding a FRAME allocation is not owned (the frame
+            is), so a copy of it is a copy, not a move. }
           if (dcl <> nil) and (dcl.kind = nkDesignator) and
              (Length (dcl.kids) = 0) and
              (OwnedCandKind (dcl.a) = 1) and (fval.IndexOf (dcl.a) < 0) and
@@ -9049,12 +9260,12 @@ var
                       'CASE label is %s but the selector is %s',
                       [TyName (t), TyName (selTy)]));
                   { a repeated label is decided at compile time, and
-                    until now only the C compiler decided it -- which
+                    until now only the C compiler decided it.  That
                     reports against generated code the author never
-                    wrote.  Single literal labels only: a range needs
-                    interval overlap and a CONST designator needs the
-                    value, and guessing at either would be worse than
-                    the gap. }
+                    wrote.  Only single literal labels are checked: a
+                    range needs interval overlap and a CONST designator
+                    needs the value, and a guess at either would be
+                    worse than the gap. }
                   if lbl.kids[1] = nil then
                   begin
                     lblTxt := ExprText (lbl.kids[0]);
@@ -9089,9 +9300,10 @@ var
             end;
           for k := 0 to High (snaps) do
             OwnMergeMoves (snaps[k]);
-          { judged only against a selector whose type is KNOWN: with
-            it unknown (softness) the labels' by-name owner is a guess,
-            and the M9 twin says nothing there (CheckFuzz, 2026-10-11) }
+          { Totality is judged only against a selector whose type is
+            KNOWN.  With it unknown (softness) the labels' by-name owner
+            is a guess, and the M9 twin says nothing there (CheckFuzz,
+            2026-10-11). }
           if labelsVariant and (not hasElse) and haveVi and haveSelVi then
           begin
             vi := selVi;
@@ -9144,9 +9356,10 @@ var
                 said := True;
               end;
             end;
-            { the same by SHAPE: an allocation in a local pool held in
-              a pool-less name, or a view of one -- except a string,
-              re-homed at exit (mirrors Sem.CheckReturn) }
+            { The same holds by SHAPE: an allocation in a local pool
+              held in a pool-less name, or a view of one.  A string is
+              the exception, re-homed at exit (mirrors
+              Sem.CheckReturn). }
             if (not said) and (t <> 'SLICE OF CHAR') then
             begin
               what := FrameWhat (st.kids[0], t);
@@ -9154,11 +9367,12 @@ var
                 ErrN (st, ctx, what +
                   ' escapes its pool, which dies with this frame (par 4.3)');
             end;
-            { par 4.1 direction: what is RETURNed reaches the caller }
+            { par 4.1 direction: the RETURNed value reaches the
+              caller. }
             vname := EscRootOf (st.kids[0]);
             if (vname <> '') and IsFrameMode (ScopeMode (vname)) then
               EscTarget (vname, '<return>');
-            { par 2.3: a string RETURN needs no refusal -- the
+            { par 2.3: a string RETURN needs no refusal: the
               generator re-homes it into the caller's arena, copying a
               frame-local designator's bytes across (m9_strdup). }
           end;
@@ -9166,8 +9380,8 @@ var
       nkRaiseStmt :
         begin
           CheckExcName (st.kids[0], ctx);
-          { a qualified name raises its BARE name -- `RAISE Io.IOError`
-            raises IOError, not "Io".  Found by System.Exec, the first
+          { A qualified name raises its BARE name: `RAISE Io.IOError`
+            raises IOError, not "Io".  System.Exec found it, the first
             corpus procedure to raise another module's exception; the
             M9 checker had it right and semdiff said so. }
           if st.kids[0].b <> '' then
@@ -9179,8 +9393,8 @@ var
           CheckRaisePayload (st.kids[0], st.kids[1]);
           { the payload was typed and diagnosed by CheckRaisePayload;
             this pass is Sem's WalkArgs, which records calls and says
-            nothing -- an unknown name in the payload was reported
-            twice here (checkfuzz, 2026-10-30) }
+            nothing.  An unknown name in the payload was reported twice
+            here (checkfuzz, 2026-10-30). }
           Inc (quietTyping);
           if st.kids[1] <> nil then
             for j := 0 to High (st.kids[1].kids) do
@@ -9234,9 +9448,10 @@ var
         end;
       nkThread :
         begin
-          { par 6: the argument held to the target's first parameter,
-            and a bare owned pointer MOVED into the thread.  Mirrors
-            Sem.CheckThread; neither checker looked at the argument
+          { par 6: the argument is held to the target's first
+            parameter, and a bare owned pointer is MOVED into the
+            thread.  This mirrors Sem.CheckThread; neither checker
+            looked at the argument
             before 2026-09-27 (docs/agent-review-2026-09-27.md F2). }
           tmoved := False;
           taTy := ExprType (st.kids[1]);
@@ -9342,8 +9557,9 @@ var
                 end;
               end;
             end;
-            { what a moved argument holds is shared all the same
-              (mirrors Sem.CheckThread; the fourth review's SharedInMoved) }
+            { The contents of a moved argument are shared all the same
+              (mirrors Sem.CheckThread; the fourth review's
+              SharedInMoved). }
             if tmoved then
             begin
               sw := SharedFieldWhy (taTy);
@@ -9351,8 +9567,8 @@ var
                 ErrN (st, ctx, 'THREAD (' + tname + '): the value moved in holds a SHARED handle to ' + sw +
                   ' which the starting thread may still hold, and it is neither a MONITOR nor a RECORD marked [SHARABLE] (par 6)');
             end;
-            { SHARABLE: what is not moved, both threads hold (mirrors
-              Sem.CheckThread) }
+            { SHARABLE: both threads hold whatever is not moved (mirrors
+              Sem.CheckThread). }
             if not tmoved then
             begin
               sw := ShareWhy (taTy, False);
@@ -9392,9 +9608,9 @@ var
         begin
           for j := 1 to High (st.kids) do
             if st.kids[j].kind = nkFinally then Inc (finSinceLoop);
-          { what a block catches it catches for its guarded sequence ONLY:
-            the raises that sequence added are dropped before the handler
-            bodies are walked (mirrors Sem.WalkStmt; the review's C6) }
+          { A block catches for its guarded sequence ONLY: the raises
+            that sequence added are dropped before the handler bodies
+            are walked (mirrors Sem.WalkStmt; the review's C6). }
           hfrom := raised.Count;
           WalkSeq (st.kids[0]);
           hnames := ' ';
@@ -9498,8 +9714,9 @@ begin
   pendN := 0;
   SetLength (pendLn, 0); SetLength (pendCl, 0);
   SetLength (pendSrc, 0); SetLength (pendDst, 0);
-  { par 2.4, the copy: the marks before the walk, since a write may
-    precede the assignment that marks the name (Sem.CheckProcBody) }
+  { par 2.4, the copy: set the marks before the walk, since a write
+    may precede the assignment that marks the name
+    (Sem.CheckProcBody). }
   RoSeed (body);
   OwnFedSeed (body);
   if nAgg > 0 then AggWalk (body, nkProcBody);
@@ -9512,7 +9729,7 @@ begin
     edges (symmetric, so the approximation errs INTO the ledger),
     then classify every pended store by where its destination
     reaches.  A for-loop's bound is fixed at entry, so entries added
-    during a round are processed in the next one -- the repeat
+    during a round are processed in the next one.  The repeat
     terminates because escSet only grows and is bounded by
     names x targets. }
   repeat
@@ -9570,8 +9787,8 @@ begin
                     pendSrc[i], pendDst[i]);
     end;
   end;
-  { the lie detector: a KEPT parameter the analysis never saw
-    retained.  A ledger class, not an error -- a borrow laundered
+  { This is the lie detector: a KEPT parameter the analysis never saw
+    retained.  It is a ledger class, not an error.  A borrow laundered
     through a call result is not yet seen, so an overstatement is a
     signal to read, not proof of a lie. }
   for i := 0 to keptParams.Count - 1 do
@@ -9596,14 +9813,14 @@ begin
   end;
   { par 3.2 rule 3: a PURE procedure may call only PURE procedures.
     This is what makes "no I/O" true without the checker knowing what
-    I/O is -- a foreign procedure carries [SERIAL] or [REENTRANT] and
+    I/O is.  A foreign procedure carries [SERIAL] or [REENTRANT] and
     is therefore never PURE, and neither is Io.WriteLine, so neither
     can be reached from a PURE body.  Purity is transitive by
     construction rather than by a second analysis.
 
     A callee that does not resolve to a declared procedure is a
-    builtin -- LEN, ORD, a checked conversion, a variant constructor
-    -- and those are pure, so they are skipped. }
+    builtin (LEN, ORD, a checked conversion, a variant constructor),
+    and those are pure, so they are skipped. }
   if curPure then
     for i := 0 to calls.Count - 1 do
       if LookupProcInfo (calls[i], prc) then
@@ -9691,8 +9908,9 @@ var
     end;
   end;
 
-  { the designator at the root of K, through SLICE/VIEW/SHARED,
-    parentheses and SOME -- Sem.EscRootOf, which lives in CheckBody }
+  { MroRoot answers the designator at the root of K, through
+    SLICE/VIEW/SHARED, parentheses and SOME.  It is Sem.EscRootOf,
+    which lives in CheckBody. }
   function MroRoot (e: TNode): string;
   var nm : string;
   begin
@@ -9712,8 +9930,8 @@ var
     end;
   end;
 
-  { Sem.RoAnswerOf, for the unit-wide prepass (RoAnswerOf lives in
-    CheckBody) }
+  { MroAnswer is Sem.RoAnswerOf, for the unit-wide prepass (RoAnswerOf
+    lives in CheckBody). }
   function MroAnswer (e: TNode): string;
   var pr : TProcInfo; name : string;
   begin
@@ -9786,8 +10004,9 @@ var
     while ModRoWalk (uu, nil, uu) and (n < 8) do Inc (n);
   end;
 
-  { par 6: the name of the first parameter when its type is a
-    MONITOR RECORD, else ''.  That parameter is the binding. }
+  { par 6: BoundMonitorOf answers the name of the first parameter when
+    its type is a MONITOR RECORD, else ''.  That parameter is the
+    binding. }
   function BoundMonitorOf (procNode: TNode): string;
   var
     grp, rt : TNode;
@@ -9845,7 +10064,8 @@ var
       if DeclaresName (n.kids[a], name) then Exit (True);
   end;
 
-  { at the level of the module `me' -- Sem.ModuleDeclares }
+  { ModuleDeclares asks whether the module `me' declares the name at
+    its level (Sem.ModuleDeclares). }
   function ModuleDeclares (const me, name: string): Boolean;
   var
     a, b : Integer;
@@ -9867,9 +10087,10 @@ var
     Result := False;
   end;
 
-  { anywhere under the procedure or module body `sc', a binder in any
-    arm included, or at the module's level: ExportWalk's test
-    (decision 28); ImportWalk has the scoped one since 2026-10-08 }
+  { NameShadowed looks anywhere under the procedure or module body
+    `sc', a binder in any arm included, or at the module's level.  It
+    is ExportWalk's test (decision 28); ImportWalk has the scoped one
+    since 2026-10-08. }
   function NameShadowed (const me: string; sc: TNode;
                          const name: string): Boolean;
   begin
@@ -9877,8 +10098,9 @@ var
     Result := ModuleDeclares (me, name);
   end;
 
-  { the procedure's own declarations -- parameters and the sections
-    of its body -- and not the binders in its statements (Sem.ProcDeclares) }
+  { ProcDeclares looks at the procedure's own declarations (parameters
+    and the sections of its body), and not the binders in its
+    statements (Sem.ProcDeclares). }
   function ProcDeclares (sc: TNode; const name: string): Boolean;
   var a : Integer;
   begin
@@ -9890,7 +10112,8 @@ var
         if DeclaresName (sc.kids[4].kids[a], name) then Exit (True);
   end;
 
-  { the name `IS SOME' binds in a condition, or '' (Sem.CondBinder) }
+  { CondBinder answers the name `IS SOME' binds in a condition, or ''
+    (Sem.CondBinder). }
   function CondBinder (c: TNode): string;
   begin
     Result := '';
@@ -9970,8 +10193,9 @@ var
         ExportWalk (uu, sc, n.kids[a]);
   end;
 
-  { Sem.AddModuleVars, after AddVarsOf (u, 'm'): an implementation's
-    definition's variables, and every other module's exports as Mod.v }
+  { AddModuleExtra is Sem.AddModuleVars, after AddVarsOf (u, 'm').  It
+    adds an implementation's definition's variables, and every other
+    module's exports as Mod.v. }
   procedure AddModuleExtra (u: TNode);
   var
     i, k : Integer;
@@ -10004,10 +10228,10 @@ var
     else if (n.kind = nkDesignator) and (Length (n.kids) > 0) and
             (n.kids[0] <> nil) then
       qualified := n.kids[0].kind = nkSelField;
-    { shadowed by a declaration of the procedure or the module, or by
-      a binder IN SCOPE HERE -- until 2026-10-08 by a binder anywhere
-      in the procedure, so a binder in one arm stood for the module in
-      the next }
+    { A name is shadowed by a declaration of the procedure or the
+      module, or by a binder IN SCOPE HERE.  Until 2026-10-08 a binder
+      anywhere in the procedure shadowed it, so a binder in one arm
+      stood for the module in the next. }
     if qualified and (FindMod (n.a) <> nil) and (seen.IndexOf (n.a) < 0) then
       if not ModImports (uu.a, n.a) then
         if not ProcDeclares (sc, n.a) and (impB.IndexOf (n.a) < 0) and
@@ -10456,8 +10680,8 @@ begin
         begin
           { FROM is for foreign FOR-C units only (there is no
             u.m9 to resolve).  A FROM of a loaded M9 module is a
-            Modula-2 habit the generator cannot honour -- catch
-            it HERE, at the mistake, not as a gen error later. }
+            Modula-2 habit the generator cannot honour.  Catch it
+            HERE, at the mistake, not as a gen error later. }
           fmi := FindMod (u.kids[i].a);
           if (fmi <> nil) and (fmi.foreignLang = '') then
             ErrN (u.kids[i], u.a,
@@ -10487,8 +10711,8 @@ begin
       of the same name in this file.  It saw only its own until
       2026-10-02, so `n := K' -- K a real constant of the definition,
       n an I64 -- passed here, built, and answered 1 for 1.5, while a
-      client's `n := Mod.K' was refused.  Entered FIRST: a constant
-      the implementation declares under the same name is the
+      client's `n := Mod.K' was refused.  They are entered FIRST: a
+      constant the implementation declares under the same name is the
       implementation's. }
     if u.kind = nkImplementation then
       for i := 0 to High (root.kids) do
@@ -10606,10 +10830,11 @@ begin
         ErrN (d, ctx, 'a function must RETURN or RAISE on every path: ' +
                       d.a + ' can reach its END (par 3)');
       CheckBody (p.kids[High (p.kids)], ctx, declared, scope, rt);
-      { RO evidence: VAR parameters this procedure never writes
-        through and never lends onward.  Each is a read-only borrow
-        wearing VAR because M9 has no other non-copying mode -- and
-        a place the checker cannot tell a reader from a writer. }
+      { Collect the RO evidence: VAR parameters this procedure never
+        writes through and never lends onward.  Each is a read-only
+        borrow wearing VAR because M9 has no other non-copying mode.
+        It is also a place the checker cannot tell a reader from a
+        writer. }
       for j := 0 to varParams.Count - 1 do
         if varWritten.IndexOf (varParams[j]) < 0 then
           RoCand.Add (ctx + ': VAR ' + varParams[j] +
@@ -10647,8 +10872,8 @@ begin
       SetLength (declared, 0);
       { the module body is never PURE, and curPure must be cleared
         rather than inherited from whichever procedure was checked
-        last -- it leaked into this frame on the first run and
-        reported the body writing its own module variables }
+        last.  It leaked into this frame on the first run and reported
+        the body writing its own module variables. }
       curPure := False;
       curFresh := False;
       curInBody := True;

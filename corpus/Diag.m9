@@ -1,13 +1,13 @@
 DEFINITION MODULE Diag ;
 
-(* Diag -- the compiler's diagnostics as data.
+(* Diag answers the compiler's diagnostics as data.
 
    Three programs republish what `m9c --check` prints: m9lsp over the
    Language Server Protocol, m9edit as JSON for its page, and the
    tutorial's cells next.  Each had carried its own copy of the line
-   parser, and the two copies had already drifted by a shape: the
-   `--no-unsafe` refusal, which carried no position at all, was
-   dropped by both -- a check that failed with ZERO findings.  This
+   parser, and the two copies had already drifted by a shape.  Both
+   dropped the `--no-unsafe` refusal, which carried no position at
+   all: a check that failed with ZERO findings.  This
    module is the one parser, the one runner, and the one JSON
    renderer, so a shape m9c gains is learned in one place.
 
@@ -18,7 +18,6 @@ DEFINITION MODULE Diag ;
    fifty-four lines of Gen.m9.                                       *)
 
 IMPORT DynStr ;
-IMPORT DynUtf ;
 
 TYPE
   Finding = RECORD
@@ -27,8 +26,8 @@ TYPE
   END ;
 
 PROCEDURE Parse (RO line: UTF ; VAR f: Finding) : BOOL ;
-  (* one line of m9c's output as a finding, when it carries a
-     position.  Two shapes, m9c's own:
+  (* Parse reads one line of m9c's output as a finding, when it
+     carries a position.  Two shapes, m9c's own:
        LINE:COL MSG            the checker's
        FILE:LINE:COL: MSG      the parser's (`parse: ...`) and the
                                --no-unsafe refusal (`no-unsafe: ...`)
@@ -37,63 +36,64 @@ PROCEDURE Parse (RO line: UTF ; VAR f: Finding) : BOOL ;
      The second is found by the leftmost `:D+:D+: `, so a path may
      hold colons and a message may quote source text; the third by
      the leftmost `:D+: gen: `.  msg keeps the prefix (`parse: `,
-     `gen: `) and is a view into line, hence KEPT.  FALSE for
-     anything else -- the summaries.  The generator's shape was
-     dropped on purpose until 2026-09-27, when --check began to run
-     the generator (docs/agent-review-2026-09-27.md F4): before that
-     a construct the checker accepts and the generator refuses was
-     invisible to every editor.                                      *)
+     `gen: `) and is a view into line, hence KEPT.  Parse answers
+     FALSE for anything else: the summaries.  The generator's shape
+     was dropped on purpose until 2026-09-27, when --check began to
+     run the generator (docs/agent-review-2026-09-27.md F4).  Before
+     that a construct the checker accepts and the generator refuses
+     was invisible to every editor.                                  *)
 
 PROCEDURE One (VAR pool: POOL ; line, col: I64 ; RO msg: STR)
   : SLICE OF Finding ;
-  (* a single finding, as a slice: what a caller answers for a
-     refusal of its own (a buffer with no MODULE line, a path it will
-     not hand to a shell).  msg is copied into pool.                 *)
+  (* One answers a single finding, as a slice: what a caller answers
+     for a refusal of its own (a buffer with no MODULE line, a path it
+     will not hand to a shell).  msg is copied into pool.            *)
 
 PROCEDURE OneUtf (VAR pool: POOL ; line, col: I64 ; RO msg: UTF)
   : SLICE OF Finding ;
-  (* One for a UTF message, copied into pool the same way.            *)
+  (* OneUtf is One for a UTF message, copied into pool the same way. *)
 
 PROCEDURE Check (VAR pool: POOL ; RO m9c: STR ; RO flags: STR ;
                  RO dir: STR ; RO file: STR ; RO outFile: STR)
   : SLICE OF Finding RAISES ValueRange, IndexError ;
-  (* run `(cd 'DIR' && M9C FLAGS --check 'FILE') > 'OUTFILE' 2>&1`
-     and answer every finding it printed, in order; an indented line
-     after a finding continues its message (the signature mismatch
+  (* Check runs `(cd 'DIR' && M9C FLAGS --check 'FILE') > 'OUTFILE'
+     2>&1` and answers every finding it printed, in order.  An indented
+     line after a finding continues its message (the signature mismatch
      prints both signatures under it, each on a line).  dir may be
      empty (no cd); outFile is a path as seen from THIS process,
      which is where it is read back.  Exit 0 answers no finding
      without reading anything.  A nonzero exit that printed NO
      positioned line answers ONE finding at 1:1 carrying the
      output's first line (or the exit code when there was none), so
-     a refusal is never silent -- that was the --no-unsafe hole.  A
+     a refusal is never silent.  That was the --no-unsafe hole.  A
      path holding a quote is answered the same way, unrun: m9c's own
      rule at its own link step.                                      *)
 
 PROCEDURE DocJson (VAR pool: POOL ; RO m9c: STR ; RO flags: STR ;
                    RO workDir: STR ; RO name: STR) : STR
   RAISES ValueRange, IndexError ;
-  (* the m9c --json gather for module `name`, cached as
-     WORKDIR/docs/NAME.json -- the hovers' food, m9edit's and the
-     tutorial's, so the name gate lives here and cannot drift:
-     letters and digits only, under 64.  Composes
+  (* DocJson runs the m9c --json gather for module `name`, cached as
+     WORKDIR/docs/NAME.json.  That is the hovers' food, m9edit's and
+     the tutorial's, so the name gate lives here and cannot drift:
+     letters and digits only, under 64.  It composes
        mkdir -p 'DOCS' && cd 'DOCS' &&
          test -f NAME.json || M9C FLAGS --json NAME > dc.txt 2>&1
-     and answers the file's text.  '' means "no document" -- a
-     refused name, a workDir holding a quote (unrun, m9c's own
-     rule), or a module the compiler does not know -- and the
-     server answers its 404 without inventing one.                  *)
+     and answers the file's text.  '' means "no document": a refused
+     name, a workDir holding a quote (unrun, m9c's own rule), or a
+     module the compiler does not know.  The server then answers its
+     404 without inventing one.                                     *)
 
 PROCEDURE Json (VAR pool: POOL ; RO fs: SLICE OF Finding) : STR
   RAISES ValueRange, IndexError ;
-  (* the cell shape:
+  (* Json renders the cell shape:
        {"ok":true,"diags":[]}
        {"ok":false,"diags":[{"line":L,"col":C,"msg":"..."},...]}
      ok is exactly "no finding".                                     *)
 
 PROCEDURE LexJson (RO src: STR) : STR
   RAISES ValueRange, IndexError ;
-  (* the compiler's own tokens and comments, for a page that paints:
+  (* LexJson answers the compiler's own tokens and comments, for a
+     page that paints:
        {"tokens":[[kind,line,col,len],...],
         "comments":[{"line":L,"col":C,"text":"..."},...]}
      kind is Lex's stable code (0 is EOF and is not listed; 1 is an
@@ -101,23 +101,22 @@ PROCEDURE LexJson (RO src: STR) : STR
 
 PROCEDURE JStr (VAR d: PTR DynStr.DString ; RO s: STR)
   RAISES ValueRange ;
-  (* a JSON string literal appended to d: the escapes RFC 8259
-     requires and no others -- `"` and `\` backslashed, controls as
+  (* JStr appends a JSON string literal to d, with the escapes RFC
+     8259 requires and no others: `"` and `\` backslashed, controls as
      \u00XX, everything else as it is.  Json.m9 keeps its emitter
      private; this is the shared home its three copies were owed.   *)
 
-PROCEDURE JStrUtf (VAR d: PTR DynUtf.DString ; RO s: UTF)
+PROCEDURE JStrUtf (VAR d: PTR DynStr.DString ; RO s: UTF)
   RAISES ValueRange ;
-  (* JStr for a UTF-8 builder and text: the same escapes, byte by
-     byte -- a byte past 0x7F is part of a character and goes as it
-     is.                                                            *)
+  (* JStrUtf is JStr for a UTF-8 builder and text: the same escapes,
+     byte by byte.  A byte past 0x7F is part of a character and goes
+     as it is.                                                      *)
 
 END Diag.
 
 IMPLEMENTATION MODULE Diag ;
 
 IMPORT DynStr ;
-IMPORT DynUtf ;
 IMPORT Io ;
 IMPORT Lex ;
 IMPORT Text ;
@@ -145,30 +144,31 @@ BEGIN
   DynStr.AppendChar (d, 022C)
 END JStr ;
 
-PROCEDURE JStrUtf (VAR d: PTR DynUtf.DString ; RO s: UTF)
+PROCEDURE JStrUtf (VAR d: PTR DynStr.DString ; RO s: UTF)
   RAISES ValueRange =
 VAR i, c, start : I64 ;
 BEGIN
-  DynUtf.AppendChar (d, 022C) ;
+  DynStr.AppendChar (d, 022C) ;
   start := 0 ;
   FOR i := 0 TO Text.BLen (s) - 1 DO
     c := B (s, i) ;
     IF c = 0x22 OR c = 0x5C OR c < 0x20 THEN
-      (* the run since the last escape, then the escape *)
-      DynUtf.Append (d, SLICE (s, start, i - start)) ;
+      (* This appends the run since the last escape, then the
+         escape. *)
+      DynStr.Append (d, SLICE (s, start, i - start)) ;
       IF c < 0x20 THEN
-        DynUtf.Append (d, '\u00') ;
-        DynUtf.AppendChar (d, HexDigit (c DIV 16)) ;
-        DynUtf.AppendChar (d, HexDigit (c MOD 16))
+        DynStr.Append (d, '\u00') ;
+        DynStr.AppendChar (d, HexDigit (c DIV 16)) ;
+        DynStr.AppendChar (d, HexDigit (c MOD 16))
       ELSE
-        DynUtf.AppendChar (d, 05CC) ;
-        DynUtf.AppendChar (d, CHR (c))
+        DynStr.AppendChar (d, 05CC) ;
+        DynStr.AppendChar (d, CHR (c))
       END ;
       start := i + 1
     END
   END ;
-  DynUtf.Append (d, SLICE (s, start, Text.BLen (s) - start)) ;
-  DynUtf.AppendChar (d, 022C)
+  DynStr.Append (d, SLICE (s, start, Text.BLen (s) - start)) ;
+  DynStr.AppendChar (d, 022C)
 END JStrUtf ;
 
 PROCEDURE HexDigit (v: I64) : CHAR RAISES ValueRange =
@@ -179,14 +179,16 @@ END HexDigit ;
 
 (* ---- the line parser ---- *)
 
-(* the byte at offset i of u, as a number: the line parser reads ASCII
-   structure -- digits, `:`, a space -- where a byte IS the character *)
+(* B answers the byte at offset i of u, as a number.  The line parser
+   reads ASCII structure (digits, `:`, a space), where a byte IS the
+   character. *)
 PROCEDURE B (RO u: UTF ; i: I64) : I64 =
 BEGIN
   RETURN I64 (Text.BAt (u, i))
 END B ;
 
-(* the leading I64 of s from position i; i walks past it *)
+(* TakeI64 takes the leading I64 of s from position i; i walks past
+   it. *)
 PROCEDURE TakeI64 (RO s: UTF ; VAR i: I64 ; VAR v: I64) : BOOL =
 VAR any : BOOL ;
 BEGIN
@@ -214,8 +216,9 @@ BEGIN
       RETURN TRUE
     END
   END ;
-  (* FILE:LINE:COL: MSG -- the leftmost colon that opens :D+:D+:
-     followed by a space; something must precede it, the file *)
+  (* FILE:LINE:COL: MSG.  This finds the leftmost colon that opens
+     :D+:D+: followed by a space.  Something must precede it: the
+     file. *)
   i := 1 ;
   WHILE i < Text.BLen (line) DO
     IF B (line, i) = ORD (':') THEN
@@ -282,14 +285,15 @@ BEGIN
   RETURN Text.FindChar (s, 027C) >= 0
 END HasQuote ;
 
-PROCEDURE Quoted (VAR d: PTR DynUtf.DString ; RO s: UTF) =
+PROCEDURE Quoted (VAR d: PTR DynStr.DString ; RO s: UTF) =
 BEGIN
-  DynUtf.AppendChar (d, 027C) ;
-  DynUtf.Append (d, s) ;
-  DynUtf.AppendChar (d, 027C)
+  DynStr.AppendChar (d, 027C) ;
+  DynStr.Append (d, s) ;
+  DynStr.AppendChar (d, 027C)
 END Quoted ;
 
-(* the captured output, or empty when there was none to read *)
+(* OutText answers the captured output, or empty when there was none
+   to read. *)
 PROCEDURE OutText (VAR pool: POOL ; RO path: STR) : UTF =
 BEGIN
   RETURN UTF (pool, Io.ReadFileUtf (UTF (path)))
@@ -305,8 +309,8 @@ PROCEDURE Check (VAR pool: POOL ; RO m9c: STR ; RO flags: STR ;
   : SLICE OF Finding RAISES ValueRange, IndexError =
 VAR
   scratch : POOL ;
-  cmd : PTR DynUtf.DString IN scratch ;
-  d : PTR DynUtf.DString IN pool ;
+  cmd : PTR DynStr.DString IN scratch ;
+  d : PTR DynStr.DString IN pool ;
   fs : SLICE OF Finding ;
   text, line : UTF ;
   rc, i, j, n, nl, mstart : I64 ;
@@ -314,24 +318,24 @@ BEGIN
   IF HasQuote (dir) OR HasQuote (file) OR HasQuote (outFile) THEN
     RETURN One (pool, 1, 1, 'a path containing a quote is not checked')
   END ;
-  cmd := DynUtf.New (scratch) ;
-  DynUtf.AppendChar (cmd, '(') ;
-  IF LEN (dir) > 0 THEN
-    DynUtf.Append (cmd, 'cd ') ;
+  cmd := DynStr.New (scratch) ;
+  DynStr.AppendChar (cmd, '(') ;
+  IF Text.BLen (dir) > 0 THEN
+    DynStr.Append (cmd, 'cd ') ;
     Quoted (cmd, UTF (dir)) ;
-    DynUtf.Append (cmd, ' && ')
+    DynStr.Append (cmd, ' && ')
   END ;
-  DynUtf.AppendStr (cmd, m9c) ;
-  IF LEN (flags) > 0 THEN
-    DynUtf.AppendChar (cmd, ' ') ;
-    DynUtf.AppendStr (cmd, flags)
+  DynStr.AppendStr (cmd, m9c) ;
+  IF Text.BLen (flags) > 0 THEN
+    DynStr.AppendChar (cmd, ' ') ;
+    DynStr.AppendStr (cmd, flags)
   END ;
-  DynUtf.Append (cmd, ' --check ') ;
+  DynStr.Append (cmd, ' --check ') ;
   Quoted (cmd, UTF (file)) ;
-  DynUtf.Append (cmd, ') > ') ;
+  DynStr.Append (cmd, ') > ') ;
   Quoted (cmd, UTF (outFile)) ;
-  DynUtf.Append (cmd, ' 2>&1') ;
-  rc := Io.Run (STR (DynUtf.View (cmd))) ;
+  DynStr.Append (cmd, ' 2>&1') ;
+  rc := Io.Run (STR (DynStr.View (cmd))) ;
   IF rc = 0 THEN RETURN NEW (pool, Finding, 0) END ;
   text := OutText (pool, outFile) ;
   (* one slot per line is the most findings the text can hold *)
@@ -351,7 +355,7 @@ BEGIN
       mstart := j - Text.BLen (fs[n].msg) ;
       n := n + 1
     ELSIF n > 0 AND j > i AND B (text, i) = 32 THEN
-      (* an INDENTED line continues the finding above it -- the
+      (* An INDENTED line continues the finding above it.  The
          checker's "signature differs from definition:" is followed
          by the two signatures, each on its own line.  The message
          is a view into text and the continuation is the next line
@@ -366,11 +370,11 @@ BEGIN
   j := 0 ;
   WHILE j < Text.BLen (text) AND B (text, j) # 10 DO j := j + 1 END ;
   IF j > 0 THEN RETURN OneUtf (pool, 1, 1, SLICE (text, 0, j)) END ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, 'm9c: exit ') ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'm9c: exit ') ;
   IF rc >= 256 THEN rc := rc DIV 256 END ;
-  DynUtf.AppendI64 (d, rc) ;
-  RETURN OneUtf (pool, 1, 1, DynUtf.ViewIn (pool, d))
+  DynStr.AppendI64 (d, rc) ;
+  RETURN OneUtf (pool, 1, 1, DynStr.ViewIn (pool, d))
 END Check ;
 
 (* ---- the cell shape ---- *)
@@ -380,12 +384,12 @@ PROCEDURE DocJson (VAR pool: POOL ; RO m9c: STR ; RO flags: STR ;
   RAISES ValueRange, IndexError =
 VAR
   scratch : POOL ;
-  cmd : PTR DynUtf.DString IN scratch ;
-  docs : PTR DynUtf.DString IN scratch ;
+  cmd : PTR DynStr.DString IN scratch ;
+  docs : PTR DynStr.DString IN scratch ;
   i, rc : I64 ;
   c : CHAR ;
 BEGIN
-  IF LEN (name) = 0 OR LEN (name) >= 64 OR HasQuote (workDir) THEN
+  IF Text.BLen (name) = 0 OR Text.BLen (name) >= 64 OR HasQuote (workDir) THEN
     RETURN ''
   END ;
   FOR c IN name DO
@@ -394,30 +398,30 @@ BEGIN
       RETURN ''
     END
   END ;
-  docs := DynUtf.New (scratch) ;
-  DynUtf.AppendStr (docs, workDir) ;
-  DynUtf.Append (docs, '/docs') ;
-  cmd := DynUtf.New (scratch) ;
-  DynUtf.Append (cmd, 'mkdir -p ') ;
-  Quoted (cmd, DynUtf.View (docs)) ;
-  DynUtf.Append (cmd, ' && cd ') ;
-  Quoted (cmd, DynUtf.View (docs)) ;
-  DynUtf.Append (cmd, ' && test -f ') ;
-  DynUtf.AppendStr (cmd, name) ;
-  DynUtf.Append (cmd, '.json || ') ;
-  DynUtf.AppendStr (cmd, m9c) ;
-  IF LEN (flags) > 0 THEN
-    DynUtf.AppendChar (cmd, ' ') ;
-    DynUtf.AppendStr (cmd, flags)
+  docs := DynStr.New (scratch) ;
+  DynStr.AppendStr (docs, workDir) ;
+  DynStr.Append (docs, '/docs') ;
+  cmd := DynStr.New (scratch) ;
+  DynStr.Append (cmd, 'mkdir -p ') ;
+  Quoted (cmd, DynStr.View (docs)) ;
+  DynStr.Append (cmd, ' && cd ') ;
+  Quoted (cmd, DynStr.View (docs)) ;
+  DynStr.Append (cmd, ' && test -f ') ;
+  DynStr.AppendStr (cmd, name) ;
+  DynStr.Append (cmd, '.json || ') ;
+  DynStr.AppendStr (cmd, m9c) ;
+  IF Text.BLen (flags) > 0 THEN
+    DynStr.AppendChar (cmd, ' ') ;
+    DynStr.AppendStr (cmd, flags)
   END ;
-  DynUtf.Append (cmd, ' --json ') ;
-  DynUtf.AppendStr (cmd, name) ;
-  DynUtf.Append (cmd, ' > dc.txt 2>&1') ;
-  rc := Io.Run (STR (DynUtf.View (cmd))) ;
-  DynUtf.Append (docs, '/') ;
-  DynUtf.AppendStr (docs, name) ;
-  DynUtf.Append (docs, '.json') ;
-  RETURN Io.ReadFile (pool, STR (DynUtf.View (docs)))
+  DynStr.Append (cmd, ' --json ') ;
+  DynStr.AppendStr (cmd, name) ;
+  DynStr.Append (cmd, ' > dc.txt 2>&1') ;
+  rc := Io.Run (STR (DynStr.View (cmd))) ;
+  DynStr.Append (docs, '/') ;
+  DynStr.AppendStr (docs, name) ;
+  DynStr.Append (docs, '.json') ;
+  RETURN Io.ReadFile (STR (DynStr.View (docs)))
 EXCEPT
 | Io.IOError (p) :
     (* the compiler refused the name: no NAME.json was written *)
@@ -427,24 +431,24 @@ END DocJson ;
 PROCEDURE Json (VAR pool: POOL ; RO fs: SLICE OF Finding) : STR
   RAISES ValueRange, IndexError =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
   IF LEN (fs) = 0 THEN RETURN '{"ok":true,"diags":[]}' END ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, '{"ok":false,"diags":[') ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '{"ok":false,"diags":[') ;
   FOR i := 0 TO LEN (fs) - 1 DO
-    IF i > 0 THEN DynUtf.AppendChar (d, 02CC) END ;
-    DynUtf.Append (d, '{"line":') ;
-    DynUtf.AppendI64 (d, fs[i].line) ;
-    DynUtf.Append (d, ',"col":') ;
-    DynUtf.AppendI64 (d, fs[i].col) ;
-    DynUtf.Append (d, ',"msg":') ;
+    IF i > 0 THEN DynStr.AppendChar (d, 02CC) END ;
+    DynStr.Append (d, '{"line":') ;
+    DynStr.AppendI64 (d, fs[i].line) ;
+    DynStr.Append (d, ',"col":') ;
+    DynStr.AppendI64 (d, fs[i].col) ;
+    DynStr.Append (d, ',"msg":') ;
     JStrUtf (d, fs[i].msg) ;
-    DynUtf.AppendChar (d, 07DC)
+    DynStr.AppendChar (d, 07DC)
   END ;
-  DynUtf.Append (d, ']}') ;
-  RETURN STR (DynUtf.ViewIn (pool, d))
+  DynStr.Append (d, ']}') ;
+  RETURN STR (DynStr.ViewIn (pool, d))
 END Json ;
 
 (* ---- the compiler's own tokens ---- *)
@@ -456,12 +460,12 @@ VAR
   lx : Lex.Lexer ;
   t : Lex.Token ;
   cm : Lex.Comment ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   first : BOOL ;
   i : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, '{"tokens":[') ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '{"tokens":[') ;
   Lex.Collect (TRUE) ;
   Lex.Init (lx, src) ;
   first := TRUE ;
@@ -469,33 +473,33 @@ BEGIN
     Lex.Next (lx, t) ;
     (* kinds are stable I64 codes by Lex's own contract: 0 is EOF *)
     IF t.kind = 0 THEN EXIT END ;
-    IF NOT first THEN DynUtf.AppendChar (d, 02CC) END ;
+    IF NOT first THEN DynStr.AppendChar (d, 02CC) END ;
     first := FALSE ;
-    DynUtf.AppendChar (d, 05BC) ;
-    DynUtf.AppendI64 (d, t.kind) ;
-    DynUtf.AppendChar (d, 02CC) ;
-    DynUtf.AppendI64 (d, t.line) ;
-    DynUtf.AppendChar (d, 02CC) ;
-    DynUtf.AppendI64 (d, t.col) ;
-    DynUtf.AppendChar (d, 02CC) ;
-    DynUtf.AppendI64 (d, Text.CpCount (t.text)) ;   (* characters, as the editor counts *)
-    DynUtf.AppendChar (d, 05DC)
+    DynStr.AppendChar (d, 05BC) ;
+    DynStr.AppendI64 (d, t.kind) ;
+    DynStr.AppendChar (d, 02CC) ;
+    DynStr.AppendI64 (d, t.line) ;
+    DynStr.AppendChar (d, 02CC) ;
+    DynStr.AppendI64 (d, t.col) ;
+    DynStr.AppendChar (d, 02CC) ;
+    DynStr.AppendI64 (d, Text.CpCount (t.text)) ;   (* characters, as the editor counts *)
+    DynStr.AppendChar (d, 05DC)
   END ;
   Lex.Collect (FALSE) ;
-  DynUtf.Append (d, '],"comments":[') ;
+  DynStr.Append (d, '],"comments":[') ;
   FOR i := 0 TO Lex.ComCount () - 1 DO
     cm := Lex.ComAt (i) ;
-    IF i > 0 THEN DynUtf.AppendChar (d, 02CC) END ;
-    DynUtf.Append (d, '{"line":') ;
-    DynUtf.AppendI64 (d, cm.line) ;
-    DynUtf.Append (d, ',"col":') ;
-    DynUtf.AppendI64 (d, cm.col) ;
-    DynUtf.Append (d, ',"text":') ;
+    IF i > 0 THEN DynStr.AppendChar (d, 02CC) END ;
+    DynStr.Append (d, '{"line":') ;
+    DynStr.AppendI64 (d, cm.line) ;
+    DynStr.Append (d, ',"col":') ;
+    DynStr.AppendI64 (d, cm.col) ;
+    DynStr.Append (d, ',"text":') ;
     JStrUtf (d, cm.text) ;
-    DynUtf.AppendChar (d, 07DC)
+    DynStr.AppendChar (d, 07DC)
   END ;
-  DynUtf.Append (d, ']}') ;
-  RETURN STR (DynUtf.View (d))
+  DynStr.Append (d, ']}') ;
+  RETURN STR (DynStr.View (d))
 END LexJson ;
 
 END Diag.

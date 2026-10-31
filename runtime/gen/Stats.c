@@ -112,25 +112,25 @@ static const m9_arr_5_double PD_k = { {
 static m9_arr_5_double * const PD = (m9_arr_5_double *) &PD_k;
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[27] = { 112u, 101u, 114u, 99u, 101u, 110u, 116u, 105u, 108u, 101u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 91u, 48u, 44u, 32u, 49u, 48u, 48u, 93u };
-static const uint32_t m9s1[35] = { 100u, 101u, 103u, 114u, 101u, 101u, 115u, 32u, 111u, 102u, 32u, 102u, 114u, 101u, 101u, 100u, 111u, 109u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
-static const uint32_t m9s2[11] = { 101u, 109u, 112u, 116u, 121u, 32u, 114u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s3[36] = { 114u, 97u, 110u, 103u, 101u, 32u, 119u, 105u, 100u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 103u, 101u, 110u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 100u, 114u, 97u, 119u, 115u };
-static const uint32_t m9s4[36] = { 114u, 97u, 110u, 103u, 101u, 32u, 119u, 105u, 100u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 103u, 101u, 110u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 100u, 114u, 97u, 119u, 115u };
-static const uint32_t m9s5[23] = { 108u, 97u, 109u, 98u, 100u, 97u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
-static const uint32_t m9s6[22] = { 115u, 105u, 103u, 109u, 97u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
-static const uint32_t m9s7[41] = { 120u, 112u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 114u, 105u, 99u, 116u, 108u, 121u, 32u, 97u, 115u, 99u, 101u, 110u, 100u, 105u, 110u, 103u, 44u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 78u, 97u, 78u };
-static const uint32_t m9s8[41] = { 120u, 112u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 114u, 105u, 99u, 116u, 108u, 121u, 32u, 97u, 115u, 99u, 101u, 110u, 100u, 105u, 110u, 103u, 44u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 78u, 97u, 78u };
-static const uint32_t m9s9[46] = { 97u, 32u, 115u, 97u, 109u, 112u, 108u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 118u, 97u, 114u, 121u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 99u, 111u, 114u, 114u, 101u, 108u, 97u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s10[46] = { 97u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 116u, 104u, 97u, 116u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 118u, 97u, 114u, 121u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 99u, 111u, 114u, 114u, 101u, 108u, 97u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s11[59] = { 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 116u, 104u, 97u, 116u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 118u, 97u, 114u, 121u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 112u, 108u, 97u, 99u, 101u, 32u, 111u, 110u, 32u, 97u, 32u, 84u, 97u, 121u, 108u, 111u, 114u, 32u, 100u, 105u, 97u, 103u, 114u, 97u, 109u };
-static const uint32_t m9s12[32] = { 97u, 32u, 112u, 101u, 114u, 109u, 117u, 116u, 97u, 116u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 102u, 101u, 119u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 110u, 111u, 110u, 101u };
-static const uint32_t m9s13[40] = { 97u, 32u, 99u, 104u, 111u, 105u, 99u, 101u, 32u, 111u, 102u, 32u, 107u, 32u, 111u, 117u, 116u, 32u, 111u, 102u, 32u, 110u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 48u, 32u, 60u, 61u, 32u, 107u, 32u, 60u, 61u, 32u, 110u };
-static const uint32_t m9s14[32] = { 97u, 32u, 104u, 105u, 115u, 116u, 111u, 103u, 114u, 97u, 109u, 32u, 104u, 97u, 115u, 32u, 111u, 110u, 101u, 32u, 98u, 105u, 110u, 32u, 97u, 116u, 32u, 108u, 101u, 97u, 115u, 116u };
-static const uint32_t m9s15[48] = { 116u, 104u, 101u, 32u, 114u, 97u, 110u, 103u, 101u, 32u, 111u, 102u, 32u, 97u, 32u, 104u, 105u, 115u, 116u, 111u, 103u, 114u, 97u, 109u, 32u, 105u, 115u, 32u, 108u, 111u, 32u, 60u, 32u, 104u, 105u, 44u, 32u, 98u, 111u, 116u, 104u, 32u, 102u, 105u, 110u, 105u, 116u, 101u };
-static const uint32_t m9s16[33] = { 97u, 32u, 119u, 105u, 110u, 100u, 111u, 119u, 32u, 104u, 111u, 108u, 100u, 115u, 32u, 111u, 110u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 97u, 116u, 32u, 108u, 101u, 97u, 115u, 116u };
-static const uint32_t m9s17[35] = { 100u, 101u, 103u, 114u, 101u, 101u, 115u, 32u, 111u, 102u, 32u, 102u, 114u, 101u, 101u, 100u, 111u, 109u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
-static const uint32_t m9s18[26] = { 97u, 32u, 112u, 114u, 111u, 98u, 97u, 98u, 105u, 108u, 105u, 116u, 121u, 32u, 105u, 115u, 32u, 105u, 110u, 32u, 91u, 48u, 44u, 32u, 49u, 93u };
+static const uint8_t m9s0[27] = { 112, 101, 114, 99, 101, 110, 116, 105, 108, 101, 32, 111, 117, 116, 115, 105, 100, 101, 32, 91, 48, 44, 32, 49, 48, 48, 93 };
+static const uint8_t m9s1[35] = { 100, 101, 103, 114, 101, 101, 115, 32, 111, 102, 32, 102, 114, 101, 101, 100, 111, 109, 32, 109, 117, 115, 116, 32, 98, 101, 32, 112, 111, 115, 105, 116, 105, 118, 101 };
+static const uint8_t m9s2[11] = { 101, 109, 112, 116, 121, 32, 114, 97, 110, 103, 101 };
+static const uint8_t m9s3[36] = { 114, 97, 110, 103, 101, 32, 119, 105, 100, 101, 114, 32, 116, 104, 97, 110, 32, 116, 104, 101, 32, 103, 101, 110, 101, 114, 97, 116, 111, 114, 32, 100, 114, 97, 119, 115 };
+static const uint8_t m9s4[36] = { 114, 97, 110, 103, 101, 32, 119, 105, 100, 101, 114, 32, 116, 104, 97, 110, 32, 116, 104, 101, 32, 103, 101, 110, 101, 114, 97, 116, 111, 114, 32, 100, 114, 97, 119, 115 };
+static const uint8_t m9s5[23] = { 108, 97, 109, 98, 100, 97, 32, 109, 117, 115, 116, 32, 98, 101, 32, 112, 111, 115, 105, 116, 105, 118, 101 };
+static const uint8_t m9s6[22] = { 115, 105, 103, 109, 97, 32, 109, 117, 115, 116, 32, 98, 101, 32, 112, 111, 115, 105, 116, 105, 118, 101 };
+static const uint8_t m9s7[41] = { 120, 112, 32, 109, 117, 115, 116, 32, 98, 101, 32, 115, 116, 114, 105, 99, 116, 108, 121, 32, 97, 115, 99, 101, 110, 100, 105, 110, 103, 44, 32, 97, 110, 100, 32, 110, 111, 32, 78, 97, 78 };
+static const uint8_t m9s8[41] = { 120, 112, 32, 109, 117, 115, 116, 32, 98, 101, 32, 115, 116, 114, 105, 99, 116, 108, 121, 32, 97, 115, 99, 101, 110, 100, 105, 110, 103, 44, 32, 97, 110, 100, 32, 110, 111, 32, 78, 97, 78 };
+static const uint8_t m9s9[46] = { 97, 32, 115, 97, 109, 112, 108, 101, 32, 116, 104, 97, 116, 32, 100, 111, 101, 115, 32, 110, 111, 116, 32, 118, 97, 114, 121, 32, 104, 97, 115, 32, 110, 111, 32, 99, 111, 114, 114, 101, 108, 97, 116, 105, 111, 110 };
+static const uint8_t m9s10[46] = { 97, 32, 99, 111, 108, 117, 109, 110, 32, 116, 104, 97, 116, 32, 100, 111, 101, 115, 32, 110, 111, 116, 32, 118, 97, 114, 121, 32, 104, 97, 115, 32, 110, 111, 32, 99, 111, 114, 114, 101, 108, 97, 116, 105, 111, 110 };
+static const uint8_t m9s11[59] = { 97, 32, 102, 105, 101, 108, 100, 32, 116, 104, 97, 116, 32, 100, 111, 101, 115, 32, 110, 111, 116, 32, 118, 97, 114, 121, 32, 104, 97, 115, 32, 110, 111, 32, 112, 108, 97, 99, 101, 32, 111, 110, 32, 97, 32, 84, 97, 121, 108, 111, 114, 32, 100, 105, 97, 103, 114, 97, 109 };
+static const uint8_t m9s12[32] = { 97, 32, 112, 101, 114, 109, 117, 116, 97, 116, 105, 111, 110, 32, 111, 102, 32, 102, 101, 119, 101, 114, 32, 116, 104, 97, 110, 32, 110, 111, 110, 101 };
+static const uint8_t m9s13[40] = { 97, 32, 99, 104, 111, 105, 99, 101, 32, 111, 102, 32, 107, 32, 111, 117, 116, 32, 111, 102, 32, 110, 32, 110, 101, 101, 100, 115, 32, 48, 32, 60, 61, 32, 107, 32, 60, 61, 32, 110 };
+static const uint8_t m9s14[32] = { 97, 32, 104, 105, 115, 116, 111, 103, 114, 97, 109, 32, 104, 97, 115, 32, 111, 110, 101, 32, 98, 105, 110, 32, 97, 116, 32, 108, 101, 97, 115, 116 };
+static const uint8_t m9s15[48] = { 116, 104, 101, 32, 114, 97, 110, 103, 101, 32, 111, 102, 32, 97, 32, 104, 105, 115, 116, 111, 103, 114, 97, 109, 32, 105, 115, 32, 108, 111, 32, 60, 32, 104, 105, 44, 32, 98, 111, 116, 104, 32, 102, 105, 110, 105, 116, 101 };
+static const uint8_t m9s16[33] = { 97, 32, 119, 105, 110, 100, 111, 119, 32, 104, 111, 108, 100, 115, 32, 111, 110, 101, 32, 118, 97, 108, 117, 101, 32, 97, 116, 32, 108, 101, 97, 115, 116 };
+static const uint8_t m9s17[35] = { 100, 101, 103, 114, 101, 101, 115, 32, 111, 102, 32, 102, 114, 101, 101, 100, 111, 109, 32, 109, 117, 115, 116, 32, 98, 101, 32, 112, 111, 115, 105, 116, 105, 118, 101 };
+static const uint8_t m9s18[26] = { 97, 32, 112, 114, 111, 98, 97, 98, 105, 108, 105, 116, 121, 32, 105, 115, 32, 105, 110, 32, 91, 48, 44, 32, 49, 93 };
 
 static int64_t Stats_Need (m9_sl_F64 xs, int64_t need, m9_state *err);
 static double Stats_Total (m9_sl_F64 xs, m9_state *err);
@@ -375,7 +375,7 @@ double Stats_Percentile (m9_sl_F64 xs, double p, m9_state *err)
     n = m9v;
   }
   if ((!(((p >= 0.0) && (p <= 100.0))))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 27 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 27 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 27 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 27 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -689,7 +689,7 @@ double Stats_TTail (double t, double dof, m9_state *err)
   double m9ret = 0;
   double p = 0; (void) p;
   if ((!((dof > 0.0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 35 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 35 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 35 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 35 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -791,14 +791,14 @@ int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_state *err)
   int64_t limit = 0; (void) limit;
   int64_t k = 0; (void) k;
   if ((hi < lo)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 11 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 11 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 11 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 11 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   bool m9t2 = ((lo < m9_neg_i64 (Stats_TwoP62, err)) || (hi > m9_sub_i64 (Stats_TwoP62, INT64_C(1), err)));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 36 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 36 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s3, 36 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s3, 36 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -807,7 +807,7 @@ int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_state *err)
     m = m9v;
   }
   if ((m > Stats_TwoP53i)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 36 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 36 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s4, 36 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 36 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -901,7 +901,7 @@ double Stats_Exponential (Stats_Stream *st, double lambda, m9_state *err)
   double m9ret = 0;
   double u = 0; (void) u;
   if ((!((lambda > 0.0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 23 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 23 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s5, 23 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s5, 23 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -927,7 +927,7 @@ double Stats_LogNormal (Stats_Stream *st, double mu, double sigma, m9_state *err
   err->res = &m9frame;
   double m9ret = 0;
   if ((!((sigma > 0.0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 22 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 22 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s6, 22 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s6, 22 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1203,7 +1203,7 @@ m9_sl_F64 Stats_Interp (m9_sl_F64 xs, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err)
   bool m9t1 = (!(((*(double *) m9_at (xp.p, INT64_C(0), xp.len, sizeof (double), err)) == (*(double *) m9_at (xp.p, INT64_C(0), xp.len, sizeof (double), err)))));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 41 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 41 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s7, 41 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s7, 41 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1215,7 +1215,7 @@ m9_sl_F64 Stats_Interp (m9_sl_F64 xs, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err)
     bool m9t4 = (!(((*(double *) m9_at (xp.p, m9_sub_i64 (i, INT64_C(1), err), xp.len, sizeof (double), err)) < (*(double *) m9_at (xp.p, i, xp.len, sizeof (double), err)))));
     if (err->exc) goto L_ret;
     if (m9t4) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s8, 41 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s8, 41 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+      { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s8, 41 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s8, 41 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
@@ -1353,7 +1353,7 @@ double Stats_Corr (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
   Stats_PairSums (xs, ys, n, &(sxx), &(syy), &(sxy), err);
   if (err->exc) goto L_ret;
   if (((sxx == 0.0) || (syy == 0.0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 46 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 46 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s9, 46 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s9, 46 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1496,7 +1496,7 @@ m9_gd2_double Stats_CorrMatrix (m9_gd2_double g, m9_state *err)
         goto L_ret;
       }
       if (((sxx == 0.0) || (syy == 0.0))) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s10, 46 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s10, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+        { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s10, 46 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s10, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
@@ -1564,7 +1564,7 @@ void Stats_Taylor (m9_sl_F64 model, m9_sl_F64 ref, double *ratio, double *corr, 
   Stats_PairSums (model, ref, n, &(smm), &(srr), &(smr), err);
   if (err->exc) goto L_ret;
   if (((smm == 0.0) || (srr == 0.0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s11, 59 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s11, 59 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s11, 59 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s11, 59 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -2082,7 +2082,7 @@ m9_sl_I64 Stats_Permutation (Stats_Stream *st, int64_t n, m9_state *err)
   m9_sl_I64 a = {0}; (void) a;
   int64_t i = 0; (void) i;
   if ((n < INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 32 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s12, 32 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s12, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -2126,7 +2126,7 @@ m9_sl_I64 Stats_Choice (Stats_Stream *st, int64_t n, int64_t k, m9_state *err)
   int64_t j = 0; (void) j;
   int64_t t = 0; (void) t;
   if ((((n < INT64_C(0)) || (k < INT64_C(0))) || (k > n))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 40 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 40 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s13, 40 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s13, 40 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -2921,14 +2921,14 @@ static void Stats_BinsOk (int64_t bins, double lo, double hi, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   if ((bins < INT64_C(1))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 32 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s14, 32 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s14, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   bool m9t2 = (((!Math_IsFinite (lo, err)) || (!Math_IsFinite (hi, err))) || (!((lo < hi))));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s15, 48 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s15, 48 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s15, 48 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s15, 48 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -3150,7 +3150,7 @@ static void Stats_RollOk (m9_sl_F64 xs, int64_t window, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   if ((window < INT64_C(1))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 33 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s16, 33 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s16, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -3629,7 +3629,7 @@ static void Stats_DofOk (double dof, m9_state *err)
   bool m9t1 = ((!((dof > 0.0))) || (!Math_IsFinite (dof, err)));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 35 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s17, 35 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s17, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -3650,7 +3650,7 @@ static void Stats_ProbOk (double p, m9_state *err)
     goto L_ret;
   }
   if (((p < 0.0) || (p > 1.0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s18, 26 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s18, 26 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s18, 26 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s18, 26 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }

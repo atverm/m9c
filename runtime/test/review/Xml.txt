@@ -1,11 +1,11 @@
-REVIEW Xml -- 58 procedures with a body, 32 of them functions; 13 headings in a DEFINITION
+REVIEW Xml -- 61 procedures with a body, 33 of them functions; 13 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              32
-  assignments                                   349
-  arguments                                     626
-  RETURN values                                  62
-  operands of a comparison or an operator       398
+  functions answering on every path              33
+  assignments                                   363
+  arguments                                     794
+  RETURN values                                  65
+  operands of a comparison or an operator       409
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -34,9 +34,9 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               15
-  handlers                                        4
-  NEW in the frame                                0
-  NEW in a named pool                            34
-  calls of a STR form with a UTF twin            36   Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.FindChar -> Text.FindCharUtf, +30 more
-  STR subscripts, writes and LEN                107   index s[0], len r.src, index r[i], len r.src, len r.src, index r[r.pos], +101 more
+  RAISE statements                               16
+  handlers                                        6
+  NEW in the frame                                1
+  NEW in a named pool                            32
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

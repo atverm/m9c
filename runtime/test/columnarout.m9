@@ -11,12 +11,12 @@ MODULE columnarout ;
         PutAttText and PutAttStr, a float variable with a NaN fill,
         a byte variable of negative values)
 
-   The program runtime/test/columnar.sh drives: what it writes is read
-   back by pyarrow and by netCDF4-python in columnarcheck.py, which is
-   the whole check -- a writer is right when somebody else's reader
-   says so.  The values are stated twice, here and in columnarcheck.py,
-   and the two must agree; corpus/ParquetTest.m9 and NetCDFTest.m9
-   hold the same files through M9's own readers. *)
+   runtime/test/columnar.sh drives this program.  What it writes is
+   read back by pyarrow and by netCDF4-python in columnarcheck.py,
+   which is the whole check: a writer is right when somebody else's
+   reader says so.  The values are stated twice, here and in
+   columnarcheck.py, and the two must agree; corpus/ParquetTest.m9 and
+   NetCDFTest.m9 hold the same files through M9's own readers. *)
 
 IMPORT Faults ;
 IMPORT Frame ;
@@ -36,9 +36,9 @@ VAR
   none : Parquet.Options ;   (* zeroed: nothing asked *)
   packed : Parquet.Options ; (* every option, and a codec *)
 
-(* the frame both Parquet files hold: every kind of column, a missing
-   cell in each numeric one but Q16, NaN and the sentinel both missing
-   in SW *)
+(* Sample answers the frame both Parquet files hold: every kind of
+   column, a missing cell in each numeric one but Q16, NaN and the
+   sentinel both missing in SW. *)
 PROCEDURE Sample () : PTR Frame.Fr IN pool
   RAISES Faults.SizeError, Frame.Duplicate, ValueRange =
 VAR
@@ -166,7 +166,7 @@ BEGIN
   NetCDF.PutAttText (f, vq, 'units', '1') ;
   NetCDF.PutAttText (f, NetCDF.Global, 'title', 'µmol m-2 s-1 — a title') ;
   NetCDF.PutAttText (f, NetCDF.Global, 'plain', 'ASCII only') ;
-  NetCDF.PutAttStr (f, NetCDF.Global, 'octets', 'K and m') ;
+  NetCDF.PutAttStr (f, NetCDF.Global, 'octets', 'K and µm') ;
   NetCDF.EndDef (f) ;
   ta := NEW (pool, F32, Rows) ;
   qc := NEW (pool, I16, Rows) ;

@@ -1,15 +1,16 @@
 # Gen
 
-The C11 code generator, in M9 -- restated from host/fpc/M9Gen.pas
-for P5 stage 2.  The FPC generator is the differential oracle:
-both must emit byte-identical .h and .c for every corpus module,
-including this one.  Faithfulness outranks taste: the oracle's
-warts are replicated deliberately.  (TagOfExpr recomputed via DES
-and CallC, side effects and all, until the typed tree's stage 3
-made the checker's recorded type the answer, 2026-10-09.)
-Errors are counted; the message table is stage-2 driver work.
-One generator instance per process: state is module-level and the
-pool is never reset, exactly one module per run.
+Gen is the C11 code generator, in M9, restated from
+host/fpc/M9Gen.pas for P5 stage 2.  The FPC generator is the
+differential oracle: both must emit byte-identical .h and .c for
+every corpus module, including this one.  Faithfulness outranks
+taste: the oracle's warts are replicated deliberately.  (TagOfExpr
+recomputed its answer via DES and CallC, side effects and all,
+until the typed tree's stage 3 made the checker's recorded type the
+answer, 2026-10-09.)  Errors are counted; the message table is
+stage-2 driver work.  Each process holds one generator instance:
+state is module-level and the pool is never reset, exactly one
+module per run.
 
 ### LoadUnit (VAR KEPT u: PTR Ast.Node)
 
@@ -17,30 +18,33 @@ _(documented with the group below)_
 
 ### LoadExtern (KEPT u: PTR Ast.Node)
 
-a DIRECT import: register its declarations and include its
-header, because this module names things in it
+LoadExtern loads a DIRECT import.  It registers its declarations
+and includes its header, because this module names things in
+it.
 
 ### LoadExternDeep (KEPT u: PTR Ast.Node)
 
-a dependency of a dependency: register its declarations so a
-callee's signature can be RESOLVED -- Qvsat.Ew answers a
-Kind.FlexFloat and its caller has no business importing Kind --
-but emit no #include, because this module names nothing in it.
+LoadExternDeep loads a dependency of a dependency.  It registers
+its declarations so a callee's signature can be RESOLVED: Qvsat.Ew
+answers a Kind.FlexFloat, and its caller has no business importing
+Kind.  It emits no #include, because this module names nothing in
+it.
 
-The third closure.  The checker wants the transitive one, the
-generator's INCLUDE list wants the direct one, and between them
+This is the third closure.  The checker wants the transitive one,
+the generator's INCLUDE list wants the direct one, and between them
 was a hole: a direct dependency's signature may name a type from
 a module this one does not import.  It resolved to nothing and,
 until the guard went in, became integer arithmetic.
 
 ### SetPrefix (RO module: UTF ; RO prefix: UTF)
 
-emit module MODULE's C names -- its procedures, initialiser,
-exceptions, exported variables and types -- under PREFIX instead
-of the module's name: one generation of a notebook state cell,
-run again, beside the generation before it in one process
-(docs/notebook-state-plan.md phase 2).  Without a call, every
-name is the module's own and the C is what it always was.
+SetPrefix makes Emit emit module MODULE's C names under PREFIX
+instead of the module's name: its procedures, initialiser,
+exceptions, exported variables and types.  This serves one
+generation of a notebook state cell, run again, beside the
+generation before it in one process (docs/notebook-state-plan.md
+phase 2).  Without a call, every name is the module's own and the
+C is what it always was.
 
 ### SetDebugSource (RO file: UTF)
 
@@ -74,16 +78,17 @@ _(documented with the group below)_
 
 ### ErrMsgAt (i: I64) : UTF
 
-the first eight generator errors, with source lines: a count
-alone cost a bisect every time a module was written outside the
-corpus, and then cost one INSIDE the tutorial.  i in
-0 .. MIN (Errs (), 8) - 1; msgs may be '' where a site has no
-wording yet.
+ErrLineAt and ErrMsgAt answer the first eight generator errors,
+with source lines.  A count alone cost a bisect every time a
+module was written outside the corpus, and then cost one INSIDE
+the tutorial.  i is in 0 .. MIN (Errs (), 8) - 1; msgs may be ''
+where a site has no wording yet.
 
 ### ErrModAt (i: I64) : UTF
 
-the module whose source error i's line is in: '' for the module
-being emitted, else an imported definition's name (2026-10-29)
+ErrModAt answers the module whose source error i's line is in:
+'' for the module being emitted, else an imported definition's
+name (2026-10-29).
 
 ### SetIrCheck (on: BOOL)
 
@@ -91,11 +96,12 @@ _(documented with the group below)_
 
 ### SetStrUtf (on: BOOL)
 
-the switch, rehearsed (Sem.SetStrUtf): STR is m9_sl_UTF8, a
-literal and a string CONST are octets, STR (u) is u, X whose
-module declares XUtf is not emitted and a call of X calls XUtf
+SetStrUtf rehearses the switch (Sem.SetStrUtf).  STR is
+m9_sl_UTF8, a literal and a string CONST are octets, and STR (u)
+is u.  X whose module declares XUtf is not emitted, and a call of
+X calls XUtf.
 
 ### IrReport () : UTF
 
-one line a disagreement since SetIrCheck: `LINE: tree X, emitter Y:
-C', '' when there was none
+IrReport answers one line a disagreement since SetIrCheck:
+`LINE: tree X, emitter Y: C', or '' when there was none.

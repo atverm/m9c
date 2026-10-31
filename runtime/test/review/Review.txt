@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        0
   NEW in the frame                                5
   NEW in a named pool                             0
-  calls of a STR form with a UTF twin             1   Text.OneOf -> Text.OneOfUtf
+  calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

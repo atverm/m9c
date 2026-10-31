@@ -1,8 +1,8 @@
 (* EXPECT: THREAD (Work): cannot move through a selector of b into its OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2) *)
-(* A THREAD whose target takes its argument OWN frees it: handed a
-   field, `THREAD (Work, b.p)', it was read as a LEND (only a bare
-   owned name moved), and Work's DISPOSE freed what this thread still
-   held through b.p (2026-10-28).  Legal forms first: a field LENT to a
+(* A THREAD whose target takes its argument OWN frees it.  Handed a
+   field, `THREAD (Work, b.p)' was read as a LEND (only a bare owned
+   name moved), and Work's DISPOSE freed what this thread still held
+   through b.p (2026-10-28).  Legal forms come first: a field LENT to a
    target that takes a value, a whole owned name moved in. *)
 MODULE m ;
 TYPE

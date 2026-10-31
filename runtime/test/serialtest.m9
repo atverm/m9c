@@ -69,8 +69,8 @@ VAR
 
 BEGIN
   j := NEW (pool, Job) ;
-  (* no : par 6 refuses reaching into a monitor from
-     outside a bound procedure, and pool storage is defined-zero *)
+  (* No j.d.n := 0 here.  Par 6 refuses reaching into a monitor from
+     outside a bound procedure, and pool storage is defined-zero. *)
   i := 0 ;
   WHILE i < NThreads DO
     THREAD (Worker, j) ;

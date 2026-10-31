@@ -1,21 +1,21 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
-/* sha256shim: Hash's SHA-256 (2026-10-11).
+/* sha256shim holds Hash's SHA-256 (2026-10-11).
  *
- * Hash.Sha256 is a VALUE record -- a copy before Final forks the
- * stream, which is how HMAC and PBKDF2 keep their keyed states -- so
+ * Hash.Sha256 is a VALUE record.  A copy before Final forks the
+ * stream, which is how HMAC and PBKDF2 keep their keyed states.  So
  * the state cannot be an EVP_MD_CTX pointer (a copy would share it).
  * The record holds 128 octets, 8-aligned, and this file keeps the
  * state there:
  *
- *   - POSIX: OpenSSL's SHA256_CTX, a plain struct, so a byte copy is a
- *     fork; SHA256_Update runs the block code EVP runs (SHA-NI, ARMv8
- *     SHA2 where the processor has them).  The low-level calls are
- *     deprecated in OpenSSL 3 for EVP, which has no copyable state;
- *     they are still built and exported, and the deprecation is
- *     silenced here on purpose.  libcrypto is on every flagless link
- *     m9c makes on POSIX.
- *   - Windows: a portable FIPS 180-4 loop (the one hashshim.c holds),
- *     because m9c's link there names no OpenSSL and the bundle's is
+ *   - POSIX uses OpenSSL's SHA256_CTX, a plain struct, so a byte copy
+ *     is a fork.  SHA256_Update runs the block code EVP runs (SHA-NI,
+ *     ARMv8 SHA2 where the processor has them).  The low-level calls
+ *     are deprecated in OpenSSL 3 for EVP, which has no copyable
+ *     state.  They are still built and exported, and the deprecation
+ *     is silenced here on purpose.  libcrypto is on every flagless
+ *     link m9c makes on POSIX.
+ *   - Windows uses a portable FIPS 180-4 loop (the one hashshim.c
+ *     holds).  m9c's link there names no OpenSSL, and the bundle's is
  *     static, with its own system libraries behind it.
  *
  * Either way Hash's digests are held to hashlib by HashTest.

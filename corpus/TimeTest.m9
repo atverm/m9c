@@ -1,12 +1,13 @@
 MODULE TimeTest ;
 
-(* Time's nanosecond instant and Http's IMF-fixdate, tested in M9
-   against java.time itself (runtime/test/gold/Time.gold, written by
-   tools/TimeGold.java with OpenJDK 25 on zoefii): ParseNanos against
-   OffsetDateTime.parse with ISO_OFFSET_DATE_TIME on 434 strings, the
-   refusals included; IsoNanos against Instant.toString and FormatDate
-   against an IMF-fixdate pattern on 411 instants from year 0 to 9999.
-   The rest of Time keeps its C driver (time_driver.c). *)
+(* TimeTest tests Time's nanosecond instant and Http's IMF-fixdate in
+   M9 against java.time itself (runtime/test/gold/Time.gold, written
+   by tools/TimeGold.java with OpenJDK 25 on zoefii).  It holds
+   ParseNanos against OffsetDateTime.parse with ISO_OFFSET_DATE_TIME
+   on 434 strings, the refusals included.  It holds IsoNanos against
+   Instant.toString and FormatDate against an IMF-fixdate pattern on
+   411 instants from year 0 to 9999.  The rest of Time keeps its C
+   driver (time_driver.c). *)
 
 IMPORT Check ;
 IMPORT Http ;
@@ -18,7 +19,8 @@ VAR
   t : Check.T ;
   pool : POOL ;
 
-(* ParseNanos's verdict on s: TRUE and r set, or FALSE when it raised *)
+(* Parsed answers ParseNanos's verdict on s: TRUE and r set, or FALSE
+   when it raised. *)
 PROCEDURE Parsed (RO s: STR ; VAR r: Time.Nanos) : BOOL =
 BEGIN
   r := Time.ParseNanos (s) ;
@@ -94,6 +96,22 @@ EXCEPT
 | IndexError : Check.That (t, 'the print golden lines differ in length', FALSE)
 END Prints ;
 
+(* Rounds holds Iso's carry.  The decimals round before the second is
+   padded, so 9.9996 is `10.000' and 59.9996 is the next minute.
+   Whole seconds are cut. *)
+PROCEDURE Rounds () =
+VAR x : Time.Instant ;
+BEGIN
+  x.t := 1755871389.9996 ;
+  Check.EqStr (t, 'Iso rounds 9.9996 to 10.000', Time.Iso (x, 3), '2025-08-22T14:03:10.000Z') ;
+  x.t := 1755871439.9996 ;
+  Check.EqStr (t, 'Iso carries 59.9996 into the minute', Time.Iso (x, 3), '2025-08-22T14:04:00.000Z') ;
+  x.t := 1755871389.7 ;
+  Check.EqStr (t, 'Iso cuts whole seconds', Time.Iso (x, 0), '2025-08-22T14:03:09Z')
+EXCEPT
+| ValueRange : Check.That (t, 'Iso refused an instant of 2025', FALSE)
+END Rounds ;
+
 PROCEDURE Refuses (secs, nanos: I64) : BOOL =
 VAR
   r : Time.Nanos ;
@@ -112,6 +130,7 @@ VAR a, b : Time.Nanos ;
 BEGIN
   Parses () ;
   Prints () ;
+  Rounds () ;
   Check.That (t, 'IsoNanos refuses a nanosecond of a billion', Refuses (0, 1000000000)) ;
   Check.That (t, 'and a negative one', Refuses (0, -1)) ;
   Check.That (t, 'and the year 10000', Refuses (253402300800, 0)) ;

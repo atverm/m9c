@@ -3,7 +3,7 @@
    par 8) and not built.  The checker accepted RECORD (Base) and the
    generator knew no field of the base: `e.a0' on an extension of an
    extension was `unknown record field' (the fuzz review's ext3, until
-   2026-10-30).  Legal form first: the base held as a field. *)
+   2026-10-30).  The legal form comes first: the base as a field. *)
 MODULE m ;
 TYPE
   E0 = RECORD a0 : I64 END ;

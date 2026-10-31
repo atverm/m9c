@@ -1,25 +1,27 @@
-/* utfrt_driver.c -- the runtime's UTF paths held to the plain loops
+/* utfrt_driver.c holds the runtime's UTF paths to the plain loops
    (m9rt.h: the ASCII prescan and the vector validator in
-   m9_utf_from_bytes, m9_utf_cpcount, m9_utf_find).  Run twice by the
-   battery: as built, and under M9_UTF_PORTABLE=1, where the runtime
-   keeps to its sequence loop.  Over three texts -- ASCII, a 2-byte
-   character in 64, one in 5 with a 3-byte one in 11 -- each 4 MB:
-     the validator accepts every text and, with a byte of every bad
-     class (FF, C0, C1, a stray 80, F5, ED+A0, E0 overlong, F0
-     overlong, F4+90) written at 23 offsets each, answers what the
-     sequence-at-a-time loop answers -- the SAME offset, or accepted
-     where the byte landed on a continuation byte it equals -- (the oracle here is that
-     loop, copied from the runtime as it was before the lane and
-     checked against Python's strict decoder when it was written);
-     every sequence cut short at the end of a text is refused;
-     the code point count equals the byte loop's on every text and on
-     every prefix length 0..64 (the tail after the last word);
-     the search answers what the double loop answers for needles at
+   m9_utf_from_bytes, m9_utf_cpcount, m9_utf_find).  The battery runs
+   it twice: as built, and under M9_UTF_PORTABLE=1, where the runtime
+   keeps to its sequence loop.  It uses three texts of 4 MB each:
+   ASCII, a 2-byte character in 64, and one in 5 with a 3-byte one in
+   11.  Over them it holds these:
+     The validator accepts every text.  A byte of every bad class (FF,
+     C0, C1, a stray 80, F5, ED+A0, E0 overlong, F0 overlong, F4+90)
+     is written at 23 offsets each.  The validator answers what the
+     sequence-at-a-time loop answers: the SAME offset, or accepted
+     where the byte landed on a continuation byte it equals.  The
+     oracle here is that loop, copied from the runtime as it was
+     before the lane and checked against Python's strict decoder when
+     it was written.
+     Every sequence cut short at the end of a text is refused.
+     The code point count equals the byte loop's on every text and on
+     every prefix length 0..64 (the tail after the last word).
+     The search answers what the double loop answers for needles at
      the start, the end, nowhere, of length 0, 1 and 21, and from
      every offset class (0, inside, past the end).
-   Shown able to fail: the prescan with its high-bit test sabotaged
-   fails 617 of 669 (2026-10-25).  Speed is printed, never gated.
-   Battery `utfrt' in build.sh. */
+   The test is shown able to fail: the prescan with its high-bit test
+   sabotaged fails 617 of 669 (2026-10-25).  Speed is printed, never
+   gated.  The battery is `utfrt' in build.sh. */
 #define _POSIX_C_SOURCE 200809L
 #include <stdint.h>
 #include <stdio.h>
@@ -35,7 +37,7 @@ static double now (void)
   return t.tv_sec + t.tv_nsec * 1e-9;
 }
 
-/* the oracle: m9_utf_seq as it stood, a sequence at a time */
+/* The oracle is m9_utf_seq as it stood, a sequence at a time. */
 static int seq (const uint8_t *p, int64_t n)
 {
   uint8_t b0 = p[0];
@@ -82,7 +84,7 @@ static int64_t plain_find (const uint8_t *h, int64_t hn, const uint8_t *nd, int6
   return -1;
 }
 
-/* the runtime's validator, as an offset or -1 */
+/* rt_validate answers the runtime's validator as an offset or -1. */
 static int64_t rt_validate (m9_pool *pool, const uint8_t *p, int64_t n)
 {
   m9_state err;
@@ -168,14 +170,15 @@ int main (void)
   }
 
   /* ---- the validator against the loop, sequence by sequence ----
-     every 2-byte pair; every 3-byte sequence whose lead is E0..FF;
-     every 4-byte lead F0..FF with every second byte and a sweep of the
-     third and fourth; each at 16 offsets so that a 16-byte block
-     boundary falls in every position of it -- the vector validator
-     (m9rt.h) sees blocks, and this is where its tables would show a
-     wrong bit.  22 million texts; the exhaustive run that chose the
-     tables (156 million, every 3-byte sequence) is in the progress
-     report of 2026-10-25. */
+     This tries every 2-byte pair and every 3-byte sequence whose lead
+     is E0..FF.  It tries every 4-byte lead F0..FF with every second
+     byte and a sweep of the third and fourth.  Each goes at 16
+     offsets, so that a 16-byte block boundary falls in every position
+     of it.  The vector validator (m9rt.h) sees blocks, and this is
+     where its tables would show a wrong bit.  It makes 22 million
+     texts.  The exhaustive run that chose the tables (156 million,
+     every 3-byte sequence) is in the progress report of
+     2026-10-25. */
   {
     uint8_t sq[48];
     static const uint8_t sw[8] = { 0x00, 0x7F, 0x80, 0x8F, 0x90, 0xBF, 0xC0, 0xFF };

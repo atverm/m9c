@@ -1,25 +1,28 @@
 #!/bin/sh
-# httpserver -- HttpServer.Run, the concurrent HTTP/1.1 server, held to
+# httpserver holds HttpServer.Run, the concurrent HTTP/1.1 server, to
 # RFC 9112 by code M9 did not write (docs/httpserver-plan.md, stages
-# 1 to 3), natively and, where wine is, as a Windows program.
+# 1 to 3).  It runs natively and, where wine is, as a Windows program.
 #
-# Builds runtime/test/srvfix/SrvFix.m9 (one route per behaviour) with
-# this tree's compiler and runs srvfix/srvfix.py against it: raw-socket
-# cases, malformed ones included, every response parsed by h11; Date
-# held to its own weekday; byte-verified load on eight kept connections
-# with the server's descriptors and resident memory read from /proc; a
-# full queue answered 503; a connection limit that drains the server and
-# prints counts that must add up; the per-connection limit.
+# The gate builds runtime/test/srvfix/SrvFix.m9 (one route per
+# behaviour) with this tree's compiler and runs srvfix/srvfix.py
+# against it.  The checks: raw-socket cases, malformed ones included,
+# every response parsed by h11; Date held to its own weekday;
+# byte-verified load on eight kept connections with the server's
+# descriptors and resident memory read from /proc; a full queue
+# answered 503; a connection limit that drains the server and prints
+# counts that must add up; the per-connection limit.
 #
-# SHOWN ABLE TO FAIL by srvfix/sabotage.py: one-line breaks of
-# HttpServer.m9 (and of Logger and the runtime where the property lives
-# there), each of which must turn this gate red.  Not in CI (it builds
-# a server for each); run it after changing either side.
+# Sabotage.m9 srvfix SHOWS the gate ABLE TO FAIL: it makes one-line
+# breaks of HttpServer.m9 (and of Logger and the runtime where the
+# property lives there), each of which must turn this gate red.  The
+# sabotage is not in CI (it builds a server for each); run it after
+# changing either side.
 #
-# Needs h11 (python3-h11 on Debian and Ubuntu; SRVFIX_PY names another
-# Python).  Without it the gate SKIPS out loud on a workstation and
-# FAILS on CI, where the package is installed by the job.  Uses an
-# m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
+# The gate needs h11 (python3-h11 on Debian and Ubuntu; SRVFIX_PY
+# names another Python).  Without it the gate SKIPS out loud on a
+# workstation and FAILS on CI, where the package is installed by the
+# job.  It uses an m9c built from runtime/gen (lib/freshm9c.sh), or
+# $M9C.
 set -e
 cd "$(dirname "$0")"
 
@@ -39,7 +42,7 @@ rm -rf "$W"; mkdir -p "$W"
 RT=$(cd .. && pwd)
 LIB=$(cd ../../corpus && pwd)
 SRC=$(cd srvfix && pwd)
-# built in $W: --make writes each module's C and objects where it runs
+# Build in $W: --make writes each module's C and objects where it runs.
 ( cd "$W" && M9RUNTIME="$RT" M9LIBRARY="$LIB" \
     "$M9C" --make -o srvfix "$SRC/SrvFix.m9" ) > "$W/build.log" 2>&1 ||
   { cat "$W/build.log"; echo "httpserver: FAIL -- SrvFix does not build"; exit 1; }
@@ -49,16 +52,16 @@ st=0
 
 # ---- the Windows half: the same fixture against a mingw build, under
 # wine (plan stage 3).  The library's C is runtime/gen, archived so the
-# link takes what SrvFix uses; OpenSSL is the Windows toolchain's
+# link takes what SrvFix uses.  OpenSSL is the Windows toolchain's
 # ($M9WINTOOLCHAIN, the ucrt64 tree the release's zip is made from).
 # Under wine srvfix.py signals with SIGINT, which wine delivers as the
-# console's Ctrl-C, and skips the one check Windows cannot pass yet --
-# a UTF-8 file name, Io's Windows paths being ANSI -- saying so.
+# console's Ctrl-C.  It skips the one check Windows cannot pass yet (a
+# UTF-8 file name, since Io's Windows paths are ANSI), and says so.
 # Without wine, mingw or the toolchain this half says why it did not
 # run, rather than passing quietly.
 TC=${M9WINTOOLCHAIN:-}
 why=""
-# wine retired as a Windows (2026-10-19); M9WINE=1 runs this half
+# wine retired as a Windows (2026-10-19).  M9WINE=1 runs this half.
 [ "${M9WINE:-0}" = 1 ] || why="wine retired: tools/release/win/vmgates.sh runs it on the Windows 11 VM, M9WINE=1 under wine"
 command -v wine >/dev/null 2>&1 || why="${why:+$why, }no wine"
 command -v x86_64-w64-mingw32-gcc >/dev/null 2>&1 || why="${why:+$why, }no mingw"

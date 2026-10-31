@@ -1,5 +1,5 @@
-/* gendump_m9.c -- the M9-compiled generator side of the stage-2
-   differential: identical output to host/fpc/gendump.
+/* gendump_m9.c is the M9-compiled generator side of the stage-2
+   differential.  Its output is identical to host/fpc/gendump.
    Usage: gendump_m9 MODULE [DEP ...]                               */
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,14 +11,14 @@
 
 static m9_pool pool = {0};
 
-/* corpus/<name>.m9 -> a CHAR slice, the way parsedump_m9 reads it */
-static m9_sl_CHAR read_unit (const char *name)
+/* This reads corpus/<name>.m9 as its UTF-8 octets, the way
+   parsedump_m9 reads it. */
+static m9_sl_UTF8 read_unit (const char *name)
 {
   char path[512];
   FILE *f;
   long len;
   char *bytes;
-  uint32_t *chars;
 
   snprintf (path, sizeof path, "../../corpus/%s.m9", name);
   f = fopen (path, "rb");
@@ -27,10 +27,7 @@ static m9_sl_CHAR read_unit (const char *name)
   bytes = malloc ((size_t) len + 1);
   if (fread (bytes, 1, (size_t) len, f) != (size_t) len) exit (2);
   fclose (f);
-  chars = malloc (sizeof (uint32_t) * (size_t) len);
-  len = m9t_decode ((const unsigned char *) bytes, len, chars);   /* UTF-8, as m9c reads it */
-  free (bytes);
-  return (m9_sl_CHAR){ chars, len };
+  return (m9_sl_UTF8){ (uint8_t *) bytes, len };   /* UTF-8, as m9c reads it */
 }
 
 static Ast_Node *parse_unit (const char *name, m9_state *err)
@@ -39,7 +36,7 @@ static Ast_Node *parse_unit (const char *name, m9_state *err)
   Ast_Node *root;
 
   memset (&p, 0, sizeof p);
-  Parse_Init (&p, &pool,read_unit (name), err);
+  Parse_InitUtf (&p, &pool,read_unit (name), err);
   root = Parse_File (&pool, &p, &pool,err);
   if (err->exc) { fprintf (stderr, "%s: raised %s\n", name, err->exc->name);
                   exit (3); }
@@ -48,10 +45,11 @@ static Ast_Node *parse_unit (const char *name, m9_state *err)
   return root;
 }
 
-/* Gen's text: UTF-8 octets since 2026-10-23 (HText, CText answer UTF),
-   a slice of CHARs before.  Both, chosen by the type, because lib/gen.sh
-   builds this helper against the checked-in runtime/gen first -- the
-   previous generator's -- and against the one it writes next */
+/* Gen's text is UTF-8 octets since 2026-10-23 (HText, CText answer
+   UTF), and was a slice of CHARs before.  This takes both, chosen by
+   the type.  lib/gen.sh builds this helper against the checked-in
+   runtime/gen first, the previous generator's, and then against the
+   one it writes next. */
 static inline void put_chars (m9_sl_CHAR s)
 {
   int64_t i;
@@ -92,12 +90,20 @@ int main (int argc, char **argv)
   if (argc < 2) { fprintf (stderr, "usage: gendump_m9 MODULE [DEP ...]\n");
                   return 2; }
 
-  /* dependency definitions first, exactly as gendump loads them */
+  /* STR is the UTF-8 type (the switch, 2026-10-31).  The generator
+     gen.sh builds first is the checked-in C's, from before the switch,
+     which reads STR as CHARs unless it is told.  The ones after it
+     default to UTF, and this changes nothing for them. */
+  Sem_SetStrUtf (true, &err);
+  Gen_SetStrUtf (true, &err);
+
+  /* Load dependency definitions first, exactly as gendump loads
+       them. */
   for (k = 2; k < argc; k++)
     {
       droot = parse_unit (argv[k], &err);
-      /* the root goes by VAR, its pool beside it: a binder on a value
-         parameter's component named no pool (2026-10-10) */
+      /* The root goes by VAR, its pool beside it.  A binder on a value
+         parameter's component named no pool (2026-10-10). */
       Sem_LoadFile (&droot, &pool, &err);
       for (i = 0; i < droot->nkids; i++)
         if (droot->kids.p[i])
@@ -107,9 +113,9 @@ int main (int argc, char **argv)
     }
 
   root = parse_unit (argv[1], &err);
-  /* the checker first, as m9c runs it: it records the types the
-     generator reads (the typed tree, 2026-10-09); its diagnostics are
-     not this tool's business -- semdiff holds them */
+  /* Run the checker first, as m9c runs it.  It records the types the
+     generator reads (the typed tree, 2026-10-09).  Its diagnostics
+     are not this tool's business: semdiff holds them. */
   Sem_LoadFile (&root, &pool, &err);
   Sem_CheckFile (&root, &pool, &err);
   if (err.exc) { fprintf (stderr, "the checker raised %s\n",
@@ -124,11 +130,12 @@ int main (int argc, char **argv)
   {
     size_t n = strlen (argv[1]);
     /* Gen.Emit takes a UTF since 2026-10-24.  gen.sh builds the stage-1
-       generator from the CHECKED-IN C, whose Emit took a STR, and the
-       stage-2 one from what it wrote: the call is chosen by Emit's own
-       type, so one helper serves both passes (the other branch is
-       never called; its call goes through a volatile pointer, so the
-       compiler cannot hold it to Emit's declared type) */
+       generator from the CHECKED-IN C, whose Emit took a STR.  It
+       builds the stage-2 one from what it wrote.  Emit's own type
+       chooses the call, so one helper serves both passes.  The other
+       branch is never called.  Its call goes through a volatile
+       pointer, so the compiler cannot hold it to Emit's declared
+       type. */
     _Generic ((Gen_Emit),
               void (*)(m9_sl_UTF8, m9_state *): emit_utf,
               default: emit_chars) (argv[1], n, &err);

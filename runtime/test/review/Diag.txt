@@ -2,10 +2,10 @@ REVIEW Diag -- 15 procedures with a body, 12 of them functions; 9 headings in a 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              12
-  assignments                                    64
-  arguments                                     300
-  RETURN values                                  26
-  operands of a comparison or an operator       114
+  assignments                                    58
+  arguments                                     286
+  RETURN values                                  25
+  operands of a comparison or an operator       108
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        3
   NEW in the frame                                0
   NEW in a named pool                             4
-  calls of a STR form with a UTF twin             5   Text.FindChar -> Text.FindCharUtf, Io.Run -> Io.RunUtf, Io.Run -> Io.RunUtf, Io.ReadFile -> Io.ReadFileUtf, Lex.Init -> Lex.InitUtf
-  STR subscripts, writes and LEN                  6   len dir, len flags, len name, len name, index name[0], len flags
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

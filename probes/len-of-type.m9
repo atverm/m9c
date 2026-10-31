@@ -9,7 +9,7 @@ VAR
   n : I64 ;
 BEGIN
   s := 'abc' ;
-  n := LEN (a) + LEN (s) ;
+  n := LEN (a) + LEN (OCTETS (s)) ;
   n := LEN (I64) ;
   n := LEN (n)
 END m.

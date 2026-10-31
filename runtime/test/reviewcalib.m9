@@ -1,8 +1,8 @@
 MODULE reviewcalib ;
 
-(* The review counters, held to a program whose sites are counted by
-   hand.  Each comment says which row of `m9c --review' the line adds
-   to; reviewdiff.sh carries the numbers and compares.
+(* The review counters are held to this program, whose sites are
+   counted by hand.  Each comment says which row of `m9c --review' the
+   line adds to; reviewdiff.sh carries the numbers and compares.
 
      assignments                 4
      arguments                   5

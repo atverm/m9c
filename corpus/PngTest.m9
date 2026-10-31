@@ -1,13 +1,15 @@
 MODULE PngTest ;
 
-(* Png.Encode, read back here: the file is taken apart chunk by chunk
-   -- each CRC computed again, the header's fields, the resolution --
-   and its image data goes through Zip.Decompress and the filters
-   backwards, to the pixels that went in.
+IMPORT Text ;
 
-   Zip.Decompress is held to zlib by ZipTest.  That a reader which is
-   NOT this repository's reads these files is runtime/test/deflate.sh:
-   Python takes the same pictures apart there. *)
+(* This test reads Png.Encode back.  It takes the file apart chunk by
+   chunk (each CRC computed again, the header's fields, the
+   resolution), and its image data goes through Zip.Decompress and the
+   filters backwards, to the pixels that went in.
+
+   Zip.Decompress is held to zlib by ZipTest.  runtime/test/deflate.sh
+   shows that a reader which is NOT this repository's reads these
+   files: Python takes the same pictures apart there. *)
 
 IMPORT Check ;
 IMPORT DynStr ;
@@ -20,7 +22,8 @@ VAR
   t : Check.T ;
   pool : POOL ;
 
-(* a picture with something in every byte: no two neighbours alike *)
+(* Busy answers a picture with something in every byte: no two
+   neighbours alike. *)
 PROCEDURE Busy (w, h: I64) : SLICE OF BYTE RAISES ValueRange =
 VAR
   p : SLICE OF BYTE ;
@@ -38,8 +41,9 @@ BEGIN
   RETURN p
 END Busy ;
 
-(* a picture as a figure is: white, a blue line across every fortieth
-   row and down every fiftieth column, a ramp of grey along the top *)
+(* Figure answers a picture as a figure is: white, a blue line across
+   every fortieth row and down every fiftieth column, a ramp of grey
+   along the top. *)
 PROCEDURE Figure (w, h: I64) : SLICE OF BYTE RAISES ValueRange =
 VAR
   p : SLICE OF BYTE ;
@@ -72,13 +76,13 @@ PROCEDURE Is (RO b: SLICE OF BYTE ; at: I64 ; RO kind: STR) : BOOL =
 VAR k : I64 ;
 BEGIN
   FOR k := 0 TO 3 DO
-    IF I64 (b[at + k]) # ORD (kind[k]) THEN RETURN FALSE END
+    IF I64 (b[at + k]) # I64 (Text.BAt (kind, k)) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END Is ;
 
-(* the file taken apart and compared with what went in.  One check
-   for each thing a reader depends on. *)
+(* Back takes the file apart and compares it with what went in.  It
+   makes one check for each thing a reader depends on. *)
 PROCEDURE Back (RO what: STR ; RO rgb: SLICE OF BYTE ; w, h: I64 ;
                 dpi: F64 ; perMetre: I64)
   RAISES Zip.Error, Faults.SizeError, Faults.BadArg, ValueRange =
@@ -131,7 +135,7 @@ BEGIN
   Check.EqI64 (t, what + ': pixels a metre (-1: no pHYs chunk)', seenPhys,
                perMetre) ;
 
-  (* the image data, the filters taken off again *)
+  (* Take the filters off the image data again. *)
   rows := Zip.Decompress (pool, SLICE (f, idatAt, idatLen)) ;
   row := 3 * w ;
   Check.EqI64 (t, what + ': a filter byte and a row of pixels, height times',
@@ -157,7 +161,8 @@ BEGIN
   Check.EqI64 (t, what + ': bytes that are not what went in', wrong, 0)
 END Back ;
 
-(* what Encode refuses an image of w by h as, given n bytes *)
+(* Refusal answers what Encode refuses an image of w by h as, given n
+   bytes. *)
 PROCEDURE Refusal (n, w, h: I64 ; dpi: F64) : STR =
 VAR f, p : SLICE OF BYTE ;
 BEGIN
@@ -173,14 +178,14 @@ END Refusal ;
 (* ---- the rasteriser ----
 
    Two kinds of witness.  ARITHMETIC: a filled shape covers as many
-   pixels as its area says, so the darkness of a small drawing --
-   the sum of (255 - red) / 255 over its pixels -- is the area of
-   what was drawn, exactly for a rectangle and closely for the rest.
-   CHROME: headless Chrome's own render of three of Plot's figures,
-   checked in under runtime/test/gold/png/ and read back here through
-   Decode, against Raster of the same SVG, pixel by pixel -- the mean
-   difference and the share of pixels far off, with bounds a shift
-   of one pixel breaks (measured: a shift triples both). *)
+   pixels as its area says, so the darkness of a small drawing (the
+   sum of (255 - red) / 255 over its pixels) is the area of what was
+   drawn, exactly for a rectangle and closely for the rest.  CHROME:
+   headless Chrome's own render of three of Plot's figures is checked
+   in under runtime/test/gold/png/.  This test reads it back through
+   Decode and holds it against Raster of the same SVG, pixel by pixel:
+   the mean difference and the share of pixels far off, with bounds a
+   shift of one pixel breaks (measured: a shift triples both). *)
 
 PROCEDURE Dark (RO pix: SLICE OF BYTE) : F64 =
 VAR i : I64 ; s : F64 ;
@@ -194,7 +199,8 @@ BEGIN
   RETURN s
 END Dark ;
 
-(* the darkness of a 40 by 40 drawing holding `body`, at 72 dpi *)
+(* DarkOf answers the darkness of a 40 by 40 drawing holding `body`,
+   at 72 dpi. *)
 PROCEDURE DarkOf (RO body: STR ; dpi: F64) : F64
   RAISES Faults.BadArg, ValueRange =
 VAR
@@ -206,7 +212,7 @@ BEGIN
   RETURN Dark (pix)
 END DarkOf ;
 
-(* what Raster refuses a drawing as *)
+(* SvgRefusal answers what Raster refuses a drawing as. *)
 PROCEDURE SvgRefusal (RO svg: STR) : STR =
 VAR
   pix : SLICE OF BYTE ;
@@ -268,13 +274,14 @@ BEGIN
   Check.Near (t, 'a line without a stroke-width is one unit wide: 30 covers 30',
               DarkOf ('<line x1="5" y1="20" x2="35" y2="20" stroke="black"/>', 72.0),
               30.0, 0.0, 0.02) ;
-  (* the dashes along a path of many short pieces: the phase must
-     carry from piece to piece, or every piece is a dash of its own *)
+  (* Check the dashes along a path of many short pieces.  The phase
+     must carry from piece to piece, or every piece is a dash of its
+     own. *)
   Check.Near (t, 'dashes 10 on 10 off along twenty pieces of 2 draw half of them',
               DarkOf (Pieces () + ' stroke="black" stroke-width="2" stroke-dasharray="10 10"/>', 72.0),
               40.0, 0.0, 0.05) ;
-  (* anti-aliasing: a line half a pixel wide is a row of grey, not of
-     black -- Sub rows of coverage, not one *)
+  (* Check anti-aliasing: a line half a pixel wide is a row of grey,
+     not of black, from Sub rows of coverage, not one. *)
   w := 0 ; h := 0 ;
   pix := Png.Raster (pool, '<svg viewBox="0 0 40 40"><line x1="0" y1="20.5" x2="40" y2="20.5" stroke="black" stroke-width="0.5"/></svg>', 72.0, w, h) ;
   at := 3 * (20 * 40 + 20) ;
@@ -294,7 +301,7 @@ BEGIN
   Check.That (t, 'and &amp; is one character, not four',
               DarkOf ('<text x="2" y="30" font-size="20" fill="black">&amp;</text>', 72.0)
               < DarkOf ('<text x="2" y="30" font-size="20" fill="black">amp;</text>', 72.0)) ;
-  (* colours: three spellings of red at the one pixel *)
+  (* Check colours: three spellings of red at the one pixel. *)
   w := 0 ; h := 0 ;
   pix := Png.Raster (pool, '<svg viewBox="0 0 4 4"><rect width="4" height="4" fill="#f00"/></svg>', 72.0, w, h) ;
   at := 3 * (2 * 4 + 2) ;
@@ -308,7 +315,7 @@ BEGIN
               I64 (pix[at]) = 31 AND I64 (pix[at + 1]) = 119 AND I64 (pix[at + 2]) = 180) ;
   Check.EqI64 (t, 'a 720 by 440 viewBox at 300 dpi is 3000 by 1833 pixels: the width',
                Width ('<svg viewBox="0 0 720 440"></svg>', 300.0), 3000) ;
-  (* what is refused, by name *)
+  (* Check what is refused, by name. *)
   Check.EqStr (t, 'a curve in a path is refused',
                SvgRefusal ('<svg viewBox="0 0 4 4"><path d="M 0 0 C 1 1 2 2 3 3" stroke="black"/></svg>'),
                'Png.FromSvg: a path command this does not draw: C') ;
@@ -324,7 +331,8 @@ BEGIN
   Check.Near (t, 'a clipPath keeps a shape inside its rectangle: 200 of a square, 148.9 of a disc, and 25 outside the group',
               DarkOf ('<clipPath id="k"><rect x="0" y="0" width="10" height="40"/></clipPath><g clip-path="url(#k)"><rect x="0" y="0" width="20" height="20" fill="black"/><circle cx="5" cy="30" r="8" fill="black"/></g><rect x="30" y="30" width="5" height="5" fill="black"/>', 72.0),
               373.861, 0.0, 0.005) ;
-  (* groups: translate and scale, nested, and a clip inside them *)
+  (* Check groups: translate and scale, nested, and a clip inside
+     them. *)
   Check.Near (t, 'a 10 by 10 square in translate(10 10) scale(2) covers 400',
               DarkOf ('<g transform="translate(10 10) scale(2)"><rect width="10" height="10" fill="black"/></g>', 72.0),
               400.0, 0.01, 0.0) ;
@@ -380,7 +388,8 @@ BEGIN
                '')
 END Areas ;
 
-(* a path of twenty pieces of two, from (0, 20) to (40, 20) *)
+(* Pieces answers a path of twenty pieces of two, from (0, 20) to
+   (40, 20). *)
 PROCEDURE Pieces () : STR =
 VAR
   d : PTR DynStr.DString IN pool ;
@@ -397,7 +406,8 @@ BEGIN
   RETURN DynStr.View (d)
 END Pieces ;
 
-(* the pixels a metre a PNG file states, -1 when it does not *)
+(* PhysOf answers the pixels a metre a PNG file states, -1 when it
+   does not. *)
 PROCEDURE PhysOf (RO f: SLICE OF BYTE) : I64 =
 VAR at, n : I64 ;
 BEGIN
@@ -420,7 +430,8 @@ BEGIN
   RETURN w
 END Width ;
 
-(* one of Plot's figures against Chrome's render of it *)
+(* Chrome holds one of Plot's figures against Chrome's render of
+   it. *)
 PROCEDURE Chrome (RO what: STR ; RO svgFile: STR ; RO pngFile: STR)
   RAISES Zip.Error, Png.Error, Io.IOError, Faults.BadArg, ValueRange =
 VAR
@@ -429,7 +440,7 @@ VAR
   w, h, rw, rh, i, k, far, d, big : I64 ;
   sum : F64 ;
 BEGIN
-  svg := Io.ReadFile (pool, svgFile) ;
+  svg := Io.ReadFile (svgFile) ;
   w := 0 ; h := 0 ; rw := 0 ; rh := 0 ;
   mine := Png.Raster (pool, svg, 72.0, w, h) ;
   theirs := Png.Decode (pool, Io.ReadFileBytes (pool, Check.GoldPath (pngFile)), rw, rh) ;

@@ -1,17 +1,17 @@
 MODULE ShareUse ;
 
-(* A SHARED answer of a call that can raise, held to its own output
-   (gendiff and the driver suite): `b := Make (n)' where Make answers
-   SHARED PTR Box and may RAISE.  The generator stores the answer and
-   reads the error slot BEFORE the share copy; until 2026-10-03 it
-   emitted m9_share_copy (Make (n, err)) with the test after, so a
-   refused Make handed NULL to the copy, and a program whose handler
-   should have run died with SIGSEGV (found by ZarrStoreTest).  The
-   runtime tolerates a NULL since, so what gendiff greps is the ORDER
-   in the C; what build.sh runs is the handler.
+(* ShareUse holds a SHARED answer of a call that can raise to its own
+   output (gendiff and the driver suite): `b := Make (n)' where Make
+   answers SHARED PTR Box and may RAISE.  The generator stores the
+   answer and reads the error slot BEFORE the share copy; until
+   2026-10-03 it emitted m9_share_copy (Make (n, err)) with the test
+   after, so a refused Make handed NULL to the copy, and a program whose
+   handler should have run died with SIGSEGV (found by ZarrStoreTest).
+   The runtime tolerates a NULL since, so gendiff greps the ORDER in the
+   C, and build.sh runs the handler.
 
-   The fixture for the owed-ledger item, 2026-10-03.  Not installed;
-   gendiff and build.sh run it.                                     *)
+   This is the fixture for the owed-ledger item, 2026-10-03.  It is
+   not installed; gendiff and build.sh run it.                      *)
 
 IMPORT Io ;
 
@@ -36,10 +36,10 @@ BEGIN
   RETURN SHARED (p)
 END Make ;
 
-(* a raising call NESTED AS AN ARGUMENT (par 5, 2026-10-08): Use must
-   not run on what Count answered when it raised.  Until then F (G (x))
-   was one C expression under one guard, and Use printed `used 0'
-   before the handler ran. *)
+(* Nest makes a raising call NESTED AS AN ARGUMENT (par 5, 2026-10-08):
+   Use must not run on what Count answered when it raised.  Until then
+   F (G (x)) was one C expression under one guard, and Use printed
+   `used 0' before the handler ran. *)
 PROCEDURE Count (n: I64) : I64 RAISES Empty =
 BEGIN
   IF n = 0 THEN RAISE Empty END ;
@@ -90,8 +90,8 @@ END Peek ;
 
 (* GRID (s, n0, n1) lays a grid over a slice's storage (par 2.2.1,
    2026-10-08): the extents must multiply to the slice's length, or
-   IndexError -- and the grid answered then is empty, so nothing can
-   be read through it *)
+   IndexError.  The grid answered then is empty, so nothing can be
+   read through it. *)
 PROCEDURE GridOf (n0, n1: I64) =
 VAR
   s : SLICE OF F64 ;
@@ -107,17 +107,18 @@ BEGIN
   Io.WriteI64 (I64 (g[1, 2])) ; Io.WriteLine ('')
 EXCEPT
 | IndexError (i, n) :
-    (* the predeclared payload, typed and bound since 2026-10-09: the
-       index and the length as the check saw them -- here GRID's
-       product of extents and the slice's length *)
+    (* The predeclared payload is typed and bound since 2026-10-09:
+       the index and the length as the check saw them, here GRID's
+       product of extents and the slice's length. *)
     Io.Write ('IndexError on GRID: ') ; Io.WriteI64 (i) ; Io.Write (' of ') ;
     Io.WriteI64 (n) ; Io.WriteLine ('')
 | ValueRange : Io.WriteLine ('ValueRange')
 END GridOf ;
 
-(* a CASE over an enumeration with QUALIFIED labels -- cp-kernel's
-   Store.m9 dispatch; the checker accepted it and the generator said
-   `CASE label form unsupported yet' until 2026-10-09 (issue 13) *)
+(* Dispatch is a CASE over an enumeration with QUALIFIED labels:
+   cp-kernel's Store.m9 dispatch.  The checker accepted it and the
+   generator said `CASE label form unsupported yet' until 2026-10-09
+   (issue 13). *)
 PROCEDURE Dispatch (s: Store) =
 BEGIN
   CASE s OF
@@ -126,8 +127,8 @@ BEGIN
   END
 END Dispatch ;
 
-(* octets on standard output through the buffer Write uses: the line
-   reads in the order it was written (issue 18) *)
+(* Octets writes octets on standard output through the buffer Write
+   uses: the line reads in the order it was written (issue 18). *)
 PROCEDURE Octets () =
 VAR b : SLICE OF BYTE ;
 BEGIN
@@ -139,12 +140,12 @@ BEGIN
   Io.WriteLine ('c')
 END Octets ;
 
-(* four forms the checker accepted and the generator refused until
-   2026-10-09, now generated: a CONST over an expression (folded with
-   the runtime's arithmetic, or a C expression of real literals), an
-   ELSIF after IS SOME (a nested IF), EXCEPT and FINALLY on one block
+(* Forms tests four forms the checker accepted and the generator refused
+   until 2026-10-09, now generated: a CONST over an expression (folded
+   with the runtime's arithmetic, or a C expression of real literals),
+   an ELSIF after IS SOME (a nested IF), EXCEPT and FINALLY on one block
    (a nested block), and EXIT inside a CASE arm (a goto to the end of
-   the loop's body, where a break leaves the loop) *)
+   the loop's body, where a break leaves the loop). *)
 CONST
   Folded = 2 * 3 + 0x10 - (7 DIV 2) ;   (* 6 + 16 - 3 = 19 *)
   Neg = -(4 - 1) ;
@@ -206,7 +207,8 @@ BEGIN
   Io.WriteLine ('')
 END Forms ;
 
-(* IS SOME and IS NONE as BOOL expressions, no binder (issue 4) *)
+(* Flags tests IS SOME and IS NONE as BOOL expressions, no binder
+   (issue 4). *)
 PROCEDURE Flags () =
 VAR
   o : OPT PTR Box ;
@@ -223,8 +225,9 @@ BEGIN
   IF (o IS SOME) AND NOT (o IS NONE) THEN Io.WriteLine ('present') END
 END Flags ;
 
-(* a string literal beyond ASCII, and a one-character one to a CHAR:
-   the source is UTF-8 and a literal holds scalars (2026-10-09) *)
+(* Accents tests a string literal beyond ASCII, and a one-character
+   one to a CHAR: the source is UTF-8 and a literal holds scalars
+   (2026-10-09). *)
 PROCEDURE Accents () =
 VAR ch : CHAR ;
 BEGIN

@@ -1,11 +1,11 @@
 (* EXPECT: argument 1 of cm.Set: cannot pass C.ConstPtr where C.MutPtr is expected *)
-(* ADR of read-only storage -- a literal, a CONST, what an RO parameter
-   lends, OCTETS -- or of a UTF answers a const pointer, which a C.MutPtr
-   parameter does not take: ADR's one pointer fitting both let a
-   literal's octets reach memset (SIGBUS) and C write 0xFF under a UTF
-   (the third review's trust T4, T6, 2026-10-26).  Legal forms first:
-   ADR of a writable slice to a C.MutPtr, and of an RO one to a
-   C.ConstPtr. *)
+(* ADR of read-only storage or of a UTF answers a const pointer.
+   Read-only storage is a literal, a CONST, what an RO parameter lends,
+   OCTETS.  A C.MutPtr parameter does not take a const pointer.  ADR's
+   one pointer fitting both let a literal's octets reach memset (SIGBUS)
+   and C write 0xFF under a UTF (the third review's trust T4, T6,
+   2026-10-26).  Legal forms come first: ADR of a writable slice to a
+   C.MutPtr, and of an RO one to a C.ConstPtr. *)
 UNSAFE DEFINITION MODULE FOR "C" cm ;
 PROCEDURE Set = "m9_cm_set" (p: C.MutPtr ; n: C.SizeT) [REENTRANT] ;
 PROCEDURE Len = "m9_cm_len" (p: C.ConstPtr) : C.SizeT [REENTRANT] ;

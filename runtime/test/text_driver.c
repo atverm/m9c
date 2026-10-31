@@ -1,10 +1,10 @@
 #define _POSIX_C_SOURCE 200112L
-/* text_driver.c -- Text.m9 and Log.m9.
-   Text is checked against the behaviour its header promises, with
-   the edge cases stated there given their own checks: an empty
-   needle found at 0, Split keeping empty fields, Trim returning a
-   VIEW rather than a copy.  Log is checked by capturing stderr,
-   because a logger nobody reads the output of is untested.        */
+/* text_driver.c tests Text.m9 and Log.m9.
+   Text is checked against the behaviour its header promises.  The
+   edge cases stated there get their own checks: an empty needle
+   found at 0, Split keeping empty fields, Trim returning a VIEW
+   rather than a copy.  Log is checked by capturing stderr, because
+   a logger nobody reads the output of is untested.                */
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -20,26 +20,25 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-static uint32_t sbuf[16384];
+/* S copies a C string's octets into sbuf.  A C literal is UTF-8
+   already, so no octet is widened. */
+static uint8_t sbuf[65536];
 static size_t sused = 0;
 
-static m9_sl_CHAR S (const char *s)
-{
-  size_t i, n = strlen (s);
-  uint32_t *p = sbuf + sused;
-  sused += n;
-  for (i = 0; i < n; i++) p[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ p, (int64_t) n };
-}
-
-static int is (m9_sl_CHAR a, const char *s)
+static m9_sl_UTF8 S (const char *s)
 {
   size_t n = strlen (s);
-  int64_t i;
+  uint8_t *p = sbuf + sused;
+  sused += n;
+  memcpy (p, s, n);
+  return (m9_sl_UTF8){ p, (int64_t) n };
+}
+
+static int is (m9_sl_UTF8 a, const char *s)
+{
+  size_t n = strlen (s);
   if (a.len != (int64_t) n) return 0;
-  for (i = 0; i < a.len; i++)
-    if (a.p[i] != (uint32_t) (unsigned char) s[i]) return 0;
-  return 1;
+  return n == 0 || memcmp (a.p, s, n) == 0;
 }
 
 int main (void)
@@ -48,100 +47,102 @@ int main (void)
   m9_state err = {0};
 
   /* ---- search ---- */
-  ok ("Eq", Text_Eq (S ("abc"), S ("abc"), &err));
-  ok ("not Eq", !Text_Eq (S ("abc"), S ("abd"), &err));
-  ok ("Find", Text_Find (S ("hello world"), S ("wor"), &err) == 6);
-  ok ("Find absent", Text_Find (S ("hello"), S ("xyz"), &err) == -1);
+  ok ("Eq", Text_EqUtf (S ("abc"), S ("abc"), &err));
+  ok ("not Eq", !Text_EqUtf (S ("abc"), S ("abd"), &err));
+  ok ("Find", Text_FindUtf (S ("hello world"), S ("wor"), &err) == 6);
+  ok ("Find absent", Text_FindUtf (S ("hello"), S ("xyz"), &err) == -1);
   ok ("Find empty needle is 0",
-      Text_Find (S ("hello"), S (""), &err) == 0);
+      Text_FindUtf (S ("hello"), S (""), &err) == 0);
   ok ("Find needle longer than hay",
-      Text_Find (S ("hi"), S ("hello"), &err) == -1);
-  ok ("FindChar", Text_FindChar (S ("a/b/c"), '/', &err) == 1);
-  ok ("LastChar", Text_LastChar (S ("a/b/c"), '/', &err) == 3);
-  ok ("LastChar absent", Text_LastChar (S ("abc"), '/', &err) == -1);
-  ok ("Contains", Text_Contains (S ("abcdef"), S ("cde"), &err));
+      Text_FindUtf (S ("hi"), S ("hello"), &err) == -1);
+  ok ("FindChar", Text_FindCharUtf (S ("a/b/c"), '/', &err) == 1);
+  ok ("LastChar", Text_LastCharUtf (S ("a/b/c"), '/', &err) == 3);
+  ok ("LastChar absent", Text_LastCharUtf (S ("abc"), '/', &err) == -1);
+  ok ("Contains", Text_ContainsUtf (S ("abcdef"), S ("cde"), &err));
   {
-    /* membership in a list of strings: the index, or -1.  'pp' and
-       'ppmv' are the neighbours a prefix compare would let in. */
-    m9_sl_CHAR units[4];
-    m9_sl_m9_sl_CHAR among;
-    m9_sl_m9_sl_CHAR none = { units, 0 };
+    /* Membership in a list of strings answers the index, or -1.  'pp'
+       and 'ppmv' are the neighbours a prefix compare would let in. */
+    m9_sl_UTF8 units[4];
+    m9_sl_m9_sl_UTF8 among;
+    m9_sl_m9_sl_UTF8 none = { units, 0 };
     units[0] = S ("ppm"); units[1] = S ("ppb"); units[2] = S ("");
     units[3] = S ("ppm");
     among.p = units; among.len = 4;
-    ok ("IndexOf first of two", Text_IndexOf (among, S ("ppm"), &err) == 0);
-    ok ("IndexOf", Text_IndexOf (among, S ("ppb"), &err) == 1);
-    ok ("IndexOf the empty string", Text_IndexOf (among, S (""), &err) == 2);
-    ok ("IndexOf absent, shorter", Text_IndexOf (among, S ("pp"), &err) == -1);
-    ok ("IndexOf absent, longer", Text_IndexOf (among, S ("ppmv"), &err) == -1);
-    ok ("OneOf", Text_OneOf (S ("ppb"), among, &err));
-    ok ("not OneOf", !Text_OneOf (S ("ppt"), among, &err));
-    ok ("OneOf of nothing", !Text_OneOf (S ("ppm"), none, &err));
+    ok ("IndexOf first of two", Text_IndexOfUtf (among, S ("ppm"), &err) == 0);
+    ok ("IndexOf", Text_IndexOfUtf (among, S ("ppb"), &err) == 1);
+    ok ("IndexOf the empty string", Text_IndexOfUtf (among, S (""), &err) == 2);
+    ok ("IndexOf absent, shorter", Text_IndexOfUtf (among, S ("pp"), &err) == -1);
+    ok ("IndexOf absent, longer", Text_IndexOfUtf (among, S ("ppmv"), &err) == -1);
+    ok ("OneOf", Text_OneOfUtf (S ("ppb"), among, &err));
+    ok ("not OneOf", !Text_OneOfUtf (S ("ppt"), among, &err));
+    ok ("OneOf of nothing", !Text_OneOfUtf (S ("ppm"), none, &err));
   }
-  ok ("StartsWith", Text_StartsWith (S ("prefix-rest"), S ("prefix"), &err));
-  ok ("not StartsWith", !Text_StartsWith (S ("ab"), S ("abc"), &err));
-  ok ("EndsWith", Text_EndsWith (S ("file.m9"), S (".m9"), &err));
-  ok ("CountChar", Text_CountChar (S ("a,b,,c"), ',', &err) == 3);
+  ok ("StartsWith", Text_StartsWithUtf (S ("prefix-rest"), S ("prefix"), &err));
+  ok ("not StartsWith", !Text_StartsWithUtf (S ("ab"), S ("abc"), &err));
+  ok ("EndsWith", Text_EndsWithUtf (S ("file.m9"), S (".m9"), &err));
+  ok ("CountChar", Text_CountCharUtf (S ("a,b,,c"), ',', &err) == 3);
 
   /* ---- trim returns a VIEW, not a copy ---- */
+  /* Text.Trim, TrimLeft and TrimRight went with the switch.  Their
+     UTF twins carry these checks. */
   {
-    m9_sl_CHAR src = S ("  padded\t\n");
-    m9_sl_CHAR t = Text_Trim (src, &err);
+    m9_sl_UTF8 src = S ("  padded\t\n");
+    m9_sl_UTF8 t = Text_TrimUtf (src, &err);
     ok ("Trim", is (t, "padded"));
     ok ("Trim is a view into the original", t.p >= src.p
         && t.p < src.p + src.len);
-    ok ("TrimLeft", is (Text_TrimLeft (S ("  x  "), &err), "x  "));
-    ok ("TrimRight", is (Text_TrimRight (S ("  x  "), &err), "  x"));
+    ok ("TrimLeft", is (Text_TrimLeftUtf (S ("  x  "), &err), "x  "));
+    ok ("TrimRight", is (Text_TrimRightUtf (S ("  x  "), &err), "  x"));
     ok ("Trim of all blanks is empty",
-        Text_Trim (S ("   "), &err).len == 0);
+        Text_TrimUtf (S ("   "), &err).len == 0);
   }
 
   /* ---- split keeps empty fields, on purpose ---- */
   {
-    m9_sl_m9_sl_CHAR p = Text_Split (S ("a,b,c"), ',', &err);
+    m9_sl_m9_sl_UTF8 p = Text_SplitUtf (S ("a,b,c"), ',', &err);
     ok ("split count", p.len == 3);
     ok ("split[0]", is (p.p[0], "a"));
     ok ("split[2]", is (p.p[2], "c"));
 
-    p = Text_Split (S ("a,,b"), ',', &err);
+    p = Text_SplitUtf (S ("a,,b"), ',', &err);
     ok ("split keeps the empty middle", p.len == 3 && p.p[1].len == 0);
 
-    p = Text_Split (S (","), ',', &err);
+    p = Text_SplitUtf (S (","), ',', &err);
     ok ("a lone separator gives two empties",
         p.len == 2 && p.p[0].len == 0 && p.p[1].len == 0);
 
-    p = Text_Split (S ("nosep"), ',', &err);
+    p = Text_SplitUtf (S ("nosep"), ',', &err);
     ok ("no separator gives one piece", p.len == 1 && is (p.p[0], "nosep"));
 
-    p = Text_Split (S ("a,b,c"), ',', &err);
+    p = Text_SplitUtf (S ("a,b,c"), ',', &err);
     ok ("join is the inverse",
-        is (Text_Join (p, S (","), &err), "a,b,c"));
+        is (Text_JoinUtf (p, S (","), &err), "a,b,c"));
 
     /* Fields drops the empties (2026-09-27, the ONEFlux port's
-       Common.Tokens); Keep copies; Cat builds in the pool */
-    p = Text_Fields (S (",a,,b,"), ',', &err);
+       Common.Tokens).  Keep copies.  Cat builds in the pool. */
+    p = Text_FieldsUtf (S (",a,,b,"), ',', &err);
     ok ("fields drops empty pieces", p.len == 2 && is (p.p[0], "a") && is (p.p[1], "b"));
-    p = Text_Fields (S (",,"), ',', &err);
+    p = Text_FieldsUtf (S (",,"), ',', &err);
     ok ("fields of only separators is empty", p.len == 0);
-    p = Text_Fields (S ("one"), ',', &err);
+    p = Text_FieldsUtf (S ("one"), ',', &err);
     ok ("fields of no separator is the string", p.len == 1 && is (p.p[0], "one"));
     {
-      m9_sl_CHAR src = S ("kept");
-      m9_sl_CHAR cp = Text_Keep (&pool, src, &err);
-      ok ("keep copies the scalars", is (cp, "kept") && cp.p != src.p);
+      m9_sl_UTF8 src = S ("kept");
+      m9_sl_UTF8 cp = Text_KeepUtf (&pool, src, &err);
+      ok ("keep copies the octets", is (cp, "kept") && cp.p != src.p);
       ok ("cat builds a + b in the pool",
-          is (Text_Cat (&pool, S ("ab"), S ("cd"), &err), "abcd"));
+          is (Text_CatUtf (&pool, S ("ab"), S ("cd"), &err), "abcd"));
       ok ("cat of two empties is empty",
-          Text_Cat (&pool, S (""), S (""), &err).len == 0);
+          Text_CatUtf (&pool, S (""), S (""), &err).len == 0);
     }
-    p = Text_Split (S ("a,b,c"), ',', &err);   /* the join checks below read p */
+    p = Text_SplitUtf (S ("a,b,c"), ',', &err);   /* the join checks below read p */
     ok ("join with a longer separator",
-        is (Text_Join (p, S (" -- "), &err), "a -- b -- c"));
+        is (Text_JoinUtf (p, S (" -- "), &err), "a -- b -- c"));
   }
 
   /* ---- case, ASCII only ---- */
-  ok ("Lower", is (Text_Lower (S ("MiXeD 123!"), &err), "mixed 123!"));
-  ok ("Upper", is (Text_Upper (S ("MiXeD 123!"), &err), "MIXED 123!"));
+  ok ("Lower", is (Text_LowerUtf (S ("MiXeD 123!"), &err), "mixed 123!"));
+  ok ("Upper", is (Text_UpperUtf (S ("MiXeD 123!"), &err), "MIXED 123!"));
   ok ("text raised nothing", err.exc == NULL);
 
   /* ---- Log: capture stderr and read it back ---- */

@@ -1,13 +1,13 @@
 # NetCDF
 
-NetCDF, the classic and netCDF-4 data model, read and write.
+NetCDF reads and writes the classic and netCDF-4 data model.
 
-Written for the dispersion-model port, whose input and
+It was written for the dispersion-model port, whose input and
 output both go through this library: 41 nf90_get_var, 113
 nf90_put_var and 228 nf90_put_att in the model's own source.  The
-surface below is what those calls need and nothing else -- groups,
+surface below is what those calls need and nothing else.  Groups,
 compound types, compression settings and the parallel API are not
-here, and will arrive when a caller asks rather than in case one
+here.  They will arrive when a caller asks rather than in case one
 does.
 
 WHAT THE BINDING FIXES ABOUT THE C API.
@@ -16,7 +16,7 @@ Every C entry point answers an int status that a caller may
 ignore, and the model ignores it 679 times behind a `nf90_err`
 helper that halts.  Here a bad status is an Error with the failing
 operation and the library's own message in it, and a halt is not
-one of the outcomes -- a reader that halts cannot be tested (the
+one of the outcomes.  A reader that halts cannot be tested (the
 museum HALT piece).
 
 Dimensions and shapes cross as I64.  The C API says size_t, which
@@ -26,7 +26,7 @@ one; the conversion here raises rather than passing it on.
 THREADS.  Every procedure in the foreign unit is [SERIAL].  The
 netCDF-4 path goes through HDF5, which serialises on a global lock
 and is only thread-safe when built for it, and the classic path
-keeps per-file state in library globals.  Declaring REENTRANT
+keeps per-file state in library globals.  A REENTRANT declaration
 because it "usually works" is exactly the blosc museum piece, so
 this says SERIAL and the checker refuses to call it from a THREAD
 root.  A caller that wants concurrency needs one process per file
@@ -85,41 +85,43 @@ the extent NC_UNLIMITED means
 
 ### Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool RAISES Error, ValueRange
 
-read-only.  The pool owns the handle; Close releases the file
-but the record dies with the pool, which is why Close takes a
-VAR and not an OWN: there is nothing here to move.
+Open opens a file read-only.  The pool owns the handle.  Close
+releases the file but the record dies with the pool, which is
+why Close takes a VAR and not an OWN: there is nothing here to
+move.
 
 ### OpenRW (VAR pool: POOL ; RO path: STR) : PTR File IN pool RAISES Error, ValueRange
 
-read-write on an EXISTING file: what a restarted run does to
-the output it left half-written -- inquire the variables back
-and continue appending records.  Everything Put* works; Def*
-would need redef mode and is not supported through this.
+OpenRW opens an EXISTING file read-write.  That is what a
+restarted run does to the output it left half-written: inquire
+the variables back and continue appending records.  Everything
+Put* works; Def* would need redef mode and is not supported
+through this.
 
 ### Create (VAR pool: POOL ; RO path: STR ; clobber: BOOL) : PTR File IN pool RAISES Error, ValueRange
 
-the CLASSIC format.  Its unlimited dimension must be a
-variable's OUTERMOST one, which is a real constraint on how a
-file may be laid out -- see Create4.
+Create makes a file in the CLASSIC format.  Its unlimited
+dimension must be a variable's OUTERMOST one, which is a real
+constraint on how a file may be laid out; see Create4.
 
 ### Create4 (VAR pool: POOL ; RO path: STR ; clobber: BOOL) : PTR File IN pool RAISES Error, ValueRange
 
-netCDF-4 (HDF5 underneath).
+Create4 makes a netCDF-4 file (HDF5 underneath).
 
-Two things it allows that the classic format does not, both of
-which a gridded time series wants: the unlimited dimension may
-sit ANYWHERE in a variable's shape, so the axis order can follow
-how the data is read rather than how the format insists; and
-more than one unlimited dimension.  Classic netCDF answers
-`NC_UNLIMITED in the wrong index` otherwise, which is how this
-was found.
+It allows two things the classic format does not, both of which
+a gridded time series wants.  The unlimited dimension may sit
+ANYWHERE in a variable's shape, so the axis order can follow how
+the data is read rather than how the format insists.  And a
+variable may have more than one unlimited dimension.  Classic
+netCDF answers `NC_UNLIMITED in the wrong index` otherwise, which
+is how this was found.
 
 ### Close (VAR f: PTR File) RAISES Error
 
-flushes and releases the underlying handle.  It RAISES, and the
-raise matters: netCDF buffers, so a write error can surface
-HERE and nowhere earlier, and a Close whose result is discarded
-is how a truncated file gets reported as a successful run.
+Close flushes and releases the underlying handle.  It RAISES, and
+the raise matters: netCDF buffers, so a write error can surface
+HERE and nowhere earlier.  A Close whose result is discarded is
+how a truncated file gets reported as a successful run.
 
   f -- VAR, and left unusable afterwards.  The record itself
        dies with the pool, so this is a release and not a move;
@@ -139,18 +141,18 @@ _(documented with the group below)_
 
 ### DimCount (f: PTR File) : I64 RAISES Error, ValueRange
 
-how many dimensions the file declares
+DimCount answers how many dimensions the file declares.
 
 ### DimName (VAR pool: POOL ; f: PTR File ; dimid: I64) : STR RAISES Error, ValueRange, IndexError, Overflow
 
-the name of one dimension; reademissions-style readers discover
-the longitude/latitude/time axes by NAME rather than assuming an
-order
+DimName answers the name of one dimension.  reademissions-style
+readers discover the longitude/latitude/time axes by NAME rather
+than assuming an order.
 
 ### DimLenOf (f: PTR File ; RO name: STR) : I64 RAISES Error, ValueRange
 
-the extent of a dimension by name, which is what a reader that
-does not already know the file wants to ask
+DimLenOf answers the extent of a dimension by name.  A reader
+that does not already know the file wants to ask that.
 
 ### VarRank (f: PTR File ; varid: I64) : I64 RAISES Error, ValueRange
 
@@ -158,17 +160,18 @@ _(documented with the group below)_
 
 ### VarShape (f: PTR File ; varid: I64) : SLICE OF I64 RAISES Error, ValueRange
 
-the extents, outermost axis first -- C order, which is also
-M9's: the last axis is contiguous in both.  A NetCDF file and a
-GRID agree about layout without anybody transposing anything,
-which is the one place row-major pays for itself twice.
+VarShape answers the extents, outermost axis first: C order,
+which is also M9's.  The last axis is contiguous in both.  A
+NetCDF file and a GRID agree about layout without anybody
+transposing anything, which is the one place row-major pays for
+itself twice.
 
 ### GetF64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF F64) RAISES Error, Faults.SizeError, ValueRange
 
-one hyperslab into a flat slice.  LEN (out) must be the product
-of count, and is checked: the C call would otherwise write past
-the end of a buffer the caller sized wrongly, which is the whole
-class of bug this language exists to remove.
+GetF64 reads one hyperslab into a flat slice.  LEN (out) must be
+the product of count, and is checked.  The C call would otherwise
+write past the end of a buffer the caller sized wrongly, which is
+the whole class of bug this language exists to remove.
 
 ### GetF32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF F32) RAISES Error, Faults.SizeError, ValueRange
 
@@ -176,13 +179,13 @@ _(undocumented)_
 
 ### GetI64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF I64) RAISES Error, Faults.SizeError, ValueRange
 
-the same hyperslab read at the other two widths, with the same
-LEN (out) = product-of-count check.  netCDF CONVERTS on the way
-out, so the file's own type need not be the one asked for --
-which is convenient and is also how a float file quietly loses
-precision into an F32 buffer.  The width is the caller's
-decision and is written down at the call site, which is the
-most this layer can do about it.
+GetF32 and GetI64 read the same hyperslab at the other two
+widths, with the same LEN (out) = product-of-count check.  netCDF
+CONVERTS on the way out, so the file's own type need not be the
+one asked for.  That is convenient, and it is also how a float
+file quietly loses precision into an F32 buffer.  The width is
+the caller's decision and is written down at the call site,
+which is the most this layer can do about it.
 
 ### ReadGrid2 (f: PTR File ; RO name: STR) : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange
 
@@ -190,7 +193,8 @@ _(documented with the group below)_
 
 ### ReadGrid3 (f: PTR File ; RO name: STR) : GRID 3 OF F64 RAISES Error, Faults.SizeError, ValueRange
 
-a whole variable, shape and all, as a GRID.  These exist because
+ReadGrid2 and ReadGrid3 read a whole variable, shape and all, as
+a GRID.  These exist because
 a GRID can today only come from NEW or VIEW: there is no way to
 say "this slice, seen as 3 axes", so a reader that wants indexed
 access must allocate and copy.  The copy is one pass and is
@@ -203,18 +207,23 @@ _(documented with the group below)_
 
 ### GetAttStr (VAR pool: POOL ; f: PTR File ; varid: I64 ; RO name: STR) : STR RAISES Error, ValueRange
 
-an NC_CHAR attribute's OCTETS, one scalar each -- the Latin-1
-wire.  Right for ASCII, wrong for anything else, and it cannot
-read an NC_STRING attribute at all: use GetAttText.
+GetAttStr reads an NC_CHAR attribute as text.  It decodes the
+octets as UTF-8 when they are valid UTF-8, else it reads one
+character per octet.  So a CF file's `°C' (C2 B0 43) reads as
+two characters, and a classic file's Latin-1 `°C' (B0 43) reads
+as the same two.  GetAttStr cannot read an NC_STRING attribute:
+use GetAttText.
 
 ### GetAttText (VAR pool: POOL ; f: PTR File ; varid: I64 ; RO name: STR) : STR RAISES Error, ValueRange
 
-the same attribute as TEXT: NC_CHAR or NC_STRING, decoded from
-UTF-8, which is what CF says a netCDF text attribute carries and
-what every reader on the other side of these files assumes.
+GetAttText reads the same attribute as TEXT, NC_CHAR or
+NC_STRING.  CF says a netCDF text attribute carries UTF-8, and
+every reader on the other side of these files assumes it.  An
+NC_CHAR attribute reads as GetAttStr reads it, Latin-1 fallback
+included.  An NC_STRING one reads the same way.
 
 BOTH HALVES ARE NEEDED IN PRACTICE and neither substitutes for
-the other: a NOAA ObsPack global block spells site_code as
+the other.  A NOAA ObsPack global block spells site_code as
 NC_CHAR and dataset_provider_citation_1 as NC_STRING, in the same
 file, and nc_get_att_text on the second answers
 "Attempt to convert between text & numbers".  An NC_STRING of
@@ -223,9 +232,9 @@ separator this module would have to invent.
 
 ### HasVar (f: PTR File ; RO name: STR) : BOOL RAISES ValueRange
 
-asks whether a variable exists without making its absence an
-error: a reader choosing between conventions needs the question,
-not the diagnosis
+HasVar asks whether a variable exists without making its absence
+an error.  A reader choosing between conventions needs the
+question, not the diagnosis.
 
 ### HasAtt (f: PTR File ; varid: I64 ; RO name: STR) : BOOL RAISES ValueRange
 
@@ -241,12 +250,13 @@ _(undocumented)_
 
 ### AttName (VAR pool: POOL ; f: PTR File ; varid: I64 ; i: I64) : STR RAISES Error, ValueRange
 
-enumeration: how many attributes a variable (or Global) carries
-and what they are called, in FILE ORDER.  Added for a builder
-that TRANSCRIBES a variable rather than inventing one -- the CF
-attributes a zarr array should carry are the ones the netCDF
-variable already has, and a hand-kept list of names is a list
-that goes stale against the next release of the product.
+AttCount and AttName enumerate how many attributes a variable (or
+Global) carries and what they are called, in FILE ORDER.  They
+were added for a builder that TRANSCRIBES a variable rather than
+inventing one.  The CF attributes a zarr array should carry are
+the ones the netCDF variable already has, and a hand-kept list of
+names is a list that goes stale against the next release of the
+product.
 
 ### VarCount (f: PTR File) : I64 RAISES Error
 
@@ -262,10 +272,10 @@ _(documented with the group below)_
 
 ### VarDims (f: PTR File ; varid: I64) : SLICE OF I64 RAISES Error, ValueRange
 
-enumeration: how many variables, their names, their nc_type
-(against the Type* constants) and their dimension IDS in
-order.  Added for Frame.m9, which walks a file it did not
-write.
+VarCount, VarName, VarType and VarDims enumerate how many
+variables, their names, their nc_type (against the Type*
+constants) and their dimension IDS in order.  They were added for
+Frame.m9, which walks a file it did not write.
 
 ### GetI32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF I32) RAISES Error, Faults.SizeError, ValueRange
 
@@ -281,8 +291,8 @@ _(undocumented)_
 
 ### DefDim (f: PTR File ; RO name: STR ; extent: I64) : I64 RAISES Error, ValueRange
 
-declares a dimension and answers its id, which is what DefVar
-takes.
+DefDim declares a dimension and answers its id, which is what
+DefVar takes.
 
   extent -- the length.  Zero declares the UNLIMITED dimension,
             which grows as records are written; every other
@@ -291,7 +301,7 @@ takes.
 
 ### DefVar (f: PTR File ; RO name: STR ; nctype: I64 ; RO dims: SLICE OF I64) : I64 RAISES Error, ValueRange
 
-declares a variable and answers its id.
+DefVar declares a variable and answers its id.
 
 nctype -- one of the NcF64/NcF32/NcI64 constants below, the
           type as STORED.  Get and Put convert, so this is
@@ -308,7 +318,7 @@ _(documented with the group below)_
 
 ### PutAttF64 (f: PTR File ; varid: I64 ; RO name: STR ; value: F64) RAISES Error, ValueRange
 
-one attribute, text or number.
+PutAttStr and PutAttF64 write one attribute, text or number.
 
   varid -- a variable's id, or Global (below) for an attribute
            on the file itself.  Global is -1 and is spelled out
@@ -316,25 +326,23 @@ one attribute, text or number.
            number in an argument list is a comment nobody
            checks.
 
-ValueRange is the CHAR/octet boundary: netCDF text attributes
-are bytes, so a scalar past 255 raises here rather than
-reaching the file as mojibake.
+PutAttStr writes the UTF-8 octets of value, as PutAttText does
+(the rule of 2026-10-31).  No character is refused.
 
 ### PutAttText (f: PTR File ; varid: I64 ; RO name: STR ; RO value: STR) RAISES Error, ValueRange
 
-a TEXT attribute, NC_CHAR, written as UTF-8: GetAttText's
-mirror, and what CF says a text attribute carries.  PutAttStr
-writes one octet per CHAR, so a unit like `°C` reached the file
-as the single byte B0, which no UTF-8 reader decodes; here it is
-C2 B0 43.  Found by the cp-kernel's NetCDF renditions
-(2026-10-09), whose units `°C` and `µmol m-2 s-1` come from the
-ICOS metadata.  PutAttStr keeps its octet contract for a caller
-that means bytes.
+PutAttText writes a TEXT attribute, NC_CHAR, as UTF-8: GetAttText's
+mirror, and what CF says a text attribute carries.  `°C' reaches
+the file as C2 B0 43.  Until 2026-10-31 PutAttStr wrote one octet
+per CHAR, so `°C' reached the file as B0 43, which no UTF-8
+reader decodes.  The cp-kernel's NetCDF renditions (2026-10-09)
+found it; their units `°C' and `µmol m-2 s-1' come from the ICOS
+metadata.  The two procedures now write the same octets.
 
 ### EndDef (f: PTR File) RAISES Error
 
-leaves define mode and commits the header.  Nothing may be
-declared afterwards and nothing may be written before.
+EndDef leaves define mode and commits the header.  Nothing may
+be declared afterwards and nothing may be written before.
 
 ### PutF64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO data: SLICE OF F64) RAISES Error, Faults.SizeError, ValueRange
 
@@ -342,19 +350,19 @@ _(undocumented)_
 
 ### FillF32 (f: PTR File ; varid: I64 ; fill: F32) RAISES Error, ValueRange
 
-the value an UNWRITTEN cell reads back as.  netCDF's default is
-9.97e36, which makes skipping a write a silent lie; set to the
-quantity's own zero, an unwritten hyperslab IS zero and a writer
-may honestly skip regions nothing touched.  Must be called in
-define mode, like Deflate.
+FillF32 sets the value an UNWRITTEN cell reads back as.  netCDF's
+default is 9.97e36, which makes a skipped write a silent lie.
+With the fill set to the quantity's own zero, an unwritten
+hyperslab IS zero and a writer may honestly skip regions nothing
+touched.  It must be called in define mode, like Deflate.
 
 ### Deflate (f: PTR File ; varid: I64 ; level: I64) RAISES Error, ValueRange
 
-compress a variable, netCDF-4 only, between EndDef and the first
-write -- in practice immediately after DefVar.
+Deflate compresses a variable, netCDF-4 only, between EndDef and
+the first write: in practice immediately after DefVar.
 
-WHY IT IS NOT OPTIONAL FOR A GRIDDED FIELD.  Measured on a
-footprint run of the port: 24 releases x 23 times x 6 levels x 90 x
+WHY IT IS NOT OPTIONAL FOR A GRIDDED FIELD.  A footprint run of
+the port measured it: 24 releases x 23 times x 6 levels x 90 x
 140 floats is 167 MB written plainly and 0.9 MB deflated,
 because a footprint is mostly zeros.  A file nobody can store is
 not an output format.  `shuffle` is on: it groups the bytes of
@@ -363,20 +371,20 @@ compress at all.
 
 ### Chunking (f: PTR File ; varid: I64 ; RO sizes: SLICE OF I64) RAISES Error, ValueRange
 
-the chunk shape, netCDF-4 only.  Compression works on a chunk at
-a time, and so does reading: a chunk that spans the axes a
-reader slices along is read whole for one value.  A map for one
-release at one time wants (1,1,1,1,nz,ny,nx), not a chunk that
-cuts across time.
+Chunking sets the chunk shape, netCDF-4 only.  Compression works
+on a chunk at a time, and so does reading: a chunk that spans the
+axes a reader slices along is read whole for one value.  A map
+for one release at one time wants (1,1,1,1,nz,ny,nx), not a chunk
+that cuts across time.
 
 ### PutChars (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO text: STR) RAISES Error, Faults.SizeError, ValueRange
 
-one hyperslab of TEXT out, for a char variable.
+PutChars writes one hyperslab of TEXT out, for a char variable.
 
-CF's labelled axes (6.1) are char arrays -- a `species_name(
+CF's labelled axes (6.1) are char arrays.  A `species_name(
 species, strlen)` beside a species dimension is what lets a
-reader slice across species instead of parsing variable names --
-and there was no way to write one until this.  Short text is
+reader slice across species instead of parsing variable names.
+There was no way to write one until this.  Short text is
 PADDED WITH NUL to the count, because a char variable's trailing
 bytes are whatever was there otherwise, and netCDF does not do it
 for you.
@@ -419,12 +427,15 @@ _(undocumented)_
 
 ### GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ; n, width: I64) : SLICE OF STR RAISES Error, Faults.SizeError, ValueRange
 
-the reverse of PutChars: an n x width char matrix, each row
-answered as a STR with trailing NULs and blanks removed.
+GetChars is the reverse of PutChars: an n x width char matrix,
+each row answered as a STR with trailing NULs and blanks removed.
+A row decodes as GetAttStr decodes an attribute: UTF-8 when
+valid, else one character per octet.  So width counts octets,
+and `°C' takes three of them in a UTF-8 file.
 
 A char variable of ANY rank is read as rows of `width` octets:
 width is its last extent, and its rows are the product of the
-others -- `datetime(time, strlen)' is time rows, a rank-1
+others.  `datetime(time, strlen)' is time rows, a rank-1
 `qc_flag(time)' is ONE row of time characters, a scalar one row
 of one.  A rank-1 variable may also be read as rows of one
 character each (width 1).  n may be fewer rows than the variable
@@ -436,35 +447,36 @@ rank-3 one read past the arrays.
 
 ### GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ; out: SLICE OF BYTE) RAISES Error, Faults.SizeError, ValueRange
 
-the same matrix in BLOCKS and as OCTETS: `n` rows from `row`,
-into a buffer the caller sized at n * width, the rows as GetChars
-counts them.  GetChars answers STRs and therefore holds the whole
-variable twice, which a 400,000-row identifier column cannot
-afford; this is the form for a caller that walks the rows and
-keeps nothing.
+GetText reads the same matrix in BLOCKS and as OCTETS: `n` rows
+from `row`, into a buffer the caller sized at n * width, the rows
+as GetChars counts them.  GetChars answers STRs and therefore
+holds the whole variable twice, which a 400,000-row identifier
+column cannot afford.  This is the form for a caller that walks
+the rows and keeps nothing.
 
 ### PutF32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO data: SLICE OF F32) RAISES Error, Faults.SizeError, ValueRange
 
-one hyperslab out, the mirror of GetF64/GetF32.
+PutF64 and PutF32 write one hyperslab out, the mirror of
+GetF64/GetF32.
 
-start -- the corner, one index per axis, outermost first.
-count -- the extent along each axis from that corner.
-data  -- LEN (data) must be the PRODUCT of count, and is
-         checked: Faults.SizeError rather than letting the C call
-         read past the end of a buffer the caller sized
-         wrongly.  Same rule as the readers, stated on both
-         sides because getting it wrong writes garbage into a
-         file instead of merely reading it.
+  start -- the corner, one index per axis, outermost first.
+  count -- the extent along each axis from that corner.
+  data  -- LEN (data) must be the PRODUCT of count, and is
+           checked: Faults.SizeError rather than letting the C call
+           read past the end of a buffer the caller sized
+           wrongly.  It is the same rule as the readers, stated
+           on both sides, because a mistake here writes garbage
+           into a file instead of merely reading it.
 
 ### CONST Global
 
 NC_GLOBAL, for file attributes
 
-libnetcdf, verbatim.  Every one is [SERIAL]: netCDF-4 goes through
-HDF5's global lock and the classic path keeps per-file state in
-library globals.  The library's own documentation says it is not
-thread-safe unless built to be, and "usually works" is how the
-blosc museum piece was written.
+These bind libnetcdf, verbatim.  Every one is [SERIAL]: netCDF-4
+goes through HDF5's global lock and the classic path keeps
+per-file state in library globals.  The library's own documentation
+says it is not thread-safe unless built to be, and "usually works"
+is how the blosc museum piece was written.
 
 ### NcOpen (path: C.ConstPtr ; mode: C.Int ; ncidp: C.MutPtr) : C.Int [SERIAL]
 
@@ -648,9 +660,9 @@ _(undocumented)_
 
 ### CLen (s: C.ConstPtr) : C.SSizeT [REENTRANT]
 
-the runtime's shim, not strlen itself: C.ConstPtr is
+CLen binds the runtime's shim, not strlen itself.  C.ConstPtr is
 `const void *` and string.h has already declared strlen with
-`const char *`, so the foreign declaration would collide
+`const char *`, so the foreign declaration would collide.
 
 ### CCopy (d: C.MutPtr ; s: C.ConstPtr ; n: C.SizeT) : C.MutPtr [REENTRANT]
 

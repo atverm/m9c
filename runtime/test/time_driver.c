@@ -1,14 +1,15 @@
-/* time_driver.c -- Time.m9 against the C library and against its own
-   stated properties.
+/* time_driver.c holds Time.m9 to the C library and to its own stated
+   properties.
 
-   Three kinds of check, because there are three kinds of claim:
+   It makes three kinds of check, because there are three kinds of
+   claim:
 
-     civil conversion is EXACT, so it is compared against timegm and
-     gmtime over a wide span of instants including before the epoch;
+     Civil conversion is EXACT.  So it is compared against timegm and
+     gmtime over a wide span of instants, including before the epoch.
 
-     ISO round-trip is a PROPERTY: ParseIso (Iso (t)) == t;
+     ISO round-trip is a PROPERTY: ParseIso (Iso (t)) == t.
 
-     calendar arithmetic makes a CONVENTION, and the convention's
+     Calendar arithmetic makes a CONVENTION, and the convention's
      whole justification is that Add (a, Diff (a, b)) == b.  That is
      checked over 100,000 random pairs rather than asserted, because
      it is exactly the invariant datetime libraries get wrong at
@@ -28,23 +29,24 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-static uint32_t sbuf[8192];
+/* S copies a C string's octets into sbuf.  A C literal is UTF-8
+   already, so no octet is widened. */
+static uint8_t sbuf[32768];
 static size_t sused = 0;
 
-static m9_sl_CHAR S (const char *s)
+static m9_sl_UTF8 S (const char *s)
 {
-  size_t i, n = strlen (s);
-  uint32_t *p = sbuf + sused;
+  size_t n = strlen (s);
+  uint8_t *p = sbuf + sused;
   sused += n;
-  for (i = 0; i < n; i++) p[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ p, (int64_t) n };
+  memcpy (p, s, n);
+  return (m9_sl_UTF8){ p, (int64_t) n };
 }
 
-static void to_c (m9_sl_CHAR s, char *out, size_t cap)
+static void to_c (m9_sl_UTF8 s, char *out, size_t cap)
 {
-  int64_t i;
   size_t n = (size_t) s.len < cap - 1 ? (size_t) s.len : cap - 1;
-  for (i = 0; i < (int64_t) n; i++) out[i] = (char) (s.p[i] & 0xff);
+  if (n > 0) memcpy (out, s.p, n);
   out[n] = 0;
 }
 
@@ -84,7 +86,8 @@ int main (void)
     ok ("ToCivil agrees with gmtime on the awkward dates", all);
   }
 
-  /* 50k instants spread over three centuries, both sides of epoch */
+  /* Spread 50k instants over three centuries, both sides of
+     epoch. */
   {
     uint64_t st = 7777777u;
     int bad = 0;
@@ -207,8 +210,9 @@ int main (void)
     ok ("diff raised nothing", err.exc == NULL);
   }
 
-  /* THE property: Add (a, Diff (a, b)) == b, over random pairs
-     including month ends, leap days and both sides of the epoch */
+  /* Check THE property, Add (a, Diff (a, b)) == b, over random pairs.
+     They include month ends, leap days and both sides of the
+     epoch. */
   {
     uint64_t st = 424242424242u;
     long total = 0, wrong = 0;

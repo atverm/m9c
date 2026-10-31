@@ -1,10 +1,10 @@
 MODULE ArrowRead ;
 
-(* ArrowRead FILE.arrows -- what Arrow.m9's READER finds in a stream, as
-   the text runtime/test/arrowread.py has pyarrow write for the same
-   bytes (see there): the fields, three metadata keys, then every batch,
-   its columns' null counts and every cell.  A refusal prints `refused'
-   and its message.  arrowread.sh compares the two. *)
+(* ArrowRead FILE.arrows prints what Arrow.m9's READER finds in a
+   stream, as the text runtime/test/arrowread.py has pyarrow write for
+   the same bytes (see there): the fields, three metadata keys, then
+   every batch, its columns' null counts and every cell.  A refusal
+   prints `refused' and its message.  arrowread.sh compares the two. *)
 
 IMPORT Io, Fmt, Arrow, Faults ;
 

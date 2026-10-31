@@ -1,10 +1,17 @@
 # DynStr
 
-Growable strings.  The M2 version leaned on libc malloc/realloc
-and answered questions about NIL with quiet zeros (Len (NIL) = 0,
-CharAt out of range = 0C).  Here the pool owns the string, NIL
-does not exist, and reading is a checked slice, not a CharAt
-loop.  Dispose is gone: free the pool, free the strings.
+DynStr holds growable UTF-8 text.  It is DynUtf's body under
+DynStr's name since STR became the UTF-8 type (2026-10-31,
+docs/utf8-stage4-plan.md decision 4); DynUtf stays beside it, the
+same builder, for programs that still name it.  The CHAR builder
+that had the name is gone (docs/utfbuilder-plan.md).
+
+The buffer holds octets, a quarter of the CHAR builder's for ASCII,
+and only whole UTF-8 sequences.  Every writer below appends a UTF, one
+encoded scalar or ASCII digits.  Text comes back as a COPY (View,
+ViewIn), because a UTF view of octets this module still writes
+would be the hole UTF (b) copies against.  The octets come back as
+a read-only view (Octets), for what leaves as octets anyway.
 
 ### TYPE DString
 
@@ -12,102 +19,91 @@ opaque; lives in a POOL
 
 ### New (VAR pool: POOL) : PTR DString IN pool
 
-an empty string, sixteen characters of capacity, owned by pool.
+New answers an empty text, sixteen octets of room, owned by
+pool.  The text and every buffer it outgrows are carved there.
 
-pool -- where the string and every buffer it later outgrows
-        are carved.  The result is `IN pool`, so the checker
-        refuses to let it outlive the pool it came from; that
-        is why there is no Dispose.
+### Append (VAR d: PTR DString ; RO s: UTF)
+
+Append puts the octets of s onto the end, growing the buffer
+when it is full.
+  d -- VAR because growing REPLACES the buffer; an Octets view
+       taken before still reads the old octets.
+  s -- copied; appending d's own View to d is safe, it is a copy
 
 ### AppendChar (VAR d: PTR DString ; ch: CHAR)
 
-one scalar onto the end, growing the buffer when it is full.
-
-d  -- VAR because growing REPLACES the buffer; a caller
-      holding an old View sees the old bytes, which is the
-      one thing to know about this type.
-ch -- any Unicode scalar.  No encoding happens here: CHAR is
-      the unit, and octets are Bytes' business.
-
-### Append (VAR d: PTR DString ; RO s: STR)
-
-the whole of s onto the end, one AppendChar at a time.
-
-s -- BORROWED for the call and copied, so appending a View of
-     d to d itself is the aliasing case this does not handle;
-     nothing in the corpus does it, and the copy is what
-     would make it safe.
-
-### Len (d: PTR DString) : I64
-
-characters written so far, never the capacity.  The M2 version
-answered 0 for NIL; there is no NIL here, so this cannot be the
-quiet zero that hid an unallocated string.
-
-### View (d: PTR DString) : STR
-
-the whole content, zero-copy; replaces the M2 CharAt-in-a-loop
-and its out-of-range 0C lie -- indexing the view is checked.
-
-### ViewIn (VAR pool: POOL ; d: PTR DString) : STR
-
-View, the copy made in pool: for text stored into a structure that
-outlives the builder's pool -- DynUtf's name, so a caller reads the
-same under the switch (2026-10-24)
-
-### Equal (d: PTR DString ; RO s: STR) : BOOL
-
-content comparison against a plain slice, without building a
-View first.  Eq below is the slice-to-slice form; this one
-exists because comparing a builder against a literal is the
-common case and should not need two calls.
-
-### Eq (RO a: STR ; RO b: STR) : BOOL
-
-slice-to-slice equality.  Json and ZarrStore had each grown a
-private copy before HttpServer became the third caller --
-inventory before manufacturing, consolidated here.
+AppendChar appends one scalar, encoded: one to four octets.
 
 ### AppendI64 (VAR d: PTR DString ; v: I64)
 
-decimal text of v.  Negating MIN(I64) traps Overflow (par 2.1);
-no caller formats it today, and the trap is declared behavior,
-not a surprise.
+AppendI64 appends the decimal text of v, a minus sign first when
+negative.  MIN (I64) is included.
 
-### Bytes (VAR pool: POOL ; RO s: STR ; zeroTerm: BOOL) : SLICE OF BYTE RAISES ValueRange
+### AppendStr (VAR d: PTR DString ; RO s: STR)
 
-CHAR is a scalar, the wire is octets; a scalar past 255 raises
-here, at the boundary, not as mojibake at the peer.  Pool
-storage is defined-zero (par 4.3): when zeroTerm is asked for,
-the terminator is already in place.
+AppendStr is Append since STR is the UTF-8 type.  It was the
+bridge from the CHAR builder's STR, and goes with the twins.
 
-### Utf8 (VAR pool: POOL ; RO s: STR) : SLICE OF BYTE RAISES ValueRange
+### BLen (d: PTR DString) : I64
 
-CHARs as UTF-8 octets -- the OTHER wire.  Bytes above is the
-Latin-1 wire and raises past 255; this one encodes every
-Unicode scalar (the claim Io.PutChars makes for the console).
-The declared ValueRange is the BYTE conversions the checker
-counts; every operand is arithmetic mod 64 plus an offset
-below 248, so it cannot fire -- declared because the
-accounting is exhaustive, not because it happens.  Demanded by
-the zarr proxy, whose JSON reference emits ensure_ascii=False.
+BLen answers the octets written so far, never the room, O(1).
 
-### Chars (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR RAISES ValueRange
+### View (d: PTR DString) : UTF
 
-octets to scalars, the inverse of Bytes.  An octet is always a
-scalar, so this cannot raise; the checker cannot know that
-without byte-level typing (P2 pass 3), and an honest signature
-beats a silent assumption.
+View answers the text so far, COPIED into the caller's frame,
+O(n).  The octets are validated as the copy is made.  Nothing
+writes a part of a character, so they cannot fail.  Were they
+to, the answer is an IndexError, never a wrong text.
 
-### FromUtf8 (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR RAISES ValueRange
+### ViewIn (VAR pool: POOL ; d: PTR DString) : UTF
 
-UTF-8 octets decoded to scalars -- the inverse of Utf8, and
-STRICT: an invalid sequence (bad lead or continuation byte,
-overlong form, surrogate, past U+10FFFF, truncated tail)
-RAISES ValueRange rather than guessing, because a file that is
-not UTF-8 read as if it were is the double-encoding bug this
-was built to end.  Demanded by the zarr proxy against the REAL
-stores: their .zattrs citations carry accented names, and
-reading those files through the Latin-1 ReadFile then encoding
-with Utf8 emitted every one twice-encoded -- a corruption the
-ASCII-only gate stores could never show.
+ViewIn is View with the copy made in pool, for text stored into
+a structure that outlives the frame.
+
+### Octets (d: PTR DString) : SLICE OF BYTE
+
+Octets answers the octets so far, a read-only VIEW of the
+buffer, O(1): for a file, a hash or a socket.  The view is valid
+until the next append that grows it.
+
+### Equal (d: PTR DString ; RO s: UTF) : BOOL
+
+Equal answers TRUE when the text so far equals s, octet by
+octet, with no copy.
+
+### Bytes (VAR pool: POOL ; RO u: UTF ; zeroTerm: BOOL) : SLICE OF BYTE RAISES ValueRange
+
+Bytes keeps DynStr.Bytes's contract, the inverse of Chars: ONE
+OCTET PER CHARACTER, a character past 255 refused as ValueRange,
+in pool, with a NUL after them when zeroTerm asks.  Pool storage
+is defined-zero, so the terminator is already in place.  For
+ASCII this is the octets of u.  For a text read off a wire
+through Chars it is the wire's bytes again.  OCTETS (u), the
+UTF-8 view, is not: NetCDF's GetAttText read `Â°C' for `°C'
+through OCTETS.
+
+### Chars (VAR pool: POOL ; RO b: SLICE OF BYTE) : UTF RAISES ValueRange
+
+Chars keeps DynStr.Chars's contract.  It answers the text whose
+characters are the octets of b, ONE CHARACTER PER OCTET, placed
+in pool.  An octet above 127 is the scalar of that value, two
+octets in the answer.  Chars serves bytes off a wire or a disk
+that a parser reads as characters without saying they are UTF-8,
+such as HttpServer's request head.  An octet is always a scalar,
+so this cannot raise.  The signature says what the checker
+counts, as DynStr's does.
+
+### Wire (VAR pool: POOL ; RO u: UTF ; zeroTerm: BOOL) : SLICE OF BYTE RAISES IndexError
+
+Wire answers the UTF-8 octets of u, copied into pool, with a NUL
+after them when zeroTerm asks.  It is what text becomes on a
+socket, in a file name or at the C boundary (Alex, 2026-10-31).
+Every character has its octets, so nothing is refused.
+
+### Decoded (VAR pool: POOL ; RO b: SLICE OF BYTE) : UTF RAISES ValueRange
+
+Decoded answers the text that the octets b carry, in pool: b
+itself when it is valid UTF-8, else one character per octet, as
+Chars reads it.  So a peer that sends Latin-1 still reads, and
+Wire gives UTF-8 back.  The signature names Chars's ValueRange,
+which cannot fire.

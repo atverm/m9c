@@ -1,9 +1,9 @@
 MODULE ThreadParen ;
 
-(* THREAD's argument under parentheses, once and twice: accepted by
-   both checkers, `THREAD form unsupported yet' in the generator until
-   2026-10-29 (decision 74's find).  Each worker counts itself done in
-   the monitor; the body waits for both (the serialtest shape). *)
+(* THREAD's argument under parentheses, once and twice, is accepted by
+   both checkers; it was `THREAD form unsupported yet' in the generator
+   until 2026-10-29 (decision 74's find).  Each worker counts itself
+   done in the monitor; the body waits for both (serialtest's shape). *)
 
 IMPORT Io, Fmt ;
 

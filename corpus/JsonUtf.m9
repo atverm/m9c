@@ -1,22 +1,24 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE JsonUtf ;
 
-(* Json over UTF text (docs/utf8-plan.md, stage 2; Alex, 2026-10-23:
-   "create the modules and test them, add UTF to the module name, swap
-   the names when STR becomes UTF").  The same tree, the same API and
-   the same contracts as Json -- read Json's comments for each procedure
-   -- with every piece of text a UTF: the document parsed, the payloads
-   and member names it keeps (views of the document, as Json's are), the
-   texts answered and the renderings produced.  A document is held at
-   its UTF-8 size, where Json's STR tree holds four octets a character.
+(* JsonUtf is Json over UTF text (docs/utf8-plan.md, stage 2; Alex,
+   2026-10-23: "create the modules and test them, add UTF to the
+   module name, swap the names when STR becomes UTF").  It has the
+   same tree, the same API and the same contracts as Json.  Read
+   Json's comments for each procedure.  Every piece of text is a UTF:
+   the document parsed, the payloads and member names it keeps (views
+   of the document, as Json's are), the texts answered and the
+   renderings produced.  A document is held at its UTF-8 size, where
+   Json's STR tree holds four octets a character.
 
-   What differs, and why:
+   JsonUtf differs from Json here, for these reasons:
      - positions in a ParseError are lines and columns of CHARACTERS, as
        Json's are; the scanner steps one code point at a time over byte
        offsets (Text.NextCp);
      - escape decoding and the renderings are built through STR and
-       converted once at the end: transient text, where the tree is what
-       lives on, and the switch at stage 3 makes the detour go away;
+       converted once at the end.  They are transient text, where the
+       tree is what lives on, and the switch at stage 3 makes the
+       detour go away;
      - AppendJString and AppendF64 append to a DynStr, which is STR, so
        their text argument is converted;
      - the exceptions' messages stay STR: they are ASCII, and a RAISE's
@@ -124,8 +126,8 @@ END JsonUtf.
 
 UNSAFE DEFINITION MODULE FOR "C" cjurepr ;
 
-(* the float printer and reader Json binds (cjrepr), bound again here so
-   that JsonUtf stands alone *)
+(* cjurepr binds again the float printer and reader Json binds
+   (cjrepr), so that JsonUtf stands alone. *)
 
 PROCEDURE ReprF64 = "m9_repr_double" (v: C.Double ; buf: C.MutPtr)
   : C.SSizeT
@@ -138,7 +140,8 @@ END cjurepr.
 
 UNSAFE IMPLEMENTATION MODULE JsonUtf ;
 
-(* UNSAFE for ADR at the float-printing boundary, as Json. *)
+(* JsonUtf is UNSAFE for ADR at the float-printing boundary, as Json
+   is. *)
 
 FROM cjurepr IMPORT ReprF64, StrToD ;
 
@@ -159,7 +162,7 @@ TYPE
     line, col : I64 ;      (* in characters *)
   END ;
 
-(* the code point at the cursor, 0C at the end *)
+(* Cur answers the code point at the cursor, 0C at the end. *)
 PROCEDURE Cur (VAR c: PTR Cursor) : CHAR =
 VAR at : I64 ;
 BEGIN
@@ -285,9 +288,9 @@ BEGIN
   RETURN n
 END ParseArray ;
 
-(* the raw text between the quotes, a view of the document as Json's
-   is: both ends sit at a quote, so the slice is at character
-   boundaries *)
+(* ParseString answers the raw text between the quotes, a view of the
+   document as Json's is.  Both ends sit at a quote, so the slice is
+   at character boundaries. *)
 PROCEDURE ParseString (VAR c: PTR Cursor) : RO UTF
   RAISES ParseError =
 VAR
@@ -364,7 +367,8 @@ BEGIN
   END ;
   IF neg THEN r := -r ; ip := -ip END ;
   IF NOT isInt THEN
-    (* libc's value of the token, as Json: its octets and a NUL *)
+    (* Take libc's value of the token, as Json does: its octets and a
+       NUL. *)
     len := c.pos - start ;
     tb := NEW (scratch, BYTE, len + 1) ;
     COPY (SLICE (tb, 0, len), SLICE (OCTETS (c.src), start, len)) ;
@@ -380,16 +384,16 @@ EXCEPT
     RETURN NEW (c, Node)
 END ParseNumber ;
 
-(* a keyword, ASCII: compared octet by octet *)
+(* Match compares a keyword, ASCII, octet by octet. *)
 PROCEDURE Match (VAR c: PTR Cursor ; RO lit: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF c.pos + LEN (lit) > Text.BLen (c.src) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (lit) - 1 DO
-    IF I64 (Text.BAt (c.src, c.pos + i)) # ORD (lit[i]) THEN RETURN FALSE END
+  IF c.pos + Text.BLen (lit) > Text.BLen (c.src) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (lit) - 1 DO
+    IF I64 (Text.BAt (c.src, c.pos + i)) # I64 (Text.BAt (lit, i)) THEN RETURN FALSE END
   END ;
-  c.pos := c.pos + LEN (lit) ;
-  c.col := c.col + LEN (lit) ;
+  c.pos := c.pos + Text.BLen (lit) ;
+  c.col := c.col + Text.BLen (lit) ;
   RETURN TRUE
 EXCEPT
 | IndexError : RETURN FALSE
@@ -581,8 +585,8 @@ END IsNull ;
 
 (* ---- escapes: decoded and made through STR (transient text) ---- *)
 
-(* does the document text hold a backslash?  An octet scan: 92 is never
-   inside a multi-octet character *)
+(* HasBackslash asks whether the document text holds a backslash.  It
+   scans octets: 92 is never inside a multi-octet character. *)
 PROCEDURE HasBackslash (RO t: UTF) : BOOL =
 VAR o : SLICE OF BYTE ; b : BYTE ;
 BEGIN
@@ -605,32 +609,37 @@ PROCEDURE Hex4 (RO t: STR ; at: I64) : I64
   RAISES TypeMismatch =
 VAR v, k, h : I64 ;
 BEGIN
-  IF at + 3 >= LEN (t) THEN RAISE TypeMismatch ('truncated unicode escape') END ;
+  IF at + 3 >= Text.BLen (t) THEN RAISE TypeMismatch ('truncated unicode escape') END ;
   v := 0 ;
   FOR k := 0 TO 3 DO
-    h := HexVal (t[at + k]) ;
+    h := HexVal (Text.BChar (t, at + k)) ;
     IF h < 0 THEN RAISE TypeMismatch ('bad hex in unicode escape') END ;
     v := v * 16 + h
   END ;
   RETURN v
 END Hex4 ;
 
-(* Json.DecodeStr over the decoded characters of t *)
+(* DecodeChars runs Json.DecodeStr over the decoded characters of t. *)
 PROCEDURE DecodeChars (RO t: STR) : STR
   RAISES TypeMismatch, ValueRange =
+  (* the characters between escapes go over as RUNS, SLICE (t, from,
+     i - from), whose ends are at a backslash or after an escape --
+     ASCII, so a character boundary; an octet appended as a character
+     would encode a character past ASCII twice *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
-  i, v, lo : I64 ;
+  i, v, lo, from : I64 ;
   ch : CHAR ;
 BEGIN
   d := DynStr.New (scratch) ;
   i := 0 ;
-  WHILE i < LEN (t) DO
-    ch := t[i] ;
-    IF ORD (ch) = 92 THEN
-      IF i + 1 >= LEN (t) THEN RAISE TypeMismatch ('escape at end of string') END ;
-      ch := t[i + 1] ;
+  from := 0 ;
+  WHILE i < Text.BLen (t) DO
+    IF I64 (Text.BAt (t, i)) = 92 THEN
+      DynStr.Append (d, SLICE (t, from, i - from)) ;
+      IF i + 1 >= Text.BLen (t) THEN RAISE TypeMismatch ('escape at end of string') END ;
+      ch := Text.BChar (t, i + 1) ;
       i := i + 2 ;
       IF ch = '"' OR ch = '/' OR ORD (ch) = 92 THEN DynStr.AppendChar (d, ch)
       ELSIF ch = 'b' THEN DynStr.AppendChar (d, 08C)
@@ -642,7 +651,7 @@ BEGIN
         v := Hex4 (t, i) ;
         i := i + 4 ;
         IF v >= 55296 AND v <= 56319 THEN
-          IF i + 5 < LEN (t) AND ORD (t[i]) = 92 AND t[i + 1] = 'u' THEN
+          IF i + 5 < Text.BLen (t) AND I64 (Text.BAt (t, i)) = 92 AND Text.BIs (t, i + 1, 'u') THEN
             lo := Hex4 (t, i + 2) ;
             IF lo < 56320 OR lo > 57343 THEN
               RAISE TypeMismatch ('lone surrogate in unicode escape')
@@ -658,17 +667,18 @@ BEGIN
         DynStr.AppendChar (d, CHR (v))
       ELSE
         RAISE TypeMismatch ('unknown escape in string')
-      END
+      END ;
+      from := i
     ELSE
-      DynStr.AppendChar (d, ch) ;
       i := i + 1
     END
   END ;
+  DynStr.Append (d, SLICE (t, from, i - from)) ;
   RETURN DynStr.View (d)
 END DecodeChars ;
 
-(* the decoded text: escape-free document text is answered as it is, a
-   view, nothing copied (Json.Text's promise) *)
+(* DecodeStr answers the decoded text.  Escape-free document text is
+   answered as it is, a view, nothing copied (Json.Text's promise). *)
 PROCEDURE DecodeStr (RO t: UTF) : UTF
   RAISES TypeMismatch, ValueRange =
 BEGIN
@@ -692,15 +702,16 @@ BEGIN
   RETURN CHR (ORD ('a') + v - 10)
 END HexDigit ;
 
-(* Json.EscapeBody: json.dumps' escaping, non-ASCII kept as it is *)
+(* EscapeBody is Json.EscapeBody: json.dumps' escaping, non-ASCII kept
+   as it is. *)
 PROCEDURE EscapeBody (VAR d: PTR DynStr.DString ; RO t: STR)
   RAISES ValueRange =
 VAR
   v : I64 ;
   ch : CHAR ;
 BEGIN
-  (* FOR ch IN t: over characters, the same both sides of the UTF
-     switch; a subscript there would be an octet *)
+  (* FOR ch IN t goes over characters, the same both sides of the UTF
+     switch.  A subscript there would be an octet. *)
   FOR ch IN t DO
     v := ORD (ch) ;
     IF ch = '"' THEN DynStr.AppendChar (d, 05CC) ; DynStr.AppendChar (d, '"')
@@ -720,7 +731,7 @@ BEGIN
   END
 END EscapeBody ;
 
-(* a decoded text written as a JSON string *)
+(* EmitJStr writes a decoded text as a JSON string. *)
 PROCEDURE EmitJStr (VAR d: PTR DynStr.DString ; RO t: UTF)
   RAISES ValueRange =
 BEGIN
@@ -1010,7 +1021,8 @@ END NumText ;
 
 (* ---- building and copying ---- *)
 
-(* a copy of s in the pool dst lives in (rule 2): UTF (dst, s) *)
+(* CopyStrTo answers a copy of s in the pool dst lives in (rule 2):
+   UTF (dst, s). *)
 PROCEDURE CopyStrTo (VAR dst: PTR Node ; RO s: UTF) : UTF =
 BEGIN
   RETURN UTF (dst, s)

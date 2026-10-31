@@ -1,18 +1,19 @@
 #!/bin/sh
 # tsan: THE THREADED PROGRAMS RUN UNDER THREADSANITIZER (2026-10-26, the
-# third review's concurrency advice: no lane looked for data races, and
-# AdoptRace -- a THREAD carving a shared pool -- lost 21,733 to 71,859
-# of 400,000 updates with nothing in CI to see it; the checker refuses
-# that shape now).  Each program below is built with CC = lib/tsancc
+# third review's concurrency advice).  No lane looked for data races.
+# AdoptRace, a THREAD carving a shared pool, lost 21,733 to 71,859 of
+# 400,000 updates with nothing in CI to see it.  The checker refuses
+# that shape now.  Each program below is built with CC = lib/tsancc
 # (clang or gcc with -fsanitize=thread) through `m9c --run' and run
 # twice, since one run of a race is no verdict.  A report is red unless
 # tsan.owed lists the program, and an owed program must still report.
 # The control tsan/tsan_control.c, a counter two threads bump with no
 # lock, must report: a lane that sees nothing there sees nothing.
-# Shown able to fail on M9 code too: the compiler of c3fddee6 emitted the
-# [SERIAL] gate's leave as a plain re-read of the slot another thread's
-# m9_gate stores atomically, and IoPar is reported (Io_Remove).  The
-# programs ran clean twice each on the MacBook in 1 min 48 s.
+# The gate is shown able to fail on M9 code too.  The compiler of
+# c3fddee6 emitted the [SERIAL] gate's leave as a plain re-read of the
+# slot another thread's m9_gate stores atomically, and IoPar is
+# reported (Io_Remove).  The programs ran clean twice each on the
+# MacBook in 1 min 48 s.
 cd "$(dirname "$0")" || exit 1
 . ./lib/gen.sh
 . ./lib/freshm9c.sh
@@ -30,8 +31,9 @@ CCT="$HERE/lib/tsancc"
 # Linux with a high mmap randomisation (vm.mmap_rnd_bits 32, zoefii's
 # kernel 7.0) is a layout gcc 13's TSan cannot map: "FATAL: unexpected
 # memory mapping" before main.  The runs go without ASLR there, through
-# setarch -R, which a container permits only with seccomp unconfined --
-# ci.yml's drivers job says so (2026-10-26, the lane's first CI run)
+# setarch -R.  A container permits that only with seccomp unconfined,
+# and ci.yml's drivers job says so (2026-10-26, the lane's first CI
+# run).
 NOASLR=
 if [ "$(uname -s)" = Linux ] && command -v setarch > /dev/null 2>&1 &&
    setarch "$(uname -m)" -R true 2> /dev/null; then
@@ -47,8 +49,9 @@ grep -q 'WARNING: ThreadSanitizer' "$W/control.out" ||
   { echo "tsan: FAIL -- the control race was not reported"; head -5 "$W/control.out"; exit 1; }
 
 fail=0 ; n=0
-# PROGRAM DIR: the file, the directory it is run from (a tutorial
-# example reads its data beside it, a test from the repository root)
+# Each spec is PROGRAM DIR: the file, and the directory it is run from.
+# A tutorial example reads its data beside it, a test from the
+# repository root.
 for spec in "thrtest.m9 $HERE" "IoPar.m9 $HERE" "ExecPar.m9 $HERE" \
             "docs/tutorial/examples/C16Hash.m9 $ROOT/docs/tutorial/examples" \
             "docs/tutorial/examples/C16Mat.m9 $ROOT/docs/tutorial/examples" \
@@ -65,7 +68,7 @@ for spec in "thrtest.m9 $HERE" "IoPar.m9 $HERE" "ExecPar.m9 $HERE" \
     if grep -q 'WARNING: ThreadSanitizer' "$W/$name.$r"; then
       reported=1
     elif [ $st != 0 ]; then
-      # a program that did not build or run proves nothing about races
+      # A program that did not build or run proves nothing about races.
       echo "tsan: FAIL $name did not run cleanly under TSan (exit $st):"
       grep -v 'm9c: gcc\|^    #' "$W/$name.$r" | tail -5 | sed 's/^/    /'
       fail=$((fail + 1)) ; break

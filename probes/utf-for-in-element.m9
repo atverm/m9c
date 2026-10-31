@@ -1,7 +1,7 @@
 (* EXPECT: FOR variable b is BYTE, and the elements it goes over are CHAR *)
 MODULE m ;
-(* legal forms first: FOR IN over a UTF gives CHARs; over its octets,
-   BYTEs *)
+(* Legal forms come first: FOR IN over a UTF gives CHARs; over its
+   octets, BYTEs. *)
 VAR
   u : UTF ;
   o : SLICE OF BYTE ;

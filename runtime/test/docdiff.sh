@@ -1,23 +1,25 @@
 #!/bin/sh
-# The generated reference documentation, against what is checked in.
+# This gate holds the generated reference documentation against what
+# is checked in.
 #
 # docs/modules/NAME.md is a GOLDEN, exactly as host/fpc/lextest.golden
-# and runtime/gen are: it must regenerate byte-identically, so a
+# and runtime/gen are.  It must regenerate byte-identically.  So a
 # comment edited without regenerating shows up as a diff rather than
 # as documentation that quietly stopped matching the code.
 #
 # THE COVERAGE NUMBER IS PRINTED AND NEVER GATED.  A threshold on how
 # much is documented makes `(* obvious *)` a rational move, which is
-# the opposite of the point.  What IS gated is drift -- a `name --`
-# line naming something that is not a parameter of that procedure --
-# because that is the documentation and the signature disagreeing,
-# not a gap.  Same asymmetry mandiff enforces between --help and the
+# the opposite of the point.  The gate DOES hold drift: a `name --`
+# line naming something that is not a parameter of that procedure.
+# There the documentation and the signature disagree; it is not a gap.
+# This is the same asymmetry mandiff enforces between --help and the
 # manual page, applied in the one direction that is safe.
 #
 # It builds its own m9c rather than accepting one it finds.  mandiff
-# took $M9C, then ./m9c, then ../../out/m9c (until lib/freshm9c.sh, 2026-10-25),
-# and any of those could be left over from an earlier run; the project's "THE GATES WERE TESTING
-# STALE CODE" is the reason not to repeat that here.
+# took $M9C, then ./m9c, then ../../out/m9c (until lib/freshm9c.sh,
+# 2026-10-25), and any of those could be left over from an earlier
+# run.  The project's "THE GATES WERE TESTING STALE CODE" is the reason
+# not to repeat that here.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
@@ -26,8 +28,9 @@ M9CNEW=$(mktemp -d)
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -o "$M9CNEW/m9c"
-# replaced only when it differs: a gate in another lane running m9c keeps
-# its file, and --run's cache, whose key holds m9c's mtime, its entries
+# Replace m9c only when it differs.  So a gate in another lane running
+# m9c keeps its file, and --run's cache keeps its entries; that cache's
+# key holds m9c's mtime.
 if cmp -s "$M9CNEW/m9c" m9c; then rm -r "$M9CNEW"; else mv -f "$M9CNEW/m9c" m9c; rmdir "$M9CNEW"; fi
 
 M9C=$(pwd)/m9c
@@ -38,10 +41,10 @@ rm -rf "$OUT"; mkdir -p "$OUT"
 export M9RUNTIME=$(cd .. && pwd)
 export M9LIBRARY=$SRC
 
-# HttpServer names Http explicitly: it says FROM csock IMPORT, csock is
-# declared in Http.m9, and `FROM u IMPORT` is deliberately not resolved
-# through the search path -- u is a C-backed unit and looking for a
-# u.m9 would invent one.  gendiff names it for the same reason.
+# HttpServer names Http explicitly.  It says FROM csock IMPORT, and
+# csock is declared in Http.m9.  `FROM u IMPORT` is deliberately not
+# resolved through the search path: u is a C-backed unit, and a search
+# for a u.m9 would invent one.  gendiff names it for the same reason.
 deps_of () {
   case $1 in
     HttpServer) echo Http DynStr Io Zip Bits Logger Syslog Time Fmt ;;
@@ -50,10 +53,11 @@ deps_of () {
 }
 
 n=0; np=0; npd=0; no=0; nod=0; npl=0; drift=0
-# The list is build.sh's LIBRARY, and the range closes on the line that
-# ends the string -- NOT on a module name: closed on `Plot ZarrStore"`,
-# it silently ran to the end of the file when 0.5.0 appended Lsp and
-# M9fmt, and `mkdir` became a module (2026-09-03, both branches red).
+# The list is build.sh's LIBRARY.  The range closes on the line that
+# ends the string, NOT on a module name.  Once it closed on `Plot
+# ZarrStore"`.  Then it silently ran to the end of the file when 0.5.0
+# appended Lsp and M9fmt, and `mkdir` became a module (2026-09-03, both
+# branches red).
 for m in $(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh |
            sed 's/LIBRARY="//; s/"$//; s/\\$//' | tr -s ' \n' ' '); do
   d=""

@@ -1,17 +1,19 @@
-/* json_driver.c -- differential checks for generated Json code.
+/* json_driver.c makes differential checks for generated Json code.
    Document: {"a":1,"b":[1.5,true,null,"xy"],"c":{"d":-7},"e":2.5e2}
-   Expectations computed by hand from the JSON grammar, never read
-   back from the code under test.                                   */
+   The expectations are computed by hand from the JSON grammar, never
+   read back from the code under test.                              */
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include "Json.h"
 
-static m9_sl_CHAR sl (const char *s, uint32_t *buf)
+/* sl copies a C string's bytes into buf.  A C literal is UTF-8
+   already, so no byte is widened. */
+static m9_sl_UTF8 sl (const char *s, uint8_t *buf)
 {
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
+  int64_t n = (int64_t) strlen (s);
+  memcpy (buf, s, (size_t) n);
+  return (m9_sl_UTF8){ buf, n };
 }
 
 static int checks = 0, fails = 0;
@@ -21,16 +23,14 @@ static void ck (bool ok, const char *what)
   if (!ok) { fails++; printf ("FAIL: %s\n", what); }
 }
 
-static uint32_t doc[256], doc2[64], doc3[64], nm[32];
+static uint8_t doc[256], doc2[64], doc3[64], nm[32];
 
-/* an M9 string against ASCII, for the builder checks below */
-static bool eqs (m9_sl_CHAR got, const char *want)
+/* eqs compares an M9 string against a C string byte for byte.  The
+   C string is UTF-8, so a non-ASCII scalar is spelled as its octets. */
+static bool eqs (m9_sl_UTF8 got, const char *want)
 {
-  int64_t i, n = (int64_t) strlen (want);
-  if (got.len != n) return false;
-  for (i = 0; i < n; i++)
-    if (got.p[i] != (uint32_t) (unsigned char) want[i]) return false;
-  return true;
+  int64_t n = (int64_t) strlen (want);
+  return got.len == n && (n == 0 || memcmp (got.p, want, (size_t) n) == 0);
 }
 
 int main (void)
@@ -38,7 +38,7 @@ int main (void)
   m9_pool pool = {0};
   m9_state err = {0};
 
-  m9_sl_CHAR src = sl ("{\"a\":1,\"b\":[1.5,true,null,\"xy\"],"
+  m9_sl_UTF8 src = sl ("{\"a\":1,\"b\":[1.5,true,null,\"xy\"],"
                        "\"c\":{\"d\":-7},\"e\":2.5e2}", doc);
   Json_Node *root = Json_Parse (src, &err);
   ck (err.exc == NULL && root != NULL, "Parse");
@@ -51,8 +51,8 @@ int main (void)
   Json_Node *b = Json_Field (root, sl ("b", nm), &err);
   ck (b != NULL && Json_Count (b, &err) == 4, "b Count 4");
   ck (Json_AsF64 (Json_Item (b, 0, &err), &err) == 1.5, "b[0] = 1.5");
-  /* Node is opaque: b[1]'s Bool-ness shows through the public API
-     only -- not null, not a string, and AsI64 refuses it */
+  /* Node is opaque.  b[1]'s Bool-ness shows through the public API
+     only: not null, not a string, and AsI64 refuses it. */
   Json_Node *b1 = Json_Item (b, 1, &err);
   ck (!Json_IsNull (b1, &err), "b[1] not null");
   Json_AsI64 (b1, &err);
@@ -62,14 +62,14 @@ int main (void)
   ck (Json_StrIs (Json_Item (b, 3, &err), sl ("xy", nm), &err),
       "b[3] = \"xy\"");
 
-  /* AsStr: the TEXT, not a comparison.  Until it existed a document's
-     strings could only be tested against a value the caller already
-     had, so a configuration could not read a path out of a file.
-     It answers a VIEW into the source, so the bytes must be the
-     source's own, and it must refuse a non-string the way AsI64
-     refuses a Bool. */
+  /* AsStr answers the TEXT, not a comparison.  Until it existed a
+     document's strings could only be tested against a value the
+     caller already had.  So a configuration could not read a path
+     out of a file.  It answers a VIEW into the source, so the bytes
+     must be the source's own.  It must refuse a non-string the way
+     AsI64 refuses a Bool. */
   {
-    m9_sl_CHAR t = Json_AsStr (Json_Item (b, 3, &err), &err);
+    m9_sl_UTF8 t = Json_AsStr (Json_Item (b, 3, &err), &err);
     ck (err.exc == NULL && t.len == 2 && t.p[0] == 'x' && t.p[1] == 'y',
         "AsStr of b[3] is \"xy\"");
     Json_AsStr (Json_Item (b, 0, &err), &err);
@@ -93,8 +93,7 @@ int main (void)
   Json_AsI64 (Json_Item (b, 3, &err), &err);
   ck (err.exc == &Json_TypeMismatch, "AsI64 of string raises");
   ck (err.s[0].len == 15 &&
-      memcmp (err.s[0].p, (uint32_t[]){ 'n','u','m','b','e','r' },
-              6 * sizeof (uint32_t)) == 0,
+      memcmp (err.s[0].p, "number", 6) == 0,
       "TypeMismatch payload 'number expected'");
   err.exc = NULL;
 
@@ -122,54 +121,49 @@ int main (void)
 
   /* Text and the decoding serializers.  Document (JSON spelling):
        {"q":"a\"b\\c\/d","u":"\u00e9\ud83d\ude00\n","t":"plain"}
-     Text(q) = a"b\c/d (7 chars), Text(u) = U+00E9 U+1F600 LF
-     (a surrogate PAIR combines), Text(t) answers the parse VIEW
-     (zero copy -- its pointer lands inside the source buffer).
-     Compact decodes then re-escapes exactly as loads-then-dumps:
-     the quote and backslash re-escape, the slash and the non-ASCII
-     scalars come out raw, LF becomes \n again. */
+     Text(q) = a"b\c/d (7 chars).  Text(u) = U+00E9 U+1F600 LF
+     (a surrogate PAIR combines).  Text(t) answers the parse VIEW
+     (zero copy: its pointer lands inside the source buffer).
+     Compact decodes, then re-escapes exactly as loads-then-dumps.
+     The quote and backslash re-escape, the slash and the non-ASCII
+     scalars come out raw, and LF becomes \n again. */
   {
-    m9_sl_CHAR esrc = sl ("{\"q\":\"a\\\"b\\\\c\\/d\","
+    m9_sl_UTF8 esrc = sl ("{\"q\":\"a\\\"b\\\\c\\/d\","
                           "\"u\":\"\\u00e9\\ud83d\\ude00\\n\","
                           "\"t\":\"plain\"}", doc);
     Json_Node *er = Json_Parse (esrc, &err);
     ck (err.exc == NULL && er != NULL, "escape doc parses");
 
-    m9_sl_CHAR q = Json_Text (Json_Field (er, sl ("q", nm), &err), &err);
-    static const uint32_t qx[] =
-      { 'a', '"', 'b', '\\', 'c', '/', 'd' };
-    ck (err.exc == NULL && q.len == 7 &&
-        memcmp (q.p, qx, sizeof qx) == 0, "Text decodes q");
+    m9_sl_UTF8 q = Json_Text (Json_Field (er, sl ("q", nm), &err), &err);
+    ck (err.exc == NULL && eqs (q, "a\"b\\c/d"), "Text decodes q");
 
-    m9_sl_CHAR u = Json_Text (Json_Field (er, sl ("u", nm), &err), &err);
-    ck (err.exc == NULL && u.len == 3 && u.p[0] == 0xE9 &&
-        u.p[1] == 0x1F600 && u.p[2] == 10,
+    m9_sl_UTF8 u = Json_Text (Json_Field (er, sl ("u", nm), &err), &err);
+    /* U+00E9 is C3 A9 and U+1F600 is F0 9F 98 80: three scalars in
+       seven bytes.  A pair left uncombined would be two 3-byte
+       sequences and no valid UTF-8 at all. */
+    ck (err.exc == NULL && eqs (u, "\xC3\xA9\xF0\x9F\x98\x80\n")
+        && m9_utf_cpcount (u) == 3,
         "Text combines the surrogate pair");
 
-    m9_sl_CHAR pl = Json_Text (Json_Field (er, sl ("t", nm), &err), &err);
+    m9_sl_UTF8 pl = Json_Text (Json_Field (er, sl ("t", nm), &err), &err);
     ck (err.exc == NULL && pl.len == 5 &&
         pl.p >= doc && pl.p < doc + 256,
         "escape-free Text is the parse view");
 
-    m9_sl_CHAR cj = Json_Compact (er, &err);
-    static const uint32_t cx[] =
-      { '{', '"', 'q', '"', ':', '"', 'a', '\\', '"', 'b', '\\',
-        '\\', 'c', '/', 'd', '"', ',', '"', 'u', '"', ':', '"',
-        0xE9, 0x1F600, '\\', 'n', '"', ',', '"', 't', '"', ':',
-        '"', 'p', 'l', 'a', 'i', 'n', '"', '}' };
-    ck (err.exc == NULL && cj.len == 40 &&
-        memcmp (cj.p, cx, sizeof cx) == 0,
+    m9_sl_UTF8 cj = Json_Compact (er, &err);
+    /* The document is 40 scalars, and the two raw ones take six of
+       its 44 bytes. */
+    ck (err.exc == NULL
+        && eqs (cj, "{\"q\":\"a\\\"b\\\\c/d\",\"u\":\""
+                    "\xC3\xA9\xF0\x9F\x98\x80\\n\",\"t\":\"plain\"}")
+        && m9_utf_cpcount (cj) == 40,
         "Compact = loads-then-dumps over escapes");
 
     /* sort_keys orders by the DECODED name: "b\u0041" is bA, which
        sorts after a */
     Json_Node *sr = Json_Parse (sl ("{\"b\\u0041\":1,\"a\":2}", doc2), &err);
-    m9_sl_CHAR cs = Json_CompactSorted (sr, &err);
-    static const uint32_t sx[] =
-      { '{', '"', 'a', '"', ':', '2', ',', '"', 'b', 'A', '"', ':',
-        '1', '}' };
-    ck (err.exc == NULL && cs.len == 14 &&
-        memcmp (cs.p, sx, sizeof sx) == 0,
+    m9_sl_UTF8 cs = Json_CompactSorted (sr, &err);
+    ck (err.exc == NULL && eqs (cs, "{\"a\":2,\"bA\":1}"),
         "CompactSorted sorts decoded names");
 
     /* a lone surrogate refuses where Python carries it */
@@ -180,14 +174,14 @@ int main (void)
   }
 
   /* ---- BUILDING a document, which Json could not do until
-     2026-09-09: parse and re-serialise existed, construction did
-     not, so every composer in this family wrote JSON as text and
+     2026-09-09.  Parse and re-serialise existed, construction did
+     not.  So every composer in this family wrote JSON as text and
      got the escaping right by hand.  The expected strings below are
      json.dumps' output, written here by hand. ---- */
   {
-    uint32_t b1[64], b2[64], b3[64], b4[64], b5[64], b6[64];
+    uint8_t b1[64], b2[64], b3[64], b4[64], b5[64], b6[64];
     Json_Node *o, *arr, *n, *inner;
-    m9_sl_CHAR out;
+    m9_sl_UTF8 out;
 
     o = Json_NewObj (&err);
     n = Json_NewI64 (1, &err);
@@ -198,16 +192,16 @@ int main (void)
     ck (err.exc == NULL && eqs (out, "{\"a\":1,\"b\":\"x\"}"),
         "a built object serialises in insertion order");
 
-    /* REPLACE IN PLACE, which is python's {**a, "a": 9}: the value
+    /* REPLACE IN PLACE, which is python's {**a, "a": 9}.  The value
        is b's and the POSITION is a's.  Appending instead would put
-       "a" last and every re-derived .zattrs would diff. */
+       "a" last, and every re-derived .zattrs would diff. */
     n = Json_NewI64 (9, &err);
     Json_Set (&o, &pool,sl ("a", b4), &n, &pool, &err);
     out = Json_Compact (o, &err);
     ck (err.exc == NULL && eqs (out, "{\"a\":9,\"b\":\"x\"}"),
         "Set replaces in place and keeps the member's position");
 
-    /* and replacing the LAST member keeps the tail correct too */
+    /* Replacing the LAST member keeps the tail correct too. */
     n = Json_NewBool (true, &err);
     Json_Set (&o, &pool,sl ("b", b5), &n, &pool, &err);
     out = Json_Compact (o, &err);
@@ -229,32 +223,32 @@ int main (void)
 
     /* NewStr takes a VALUE and stores DOCUMENT text, so a literal
        backslash survives.  Stored raw it would be read back as an
-       escape -- and \q is not one, so the document would not even
-       parse.  json.dumps(ensure_ascii=False) of these four is what
-       is written here. */
+       escape.  \q is not one, so the document would not even parse.
+       json.dumps(ensure_ascii=False) of these four is what is written
+       here. */
     {
-      uint32_t v[32];
-      m9_sl_CHAR val = sl ("q\"w\\e", v);          /* q "w \e */
-      val.p[5] = 0x00e9;                            /* ... and an accent */
-      val.len = 6;
+      uint8_t v[32];
+      m9_sl_UTF8 val = sl ("q\"w\\e\xC3\xA9", v);  /* q "w \e and an accent */
       o = Json_NewObj (&err);
       n = Json_NewStr (val, &err);
       Json_Set (&o, &pool,sl ("s", b1), &n, &pool, &err);
       out = Json_Compact (o, &err);
-      /* {"s":"q\"w\\e<e9>"} -- 16 scalars, counted out by hand */
-      ck (err.exc == NULL && out.len == 16
+      /* {"s":"q\"w\\e<e9>"} -- 16 scalars, counted out by hand.  The
+         accent is C3 A9, so the bytes are 17 and the accent sits at
+         byte 13. */
+      ck (err.exc == NULL && out.len == 17 && m9_utf_cpcount (out) == 16
           && out.p[7] == '\\' && out.p[8] == '"'
           && out.p[10] == '\\' && out.p[11] == '\\'
-          && out.p[13] == 0x00e9,
+          && out.p[13] == 0xC3 && out.p[14] == 0xA9,
           "NewStr escapes the value, and Compact round-trips it");
-      /* and Text gives the VALUE back, unchanged */
-      m9_sl_CHAR back = Json_Text (Json_Field (o, sl ("s", b2), &err), &err);
-      ck (err.exc == NULL && back.len == 6 && back.p[1] == '"'
-          && back.p[3] == '\\' && back.p[5] == 0x00e9,
+      /* Text gives the VALUE back, unchanged. */
+      m9_sl_UTF8 back = Json_Text (Json_Field (o, sl ("s", b2), &err), &err);
+      ck (err.exc == NULL && back.len == 7 && back.p[1] == '"'
+          && back.p[3] == '\\' && back.p[5] == 0xC3 && back.p[6] == 0xA9,
           "Text answers what NewStr was given");
     }
 
-    /* a built member set into a PARSED tree: the two kinds mix */
+    /* Set a built member into a PARSED tree: the two kinds mix. */
     {
       Json_Node *pr = Json_Parse (sl ("{\"keep\":1,\"drop\":2}", b2), &err);
       n = Json_NewStr (sl ("new", b3), &err);
@@ -265,8 +259,8 @@ int main (void)
     }
 
     /* Clone: a node belongs to ONE parent, so a subtree that appears
-       in a second document is copied.  Deep, so mutating the copy
-       cannot reach the original -- which is the whole failure mode
+       in a second document is copied.  The copy is deep, so mutating
+       it cannot reach the original.  That is the whole failure mode
        when a shared vocabulary is merged into many documents. */
     {
       Json_Node *src = Json_Parse (sl ("{\"a\":{\"x\":1},\"b\":[1,2]}", b1), &err);
@@ -275,7 +269,8 @@ int main (void)
       out = Json_Compact (cp, &err);
       ck (eqs (out, "{\"a\":{\"x\":1},\"b\":[1,2]}"),
           "the clone serialises identically");
-      /* mutate the COPY's nested object; the original must not move */
+      /* Mutate the COPY's nested object.  The original must not
+         move. */
       {
         Json_Node *inner = Json_Field (cp, sl ("a", b2), &err);
         n = Json_NewI64 (99, &err);
@@ -289,13 +284,13 @@ int main (void)
     }
 
     /* A MEMBER NAME FROM DATA.  The FLUXNET shuttle put a Windows path
-       into a BADM group name; set RAW, the backslash-u in it read
+       into a BADM group name.  Set RAW, the backslash-u in it read
        back as a broken unicode escape.  Name spells it as document
        text, and the parsed document hands the value back. */
     {
-      uint32_t v[32], w[64];
-      m9_sl_CHAR raw = sl ("badm_c:\\users\\x", v);   /* one \ each */
-      m9_sl_CHAR nm = Json_Name (raw, &err);
+      uint8_t v[32], w[64];
+      m9_sl_UTF8 raw = sl ("badm_c:\\users\\x", v);   /* one \ each */
+      m9_sl_UTF8 nm = Json_Name (raw, &err);
       o = Json_NewObj (&err);
       n = Json_NewI64 (7, &err);
       Json_Set (&o, &pool,nm, &n, &pool, &err);
@@ -305,7 +300,7 @@ int main (void)
           && out.p[10] == '\\' && out.p[11] == 'u',
           "Name escapes a backslash in a member name");
       Json_Node *pr2 = Json_Parse (out, &err);
-      m9_sl_CHAR got = Json_NameAt (pr2, 0, &err);
+      m9_sl_UTF8 got = Json_NameAt (pr2, 0, &err);
       ck (err.exc == NULL && got.len == nm.len
           && Json_Field (pr2, nm, &err) != NULL
           && Json_AsI64 (Json_Field (pr2, nm, &err), &err) == 7,
@@ -330,13 +325,14 @@ int main (void)
   m9_pool_free (&pool);
   if (fails) { printf ("FAIL (%d of %d)\n", fails, checks); return 1; }
   /* ---- the pool-destination twins: the same tree built in a pool,
-     parsed into a pool, cloned into a pool, serialises identically
-     and reads back after the frame-built one is gone ---- */
+     parsed into a pool, or cloned into a pool serialises identically.
+     It reads back after the frame-built one is gone ---- */
   {
     m9_pool tp = {0};
-    /* one buffer per name: Set KEEPS its name, and the nested lookups
-       below evaluate their arguments in an order C does not fix */
-    static uint32_t k1[8], k2[8], k3[8], k4[8], k5[8], src2[64];
+    /* Use one buffer per name.  Set KEEPS its name, and the nested
+       lookups below evaluate their arguments in an order C does not
+       fix. */
+    static uint8_t k1[8], k2[8], k3[8], k4[8], k5[8], src2[64];
     Json_Node *o = Json_NewObjIn (&tp, &err);
     Json_Node *v = Json_NewStrIn (&tp, sl ("x\\y", doc2), &err);
     Json_Set (&o, &tp, sl ("k", k1), &v, &tp, &err);

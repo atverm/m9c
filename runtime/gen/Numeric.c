@@ -124,16 +124,16 @@ static const m9_arr_4_double Wg_k = { {
 static m9_arr_4_double * const Wg = (m9_arr_4_double *) &Wg_k;
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[33] = { 116u, 104u, 101u, 32u, 108u, 111u, 119u, 101u, 114u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 101u, 120u, 99u, 101u, 101u, 100u, 115u, 32u, 116u, 104u, 101u, 32u, 117u, 112u, 112u, 101u, 114u };
-static const uint32_t m9s1[41] = { 70u, 102u, 116u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 116u, 104u, 97u, 116u, 32u, 105u, 115u, 32u, 97u, 32u, 112u, 111u, 119u, 101u, 114u, 32u, 111u, 102u, 32u, 116u, 119u, 111u };
-static const uint32_t m9s2[65] = { 67u, 99u, 103u, 70u, 105u, 108u, 116u, 101u, 114u, 58u, 32u, 116u, 104u, 101u, 32u, 105u, 110u, 116u, 101u, 114u, 118u, 97u, 108u, 32u, 97u, 110u, 100u, 32u, 98u, 111u, 116u, 104u, 32u, 99u, 117u, 116u, 111u, 102u, 102u, 115u, 32u, 97u, 114u, 101u, 32u, 100u, 97u, 121u, 115u, 44u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 110u, 111u, 110u, 101u };
-static const uint32_t m9s3[76] = { 67u, 99u, 103u, 70u, 105u, 108u, 116u, 101u, 114u, 58u, 32u, 111u, 110u, 101u, 32u, 112u, 111u, 108u, 121u, 110u, 111u, 109u, 105u, 97u, 108u, 32u, 116u, 101u, 114u, 109u, 32u, 97u, 116u, 32u, 108u, 101u, 97u, 115u, 116u, 44u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 110u, 101u, 103u, 97u, 116u, 105u, 118u, 101u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 111u, 102u, 32u, 104u, 97u, 114u, 109u, 111u, 110u, 105u, 99u, 115u };
-static const uint32_t m9s4[38] = { 67u, 99u, 103u, 70u, 105u, 108u, 116u, 101u, 114u, 58u, 32u, 116u, 104u, 101u, 32u, 116u, 105u, 109u, 101u, 115u, 32u, 97u, 114u, 101u, 32u, 110u, 111u, 116u, 32u, 97u, 115u, 99u, 101u, 110u, 100u, 105u, 110u, 103u };
-static const uint32_t m9s5[62] = { 67u, 99u, 103u, 70u, 105u, 108u, 116u, 101u, 114u, 58u, 32u, 102u, 101u, 119u, 101u, 114u, 32u, 111u, 98u, 115u, 101u, 114u, 118u, 97u, 116u, 105u, 111u, 110u, 115u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 105u, 116u, 32u, 104u, 97u, 115u, 32u, 116u, 101u, 114u, 109u, 115u, 44u, 32u, 112u, 108u, 117u, 115u, 32u, 111u, 110u, 101u };
-static const uint32_t m9s6[59] = { 67u, 99u, 103u, 70u, 105u, 108u, 116u, 101u, 114u, 58u, 32u, 116u, 104u, 101u, 32u, 116u, 105u, 109u, 101u, 115u, 32u, 100u, 111u, 32u, 110u, 111u, 116u, 32u, 116u, 101u, 108u, 108u, 32u, 116u, 104u, 101u, 32u, 116u, 101u, 114u, 109u, 115u, 32u, 111u, 102u, 32u, 116u, 104u, 101u, 32u, 102u, 105u, 116u, 32u, 97u, 112u, 97u, 114u, 116u };
-static const uint32_t m9s7[43] = { 67u, 99u, 103u, 70u, 105u, 108u, 116u, 101u, 114u, 58u, 32u, 101u, 118u, 101u, 114u, 121u, 32u, 111u, 98u, 115u, 101u, 114u, 118u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 115u, 32u, 97u, 116u, 32u, 111u, 110u, 101u, 32u, 116u, 105u, 109u, 101u };
-static const uint32_t m9s8[50] = { 67u, 99u, 103u, 70u, 105u, 108u, 116u, 101u, 114u, 58u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 105u, 115u, 32u, 115u, 104u, 111u, 114u, 116u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 105u, 110u, 116u, 101u, 114u, 118u, 97u, 108u };
-static const uint32_t m9s9[72] = { 102u, 101u, 119u, 101u, 114u, 32u, 114u, 101u, 115u, 105u, 100u, 117u, 97u, 108u, 115u, 32u, 116u, 104u, 97u, 110u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 44u, 32u, 111u, 114u, 32u, 97u, 32u, 116u, 111u, 108u, 101u, 114u, 97u, 110u, 99u, 101u, 32u, 98u, 101u, 108u, 111u, 119u, 32u, 122u, 101u, 114u, 111u };
+static const uint8_t m9s0[33] = { 116, 104, 101, 32, 108, 111, 119, 101, 114, 32, 98, 111, 117, 110, 100, 32, 101, 120, 99, 101, 101, 100, 115, 32, 116, 104, 101, 32, 117, 112, 112, 101, 114 };
+static const uint8_t m9s1[41] = { 70, 102, 116, 32, 116, 97, 107, 101, 115, 32, 97, 32, 108, 101, 110, 103, 116, 104, 32, 116, 104, 97, 116, 32, 105, 115, 32, 97, 32, 112, 111, 119, 101, 114, 32, 111, 102, 32, 116, 119, 111 };
+static const uint8_t m9s2[65] = { 67, 99, 103, 70, 105, 108, 116, 101, 114, 58, 32, 116, 104, 101, 32, 105, 110, 116, 101, 114, 118, 97, 108, 32, 97, 110, 100, 32, 98, 111, 116, 104, 32, 99, 117, 116, 111, 102, 102, 115, 32, 97, 114, 101, 32, 100, 97, 121, 115, 44, 32, 109, 111, 114, 101, 32, 116, 104, 97, 110, 32, 110, 111, 110, 101 };
+static const uint8_t m9s3[76] = { 67, 99, 103, 70, 105, 108, 116, 101, 114, 58, 32, 111, 110, 101, 32, 112, 111, 108, 121, 110, 111, 109, 105, 97, 108, 32, 116, 101, 114, 109, 32, 97, 116, 32, 108, 101, 97, 115, 116, 44, 32, 97, 110, 100, 32, 110, 111, 32, 110, 101, 103, 97, 116, 105, 118, 101, 32, 110, 117, 109, 98, 101, 114, 32, 111, 102, 32, 104, 97, 114, 109, 111, 110, 105, 99, 115 };
+static const uint8_t m9s4[38] = { 67, 99, 103, 70, 105, 108, 116, 101, 114, 58, 32, 116, 104, 101, 32, 116, 105, 109, 101, 115, 32, 97, 114, 101, 32, 110, 111, 116, 32, 97, 115, 99, 101, 110, 100, 105, 110, 103 };
+static const uint8_t m9s5[62] = { 67, 99, 103, 70, 105, 108, 116, 101, 114, 58, 32, 102, 101, 119, 101, 114, 32, 111, 98, 115, 101, 114, 118, 97, 116, 105, 111, 110, 115, 32, 116, 104, 97, 110, 32, 116, 104, 101, 32, 102, 105, 116, 32, 104, 97, 115, 32, 116, 101, 114, 109, 115, 44, 32, 112, 108, 117, 115, 32, 111, 110, 101 };
+static const uint8_t m9s6[59] = { 67, 99, 103, 70, 105, 108, 116, 101, 114, 58, 32, 116, 104, 101, 32, 116, 105, 109, 101, 115, 32, 100, 111, 32, 110, 111, 116, 32, 116, 101, 108, 108, 32, 116, 104, 101, 32, 116, 101, 114, 109, 115, 32, 111, 102, 32, 116, 104, 101, 32, 102, 105, 116, 32, 97, 112, 97, 114, 116 };
+static const uint8_t m9s7[43] = { 67, 99, 103, 70, 105, 108, 116, 101, 114, 58, 32, 101, 118, 101, 114, 121, 32, 111, 98, 115, 101, 114, 118, 97, 116, 105, 111, 110, 32, 105, 115, 32, 97, 116, 32, 111, 110, 101, 32, 116, 105, 109, 101 };
+static const uint8_t m9s8[50] = { 67, 99, 103, 70, 105, 108, 116, 101, 114, 58, 32, 116, 104, 101, 32, 114, 101, 99, 111, 114, 100, 32, 105, 115, 32, 115, 104, 111, 114, 116, 101, 114, 32, 116, 104, 97, 110, 32, 111, 110, 101, 32, 105, 110, 116, 101, 114, 118, 97, 108 };
+static const uint8_t m9s9[72] = { 102, 101, 119, 101, 114, 32, 114, 101, 115, 105, 100, 117, 97, 108, 115, 32, 116, 104, 97, 110, 32, 112, 97, 114, 97, 109, 101, 116, 101, 114, 115, 44, 32, 110, 111, 32, 112, 97, 114, 97, 109, 101, 116, 101, 114, 44, 32, 111, 114, 32, 97, 32, 116, 111, 108, 101, 114, 97, 110, 99, 101, 32, 98, 101, 108, 111, 119, 32, 122, 101, 114, 111 };
 
 static double Numeric_Qk15 (Numeric_Fn f, m9_sl_F64 p, double a, double b, double *abserr, m9_state *err);
 static double Numeric_Rms (m9_sl_F64 v, m9_state *err);
@@ -339,7 +339,7 @@ double Numeric_Minimum (Numeric_Fn f, m9_sl_F64 p, double a, double b, double xa
   int64_t num = 0; (void) num;
   bool golden = false; (void) golden;
   if ((a > b)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 33 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 33 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1266,7 +1266,7 @@ void Numeric_Fft (m9_sl_F64 *re, m9_sl_F64 *im, bool inverse, m9_state *err)
     }
   }
   if ((bit != n)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 41 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 41 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 41 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 41 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1507,12 +1507,12 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
     goto L_ret;
   }
   if ((!((((interval > 0.0) && (shortterm > 0.0)) && (longterm > 0.0))))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 65 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 65 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 65 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 65 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if (((numpoly < INT64_C(1)) || (numharm < INT64_C(0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 76 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 76 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s3, 76 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s3, 76 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1536,7 +1536,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
       bool m9t5 = ((n > INT64_C(0)) && ((*(double *) m9_at (xp.p, i, xp.len, sizeof (double), err)) < (*(double *) m9_at (work.p, m9_sub_i64 (n, INT64_C(1), err), work.len, sizeof (double), err))));
       if (err->exc) goto L_ret;
       if (m9t5) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 38 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 38 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
+        { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s4, 38 })) m9t6 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 38 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
@@ -1565,7 +1565,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
   bool m9t7 = (n < m9_add_i64 (m, INT64_C(1), err));
   if (err->exc) goto L_ret;
   if (m9t7) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 62 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 62 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s5, 62 })) m9t8 = ((m9_sl_UTF8){ (uint8_t *) m9s5, 62 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1635,7 +1635,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
     solved = m9v;
   }
   if ((!solved)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 59 })) m9t12 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 59 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s6, 59 })) m9t12 = ((m9_sl_UTF8){ (uint8_t *) m9s6, 59 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1802,7 +1802,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
     nx = m9v;
   }
   if ((nx < INT64_C(2))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 43 })) m9t22 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 43 }); err->s[0].p = m9t22.p; err->s[0].len = m9t22.len; m9_pay_keep (err, 0, sizeof (*m9t22.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s7, 43 })) m9t22 = ((m9_sl_UTF8){ (uint8_t *) m9s7, 43 }); err->s[0].p = m9t22.p; err->s[0].len = m9t22.len; m9_pay_keep (err, 0, sizeof (*m9t22.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1815,7 +1815,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
   }
   }
   if ((ni < INT64_C(2))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s8, 50 })) m9t23 = ((m9_sl_CHAR){ (uint32_t *) m9s8, 50 }); err->s[0].p = m9t23.p; err->s[0].len = m9t23.len; m9_pay_keep (err, 0, sizeof (*m9t23.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s8, 50 })) m9t23 = ((m9_sl_UTF8){ (uint8_t *) m9s8, 50 }); err->s[0].p = m9t23.p; err->s[0].len = m9t23.len; m9_pay_keep (err, 0, sizeof (*m9t23.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -4161,7 +4161,7 @@ static Numeric_Fitted Numeric_LmReport (Numeric_Lm *s, m9_sl_F64 *x, m9_state *e
   Numeric_Fitted r = {0}; (void) r;
   int64_t i = 0; (void) i;
   if (((*s).info == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 72 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 72 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s9, 72 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s9, 72 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }

@@ -1,7 +1,7 @@
 (* EXPECT: argument 1 of Up: the CONST Names can be lent only to an RO parameter *)
 MODULE m ;
 CONST Names = ['alpha', 'beta'] ;
-PROCEDURE Up (s: STR) RAISES IndexError =
+PROCEDURE Up (s: SLICE OF CHAR) RAISES IndexError =
 BEGIN
   s[0] := 'X'
 END Up ;

@@ -1,9 +1,9 @@
 (* EXPECT: cannot assign a real literal to I64 *)
-(* the one refusal here is the last assignment; everything before it is
-   what the rule must NOT refuse: a constant of the definition used in
-   its implementation as what it is -- an integer, a real (which adapts
-   to F32 as a literal does), a string -- and a constant the
-   implementation declares under a name of its own *)
+(* The one refusal here is the last assignment.  Everything before it is
+   what the rule must NOT refuse.  The implementation uses a constant of
+   its definition as what it is: an integer, a real (which adapts to F32
+   as a literal does), a string.  It also uses a constant it declares
+   under a name of its own. *)
 DEFINITION MODULE m ;
 CONST
   N = 3 ;

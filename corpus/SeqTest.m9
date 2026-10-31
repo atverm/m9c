@@ -1,10 +1,10 @@
 MODULE SeqTest ;
 
-(* Seq, tested in M9.  Distinct against Python's
+(* SeqTest tests Seq in M9.  It holds Distinct against Python's
    list (dict.fromkeys (xs)) on 40 lists (runtime/test/gold/Seq.gold,
-   tools/seqgold.py); the growable lists by what they must hold after
-   many Adds; a string added from a frame that has returned still
-   reads right, because Add copies it. *)
+   tools/seqgold.py), and the growable lists to what they must hold
+   after many Adds.  A string added from a frame that has returned
+   still reads right, because Add copies it. *)
 
 IMPORT Check ;
 IMPORT Fmt ;
@@ -53,7 +53,7 @@ EXCEPT
 | IndexError : Check.That (t, 'the Seq golden lines are inconsistent', FALSE)
 END Distincts ;
 
-(* a string built in this frame, added, the frame gone *)
+(* AddFresh adds a string built in this frame, and the frame goes. *)
 PROCEDURE AddFresh (VAR s: Seq.Strs ; k: I64) =
 BEGIN
   Seq.AddStr (pool, s, 'item ' + Fmt.I64Str (k))
@@ -83,8 +83,9 @@ BEGIN
     IF fs.at[i] # 0.5 * F64 (i) THEN bad := bad + 1 END
   END ;
   Check.EqI64 (t, 'every element where it was added, strings outliving their frame', bad, 0) ;
-  (* the room DOUBLES from 8: 1000 Adds end in 1024 slots, not 1000
-     -- the n log n promise, which a grow-by-one list breaks quietly *)
+  (* The room DOUBLES from 8: 1000 Adds end in 1024 slots, not 1000.
+     That is the n log n promise, which a grow-by-one list breaks
+     quietly. *)
   Check.EqI64 (t, 'the room doubled: 1024 slots for 1000', LEN (is.at), 1024) ;
   v := Seq.I64sOf (pool, is) ;
   Check.EqI64 (t, 'I64sOf is exactly n long', LEN (v), 1000) ;

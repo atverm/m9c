@@ -1,0 +1,367 @@
+# runtime/test/Sabotage.m9 rdf reads this list.  Each entry is one
+# small break of a COPY of corpus/Rdf.m9 (the default file).  RdfTest
+# and rdf.sh's half (RdfConv's output judged by rdflib) both run against
+# the copy, and at least one must go red.  docs/datalib-plan.md.
+#
+# The form, one entry:
+#
+#   @name what the edit breaks
+#   @file another file        (optional; the default above without it)
+#   @old
+#   the text to replace: it must occur in the file exactly once
+#   @new
+#   the text put in its place
+#   @end
+#
+# A text is the lines between its two markers, joined by newlines, taken
+# exactly: leading spaces count, and no escapes exist.  A text that ends
+# in a newline has one empty line before the next marker.  An empty text
+# has no lines.  A line beginning with # is a comment only outside an
+# entry.
+
+@name a blank-node label names a new node each time
+@old
+    IF Text.Eq (r.blab[i], lab) THEN RETURN r.bid[i] END
+@new
+    IF Text.Eq (r.blab[i], '') THEN RETURN r.bid[i] END
+@end
+
+@name a collection's last cell has no rdf:rest
+@old
+  IF any THEN Add (pool, g, prev, IriT (RdfNs + 'rest'), IriT (RdfNs + 'nil')) END ;
+@new
+@end
+
+@name a surrogate escape accepted
+@old
+  IF v > 0x10FFFF OR (v >= 0xD800 AND v <= 0xDFFF) THEN
+@new
+  IF v > 0x10FFFF THEN
+@end
+
+@name a /../ that does not climb
+@old
+      IF i >= 0 THEN output := SLICE (output, 0, i) ELSE output := '' END
+@new
+@end
+
+@name a relative reference merged without the base's directory
+@old
+            IF k >= 0 THEN tp := RemoveDots (SLICE (bp, 0, k + 1) + rp)
+@new
+            IF k >= 0 THEN tp := RemoveDots (rp)
+@end
+
+@name a relative IRI in N-Triples accepted
+@old
+  IF NOT r.turtle THEN Fail (r, 'a relative IRI in N-Triples') END ;
+@new
+@end
+
+# The UTF-8 switch (2026-10-31) reads the last octet with Text.BIs.
+@name a blank-node label ending in a dot accepted
+@old
+  IF Text.BIs (s, Text.BLen (s) - 1, '.') THEN Fail (r, 'a blank node label ends with a dot') END ;
+@new
+@end
+
+@name a line end in a short string accepted
+@old
+      IF c = 0AC OR c = 0DC THEN Fail (r, 'a line end in a short string') END
+@new
+@end
+
+@name a blank node as a predicate in N-Triples accepted
+@old
+    IF p.kind # Kind.Iri THEN Fail (r, 'a predicate that is not an IRI') END ;
+@new
+@end
+
+@name a decimal typed as a double
+@old
+  ELSIF dot THEN dt := Xsd + 'decimal'
+@new
+  ELSIF dot THEN dt := Xsd + 'double'
+@end
+
+@name the writer leaves a quote unescaped
+@old
+        IF c = '"' THEN DynStr.Append (d, '\"')
+@new
+        IF c = '"' THEN DynStr.Append (d, '"')
+@end
+
+@name the writer leaves a line feed unescaped
+@old
+        ELSIF c = 0AC THEN DynStr.Append (d, '\n')
+@new
+        ELSIF c = 0AC THEN DynStr.AppendChar (d, 0AC)
+@end
+
+# the Turtle writer
+@name Turtle: a predicate group ended with a dot, not a semicolon
+@old
+          IF firstPred THEN DynStr.AppendChar (body, ' ') ELSE DynStr.Append (body, ' ;' + 0AC + '    ') END ;
+@new
+          IF firstPred THEN DynStr.AppendChar (body, ' ') ELSE DynStr.Append (body, ' .' + 0AC + '    ') END ;
+@end
+
+@name Turtle: `a' for every predicate
+@old
+      IF predicate AND Text.Eq (t.value, RdfNs + 'type') THEN DynStr.AppendChar (d, 'a')
+@new
+      IF predicate THEN DynStr.AppendChar (d, 'a')
+@end
+
+# The UTF-8 switch (2026-10-31) changed LEN (s) to Text.BLen (s) here.
+@name Turtle: a short form for a non-canonical integer
+@old
+    RETURN Digits (s, i, Text.BLen (s))
+  ELSIF Text.Eq (t.datatype, Xsd + 'decimal') THEN
+@new
+    RETURN TRUE
+  ELSIF Text.Eq (t.datatype, Xsd + 'decimal') THEN
+@end
+
+# Not here: a short string with a raw line end.  A literal holding one
+# is written as a long string, so the branch did not exist.  It was
+# removed when its sabotage stayed green.
+@name Turtle: a blank node written as an IRI
+@old
+  | Blank :
+      DynStr.Append (d, '_:') ;
+      DynStr.Append (d, t.value)
+  | Literal :
+      TtlLiteral (d, p, t)
+@new
+  | Blank :
+      DynStr.Append (d, '<_:') ;
+      DynStr.Append (d, t.value) ;
+      DynStr.AppendChar (d, '>')
+  | Literal :
+      TtlLiteral (d, p, t)
+@end
+
+# The UTF-8 switch (2026-10-31) changed LEN to Text.BLen here, in the
+# text and in the break.
+@name Turtle: the language tag dropped
+@old
+  IF Text.BLen (t.lang) > 0 THEN
+    DynStr.AppendChar (d, '@') ;
+    DynStr.Append (d, t.lang)
+  ELSIF Text.BLen (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
+    DynStr.Append (d, '^^') ;
+    TtlIri (d, p, t.datatype)
+@new
+  IF Text.BLen (t.lang) > 0 THEN
+    DynStr.Append (d, '')
+  ELSIF Text.BLen (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
+    DynStr.Append (d, '^^') ;
+    TtlIri (d, p, t.datatype)
+@end
+
+# The UTF-8 switch (2026-10-31) changed LEN to Text.BLen here.
+@name Turtle: a prefix applied to a local name it cannot spell
+@old
+       LocalOk (SLICE (iri, Text.BLen (p.iris[i]), Text.BLen (iri) - Text.BLen (p.iris[i]))) THEN
+@new
+       TRUE THEN
+@end
+
+@name Turtle: a used prefix not declared
+@old
+    p.used[k] := TRUE ;
+@new
+    p.used[k] := p.used[k] ;
+@end
+
+# the RDF/XML reader
+@name RDF/XML: rdf:li not numbered
+@old
+      li := li + 1 ;
+      pred := IriT (RdfNs + '_' + Fmt.I64Str (li))
+@new
+      pred := IriT (RdfNs + '_' + Fmt.I64Str (li))
+@end
+
+@name RDF/XML: a typed node element's rdf:type dropped
+@old
+  IF NOT (IsRdf (e) AND Text.Eq (e.local, 'Description')) THEN
+    Add (pool, g, subj, IriT (RdfNs + 'type'), IriT (e.ns + e.local))
+  END ;
+@new
+@end
+
+@name RDF/XML: xml:lang ignored
+@old
+  IF Xml.HasAttr (e, XmlNsUri, 'lang') THEN lang := Xml.AttrValue (e, XmlNsUri, 'lang') END
+@new
+@end
+
+@name RDF/XML: rdf:ID used twice accepted
+@old
+    IF Text.Eq (st.ids[i], iri) THEN XFail ('rdf:ID used twice: ' + id) END
+@new
+@end
+
+@name RDF/XML: no reification for rdf:ID on a property element
+@old
+  Add (pool, g, r, IriT (RdfNs + 'type'), IriT (RdfNs + 'Statement')) ;
+@new
+@end
+
+@name RDF/XML: a collection without its rdf:nil
+@old
+        Add (pool, g, prev, IriT (RdfNs + 'rest'), IriT (RdfNs + 'nil'))
+      END ;
+@new
+      END ;
+@end
+
+@name RDF/XML: parseType Resource read as a literal
+@old
+    IF Text.Eq (parseType, 'Resource') THEN
+@new
+    IF FALSE THEN
+@end
+
+@name RDF/XML: an XML literal without its namespace declarations
+@old
+    IF NOT Declared (dn, du, n, names[i], uris[i]) THEN
+@new
+    IF FALSE THEN
+@end
+
+@name RDF/XML: rdf:datatype ignored on a literal
+@old
+    IF hasDatatype THEN obj := LitT (pe.text, '', XIri (st, base, datatype))
+    ELSE obj := LitT (pe.text, lang, '')
+    END ;
+@new
+    obj := LitT (pe.text, lang, '') ;
+@end
+
+@name RDF/XML: an attribute without a namespace accepted
+@old
+      IF NOT Text.StartsWith (e.attrs[i].name, 'xml') THEN
+        XFail ('an attribute without a namespace: ' + e.attrs[i].name)
+      END
+@new
+@end
+
+# the JSON-LD reader
+@name JSON-LD: a term consulted for an @id
+@old
+  IF vocab AND k >= 0 THEN
+    IF c.defs[k].isNull THEN nul := TRUE ; RETURN '' END ;
+@new
+  IF k >= 0 THEN
+    IF c.defs[k].isNull THEN nul := TRUE ; RETURN '' END ;
+@end
+
+@name JSON-LD: @vocab not applied
+@old
+  IF vocab AND c.hasVocab THEN RETURN c.vocab + value END ;
+@new
+@end
+
+@name JSON-LD: a double written as its shortest decimal, not canonical
+@old
+      RETURN LitT (CanonDouble (Json.AsF64 (v)), '', dt)
+@new
+      RETURN LitT (Fmt.Short (Json.AsF64 (v)), '', dt)
+@end
+
+@name JSON-LD: a list's last cell without rdf:nil
+@old
+  Add (pool, g, prev, IriT (RdfNs + 'rest'), IriT (RdfNs + 'nil')) ;
+  RETURN head
+@new
+  RETURN head
+@end
+
+@name JSON-LD: the default language ignored
+@old
+    ELSIF c.hasLang THEN
+      s := Json.NewStrIn (pool, c.lang) ;
+      Json.Set (o, '@language', s)
+    END
+@new
+    END
+@end
+
+@name JSON-LD: a list of lists accepted
+@old
+        IF listCtx AND (IsArr (x) OR IsListObj (x)) THEN JFail ('list of lists', '') END ;
+@new
+@end
+
+@name JSON-LD: @reverse read forwards
+@old
+      IF inDefault THEN
+        ref := RefTo (pool, subject) ;
+        AddUnique (pool, node, prop, ref)
+      END
+@new
+      IF inDefault THEN
+        ref := RefTo (pool, id) ;
+        inner := NodeFor (pool, dflt, subject) ;
+        AddUnique (pool, inner, prop, ref)
+      END
+@end
+
+@name JSON-LD: a remote context fetched instead of refused (read as nothing)
+@old
+      JFail ('a remote context is refused', JStr (item))
+@new
+@end
+
+@name JSON-LD: a keyword redefined in a context accepted
+@old
+  IF IsKeyword (term) THEN JFail ('keyword redefinition', term) END ;
+@new
+@end
+
+@name JSON-LD: a typed value's @type dropped
+@old
+  IF Has (item, '@type') THEN dt := JStr (JGet (item, '@type')) END ;
+@new
+  dt := '' ;
+@end
+
+# the JSON-LD writer
+@name JSON-LD written: a language tag dropped
+@old
+        s := Json.NewStrIn (pool, t.lang) ;
+        Json.Set (o, '@language', s)
+@new
+@end
+
+@name JSON-LD written: a datatype dropped
+@old
+        s := Json.NewStrIn (pool, t.datatype) ;
+        Json.Set (o, '@type', s)
+@new
+@end
+
+@name JSON-LD written: a list's cells kept as nodes beside the list
+@old
+  FOR first := 0 TO n - 1 DO consumed[cells[first]] := TRUE END ;
+@new
+@end
+
+@name JSON-LD written: rdf:type written as a property
+@old
+      IF Text.Eq (g.t[i].p.value, RdfNs + 'type') AND g.t[i].o.kind # Kind.Literal THEN
+@new
+      IF FALSE THEN
+@end
+
+# The UTF-8 switch (2026-10-31) changed LEN to Text.BLen here, in the
+# text and in the break.
+@name JSON-LD written: a compact IRI by the wrong prefix
+@old
+      best := i ; bestLen := Text.BLen (c.defs[i].iri)
+@new
+      IF best < 0 THEN best := i ; bestLen := Text.BLen (c.defs[i].iri) END
+@end

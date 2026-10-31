@@ -1,15 +1,16 @@
-/* csvnum_driver.c -- m9_csv_number and m9_field_f64 (m9rt.h), Csv's
-   IsNumber grammar in one pass in the runtime, held to a table of
-   verdicts read off that grammar -- every shape it names: blanks and
-   tabs trimmed, a sign, nan/inf/infinity in any case, digits with one
-   point among them, an exponent with a sign, and the shapes it refuses:
-   nothing, a sign alone, a point alone, 1e, 0x10, a blank inside, a
-   second point, text, a trailing letter -- and the parser's value to
-   strtod on the trimmed field for every accepted one plus 200,000
-   random fields of digits and padding.  Under M9_CSV_PORTABLE both
-   answer -1 for every field (the battery's second run, the control).
-   Shown able to fail: the exponent's digit count not reset fails "1e"
-   and "1e+" (2026-10-25). */
+/* csvnum_driver.c tests m9_csv_number and m9_field_f64 (m9rt.h).
+   They run Csv's IsNumber grammar in one pass in the runtime.  This
+   holds them to a table of verdicts read off that grammar, every
+   shape it names.  It accepts blanks and tabs trimmed, a sign,
+   nan/inf/infinity in any case, digits with one point among them, an
+   exponent with a sign.  It refuses nothing, a sign alone, a point
+   alone, 1e, 0x10, a blank inside, a second point, text, a trailing
+   letter.  It also holds the parser's value to strtod on the trimmed
+   field for every accepted one, plus 200,000 random fields of digits
+   and padding.  Under M9_CSV_PORTABLE both answer -1 for every field
+   (the battery's second run, the control).  The test is shown able
+   to fail: the exponent's digit count not reset fails "1e" and "1e+"
+   (2026-10-25). */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +30,7 @@ static void verdict (const char *s, int want)
   if (portable) { if (got != -1 || got2 != -1) { bad++; printf ("FAIL \"%s\": %d %d under M9_CSV_PORTABLE\n", s, got, got2); } return; }
   if (got != want || got2 != want) { bad++; printf ("FAIL \"%s\": number %d, field %d, wanted %d\n", s, got, got2, want); return; }
   if (want == 1) {
-    /* the value: strtod on the trimmed field */
+    /* Check the value: strtod on the trimmed field. */
     const char *p = s;
     while (*p == ' ' || *p == '\t') p++;
     double w = strtod (p, NULL);
@@ -54,7 +55,8 @@ int main (void)
     { "1e5.5", 0 }, { "--1", 0 }, { "+-1", 0 }, { "1-", 0 }, { "1+", 0 }, { "1.5e", 0 }, { "NA", 0 }, { "null", 0 },
     { "1_000", 0 }, { "１", 0 }, { "1\n", 0 }, { "1\r", 0 } };
   for (unsigned i = 0; i < sizeof tab / sizeof tab[0]; i++) verdict (tab[i].s, tab[i].want);
-  /* random fields: digits, a point somewhere or not, an exponent or not, padding */
+  /* Random fields have digits, a point somewhere or not, an exponent
+     or not, and padding. */
   srand (5);
   char buf[96];
   for (int i = 0; i < 200000; i++) {

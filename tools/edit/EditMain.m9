@@ -1,7 +1,7 @@
 MODULE EditMain ;
 
-(* m9edit PORT MAXREQ PAGEDIR WORKDIR -- the beginner's editor.
-   Defaults: 8000, effectively unbounded, and the directories beside
+(* m9edit PORT MAXREQ PAGEDIR WORKDIR runs the beginner's editor.  The
+   defaults are 8000, effectively unbounded, and the directories beside
    the current one; see docs/editor-plan.md and tools/edit/Edit.m9. *)
 
 IMPORT Io ;

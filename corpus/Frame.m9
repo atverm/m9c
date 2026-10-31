@@ -1,16 +1,16 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Frame ;
 
-(* Dataframes for scientific computing: typed columns that carry
-   their own metadata and missing value, a timeseries frame that
-   carries its resolution and time convention, and the two
-   operations every pipeline otherwise reinvents -- resample-average
+(* Frame provides dataframes for scientific computing: typed columns
+   that carry their own metadata and missing value, a timeseries
+   frame that carries its resolution and time convention, and the two
+   operations every pipeline otherwise reinvents: resample-average
    and make-contiguous.  docs/dataframe-plan.md is the design; the
    oracle is polars, in runtime/test/frame_driver.c.
 
    THE MISSING VALUE LIVES INSIDE THE TYPED ARM, so it can never
-   have the wrong width for its column -- the ICOS roundtrip demo
-   got the missing-value rule wrong twice precisely because it lived
+   have the wrong width for its column.  The ICOS roundtrip demo got
+   the missing-value rule wrong twice precisely because it lived
    outside the data.  For float columns a NaN is ALWAYS missing, on
    top of whatever `miss` says; for Strs the empty string is.
 
@@ -31,14 +31,15 @@ IMPORT NetCDF ;
 
 EXCEPTION
   Unknown (RO name: STR) ;
-  (* no column of that name *)
+  (* Unknown says there is no column of that name. *)
   WrongType (RO name: STR) ;
-  (* the accessor's type is not the column's, or a reducer was asked
-     of a column that cannot answer it (a mean of flags) *)
+  (* WrongType says the accessor's type is not the column's, or a
+     reducer was asked of a column that cannot answer it (a mean of
+     flags). *)
   Duplicate (RO name: STR) ;
   Disorder (row: I64) ;
-  (* the time axis is not strictly increasing at this row, or a
-     stamp is off the resolution grid *)
+  (* Disorder says the time axis is not strictly increasing at this
+     row, or a stamp is off the resolution grid. *)
 
 TYPE
   Data = CASE RECORD
@@ -58,8 +59,8 @@ TYPE
   (* Strs carries an INDEX into the frame's own string table rather
      than the slice itself: a transparent variant arm holding a
      module-emitted slice typedef (SLICE OF STR) is emitted before
-     its typedef by both generators today -- the emission-order gap
-     is in the owed ledger, and ColStrs hides the indirection. *)
+     its typedef by both generators today.  The emission-order gap is
+     in the owed ledger, and ColStrs hides the indirection. *)
 
   Col = RECORD
     name : STR ;             (* short; the key.  Required, unique. *)
@@ -72,17 +73,18 @@ TYPE
   Fr ;                       (* a plain frame *)
   Ts ;                       (* a timeseries frame: Fr + time axis *)
 
-  (* whether a stamp labels the START, the END or the MIDDLE of its
-     averaging period.  Start is the default everywhere. *)
+  (* Conv says whether a stamp labels the START, the END or the
+     MIDDLE of its averaging period.  Start is the default
+     everywhere. *)
   Conv = CASE RECORD
   | AtStart
   | AtEnd
   | AtMid
   END ;
 
-  (* the per-column reducer for Average.  Mean answers F64 (polars'
-     own rule) and is refused on non-float columns; Sum keeps the
-     column's type and integer sums are overflow-checked; Lo/Hi are
+  (* How is the per-column reducer for Average.  Mean answers F64
+     (polars' own rule) and is refused on non-float columns; Sum keeps
+     the column's type and integer sums are overflow-checked; Lo/Hi are
      min/max; First/Last are positional within the window, exactly
      polars' first()/last(). *)
   How = CASE RECORD
@@ -98,7 +100,7 @@ TYPE
 
 PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Fr IN pool
   RAISES Faults.SizeError ;
-  (* rows < 0 refuses; 0 is a legal empty frame *)
+  (* New refuses rows < 0; 0 is a legal empty frame. *)
 
 PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
                   RO KEPT v: SLICE OF F64 ; miss: F64)
@@ -142,10 +144,11 @@ PROCEDURE Rows (f: PTR Fr) : I64 ;
 PROCEDURE Cols (f: PTR Fr) : I64 ;
 PROCEDURE NameAt (f: PTR Fr ; c: I64) : STR RAISES IndexError ;
 PROCEDURE Find (f: PTR Fr ; RO name: STR) : I64 ;
-  (* the column index, or -1 -- the question, not the diagnosis *)
+  (* Find answers the column index, or -1: the question, not the
+     diagnosis. *)
 PROCEDURE GetCol (f: PTR Fr ; RO name: STR) : Col RAISES Unknown ;
-  (* the whole column record; CASE over .data handles every type,
-     and the checker holds the CASE total *)
+  (* GetCol answers the whole column record.  CASE over .data handles
+     every type, and the checker holds the CASE total. *)
 
 PROCEDURE ColF64 (f: PTR Fr ; RO name: STR) : RO SLICE OF F64
   RAISES Unknown, WrongType ;
@@ -157,36 +160,37 @@ PROCEDURE ColStrs (f: PTR Fr ; RO name: STR) : RO SLICE OF STR
   RAISES Unknown, WrongType ;
 PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : RO SLICE OF BOOL
   RAISES Unknown, WrongType ;
-  (* the everyday accessors; the other types go through GetCol *)
+  (* These are the everyday accessors; the other types go through
+     GetCol. *)
 
 (* ---- CSV ---- *)
 
 PROCEDURE FromCsv (VAR pool: POOL ; KEPT t: PTR Csv.Table) : PTR Fr IN pool
   RAISES Faults.SizeError, Duplicate, IndexError, ValueRange ;
-  (* every non-Skip column of a PARSED Csv.Table, with the kinds the
-     caller declared there: Real -> F32s (miss NaN), Int -> I64s
-     (miss MIN I64, stated below), Stamp -> I64s epoch seconds,
-     Text -> Strs (materialised).  The integer missing value is
-     -9223372036854775808: an integer column has no NaN, a sentinel
-     must exist, and the far end of the line is the one value real
-     data never means. *)
+  (* FromCsv takes every non-Skip column of a PARSED Csv.Table, with
+     the kinds the caller declared there: Real -> F32s (miss NaN),
+     Int -> I64s (miss MIN I64, stated below), Stamp -> I64s epoch
+     seconds, Text -> Strs (materialised).  The integer missing value is
+     -9223372036854775808: an integer column has no NaN, a sentinel must
+     exist, and the far end of the line is the one value real data never
+     means. *)
 
 PROCEDURE WriteCsv (f: PTR Fr ; RO path: STR)
   RAISES Io.IOError, ValueRange, Overflow, IndexError ;
-  (* header = short names; a missing value writes an EMPTY field;
-     floats write 17 significant digits (round-trip exact -- the
-     driver proves parse (print (x)) = x bit for bit); a text field
-     containing the delimiter, a quote or a newline is quoted with
-     "" doubling. *)
+  (* WriteCsv writes a header of short names.  A missing value writes
+     an EMPTY field.  Floats write 17 significant digits, round-trip
+     exact: the driver proves parse (print (x)) = x bit for bit.  A
+     text field containing the delimiter, a quote or a newline is
+     quoted with "" doubling. *)
 
 (* ---- the cross-module face of the variants ----
 
-   Integer kind codes and typed accessors, written when a caller in
-   another module could not CASE over Frame.Data or Frame.Conv (the
-   generators could not type a cross-module variant selector).  That
-   gap closed 2026-09-15 (`corpus/KindUse.m9`); the face stays
-   because Parquet.m9 is built on it -- retiring it means moving
-   Parquet's ColPhys/ColConv onto the variants, ledgered in
+   These are integer kind codes and typed accessors, written when a
+   caller in another module could not CASE over Frame.Data or
+   Frame.Conv (the generators could not type a cross-module variant
+   selector).  That gap closed 2026-09-15 (`corpus/KindUse.m9`); the
+   face stays because Parquet.m9 is built on it.  Retiring it means
+   moving Parquet's ColPhys/ColConv onto the variants, ledgered in
    `docs/p3-ledger.md` as a workaround left standing. *)
 
 CONST
@@ -219,57 +223,57 @@ PROCEDURE MissI16 (f: PTR Fr ; RO name: STR) : I16
 PROCEDURE MissByte (f: PTR Fr ; RO name: STR) : BYTE
   RAISES Unknown, WrongType ;
 PROCEDURE ConvName (conv: Conv) : STR ;
-  (* 'start' | 'end' | 'mid' *)
+  (* ConvName answers 'start' | 'end' | 'mid'. *)
 
 (* ---- NetCDF ---- *)
 
 PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
                    RO path: STR ; RO dim: STR)
   RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError ;
-  (* a netCDF-4 file with one dimension named `dim`, one variable
-     per column in its OWN storage type, the column's missing value
-     as a TYPED _FillValue, and units / long_name / standard_name
-     attributes exactly when the column carries them -- nothing is
-     invented at export time.  Strs columns become an n x width char
-     matrix over a per-column length dimension, the PutChars
+  (* WriteNc writes a netCDF-4 file with one dimension named `dim`,
+     one variable per column in its OWN storage type, the column's
+     missing value as a TYPED _FillValue, and units / long_name /
+     standard_name attributes exactly when the column carries them.
+     Nothing is invented at export time.  Strs columns become an n x
+     width char matrix over a per-column length dimension, the PutChars
      convention. *)
 
 PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR)
   RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError ;
-  (* WriteNc over the dimension 'time', plus the time coordinate:
-     I64 seconds, units 'seconds since 1970-01-01 00:00:00 +00:00'
-     (the zone STATED -- the roundtrip demo found a CF axis that was
-     silently local time), standard_name time, and time_bnds giving
-     each stamp's [period start, period end] under the frame's own
-     convention.  The resolution, convention and description ride as
-     global attributes so TsFromNc can answer the same frame back.
-     cell_methods is deliberately NOT written: the frame does not
-     know whether a column is a mean over its period or a point
-     sample, and writing 'mean' unasked would be a lie in metadata. *)
+  (* WriteTsNc is WriteNc over the dimension 'time', plus the time
+     coordinate: I64 seconds, units 'seconds since 1970-01-01
+     00:00:00 +00:00' (the zone STATED: the roundtrip demo found a CF
+     axis that was silently local time), standard_name time, and
+     time_bnds giving each stamp's [period start, period end] under the
+     frame's own convention.  The resolution, convention and description
+     ride as global attributes so TsFromNc can answer the same frame
+     back.  cell_methods is deliberately NOT written: the frame does not
+     know whether a column is a mean over its period or a point sample,
+     and writing 'mean' unasked would be a lie in metadata. *)
 
 PROCEDURE FromNc (VAR pool: POOL ; RO path: STR ; RO dim: STR) : PTR Fr
   RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange,
          Overflow, IndexError ;
-  (* every variable whose FIRST dimension is `dim`: 1-D numerics
-     into their matching arms, 2-D char matrices into Strs.  A
-     variable on the dimension with a type this frame cannot hold is
-     REFUSED with its name -- a column that silently vanished is the
-     failure this module exists to prevent.  _FillValue becomes the
+  (* FromNc reads every variable whose FIRST dimension is `dim`: 1-D
+     numerics into their matching arms, 2-D char matrices into Strs.
+     A variable on the dimension with a type this frame cannot hold
+     is REFUSED with its name.  A column that silently vanished is
+     the failure this module exists to prevent.  _FillValue becomes the
      column's missing value; units / long_name / standard_name are
      read when present. *)
 
 PROCEDURE TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts
   RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, Disorder,
          ValueRange, Overflow, IndexError ;
-  (* FromNc over 'time', with the time variable itself parsed from
-     its CF units -- seconds, minutes, hours or days since a date,
-     any other unit refused with the string.  A nonzero zone offset
-     in the units is refused too; no zone means UTC, which is CF's
-     rule and the best that can be done with a file that does not
-     say.  The convention and resolution come from the global
-     attributes WriteTsNc writes; a foreign file without them gets
-     convention start and the axis's own smallest gap, both stated
-     choices rather than inference. *)
+  (* TsFromNc is FromNc over 'time', with the time variable itself
+     parsed from its CF units: seconds, minutes, hours or days since
+     a date, any other unit refused with the string.  A nonzero zone
+     offset in the units is refused too; no zone means UTC, which is
+     CF's rule and the best that can be done with a file that does not
+     say.  The convention and resolution come from the global attributes
+     WriteTsNc writes; a foreign file without them gets convention start
+     and the axis's own smallest gap, both stated choices rather than
+     inference. *)
 
 (* ---- the timeseries frame ---- *)
 
@@ -287,9 +291,9 @@ PROCEDURE TsRes (ts: PTR Ts) : I64 ;
 PROCEDURE TsConv (ts: PTR Ts) : Conv ;
 PROCEDURE TsDescr (ts: PTR Ts) : STR ;
 
-(* the six reducers, as functions, because a caller in another
-   module cannot spell Frame.How.Mean today (the cross-module
-   payload-less constructor gap, logged in Csv.m9 too) *)
+(* These are the six reducers, as functions, because a caller in
+   another module cannot spell Frame.How.Mean today (the cross-module
+   payload-less constructor gap, logged in Csv.m9 too). *)
 PROCEDURE HowMean () : How ;
 PROCEDURE HowSum () : How ;
 PROCEDURE HowLo () : How ;
@@ -305,16 +309,16 @@ PROCEDURE Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ;
   : PTR Ts IN pool
   RAISES Faults.SizeError, WrongType, Faults.BadArg, ValueRange, Overflow,
          IndexError ;
-  (* resample to a coarser resolution.  toRes must be a positive
-     multiple of the frame's resolution (refused otherwise, named);
-     how has one entry per column.  Windows are aligned to the epoch
-     (floor (t / toRes) * toRes over PERIOD-START times, whatever
+  (* Average resamples to a coarser resolution.  toRes must be a
+     positive multiple of the frame's resolution (refused otherwise,
+     named); how has one entry per column.  Windows are aligned to the
+     epoch (floor (t / toRes) * toRes over PERIOD-START times, whatever
      the convention labels), and only windows containing rows are
-     emitted -- polars' own group_by_dynamic behaviour; run
-     MakeContiguous after if a full grid is wanted.  Missing values
-     are excluded from Mean/Sum/Lo/Hi; a window with fewer than
-     minCount live values answers the column's missing value.
-     Output labels follow the frame's own convention at toRes. *)
+     emitted: polars' own group_by_dynamic behaviour.  Run
+     MakeContiguous after if a full grid is wanted.  Missing values are
+     excluded from Mean/Sum/Lo/Hi; a window with fewer than minCount
+     live values answers the column's missing value.  Output labels
+     follow the frame's own convention at toRes. *)
 
 PROCEDURE MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool
   RAISES Faults.SizeError, Duplicate, Disorder, Faults.BadArg, WrongType,
@@ -336,14 +340,15 @@ PROCEDURE MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool
 
 PROCEDURE Take (VAR pool: POOL ; KEPT f: PTR Fr ; RO rows: SLICE OF I64)
   : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate ;
-  (* f's columns, in f's order, with their metadata, and the rows
-     named, in the order named; a row may be named more than once,
-     or not at all.  A number outside 0 .. Rows (f) - 1 is
+  (* Take answers f's columns, in f's order, with their metadata, and
+     the rows named, in the order named; a row may be named more than
+     once, or not at all.  A number outside 0 .. Rows (f) - 1 is
      IndexError. *)
 
 PROCEDURE Filter (VAR pool: POOL ; KEPT f: PTR Fr ; RO mask: SLICE OF BOOL)
   : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate ;
-  (* the rows where mask is TRUE, in their order: polars' filter.
+  (* Filter answers the rows where mask is TRUE, in their order:
+     polars' filter.
      LEN (mask) must be Rows (f), or it is Faults.SizeError. *)
 
 PROCEDURE OrderBy (f: PTR Fr ; RO name: STR ; descending: BOOL)
@@ -351,9 +356,10 @@ PROCEDURE OrderBy (f: PTR Fr ; RO name: STR ; descending: BOOL)
 PROCEDURE SortBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO name: STR ;
                   descending: BOOL) : PTR Fr IN pool
   RAISES Unknown, IndexError, Faults.SizeError, Duplicate ;
-  (* the rows in the order of one column: OrderBy answers the row
-     numbers and SortBy the frame, which is Take of them.  STABLE
-     both ways: rows equal in the column keep the order they had.
+  (* OrderBy and SortBy put the rows in the order of one column.
+     OrderBy answers the row numbers and SortBy the frame, which is
+     Take of them.  Both are STABLE: rows equal in the column keep
+     the order they had.
      The rules are polars' sort with its defaults, a missing value
      being its null:
 
@@ -366,34 +372,34 @@ PROCEDURE GroupBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO key: STR ;
                    RO how: SLICE OF How ; minCount: I64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Faults.SizeError, ValueRange, Overflow,
          IndexError ;
-  (* one row for every distinct value of the column `key`, the rows
-     in ASCENDING ORDER OF THE KEY, and the rows whose key is missing
-     as one group, first (OrderBy's order; polars' group_by, sorted
-     by the key).  Every other column is reduced over the rows of its
-     group by its entry of how, which has one entry per column of f,
-     the key's being ignored: Average's reducers and Average's rules.
-     Missing values are left out of Mean/Sum/Lo/Hi, a group with
-     fewer than minCount values left answers the column's missing
-     value, First and Last are the first and the last ROW of the
-     group in f's order.  As from Average, an F32 column comes back
+  (* GroupBy answers one row for every distinct value of the column
+     `key`, the rows in ASCENDING ORDER OF THE KEY, and the rows whose
+     key is missing as one group, first (OrderBy's order; polars'
+     group_by, sorted by the key).  Every other column is reduced over
+     the rows of its group by its entry of how, which has one entry per
+     column of f, the key's being ignored: Average's reducers and
+     Average's rules.  Missing values are left out of Mean/Sum/Lo/Hi.  A
+     group with fewer than minCount values left answers the column's
+     missing value.  First and Last are the first and the last ROW of
+     the group in f's order.  As from Average, an F32 column comes back
      F64. *)
 
 PROCEDURE GroupSizes (f: PTR Fr ; RO key: STR) : SLICE OF I64
   RAISES Unknown, IndexError ;
-  (* how many rows each group of GroupBy (f, key) has, in the same
-     order *)
+  (* GroupSizes answers how many rows each group of GroupBy (f, key)
+     has, in the same order. *)
 
 PROCEDURE Join (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError ;
 PROCEDURE JoinLeft (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR)
   : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError ;
-  (* the rows of a and b that hold the same value in the column
-     `key`, which both have: a's columns, then b's but its key.  One
-     row for every PAIR that matches, so a key held twice on each
-     side gives four; a's rows in a's order and, for each, its
-     matches in b's order.  Join is the inner join: a row of a that
-     matches nothing is left out.  JoinLeft keeps it, with the
+  (* Join and JoinLeft answer the rows of a and b that hold the same
+     value in the column `key`, which both have: a's columns, then b's
+     but its key.  They answer one row for every PAIR that matches, so a
+     key held twice on each side gives four; a's rows in a's order and,
+     for each, its matches in b's order.  Join is the inner join: a row
+     of a that matches nothing is left out.  JoinLeft keeps it, with the
      missing value in every column of b ('' in a Strs column) and
      WrongType for a Bools column of b, which has none.
 
@@ -408,22 +414,22 @@ PROCEDURE JoinLeft (VAR pool: POOL ; KEPT a, b: PTR Fr ; RO key: STR)
 
 PROCEDURE Describe (VAR pool: POOL ; f: PTR Fr) : PTR Fr IN pool
   RAISES Duplicate, Faults.SizeError, IndexError ;
-  (* nine rows about every NUMERIC column of f: a Strs column
-     `statistic` naming the rows -- count, missing, mean, std, min,
-     25%, 50%, 75%, max -- and one F64 column for each numeric column
-     of f, under its name.  count is of the values that are not
-     missing; std is the sample one (ddof 1); the percentiles are
-     Stats.Percentile's, numpy's linear rule (polars' describe with
-     interpolation = 'linear').  A statistic that has too few values
-     to exist is NaN.  Strs and Bools columns are left out, and an
-     I64 beyond 2^53 is rounded on its way to F64. *)
+  (* Describe answers nine rows about every NUMERIC column of f: a
+     Strs column `statistic` naming the rows (count, missing, mean,
+     std, min, 25%, 50%, 75%, max) and one F64 column for each
+     numeric column of f, under its name.  count is of the values that
+     are not missing; std is the sample one (ddof 1); the percentiles
+     are Stats.Percentile's, numpy's linear rule (polars' describe with
+     interpolation = 'linear').  A statistic that has too few values to
+     exist is NaN.  Strs and Bools columns are left out, and an I64
+     beyond 2^53 is rounded on its way to F64. *)
 
 (* ---- verbs that take a procedure (2026-10-02) ----
 
    Where the six reducers of How, or a mask made elsewhere, are not
    what is wanted, the caller writes the arithmetic as a procedure
    and hands it over (report par 2.2.3).  A procedure value captures
-   nothing, so, as in Numeric, whatever else it needs travels beside
+   nothing.  So, as in Numeric, anything else it needs travels beside
    it as `p', a slice of reals these verbs pass on and never read.
 
    The procedure sees REALS: a numeric column of any kind is handed
@@ -434,46 +440,49 @@ PROCEDURE Describe (VAR pool: POOL ; f: PTR Fr) : PTR Fr IN pool
 TYPE
   Agg = PROCEDURE (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64
         RAISES ValueRange ;
-  (* one number for the values of a group.  v holds the values THAT
-     ARE THERE, in row order: a missing value is not among them, so
-     v may be empty, and what a group of nothing answers is the
-     procedure's to say -- NaN, which is Frame's missing value, is
-     the honest one. *)
+  (* An Agg answers one number for the values of a group.  v holds
+     the values THAT ARE THERE, in row order: a missing value is not
+     among them, so v may be empty.  The procedure says what a group
+     of nothing answers.  NaN, which is Frame's missing value, is the
+     honest one. *)
 
   RowFn = PROCEDURE (RO row: SLICE OF F64 ; RO p: SLICE OF F64) : F64
           RAISES ValueRange ;
-  (* one number for a row.  row[j] is the row's value in the j-th
-     column asked for, and NaN where that is missing -- so plain
-     arithmetic answers NaN for a row with a gap, which is right. *)
+  (* A RowFn answers one number for a row.  row[j] is the row's value
+     in the j-th column asked for, and NaN where that is missing.  So
+     plain arithmetic answers NaN for a row with a gap, which is
+     right. *)
 
   RowTest = PROCEDURE (RO row: SLICE OF F64 ; RO p: SLICE OF F64) : BOOL
             RAISES ValueRange ;
-  (* yes or no for a row; a comparison with a NaN is FALSE *)
+  (* A RowTest answers yes or no for a row; a comparison with a NaN
+     is FALSE. *)
 
 PROCEDURE Aggregate (VAR pool: POOL ; KEPT f: PTR Fr ; RO key, name: STR ;
                      agg: Agg ; RO p: SLICE OF F64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
          IndexError ;
-  (* GroupBy's groups, in GroupBy's order, and two columns: the key,
-     and the column `name' reduced by agg, as F64 with NaN for its
-     missing value.  polars' group_by (key).agg (an expression over
-     name), sorted by the key. *)
+  (* Aggregate answers GroupBy's groups, in GroupBy's order, and two
+     columns: the key, and the column `name' reduced by agg, as F64
+     with NaN for its missing value.  It is polars' group_by
+     (key).agg (an expression over name), sorted by the key. *)
 
 PROCEDURE Compute (VAR pool: POOL ; VAR f: PTR Fr ; RO cols: SLICE OF STR ;
                    RO name: STR ; fn: RowFn ; RO p: SLICE OF F64)
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
          IndexError ;
-  (* a new F64 column `name' ADDED to f, each value fn of that row's
-     values in the columns cols; its missing value is NaN.  polars'
-     with_columns. *)
+  (* Compute ADDS a new F64 column `name' to f, each value fn of that
+     row's values in the columns cols; its missing value is NaN.  It
+     is polars' with_columns. *)
 
 PROCEDURE FilterBy (VAR pool: POOL ; KEPT f: PTR Fr ; RO cols: SLICE OF STR ;
                     test: RowTest ; RO p: SLICE OF F64) : PTR Fr IN pool
   RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
          IndexError ;
-  (* the rows for which test is TRUE of their values in the columns
-     cols, in their order: Filter, with the mask computed here.
-     polars' filter over an expression, where a null is not a yes. *)
+  (* FilterBy answers the rows for which test is TRUE of their values
+     in the columns cols, in their order: Filter, with the mask
+     computed here.  It is polars' filter over an expression, where a
+     null is not a yes. *)
 
 END Frame.
 
@@ -512,10 +521,11 @@ TYPE
   END ;
 
 PROCEDURE MissI () : I64 =
-  (* MIN I64, the stated integer sentinel.  A PROCEDURE because the
-     value has no literal spelling (2^63 overflows the literal), and a
-     CONST over an expression, folded since 0.20.0, refuses exactly
-     this value by name; free after -flto either way. *)
+  (* MissI answers MIN I64, the stated integer sentinel.  It is a
+     PROCEDURE because the value has no literal spelling (2^63
+     overflows the literal).  A CONST over an expression, folded
+     since 0.20.0, refuses exactly this value by name.  The call is
+     free after -flto either way. *)
 BEGIN
   RETURN -9223372036854775807 - 1
 END MissI ;
@@ -569,15 +579,9 @@ BEGIN
 END Blank ;
 
 PROCEDURE Copy (VAR pool: POOL ; RO s: STR) : STR =
-VAR
-  d : SLICE OF CHAR ;
-  i : I64 ;
+  (* a copy in pool: UTF (pool, x) is where NEW (pool, ...) would put it *)
 BEGIN
-  d := NEW (pool, CHAR, LEN (s)) ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    d[i] := s[i]
-  END ;
-  RETURN d
+  RETURN UTF (pool, s)
 END Copy ;
 
 PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
@@ -695,9 +699,9 @@ VAR i : I64 ;
 BEGIN
   i := Find (f, name) ;
   IF i < 0 THEN RAISE Unknown (name) END ;
-  IF LEN (long) > 0 THEN f.cols[i].long := Copy (pool, long) END ;
-  IF LEN (cf) > 0 THEN f.cols[i].cf := Copy (pool, cf) END ;
-  IF LEN (unit) > 0 THEN f.cols[i].unit := Copy (pool, unit) END
+  IF Text.BLen (long) > 0 THEN f.cols[i].long := Copy (pool, long) END ;
+  IF Text.BLen (cf) > 0 THEN f.cols[i].cf := Copy (pool, cf) END ;
+  IF Text.BLen (unit) > 0 THEN f.cols[i].unit := Copy (pool, unit) END
 END SetMeta ;
 
 (* ---- interrogation ---- *)
@@ -722,7 +726,7 @@ PROCEDURE Find (f: PTR Fr ; RO name: STR) : I64 =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO f.ncols - 1 DO
-    IF DynStr.Eq (f.cols[i].name, name) THEN RETURN i END
+    IF Text.Eq (f.cols[i].name, name) THEN RETURN i END
   END ;
   RETURN -1
 END Find ;
@@ -842,8 +846,8 @@ BEGIN
     | Real64 :
       (* this arm was EMPTY until 2026-10-08: a column the caller
          declared Real64 was parsed by Csv and dropped by the frame
-         without a word -- found by an example notebook whose frame
-         had two columns of three *)
+         without a word.  An example notebook found it: its frame had
+         two columns of three. *)
       AddF64 (pool, f, Csv.Name (pool, t, c), Csv.ColF64 (t, c),
               NaN)
     END
@@ -880,8 +884,8 @@ END PutF32 ;
 
 PROCEDURE PutStr (VAR d: PTR DynStr.DString ;
                   RO s: STR) =
-  (* by FOR c IN s, over characters: the same both sides of the UTF
-     switch *)
+  (* This walks by FOR c IN s, over characters: the same both sides
+     of the UTF switch. *)
 VAR
   c : CHAR ;
   needs : BOOL ;
@@ -1006,16 +1010,17 @@ PROCEDURE ConvEnd () : Conv = BEGIN RETURN Conv.AtEnd END ConvEnd ;
 PROCEDURE ConvMid () : Conv = BEGIN RETURN Conv.AtMid END ConvMid ;
 
 PROCEDURE FloorDiv (a, b: I64) : I64 =
-  (* floor division for a possibly negative numerator: DIV truncates
-     toward zero, and a pre-1970 stamp must land in the window BELOW
-     it, not the one above *)
+  (* FloorDiv is floor division for a possibly negative numerator: DIV
+     truncates toward zero, and a pre-1970 stamp must land in the window
+     BELOW it, not the one above. *)
 BEGIN
   IF a >= 0 THEN RETURN a DIV b END ;
   RETURN -((b - 1 - a) DIV b)
 END FloorDiv ;
 
 PROCEDURE StartOf (ts: PTR Ts ; t: I64) : I64 =
-  (* the PERIOD START a label means under the frame's convention *)
+  (* StartOf answers the PERIOD START a label means under the frame's
+     convention. *)
 BEGIN
   CASE ts.conv OF
   | AtStart : RETURN t
@@ -1085,7 +1090,7 @@ BEGIN
   RETURN result
 END Average ;
 
-(* one column reduced into the output frame.  The float paths
+(* Reduce reduces one column into the output frame.  The float paths
    accumulate in F64; integer sums accumulate in I64 with the checked
    ops, so an overflowing Sum RAISES instead of wrapping. *)
 PROCEDURE Reduce (VAR pool: POOL ; KEPT src: PTR Fr ; VAR out: PTR Fr ;
@@ -1367,7 +1372,7 @@ PROCEDURE ReduceBools (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                        win: SLICE OF I64 ; nwin: I64)
   RAISES WrongType, Faults.SizeError, IndexError =
   (* Lo is ALL (a FALSE anywhere wins), Hi is ANY, First/Last are
-     positional -- polars' own min/max/first/last over booleans.
+     positional: polars' own min/max/first/last over booleans.
      Mean and Sum are refused: a boolean has no arithmetic. *)
 VAR
   o : SLICE OF BOOL ;
@@ -1550,9 +1555,9 @@ BEGIN
       END ;
       AddBytes (pool, out, c.name, ob, m)
   | Bools (v) :
-      (* no missing value exists for a boolean, so a gap row cannot
-         be expressed: refused with the column named rather than
-         inventing FALSE *)
+      (* No missing value exists for a boolean, so a gap row cannot
+         be expressed.  It is refused with the column named rather
+         than inventing FALSE. *)
       RAISE WrongType (c.name)
   | Strs (si) :
       os := NEW (pool, STR, total) ;
@@ -1576,13 +1581,13 @@ END Fill ;
 PROCEDURE NcMeta (f: PTR NetCDF.File ; vid: I64 ; RO c: Col)
   RAISES NetCDF.Error, ValueRange =
 BEGIN
-  IF LEN (c.unit) > 0 THEN
+  IF Text.BLen (c.unit) > 0 THEN
     NetCDF.PutAttStr (f, vid, 'units', c.unit)
   END ;
-  IF LEN (c.long) > 0 THEN
+  IF Text.BLen (c.long) > 0 THEN
     NetCDF.PutAttStr (f, vid, 'long_name', c.long)
   END ;
-  IF LEN (c.cf) > 0 THEN
+  IF Text.BLen (c.cf) > 0 THEN
     NetCDF.PutAttStr (f, vid, 'standard_name', c.cf)
   END
 END NcMeta ;
@@ -1626,14 +1631,15 @@ BEGIN
     | Bools (v) :
         vid := NetCDF.DefVar (nc, src.cols[c].name,
                               NetCDF.TypeUByte, dims) ;
-        (* the marker TsFromNc restores the type from; 0/1 on the
-           wire, and no _FillValue because no missing exists *)
+        (* This is the marker TsFromNc restores the type from.  It
+           is 0/1 on the wire, with no _FillValue because no missing
+           exists. *)
         NetCDF.PutAttStr (nc, vid, 'frame_kind', 'bool')
     | Strs (si) :
         w := 1 ;
         FOR i := 0 TO LEN (src.strs[si].v) - 1 DO
-          IF LEN (src.strs[si].v[i]) > w THEN
-            w := LEN (src.strs[si].v[i])
+          IF Text.BLen (src.strs[si].v[i]) > w THEN
+            w := Text.BLen (src.strs[si].v[i])
           END
         END ;
         wdid := NetCDF.DefDim (nc, src.cols[c].name + '_len', w) ;
@@ -1677,11 +1683,12 @@ BEGIN
         END ;
         NetCDF.PutBytes (nc, vids[c], st, ct, vb2)
     | Strs (si) :
-        (* one hyperslab per row; PutChars NUL-pads to the count *)
+        (* This writes one hyperslab per row; PutChars NUL-pads to
+           the count. *)
         w := 1 ;
         FOR i := 0 TO LEN (src.strs[si].v) - 1 DO
-          IF LEN (src.strs[si].v[i]) > w THEN
-            w := LEN (src.strs[si].v[i])
+          IF Text.BLen (src.strs[si].v[i]) > w THEN
+            w := Text.BLen (src.strs[si].v[i])
           END
         END ;
         FOR i := 0 TO src.rows - 1 DO
@@ -1733,9 +1740,9 @@ BEGIN
   bdid := NetCDF.DefDim (nc, 'bnds', 2) ;
   dims := NEW (pool, I64, 1) ;
   dims[0] := did ;
-  (* DOUBLE seconds, not int64: CF's checkers class an int64
-     boundary variable as non-numeric, and a double is exact for
-     integer seconds until year 285 million *)
+  (* The bounds are DOUBLE seconds, not int64: CF's checkers class an
+     int64 boundary variable as non-numeric, and a double is exact for
+     integer seconds until year 285 million. *)
   tvid := NetCDF.DefVar (nc, 'time', NetCDF.TypeDouble, dims) ;
   NetCDF.PutAttStr (nc, tvid, 'units',
                     'seconds since 1970-01-01 00:00:00 +00:00') ;
@@ -1752,7 +1759,7 @@ BEGIN
                     ConvName (ts.conv)) ;
   NetCDF.PutAttF64 (nc, NetCDF.Global, 'frame_resolution_seconds',
                     F64 (ts.res)) ;
-  IF LEN (ts.descr) > 0 THEN
+  IF Text.BLen (ts.descr) > 0 THEN
     NetCDF.PutAttStr (nc, NetCDF.Global, 'description', ts.descr)
   END ;
   NetCDF.EndDef (nc) ;
@@ -1852,7 +1859,8 @@ BEGIN
     vb := NEW (pool, BYTE, n) ;
     NetCDF.GetBytes (nc, vid, st, ct, vb) ;
     IF NetCDF.HasAtt (nc, vid, 'frame_kind') THEN
-      (* the bool marker: 0/1 on the wire, anything else refused *)
+      (* This reads the bool marker: 0/1 on the wire, anything else
+         refused. *)
       vbo := NEW (pool, BOOL, n) ;
       FOR i := 0 TO n - 1 DO
         IF I64 (vb[i]) = 1 THEN
@@ -1896,7 +1904,8 @@ END ReadCol ;
 PROCEDURE SetMeta2 (VAR pool: POOL ; VAR f: PTR Fr ;
                     RO name, long, cf, unit: STR)
   RAISES IndexError =
-  (* SetMeta on a column that provably exists (just added) *)
+  (* This calls SetMeta on a column that provably exists (just
+     added). *)
 BEGIN
   SetMeta (pool, f, name, long, cf, unit)
 EXCEPT
@@ -1934,10 +1943,11 @@ END FromNc ;
 PROCEDURE ParseSince (RO units: STR ;
                       VAR mult, base: I64)
   RAISES Faults.BadArg, ValueRange =
-  (* 'seconds|minutes|hours|days since YYYY-MM-DD[ hh:mm:ss][zone]',
-     zone empty, 'Z', 'UTC' or '+00:00'; anything else refused WITH
-     THE STRING, because a wrong time axis is an hour of silent
-     error nobody can see *)
+  (* ParseSince reads
+     'seconds|minutes|hours|days since YYYY-MM-DD[ hh:mm:ss][zone]',
+     zone empty, 'Z', 'UTC' or '+00:00'.  It refuses anything else
+     WITH THE STRING, because a wrong time axis is an hour of silent
+     error nobody can see. *)
 VAR
   i, k, y, mo, d, hh, mm, ss : I64 ;
   c : Time.Civil ;
@@ -1960,21 +1970,21 @@ BEGIN
   d := Num (units, i + 8, 2) ;
   hh := 0 ; mm := 0 ; ss := 0 ;
   k := i + 10 ;
-  IF LEN (units) >= k + 9 AND (units[k] = ' ' OR units[k] = 'T') THEN
+  IF Text.BLen (units) >= k + 9 AND (Text.BIs (units, k, ' ') OR Text.BIs (units, k, 'T')) THEN
     hh := Num (units, k + 1, 2) ;
     mm := Num (units, k + 4, 2) ;
     ss := Num (units, k + 7, 2) ;
     k := k + 9
   END ;
-  (* the zone: absent is UTC by CF's rule; an explicit zero is
-     welcome; anything else is refused *)
-  WHILE k < LEN (units) AND units[k] = ' ' DO k := k + 1 END ;
-  IF k < LEN (units) THEN
-    IF NOT (DynStr.Eq (SLICE (units, k, LEN (units) - k), 'Z')
-            OR DynStr.Eq (SLICE (units, k, LEN (units) - k), 'UTC')
-            OR DynStr.Eq (SLICE (units, k, LEN (units) - k), '+00:00')
-            OR DynStr.Eq (SLICE (units, k, LEN (units) - k), '+0000')
-            OR DynStr.Eq (SLICE (units, k, LEN (units) - k), '00:00')) THEN
+  (* This reads the zone.  An absent zone is UTC by CF's rule, an
+     explicit zero is welcome, and anything else is refused. *)
+  WHILE k < Text.BLen (units) AND Text.BIs (units, k, ' ') DO k := k + 1 END ;
+  IF k < Text.BLen (units) THEN
+    IF NOT (Text.Eq (SLICE (units, k, Text.BLen (units) - k), 'Z')
+            OR Text.Eq (SLICE (units, k, Text.BLen (units) - k), 'UTC')
+            OR Text.Eq (SLICE (units, k, Text.BLen (units) - k), '+00:00')
+            OR Text.Eq (SLICE (units, k, Text.BLen (units) - k), '+0000')
+            OR Text.Eq (SLICE (units, k, Text.BLen (units) - k), '00:00')) THEN
       RAISE Faults.BadArg (units)
     END
   END ;
@@ -1991,9 +2001,9 @@ END ParseSince ;
 PROCEDURE Starts (RO s, p: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (s) < LEN (p) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (p) - 1 DO
-    IF s[i] # p[i] THEN RETURN FALSE END
+  IF Text.BLen (s) < Text.BLen (p) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (p) - 1 DO
+    IF Text.BAt (s, i) # Text.BAt (p, i) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END Starts ;
@@ -2003,11 +2013,11 @@ PROCEDURE Num (RO s: STR ; at, n: I64) : I64
 VAR
   i, v : I64 ;
 BEGIN
-  IF at + n > LEN (s) THEN RAISE Faults.BadArg (s) END ;
+  IF at + n > Text.BLen (s) THEN RAISE Faults.BadArg (s) END ;
   v := 0 ;
   FOR i := at TO at + n - 1 DO
-    IF s[i] < '0' OR s[i] > '9' THEN RAISE Faults.BadArg (s) END ;
-    v := v * 10 + (ORD (s[i]) - 48)
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RAISE Faults.BadArg (s) END ;
+    v := v * 10 + (I64 (Text.BAt (s, i)) - 48)
   END ;
   RETURN v
 END Num ;
@@ -2031,7 +2041,7 @@ BEGIN
   did := NetCDF.DimId (nc, 'time') ;
   n := NetCDF.DimLen (nc, did) ;
   tvid := NetCDF.VarId (nc, 'time') ;
-  (* the axis, through its own units *)
+  (* This reads the axis, through its own units. *)
   ParseSince (NetCDF.GetAttStr (pool, nc, tvid, 'units'),
               mult, base) ;
   st := NEW (pool, I64, 1) ;
@@ -2058,14 +2068,15 @@ BEGIN
       tsec[r] := base + I64 (rawd[r] * F64 (mult))
     END
   END ;
-  (* the data columns: everything on time except the axis machinery *)
+  (* This reads the data columns: everything on time except the axis
+     machinery. *)
   f := New (pool, n) ;
   nv := NetCDF.VarCount (nc) ;
   FOR vid := 0 TO nv - 1 DO
     rank := NetCDF.VarRank (nc, vid) ;
     vdims := NetCDF.VarDims (nc, vid) ;
     nm := NetCDF.VarName (pool, nc, vid) ;
-    IF vid # tvid AND NOT DynStr.Eq (nm, 'time_bnds')
+    IF vid # tvid AND NOT Text.Eq (nm, 'time_bnds')
        AND rank >= 1 AND vdims[0] = did
        AND (rank = 1 OR (rank = 2
                          AND NetCDF.VarType (nc, vid)
@@ -2073,15 +2084,15 @@ BEGIN
       ReadCol (pool, f, nc, vid, n, nm)
     END
   END ;
-  (* convention and resolution: the frame's own attributes when
-     present, stated defaults when not *)
+  (* This takes the convention and resolution from the frame's own
+     attributes when present, and stated defaults when not. *)
   conv := Conv.AtStart ;
   IF NetCDF.HasAtt (nc, NetCDF.Global, 'frame_time_convention') THEN
     cn := NetCDF.GetAttStr (pool, nc, NetCDF.Global,
                             'frame_time_convention') ;
-    IF DynStr.Eq (cn, 'end') THEN
+    IF Text.Eq (cn, 'end') THEN
       conv := Conv.AtEnd
-    ELSIF DynStr.Eq (cn, 'mid') THEN
+    ELSIF Text.Eq (cn, 'mid') THEN
       conv := Conv.AtMid
     END
   END ;
@@ -2089,7 +2100,8 @@ BEGIN
     res := I64 (NetCDF.GetAttF64 (nc, NetCDF.Global,
                                   'frame_resolution_seconds'))
   ELSE
-    (* a foreign file: the smallest gap on the axis, a stated choice *)
+    (* A foreign file gets the smallest gap on the axis, a stated
+       choice. *)
     res := 0 ;
     FOR r := 1 TO n - 1 DO
       g := tsec[r] - tsec[r - 1] ;
@@ -2295,10 +2307,10 @@ END MissByte ;
 
 (* ---- the verbs: rows chosen, rows ordered, rows grouped and joined ---- *)
 
-(* the columns of f, but `skip`, appended to out, row i of each taken
-   from rows[i] of f -- and a row number of -1 is a row that is not
-   there, which answers the column's missing value ('' in a Strs
-   column) and is REFUSED by a Bools column, which has none *)
+(* Gather appends the columns of f, but `skip`, to out, row i of each
+   taken from rows[i] of f.  A row number of -1 is a row that is not
+   there.  It answers the column's missing value ('' in a Strs
+   column) and is REFUSED by a Bools column, which has none. *)
 PROCEDURE Gather (VAR pool: POOL ; VAR out: PTR Fr ; KEPT f: PTR Fr ;
                   RO rows: SLICE OF I64 ; RO skip: STR)
   RAISES IndexError, WrongType, Faults.SizeError, Duplicate =
@@ -2318,7 +2330,7 @@ BEGIN
   FOR k := 0 TO f.ncols - 1 DO
     c := f.cols[k] ;
     IF NOT Text.Eq (c.name, skip) THEN
-      (* one arm a kind, each the same lines: no generics *)
+      (* Each kind has one arm, each the same lines: no generics. *)
       CASE c.data OF
       | F64s (v, m) :
           a64 := NEW (pool, F64, n) ;
@@ -2417,8 +2429,8 @@ END Filter ;
 
 (* ---- a column as a KEY: what a sort, a grouping and a join compare ----
 
-   Every kind becomes one of three representations -- a real, an
-   integer, a string -- and a flag saying whether the row holds a
+   Every kind becomes one of three representations (a real, an
+   integer, a string) and a flag saying whether the row holds a
    value at all.  F32 widens to F64 and the narrow integers and the
    booleans to I64 without loss, so three sorts serve eight kinds.
    The FAMILY says what the column was, for a join, which may not
@@ -2519,9 +2531,9 @@ EXCEPT
 | Sort.NotANumber : RAISE IndexError
 END ArgNoNaN ;
 
-(* the keys of the rows named, sorted: rows[idx[j]] holds the j-th
-   smallest, and rows with equal keys stay in the order `rows` names
-   them *)
+(* ArgKeys sorts the keys of the rows named: rows[idx[j]] holds the
+   j-th smallest, and rows with equal keys stay in the order `rows`
+   names them. *)
 PROCEDURE ArgKeys (RO k: Keys ; RO rows: SLICE OF I64 ; VAR idx: SLICE OF I64)
   RAISES IndexError =
 VAR
@@ -2555,7 +2567,7 @@ END SameKey ;
 
 (* every row that holds a key gets the NUMBER of its key, the keys
    numbered from 0 in ascending order; a row that holds none gets -1.
-   Answers how many keys there are. *)
+   Ids answers how many keys there are. *)
 PROCEDURE Ids (RO k: Keys ; VAR id: SLICE OF I64) : I64 RAISES IndexError =
 VAR
   rows, idx : SLICE OF I64 ;
@@ -2600,10 +2612,10 @@ VAR
 BEGIN
   k := KeysOf (scratch, f, name) ;
   n := f.rows ;
-  (* the rows that hold a value, in the order the sort is to be
-     stable in: as they come when ascending, BACKWARDS when
-     descending -- a stable ascending sort of the reversed rows, read
-     back to front, is a stable descending sort of the rows *)
+  (* This collects the rows that hold a value, in the order the sort
+     is to be stable in: as they come when ascending, BACKWARDS when
+     descending.  A stable ascending sort of the reversed rows, read
+     back to front, is a stable descending sort of the rows. *)
   nv := 0 ;
   FOR i := 0 TO n - 1 DO
     IF k.live[i] THEN nv := nv + 1 END
@@ -2620,8 +2632,8 @@ BEGIN
   idx := NEW (scratch, I64, nv) ;
   ArgKeys (k, rows, idx) ;
 
-  (* the missing first, in their own order, both ways; then the
-     values, back to front when descending *)
+  (* The missing come first, in their own order, both ways; then the
+     values, back to front when descending. *)
   out := NEW (I64, n) ;
   at := 0 ;
   FOR i := 0 TO n - 1 DO
@@ -2650,9 +2662,9 @@ END SortBy ;
 
 (* ---- group by ---- *)
 
-(* the group of every row, the groups numbered in the order of their
-   keys and the rows without a key in group 0 when there are any;
-   answers how many groups *)
+(* Groups finds the group of every row, the groups numbered in the
+   order of their keys and the rows without a key in group 0 when
+   there are any.  It answers how many groups. *)
 PROCEDURE Groups (f: PTR Fr ; RO key: STR ; VAR win: SLICE OF I64) : I64
   RAISES Unknown, IndexError =
 VAR
@@ -2711,7 +2723,8 @@ END GroupSizes ;
 
 (* ---- join ---- *)
 
-(* the keys of a and then the keys of b, as one column *)
+(* Glue answers the keys of a and then the keys of b, as one
+   column. *)
 PROCEDURE Glue (VAR pool: POOL ; RO a, b: Keys) : Keys
   RAISES IndexError =
 VAR
@@ -2756,13 +2769,15 @@ BEGIN
   END ;
   na := a.rows ;
   nb := b.rows ;
-  (* one numbering of the keys of both sides: two rows match exactly
-     when their numbers are equal, and a row without a key has none *)
+  (* This makes one numbering of the keys of both sides: two rows
+     match exactly when their numbers are equal, and a row without a
+     key has none. *)
   both := Glue (scratch, ka, kb) ;
   id := NEW (scratch, I64, na + nb) ;
   ng := Ids (both, id) ;
 
-  (* b's rows by key number, each key's rows in b's own order *)
+  (* This lists b's rows by key number, each key's rows in b's own
+     order. *)
   start := NEW (scratch, I64, ng + 1) ;
   FOR j := 0 TO nb - 1 DO
     g := id[na + j] ;
@@ -2779,8 +2794,8 @@ BEGIN
     END
   END ;
 
-  (* the pairs: counted, then written -- a's rows in a's order, and
-     for each the rows of b that match it, in b's *)
+  (* The pairs are counted, then written: a's rows in a's order, and
+     for each the rows of b that match it, in b's. *)
   n := 0 ;
   FOR i := 0 TO na - 1 DO
     g := id[i] ;
@@ -2860,8 +2875,9 @@ EXCEPT
 | ValueRange : RETURN NaN
 END PctOr ;
 
-(* a numeric column as reals, a NaN where the value is missing: what
-   Stats takes.  FALSE for a column that is not numeric. *)
+(* AsReals answers a numeric column as reals, a NaN where the value
+   is missing: what Stats takes.  It answers FALSE for a column that
+   is not numeric. *)
 PROCEDURE AsReals (f: PTR Fr ; RO c: Col ; VAR x: SLICE OF F64) : BOOL
   RAISES IndexError =
 VAR
@@ -2957,8 +2973,8 @@ BEGIN
   IF NOT AsReals (f, c, x) THEN RAISE WrongType (name) END ;
   win := NEW (I64, n) ;
   ng := Groups (f, key, win) ;
-  (* the values that are there, group after group, each group's in
-     the order of its rows *)
+  (* This gathers the values that are there, group after group, each
+     group's in the order of its rows. *)
   start := NEW (I64, ng + 1) ;
   FOR r := 0 TO n - 1 DO
     IF NOT IsNaN64 (x[r]) THEN
@@ -2986,9 +3002,9 @@ BEGIN
   RETURN out
 END Aggregate ;
 
-(* the columns named, as reals, one whole column after another:
-   value r of column j is at j * Rows (f) + r, NaN where it is
-   missing.  WrongType for a column that is not numeric. *)
+(* Reals answers the columns named, as reals, one whole column after
+   another: value r of column j is at j * Rows (f) + r, NaN where it is
+   missing.  It raises WrongType for a column that is not numeric. *)
 PROCEDURE Reals (f: PTR Fr ; RO cols: SLICE OF STR) : SLICE OF F64
   RAISES Unknown, WrongType, IndexError =
 VAR

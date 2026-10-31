@@ -1,14 +1,16 @@
 MODULE GfFinallyRaise ;
 
+IMPORT Text ;
+
 (* WANT: finally: 132 Bad first message, 4 Bad second wins, 56 none, 78 none *)
 
 (* A FINALLY runs on the raise path as on the others (report par 5),
    and the exception it runs for goes on afterwards (2026-10-21, the
    compiler review's G1).  Until then the cleanup ran with the raise
-   still pending: every checked statement and call in it stopped at
-   its first test -- Cleaned's log read 0, not 132 -- and a cleanup
-   calling a procedure that handled an exception of its own cleared
-   the pending one, so Cleaned returned normally.  Quiet's payload is
+   still pending.  Every checked statement and call in it stopped at
+   its first test: Cleaned's log read 0, not 132.  A cleanup calling
+   a procedure that handled an exception of its own cleared the
+   pending one, so Cleaned returned normally.  Quiet's payload is
    300 characters, more than the in-flight buffer's first 256 octets,
    so the buffer holding 'first message' is reallocated under the
    cleanup: the saved copy is what keeps the text.  A raise in the
@@ -40,13 +42,13 @@ BEGIN
   RETURN s
 END Long ;
 
-(* handles an exception of its own: the cleanup's callee *)
+(* Quiet handles an exception of its own: the cleanup's callee. *)
 PROCEDURE Quiet () =
 BEGIN
   BEGIN
     RAISE Other (Long ())
   EXCEPT
-  | Other (m) : Note (LEN (m) DIV 100)
+  | Other (m) : Note (Text.BLen (m) DIV 100)
   END
 END Quiet ;
 

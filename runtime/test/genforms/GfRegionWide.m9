@@ -2,16 +2,16 @@ MODULE GfRegionWide ;
 
 (* WANT: g 1.5 names abc *)
 
-(* A record of more fields than the region judgement had room for
-   (2026-10-25, flexpartm9's Config.Read under 0.25.0, found and reduced
-   by its session).  The table of tracked names held the scope plus 96;
-   once full a field was no longer tracked on its own and fell back to
-   its record, so an RO string stored into one field's elements made the
-   whole record read-only storage, and every later write through another
-   field -- into storage NEW made -- was refused (73 sites in Config.m9).
-   With 95 fields it was accepted.  The table is sized from the body now.
-   The write into the field that does hold the RO string stays refused
-   (runtime/test/regions/W1.m9). *)
+(* A record here has more fields than the region judgement had room
+   for (2026-10-25, flexpartm9's Config.Read under 0.25.0, found and
+   reduced by its session).  The table of tracked names held the scope
+   plus 96.  Once full, a field was no longer tracked on its own and
+   fell back to its record.  So an RO string stored into one field's
+   elements made the whole record read-only storage, and every later
+   write through another field (into storage NEW made) was refused: 73
+   sites in Config.m9.  With 95 fields it was accepted.  The table is
+   sized from the body now.  The write into the field that does hold
+   the RO string stays refused (runtime/test/regions/W1.m9). *)
 
 IMPORT Io, Fmt ;
 

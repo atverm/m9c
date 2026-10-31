@@ -1,12 +1,12 @@
 (* EXPECT: argument 1 of Grow: the pool of u is not known here, and the callee may allocate in it -- u is bound from the value parameter h -- take it as VAR, so its pool comes with it (par 4.3) *)
 (* A VAR argument of a pointer-bearing type carries the pool its object
    lives in, named from the argument's ROOT; a binder's pool is its
-   origin's.  The legal forms first: a binder on a VAR parameter's
-   component, on a local's, on a binder of those.  Then a binder on a
-   VALUE parameter's component, whose pool nobody named: the generator
-   fell back to the calling frame, and what the callee allocated there
-   died with the caller (Sem.CheckFile lending a binder on root.kids[i]
-   to ExportWalk, 2026-10-10). *)
+   origin's.  The legal forms come first: a binder on a VAR parameter's
+   component, on a local's, on a binder of those.  Then comes a binder
+   on a VALUE parameter's component, whose pool nobody named.  The
+   generator fell back to the calling frame, and what the callee
+   allocated there died with the caller (Sem.CheckFile lending a binder
+   on root.kids[i] to ExportWalk, 2026-10-10). *)
 MODULE m ;
 TYPE
   Kid = OPT PTR Node ;

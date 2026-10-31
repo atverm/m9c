@@ -1,9 +1,9 @@
 (* EXPECT: cannot DISPOSE r: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2) *)
-(* DISPOSE frees only a name that may own what it holds (2026-10-10):
+(* DISPOSE frees only a name that may own what it holds (2026-10-10).
    `r := b.p ; DISPOSE (r) ; DISPOSE (b.p)' freed one object twice and
-   both checkers accepted it.  The legal forms first: NEW (OWN, T), an
-   owned name moved in, an OWN parameter, a call's answer, a SHARED
-   handle.  Then a copy taken out of a field. *)
+   both checkers accepted it.  The legal forms come first: NEW (OWN, T),
+   an owned name moved in, an OWN parameter, a call's answer, a SHARED
+   handle.  Then comes a copy taken out of a field. *)
 MODULE m ;
 TYPE
   T = RECORD v : I64 END ;

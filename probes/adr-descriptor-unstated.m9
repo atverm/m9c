@@ -1,10 +1,10 @@
 (* EXPECT: ADR of a variable of type m.Held, which holds a reference: C can write one no assignment shows *)
 (* ADR of a variable whose type holds a reference lets C write one that
-   no assignment shows, and the region judgement read such an answer as
-   module storage: Text.AdoptUtf8 of frame bytes kept in a module UTF
+   no assignment shows.  The region judgement read such an answer as
+   module storage.  Text.AdoptUtf8 of frame bytes kept in a module UTF
    was a heap-use-after-free (the second review's S9).  It is allowed
    where the procedure states where its answer lives, [FRESH] (the third
-   review's trust advice, 2026-10-26).  Legal forms first: ADR of a
+   review's trust advice, 2026-10-26).  Legal forms come first: ADR of a
    slice, ADR of a scalar record, and a [FRESH] procedure filling a
    descriptor. *)
 UNSAFE DEFINITION MODULE FOR "C" ca ;

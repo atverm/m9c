@@ -1,25 +1,25 @@
 #!/bin/sh
 # Compile generated modules against m9rt and run the drivers.
 # -Wno-unused-label: every proc carries L_ret whether or not a
-# RETURN/raise jumps there; uniformity beats a warning.
+# RETURN/raise jumps there, and uniformity beats a warning.
 #
 # EVERY BATTERY RUNS, AND THE SCRIPT ANSWERS HOW MANY FAILED.  It
-# used to be one `set -e' list: the first driver that did not compile
+# used to be one `set -e' list.  The first driver that did not compile
 # ended it, and every battery after that one silently did not run.
 # 2026-10-01: twelve stale Csv calls in frame_driver.c (pool elision's
 # hidden pool) had hidden twenty batteries since stage 3, and nothing
-# said so until a release was cut.  Errors are values here too: each
-# battery is a function run in its own subshell under `set -e', its
+# said so until a release was cut.  Errors are values here too.  Each
+# battery is a function run in its own subshell under `set -e'.  Its
 # failure is counted and NAMED, and the rest still run.
 #
 #   runtime/test/build.sh                    every battery
 #   M9_SKIPS=FILE runtime/test/build.sh      ... and the SKIP lines the
 #                                            run printed must be FILE's
 #
-# M9_SKIPS is how CI holds the skips: a battery that needs a library
-# SKIPS OUT LOUD without it and the script still passes, which is
+# CI holds the skips through M9_SKIPS.  A battery that needs a library
+# SKIPS OUT LOUD without it, and the script still passes.  That is
 # right on a laptop and wrong on a machine that is supposed to have
-# the library -- there, a netCDF battery that stops running must be a
+# the library.  There, a netCDF battery that stops running must be a
 # red diff, not a line nobody reads.  runtime/test/build.skips is
 # CI's list.
 case ${M9_SKIPS:-} in ""|/*) ;; *) M9_SKIPS=$(pwd)/$M9_SKIPS ;; esac
@@ -34,9 +34,9 @@ fail=0
 failed=""
 battery () {  # battery NAME: run b_NAME under set -e in a subshell
   n=$((n+1))
-  # NOT `if ( ... ); then': a shell ignores -e inside a condition,
-  # subshell and function included, and the battery would run on
-  # past its first failure exactly as if nothing had been set
+  # Do NOT write `if ( ... ); then'.  A shell ignores -e inside a
+  # condition, subshell and function included, and the battery would
+  # run on past its first failure exactly as if nothing had been set.
   ( set -e; "b_$1" ) > "$W/$1.log" 2>&1
   rc=$?
   cat "$W/$1.log"
@@ -56,7 +56,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 }
 b_dict () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/Dict.c dict_driver.c -o dict_test
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Text.c ../gen/Dict.c dict_driver.c -o dict_test
 ./dict_test
 }
 b_fmt () {
@@ -66,10 +66,11 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 d=$(mktemp -d)
 ./fmt_test > "$d/plain.out" || { cat "$d/plain.out"; exit 1; }
 cat "$d/plain.out"
-# and once more on Fmt's own digits: Fixed and Sci take the C
+# Run once more on Fmt's own digits.  Fixed and Sci take the C
 # library's through the runtime since 2026-10-25, Short Dragonbox's,
-# and keep the M9 code for where the runtime declines (m9rt.h); both
-# twins are held to printf, and Short's two runs must hash the same
+# and they keep the M9 code for where the runtime declines (m9rt.h).
+# Both twins are held to printf, and Short's two runs must hash the
+# same.
 M9_FMT_PORTABLE=1 ./fmt_test > "$d/portable.out" || { cat "$d/portable.out"; exit 1; }
 cat "$d/portable.out"
 grep '^Short hash' "$d/plain.out" > "$d/h1"
@@ -79,7 +80,7 @@ rm -rf "$d"
 }
 b_time () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Fmt.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c ../gen/Fmt.c \
     ../gen/Time.c time_driver.c -lm -o time_test
 ./time_test
 }
@@ -90,17 +91,18 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     text_driver.c -lm -o text_test
 ./text_test
 }
-# the system log, observed through LOG_PERROR: a test cannot read the
-# journal, but it can read exactly what syslog() was handed
+# b_syslog observes the system log through LOG_PERROR.  A test cannot
+# read the journal, but it can read exactly what syslog() was handed.
 b_syslog () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Fmt.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c ../gen/Fmt.c \
     ../gen/Io.c ../gen/Time.c ../gen/Syslog.c ../gen/Logger.c syslog_driver.c \
     -lm -o syslog_test
 ./syslog_test
 }
-# libm, wrapped: the values must be libm's bit for bit, and the
-# domain errors must RAISE rather than return a NaN that travels
+# b_math tests libm, wrapped.  The values must be libm's bit for bit,
+# and the domain errors must RAISE rather than return a NaN that
+# travels.
 b_math () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/Math.c math_driver.c \
@@ -113,17 +115,19 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     mat_driver.c -lm -o mat_test
 ./mat_test
 }
-# Sort: stable merge sorts against a reference, the F64 NaN refusal,
-# the argsort's stability, and By called through a C function of the
-# procedure type's own signature -- the ABI of par 2.2.3 proven
+# b_sort tests Sort: stable merge sorts against a reference, the F64
+# NaN refusal, the argsort's stability, and By called through a C
+# function of the procedure type's own signature.  That proves the ABI
+# of par 2.2.3.
 b_sort () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/Sort.c ../gen/Math.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Text.c ../gen/Sort.c ../gen/Math.c \
     sort_driver.c -lm -o sort_test
 ./sort_test
 }
-# Bits: the 64-bit pattern operations against C's own operators over
-# a sweep, and the shift counts C leaves undefined refused BY NAME
+# b_bits holds Bits' 64-bit pattern operations against C's own
+# operators over a sweep.  The shift counts C leaves undefined must be
+# refused BY NAME.
 b_bits () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/Bits.c bits_driver.c \
@@ -133,8 +137,8 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 
 # The runtime's CRC-32 fast path (m9_crc_raw) against its portable
 # twin and against zlib's crc32: 9,002 checks over random pieces at
-# every alignment, whole and in two parts.  No generated module on the
-# line: the function is the runtime's and the gate is C against C.
+# every alignment, whole and in two parts.  No generated module is on
+# the line: the function is the runtime's, and the gate is C against C.
 # -O2 because the speed line it prints is the operation as a program
 # links it; the checks hold at any -O.  Sabotaged (a table entry
 # flipped) it fails 2,979 of them.  zlib is in every gate machine's
@@ -147,21 +151,21 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 
 # The runtime's eight-bytes-at-a-time UTF paths (the ASCII lane of the
 # validator, the code point count, memmem) against the plain loops, with
-# corruptions of every class at many offsets.  C against C, no generated
-# module; -O2 for the speed line it prints.
+# corruptions of every class at many offsets.  It is C against C, with
+# no generated module, and -O2 for the speed line it prints.
 b_utfrt () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c utfrt_driver.c -lm -o utfrt_test
 ./utfrt_test
-# and once more with the runtime kept to its sequence loop: the vector
-# validator (NEON, SSSE3/SSE4.1) and its portable twin both held
+# Run once more with the runtime kept to its sequence loop.  The vector
+# validator (NEON, SSSE3/SSE4.1) and its portable twin are both held.
 M9_UTF_PORTABLE=1 ./utfrt_test
 }
 
 # The per-thread cache of large pool blocks (m9rt.h), held to its
 # policy by counting: kept blocks taken 49 of 50 times, none across a
 # size class or above the cap, none left by a thread that returned.
-# Run plain and with the cache off -- the control that reads 0.
+# It runs plain and with the cache off, the control that reads 0.
 b_blockreuse () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c blockreuse_driver.c -lm -o blockreuse_test
@@ -169,18 +173,20 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 M9_BLOCK_REUSE=0 ./blockreuse_test
 }
 
-# ExecWithin's limit as poll takes it: past 2^31 ms it wrapped through
-# (int) and killed a child after half a second (the second review's R2)
+# b_execlimit tests ExecWithin's limit as poll takes it.  Past 2^31 ms
+# it wrapped through (int) and killed a child after half a second (the
+# second review's R2).
 b_execlimit () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c execlimit_driver.c -lm -o execlimit_test
 ./execlimit_test
 }
 
-# m9_strtod -- Eisel-Lemire where it decides, strtod where it does not
-# -- held to strtod bit for bit over two million strings in every
-# shape, the halfway cases and the hard ones; plain and under
-# M9_PARSE_PORTABLE (every answer strtod's, the control).
+# b_parsef64 holds m9_strtod (Eisel-Lemire where it decides, strtod
+# where it does not) to strtod bit for bit.  It runs over two million
+# strings in every shape, the halfway cases and the hard ones.  It runs
+# plain and under M9_PARSE_PORTABLE (every answer strtod's, the
+# control).
 b_parsef64 () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c parsef64_driver.c -lm -o parsef64_test
@@ -188,9 +194,9 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 M9_PARSE_PORTABLE=1 ./parsef64_test
 }
 
-# The runtime's radix sorts against a stable reference over seven
-# shapes of array and every length class; plain and under
-# M9_SORT_PORTABLE (the runtime declines every one, the control).
+# b_sort_rt holds the runtime's radix sorts against a stable reference
+# over seven shapes of array and every length class.  It runs plain and
+# under M9_SORT_PORTABLE (the runtime declines every one, the control).
 b_sort_rt () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c sort_driver.c -lm -o sort_rt_test
@@ -198,10 +204,10 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 M9_SORT_PORTABLE=1 ./sort_rt_test
 }
 
-# The runtime's CSV number recogniser (Csv.IsNumber's grammar in one
-# pass) held to a table of verdicts read off that grammar, and the field
-# parser's value to strtod; plain and under M9_CSV_PORTABLE (-1 for
-# every field, the control).
+# b_csvnum holds the runtime's CSV number recogniser (Csv.IsNumber's
+# grammar in one pass) to a table of verdicts read off that grammar.
+# It holds the field parser's value to strtod.  It runs plain and under
+# M9_CSV_PORTABLE (-1 for every field, the control).
 b_csvnum () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c csvnum_driver.c -lm -o csvnum_test
@@ -209,9 +215,9 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 M9_CSV_PORTABLE=1 ./csvnum_test
 }
 
-# System: the process seen from inside.  The driver is run with a
-# known argument line so the three argument views can be checked
-# against it, and it runs /bin/echo and sh through Exec and reads
+# b_system tests System: the process seen from inside.  The driver is
+# run with a known argument line, so the three argument views can be
+# checked against it.  It runs /bin/echo and sh through Exec and reads
 # both streams back.
 b_system () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
@@ -220,17 +226,17 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 ./system_test --verbose --out=x.nc a -- -b
 }
 
-# Statistics against numpy/scipy: the goldens are CHECKED IN
-# (tools/statsgold.py regenerates them by hand), so the gate needs
-# no python and cannot regenerate what it compares against.
+# b_stats holds Statistics against numpy/scipy.  The goldens are
+# CHECKED IN (tools/statsgold.py regenerates them by hand), so the gate
+# needs no python and cannot regenerate what it compares against.
 b_stats () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../gen/Stats.c ../gen/Math.c ../gen/Bits.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Text.c ../gen/Faults.c ../gen/Stats.c ../gen/Math.c ../gen/Bits.c \
     ../gen/Sort.c stats_driver.c -lm -o stats_test
 ./stats_test
 }
 
-# Frame against polars: sample and goldens are CHECKED IN
+# b_frame holds Frame against polars.  Sample and goldens are CHECKED IN
 # (tools/framegold.py regenerates by hand).  Frame imports NetCDF
 # (phase 3), so the gate needs the library and SKIPS OUT LOUD
 # without it, like the other format batteries.
@@ -247,33 +253,33 @@ else
 fi
 }
 
-# Delim: the ROW CURSOR, which is Csv's opposite number -- Csv reads a
-# whole file and hands out columns, this walks a 9 GB one in bounded
-# memory and hands out views.  The fixtures are written by the driver,
-# so this needs nothing on the machine.  The check that matters opens
-# a 4 KiB block over a ~180 KiB file so lines straddle reads
-# repeatedly; measured separately, 4 M rows cost 1.6 MB of RSS at that
-# block and 5.9 MB at 1 MiB, flat in the file size.
-# Zip is in THIS link and not in Delim's imports: the driver is where
-# the two meet, which is where a dependency between them belongs.  M9
+# b_delim tests Delim, the ROW CURSOR, which is Csv's opposite number.
+# Csv reads a whole file and hands out columns.  Delim walks a 9 GB one
+# in bounded memory and hands out views.  The driver writes the
+# fixtures, so this needs nothing on the machine.  The check that
+# matters opens a 4 KiB block over a ~180 KiB file, so lines straddle
+# reads repeatedly.  Measured separately, 4 M rows cost 1.6 MB of RSS
+# at that block and 5.9 MB at 1 MiB, flat in the file size.
+# Zip is in THIS link and not in Delim's imports.  The two meet in the
+# driver, and a dependency between them belongs there.  M9
 # had no procedure types then, so a source could not be passed as a
 # function; Delim takes pushed bytes instead.  (No zlib in the link
 # since 2026-10-02: Zip inflates in M9.)
 b_delim () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c \
     ../gen/Io.c ../gen/Delim.c ../gen/Zip.c ../gen/Bits.c delim_driver.c \
     -lm -o delim_test
 ./delim_test
 }
 
-# Io: a file read while another process is WRITING it.  ReadFile asks
-# the size first and the bytes second, and a size of 0 passed back as
-# the cap was the size query again -- so a file created empty and
-# filled a moment later answered its new length for a buffer of none,
-# an IndexError that killed m9setup two runs in six while it polled
-# for the tutorial's port file (2026-09-11).  The driver holds that
-# window open on purpose and requires that it was actually entered.
+# b_io reads a file while another process is WRITING it.  ReadFile
+# asks the size first and the bytes second.  A size of 0 passed back
+# as the cap was the size query again.  So a file created empty and
+# filled a moment later answered its new length for a buffer of none.
+# That IndexError killed m9setup two runs in six while it polled for
+# the tutorial's port file (2026-09-11).  The driver holds that window
+# open on purpose and requires that it was actually entered.
 b_io () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
@@ -281,9 +287,9 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 ./io_test
 }
 
-# Zip: a member read as a STREAM, which is what Delim's source
-# actually is -- SOCAT ships its 9 GB table inside one.  The fixtures
-# come from python's zipfile, so the oracle is a real zip writer; the
+# b_zip reads a Zip member as a STREAM, which is what Delim's source
+# actually is: SOCAT ships its 9 GB table inside one.  The fixtures
+# come from python's zipfile, so the oracle is a real zip writer.  The
 # driver skips out loud without python3.  Measured separately, when
 # the stream went to zlib: a 224 MB member inflated in 0.21 s at
 # 2.4 MB of RSS, against python's own zipfile stream at 0.38 s and
@@ -291,7 +297,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 # own, in M9, and the link names no zlib.
 b_zip () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c \
     ../gen/Io.c ../gen/Zip.c ../gen/Bits.c zip_driver.c -lm -o zip_test
 ./zip_test
 }
@@ -301,14 +307,14 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 b_csv () {
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -iquote .. -iquote ../gen ../m9rt.c \
-    ../gen/DynStr.c ../gen/Io.c ../gen/Fmt.c ../gen/Time.c ../gen/Csv.c \
+    ../gen/Text.c ../gen/DynStr.c ../gen/Io.c ../gen/Fmt.c ../gen/Time.c ../gen/Csv.c \
     csv_driver.c -lm -o csv_test
 ./csv_test
 }
 
 # The two format libraries the port needs.  Optional, and
-# SKIPPED OUT LOUD when absent: a test that silently disappears on a
-# machine without a dependency is a test nobody notices losing.
+# SKIPPED OUT LOUD when absent.  Nobody notices losing a test that
+# silently disappears on a machine without a dependency.
 b_grib () {
 ECH=$(ls /usr/include/eccodes.h /usr/include/*/eccodes.h 2>/dev/null | head -1)
 if [ -n "$ECH" ]; then
@@ -322,34 +328,36 @@ fi
 }
 b_json () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Json.c json_driver.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c ../gen/Json.c json_driver.c \
     -lm -o json_test
 ./json_test
 }
-# ApiSpec: the OpenAPI document a service BUILDS, for one whose routes
-# are handlers and so have no table to read back.  OpenApi.Document is
-# the derived-from-the-router half and keeps its own battery above;
-# this one owns the 3.1 shapes and the JSON escaping that the older
-# module explicitly does not do.  DynStr and nothing else -- a service
-# describing itself must not have to link a TLS stack to do it.
+# b_apispec tests ApiSpec: the OpenAPI document a service BUILDS, for
+# one whose routes are handlers and so have no table to read back.
+# OpenApi.Document is the derived-from-the-router half and keeps its
+# own battery above.  This one owns the 3.1 shapes and the JSON
+# escaping that the older module explicitly does not do.  It links
+# DynStr and nothing else.  A service describing itself must not have
+# to link a TLS stack to do it.
 b_apispec () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/ApiSpec.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c ../gen/ApiSpec.c \
     apispec_driver.c -lm -o apispec_test
 ./apispec_test
 }
-# Arrow IPC: a columnar stream nobody can read is worse than none, so
-# the oracle is the library the clients use.  The driver checks the
-# framing and the size accounting itself, then has pyarrow read the
-# file back when it is installed (skips out loud otherwise).
+# b_arrow tests Arrow IPC.  A columnar stream nobody can read is worse
+# than none, so the oracle is the library the clients use.  The driver
+# checks the framing and the size accounting itself.  Then it has
+# pyarrow read the file back when it is installed (it skips out loud
+# otherwise).
 b_arrow () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../gen/DynStr.c ../gen/Arrow.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/Faults.c ../gen/DynStr.c ../gen/Arrow.c \
     arrow_driver.c -l:libzstd.so.1 -lm -o arrow_test
-# the driver asks `python3' for pyarrow; where the suite names another
-# Python that has it ($COLUMNAR_PY: zoefii's miniconda), that one is the
-# python3 the driver sees, so the zstd streams are read back by pyarrow
-# there too -- they were read only on the Mac (2026-10-11)
+# The driver asks `python3' for pyarrow.  Where the suite names another
+# Python that has it ($COLUMNAR_PY: zoefii's miniconda), that one is
+# the python3 the driver sees.  So pyarrow reads the zstd streams back
+# there too; they were read only on the Mac (2026-10-11).
 if [ -n "${COLUMNAR_PY:-}" ] && [ -x "$COLUMNAR_PY" ]; then
   mkdir -p pyshim && ln -sf "$COLUMNAR_PY" pyshim/python3
   PATH="$(pwd)/pyshim:$PATH" ./arrow_test
@@ -359,7 +367,7 @@ fi
 }
 b_httpserver () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Io.c ../gen/Http.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/Text.c ../gen/DynStr.c ../gen/Io.c ../gen/Http.c \
     ../gen/Bits.c ../gen/Zip.c ../gen/Fmt.c ../gen/Time.c ../gen/Syslog.c ../gen/Logger.c \
     ../gen/HttpServer.c ../gen/OpenApi.c httpserver_driver.c -lssl -lcrypto \
     -o httpserver_test
@@ -367,15 +375,16 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 }
 # A peer that hangs up must be an ERROR, not a death.  SIGPIPE's
 # default action kills the process silently, and the ignore lived
-# inside m9_exec -- so any program that never spawned a child ran
-# with the default, which is how a cancelled download killed the
-# zarr proxy (2026-09-07).  The driver carries its own control: a
+# inside m9_exec.  So any program that never spawned a child ran with
+# the default, and so a cancelled download killed the zarr proxy
+# (2026-09-07).  The driver carries its own control: a
 # child that restores SIG_DFL must still die of the same write, or
 # these checks would pass on a platform that never raises it.
-# The statement release's runtime half (docs/statement-release-plan.md,
-# stage 1): mark and release over the frame arena, twice -- as shipped,
-# and with -DM9_POISON, where a read after release must see 0xA5.  No
-# generator emits a mark yet; this holds the operations it will emit.
+# b_release tests the statement release's runtime half
+# (docs/statement-release-plan.md, stage 1): mark and release over the
+# frame arena.  It runs twice: as shipped, and with -DM9_POISON, where
+# a read after release must see 0xA5.  No generator emits a mark yet;
+# this holds the operations it will emit.
 b_release () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. ../m9rt.c release_driver.c -o release_test
@@ -392,19 +401,20 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 ./sigpipe_test
 }
 
-# Zarr, the WRITER -- ZarrStore below it is the reader, and the two
-# meet at the format rather than in the code.  Json is in the closure
-# because the consolidated index is RE-SERIALISED rather than pasted;
-# this line missed it on the first try, which is the THIRD time a
-# hand-kept link list in this project has missed Json specifically.  The driver checks the
-# metadata text and the raw chunk bytes itself (at clevel 0 the chunk
-# file IS the buffer), then hands the directory to zarr-python and
-# xarray when they are on the machine.  -l:libblosc.so.1 by soname,
-# as the reader does: libblosc1 ships the runtime and only the -dev
-# package ships the libblosc.so the linker would otherwise want.
+# b_zarrw tests Zarr, the WRITER.  ZarrStore below it is the reader, and
+# the two meet at the format rather than in the code.  Json is in the
+# closure because the consolidated index is RE-SERIALISED rather than
+# pasted.  This line missed it on the first try, the THIRD time a
+# hand-kept link list in this project has missed Json specifically.
+# The driver checks the metadata text and the raw chunk bytes itself
+# (at clevel 0 the chunk file IS the buffer).  Then it hands the
+# directory to zarr-python and xarray when they are on the machine.
+# The link names -l:libblosc.so.1 by soname, as the reader does.
+# libblosc1 ships the runtime, and only the -dev package ships the
+# libblosc.so the linker would otherwise want.
 b_zarrw () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c ../gen/Io.c \
     ../gen/Json.c ../gen/Math.c ../gen/Zarr.c zarrw_driver.c \
     -l:libblosc.so.1 -lm -o zarrw_test
 ./zarrw_test
@@ -413,12 +423,12 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 # THE STORES the three batteries below read over HTTP.  time.zarr is
 # the newest store: a /tmp/m9stores from before it exists has co2 and
 # bench and still needs the regeneration.  THE TEST IS THE METADATA
-# FILE, NOT THE DIRECTORY: on 2026-09-28 the stores had survived a
+# FILE, NOT THE DIRECTORY.  On 2026-09-28 the stores had survived a
 # reboot as EMPTY directories (tmpfiles cleaned the files, left the
-# dirs), `[ -d ]` was satisfied, and zarr_test opened a co2.zarr with
-# no .zarray ("OpenArray co2.zarr / FormatError").  A battery of its
-# own, so that a machine without numpy or zarr-python says THAT, once,
-# and not three FormatErrors.
+# dirs).  `[ -d ]` was satisfied, and zarr_test opened a co2.zarr with
+# no .zarray ("OpenArray co2.zarr / FormatError").  This is a battery
+# of its own, so that a machine without numpy or zarr-python says
+# THAT, once, and not three FormatErrors.
 b_stores () {
 [ -f /tmp/m9stores/co2.zarr/.zarray ] && [ -f /tmp/m9stores/bench.zarr/.zarray ] \
     && [ -f /tmp/m9stores/time.zarr/.zarray ] \
@@ -431,13 +441,13 @@ echo "PASS (3 stores) -- co2, bench and time are in /tmp/m9stores"
 b_zarr () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Json.c \
-    ../gen/Io.c ../gen/Http.c ../gen/ZarrStore.c zarr_driver.c \
+    ../gen/Io.c ../gen/Http.c ../gen/Text.c ../gen/ZarrStore.c zarr_driver.c \
     -l:libblosc.so.1 -lssl -lcrypto -lm -o zarr_test
 ./zarr_test
 }
 # THE THREE cmp LINES COULD NOT FAIL.  They read `cmp a b && echo
 # identical' under set -e, and a shell does not apply -e to the left
-# side of an and-list: a differing SVG printed "differ" and the
+# side of an and-list.  A differing SVG printed "differ", and the
 # script went on to exit 0 (measured 2026-10-01 on a two-line
 # fixture).  Each is now a refusal by name.
 b_plot () {
@@ -455,15 +465,16 @@ for s in co2_columns co2_field co2_anomaly; do
 done
 }
 
-# THE BAR CHARTS, which have no Modula-2 oracle -- bars are new, so
-# there is nothing to be byte-identical TO.  The checks are
+# THE BAR CHARTS have no Modula-2 oracle.  Bars are new, so there is
+# nothing to be byte-identical TO.  The checks are
 # structural and arithmetic instead: how many rectangles, that a
 # stacked pair's edges meet (to the tolerance the DOCUMENT has, since
 # every coordinate is printed %.4g), that an outline bar has a stroke
 # and no fill, that a whisker appears for each usable error and no
 # others, that a chosen colour replaces the palette, and that a log
-# axis ticks the decades and labels them by value.  Shown able to
-# fail: dropping the stack base turns the touching-edges check red.
+# axis ticks the decades and labels them by value.  The battery is
+# shown able to fail: a dropped stack base turns the touching-edges
+# check red.
 b_bars () {
 gcc -std=c11 -O2 -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../fmtshim.c \
     ../gen/DynStr.c ../gen/Io.c ../gen/Math.c ../gen/Mat.c ../gen/Fmt.c ../gen/Text.c ../gen/Time.c ../gen/Plot.c \
@@ -473,19 +484,19 @@ gcc -std=c11 -O2 -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../fmtshim.
 b_bench () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Json.c \
-    ../gen/Io.c ../gen/Http.c ../gen/ZarrStore.c bench_driver.c \
+    ../gen/Io.c ../gen/Http.c ../gen/Text.c ../gen/ZarrStore.c bench_driver.c \
     -l:libblosc.so.1 -lssl -lcrypto -lm -o bench_test
 ./bench_test
 }
-# Http's own driver, against python's http.server over this
+# b_http runs Http's own driver against python's http.server over this
 # directory.  The server is this battery's and dies with it.
 b_http () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Io.c ../gen/Http.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/Text.c ../gen/DynStr.c ../gen/Io.c ../gen/Http.c \
     http_driver.c -lssl -lcrypto -o http_test
 printf 'hello from the shim\nM9' > hello.txt
-# 5 MB, past the one-shot reader's old 4 MB ceiling; the driver checks
-# every byte against the same formula
+# Write 5 MB, past the one-shot reader's old 4 MB ceiling.  The driver
+# checks every byte against the same formula.
 python3 -c 'import sys; sys.stdout.buffer.write(bytes((i * 7 + 11) % 251 for i in range(5 * 1024 * 1024)))' > big.bin
 python3 -m http.server 18923 --bind 127.0.0.1 --directory . >/dev/null 2>&1 &
 SRV=$!
@@ -497,8 +508,8 @@ b_hello () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Hello.c \
     -o hello_test
-# a PROGRAM, not a library: the body became main () and the exit
-# status is the err slot's verdict
+# This is a PROGRAM, not a library.  The body became main (), and the
+# exit status is the err slot's verdict.
 [ "$(./hello_test)" = "hello, world
 1" ] || { echo "FAIL: hello default"; exit 1; }
 [ "$(./hello_test alice bob)" = "hello, alice
@@ -508,10 +519,10 @@ echo "PASS (2 checks) -- compiled M9 as an executable"
 }
 b_concat () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c ../gen/Io.c \
     ../gen/Concat.c -o concat_test
-# `+` on strings: composed, chained, returned across a frame, and
-# HEAP passed by name as an ordinary pool
+# Test `+` on strings: composed, chained, returned across a frame, and
+# HEAP passed by name as an ordinary pool.
 [ "$(./concat_test)" = "hello, world!
 ababab
 6
@@ -521,8 +532,8 @@ a|b|c
 echo "PASS (1 check) -- + on strings, across a frame, HEAP by name, a view not grown over"
 }
 
-# every integer width traps on overflow (par 2.1): until 2026-09-27
-# the narrow ones wrapped silently through the I64 helper
+# Every integer width traps on overflow (par 2.1).  Until 2026-09-27
+# the narrow ones wrapped silently through the I64 helper.
 b_narrow () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
@@ -546,12 +557,12 @@ U64 2^62 * 3 DIV 3 = 2^62: 4611686018427387904
 I32 7 MOD 3: 1" ] || { echo "FAIL: narrow integer arithmetic does not trap"; ./narrow_test; exit 1; }
 echo "PASS (17 checks) -- every integer width traps on overflow"
 }
-# procedure types (par 2.2.3): a value called through a parameter,
-# through an OPT variable and an OPT field, VAR and RO inside the
-# type, the type's RAISES honoured
+# b_procuse tests procedure types (par 2.2.3): a value called through
+# a parameter, through an OPT variable and an OPT field, VAR and RO
+# inside the type, the type's RAISES honoured.
 b_procuse () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c ../gen/Io.c \
     ../gen/ProcUse.c -o procuse_test
 [ "$(./procuse_test)" = "Pick Up 3 2 -> 2
 Pick Down 3 2 -> 3
@@ -561,15 +572,16 @@ Each AddLen -> 15
 ValueRange raised, as Kernel declares" ] || { echo "FAIL: procedure types"; ./procuse_test; exit 1; }
 echo "PASS (6 checks) -- procedure types: values, OPT, IS SOME, VAR and RO, RAISES"
 }
-# constant tables (par 2.2.4): CONST X = [ ... ] of integers, reals,
-# strings, characters and booleans -- indexed, measured, lent to an RO
-# parameter, shadowed by a parameter, and an index past the end raised.
-# The second half is where the table LIVES: the checker forbids every
-# write, and const data is what makes a write it missed a fault
-# rather than a changed constant.
+# b_agguse tests constant tables (par 2.2.4): CONST X = [ ... ] of
+# integers, reals, strings, characters and booleans.  It indexes them,
+# measures them, lends one to an RO parameter, shadows one by a
+# parameter, and raises on an index past the end.
+# The second half tests where the table LIVES.  The checker forbids
+# every write, and const data makes a write it missed a fault rather
+# than a changed constant.
 b_agguse () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Text.c ../gen/DynStr.c ../gen/Io.c \
     ../gen/AggUse.c -o agguse_test
 [ "$(./agguse_test)" = "5
 11
@@ -591,17 +603,18 @@ Not Found / ?
 IndexError" ] || { echo "FAIL: constant tables"; ./agguse_test; exit 1; }
 nm agguse_test | grep -q ' [rR] Primes_k$' \
   || { echo "FAIL: the constant table Primes is not in read-only data"; nm agguse_test | grep Primes; exit 1; }
-# a table that holds STRINGS holds pointers, which a position-independent
-# executable relocates at load: such data is .data.rel.ro, read-only
-# once relocated (RELRO), and nm calls it `d' -- so by section here
+# A table that holds STRINGS holds pointers, which a
+# position-independent executable relocates at load.  Such data is
+# .data.rel.ro, read-only once relocated (RELRO), and nm calls it `d'.
+# So the check goes by section here.
 for k in Names_k Ok_k Statuses_k; do
   objdump -t agguse_test | grep -qE " O \.(rodata|data\.rel\.ro)[[:space:]].* $k\$" \
     || { echo "FAIL: the constant $k is not in read-only data"; objdump -t agguse_test | grep "$k"; exit 1; }
 done
 echo "PASS (22 checks) -- constant tables: five element types, LEN, lending, shadowing, IndexError, read-only data; record aggregates in a CONST, a table and a statement"
 }
-# a call that raised answered nothing (par 5): `b := Make (0)' raises
-# and b keeps the box Make (3) answered, so the line after the handler
+# A call that raised answered nothing (par 5).  `b := Make (0)' raises,
+# and b keeps the box Make (3) answered.  So the line after the handler
 # reads 3 and not NULL.  Until 2026-10-03 it died there.
 b_shareuse () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
@@ -632,22 +645,22 @@ for in 60 a b c" ] || { echo "FAIL: a raising call's answer was stored, a binder
 echo "PASS (22 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped; IndexError binds (index, length); a literal beyond ASCII is its scalars"
 }
 
-# Http's URL fetcher, against a local fixture server.  IN THE SUITE
-# rather than beside it (threads.sh is run by hand) because it is
-# local, it takes seconds, and a gate nobody runs rots -- which is the
-# same argument the catbench paragraph below makes.
+# Http's URL fetcher runs against a local fixture server.  It is IN THE
+# SUITE rather than beside it (threads.sh is run by hand), because it
+# is local, it takes seconds, and a gate nobody runs rots.  The catbench
+# paragraph below makes the same argument.
 b_deflate () {
-# Zip's compressor and Png's encoder, read back by Python's zlib and
-# gzip (and Pillow where it is installed): the witness that is not
-# this repository's own inflate
+# Python's zlib and gzip (and Pillow where it is installed) read back
+# Zip's compressor and Png's encoder.  They are the witness that is not
+# this repository's own inflate.
 sh ./deflate.sh || { echo "FAIL: deflate"; exit 1; }
 }
 
 b_columnar () {
-# Parquet's and NetCDF's writers, read back by pyarrow and
-# netCDF4-python: the witness that is not this repository's own
-# reader (ParquetTest and NetCDFTest, in m9test, are the M9 half;
-# they took over parquet_driver.c and netcdf_driver.c)
+# pyarrow and netCDF4-python read back Parquet's and NetCDF's writers.
+# They are the witness that is not this repository's own reader
+# (ParquetTest and NetCDFTest, in m9test, are the M9 half; they took
+# over parquet_driver.c and netcdf_driver.c).
 sh ./columnar.sh || { echo "FAIL: columnar"; exit 1; }
 }
 
@@ -655,12 +668,12 @@ b_httpget () {
 sh ./httpget.sh || { echo "FAIL: httpget"; exit 1; }
 }
 
-# catbench is a BENCHMARK, not a driver: nothing ran it, so nothing
+# catbench is a BENCHMARK, not a driver.  Nothing ran it, so nothing
 # compiled it, and it sat broken from the m9_err -> m9_state rename
 # until someone tried to use it.  A checked-in C file that no gate
-# compiles rots silently -- the same family as a gate that cannot run.
-# Compiled here and NOT run: the answer is a measurement, not a check,
-# and it takes seconds.
+# compiles rots silently, the same family as a gate that cannot run.
+# It is compiled here and NOT run: the answer is a measurement, not a
+# check, and it takes seconds.
 b_catbench () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -iquote .. -iquote ../gen ../m9rt.c catbench.c -lm -o /dev/null \
@@ -673,8 +686,8 @@ for b in dynstr dict fmt time text syslog math mat sort sort_rt bits crc utfrt b
          httpserver sigpipe release zarrw stores; do
   battery "$b"
 done
-# one server for the three store readers, started here so that it is
-# this script's to stop whatever the batteries do
+# Start one server for the three store readers here, so that it is
+# this script's to stop whatever the batteries do.
 python3 -m http.server 18930 --bind 127.0.0.1 --directory /tmp/m9stores \
     >/dev/null 2>&1 &
 ZSRV=$!
@@ -685,12 +698,12 @@ kill $ZSRV 2>/dev/null
 trap - INT TERM
 for b in http hello concat narrow procuse agguse shareuse deflate columnar httpget catbench; do battery "$b"; done
 
-# THE SKIPS, held to a list when one is given: sorted, leading blanks
-# dropped, compared as text.  A line too many is a battery that
-# stopped running on a machine meant to run it; a line too few is the
+# THE SKIPS are held to a list when one is given: sorted, leading
+# blanks dropped, compared as text.  A line too many is a battery that
+# stopped running on a machine meant to run it.  A line too few is the
 # list being stale.  Both are red.  A `? ' line in the list is
-# optional -- the network decides whether it appears -- and is taken
-# out of both sides before they are compared.
+# optional (the network decides whether it appears), and is taken out
+# of both sides before they are compared.
 if [ -n "${M9_SKIPS:-}" ]; then
   n=$((n+1))
   sed 's/^ *//' "$M9_SKIPS" | grep -v '^#' | grep . > "$W/skips.list" || :

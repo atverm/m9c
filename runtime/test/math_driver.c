@@ -1,22 +1,22 @@
-/* math_driver.c -- Math.m9 against libm, and against its own stated
+/* math_driver.c holds Math.m9 to libm, and to its own stated
    refusals.
 
-   Two kinds of claim, so two kinds of check.
+   There are two kinds of claim, so there are two kinds of check.
 
-   The VALUES must be libm's, bit for bit.  Math wraps libm; if the
+   The VALUES must be libm's, bit for bit.  Math wraps libm.  If the
    wrapper changed an answer it would be a numerical library nobody
-   asked for, so every value is compared with memcmp against the
-   direct call and not with a tolerance.  Compared over a sweep, not
-   at three convenient points.
+   asked for.  So every value is compared with memcmp against the
+   direct call and not with a tolerance.  They are compared over a
+   sweep, not at three convenient points.
 
    The REFUSALS are the reason the module exists.  C's answer to a
-   domain error is a NaN plus an errno nobody reads, and a NaN in a
-   checked language is a lie that travels: it compares false against
+   domain error is a NaN plus an errno nobody reads.  A NaN in a
+   checked language is a lie that travels.  It compares false against
    everything, survives every operation, and surfaces three
    procedures later as a ValueRange from a conversion that had
    nothing to do with it.  That is the Trunc(NaN) museum piece with
    the crash moved somewhere else.  So each domain error is asserted
-   to raise, with the exception identity checked -- ValueRange for a
+   to raise, with the exception identity checked: ValueRange for a
    domain error, Overflow for an answer that left the type.          */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -32,8 +32,8 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-/* bit-identical, so that a NaN payload or a signed zero cannot slip
-   through a == comparison */
+/* same compares bit-identical, so that a NaN payload or a signed zero
+   cannot slip through a == comparison. */
 static int same (double a, double b)
 {
   return memcmp (&a, &b, sizeof a) == 0;
@@ -128,10 +128,11 @@ int main (void)
   /* ---- an answer that leaves the type is Overflow, not infinity ---- */
   RAISES1 (Exp, 1000.0, Overflow);
   RAISES2 (Pow, 10.0, 400.0, Overflow);
-  /* 1.5e308, not 1e308: hypot (1e308,1e308) is sqrt(2)*1e308, which
-     is FINITE and is exactly what hypot exists to compute without an
-     intermediate overflow.  The first version of this check asserted
-     it raised, and the module was right and the test was wrong. */
+  /* Use 1.5e308, not 1e308.  hypot (1e308,1e308) is sqrt(2)*1e308,
+     which is FINITE.  It is exactly what hypot exists to compute
+     without an intermediate overflow.  The first version of this
+     check asserted it raised, and the module was right and the test
+     was wrong. */
   RAISES2 (Hypot, 1.5e308, 1.5e308, Overflow);
 
   /* ---- underflow is an answer ---- */
@@ -152,10 +153,10 @@ int main (void)
     RAISES2 (Atan2, nan, 1.0, ValueRange);
     RAISES2 (Pow, 2.0, nan, ValueRange);
 
-    /* ...except the two predicates that exist to ask about it, and
-       Fabs, which is total on purpose: abs of NaN is NaN, no domain
-       error, so the ONEFlux port can take |x| of a gappy series
-       without a handler per element */
+    /* The exceptions are the two predicates that exist to ask about it,
+       and Fabs, which is total on purpose.  abs of NaN is NaN, no
+       domain error, so the ONEFlux port can take |x| of a gappy
+       series without a handler per element. */
     e.exc = NULL;
     {
       double fa = Math_Fabs (nan, &e);
@@ -187,7 +188,7 @@ int main (void)
         refused == 2 && total == 2.0 + 3.0 + 4.0);
   }
 
-  /* erf/erfc: libm's own bits, both widths */
+  /* erf/erfc must give libm's own bits, both widths. */
   {
     m9_state e2 = {0};
     ok ("Erf is libm's erf, bitwise", Math_Erf (0.5, &e2) == erf (0.5));
@@ -199,8 +200,9 @@ int main (void)
     ok ("Erf of NaN raises ValueRange", e2.exc == &m9_exc_ValueRange);
   }
 
-  /* the extrema (2026-09-27): integer ones total but for MIN (I64),
-     real ones refusing a NaN like every checked Math procedure */
+  /* The extrema (2026-09-27): integer ones are total but for MIN
+     (I64).  Real ones refuse a NaN like every checked Math
+     procedure. */
   {
     m9_state e3 = {0};
     ok ("AbsI64 (-7) = 7", Math_AbsI64 (-7, &e3) == 7);
@@ -223,9 +225,9 @@ int main (void)
   }
 
   /* Round and Trunc (2026-10-29): Round is libm's round, a half away
-     from zero, at the halves the sweep never meets; Trunc is I64 (x),
-     toward zero, refusing what I64 cannot hold; the F32 twins the
-     same at their width */
+     from zero, at the halves the sweep never meets.  Trunc is I64 (x),
+     toward zero, refusing what I64 cannot hold.  The F32 twins do
+     the same at their width. */
   {
     m9_state e4 = {0};
     double half[8] = { 0.5, -0.5, 1.5, -1.5, 2.5, -2.5, 0.49999999999999994, -0.0 };

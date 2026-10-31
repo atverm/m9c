@@ -1,7 +1,7 @@
 MODULE R3RoField ;
-(* a read-only literal held in ONE field of a local record, lent to a
-   VAR STR the callee writes through.  The bare-name form W (s) with
-   s := 'abc' is refused (RgVarWrites); the field form? *)
+(* A read-only literal is held in ONE field of a local record, lent to
+   a VAR STR the callee writes through.  The bare-name form W (s) with
+   s := 'abc' is refused (RgVarWrites); this tests the field form. *)
 IMPORT Io ;
 TYPE R = RECORD s, t : STR END ;
 PROCEDURE W (VAR s: STR) =

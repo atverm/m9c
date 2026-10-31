@@ -1,24 +1,25 @@
 MODULE ZipTest ;
 
-(* Zip.Gunzip against Python's gzip, and the member reader as a stream
-   against Python's zipfile.  (The archive FORMAT -- ZIP64, names,
-   methods -- stays with runtime/test/zip_driver.c.)  The files are
-   under runtime/test/gold/gz/, written with their goldens by
-   tools/zipgoldm9.py: nine .gz that decompress -- one of each kind
-   of deflate block, every optional header field, files of two and
-   three members, one written by hand -- and twenty-three that must be
-   refused, each of which Python refuses too; an archive of eight
-   members read three ways, and one of four members whose streams
-   are wrong.
+(* ZipTest holds Zip.Gunzip against Python's gzip, and the member
+   reader as a stream against Python's zipfile.  (The archive FORMAT,
+   with ZIP64, names and methods, stays with
+   runtime/test/zip_driver.c.)  The files are under
+   runtime/test/gold/gz/, written with their goldens by
+   tools/zipgoldm9.py.  Nine .gz decompress: one of each kind of
+   deflate block, every optional header field, files of two and three
+   members, and one written by hand.  Twenty-three must be refused,
+   and Python refuses each of them too.  An archive of eight members
+   is read three ways, and one of four members has streams that are
+   wrong.
 
-   What a file decompresses to is held by its length and a checksum
-   that depends on where each byte is.
+   The test holds the bytes a file decompresses to by their length and
+   a checksum that depends on where each byte is.
 
    The inflate under test is Zip's own, written in M9.  Beside the
    files of the first list, runtime/test/gold/gz/many.gzs holds
    several hundred deflate streams written every way zlib can write
-   one -- every level and strategy, six kinds of data, lengths around
-   the window and the block sizes -- and each must come out byte for
+   one: every level and strategy, six kinds of data, lengths around
+   the window and the block sizes.  Each must come out byte for
    byte. *)
 
 IMPORT Check ;
@@ -32,7 +33,8 @@ VAR
   gold : STR ;
   pool : POOL ;
 
-(* the sum over the bytes of (i mod 251 + 1) * byte, modulo 1000000007 *)
+(* Sum answers the sum over the bytes of (i mod 251 + 1) * byte,
+   modulo 1000000007. *)
 PROCEDURE Sum (RO b: SLICE OF BYTE) : I64 =
 VAR s, i : I64 ;
 BEGIN
@@ -66,9 +68,10 @@ BEGIN
   Check.EqI64 (t, 'GunzipBytes of nothing is nothing', LEN (b), 0)
 END Good ;
 
-(* gz/many.gzs: several hundred members in one file, each read on its
-   own.  One check for the lot, and it names the first that is wrong:
-   a check a member would be a page of PASS that nobody reads. *)
+(* Many reads gz/many.gzs: several hundred members in one file, each
+   read on its own.  One check covers the lot, and it names the first
+   that is wrong.  A check a member would be a page of PASS that
+   nobody reads. *)
 PROCEDURE Many () RAISES Io.IOError, ValueRange =
 VAR
   data, b : SLICE OF BYTE ;
@@ -97,8 +100,8 @@ BEGIN
                firstWrong, -1)
 END Many ;
 
-(* one member's bytes, or a slice no member has the length of when it
-   is refused *)
+(* OneOf answers one member's bytes, or a slice no member has the
+   length of when it is refused. *)
 PROCEDURE OneOf (RO member: SLICE OF BYTE) : SLICE OF BYTE =
 BEGIN
   RETURN Zip.GunzipBytes (pool, member)
@@ -107,7 +110,7 @@ EXCEPT
 | ValueRange : RETURN NEW (BYTE, 999998)
 END OneOf ;
 
-(* what the file is refused as: '' when it is not *)
+(* Refusal answers what the file is refused as: '' when it is not. *)
 PROCEDURE Refusal (RO name: STR) : STR =
 VAR
   b : SLICE OF BYTE ;
@@ -142,10 +145,11 @@ END Bad ;
 (* ---- the other way: Gzip, Compress, Deflate ----
 
    A compressor's bytes are not unique, so nothing here compares them
-   to zlib's: what Gzip wrote must come back through GunzipBytes --
-   the decoder the rest of this test holds to zlib -- for each of the
-   several hundred members of many.gzs.  (Python's own gzip and zlib
-   read what these write in runtime/test/deflate.sh.) *)
+   to zlib's.  Instead the bytes Gzip wrote must come back through
+   GunzipBytes for each of the several hundred members of many.gzs.
+   GunzipBytes is the decoder the rest of this test holds to zlib.
+   (Python's own gzip and zlib read what these write in
+   runtime/test/deflate.sh.) *)
 PROCEDURE Packs () RAISES Zip.Error, Io.IOError, ValueRange =
 VAR
   data, b, g, back, z, raw : SLICE OF BYTE ;
@@ -176,7 +180,8 @@ BEGIN
     ELSIF firstWrong < 0 THEN
       firstWrong := i
     END ;
-    (* never much longer than what went in: stored blocks at worst *)
+    (* The output is never much longer than what went in: stored
+       blocks at worst. *)
     IF LEN (g) > LEN (b) + 18 + 5 * (LEN (b) DIV 65535 + 1) THEN
       grown := grown + 1
     END ;
@@ -191,7 +196,7 @@ BEGIN
   Check.That (t, 'Gzip: and together they are less than half of what went in',
               2 * sumOut < sumIn) ;
 
-  (* the three wrappings of one stream *)
+  (* These are the three wrappings of one stream. *)
   b := Io.ReadFileBytes (pool, Check.GoldPath ('gz/hello.gz')) ;
   raw := Zip.Deflate (pool, b) ;
   g := Zip.Gzip (pool, b) ;
@@ -219,7 +224,8 @@ BEGIN
   Check.EqI64 (t, 'Deflate of nothing is one empty block', LEN (Zip.Deflate (pool, SLICE (b, 0, 0))), 2)
 END Packs ;
 
-(* what Decompress refuses a file as: '' when it does not *)
+(* ZlibRefusal answers what Decompress refuses a file as: '' when it
+   does not. *)
 PROCEDURE ZlibRefusal (RO name: STR) : STR =
 VAR
   b : SLICE OF BYTE ;
@@ -246,8 +252,8 @@ CONST
            'bytes after the zlib stream',
            'the zlib stream stops inside its header'] ;
 
-(* Decompress: streams zlib wrote, streams Compress wrote, and seven
-   that are not sound *)
+(* Zlibs holds Decompress on streams zlib wrote, streams Compress
+   wrote, and seven that are not sound. *)
 PROCEDURE Zlibs () RAISES Zip.Error, Io.IOError, ValueRange =
 VAR
   names : SLICE OF STR ;
@@ -291,7 +297,8 @@ BEGIN
   END
 END Zlibs ;
 
-(* Crc32 and Adler32 against zlib's, over bytes made here *)
+(* These hold Crc32 and Adler32 against zlib's, over bytes made
+   here. *)
 PROCEDURE BadCrcRefused () : BOOL =
 VAR n : I64 ;
 BEGIN
@@ -331,9 +338,9 @@ BEGIN
                LEN (length)) ;
   Check.EqI64 (t, 'Adler32 of nothing but ones, where its sums are largest',
                okFf, LEN (length)) ;
-  (* the check value of the CRC-32 every table of it prints; its own
-     name, because b is written above and under the UTF switch these
-     octets are a read-only view *)
+  (* cb holds the check value of the CRC-32 that every table of it
+     prints.  It has its own name because b is written above, and
+     under the UTF switch these octets are a read-only view. *)
   cb := DynStr.Bytes (pool, '123456789', FALSE) ;
   Check.EqI64 (t, 'Crc32 of 123456789 is cbf43926', Zip.Crc32 (cb), 3421780262) ;
   Check.EqI64 (t, 'Crc32Update from 0 is Crc32', Zip.Crc32Update (0, cb), 3421780262) ;
@@ -347,12 +354,12 @@ END Sums ;
 
    Gunzip decodes straight into its answer, and a copy reads from the
    answer itself.  A member is read a buffer at a time, and a copy
-   reads from a ring of the last 32768 bytes -- other code, which no
-   .gz file reaches.  gz/many.zip is Python's zipfile's: matches near,
-   30 kB back and of distance one, noise, nothing, and a stored
-   member.  Each is read three times: 97 bytes at a time (less than
-   one copy can be long, with the smallest compressed-side block),
-   4096, and 100000 (more than the window). *)
+   reads from a ring of the last 32768 bytes.  That is other code,
+   which no .gz file reaches.  gz/many.zip is Python's zipfile's.  It
+   holds matches near, 30 kB back and of distance one, noise, nothing,
+   and a stored member.  Each is read three times: 97 bytes at a time
+   (less than one copy can be long, with the smallest compressed-side
+   block), 4096, and 100000 (more than the window). *)
 
 CONST
   ManyZip = 'runtime/test/gold/gz/many.zip' ;
@@ -361,9 +368,9 @@ CONST
   Blocks = [1, 0, 0] ;
   Sizes = ['97', '4096', '100000'] ;
 
-(* member i whole, read `size` bytes at a time; a slice of a length no
-   member has when the reader fails or answers another length than the
-   directory states *)
+(* Whole answers member i whole, read `size` bytes at a time.  It
+   answers a slice of a length no member has when the reader fails or
+   answers another length than the directory states. *)
 PROCEDURE Whole (a: PTR Zip.Archive ; i, size, block: I64) : SLICE OF BYTE =
 VAR
   m : PTR Zip.Member ;
@@ -407,9 +414,9 @@ BEGIN
   a := Zip.Open (pool, ManyZip) ;
   Check.EqI64 (t, 'many.zip: as many members as the golden file names',
                Zip.Count (a), LEN (names)) ;
-  (* CrcAt: the directory's CRC, zipfile's ZipInfo.CRC, read and not
-     computed; and Crc32Update over each member in pieces of 997
-     bytes, a length that divides nothing, gives the same number *)
+  (* CrcAt answers the directory's CRC, zipfile's ZipInfo.CRC, read
+     and not computed.  Crc32Update over each member in pieces of 997
+     bytes, a length that divides nothing, gives the same number. *)
   got := NEW (pool, I64, LEN (names)) ;
   FOR i := 0 TO LEN (names) - 1 DO got[i] := Zip.CrcAt (a, Zip.Find (a, names[i])) END ;
   Check.EqI64s (t, 'CrcAt is zipfile ZipInfo.CRC for every member', got, crc) ;
@@ -438,8 +445,8 @@ BEGIN
   END
 END Members ;
 
-(* what reading member i to its end, `size` bytes at a time, is
-   refused as: '' when it is not *)
+(* StreamRefusal answers what reading member i to its end, `size`
+   bytes at a time, is refused as: '' when it is not. *)
 PROCEDURE StreamRefusal (a: PTR Zip.Archive ; i, size: I64) : STR =
 VAR
   m : PTR Zip.Member ;
@@ -459,12 +466,12 @@ EXCEPT
 | IndexError : RETURN 'IndexError'
 END StreamRefusal ;
 
-(* gz/bad.zip: a directory that is right over streams that are not --
-   each met by the decoder twenty letters in, in its common run -- and
-   two streams that are right under a directory that lies: the CRC
-   (zipfile refuses it too) and the length (zipfile reads the stream
-   whole and never looks).  A member read in pieces of 7 is summed
-   as one. *)
+(* BadMembers reads gz/bad.zip.  It holds a directory that is right
+   over streams that are not, each met by the decoder twenty letters
+   in, in its common run.  It also holds two streams that are right
+   under a directory that lies: the CRC (zipfile refuses it too) and
+   the length (zipfile reads the stream whole and never looks).  A
+   member read in pieces of 7 is summed as one. *)
 PROCEDURE BadMembers () RAISES Zip.Error, Io.IOError, ValueRange =
 VAR
   a : PTR Zip.Archive ;
@@ -506,8 +513,8 @@ CONST
          'the gzip length does not match the bytes',
          'the gzip stream stops inside a member',
          'the gzip stream stops before its trailer',
-         (* one bit turned mid-stream still decodes, to other bytes:
-            it is the CRC that catches it, which is what a CRC is for *)
+         (* One bit turned mid-stream still decodes, to other bytes.
+            The CRC catches it, which is what a CRC is for. *)
          'the gzip CRC does not match the bytes',
          'the gzip stream is corrupt',
          'the gzip stream is corrupt',
@@ -516,13 +523,14 @@ CONST
          'the gzip stream stops inside a header',
          'bytes after the last gzip member',
          'the gzip stream is corrupt',
-         (* the same three, met by the decoder's common run *)
+         (* The decoder's common run meets the same three. *)
          'the gzip stream is corrupt',
          'the gzip stream is corrupt',
          'the gzip stream is corrupt',
-         (* handmade.gz, which decodes, with one thing the format
-            forbids: one length code, one distance code more than
-            there are; a code set with a gap; one with too many codes *)
+         (* Each is handmade.gz, which decodes, with one thing the
+            format forbids: one length code, one distance code more
+            than there are; a code set with a gap; one with too many
+            codes. *)
          'the gzip stream is corrupt',
          'the gzip stream is corrupt',
          'the gzip stream is corrupt',
@@ -530,10 +538,10 @@ CONST
          'the gzip stream is corrupt',
          'the gzip stream is corrupt'] ;
 
-(* the writer: an archive written, read back by Open above and held
-   member by member; the refusals.  Python's zipfile reads the same
-   kind of archive in runtime/test/deflate.sh, the witness that is not
-   ours. *)
+(* Writes tests the writer.  It writes an archive, reads it back by
+   Open above and holds it member by member, and checks the refusals.
+   Python's zipfile reads the same kind of archive in
+   runtime/test/deflate.sh, the witness that is not ours. *)
 PROCEDURE Writes () RAISES Zip.Error, Io.IOError, ValueRange =
 CONST
   Path = '/tmp/m9ziptest-written.zip' ;
@@ -588,7 +596,7 @@ BEGIN
   got := Whole (a, 5, 100000, 0) ;
   Check.EqI64 (t, 'written: the stored table read back whole', Sum (got), Sum (table)) ;
   Check.That (t, 'written: a member read with the CRC checked', Zip.Find (a, 'noise.bin') = 2) ;
-  (* the empty archive: 22 bytes, read as nothing *)
+  (* The empty archive is 22 bytes, read as nothing. *)
   w := Zip.NewWriter (pool) ;
   Check.EqI64 (t, 'written: an empty archive is its end record', LEN (Zip.Finish (w)), 22) ;
   Zip.WriteTo (w, Path) ;
@@ -606,8 +614,9 @@ BEGIN
 END Writes ;
 
 PROCEDURE WriteRefusal (VAR w: PTR Zip.Writer ; RO name: STR ; year: I64) : STR =
-  (* the Error's text of SetTime at year, then AddBytes of a stored
-     member named name; '' when both are accepted *)
+  (* WriteRefusal answers the Error's text of SetTime at year, then
+     AddBytes of a stored member named name, or '' when both are
+     accepted. *)
 VAR one : SLICE OF BYTE ;
 BEGIN
   one := NEW (BYTE, 1) ;

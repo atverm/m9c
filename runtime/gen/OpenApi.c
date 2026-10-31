@@ -2,6 +2,7 @@
 #include "OpenApi.h"
 #include "HttpServer.h"
 #include "DynStr.h"
+#include "Text.h"
 
 extern int tcp_listen (int, int);
 extern int tcp_accept (int);
@@ -15,42 +16,46 @@ extern int m9_srv_stopping (void);
 extern void m9_srv_stop (void);
 extern void m9_srv_unstop (void);
 extern void m9_srv_signals (int);
+extern void m9_keep_at_most (int64_t);
+extern void m9_release_kept (void);
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[36] = { 123u, 34u, 111u, 112u, 101u, 110u, 97u, 112u, 105u, 34u, 58u, 34u, 51u, 46u, 48u, 46u, 51u, 34u, 44u, 34u, 105u, 110u, 102u, 111u, 34u, 58u, 123u, 34u, 116u, 105u, 116u, 108u, 101u, 34u, 58u, 34u };
-static const uint32_t m9s1[13] = { 34u, 44u, 34u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 34u, 58u, 34u };
-static const uint32_t m9s2[12] = { 34u, 125u, 44u, 34u, 112u, 97u, 116u, 104u, 115u, 34u, 58u, 123u };
-static const uint32_t m9s3[3] = { 34u, 58u, 123u };
-static const uint32_t m9s4[2] = { 125u, 125u };
-static const uint32_t m9s5[3] = { 71u, 69u, 84u };
-static const uint32_t m9s6[3] = { 103u, 101u, 116u };
-static const uint32_t m9s7[4] = { 80u, 79u, 83u, 84u };
-static const uint32_t m9s8[4] = { 112u, 111u, 115u, 116u };
-static const uint32_t m9s9[3] = { 80u, 85u, 84u };
-static const uint32_t m9s10[3] = { 112u, 117u, 116u };
-static const uint32_t m9s11[6] = { 68u, 69u, 76u, 69u, 84u, 69u };
-static const uint32_t m9s12[6] = { 100u, 101u, 108u, 101u, 116u, 101u };
-static const uint32_t m9s13[4] = { 72u, 69u, 65u, 68u };
-static const uint32_t m9s14[4] = { 104u, 101u, 97u, 100u };
-static const uint32_t m9s15[14] = { 34u, 58u, 123u, 34u, 115u, 117u, 109u, 109u, 97u, 114u, 121u, 34u, 58u, 34u };
-static const uint32_t m9s16[16] = { 34u, 44u, 34u, 114u, 101u, 115u, 112u, 111u, 110u, 115u, 101u, 115u, 34u, 58u, 123u, 34u };
-static const uint32_t m9s17[18] = { 34u, 58u, 123u, 34u, 100u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u, 34u, 58u, 34u };
-static const uint32_t m9s18[14] = { 34u, 44u, 34u, 99u, 111u, 110u, 116u, 101u, 110u, 116u, 34u, 58u, 123u, 34u };
-static const uint32_t m9s19[8] = { 34u, 58u, 123u, 125u, 125u, 125u, 125u, 125u };
+static const uint8_t m9s0[36] = { 123, 34, 111, 112, 101, 110, 97, 112, 105, 34, 58, 34, 51, 46, 48, 46, 51, 34, 44, 34, 105, 110, 102, 111, 34, 58, 123, 34, 116, 105, 116, 108, 101, 34, 58, 34 };
+static const uint8_t m9s1[13] = { 34, 44, 34, 118, 101, 114, 115, 105, 111, 110, 34, 58, 34 };
+static const uint8_t m9s2[12] = { 34, 125, 44, 34, 112, 97, 116, 104, 115, 34, 58, 123 };
+static const uint8_t m9s3[3] = { 34, 58, 123 };
+static const uint8_t m9s4[2] = { 125, 125 };
+static const uint8_t m9s5[3] = { 71, 69, 84 };
+static const uint8_t m9s6[3] = { 103, 101, 116 };
+static const uint8_t m9s7[4] = { 80, 79, 83, 84 };
+static const uint8_t m9s8[4] = { 112, 111, 115, 116 };
+static const uint8_t m9s9[3] = { 80, 85, 84 };
+static const uint8_t m9s10[3] = { 112, 117, 116 };
+static const uint8_t m9s11[6] = { 68, 69, 76, 69, 84, 69 };
+static const uint8_t m9s12[6] = { 100, 101, 108, 101, 116, 101 };
+static const uint8_t m9s13[4] = { 72, 69, 65, 68 };
+static const uint8_t m9s14[4] = { 104, 101, 97, 100 };
+static const uint8_t m9s15[14] = { 34, 58, 123, 34, 115, 117, 109, 109, 97, 114, 121, 34, 58, 34 };
+static const uint8_t m9s16[16] = { 34, 44, 34, 114, 101, 115, 112, 111, 110, 115, 101, 115, 34, 58, 123, 34 };
+static const uint8_t m9s17[18] = { 34, 58, 123, 34, 100, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110, 34, 58, 34 };
+static const uint8_t m9s18[14] = { 34, 44, 34, 99, 111, 110, 116, 101, 110, 116, 34, 58, 123, 34 };
+static const uint8_t m9s19[8] = { 34, 58, 123, 125, 125, 125, 125, 125 };
 
 static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_state *err);
-static void OpenApi_AppendMethod (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR m, m9_state *err);
+static void OpenApi_AppendMethod (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 m, m9_state *err);
 static void OpenApi_Operation (DynStr_DString * *d, m9_pool *d_pool, HttpServer_Router * r, int64_t j, m9_state *err);
 
 
-m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Router * r, m9_state *err)
+m9_sl_UTF8 OpenApi_Document (m9_sl_UTF8 title, m9_sl_UTF8 version, HttpServer_Router * r, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -62,15 +67,15 @@ m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Ro
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s0, 36 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s0, 36 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), title, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s1, 13 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s1, 13 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), version, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s2, 12 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s2, 12 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(n) m9v = HttpServer_RouteCount (r, err);
     if (err->exc) goto L_ret;
@@ -97,7 +102,7 @@ m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Ro
       DynStr_Append (&(d), &(pool), m9a1, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s3, 3 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s3, 3 }), err);
       if (err->exc) goto L_ret;
       firstOp = true;
       { __typeof__(j) m9t3to;
@@ -109,7 +114,7 @@ m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Ro
           if (err->exc) goto L_ret;
         { __typeof__(HttpServer_RoutePath (r, i, err)) m9a3 = HttpServer_RoutePath (r, i, err);
           if (err->exc) goto L_ret;
-        bool m9t4 = DynStr_Eq (m9a2, m9a3, err);
+        bool m9t4 = Text_EqUtf (m9a2, m9a3, err);
         if (err->exc) goto L_ret;
         if (m9t4) {
           if ((!firstOp)) {
@@ -129,7 +134,7 @@ m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Ro
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s4, 2 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_UTF8){ (uint8_t *) m9s4, 2 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -137,8 +142,8 @@ m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Ro
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&pool, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&pool);
   return m9ret;
@@ -161,7 +166,7 @@ static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_state *err)
       if (err->exc) goto L_ret;
     { __typeof__(HttpServer_RoutePath (r, i, err)) m9a5 = HttpServer_RoutePath (r, i, err);
       if (err->exc) goto L_ret;
-    bool m9t2 = DynStr_Eq (m9a4, m9a5, err);
+    bool m9t2 = Text_EqUtf (m9a4, m9a5, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -180,40 +185,40 @@ L_ret: ;
   return m9ret;
 }
 
-static void OpenApi_AppendMethod (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR m, m9_state *err)
+static void OpenApi_AppendMethod (DynStr_DString * *d, m9_pool *d_pool, m9_sl_UTF8 m, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  bool m9t1 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s5, 3 }), err);
+  bool m9t1 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s5, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s6, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s6, 3 }), err);
     if (err->exc) goto L_ret;
   } else {
-    bool m9t2 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s7, 4 }), err);
+    bool m9t2 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s7, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s8, 4 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s8, 4 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t3 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s9, 3 }), err);
+    bool m9t3 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s9, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s10, 3 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s10, 3 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t4 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s11, 6 }), err);
+    bool m9t4 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s11, 6 }), err);
     if (err->exc) goto L_ret;
     if (m9t4) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s12, 6 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s12, 6 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t5 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s13, 4 }), err);
+    bool m9t5 = Text_EqUtf (m, ((m9_sl_UTF8){ (uint8_t *) m9s13, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t5) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s14, 4 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s14, 4 }), err);
       if (err->exc) goto L_ret;
   } else {
     DynStr_Append (d, d_pool, m, err);
@@ -239,35 +244,35 @@ static void OpenApi_Operation (DynStr_DString * *d, m9_pool *d_pool, HttpServer_
   OpenApi_AppendMethod (d, d_pool, m9a6, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s15, 14 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s15, 14 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(HttpServer_RouteSummary (r, j, err)) m9a7 = HttpServer_RouteSummary (r, j, err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a7, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 16 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s16, 16 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(HttpServer_RouteStatus (r, j, err)) m9a8 = HttpServer_RouteStatus (r, j, err);
     if (err->exc) goto L_ret;
   DynStr_AppendI64 (d, d_pool, m9a8, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s17, 18 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s17, 18 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(HttpServer_RouteSummary (r, j, err)) m9a9 = HttpServer_RouteSummary (r, j, err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a9, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s18, 14 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s18, 14 }), err);
   if (err->exc) goto L_ret;
   { __typeof__(HttpServer_RouteType (r, j, err)) m9a10 = HttpServer_RouteType (r, j, err);
     if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, m9a10, err);
   if (err->exc) goto L_ret;
   }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_UTF8){ (uint8_t *) m9s19, 8 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -285,6 +290,7 @@ void OpenApi_m9init (m9_state *err)
   err->res = &m9mframe;
   HttpServer_m9init (err); if (err->exc) goto L_ret;
   DynStr_m9init (err); if (err->exc) goto L_ret;
+  Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9prev;
 }

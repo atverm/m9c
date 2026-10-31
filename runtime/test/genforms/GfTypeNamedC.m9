@@ -4,10 +4,11 @@ MODULE GfTypeNamedC ;
 
 (* A type of the program named C (report M7, 2026-10-29): `TYPE C = A'
    with A an array, then `c[k]' -- the checker accepted it and the
-   generator said `index into a non-array unsupported yet'.  Not the
-   alias: Gen.Resolve stopped at any qualident named C, the foreign
-   boundary's pseudo-module, whose types (C.Int) always have a member.
-   An alias of it, a field and a parameter of it, indexed. *)
+   generator said `index into a non-array unsupported yet'.  The alias
+   was not the cause: Gen.Resolve stopped at any qualident named C,
+   the foreign boundary's pseudo-module, whose types (C.Int) always
+   have a member.  An alias of it, a field and a parameter of it are
+   indexed. *)
 
 IMPORT Io, Fmt ;
 

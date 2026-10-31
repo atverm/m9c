@@ -1,15 +1,15 @@
-/* Stats.m9 against numpy and scipy.
+/* This holds Stats.m9 to numpy and scipy.
  *
  * The goldens in stats.golden come from tools/statsgold.py and are
- * CHECKED IN -- regenerating them here would make this gate unable
- * to fail.  Tolerances: moments and order statistics 1e-13 relative
- * (numpy sums pairwise, this module sums sequentially, and that is
- * the whole difference); p-values 1e-12 (two independent incomplete
- * beta implementations); the random stream EXACT to all 17 digits,
- * because the golden reimplements the same integer arithmetic and
- * two correct transcriptions of one generator have no digits to
- * disagree on.  Every family ends with a perturbation that must
- * fail, because a comparison that cannot fail is not evidence.
+ * CHECKED IN.  Regenerating them here would make this gate unable to
+ * fail.  The tolerances follow.  Moments and order statistics hold to
+ * 1e-13 relative: numpy sums pairwise, this module sums sequentially,
+ * and that is the whole difference.  P-values hold to 1e-12 (two
+ * independent incomplete beta implementations).  The random stream is
+ * EXACT to all 17 digits.  The golden reimplements the same integer
+ * arithmetic, and two correct transcriptions of one generator have no
+ * digits to disagree on.  Every family ends with a perturbation that
+ * must fail, because a comparison that cannot fail is not evidence.
  */
 #include "m9rt.h"
 #include "Stats.h"
@@ -17,6 +17,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* The macOS stdio defines stderr as a macro, and Stats_Reg has a field
+   of that name.  errout answers the stream and stands before the
+   #undef.  The #undef lets r.stderr name the field. */
+static FILE *errout (void) { return stderr; }
+#undef stderr
 
 static double X[] = {3.1, -1.4, 2.72, 8.05, 0.0, 4.4, -2.25, 5.5,
                      1.61, 7.7, -0.3, 2.2, 6.6, 0.9, 3.3};
@@ -34,7 +40,7 @@ static double gold (const char *name)
 {
   for (int i = 0; i < ng; i++)
     if (strcmp (gname[i], name) == 0) return g[i];
-  fprintf (stderr, "no golden named %s\n", name); exit (1);
+  fprintf (errout (), "no golden named %s\n", name); exit (1);
 }
 
 static void ok (const char *what, int cond)
@@ -114,7 +120,7 @@ int main (void)
   near ("ncdf_1.0", Stats_NormalCdf (1.0, &e), 1e-14);
   near ("ncdf_2.5", Stats_NormalCdf (2.5, &e), 1e-14);
 
-  /* the stream, bit for bit against the reimplementation */
+  /* Hold the stream bit for bit against the reimplementation. */
   {
     char nm[32];
     int64_t seeds[2] = {42, -7};
@@ -136,7 +142,8 @@ int main (void)
     ok ("stream raised nothing", e.exc == NULL);
   }
 
-  /* distribution moments over a million draws: not goldens, laws */
+  /* Check distribution moments over a million draws.  These are not
+     goldens but laws. */
   {
     Stats_Stream st = Stats_Seed (1234, &e);
     double s1 = 0, s2 = 0; int N = 1000000;
@@ -168,9 +175,9 @@ int main (void)
     double nanv[3] = {1.0, 0.0 / 0.0, 2.0};
     /* the NaN is built at runtime so -Werror cannot fold it */
     nanv[1] = nan ("");
-    /* a NaN is a missing value since 2026-10-02 (it raised
-       ValueRange until then): the mean is over the two that are
-       there, and a sample of nothing but NaN is TooFew by its count */
+    /* A NaN is a missing value since 2026-10-02 (it raised
+       ValueRange until then).  The mean is over the two that are
+       there.  A sample of nothing but NaN is TooFew by its count. */
     ok ("a NaN in the sample is skipped: mean of 1, NaN, 2",
         Stats_Mean (S (nanv, 3), &e2) == 1.5 && e2.exc == NULL);
     ok ("and counted out: Count is 2", Stats_Count (S (nanv, 3), &e2) == 2);

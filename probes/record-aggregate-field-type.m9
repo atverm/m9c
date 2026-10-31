@@ -1,4 +1,4 @@
-(* EXPECT: field 1 of Row: cannot give SLICE OF CHAR where I64 is expected *)
+(* EXPECT: field 1 of Row: cannot give UTF where I64 is expected *)
 MODULE m ;
 TYPE
   Row = RECORD

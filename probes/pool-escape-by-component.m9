@@ -1,12 +1,12 @@
 (* EXPECT: an allocation in pool scratch escapes its pool, which dies with this frame (par 4.3) *)
 (* The storage rules followed a bare local and a view of one, not a
-   COMPONENT of a local: `c.pix := NEW (scratch, BYTE, n)' tainted c,
-   so `RETURN c' was refused, and `RETURN c.pix' -- the same slice,
-   through the field -- passed until 2026-10-03 and dangled
-   (Png.Raster died in its caller).  A component of a tainted local
-   carries the taint when its own type can hold storage; Width's
-   `RETURN c.w', an integer, holds nothing and is the legal form held
-   here before the one refusal. *)
+   COMPONENT of a local.  `c.pix := NEW (scratch, BYTE, n)' tainted c,
+   so `RETURN c' was refused.  `RETURN c.pix', the same slice through
+   the field, passed until 2026-10-03 and dangled (Png.Raster died in
+   its caller).  A component of a tainted local carries the taint when
+   its own type can hold storage.  Width's `RETURN c.w', an integer,
+   holds nothing and is the legal form held here before the one
+   refusal. *)
 MODULE m ;
 TYPE Canvas = RECORD w : I64 ; pix : SLICE OF BYTE END ;
 PROCEDURE Width (n: I64) : I64 =

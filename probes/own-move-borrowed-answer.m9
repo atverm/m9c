@@ -1,8 +1,8 @@
 (* EXPECT: argument 1 of Eat: cannot move r into an OWN parameter: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call that does not answer what it was lent does (par 4.2) *)
 (* DISPOSE asked whether a name can own what it points to; the other
-   operations that consume an owner did not: `r := Id (q) ; Eat (r)'
-   freed what q held, refused as `DISPOSE (r)' was (2026-10-28).  Legal
-   forms first: a call that makes the object it answers, moved in. *)
+   operations that consume an owner did not.  `r := Id (q) ; Eat (r)'
+   freed what q held; it is refused as `DISPOSE (r)' was (2026-10-28).
+   Legal forms come first: a call that makes the object it answers. *)
 MODULE m ;
 TYPE T = RECORD v : I64 END ;
 PROCEDURE Eat (OWN p: PTR T) =

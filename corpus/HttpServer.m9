@@ -1,12 +1,12 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE HttpServer ;
 
-(* An HTTP/1.1 server for a program to carry: a route table, a pool
-   of worker threads, and the protocol held to RFC 9112 with every
-   limit named (docs/httpserver-plan.md).
+(* HttpServer is an HTTP/1.1 server for a program to carry: a route
+   table, a pool of worker threads, and the protocol held to RFC 9112
+   with every limit named (docs/httpserver-plan.md).
 
-   A route is DATA -- method, path, status, content type, body,
-   summary -- or a HANDLER, a procedure value that answers a Request
+   A route is DATA (method, path, status, content type, body,
+   summary) or a HANDLER, a procedure value that answers a Request
    with a Response.  The same table that answers requests describes
    the API: OpenApi reads it back through the accessors below, so the
    server cannot disagree with its own documentation.
@@ -20,24 +20,25 @@ DEFINITION MODULE HttpServer ;
    accepting thread; it never grows.
 
    A HANDLER MAY RAISE ValueRange, and a handler that raises nothing
-   fits the type as well (report par 2.2.3).  Whatever escapes it --
-   ValueRange, and IndexError, Overflow and OutOfMemory, which the
-   checker does not account for -- costs that one request a 500 and
-   is counted; it never costs the process.  A procedure value cannot
-   capture, so a handler's context is module state the program sets
-   before Run (read-only from then on), state behind the program's
-   own MONITOR, or state indexed by Request.worker, which is the
-   number of the worker serving it (0 .. workers - 1): one database
-   connection per worker is an array of them.
+   fits the type as well (report par 2.2.3).  Anything that escapes
+   it costs that one request a 500 and is counted; it never costs the
+   process.  That covers ValueRange, and IndexError, Overflow and
+   OutOfMemory, which the checker does not account for.  A procedure
+   value cannot capture.  So a handler's context is module state the
+   program sets before Run (read-only from then on), state behind the
+   program's own MONITOR, or state indexed by Request.worker.
+   Request.worker is the number of the worker serving it
+   (0 .. workers - 1).  One database connection per worker is an
+   array of them.
 
    THE ROUTER IS FROZEN before Run (Freeze) and only read after, so
    the workers share it without a lock.  Nothing in the language
    checks that a value lent to a thread is safe to share yet (the
-   owed SHARABLE rule); Freeze is the run-time half of that promise:
+   owed SHARABLE rule).  Freeze is the run-time half of that promise:
    AddRoute and AddHandler raise Frozen after it, and Run refuses a
    router that is not frozen.
 
-   What a request may be is bounded by Config, each limit answered by
+   Config bounds what a request may be, and each limit is answered by
    its status: a request line over lineMax 414, a header block over
    headerMax 431, a body over bodyMax 413, a header block not
    finished within headerMs of its first byte 408.  A request is
@@ -60,60 +61,63 @@ DEFINITION MODULE HttpServer ;
    cannot inject a header.
 
    A RESPONSE IS A BODY, A FILE OR A STREAM (stage 2):
-   - a body in memory (Reply, ReplyBytes) is GZIPPED when the client's
-     Accept-Encoding takes gzip (q above 0, by name or by the star), the body
-     is at least gzipMin octets, its type is text, JSON, XML,
-     JavaScript or SVG, and the handler set no Content-Encoding of its
-     own; such a response says Vary: Accept-Encoding either way.  The
-     same body gives the same octets every time (Zip.Gzip writes no
-     time);
+   - a body in memory (Reply, ReplyBytes) is GZIPPED under four
+     conditions.  The client's Accept-Encoding takes gzip (q above 0,
+     by name or by the star).  The body is at least gzipMin octets.
+     Its type is text, JSON, XML, JavaScript or SVG.  And the handler
+     set no Content-Encoding of its own.  Such a response says Vary:
+     Accept-Encoding either way.  The same body gives the same octets
+     every time (Zip.Gzip writes no time);
    - a FILE (ReplyFile, or every path under an AddFiles prefix) is
      sent in pieces as it is read, never whole in memory, with
-     Accept-Ranges: bytes.  A GET with one byte range -- bytes=A-B,
-     A- or -N -- is answered 206 with Content-Range; a range the file
-     cannot satisfy 416 with Content-Range: bytes */size; several
-     ranges, a malformed one, another unit, or an If-Range (there are
-     no validators to compare it with) are answered with the whole
-     file, which RFC 9110 permits.  Files are not gzipped;
+     Accept-Ranges: bytes.  A GET with one byte range (bytes=A-B,
+     A- or -N) is answered 206 with Content-Range.  A range the file
+     cannot satisfy is answered 416 with Content-Range: bytes */size.
+     Several ranges, a malformed one, another unit, or an If-Range
+     (there are no validators to compare it with) are answered with
+     the whole file, which RFC 9110 permits.  Files are not gzipped;
    - a STREAM (ReplyStream) is a Producer called for part 0, 1, 2 ...
-     until it answers the empty string, each part sent as it comes:
-     chunked to HTTP/1.1, and to HTTP/1.0 without a length, the
-     connection closed to end it.  A producer that raises after the
-     head was sent cannot be answered 500: the connection is closed
-     without the last chunk, so the client sees the body cut short,
-     and the fault is counted.
-   HEAD is answered with the head GET would get -- the gzipped length,
-   the range's length, the stream's Transfer-Encoding -- and no body.
+     until it answers the empty string.  Each part is sent as it
+     comes: chunked to HTTP/1.1, and to HTTP/1.0 without a length,
+     with the connection closed to end it.  A producer that raises
+     after the head was sent cannot be answered 500.  The connection
+     is closed without the last chunk, so the client sees the body
+     cut short, and the fault is counted.
+   HEAD is answered with the head GET would get (the gzipped length,
+   the range's length, the stream's Transfer-Encoding) and no body.
 
    OPERATIONS (stage 3).  Run listens at Config.bind, a numeric
    address (loopback by default: TLS and the outside world belong to a
-   reverse proxy in front).  SIGTERM and SIGINT -- or Stop -- end it
-   gracefully: the accepting thread stops within a quarter of a second,
-   connections already accepted are served, a request in flight is
-   answered with Connection: close, an idle kept connection is closed,
-   and Run returns Stopped with its counts.  Request.client is the
-   peer, unless the peer is one of Config.trusted, a reverse proxy:
-   then it is the right-most address in X-Forwarded-For that is not a
-   trusted proxy itself.  With Config.accessLog every request answered,
-   refusals included, is one line through Logger.Msg at Info --
-   `http method=GET path=/x status=200 bytes=512 ms=3 client=10.0.0.7
-   worker=2` -- whole even when every worker logs at once.           *)
+   reverse proxy in front).  SIGTERM and SIGINT, or Stop, end it
+   gracefully.  The accepting thread stops within a quarter of a
+   second.  Connections already accepted are served, a request in
+   flight is answered with Connection: close, an idle kept connection
+   is closed, and Run returns Stopped with its counts.  Request.client
+   is the peer, unless the peer is one of Config.trusted, a reverse
+   proxy.  Then it is the right-most address in X-Forwarded-For that
+   is not a trusted proxy itself.  With Config.accessLog every request
+   answered, refusals included, is one line through Logger.Msg at
+   Info: `http method=GET path=/x status=200 bytes=512 ms=3
+   client=10.0.0.7 worker=2`.  The line stays whole even when every
+   worker logs at once.                                              *)
 
 EXCEPTION
   BindError (RO msg: STR) ;
   Frozen (RO path: STR) ;
-    (* a route added after Freeze; path is the route's.              *)
+    (* Frozen reports a route added after Freeze; path is the
+       route's.                                                      *)
 
 CONST
   (* why Run returned *)
-  Drained = 0 ;                (* maxConn connections accepted and
-                                  answered, or the listener ended *)
+  Drained = 0 ;                (* maxConn connections were accepted
+                                  and answered, or the listener
+                                  ended. *)
   ListenFail = 1 ;             (* the port could not be bound *)
   BadConfig = 2 ;              (* a Config value outside its range *)
   NotFrozen = 3 ;              (* Run was handed a router not frozen *)
-  Stopped = 4 ;                (* told to stop -- SIGTERM, SIGINT or
-                                  Stop -- and every request in flight
-                                  answered *)
+  Stopped = 4 ;                (* Run was told to stop (SIGTERM,
+                                  SIGINT or Stop), and every request
+                                  in flight was answered. *)
 
   MaxWorkers = 64 ;
   MaxQueue = 1024 ;
@@ -128,19 +132,22 @@ TYPE
     query : STR ;              (* after '?', or '' *)
     version : STR ;            (* HTTP/1.1 or HTTP/1.0 *)
     headers : STR ;            (* the header lines as `name: value`,
-                                  one per line, line feeds between --
-                                  Http's convention, read with Header *)
+                                  one per line, line feeds between.
+                                  This is Http's convention; read
+                                  them with Header. *)
     body : SLICE OF BYTE ;     (* the whole body, de-chunked *)
     peer : STR ;               (* the socket peer's numeric address *)
-    client : STR ;             (* the client's: the peer's, or, when the
-                                  peer is a trusted proxy, the address
-                                  X-Forwarded-For names (Config.trusted) *)
+    client : STR ;             (* the client's address: the peer's, or
+                                  the address X-Forwarded-For names
+                                  when the peer is a trusted proxy
+                                  (Config.trusted) *)
     worker : I64 ;             (* 0 .. workers - 1 *)
   END ;
 
-  (* a stream's parts: part 0, 1, 2 ... of the answer to req, the
-     empty string after the last.  No capture: what a producer needs
-     is in req (its query, its worker) and in module state *)
+  (* A Producer answers a stream's parts: part 0, 1, 2 ... of the
+     answer to req, and the empty string after the last.  It has no
+     capture: a producer finds what it needs in req (its query, its
+     worker) and in module state. *)
   Producer = PROCEDURE (RO req: Request ; part: I64) : STR RAISES ValueRange ;
 
   Response = RECORD
@@ -160,11 +167,13 @@ TYPE
   Handler = PROCEDURE (RO req: Request) : Response RAISES ValueRange ;
 
   Config = RECORD
-    port : I64 ;               (* listens on 127.0.0.1: the runtime's
-                                  contract; a reverse proxy faces out *)
+    port : I64 ;               (* The server listens on 127.0.0.1: the
+                                  runtime's contract.  A reverse proxy
+                                  faces out. *)
     workers : I64 ;            (* 1 .. MaxWorkers *)
     queue : I64 ;              (* accepted connections waiting for a
-                                  worker, 1 .. MaxQueue; over it, 503 *)
+                                  worker, 1 .. MaxQueue.  Over it, the
+                                  answer is 503. *)
     backlog : I64 ;            (* the kernel's listen backlog *)
     maxConn : I64 ;            (* stop after this many connections;
                                   0 = never (a gate bounds a run) *)
@@ -185,6 +194,11 @@ TYPE
     accessLog : BOOL ;         (* one Logger Info line a request *)
     signals : BOOL ;           (* SIGTERM and SIGINT stop Run gracefully
                                   (the default); FALSE leaves them be *)
+    keepBytes : I64 ;          (* the large freed blocks each worker
+                                  keeps for its next request; 0 (the
+                                  default) keeps none.  A worker gives
+                                  them back when the ring is empty.
+                                  System.KeepAtMost says more. *)
   END ;
 
   Stats = RECORD
@@ -197,10 +211,11 @@ TYPE
   END ;
 
 PROCEDURE NewRouter (VAR pool: POOL) : PTR Router IN pool ;
-  (* an empty route table.  Routes are added in order and matched in
-     order, so the first route whose method and path agree wins;
-     there is no most-specific rule to reason about, and a shadowed
-     route is visible by reading down the calls that built it.      *)
+  (* NewRouter answers an empty route table.  Routes are added in
+     order and matched in order, so the first route whose method and
+     path agree wins.  There is no most-specific rule to reason about,
+     and a shadowed route is visible by reading down the calls that
+     built it.                                                      *)
 
 PROCEDURE AddRoute (VAR r: PTR Router ;
                     RO KEPT method: STR ;
@@ -210,9 +225,10 @@ PROCEDURE AddRoute (VAR r: PTR Router ;
                     RO KEPT body: STR ;
                     RO KEPT summary: STR)
   RAISES Frozen ;
-  (* a DATA route: the same answer every time.  The router keeps the
-     slices, not copies: the caller's strings must outlive the router
-     -- the contract Json.Parse already has with its source.        *)
+  (* AddRoute adds a DATA route: the same answer every time.  The
+     router keeps the slices, not copies: the caller's strings must
+     outlive the router.  Json.Parse already has that contract with
+     its source.                                                    *)
 
 PROCEDURE AddHandler (VAR r: PTR Router ;
                       RO KEPT method: STR ;
@@ -221,10 +237,10 @@ PROCEDURE AddHandler (VAR r: PTR Router ;
                       RO KEPT ctype: STR ;
                       RO KEPT summary: STR)
   RAISES Frozen ;
-  (* a HANDLER route: h answers every request whose method is method
-     and whose path is path exactly.  ctype and summary describe the
-     route to OpenApi (status 200); the Response h answers says what
-     is sent.                                                        *)
+  (* AddHandler adds a HANDLER route: h answers every request whose
+     method is method and whose path is path exactly.  ctype and
+     summary describe the route to OpenApi (status 200).  The Response
+     h answers says what is sent.                                    *)
 
 PROCEDURE AddPrefix (VAR r: PTR Router ;
                      RO KEPT method: STR ;
@@ -233,33 +249,36 @@ PROCEDURE AddPrefix (VAR r: PTR Router ;
                      RO KEPT ctype: STR ;
                      RO KEPT summary: STR)
   RAISES Frozen ;
-  (* as AddHandler, for every path that BEGINS with prefix.          *)
+  (* AddPrefix works as AddHandler, for every path that BEGINS with
+     prefix.                                                         *)
 
 PROCEDURE AddFiles (VAR r: PTR Router ;
                    RO KEPT prefix: STR ;
                    RO KEPT dir: STR ;
                    RO KEPT summary: STR)
   RAISES Frozen ;
-  (* GET and HEAD of every path under prefix answered with the file of
-     that name under dir, its type by TypeOf.  The rest of the path is
-     percent-decoded (strictly: bad UTF-8 is 404) and given to the file
-     system as UTF-8; dir, like every Io path, is octets, a character a
-     byte.  The name must be NAMES: no empty segment, none beginning with a dot -- which refuses ..
-     and every hidden file with one rule -- and no control character,
-     backslash or colon.  A path ending in / names its index.html.  A
-     directory is 404: there are no listings.                        *)
+  (* AddFiles answers GET and HEAD of every path under prefix with the
+     file of that name under dir, its type by TypeOf.  The rest of the
+     path is percent-decoded (strictly: bad UTF-8 is 404) and given to
+     the file system as UTF-8.  dir, like every Io path, is octets, a
+     character a byte.  The name must be NAMES: no empty segment, none
+     beginning with a dot, and no control character, backslash or
+     colon.  The dot rule refuses .. and every hidden file at once.  A
+     path ending in / names its index.html.  A directory is 404: there
+     are no listings.                                                *)
 
 PROCEDURE Freeze (VAR r: PTR Router) ;
-  (* no more routes: what Run requires.                              *)
+  (* Freeze closes the table to more routes.  Run requires it.       *)
 
 PROCEDURE RouteCount (r: PTR Router) : I64 ;
-  (* how many routes were added.  This and the five accessors below
-     are the READ-BACK half of the module's claim: the table that
-     answers requests is the same table OpenApi.Document walks to
-     describe them, so the server cannot disagree with its own
-     documentation.  OpenApi imports this module and nothing else of
-     ours -- it is an ordinary client with no privileged access, and
-     that is what makes the claim checkable rather than a promise.  *)
+  (* RouteCount answers how many routes were added.  This and the
+     five accessors below are the READ-BACK half of the module's
+     claim: the table that answers requests is the same table
+     OpenApi.Document walks to describe them, so the server cannot
+     disagree with its own documentation.  OpenApi imports this
+     module and nothing else of ours.  It is an ordinary client with
+     no privileged access, and that makes the claim checkable rather
+     than a promise.                                                *)
 
 PROCEDURE RouteMethod (r: PTR Router ; i: I64) : RO STR
   RAISES IndexError ;
@@ -275,99 +294,103 @@ PROCEDURE RouteType (r: PTR Router ; i: I64) : RO STR
 
 PROCEDURE RouteSummary (r: PTR Router ; i: I64) : RO STR
   RAISES IndexError ;
-  (* the five fields of route i, one accessor each because M9 will
-     not hand out a pointer into an opaque type.
+  (* RouteMethod, RoutePath, RouteStatus, RouteType and RouteSummary
+     answer the five fields of route i, one accessor each because M9
+     will not hand out a pointer into an opaque type.
 
        i -- 0 .. RouteCount - 1.  Anything else RAISES IndexError
             carrying the index AND the count, so the message says
-            what was asked for and what was there; a walk is
+            what was asked for and what was there.  A walk is
             therefore a FOR over RouteCount and cannot go wrong by
             an off-by-one that answers a neighbouring route.
 
      The STR results are RO VIEWS of what AddRoute was given, so
-     they live exactly as long as the caller's own strings do -- see
+     they live exactly as long as the caller's own strings do: see
      the retention note on AddRoute above.  RouteSummary is the one
      that is also documentation: it is OpenAPI's response
      description, so there is no second place for the wording to
      drift to.  A handler route's status is 200.                    *)
 
 PROCEDURE Stop () ;
-  (* stop Run gracefully, as SIGTERM does: no more connections are
-     accepted, every request already read or queued is answered, an
-     idle kept connection is closed within a quarter of a second, and
-     Run returns Stopped.  May be called from a handler.  The flag is
-     the process's, as a signal is, and Run clears it when it starts *)
+  (* Stop ends Run gracefully, as SIGTERM does: no more connections
+     are accepted, every request already read or queued is answered,
+     an idle kept connection is closed within a quarter of a second,
+     and Run returns Stopped.  A handler may call it.  The flag is the
+     process's, as a signal is, and Run clears it when it starts. *)
 
 PROCEDURE Defaults () : Config ;
-  (* port 8000, 8 workers, a queue of 256, backlog 128, no
-     connection limit, a request line of 8 KB, a header block of
-     16 KB, a body of 1 MB, 5 s idle, 10 s for a header block, 1000
+  (* Defaults answers port 8000, 8 workers, a queue of 256, backlog
+     128, no connection limit, a request line of 8 KB, a header block
+     of 16 KB, a body of 1 MB, 5 s idle, 10 s for a header block, 1000
      requests on one connection.                                     *)
 
 PROCEDURE Run (RO cfg: Config ; KEPT r: PTR Router ; VAR st: Stats)
   : I64 RAISES ValueRange ;
-  (* listen, serve, and return why: Drained, ListenFail, BadConfig
-     or NotFrozen.  A failure a supervisor can act on is a status,
-     not a RAISE (par 5); ValueRange is only the octet boundary of
-     the listener's own calls.  Everything Run starts has ended
-     before it returns, by any path, and st holds the counts of the
-     whole run.                                                      *)
+  (* Run listens, serves, and returns why: Drained, ListenFail,
+     BadConfig or NotFrozen.  A failure a supervisor can act on is a
+     status, not a RAISE (par 5).  ValueRange is only the octet
+     boundary of the listener's own calls.  Everything Run starts has
+     ended before it returns, by any path, and st holds the counts of
+     the whole run.                                                  *)
 
 PROCEDURE Reply (status: I64 ; RO ctype: STR ; RO text: STR)
   : Response ;
-  (* a response carrying text, sent as UTF-8.                         *)
+  (* Reply answers a response carrying text, sent as UTF-8.           *)
 
 PROCEDURE ReplyBytes (status: I64 ; RO ctype: STR ;
                       RO data: SLICE OF BYTE) : Response ;
-  (* a response carrying octets as they are.                         *)
+  (* ReplyBytes answers a response carrying octets as they are.      *)
 
 PROCEDURE ReplyFile (RO path: STR ; RO ctype: STR) : Response ;
-  (* 200 and the file at path, read as it is sent; a file that cannot
-     be read when it is sent is answered 404 *)
+  (* ReplyFile answers 200 and the file at path, read as it is sent.
+     A file that cannot be read when it is sent is answered 404. *)
 
 PROCEDURE ReplyStream (status: I64 ; RO ctype: STR ; p: Producer) : Response ;
-  (* status and the parts p answers, sent as they come *)
+  (* ReplyStream answers status and the parts p answers, sent as they
+     come. *)
 
 PROCEDURE TypeOf (RO path: STR) : STR ;
-  (* the Content-Type AddFiles gives a file, by its extension:
-     html, js, mjs, css, svg, png, jpg, jpeg, gif, webp, ico, mp4,
-     json, txt, csv, xml, pdf, wasm, zip, gz, nc; else
-     application/octet-stream *)
+  (* TypeOf answers the Content-Type AddFiles gives a file, by its
+     extension: html, js, mjs, css, svg, png, jpg, jpeg, gif, webp,
+     ico, mp4, json, txt, csv, xml, pdf, wasm, zip, gz, nc; else
+     application/octet-stream. *)
 
 PROCEDURE WithHeader (RO resp: Response ; RO name: STR ; RO value: STR)
   : Response ;
-  (* resp with one more header line.  Not checked here: a line that
-     is not `name: value`, or holds a carriage return or a line
-     feed, makes the response a 500 when it is written.             *)
+  (* WithHeader answers resp with one more header line.  It does not
+     check the line: a line that is not `name: value`, or holds a
+     carriage return or a line feed, makes the response a 500 when it
+     is written.                                                     *)
 
 PROCEDURE Header (RO req: Request ; RO name: STR) : STR
   RAISES ValueRange ;
-  (* the value of the request's header named name, compared without
-     regard to case; '' when there is none.  Http.Header over
-     req.headers.                                                    *)
+  (* Header answers the value of the request's header named name,
+     compared without regard to case; '' when there is none.  It is
+     Http.Header over req.headers.                                   *)
 
 PROCEDURE Serve (r: PTR Router ; port: I64 ; maxRequests: I64)
   RAISES BindError, ValueRange ;
-  (* the SERIAL HTTP/1.0 baseline: accept and answer maxRequests
-     connections, one at a time, data routes only, then return.  Run
-     is the server; this is what a load measurement compares it
-     against.  ValueRange is the octet boundary speaking, as in
-     Http.Get.                                                       *)
+  (* Serve is the SERIAL HTTP/1.0 baseline: it accepts and answers
+     maxRequests connections, one at a time, data routes only, then
+     returns.  Run is the server; this is what a load measurement
+     compares it against.  ValueRange is the octet boundary speaking,
+     as in Http.Get.                                                 *)
 
 END HttpServer.
 
 
 UNSAFE DEFINITION MODULE FOR "C" csrv ;
 
-(* runtime/tcpshim.c.  Listen and Accept SERIAL: one accepting thread
-   anyway, and the audit has not been written.  The per-connection
-   calls REENTRANT: each carries its own descriptor, nothing shared. *)
+(* These bind runtime/tcpshim.c.  Listen and Accept are SERIAL: there
+   is one accepting thread anyway, and the audit has not been written.
+   The per-connection calls are REENTRANT: each carries its own
+   descriptor, nothing shared.                                       *)
 
 PROCEDURE Listen = "tcp_listen" (port: C.Int ; backlog: C.Int) : C.Int
   [SERIAL] ;
-  (* socket+bind+listen in the shim, the server-side twin of
-     tcp_connect; SERIAL until its thread safety is audited, not
-     asserted -- REENTRANT is a claim, not a default                 *)
+  (* Listen does socket+bind+listen in the shim, the server-side twin
+     of tcp_connect.  It stays SERIAL until its thread safety is
+     audited, not asserted: REENTRANT is a claim, not a default.     *)
 
 PROCEDURE Accept = "tcp_accept" (fd: C.Int) : C.Int
   [SERIAL] ;
@@ -382,33 +405,44 @@ PROCEDURE NoDelay = "tcp_nodelay" (fd: C.Int) : C.Int  [REENTRANT] ;
 
 PROCEDURE ListenAt = "tcp_listen_at" (addr: C.ConstPtr ; port: C.Int ;
                                       backlog: C.Int) : C.Int  [SERIAL] ;
-  (* at a numeric address; -1 for a name or a port taken *)
+  (* ListenAt listens at a numeric address.  It answers -1 for a name
+     or a port taken. *)
 
 PROCEDURE AcceptWait = "tcp_accept_wait" (fd: C.Int ; ms: C.SSizeT) : C.Int
   [SERIAL] ;
-  (* a connection, -2 for none within ms, -1 for a dead listener *)
+  (* AcceptWait answers a connection, -2 for none within ms, -1 for a
+     dead listener. *)
 
 PROCEDURE Readable = "tcp_readable" (fd: C.Int ; ms: C.SSizeT) : C.Int
   [REENTRANT] ;
-  (* 1 something to read (or the peer closed), 0 nothing within ms *)
+  (* Readable answers 1 when there is something to read (or the peer
+     closed), 0 when nothing came within ms. *)
 
 PROCEDURE Stopping = "m9_srv_stopping" () : C.Int  [REENTRANT] ;
 PROCEDURE StopFlag = "m9_srv_stop" ()  [REENTRANT] ;
 PROCEDURE Unstop = "m9_srv_unstop" ()  [REENTRANT] ;
 PROCEDURE Signals = "m9_srv_signals" (on: C.Int)  [SERIAL] ;
-  (* the stop flag, process-wide as a signal is; Signals (1) points
-     SIGTERM and SIGINT (Ctrl-C and the console's close on Windows) at
-     it, Signals (0) puts back what was there *)
+  (* The stop flag is process-wide, as a signal is.  Signals (1)
+     points SIGTERM and SIGINT (Ctrl-C and the console's close on
+     Windows) at it.  Signals (0) puts back what was there. *)
+PROCEDURE KeepAtMost = "m9_keep_at_most" (bytes: C.SSizeT)  [REENTRANT] ;
+PROCEDURE ReleaseKept = "m9_release_kept" ()  [REENTRANT] ;
+  (* These two are System's, bound here so that HttpServer needs no
+     System.  Each acts on the calling worker's own kept blocks. *)
 
 END csrv.
 
 
 UNSAFE IMPLEMENTATION MODULE HttpServer ;
 
-(* UNSAFE for one reason: ADR at the foreign boundary, as in Http.   *)
+IMPORT Text ;
+
+(* The module is UNSAFE for one reason: ADR at the foreign boundary,
+   as in Http.                                                       *)
 
 FROM csrv IMPORT Listen, Accept, Peer, RcvTimeo, NoDelay, ListenAt, AcceptWait,
-                 Readable, Stopping, StopFlag, Unstop, Signals ;
+                 Readable, Stopping, StopFlag, Unstop, Signals,
+                 KeepAtMost, ReleaseKept ;
 FROM csock IMPORT Read, Write, Close, NowSec ;
 IMPORT DynStr ;
 IMPORT Http ;
@@ -462,13 +496,13 @@ TYPE
     last : I64 ;               (* the status the last answer went with *)
   END [SHARABLE] ;
 
-  (* the one pointer-shaped argument a THREAD may take *)
+  (* WorkerP is the one pointer-shaped argument a THREAD may take. *)
   WorkerP = PTR Worker ;
 
-  (* one connection's read side: what has arrived and not yet been
-     consumed is cb[0 .. have).  A request is parsed from the front;
-     what follows it (a pipelined request) is moved to the front when
-     the request is done. *)
+  (* Conn is one connection's read side.  cb[0 .. have) holds the
+     octets that have arrived and are not yet consumed.  A request is
+     parsed from the front.  When the request is done, the octets
+     after it (a pipelined request) move to the front. *)
   Conn = RECORD
     fd : I64 ;
     cb : SLICE OF BYTE ;
@@ -613,8 +647,8 @@ BEGIN
     j := j - 1 ;
     c := rt.next
   END ;
-  RAISE IndexError (i, r.count)   (* count and chain disagree: only
-                                     reachable through a broken list *)
+  RAISE IndexError (i, r.count)   (* Count and chain disagree.  Only
+                                     a broken list reaches this. *)
 END RouteAt ;
 
 PROCEDURE RouteCount (r: PTR Router) : I64 =
@@ -715,29 +749,29 @@ PROCEDURE TypeOf (RO path: STR) : STR =
 VAR i : I64 ;
   ext : STR ;
 BEGIN
-  i := LEN (path) - 1 ;
-  WHILE i >= 0 AND path[i] # '.' AND path[i] # '/' DO i := i - 1 END ;
-  IF i < 0 OR path[i] = '/' THEN RETURN 'application/octet-stream' END ;
-  ext := SLICE (path, i + 1, LEN (path) - i - 1) ;
-  IF DynStr.Eq (ext, 'html') OR DynStr.Eq (ext, 'htm') THEN RETURN 'text/html; charset=utf-8' END ;
-  IF DynStr.Eq (ext, 'js') OR DynStr.Eq (ext, 'mjs') THEN RETURN 'text/javascript; charset=utf-8' END ;
-  IF DynStr.Eq (ext, 'css') THEN RETURN 'text/css; charset=utf-8' END ;
-  IF DynStr.Eq (ext, 'svg') THEN RETURN 'image/svg+xml' END ;
-  IF DynStr.Eq (ext, 'png') THEN RETURN 'image/png' END ;
-  IF DynStr.Eq (ext, 'jpg') OR DynStr.Eq (ext, 'jpeg') THEN RETURN 'image/jpeg' END ;
-  IF DynStr.Eq (ext, 'gif') THEN RETURN 'image/gif' END ;
-  IF DynStr.Eq (ext, 'webp') THEN RETURN 'image/webp' END ;
-  IF DynStr.Eq (ext, 'ico') THEN RETURN 'image/x-icon' END ;
-  IF DynStr.Eq (ext, 'mp4') THEN RETURN 'video/mp4' END ;
-  IF DynStr.Eq (ext, 'json') THEN RETURN 'application/json' END ;
-  IF DynStr.Eq (ext, 'txt') THEN RETURN 'text/plain; charset=utf-8' END ;
-  IF DynStr.Eq (ext, 'csv') THEN RETURN 'text/csv; charset=utf-8' END ;
-  IF DynStr.Eq (ext, 'xml') THEN RETURN 'application/xml' END ;
-  IF DynStr.Eq (ext, 'pdf') THEN RETURN 'application/pdf' END ;
-  IF DynStr.Eq (ext, 'wasm') THEN RETURN 'application/wasm' END ;
-  IF DynStr.Eq (ext, 'zip') THEN RETURN 'application/zip' END ;
-  IF DynStr.Eq (ext, 'gz') THEN RETURN 'application/gzip' END ;
-  IF DynStr.Eq (ext, 'nc') THEN RETURN 'application/x-netcdf' END ;
+  i := Text.BLen (path) - 1 ;
+  WHILE i >= 0 AND NOT Text.BIs (path, i, '.') AND NOT Text.BIs (path, i, '/') DO i := i - 1 END ;
+  IF i < 0 OR Text.BIs (path, i, '/') THEN RETURN 'application/octet-stream' END ;
+  ext := SLICE (path, i + 1, Text.BLen (path) - i - 1) ;
+  IF Text.Eq (ext, 'html') OR Text.Eq (ext, 'htm') THEN RETURN 'text/html; charset=utf-8' END ;
+  IF Text.Eq (ext, 'js') OR Text.Eq (ext, 'mjs') THEN RETURN 'text/javascript; charset=utf-8' END ;
+  IF Text.Eq (ext, 'css') THEN RETURN 'text/css; charset=utf-8' END ;
+  IF Text.Eq (ext, 'svg') THEN RETURN 'image/svg+xml' END ;
+  IF Text.Eq (ext, 'png') THEN RETURN 'image/png' END ;
+  IF Text.Eq (ext, 'jpg') OR Text.Eq (ext, 'jpeg') THEN RETURN 'image/jpeg' END ;
+  IF Text.Eq (ext, 'gif') THEN RETURN 'image/gif' END ;
+  IF Text.Eq (ext, 'webp') THEN RETURN 'image/webp' END ;
+  IF Text.Eq (ext, 'ico') THEN RETURN 'image/x-icon' END ;
+  IF Text.Eq (ext, 'mp4') THEN RETURN 'video/mp4' END ;
+  IF Text.Eq (ext, 'json') THEN RETURN 'application/json' END ;
+  IF Text.Eq (ext, 'txt') THEN RETURN 'text/plain; charset=utf-8' END ;
+  IF Text.Eq (ext, 'csv') THEN RETURN 'text/csv; charset=utf-8' END ;
+  IF Text.Eq (ext, 'xml') THEN RETURN 'application/xml' END ;
+  IF Text.Eq (ext, 'pdf') THEN RETURN 'application/pdf' END ;
+  IF Text.Eq (ext, 'wasm') THEN RETURN 'application/wasm' END ;
+  IF Text.Eq (ext, 'zip') THEN RETURN 'application/zip' END ;
+  IF Text.Eq (ext, 'gz') THEN RETURN 'application/gzip' END ;
+  IF Text.Eq (ext, 'nc') THEN RETURN 'application/x-netcdf' END ;
   RETURN 'application/octet-stream'
 END TypeOf ;
 
@@ -746,7 +780,7 @@ PROCEDURE WithHeader (RO resp: Response ; RO name: STR ; RO value: STR)
 VAR r : Response ;
 BEGIN
   r := resp ;
-  IF LEN (r.headers) = 0 THEN
+  IF Text.BLen (r.headers) = 0 THEN
     r.headers := name + ': ' + value
   ELSE
     r.headers := r.headers + 0AC + name + ': ' + value
@@ -779,6 +813,7 @@ BEGIN
   c.trusted := '' ;
   c.accessLog := FALSE ;
   c.signals := TRUE ;
+  c.keepBytes := 0 ;
   RETURN c
 END Defaults ;
 
@@ -795,7 +830,7 @@ BEGIN
 END SetCap ;
 
 PROCEDURE Offer (VAR q: Q ; fd: I64) : BOOL =
-  (* never waits: a full ring is the accepting thread's 503 *)
+  (* Offer never waits: a full ring is the accepting thread's 503. *)
 BEGIN
   IF q.count >= q.cap THEN RETURN FALSE END ;
   q.fds[q.tail] := fd ;
@@ -806,7 +841,8 @@ BEGIN
 END Offer ;
 
 PROCEDURE Take (VAR q: Q) : I64 =
-  (* the next connection, or -1 once the ring is closing and empty *)
+  (* Take answers the next connection, or -1 once the ring is closing
+     and empty. *)
 VAR fd : I64 ;
 BEGIN
   WHILE q.count = 0 AND NOT q.closing DO
@@ -823,6 +859,12 @@ PROCEDURE Closing (VAR q: Q) : BOOL =
 BEGIN
   RETURN q.closing
 END Closing ;
+
+PROCEDURE Waiting (VAR q: Q) : I64 =
+  (* Waiting answers the connections in the ring now. *)
+BEGIN
+  RETURN q.count
+END Waiting ;
 
 PROCEDURE Shut (VAR q: Q) =
 BEGIN
@@ -845,10 +887,10 @@ END AwaitExits ;
 
 (* ---- octets out --------------------------------------------------- *)
 
-(* a descriptor and a length as C takes them, now that a C.*
-   conversion that narrows is checked (2026-10-10): what no C int holds
-   is no descriptor -- -1, which every call refuses as a bad one -- and
-   a length below zero is none *)
+(* CFd and CLen give a descriptor and a length as C takes them, now
+   that a C.* conversion that narrows is checked (2026-10-10).  A value
+   no C int holds is no descriptor: it becomes -1, which every call
+   refuses as a bad one.  A length below zero is none. *)
 PROCEDURE CFd (v: I64) : C.Int =
 VAR bad : I32 ;
 BEGIN
@@ -932,9 +974,9 @@ END Reason ;
 (* ---- the date a response carries (RFC 9110 par 6.6.1) ------------- *)
 
 PROCEDURE AppendDate (VAR d: PTR DynStr.DString) RAISES ValueRange =
-  (* `Date: Sun, 06 Nov 1994 08:49:37 GMT', from the wall clock,
-     through Http.FormatDate (this was a private copy of it until
-     2026-10-10) *)
+  (* AppendDate appends `Date: Sun, 06 Nov 1994 08:49:37 GMT', from
+     the wall clock, through Http.FormatDate.  This was a private copy
+     of it until 2026-10-10. *)
 BEGIN
   DynStr.Append (d, 'Date: ') ;
   DynStr.Append (d, Http.FormatDate (I64 (F64 (NowSec ())))) ;
@@ -956,19 +998,20 @@ END Lc ;
 
 PROCEDURE SameCi (RO a: STR ; RO lower: STR) : BOOL
   RAISES ValueRange =
-  (* a equals lower, which is written in lower case, without regard
-     to case *)
+  (* SameCi answers whether a equals lower, which is written in lower
+     case, without regard to case. *)
 VAR i : I64 ;
 BEGIN
-  IF LEN (a) # LEN (lower) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (a) - 1 DO
-    IF Lc (a[i]) # lower[i] THEN RETURN FALSE END
+  IF Text.BLen (a) # Text.BLen (lower) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (a) - 1 DO
+    IF Lc (Text.BChar (a, i)) # Text.BChar (lower, i) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END SameCi ;
 
 PROCEDURE IsTchar (ch: CHAR) : BOOL =
-  (* RFC 9110 par 5.6.2: the characters of a token *)
+  (* IsTchar accepts the characters of a token (RFC 9110 par
+     5.6.2). *)
 VAR
   punct : STR ;
   i : I64 ;
@@ -977,8 +1020,8 @@ BEGIN
   IF ch >= 'A' AND ch <= 'Z' THEN RETURN TRUE END ;
   IF ch >= '0' AND ch <= '9' THEN RETURN TRUE END ;
   punct := "!#$%&'*+-.^_`|~" ;
-  FOR i := 0 TO LEN (punct) - 1 DO
-    IF ch = punct[i] THEN RETURN TRUE END
+  FOR i := 0 TO Text.BLen (punct) - 1 DO
+    IF Text.BIs (punct, i, ch) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END IsTchar ;
@@ -986,7 +1029,7 @@ END IsTchar ;
 PROCEDURE IsToken (RO s: STR) : BOOL =
 VAR c : CHAR ;
 BEGIN
-  IF LEN (s) = 0 THEN RETURN FALSE END ;
+  IF Text.BLen (s) = 0 THEN RETURN FALSE END ;
   FOR c IN s DO                   (* by character: the same under the switch *)
     IF NOT IsTchar (c) THEN RETURN FALSE END
   END ;
@@ -994,28 +1037,30 @@ BEGIN
 END IsToken ;
 
 PROCEDURE Trimmed (RO s: STR) : STR =
-  (* without the blanks and tabs at either end: a view *)
+  (* Trimmed answers s without the blanks and tabs at either end, as
+     a view. *)
 VAR a, b : I64 ;
 BEGIN
   a := 0 ;
-  b := LEN (s) ;
-  WHILE a < b AND (s[a] = ' ' OR s[a] = 09C) DO a := a + 1 END ;
-  WHILE b > a AND (s[b - 1] = ' ' OR s[b - 1] = 09C) DO b := b - 1 END ;
+  b := Text.BLen (s) ;
+  WHILE a < b AND (Text.BIs (s, a, ' ') OR Text.BIs (s, a, 09C)) DO a := a + 1 END ;
+  WHILE b > a AND (Text.BIs (s, b - 1, ' ') OR Text.BIs (s, b - 1, 09C)) DO b := b - 1 END ;
   RETURN SLICE (s, a, b - a)
 END Trimmed ;
 
 PROCEDURE Digits (RO s: STR ; most: I64) : I64 =
-  (* s as a decimal count: -1 when it is not all digits or is empty,
-     -2 when it is over most.  The test sits BEFORE the multiply, so
-     v never leaves the range where v * 10 + 9 is exact. *)
+  (* Digits reads s as a decimal count: -1 when it is not all digits
+     or is empty, -2 when it is over most.  The test sits BEFORE the
+     multiply, so v never leaves the range where v * 10 + 9 is
+     exact. *)
 VAR i, v : I64 ;
 BEGIN
-  IF LEN (s) = 0 THEN RETURN -1 END ;
+  IF Text.BLen (s) = 0 THEN RETURN -1 END ;
   v := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] < '0' OR s[i] > '9' THEN RETURN -1 END ;
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RETURN -1 END ;
     IF v > most THEN RETURN -2 END ;
-    v := v * 10 + ORD (s[i]) - ORD ('0')
+    v := v * 10 + I64 (Text.BAt (s, i)) - ORD ('0')
   END ;
   IF v > most THEN RETURN -2 END ;
   RETURN v
@@ -1031,13 +1076,14 @@ END HexVal ;
 
 PROCEDURE HasToken (RO list: STR ; RO lower: STR) : BOOL
   RAISES ValueRange =
-  (* a comma-separated header value names lower, without regard to
-     case: `Connection: keep-alive, close` names close *)
+  (* HasToken answers whether a comma-separated header value names
+     lower, without regard to case.  `Connection: keep-alive, close`
+     names close. *)
 VAR a, i : I64 ;
 BEGIN
   a := 0 ;
-  FOR i := 0 TO LEN (list) DO
-    IF i = LEN (list) OR list[i] = ',' THEN
+  FOR i := 0 TO Text.BLen (list) DO
+    IF i = Text.BLen (list) OR Text.BIs (list, i, ',') THEN
       IF SameCi (Trimmed (SLICE (list, a, i - a)), lower) THEN
         RETURN TRUE
       END ;
@@ -1050,8 +1096,9 @@ END HasToken ;
 (* ---- octets in ---------------------------------------------------- *)
 
 PROCEDURE Fill (VAR c: Conn) : I64 =
-  (* one read into the free end of cb: what arrived, or 0 when the
-     peer closed, the receive timeout fired, or cb is full *)
+  (* Fill does one read into the free end of cb.  It answers what
+     arrived, or 0 when the peer closed, the receive timeout fired, or
+     cb is full. *)
 VAR n : I64 ;
 BEGIN
   IF c.have >= LEN (c.cb) THEN RETURN 0 END ;
@@ -1063,8 +1110,8 @@ BEGIN
 END Fill ;
 
 PROCEDURE Consume (VAR c: Conn ; n: I64) =
-  (* the first n octets are done with: what follows moves to the
-     front *)
+  (* Consume marks the first n octets done with: what follows moves to
+     the front. *)
 VAR i : I64 ;
 BEGIN
   i := 0 ;
@@ -1076,7 +1123,8 @@ BEGIN
 END Consume ;
 
 PROCEDURE FindLf (VAR c: Conn ; from: I64) : I64 =
-  (* the index of the first line feed at or after from, or -1 *)
+  (* FindLf answers the index of the first line feed at or after from,
+     or -1. *)
 VAR i : I64 ;
 BEGIN
   i := from ;
@@ -1088,8 +1136,9 @@ BEGIN
 END FindLf ;
 
 PROCEDURE HeadEnd (VAR c: Conn ; from: I64) : I64 =
-  (* the index just past the empty line that ends the header block,
-     looking at line feeds from from on; -1 when it has not arrived.
+  (* HeadEnd answers the index just past the empty line that ends the
+     header block, looking at line feeds from from on.  It answers -1
+     when that line has not arrived.
      A line may end CR LF or LF alone (RFC 9112 par 2.2 lets a
      server accept the bare LF, and it does). *)
 VAR i, lf : I64 ;
@@ -1110,10 +1159,10 @@ END HeadEnd ;
 PROCEDURE Linger (VAR c: Conn) =
   (* A REFUSAL HAS TO SURVIVE THE CLOSE.  close() on a socket that
      still holds unread octets sends RST, and an RST discards what
-     the peer has not read yet -- including the 413 or 431 just
-     written.  So the rest of what the client is sending is read and
-     thrown away first, the lingering close, bounded twice so a
-     refusal cannot hold a worker: a short receive timeout and a cap.
+     the peer has not read yet.  That includes the 413 or 431 just
+     written.  So Linger first reads and throws away the rest of what
+     the client is sending: the lingering close.  Two bounds keep a
+     refusal from holding a worker: a short receive timeout and a cap.
      (The zarr proxy found it by testing: its first 431 answered
      correctly and the client saw ECONNRESET.) *)
 VAR n, seen : I64 ;
@@ -1131,22 +1180,23 @@ END Linger ;
 (* ---- one response -------------------------------------------------- *)
 
 PROCEDURE HeadersOk (RO h: STR) : BOOL =
-  (* every line of a response's extra headers is `name: value`, the
-     name a token, the value free of CR and LF *)
+  (* HeadersOk answers whether every line of a response's extra
+     headers is `name: value`, the name a token, the value free of CR
+     and LF. *)
 VAR a, i, colon : I64 ;
 BEGIN
   a := 0 ;
-  FOR i := 0 TO LEN (h) DO
-    IF i = LEN (h) OR h[i] = 0AC THEN
+  FOR i := 0 TO Text.BLen (h) DO
+    IF i = Text.BLen (h) OR Text.BIs (h, i, 0AC) THEN
       IF i > a THEN
         colon := a ;
-        WHILE colon < i AND h[colon] # ':' DO colon := colon + 1 END ;
+        WHILE colon < i AND NOT Text.BIs (h, colon, ':') DO colon := colon + 1 END ;
         IF colon = i OR NOT IsToken (SLICE (h, a, colon - a)) THEN
           RETURN FALSE
         END
       END ;
       a := i + 1
-    ELSIF h[i] = 0DC THEN
+    ELSIF Text.BIs (h, i, 0DC) THEN
       RETURN FALSE
     END
   END ;
@@ -1154,12 +1204,13 @@ BEGIN
 END HeadersOk ;
 
 PROCEDURE Lines (VAR d: PTR DynStr.DString ; RO lines: STR) =
-  (* header lines, line feeds between, each ended CR LF *)
+  (* Lines takes header lines with line feeds between and writes each
+     ended CR LF. *)
 VAR i, a : I64 ;
 BEGIN
   a := 0 ;
-  FOR i := 0 TO LEN (lines) DO
-    IF i = LEN (lines) OR lines[i] = 0AC THEN
+  FOR i := 0 TO Text.BLen (lines) DO
+    IF i = Text.BLen (lines) OR Text.BIs (lines, i, 0AC) THEN
       IF i > a THEN
         DynStr.Append (d, SLICE (lines, a, i - a)) ;
         CrLf (d)
@@ -1170,8 +1221,8 @@ BEGIN
 END Lines ;
 
 PROCEDURE NoBody (status: I64) : BOOL =
-  (* a 1xx, 204 or 304 has no body and says no length (RFC 9110
-     par 8.6) *)
+  (* NoBody answers TRUE for a 1xx, 204 or 304: it has no body and
+     says no length (RFC 9110 par 8.6). *)
 BEGIN
   RETURN status < 200 OR status = 204 OR status = 304
 END NoBody ;
@@ -1179,8 +1230,8 @@ END NoBody ;
 PROCEDURE Head (fd: I64 ; status: I64 ; RO ctype: STR ; RO headers: STR ;
                 RO extra: STR ; length: I64 ; keep: BOOL ; keepAlive10: BOOL)
   : BOOL RAISES ValueRange =
-  (* the status line and the header lines, written; length -1 says
-     none (a stream) *)
+  (* Head writes the status line and the header lines.  A length of
+     -1 says none (a stream). *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
@@ -1192,7 +1243,7 @@ BEGIN
   DynStr.Append (d, Reason (status)) ;
   CrLf (d) ;
   AppendDate (d) ;
-  IF LEN (ctype) > 0 THEN
+  IF Text.BLen (ctype) > 0 THEN
     DynStr.Append (d, 'Content-Type: ') ;
     DynStr.Append (d, ctype) ;
     CrLf (d)
@@ -1212,7 +1263,9 @@ BEGIN
     CrLf (d)
   END ;
   CrLf (d) ;
-  RETURN WriteAll (fd, DynStr.Bytes (scratch, DynStr.View (d), FALSE))
+  (* The head goes out as its UTF-8 octets, a handler's header values
+     included (Alex, 2026-10-31).  Octets views them without a copy. *)
+  RETURN WriteAll (fd, DynStr.Octets (d))
 END Head ;
 
 PROCEDURE Tally (VAR w: Worker ; status: I64) =
@@ -1230,8 +1283,8 @@ PROCEDURE SendBody (VAR w: Worker ; VAR c: Conn ; status: I64 ; RO ctype: STR ;
                     RO headers: STR ; RO extra: STR ; RO body: SLICE OF BYTE ;
                     head: BOOL ; keep: BOOL ; keepAlive10: BOOL) : BOOL
   RAISES ValueRange =
-  (* a body in memory, with its length; answers whether every octet
-     went out *)
+  (* SendBody writes a body in memory, with its length, and answers
+     whether every octet went out. *)
 VAR ok : BOOL ;
 BEGIN
   ok := Head (c.fd, status, ctype, headers, extra, LEN (body), keep, keepAlive10) ;
@@ -1245,56 +1298,56 @@ END SendBody ;
 
 PROCEDURE NotFound (VAR w: Worker ; VAR c: Conn ; head: BOOL ; keep: BOOL ;
                     keepAlive10: BOOL) : BOOL RAISES ValueRange =
-VAR scratch : POOL ;
 BEGIN
   RETURN SendBody (w, c, 404, 'text/plain; charset=utf-8', '', '',
-                   DynStr.Bytes (scratch, 'not found', FALSE), head, keep, keepAlive10)
+                   OCTETS ('not found'), head, keep, keepAlive10)
 END NotFound ;
 
 (* ---- gzip ------------------------------------------------------------ *)
 
 PROCEDURE Compressible (RO ctype: STR) : BOOL RAISES ValueRange =
-  (* text, JSON, XML, JavaScript and SVG: what gzip makes smaller *)
+  (* Compressible accepts text, JSON, XML, JavaScript and SVG: the
+     types gzip makes smaller. *)
 VAR
   t : STR ;
   i : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i < LEN (ctype) AND ctype[i] # ';' DO i := i + 1 END ;
+  WHILE i < Text.BLen (ctype) AND NOT Text.BIs (ctype, i, ';') DO i := i + 1 END ;
   t := Trimmed (SLICE (ctype, 0, i)) ;
-  IF LEN (t) > 5 AND SameCi (SLICE (t, 0, 5), 'text/') THEN RETURN TRUE END ;
+  IF Text.BLen (t) > 5 AND SameCi (SLICE (t, 0, 5), 'text/') THEN RETURN TRUE END ;
   IF SameCi (t, 'application/json') OR SameCi (t, 'application/xml') OR
      SameCi (t, 'application/javascript') OR SameCi (t, 'image/svg+xml') THEN
     RETURN TRUE
   END ;
-  IF LEN (t) > 5 AND (SameCi (SLICE (t, LEN (t) - 5, 5), '+json') OR
-                      SameCi (SLICE (t, LEN (t) - 4, 4), '+xml')) THEN
+  IF Text.BLen (t) > 5 AND (SameCi (SLICE (t, Text.BLen (t) - 5, 5), '+json') OR
+                      SameCi (SLICE (t, Text.BLen (t) - 4, 4), '+xml')) THEN
     RETURN TRUE
   END ;
   RETURN FALSE
 END Compressible ;
 
 PROCEDURE Positive (RO param: STR) : BOOL RAISES ValueRange =
-  (* a coding's parameters, after its ;: FALSE for q=0, 0.0, 0.00 or
-     0.000 and for a q that is not a qvalue; TRUE for any other q and
-     for none *)
+  (* Positive reads a coding's parameters, after its ;.  It answers
+     FALSE for q=0, 0.0, 0.00 or 0.000 and for a q that is not a
+     qvalue.  It answers TRUE for any other q and for none. *)
 VAR
   p, v : STR ;
   i : I64 ;
   zero : BOOL ;
 BEGIN
   p := Trimmed (param) ;
-  IF LEN (p) = 0 THEN RETURN TRUE END ;
-  IF LEN (p) < 3 OR NOT SameCi (SLICE (p, 0, 2), 'q=') THEN RETURN FALSE END ;
-  v := SLICE (p, 2, LEN (p) - 2) ;
-  IF LEN (v) = 0 OR LEN (v) > 5 OR (v[0] # '0' AND v[0] # '1') THEN RETURN FALSE END ;
-  zero := v[0] = '0' ;
-  IF LEN (v) > 1 THEN
-    IF v[1] # '.' THEN RETURN FALSE END ;
-    FOR i := 2 TO LEN (v) - 1 DO
-      IF v[i] < '0' OR v[i] > '9' THEN RETURN FALSE END ;
-      IF v[i] # '0' THEN
-        IF v[0] = '1' THEN RETURN FALSE END ;
+  IF Text.BLen (p) = 0 THEN RETURN TRUE END ;
+  IF Text.BLen (p) < 3 OR NOT SameCi (SLICE (p, 0, 2), 'q=') THEN RETURN FALSE END ;
+  v := SLICE (p, 2, Text.BLen (p) - 2) ;
+  IF Text.BLen (v) = 0 OR Text.BLen (v) > 5 OR (NOT Text.BIs (v, 0, '0') AND NOT Text.BIs (v, 0, '1')) THEN RETURN FALSE END ;
+  zero := Text.BIs (v, 0, '0') ;
+  IF Text.BLen (v) > 1 THEN
+    IF NOT Text.BIs (v, 1, '.') THEN RETURN FALSE END ;
+    FOR i := 2 TO Text.BLen (v) - 1 DO
+      IF I64 (Text.BAt (v, i)) < ORD ('0') OR I64 (Text.BAt (v, i)) > ORD ('9') THEN RETURN FALSE END ;
+      IF NOT Text.BIs (v, i, '0') THEN
+        IF Text.BIs (v, 0, '1') THEN RETURN FALSE END ;
         zero := FALSE
       END
     END
@@ -1303,9 +1356,9 @@ BEGIN
 END Positive ;
 
 PROCEDURE TakesGzip (RO ae: STR) : BOOL RAISES ValueRange =
-  (* Accept-Encoding takes gzip: gzip (or x-gzip) with q above 0, or
-     else * with q above 0 (RFC 9110 par 12.5.3).  No header, or an
-     empty one, takes identity only *)
+  (* TakesGzip answers whether Accept-Encoding takes gzip: gzip (or
+     x-gzip) with q above 0, or else * with q above 0 (RFC 9110 par
+     12.5.3).  No header, or an empty one, takes identity only. *)
 VAR
   a, i, semi : I64 ;
   el, coding : STR ;
@@ -1314,18 +1367,18 @@ BEGIN
   gz := -1 ;
   star := -1 ;
   a := 0 ;
-  FOR i := 0 TO LEN (ae) DO
-    IF i = LEN (ae) OR ae[i] = ',' THEN
+  FOR i := 0 TO Text.BLen (ae) DO
+    IF i = Text.BLen (ae) OR Text.BIs (ae, i, ',') THEN
       el := Trimmed (SLICE (ae, a, i - a)) ;
       semi := 0 ;
-      WHILE semi < LEN (el) AND el[semi] # ';' DO semi := semi + 1 END ;
+      WHILE semi < Text.BLen (el) AND NOT Text.BIs (el, semi, ';') DO semi := semi + 1 END ;
       coding := Trimmed (SLICE (el, 0, semi)) ;
       IF SameCi (coding, 'gzip') OR SameCi (coding, 'x-gzip') THEN
         gz := 0 ;
-        IF semi = LEN (el) OR Positive (SLICE (el, semi + 1, LEN (el) - semi - 1)) THEN gz := 1 END
-      ELSIF DynStr.Eq (coding, '*') THEN
+        IF semi = Text.BLen (el) OR Positive (SLICE (el, semi + 1, Text.BLen (el) - semi - 1)) THEN gz := 1 END
+      ELSIF Text.Eq (coding, '*') THEN
         star := 0 ;
-        IF semi = LEN (el) OR Positive (SLICE (el, semi + 1, LEN (el) - semi - 1)) THEN star := 1 END
+        IF semi = Text.BLen (el) OR Positive (SLICE (el, semi + 1, Text.BLen (el) - semi - 1)) THEN star := 1 END
       END ;
       a := i + 1
     END
@@ -1338,26 +1391,27 @@ END TakesGzip ;
 
 PROCEDURE ParseRange (RO h: STR ; size: I64 ; VAR a, b: I64) : I64
   RAISES ValueRange =
-  (* a Range value against a file of size octets (RFC 9110 par 14):
-     1 one satisfiable range, a .. b; 2 one valid range nothing
-     satisfies; 0 anything else -- several ranges, another unit, not
-     the grammar, a last position before the first -- which the whole
-     file answers.  A position too long to hold is taken as infinite *)
+  (* ParseRange reads a Range value against a file of size octets
+     (RFC 9110 par 14).  It answers 1 for one satisfiable range,
+     a .. b, and 2 for one valid range nothing satisfies.  It answers
+     0 for anything else, which the whole file answers: several
+     ranges, another unit, not the grammar, a last position before
+     the first.  A position too long to hold is taken as infinite. *)
 VAR
   spec : STR ;
   dash, first, last, n, i : I64 ;
 BEGIN
-  IF LEN (h) < 6 OR NOT SameCi (SLICE (h, 0, 6), 'bytes=') THEN RETURN 0 END ;
-  spec := Trimmed (SLICE (h, 6, LEN (h) - 6)) ;
+  IF Text.BLen (h) < 6 OR NOT SameCi (SLICE (h, 0, 6), 'bytes=') THEN RETURN 0 END ;
+  spec := Trimmed (SLICE (h, 6, Text.BLen (h) - 6)) ;
   dash := -1 ;
-  FOR i := 0 TO LEN (spec) - 1 DO
-    IF spec[i] = ',' THEN RETURN 0 END ;
-    IF spec[i] = '-' AND dash < 0 THEN dash := i END
+  FOR i := 0 TO Text.BLen (spec) - 1 DO
+    IF Text.BIs (spec, i, ',') THEN RETURN 0 END ;
+    IF Text.BIs (spec, i, '-') AND dash < 0 THEN dash := i END
   END ;
   IF dash < 0 THEN RETURN 0 END ;
   IF dash = 0 THEN
     (* the last n octets *)
-    n := Digits (SLICE (spec, 1, LEN (spec) - 1), Huge - 1) ;
+    n := Digits (SLICE (spec, 1, Text.BLen (spec) - 1), Huge - 1) ;
     IF n = -1 THEN RETURN 0 END ;
     IF n = -2 THEN n := Huge END ;
     IF n = 0 OR size = 0 THEN RETURN 2 END ;
@@ -1370,8 +1424,8 @@ BEGIN
   IF first = -1 THEN RETURN 0 END ;
   IF first = -2 THEN first := Huge END ;
   last := Huge ;
-  IF dash < LEN (spec) - 1 THEN
-    last := Digits (SLICE (spec, dash + 1, LEN (spec) - dash - 1), Huge - 1) ;
+  IF dash < Text.BLen (spec) - 1 THEN
+    last := Digits (SLICE (spec, dash + 1, Text.BLen (spec) - dash - 1), Huge - 1) ;
     IF last = -1 THEN RETURN 0 END ;
     IF last = -2 THEN last := Huge END ;
     IF last < first THEN RETURN 0 END
@@ -1385,9 +1439,10 @@ END ParseRange ;
 
 PROCEDURE FilePiece (VAR w: Worker ; fd: I64 ; RO path: STR ; off, n: I64) : BOOL
   RAISES ValueRange =
-  (* n octets of the file from off, written; FALSE if the file gave
-     fewer (it shrank) or the write failed.  Its own frame, so a
-     piece's memory is gone before the next is read *)
+  (* FilePiece writes n octets of the file from off.  It answers FALSE
+     if the file gave fewer (it shrank) or the write failed.  It has
+     its own frame, so a piece's memory is gone before the next is
+     read. *)
 VAR
   scratch : POOL ;
   b : SLICE OF BYTE ;
@@ -1429,13 +1484,13 @@ BEGIN
   rng := Header (q, 'Range') ;
   (* Range is GET's alone; with an If-Range there is no validator to
      compare, so the whole file is the answer (RFC 9110 par 13.1.5) *)
-  IF status = 200 AND DynStr.Eq (q.method, 'GET') AND LEN (rng) > 0 AND
-     LEN (Header (q, 'If-Range')) = 0 THEN
+  IF status = 200 AND Text.Eq (q.method, 'GET') AND Text.BLen (rng) > 0 AND
+     Text.BLen (Header (q, 'If-Range')) = 0 THEN
     k := ParseRange (rng, size, a, b) ;
     IF k = 2 THEN
       RETURN SendBody (w, c, 416, 'text/plain; charset=utf-8', '',
                        'Content-Range: bytes */' + Itoa (size),
-                       DynStr.Bytes (scratch, 'range not satisfiable', FALSE),
+                       OCTETS ('range not satisfiable'),
                        head, keep, keepAlive10)
     ELSIF k = 1 THEN
       status := 206 ;
@@ -1471,12 +1526,13 @@ BEGIN
 END Itoa ;
 
 PROCEDURE SafeName (RO name: STR) : BOOL =
-  (* names separated by single slashes: no empty segment, none that
-     begins with a dot, no control character, backslash or colon *)
+  (* SafeName accepts names separated by single slashes: no empty
+     segment, none that begins with a dot, no control character,
+     backslash or colon. *)
 VAR
   c, prev : CHAR ;
 BEGIN
-  IF LEN (name) = 0 THEN RETURN FALSE END ;
+  IF Text.BLen (name) = 0 THEN RETURN FALSE END ;
   prev := '/' ;                   (* the start counts as after a slash *)
   FOR c IN name DO                (* by character: the same under the switch *)
     IF ORD (c) < 32 OR ORD (c) = 127 OR c = '\' OR c = ':' THEN RETURN FALSE END ;
@@ -1501,25 +1557,25 @@ BEGIN
 END IsDir ;
 
 PROCEDURE FileFor (rt: PTR Route ; RO q: Request) : Response RAISES ValueRange =
-  (* the file an AddFiles route names for q's path, or 404.  The URL
-     names it in UTF-8; Io takes a path as OCTETS, a character a byte
-     (as Io.Arg answers argv), so the checked name goes to Io as its
-     UTF-8 octets *)
+  (* FileFor answers the file an AddFiles route names for q's path, or
+     404.  The URL names it in UTF-8.  Io takes a path as OCTETS, a
+     character a byte (as Io.Arg answers argv), so the checked name
+     goes to Io as its UTF-8 octets. *)
 VAR
   scratch : POOL ;
   name, full : STR ;
 BEGIN
   BEGIN
-    name := Http.UrlDecode (SLICE (q.path, LEN (rt.path), LEN (q.path) - LEN (rt.path)))
+    name := Http.UrlDecode (SLICE (q.path, Text.BLen (rt.path), Text.BLen (q.path) - Text.BLen (rt.path)))
   EXCEPT
   | ValueRange :
       RETURN Reply (404, 'text/plain; charset=utf-8', 'not found')
   END ;
-  IF LEN (name) = 0 OR name[LEN (name) - 1] = '/' THEN name := name + 'index.html' END ;
+  IF Text.BLen (name) = 0 OR Text.BIs (name, Text.BLen (name) - 1, '/') THEN name := name + 'index.html' END ;
   IF NOT SafeName (name) THEN RETURN Reply (404, 'text/plain; charset=utf-8', 'not found') END ;
-  (* the name's scalars, as they are: Io encodes a path as UTF-8
-     (2026-10-09; until then it was octets, so the name was encoded
-     here first) *)
+  (* The name goes as its scalars, as they are: Io encodes a path as
+     UTF-8 (2026-10-09; until then it was octets, so the name was
+     encoded here first). *)
   full := rt.dir + '/' + name ;
   IF NOT Io.Exists (full) THEN
     RETURN Reply (404, 'text/plain; charset=utf-8', 'not found')
@@ -1532,9 +1588,10 @@ END FileFor ;
 PROCEDURE StreamPart (VAR w: Worker ; fd: I64 ; RO q: Request ; p: Producer ;
                       part: I64 ; chunked: BOOL) : I64
   RAISES ValueRange =
-  (* part of the stream, written: 0 it was, 1 the producer is done,
-     -1 it raised or the write failed.  Its own frame, so the part's
-     text is gone before the next is made *)
+  (* StreamPart writes part of the stream.  It answers 0 when it did,
+     1 when the producer is done, -1 when it raised or the write
+     failed.  It has its own frame, so the part's text is gone before
+     the next is made. *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
@@ -1554,14 +1611,14 @@ BEGIN
   | OutOfMemory :
       w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN -1
   END ;
-  IF LEN (s) = 0 THEN RETURN 1 END ;
-  b := DynStr.Utf8 (scratch, s) ;
+  IF Text.BLen (s) = 0 THEN RETURN 1 END ;
+  b := OCTETS (s) ;
   IF chunked THEN
     d := DynStr.New (scratch) ;
     AppendHex (d, LEN (b)) ;
     CrLf (d) ;
-    ok := WriteAll (fd, DynStr.Bytes (scratch, DynStr.View (d), FALSE)) AND
-          WriteAll (fd, b) AND WriteAll (fd, DynStr.Bytes (scratch, '' + 0DC + 0AC, FALSE))
+    ok := WriteAll (fd, DynStr.Octets (d)) AND
+          WriteAll (fd, b) AND WriteAll (fd, OCTETS ('' + 0DC + 0AC))
   ELSE
     ok := WriteAll (fd, b)
   END ;
@@ -1592,15 +1649,15 @@ END AppendHex ;
 PROCEDURE SendStream (VAR w: Worker ; VAR c: Conn ; RO q: Request ; RO resp: Response ;
                       p: Producer ; head: BOOL ; keep: BOOL ; keepAlive10: BOOL) : BOOL
   RAISES ValueRange =
-  (* chunked to HTTP/1.1; to HTTP/1.0 with no length, the caller
-     having made keep FALSE so that the close ends it *)
+  (* SendStream sends chunked to HTTP/1.1, and to HTTP/1.0 with no
+     length.  There the caller has made keep FALSE so that the close
+     ends it. *)
 VAR
-  scratch : POOL ;
   chunked, ok : BOOL ;
   extra : STR ;
   part, k : I64 ;
 BEGIN
-  chunked := DynStr.Eq (q.version, 'HTTP/1.1') ;
+  chunked := Text.Eq (q.version, 'HTTP/1.1') ;
   extra := '' ;
   IF chunked AND NOT NoBody (resp.status) THEN extra := 'Transfer-Encoding: chunked' END ;
   ok := Head (c.fd, resp.status, resp.ctype, resp.headers, extra, -1, keep, keepAlive10) ;
@@ -1612,7 +1669,7 @@ BEGIN
       part := part + 1
     END ;
     IF k = 1 AND chunked THEN
-      ok := WriteAll (c.fd, DynStr.Bytes (scratch, '0' + 0DC + 0AC + 0DC + 0AC, FALSE))
+      ok := WriteAll (c.fd, OCTETS ('0' + 0DC + 0AC + 0DC + 0AC))
     ELSE
       ok := k = 1
     END
@@ -1624,8 +1681,8 @@ END SendStream ;
 PROCEDURE Send (VAR w: Worker ; VAR c: Conn ; RO q: Request ; RO resp: Response ;
                 head: BOOL ; keep: BOOL ; keepAlive10: BOOL) : BOOL
   RAISES ValueRange =
-  (* the answer to q: a body (gzipped when it may be), a file or a
-     stream; answers whether every octet went out *)
+  (* Send writes the answer to q: a body (gzipped when it may be), a
+     file or a stream.  It answers whether every octet went out. *)
 VAR
   scratch : POOL ;
   body : SLICE OF BYTE ;
@@ -1634,15 +1691,15 @@ BEGIN
   IF NOT HeadersOk (resp.headers) OR resp.status < 100 OR resp.status > 599 THEN
     w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ;
     RETURN SendBody (w, c, 500, 'text/plain; charset=utf-8', '', '',
-                     DynStr.Bytes (scratch, 'a handler answered a malformed response', FALSE),
+                     OCTETS ('a handler answered a malformed response'),
                      head, keep, keepAlive10)
   END ;
   IF resp.stream IS SOME p THEN RETURN SendStream (w, c, q, resp, p, head, keep, keepAlive10) END ;
-  IF LEN (resp.file) > 0 THEN RETURN SendFile (w, c, q, resp, head, keep, keepAlive10) END ;
-  IF resp.binary THEN body := resp.data ELSE body := DynStr.Utf8 (scratch, resp.text) END ;
+  IF Text.BLen (resp.file) > 0 THEN RETURN SendFile (w, c, q, resp, head, keep, keepAlive10) END ;
+  IF resp.binary THEN body := resp.data ELSE body := OCTETS (resp.text) END ;
   extra := '' ;
   IF w.s.cfg.gzipMin > 0 AND LEN (body) >= w.s.cfg.gzipMin AND NOT NoBody (resp.status) AND
-     Compressible (resp.ctype) AND LEN (Http.Header (resp.headers, 'Content-Encoding')) = 0 THEN
+     Compressible (resp.ctype) AND Text.BLen (Http.Header (resp.headers, 'Content-Encoding')) = 0 THEN
     extra := 'Vary: Accept-Encoding' ;
     IF TakesGzip (Header (q, 'Accept-Encoding')) THEN
       body := Zip.Gzip (scratch, body) ;
@@ -1655,8 +1712,9 @@ END Send ;
 
 PROCEDURE AccessLine (VAR w: Worker ; RO method: STR ; RO path: STR ; status: I64 ;
                       bytes: I64 ; t0: F64 ; RO client: STR) RAISES ValueRange =
-  (* one line through Logger.Msg, which composes it in its own frame
-     and writes it in one call: whole when every worker logs at once *)
+  (* AccessLine writes one line through Logger.Msg, which composes it
+     in its own frame and writes it in one call.  So the line is whole
+     when every worker logs at once. *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
@@ -1682,14 +1740,15 @@ BEGIN
 END AccessLine ;
 
 PROCEDURE InList (RO a: STR ; RO list: STR) : BOOL =
-  (* a is one of the comma-separated entries of list *)
+  (* InList answers whether a is one of the comma-separated entries of
+     list. *)
 VAR i, s0 : I64 ;
 BEGIN
-  IF LEN (a) = 0 THEN RETURN FALSE END ;
+  IF Text.BLen (a) = 0 THEN RETURN FALSE END ;
   s0 := 0 ;
-  FOR i := 0 TO LEN (list) DO
-    IF i = LEN (list) OR list[i] = ',' THEN
-      IF DynStr.Eq (Trimmed (SLICE (list, s0, i - s0)), a) THEN RETURN TRUE END ;
+  FOR i := 0 TO Text.BLen (list) DO
+    IF i = Text.BLen (list) OR Text.BIs (list, i, ',') THEN
+      IF Text.Eq (Trimmed (SLICE (list, s0, i - s0)), a) THEN RETURN TRUE END ;
       s0 := i + 1
     END
   END ;
@@ -1697,13 +1756,14 @@ BEGIN
 END InList ;
 
 PROCEDURE IsAddress (RO a: STR) : BOOL =
-  (* the characters of a numeric v4 or v6 address, and one at least *)
+  (* IsAddress accepts the characters of a numeric v4 or v6 address,
+     and one at least. *)
 VAR i : I64 ;
 BEGIN
-  IF LEN (a) = 0 OR LEN (a) > 45 THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (a) - 1 DO
-    IF NOT ((a[i] >= '0' AND a[i] <= '9') OR (a[i] >= 'a' AND a[i] <= 'f') OR
-            (a[i] >= 'A' AND a[i] <= 'F') OR a[i] = '.' OR a[i] = ':') THEN
+  IF Text.BLen (a) = 0 OR Text.BLen (a) > 45 THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (a) - 1 DO
+    IF NOT ((I64 (Text.BAt (a, i)) >= ORD ('0') AND I64 (Text.BAt (a, i)) <= ORD ('9')) OR (I64 (Text.BAt (a, i)) >= ORD ('a') AND I64 (Text.BAt (a, i)) <= ORD ('f')) OR
+            (I64 (Text.BAt (a, i)) >= ORD ('A') AND I64 (Text.BAt (a, i)) <= ORD ('F')) OR Text.BIs (a, i, '.') OR Text.BIs (a, i, ':')) THEN
       RETURN FALSE
     END
   END ;
@@ -1711,19 +1771,20 @@ BEGIN
 END IsAddress ;
 
 PROCEDURE ClientOf (RO peer: STR ; RO trusted: STR ; RO xff: STR) : STR =
-  (* the peer; or, from a trusted proxy, the right-most address in
-     X-Forwarded-For that is not a trusted proxy -- the one the proxy
-     nearest us saw.  An entry that is not an address stops the walk
-     and the peer is the answer: the header was not a proxy's *)
+  (* ClientOf answers the peer.  From a trusted proxy, it answers the
+     right-most address in X-Forwarded-For that is not a trusted
+     proxy: the one the proxy nearest us saw.  An entry that is not an
+     address stops the walk and the peer is the answer: the header was
+     not a proxy's. *)
 VAR
   i, e : I64 ;
   a : STR ;
 BEGIN
   IF NOT InList (peer, trusted) THEN RETURN peer END ;
-  e := LEN (xff) ;
-  i := LEN (xff) - 1 ;
+  e := Text.BLen (xff) ;
+  i := Text.BLen (xff) - 1 ;
   WHILE i >= -1 DO
-    IF i = -1 OR xff[i] = ',' THEN
+    IF i = -1 OR Text.BIs (xff, i, ',') THEN
       a := Trimmed (SLICE (xff, i + 1, e - i - 1)) ;
       IF NOT IsAddress (a) THEN RETURN peer END ;
       IF NOT InList (a, trusted) THEN RETURN a END ;
@@ -1735,10 +1796,11 @@ BEGIN
 END ClientOf ;
 
 PROCEDURE Idle (VAR w: Worker ; VAR c: Conn ; served: I64) : BOOL =
-  (* wait for the next request on c, idleMs at most, in slices of a
-     quarter of a second: FALSE when none came, or -- for a kept
-     connection -- when the server is stopping.  A connection's first
-     request is waited for even then: it was accepted to be served *)
+  (* Idle waits for the next request on c, idleMs at most, in slices
+     of a quarter of a second.  It answers FALSE when none came, or,
+     for a kept connection, when the server is stopping.  A
+     connection's first request is waited for even then: it was
+     accepted to be served. *)
 VAR waited, slice : I64 ;
 BEGIN
   waited := 0 ;
@@ -1755,8 +1817,8 @@ END Idle ;
 PROCEDURE Refuse (VAR w: Worker ; VAR c: Conn ; status: I64 ;
                   RO why: STR) : BOOL
   RAISES ValueRange =
-  (* answer status and close, after the lingering read; answers
-     FALSE, which is what the caller returns *)
+  (* Refuse answers status and closes, after the lingering read.  It
+     answers FALSE, which is what the caller returns. *)
 VAR
   scratch : POOL ;
   ok : BOOL ;
@@ -1766,7 +1828,7 @@ BEGIN
   t0 := F64 (NowSec ()) ;
   b0 := w.s.st[w.k].bytesOut ;
   ok := SendBody (w, c, status, 'text/plain; charset=utf-8', '', '',
-                  DynStr.Utf8 (scratch, why), FALSE, FALSE, FALSE) ;
+                  OCTETS (why), FALSE, FALSE, FALSE) ;
   IF w.s.cfg.accessLog THEN
     AccessLine (w, '-', '-', status, w.s.st[w.k].bytesOut - b0, t0, c.peer)
   END ;
@@ -1782,7 +1844,7 @@ VAR
   i : I64 ;
 BEGIN
   s := 'HTTP/1.1 100 Continue' ;
-  FOR i := 0 TO 20 DO b[i] := BYTE (ORD (s[i])) END ;
+  FOR i := 0 TO 20 DO b[i] := BYTE (I64 (Text.BAt (s, i))) END ;
   b[21] := 13 ; b[22] := 10 ; b[23] := 13 ; b[24] := 10 ;
   RETURN WriteAll (c.fd, b)
 END Continue100 ;
@@ -1790,8 +1852,9 @@ END Continue100 ;
 (* ---- the body ----------------------------------------------------- *)
 
 PROCEDURE ReadFixed (VAR c: Conn ; body: SLICE OF BYTE) : BOOL =
-  (* LEN (body) octets: those already in cb first, then straight from
-     the socket.  FALSE when the peer stops short. *)
+  (* ReadFixed reads LEN (body) octets: those already in cb first,
+     then straight from the socket.  It answers FALSE when the peer
+     stops short. *)
 VAR got, n, take : I64 ;
 BEGIN
   take := c.have ;
@@ -1812,9 +1875,9 @@ BEGIN
 END ReadFixed ;
 
 PROCEDURE NextLine (VAR c: Conn ; VAR len: I64) : BOOL =
-  (* wait for a whole line at the front of cb; len is its length
-     without CR LF.  FALSE when it does not come, or is longer than a
-     chunk line may be. *)
+  (* NextLine waits for a whole line at the front of cb; len is its
+     length without CR LF.  It answers FALSE when the line does not
+     come, or is longer than a chunk line may be. *)
 VAR lf : I64 ;
 BEGIN
   LOOP
@@ -1830,7 +1893,7 @@ BEGIN
 END NextLine ;
 
 PROCEDURE LineEnd (VAR c: Conn ; len: I64) =
-  (* consume the line NextLine found *)
+  (* LineEnd consumes the line NextLine found. *)
 VAR lf : I64 ;
 BEGIN
   lf := FindLf (c, len) ;
@@ -1840,10 +1903,10 @@ END LineEnd ;
 PROCEDURE ReadChunked (VAR c: Conn ; store: SLICE OF BYTE ;
                        VAR got: I64 ; most: I64) : I64
   RAISES ValueRange =
-  (* RFC 9112 par 7.1: chunk-size [; ext] CRLF data CRLF ... 0 CRLF
-     trailers CRLF.  The data lands in store[0 .. got).  Answers 0,
-     or the status to refuse with: 400 for a malformed chunk, 413 for
-     a body over most. *)
+  (* ReadChunked reads RFC 9112 par 7.1: chunk-size [; ext] CRLF data
+     CRLF ... 0 CRLF trailers CRLF.  The data lands in store[0 .. got).
+     It answers 0, or the status to refuse with: 400 for a malformed
+     chunk, 413 for a body over most. *)
 VAR len, i, size, v, n, take : I64 ;
 BEGIN
   got := 0 ;
@@ -1897,37 +1960,37 @@ END ReadChunked ;
 
 PROCEDURE KnownMethod (RO m: STR) : BOOL =
 BEGIN
-  RETURN DynStr.Eq (m, 'GET') OR DynStr.Eq (m, 'HEAD') OR
-         DynStr.Eq (m, 'POST') OR DynStr.Eq (m, 'PUT') OR
-         DynStr.Eq (m, 'DELETE') OR DynStr.Eq (m, 'PATCH') OR
-         DynStr.Eq (m, 'OPTIONS')
+  RETURN Text.Eq (m, 'GET') OR Text.Eq (m, 'HEAD') OR
+         Text.Eq (m, 'POST') OR Text.Eq (m, 'PUT') OR
+         Text.Eq (m, 'DELETE') OR Text.Eq (m, 'PATCH') OR
+         Text.Eq (m, 'OPTIONS')
 END KnownMethod ;
 
 PROCEDURE PathMatches (rt: PTR Route ; RO path: STR) : BOOL =
 BEGIN
   IF rt.prefix THEN
-    RETURN LEN (path) >= LEN (rt.path) AND
-           DynStr.Eq (SLICE (path, 0, LEN (rt.path)), rt.path)
+    RETURN Text.BLen (path) >= Text.BLen (rt.path) AND
+           Text.Eq (SLICE (path, 0, Text.BLen (rt.path)), rt.path)
   END ;
-  RETURN DynStr.Eq (path, rt.path)
+  RETURN Text.Eq (path, rt.path)
 END PathMatches ;
 
 PROCEDURE Dispatch (VAR w: Worker ; RO q: Request) : Response
   RAISES ValueRange =
-  (* the route's answer; a handler that raised is answered 500 and
-     counted *)
+  (* Dispatch answers with the route's answer.  A handler that raised
+     is answered 500 and counted. *)
 VAR
   cur : OPT PTR Route ;
   allow : STR ;
   isHead : BOOL ;
 BEGIN
-  isHead := DynStr.Eq (q.method, 'HEAD') ;
+  isHead := Text.Eq (q.method, 'HEAD') ;
   allow := '' ;
   cur := w.s.r.first ;
   WHILE cur IS SOME rt DO
     IF PathMatches (rt, q.path) THEN
-      IF DynStr.Eq (rt.method, q.method) OR
-         (isHead AND DynStr.Eq (rt.method, 'GET')) THEN
+      IF Text.Eq (rt.method, q.method) OR
+         (isHead AND Text.Eq (rt.method, 'GET')) THEN
         IF rt.files THEN RETURN FileFor (rt, q) END ;
         IF rt.h IS SOME f THEN
           BEGIN
@@ -1947,13 +2010,13 @@ BEGIN
         END ;
         RETURN Reply (rt.status, rt.ctype, rt.body)
       END ;
-      IF LEN (allow) > 0 THEN allow := allow + ', ' END ;
+      IF Text.BLen (allow) > 0 THEN allow := allow + ', ' END ;
       allow := allow + rt.method ;
-      IF DynStr.Eq (rt.method, 'GET') THEN allow := allow + ', HEAD' END
+      IF Text.Eq (rt.method, 'GET') THEN allow := allow + ', HEAD' END
     END ;
     cur := rt.next
   END ;
-  IF LEN (allow) > 0 THEN
+  IF Text.BLen (allow) > 0 THEN
     RETURN WithHeader (Reply (405, 'text/plain; charset=utf-8',
                               'method not allowed'),
                        'Allow', allow)
@@ -1961,10 +2024,38 @@ BEGIN
   RETURN Reply (404, 'text/plain; charset=utf-8', 'not found')
 END Dispatch ;
 
+PROCEDURE HeadText (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR
+  RAISES ValueRange =
+  (* HeadText answers the text of a request head, in pool, judged line
+     by line as Http's Line judges a response (Alex, 2026-10-31).  A
+     line of UTF-8 octets reads as its text.  Any other line reads one
+     CHAR per octet.  So a Latin-1 header leaves a UTF-8 path as it
+     is.  Every LF stays where it was, so the lines of the answer are
+     the lines of b. *)
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN pool ;
+  a, i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  a := 0 ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    IF I64 (b[i]) = 10 THEN
+      DynStr.Append (d, DynStr.Decoded (scratch, SLICE (b, a, i - a))) ;
+      DynStr.AppendChar (d, 0AC) ;
+      a := i + 1
+    END
+  END ;
+  IF a < LEN (b) THEN
+    DynStr.Append (d, DynStr.Decoded (scratch, SLICE (b, a, LEN (b) - a)))
+  END ;
+  RETURN DynStr.ViewIn (pool, d)
+END HeadText ;
+
 PROCEDURE One (VAR w: Worker ; VAR c: Conn ; served: I64) : BOOL
   RAISES ValueRange =
-  (* read one request from c, answer it, and say whether the
-     connection is kept *)
+  (* One reads one request from c, answers it, and says whether the
+     connection is kept. *)
 VAR
   scratch : POOL ;
   head, line, name, value, te, cl1, conn, expect, version, tg : STR ;
@@ -2005,53 +2096,60 @@ BEGIN
     END ;
     n := Fill (c) ;
     IF n <= 0 THEN
-      (* nothing at all is the idle timeout of a kept connection, or a
-         peer that closed between requests: nothing to answer.  Part
-         of a request and then silence is a request that timed out. *)
+      (* No octets at all mean the idle timeout of a kept connection,
+         or a peer that closed between requests: nothing to answer.
+         Part of a request and then silence is a request that timed
+         out. *)
       IF c.have > 0 THEN
         RETURN Refuse (w, c, 408, 'request header not finished in time')
       END ;
       RETURN FALSE
     END
   END ;
-  head := DynStr.Chars (scratch, SLICE (c.cb, 0, hend)) ;
+  (* HeadText reads each line as UTF-8 when it is UTF-8, else one
+     CHAR per octet.  So a UTF-8 path reaches the handler as its text,
+     and a Latin-1 octet still reads as its character.  Every offset
+     below is a byte offset into head, never into c.cb.  Only ASCII
+     octets split head, and an ASCII octet is never inside a UTF-8
+     sequence. *)
+  head := HeadText (scratch, SLICE (c.cb, 0, hend)) ;
 
   (* ---- the request line ---- *)
   lf := 0 ;
-  WHILE head[lf] # 0AC DO lf := lf + 1 END ;
+  WHILE NOT Text.BIs (head, lf, 0AC) DO lf := lf + 1 END ;
   line := SLICE (head, 0, lf) ;
-  IF LEN (line) > 0 AND line[LEN (line) - 1] = 0DC THEN
-    line := SLICE (line, 0, LEN (line) - 1)
+  IF Text.BLen (line) > 0 AND Text.BIs (line, Text.BLen (line) - 1, 0DC) THEN
+    line := SLICE (line, 0, Text.BLen (line) - 1)
   END ;
-  IF LEN (line) > w.s.cfg.lineMax THEN
+  IF Text.BLen (line) > w.s.cfg.lineMax THEN
     RETURN Refuse (w, c, 414, 'request line too long')
   END ;
   sp1 := -1 ;
   sp2 := -1 ;
-  FOR i := 0 TO LEN (line) - 1 DO
-    IF line[i] = ' ' THEN
+  FOR i := 0 TO Text.BLen (line) - 1 DO
+    IF Text.BIs (line, i, ' ') THEN
       IF sp1 < 0 THEN sp1 := i
       ELSIF sp2 < 0 THEN sp2 := i
       ELSE RETURN Refuse (w, c, 400, 'malformed request line')
       END
     END
   END ;
-  IF sp1 <= 0 OR sp2 <= sp1 + 1 OR sp2 = LEN (line) - 1 THEN
+  IF sp1 <= 0 OR sp2 <= sp1 + 1 OR sp2 = Text.BLen (line) - 1 THEN
     RETURN Refuse (w, c, 400, 'malformed request line')
   END ;
   q.method := SLICE (line, 0, sp1) ;
   q.target := SLICE (line, sp1 + 1, sp2 - sp1 - 1) ;
-  version := SLICE (line, sp2 + 1, LEN (line) - sp2 - 1) ;
+  version := SLICE (line, sp2 + 1, Text.BLen (line) - sp2 - 1) ;
   q.version := version ;
   IF NOT IsToken (q.method) THEN
     RETURN Refuse (w, c, 400, 'malformed request line')
   END ;
-  IF LEN (version) # 8 OR NOT DynStr.Eq (SLICE (version, 0, 5), 'HTTP/') OR
-     version[6] # '.' OR version[5] < '0' OR version[5] > '9' OR
-     version[7] < '0' OR version[7] > '9' THEN
+  IF Text.BLen (version) # 8 OR NOT Text.Eq (SLICE (version, 0, 5), 'HTTP/') OR
+     NOT Text.BIs (version, 6, '.') OR I64 (Text.BAt (version, 5)) < ORD ('0') OR I64 (Text.BAt (version, 5)) > ORD ('9') OR
+     I64 (Text.BAt (version, 7)) < ORD ('0') OR I64 (Text.BAt (version, 7)) > ORD ('9') THEN
     RETURN Refuse (w, c, 400, 'malformed request line')
   END ;
-  IF NOT DynStr.Eq (version, 'HTTP/1.1') AND NOT DynStr.Eq (version, 'HTTP/1.0') THEN
+  IF NOT Text.Eq (version, 'HTTP/1.1') AND NOT Text.Eq (version, 'HTTP/1.0') THEN
     RETURN Refuse (w, c, 505, 'HTTP/1.1 and HTTP/1.0 only')
   END ;
 
@@ -2060,27 +2158,27 @@ BEGIN
   nCl := 0 ; nHost := 0 ; nTe := 0 ;
   te := '' ; cl1 := '' ; conn := '' ; expect := '' ;
   a := lf + 1 ;
-  WHILE a < LEN (head) DO
+  WHILE a < Text.BLen (head) DO
     lf := a ;
-    WHILE head[lf] # 0AC DO lf := lf + 1 END ;
+    WHILE NOT Text.BIs (head, lf, 0AC) DO lf := lf + 1 END ;
     line := SLICE (head, a, lf - a) ;
-    IF LEN (line) > 0 AND line[LEN (line) - 1] = 0DC THEN
-      line := SLICE (line, 0, LEN (line) - 1)
+    IF Text.BLen (line) > 0 AND Text.BIs (line, Text.BLen (line) - 1, 0DC) THEN
+      line := SLICE (line, 0, Text.BLen (line) - 1)
     END ;
     a := lf + 1 ;
-    IF LEN (line) > 0 THEN
-      IF line[0] = ' ' OR line[0] = 09C THEN
+    IF Text.BLen (line) > 0 THEN
+      IF Text.BIs (line, 0, ' ') OR Text.BIs (line, 0, 09C) THEN
         RETURN Refuse (w, c, 400, 'folded header line')
       END ;
       i := 0 ;
-      WHILE i < LEN (line) AND line[i] # ':' DO i := i + 1 END ;
-      IF i = LEN (line) OR NOT IsToken (SLICE (line, 0, i)) THEN
+      WHILE i < Text.BLen (line) AND NOT Text.BIs (line, i, ':') DO i := i + 1 END ;
+      IF i = Text.BLen (line) OR NOT IsToken (SLICE (line, 0, i)) THEN
         RETURN Refuse (w, c, 400, 'malformed header line')
       END ;
       name := SLICE (line, 0, i) ;
-      value := Trimmed (SLICE (line, i + 1, LEN (line) - i - 1)) ;
+      value := Trimmed (SLICE (line, i + 1, Text.BLen (line) - i - 1)) ;
       IF SameCi (name, 'content-length') THEN
-        IF nCl > 0 AND NOT DynStr.Eq (value, cl1) THEN
+        IF nCl > 0 AND NOT Text.Eq (value, cl1) THEN
           RETURN Refuse (w, c, 400, 'two different Content-Lengths')
         END ;
         cl1 := value ;
@@ -2102,12 +2200,12 @@ BEGIN
     END
   END ;
   q.headers := DynStr.View (hd) ;
-  IF LEN (q.headers) > 0 THEN
-    q.headers := SLICE (q.headers, 0, LEN (q.headers) - 1)
+  IF Text.BLen (q.headers) > 0 THEN
+    q.headers := SLICE (q.headers, 0, Text.BLen (q.headers) - 1)
   END ;
   Consume (c, hend) ;
 
-  IF DynStr.Eq (version, 'HTTP/1.1') AND nHost # 1 THEN
+  IF Text.Eq (version, 'HTTP/1.1') AND nHost # 1 THEN
     RETURN Refuse (w, c, 400, 'an HTTP/1.1 request names one Host')
   END ;
   IF nTe > 0 AND nCl > 0 THEN
@@ -2131,11 +2229,11 @@ BEGIN
   END ;
 
   (* ---- the body ---- *)
-  IF LEN (expect) > 0 THEN
+  IF Text.BLen (expect) > 0 THEN
     IF NOT SameCi (expect, '100-continue') THEN
       RETURN Refuse (w, c, 417, 'only 100-continue is expected')
     END ;
-    IF DynStr.Eq (version, 'HTTP/1.1') AND (chunked OR cl > 0) AND c.have = 0 THEN
+    IF Text.Eq (version, 'HTTP/1.1') AND (chunked OR cl > 0) AND c.have = 0 THEN
       IF NOT Continue100 (c) THEN RETURN FALSE END
     END
   END ;
@@ -2155,25 +2253,25 @@ BEGIN
      client sends a proxy) and routes on its path. *)
   tg := q.target ;
   i := 0 ;
-  IF LEN (tg) > 7 AND SameCi (SLICE (tg, 0, 7), 'http://') THEN i := 7
-  ELSIF LEN (tg) > 8 AND SameCi (SLICE (tg, 0, 8), 'https://') THEN i := 8
+  IF Text.BLen (tg) > 7 AND SameCi (SLICE (tg, 0, 7), 'http://') THEN i := 7
+  ELSIF Text.BLen (tg) > 8 AND SameCi (SLICE (tg, 0, 8), 'https://') THEN i := 8
   END ;
   IF i > 0 THEN
-    WHILE i < LEN (tg) AND tg[i] # '/' AND tg[i] # '?' DO i := i + 1 END ;
-    IF i = LEN (tg) THEN tg := '/'
-    ELSIF tg[i] = '?' THEN tg := '/' + SLICE (tg, i, LEN (tg) - i)
-    ELSE tg := SLICE (tg, i, LEN (tg) - i)
+    WHILE i < Text.BLen (tg) AND NOT Text.BIs (tg, i, '/') AND NOT Text.BIs (tg, i, '?') DO i := i + 1 END ;
+    IF i = Text.BLen (tg) THEN tg := '/'
+    ELSIF Text.BIs (tg, i, '?') THEN tg := '/' + SLICE (tg, i, Text.BLen (tg) - i)
+    ELSE tg := SLICE (tg, i, Text.BLen (tg) - i)
     END
   END ;
-  IF tg[0] # '/' AND
-     NOT (DynStr.Eq (tg, '*') AND DynStr.Eq (q.method, 'OPTIONS')) THEN
+  IF NOT Text.BIs (tg, 0, '/') AND
+     NOT (Text.Eq (tg, '*') AND Text.Eq (q.method, 'OPTIONS')) THEN
     RETURN Refuse (w, c, 400, 'the target is not a path')
   END ;
   i := 0 ;
-  WHILE i < LEN (tg) AND tg[i] # '?' DO i := i + 1 END ;
+  WHILE i < Text.BLen (tg) AND NOT Text.BIs (tg, i, '?') DO i := i + 1 END ;
   q.path := SLICE (tg, 0, i) ;
-  IF i < LEN (tg) THEN
-    q.query := SLICE (tg, i + 1, LEN (tg) - i - 1)
+  IF i < Text.BLen (tg) THEN
+    q.query := SLICE (tg, i + 1, Text.BLen (tg) - i - 1)
   ELSE
     q.query := ''
   END ;
@@ -2183,7 +2281,7 @@ BEGIN
 
   (* ---- keep the connection? ---- *)
   keep10 := FALSE ;
-  IF DynStr.Eq (version, 'HTTP/1.1') THEN
+  IF Text.Eq (version, 'HTTP/1.1') THEN
     keep := NOT HasToken (conn, 'close')
   ELSE
     keep10 := HasToken (conn, 'keep-alive') ;
@@ -2194,13 +2292,14 @@ BEGIN
   END ;
 
   (* ---- the answer ---- *)
-  isHead := DynStr.Eq (q.method, 'HEAD') ;
+  isHead := Text.Eq (q.method, 'HEAD') ;
   resp := Dispatch (w, q) ;
   IF resp.close THEN keep := FALSE END ;
-  (* a stop that came while the handler ran: this answer is the last *)
+  (* After a stop that came while the handler ran, this answer is the
+     last. *)
   IF I64 (Stopping ()) # 0 OR Closing (w.s.q) THEN keep := FALSE END ;
   (* a stream to HTTP/1.0 has no length: the close ends it *)
-  IF NOT DynStr.Eq (version, 'HTTP/1.1') THEN
+  IF NOT Text.Eq (version, 'HTTP/1.1') THEN
     IF resp.stream IS SOME p THEN keep := FALSE END
   END ;
   t0 := F64 (NowSec ()) ;
@@ -2214,8 +2313,8 @@ BEGIN
 END One ;
 
 PROCEDURE Serve1 (VAR w: Worker ; fd: I64) =
-  (* one connection, every request on it; a thread root's callee
-     raises nothing (report par 6) *)
+  (* Serve1 serves one connection, every request on it.  A thread
+     root's callee raises nothing (report par 6). *)
 VAR
   cpool : POOL ;
   c : Conn ;
@@ -2223,10 +2322,11 @@ VAR
   n, served : I64 ;
   keep : BOOL ;
 BEGIN
-  (* the FINALLY inside the handlers' block: the close converts fd too,
-     and its ValueRange is a fault like the others -- outside, it was
-     counted as handled only because the checker's handled set was
-     flat over the procedure (2026-10-21, the compiler review's C6) *)
+  (* The FINALLY sits inside the handlers' block: the close converts
+     fd too, and its ValueRange is a fault like the others.  Outside,
+     it was counted as handled only because the checker's handled set
+     was flat over the procedure (2026-10-21, the compiler review's
+     C6). *)
   BEGIN
     BEGIN
       c.fd := fd ;
@@ -2234,7 +2334,7 @@ BEGIN
       c.have := 0 ;
       n := I64 (Peer (C.Int (fd), ADR (pb), C.SSizeT (64))) ;
       c.peer := '' ;
-      IF n > 0 THEN c.peer := DynStr.Chars (cpool, SLICE (pb, 0, n)) END ;
+      IF n > 0 THEN c.peer := DynStr.Decoded (cpool, SLICE (pb, 0, n)) END ;
       n := I64 (RcvTimeo (C.Int (fd), C.SSizeT (w.s.cfg.idleMs))) ;
       n := I64 (NoDelay (C.Int (fd))) ;
       served := 0 ;
@@ -2259,25 +2359,34 @@ BEGIN
 END Serve1 ;
 
 PROCEDURE WorkerRun (VAR w: Worker) =
+  (* WorkerRun serves connections from the ring until it closes.  A
+     worker never returns while the server runs, so the runtime would
+     never give its kept blocks back.  So the worker keeps at most
+     cfg.keepBytes, and gives them back whenever the ring is empty
+     (Alex, 2026-10-31: the program that starts the threads decides;
+     zpd's 32 workers held 7.33 GB against 5.43 GB at the same
+     speed). *)
 VAR fd : I64 ;
 BEGIN
+  KeepAtMost (C.SSizeT (w.s.cfg.keepBytes)) ;
   LOOP
     fd := Take (w.s.q) ;
     IF fd < 0 THEN EXIT END ;
-    Serve1 (w, fd)
+    Serve1 (w, fd) ;
+    IF Waiting (w.s.q) = 0 THEN ReleaseKept () END
   END ;
   Exited (w.s.q)
 END WorkerRun ;
 
 PROCEDURE Busy (fd: I64)
   RAISES ValueRange =
-  (* the accepting thread's answer when every worker is busy and the
-     ring is full: short, and the connection closed.  What the client
-     has already sent is read first, for at most BusyMs, because a
-     close over unread octets is a reset and a reset discards the 503
-     before the client reads it (seen by the gate, as the proxy saw it
-     for its 431).  The accepting thread pays BusyMs at most for each
-     connection it turns away. *)
+  (* Busy is the accepting thread's answer when every worker is busy
+     and the ring is full: short, and the connection closed.  Busy
+     first reads what the client has already sent, for at most BusyMs,
+     because a close over unread octets is a reset.  A reset discards
+     the 503 before the client reads it (seen by the gate, as the
+     proxy saw it for its 431).  The accepting thread pays BusyMs at
+     most for each connection it turns away. *)
 VAR
   junk : ARRAY 4096 OF BYTE ;
   b : ARRAY 128 OF BYTE ;
@@ -2287,13 +2396,13 @@ VAR
 BEGIN
   s := 'HTTP/1.1 503 Service Unavailable|Retry-After: 1|Content-Length: 0|Connection: close||' ;
   j := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '|' THEN
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF Text.BIs (s, i, '|') THEN
       b[j] := 13 ;
       b[j + 1] := 10 ;
       j := j + 2
     ELSE
-      b[j] := BYTE (ORD (s[i])) ;
+      b[j] := BYTE (I64 (Text.BAt (s, i))) ;
       j := j + 1
     END
   END ;
@@ -2334,7 +2443,11 @@ BEGIN
      cfg.perConn < 1 OR cfg.maxConn < 0 THEN
     RETURN BadConfig
   END ;
-  IF LEN (cfg.bind) = 0 OR LEN (cfg.bind) > 45 THEN RETURN BadConfig END ;
+  IF Text.BLen (cfg.bind) = 0 OR Text.BLen (cfg.bind) > 45 THEN RETURN BadConfig END ;
+  (* An address is ASCII, so a bind past ASCII is a bad config, not a
+     raise.  Bytes gives an ASCII text's UTF-8 octets, as Wire does.
+     Bytes adds no IndexError to Run's heading. *)
+  IF Text.CpCount (cfg.bind) # Text.BLen (cfg.bind) THEN RETURN BadConfig END ;
   addr := DynStr.Bytes (pool, cfg.bind, TRUE) ;
   lfd := I64 (ListenAt (ADR (addr), C.Int (cfg.port), C.Int (cfg.backlog))) ;
   IF lfd < 0 THEN RETURN ListenFail END ;
@@ -2394,8 +2507,7 @@ PROCEDURE Respond (fd: I64 ; status: I64 ;
 VAR
   scratch : POOL ;                       (* dies with this frame *)
   d : PTR DynStr.DString IN scratch ;
-  wire : SLICE OF BYTE ;
-  n : I64 ;
+  ok : BOOL ;
 BEGIN
   d := DynStr.New (scratch) ;
   DynStr.Append (d, 'HTTP/1.0 ') ;
@@ -2407,17 +2519,17 @@ BEGIN
   DynStr.Append (d, ctype) ;
   CrLf (d) ;
   DynStr.Append (d, 'Content-Length: ') ;
-  DynStr.AppendI64 (d, LEN (body)) ;
-  (* Latin-1 wire: one CHAR, one octet -- DynStr.Bytes checks the
-     claim below, so the length cannot lie                           *)
+  DynStr.AppendI64 (d, Text.BLen (body)) ;
+  (* The answer goes out as its UTF-8 octets (Alex, 2026-10-31).  The
+     length counts those octets, so it cannot lie.  A character past
+     255 needs no refusal. *)
   CrLf (d) ;
   CrLf (d) ;
   DynStr.Append (d, body) ;
-  wire := DynStr.Bytes (scratch, DynStr.View (d), FALSE) ;
-  n := I64 (Write (C.Int (fd), ADR (wire), C.SizeT (LEN (wire))))
-  (* a client that hung up mid-answer is its own news: nothing to do
-     with the corpse of a connection but close it (Answer's FINALLY).
-     A server does not RAISE at a peer's failure.                    *)
+  ok := WriteAll (fd, DynStr.Octets (d))
+  (* A client may hang up mid-answer.  Answer's FINALLY closes the
+     connection then, and ok goes unread.  A server does not RAISE at
+     a peer's failure. *)
 END Respond ;
 
 PROCEDURE Answer (r: PTR Router ; fd: I64)
@@ -2433,21 +2545,25 @@ BEGIN
   buf := NEW (scratch, BYTE, ReqMax) ;
   BEGIN
     n := I64 (Read (C.Int (fd), ADR (buf), C.SizeT (ReqMax))) ;
-    (* one read: an HTTP/1.0 request line fits in the first segment;
-       one that straddles it earns 400, honestly                     *)
+    (* One read is enough: an HTTP/1.0 request line fits in the first
+       segment.  One that straddles it earns 400, honestly.          *)
     IF n <= 0 THEN RETURN END ;
-    req := DynStr.Chars (scratch, SLICE (buf, 0, n)) ;
+    (* HeadText reads each line as UTF-8 when it is UTF-8, else one
+       CHAR per octet.  The scans below run over req's own octets.  A
+       Latin-1 line has more of them than the wire had. *)
+    req := HeadText (scratch, SLICE (buf, 0, n)) ;
+    n := Text.BLen (req) ;
 
     (* request line is "METHOD SP PATH SP VERSION CRLF ..." *)
     sp1 := 0 ;
     i := 0 ;
     WHILE i < n AND sp1 = 0 DO
-      IF req[i] = ' ' THEN sp1 := i END ;
+      IF Text.BIs (req, i, ' ') THEN sp1 := i END ;
       i := i + 1
     END ;
     sp2 := 0 ;
     WHILE i < n AND sp2 = 0 DO
-      IF req[i] = ' ' OR req[i] = 0DC THEN sp2 := i END ;
+      IF Text.BIs (req, i, ' ') OR Text.BIs (req, i, 0DC) THEN sp2 := i END ;
       i := i + 1
     END ;
     IF sp1 = 0 OR sp2 = 0 THEN
@@ -2459,7 +2575,7 @@ BEGIN
 
     cur := r.first ;
     WHILE cur IS SOME rt DO
-      IF DynStr.Eq (rt.method, method) AND DynStr.Eq (rt.path, path) THEN
+      IF Text.Eq (rt.method, method) AND Text.Eq (rt.path, path) THEN
         Respond (fd, rt.status, rt.ctype, rt.body) ;
         RETURN
       END ;
@@ -2468,8 +2584,8 @@ BEGIN
     Respond (fd, 404, 'text/plain', 'no route')
   FINALLY
     n := I64 (Close (C.Int (fd)))
-    (* closed on success, on RAISE, on early RETURN: par 5.  The M2
-       tradition juggled close by hand on every path.                *)
+    (* fd is closed on success, on RAISE, on early RETURN: par 5.
+       The M2 tradition juggled close by hand on every path.         *)
   END
 END Answer ;
 

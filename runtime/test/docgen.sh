@@ -1,9 +1,10 @@
 #!/bin/sh
 # Regenerate docs/modules/*.md, the goldens docdiff compares against.
 #
-# Separate from docdiff on purpose: a gate that regenerates what it
-# compares against cannot fail.  Run this when a doc comment changes,
-# in the same commit as the change, exactly as lextest.golden is.
+# This script stays separate from docdiff on purpose: a gate that
+# regenerates what it compares against cannot fail.  Run this when a doc
+# comment changes, in the same commit as the change, exactly as
+# lextest.golden is.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh
@@ -17,10 +18,11 @@ mkdir -p "$GOLD"
 export M9RUNTIME=$(cd .. && pwd)
 export M9LIBRARY=$SRC
 n=0
-# The list is build.sh's LIBRARY, and the range closes on the line that
-# ends the string -- NOT on a module name: closed on `Plot ZarrStore"`,
-# it silently ran to the end of the file when 0.5.0 appended Lsp and
-# M9fmt, and `mkdir` became a module (2026-09-03, both branches red).
+# The list is build.sh's LIBRARY.  The range closes on the line that
+# ends the string, NOT on a module name.  Once it closed on `Plot
+# ZarrStore"`.  Then it silently ran to the end of the file when 0.5.0
+# appended Lsp and M9fmt, and `mkdir` became a module (2026-09-03, both
+# branches red).
 for m in $(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh |
            sed 's/LIBRARY="//; s/"$//; s/\\$//' | tr -s ' \n' ' '); do
   d=""

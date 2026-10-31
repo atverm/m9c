@@ -6,7 +6,7 @@ MODULE reviewstale ;
    argument, which already reaches the twin, is not.  Three stale calls
    -- Text.Eq on two STR, Io.WriteLine of a STR, Csv.Find by a STR name
    is not here (no Csv) -- and three UTF calls that must not appear.
-   Held by reviewdiff.sh, which must find exactly the three. *)
+   reviewdiff.sh holds it and must find exactly the three. *)
 
 IMPORT Io, Text ;
 

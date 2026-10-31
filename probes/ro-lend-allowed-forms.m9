@@ -1,34 +1,39 @@
 (* EXPECT: argument 1 of Up: the CONST Title can be lent only to an RO parameter *)
-(* the one refusal here is the last call; everything before it is what
+(* The one refusal here is the last call.  Everything before it is what
    the rule must NOT refuse: read-only storage to an RO parameter, a
-   variable to a writable one, a literal to a CHAR, a concatenation
-   (frame storage, writable) and a by-value slice parameter lent on *)
+   variable to a writable one, a literal to a CHAR, a frame allocation
+   (writable) and a by-value slice parameter lent on.  Title is a UTF
+   since the switch, so its legal read goes to a UTF parameter. *)
 MODULE m ;
 CONST Title = 'report' ;
 VAR
   buf : ARRAY 4 OF CHAR ;
   n : I64 ;
-PROCEDURE Up (s: STR) RAISES IndexError =
+PROCEDURE Up (s: SLICE OF CHAR) RAISES IndexError =
 BEGIN
   s[0] := 'X'
 END Up ;
-PROCEDURE Len (RO s: STR) : I64 =
+PROCEDURE Len (RO s: SLICE OF CHAR) : I64 =
 BEGIN
   RETURN LEN (s)
 END Len ;
+PROCEDURE LenU (RO s: UTF) : I64 =
+BEGIN
+  RETURN LEN (OCTETS (s))
+END LenU ;
 PROCEDURE One (c: CHAR) : I64 =
 BEGIN
   RETURN ORD (c)
 END One ;
-PROCEDURE Onward (s: STR) RAISES IndexError =
+PROCEDURE Onward (s: SLICE OF CHAR) RAISES IndexError =
 BEGIN
   Up (s)
 END Onward ;
-PROCEDURE F (RO view: STR) RAISES IndexError =
+PROCEDURE F (RO view: SLICE OF CHAR) RAISES IndexError =
 BEGIN
-  n := Len ('abc') + Len (view) + Len (Title) + One ('x') ;
+  n := Len ('abc') + Len (view) + LenU (Title) + One ('x') ;
   Up (buf) ;
-  Up ('ab' + 'c') ;
+  Up (NEW (CHAR, 3)) ;
   Onward (buf) ;
   Up (Title)
 END F ;

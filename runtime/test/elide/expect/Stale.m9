@@ -1,12 +1,11 @@
 MODULE Stale ;
 
-(* a caller written before its callee lost its pool by hand: Sum and
-   Squares take none here, and the extra pool argument is STALE.  The
-   tool drops it by arity -- the callee takes no pool and the call
-   hands one argument too many -- and it is no use of the caller's
-   pool, so Total loses its parameter like any other.  (Json and Text
-   were elided by hand in stage 2, before the tool; the zarr proxy
-   kept 123 pools only to hand them on this way.) *)
+(* Stale is a caller written before its callee lost its pool by hand:
+   Count takes none, and the pool handed to it is STALE.  The tool drops it by arity -- the callee takes no pool and
+   the call hands one argument too many -- and it is no use of the
+   caller's pool, so Total loses its parameter like any other.  (Json
+   and Text were elided by hand in stage 2, before the tool; the zarr
+   proxy kept 123 pools only to hand them on this way.) *)
 
 IMPORT Io ;
 IMPORT Grow ;
@@ -26,5 +25,6 @@ BEGIN
   l := Grow.NewList (pool) ;
   Grow.Push (l, 5) ;
   Io.WriteI64 (Total (l)) ;
+  Io.WriteI64 (Grow.Count ()) ;   (* stale: Count takes no pool *)
   Io.WriteLine ('')
 END Stale.

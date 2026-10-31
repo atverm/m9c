@@ -31,8 +31,9 @@ CONST
   Fence = '```' ;
   Fewest = 15 ;
 
-(* the file's octets, one CHAR each; the empty string when it is not
-   there, as a missing gated file must count as a drift, not a crash *)
+(* Octets answers the file's octets, one CHAR each.  It answers the
+   empty string when the file is not there, as a missing gated file
+   must count as a drift, not a crash. *)
 PROCEDURE Octets (VAR pool: POOL ; RO path: STR) : STR
   RAISES ValueRange =
 BEGIN
@@ -42,29 +43,30 @@ EXCEPT
 | Io.IOError : RETURN ''
 END Octets ;
 
-(* the position of needle in s at or after from, or -1 *)
+(* FindFrom answers the position of needle in s at or after from, or
+   -1. *)
 PROCEDURE FindFrom (RO s, needle: STR ; from: I64) : I64 =
 VAR k : I64 ;
 BEGIN
-  IF from > LEN (s) THEN RETURN -1 END ;
-  k := Text.Find (SLICE (s, from, LEN (s) - from), needle) ;
+  IF from > Text.BLen (s) THEN RETURN -1 END ;
+  k := Text.Find (SLICE (s, from, Text.BLen (s) - from), needle) ;
   IF k < 0 THEN RETURN -1 END ;
   RETURN from + k
 END FindFrom ;
 
-(* a blank as Python's \S does not match it *)
+(* Blank tests for a blank as Python's \S does not match it. *)
 PROCEDURE Blank (c: CHAR) : BOOL =
 BEGIN
   RETURN (c = ' ') OR (c = 09C) OR (c = 0AC) OR (c = 0DC) OR
          (c = 0BC) OR (c = 0CC)
 END Blank ;
 
-(* s without the line feeds at its end *)
+(* NoTrailingLf answers s without the line feeds at its end. *)
 PROCEDURE NoTrailingLf (RO s: STR) : STR =
 VAR n : I64 ;
 BEGIN
-  n := LEN (s) ;
-  WHILE (n > 0) AND (s[n - 1] = 0AC) DO n := n - 1 END ;
+  n := Text.BLen (s) ;
+  WHILE (n > 0) AND (Text.BIs (s, n - 1, 0AC)) DO n := n - 1 END ;
   RETURN SLICE (s, 0, n)
 END NoTrailingLf ;
 
@@ -98,19 +100,19 @@ BEGIN
         (* the opening: the kind, one blank, the name to the line's end *)
         q := p + 3 ;
         k := q ;
-        WHILE (k < LEN (text)) AND
-              (((text[k] >= 'a') AND (text[k] <= 'z')) OR
-               ((text[k] >= '0') AND (text[k] <= '9'))) DO
+        WHILE (k < Text.BLen (text)) AND
+              (((I64 (Text.BAt (text, k)) >= ORD ('a')) AND (I64 (Text.BAt (text, k)) <= ORD ('z'))) OR
+               ((I64 (Text.BAt (text, k)) >= ORD ('0')) AND (I64 (Text.BAt (text, k)) <= ORD ('9')))) DO
           k := k + 1
         END ;
         kind := SLICE (text, q, k - q) ;
         ok := (Text.Eq (kind, 'm9') OR Text.Eq (kind, 'output') OR
-               Text.Eq (kind, 'refusal')) AND (k < LEN (text)) AND (text[k] = ' ') ;
+               Text.Eq (kind, 'refusal')) AND (k < Text.BLen (text)) AND (Text.BIs (text, k, ' ')) ;
         IF ok THEN
           q := k + 1 ;
           k := q ;
-          WHILE (k < LEN (text)) AND NOT Blank (text[k]) DO k := k + 1 END ;
-          ok := (k > q) AND (k < LEN (text)) AND (text[k] = 0AC)
+          WHILE (k < Text.BLen (text)) AND NOT Blank (Text.BChar (text, k)) DO k := k + 1 END ;
+          ok := (k > q) AND (k < Text.BLen (text)) AND (Text.BIs (text, k, 0AC))
         END ;
         IF ok THEN
           name := SLICE (text, q, k - q) ;
@@ -121,9 +123,9 @@ BEGIN
           body := SLICE (text, k + 1, e - (k + 1)) ;
           n := n + 1 ;
           IF Text.Eq (kind, 'm9') THEN
-            ok := DynStr.Eq (body, Octets (pool, exa + '/' + name))
+            ok := Text.Eq (body, Octets (pool, exa + '/' + name))
           ELSIF Text.Eq (kind, 'output') THEN
-            ok := DynStr.Eq (body, Octets (pool, exa + '/expect/' + name + '.out'))
+            ok := Text.Eq (body, Octets (pool, exa + '/expect/' + name + '.out'))
           ELSE
             want := NoTrailingLf (body) ;
             ok := Text.Contains (Octets (pool, work + '/' + name + '.err'), want)

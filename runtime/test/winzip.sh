@@ -1,9 +1,9 @@
 #!/bin/sh
-# The Windows zip, end to end, the way a reader meets it: unpack a
-# folder, run install.bat, read the page, press Y, get a working M9.
-# Run under wine, because that is the only Windows this repository
-# has; the RECEIPT still has to come from real Windows, exactly as
-# each Linux package's does from its own distro.
+# This gate tests the Windows zip, end to end, the way a reader meets
+# it: unpack a folder, run install.bat, read the page, press Y, get a
+# working M9.  It runs under wine, because that is the only Windows
+# this repository has.  The RECEIPT still has to come from real
+# Windows, exactly as each Linux package's does from its own distro.
 #
 # It needs two things the CI machine does not have, and says so rather
 # than passing quietly:
@@ -24,21 +24,21 @@
 #      how to reach m9c, PATH or no PATH
 #   7  the tutorial is offered; declining names the web version,
 #      accepting builds m9tutor and serves the pages and a cell, AND
-#      m9setup's own `start` launch works -- the branch that was not
-#      taken here is the one that broke on a real Windows machine
+#      m9setup's own `start` launch works.  The branch that was not
+#      taken here is the one that broke on a real Windows machine.
 #   8  a second run is idempotent, PATH included
 #   9  NO WARNING anywhere.  The zip's whole audience is people
-#      meeting M9 for the first time; a warning on their first build
-#      is the thing this gate exists to keep out.
+#      meeting M9 for the first time.  This gate exists to keep a
+#      warning out of their first build.
 set -u
 
 R=$(cd "$(dirname "$0")/../.." && pwd)
 TC=${M9WINTOOLCHAIN:-}
 
 # WINE IS RETIRED AS A WINDOWS (Alex, 2026-10-19: "skip the wine part
-# and move to the UTM Win11").  The zip is installed, compiled with and
-# its tutor run on Windows 11 by tools/release/win/vmsmoke.sh, whose
-# smoke line the release receipt carries; M9WINE=1 runs this gate
+# and move to the UTM Win11").  tools/release/win/vmsmoke.sh installs
+# the zip, compiles with it and runs its tutor on Windows 11, and the
+# release receipt carries its smoke line.  M9WINE=1 runs this gate
 # under wine as before, for a machine without the VM.
 [ "${M9WINE:-0}" = 1 ] || { echo "winzip: SKIP -- the Windows checks run on the Windows 11 VM ($0's successor: tools/release/win/vmsmoke.sh); M9WINE=1 for wine"; exit 0; }
 command -v wine >/dev/null 2>&1 || { echo "winzip: SKIP -- no wine"; exit 0; }
@@ -46,8 +46,8 @@ command -v wine >/dev/null 2>&1 || { echo "winzip: SKIP -- no wine"; exit 0; }
   echo "winzip: SKIP -- no MSYS2 subset (set \$M9WINTOOLCHAIN; see tools/release/win/subset.sh)"
   exit 0
 }
-# the release half is not in the public tree, and this gate is (the
-# tutdiff precedent: skip out loud rather than fail on a missing half)
+# The release half is not in the public tree, and this gate is (the
+# tutdiff precedent: skip out loud rather than fail on a missing half).
 [ -f "$R/tools/release/win/install.bat" ] || {
   echo "winzip: SKIP -- no tools/release/win in this tree"
   exit 0
@@ -71,8 +71,9 @@ COMPILER=$(sed -n 's/^COMPILER="\(.*\)"/\1/p' "$R/build.sh")
 LIBRARY=$(sed -n '/^LIBRARY="/,/"/p' "$R/build.sh" | tr -d '"\\' | sed 's/^LIBRARY=//')
 for m in $COMPILER; do cp "$R/runtime/gen/$m.c" "$R/runtime/gen/$m.h" "$Z/bootstrap/"; done
 for m in $LIBRARY; do cp "$R/corpus/$m.m9" "$Z/lib/m9/"; done
-# the tutorial's own library modules -- not an example: a module the
-# examples IMPORT (chapter 3's Temps).  Derived, not named.
+# Copy the tutorial's own library modules.  Such a module is not an
+# example but a module the examples IMPORT (chapter 3's Temps).  The
+# list is derived, not named.
 for f in "$R"/docs/tutorial/examples/*.m9; do
   b=$(basename "$f")
   case $b in C[0-9]*|X[0-9]*) ;; *) cp "$f" "$Z/lib/m9/" ;; esac
@@ -82,9 +83,9 @@ cp -r "$R/tools/vscode-m9/." "$Z/tools/vscode-m9/" ; rm -f "$Z/tools/vscode-m9/t
 cp "$R/tools/release/win/Setup.m9" "$R/tools/release/win/WinTutor.m9" \
    "$R/tools/release/win/M9Tutor.m9" "$Z/setup/"
 cp "$R/tools/release/win/install.bat" "$Z/"
-# the tutorial pages, by tools/tutor/MkTutor.m9 under `m9c --run`: the
-# tree's own compiler, built here from runtime/gen when no gate has
-# left one (an installed m9c may predate --run)
+# tools/tutor/MkTutor.m9 makes the tutorial pages under `m9c --run`.
+# It runs with the tree's own compiler, built here from runtime/gen
+# when no gate has left one (an installed m9c may predate --run).
 M9C=${M9C:-$R/runtime/test/m9c}
 if [ ! -x "$M9C" ]; then
   ( cd "$R/runtime/test" && . ./lib/gen.sh >/dev/null &&
@@ -118,12 +119,13 @@ grep -qi 'Nothing was installed' "$W/decline.log" && ok "declining says so" \
 # --- 3-7: accepting, and answering the three questions --------------
 # install.bat -y takes the page's own question WITHOUT READING STDIN,
 # so the three m9setup asks get the three answers below.  Driving it
-# through `set /p` instead does not work and is the finding: cmd's
-# set /p on a redirected stream takes the buffer, not a line, and all
-# three questions then silently took their defaults.
-# n to the VS Code extension (so the gate can see a refusal leave
-# nothing behind), Y to the PATH, n to the tutorial -- which is
-# started separately below, in this shell, where it can be stopped.
+# through `set /p` instead does not work, and that is the finding.
+# cmd's set /p on a redirected stream takes the buffer, not a line,
+# and all three questions then silently took their defaults.
+# Answer n to the VS Code extension (so the gate can see a refusal
+# leave nothing behind), Y to the PATH, n to the tutorial.  The
+# tutorial is started separately below, in this shell, where it can be
+# stopped.
 printf 'n\nY\nn\n' > "$W/yes.txt"
 ( cd "$Z" && wine cmd /c install.bat -y < "$W/yes.txt" ) > "$W/install.log" 2>&1
 rc=$?
@@ -170,10 +172,10 @@ rc=$?
 if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
   ok "m9tutor.exe builds  ($(stat -c%s "$Z/bin/m9tutor.exe") bytes)"
   P=8793
-  # exec, so $! is the server itself and not a subshell around it:
-  # `fuser -k` did NOT reach it (measured -- the gate hung in wait
-  # with the tutor still listening), and the project's own rule is to
-  # kill the pid you started.
+  # Use exec, so $! is the server itself and not a subshell around it.
+  # `fuser -k` did NOT reach it (measured: the gate hung in wait with
+  # the tutor still listening), and the project's own rule is to kill
+  # the pid you started.
   ( cd "$Z/build" && exec wine ../bin/m9tutor.exe $P ../doc/tutorial . ) > "$W/tut.log" 2>&1 &
   TUT=$!
   i=0
@@ -191,10 +193,10 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
     && ok "and compiles and runs a cell from the page" \
     || { bad "POST /run"; head -5 "$W/run.txt"; }
   # THE CHAPTERS THAT NEEDED A LIBRARY.  Every one of these failed on
-  # a real Windows machine while this gate was green (Alex, 2026-09-06)
-  # -- the gate ran one hand-written hello and never an example, so it
-  # never linked TLS, blosc or netCDF and never read Io.Arg.  Four
-  # separate bugs hid behind that.
+  # a real Windows machine while this gate was green (Alex,
+  # 2026-09-06).  The gate ran one hand-written hello and never an
+  # example, so it never linked TLS, blosc or netCDF and never read
+  # Io.Arg.  Four separate bugs hid behind that.
   cell () {                          # cell NAME  -> $W/r-NAME.txt
     # --max-time, ALWAYS.  Without it a cell that hangs hangs the
     # gate: C14Flux did, and turned a run into a 28-minute wait
@@ -203,10 +205,10 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
          --data-binary "@$R/docs/tutorial/examples/$1.m9" \
          "http://127.0.0.1:$P/run" > "$W/r-$1.txt"
   }
-  # imports a module that is not an example -- the tutorial's own
+  # C3Use imports a module that is not an example: the tutorial's own
   # Temps.  The zip shipped the corpus library and not this, so the
   # chapter answered `m9c: cannot find module Temps' (Alex,
-  # 2026-09-07).  It is also the check that the REFUSAL is tidy: a
+  # 2026-09-07).  It is also the check that the REFUSAL is tidy.  A
   # cell's reply carries the compiler's diagnostic and not its
   # `N errors in cell.m9' summary.
   cell C3Use
@@ -221,32 +223,35 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
     && ok "a refusal is the diagnostic, without m9c's own summary" \
     || { bad "the refusal carries the summary"; head -4 "$W/r-bad.txt"; }
 
-  # reads a file by a RELATIVE path and its own Io.Arg default: the
-  # empty-argument bug made this answer `cannot read ' with no name
+  # C15Stats reads a file by a RELATIVE path and its own Io.Arg
+  # default.  The empty-argument bug made this answer `cannot read '
+  # with no name.
   cell C15Stats
   [ "$(head -1 "$W/r-C15Stats.txt" | tr -d '\r')" = "exit 0" ] \
     && ok "C15Stats runs and reads build/data by its own relative path" \
     || { bad "C15Stats"; head -3 "$W/r-C15Stats.txt"; }
-  # threads, and the one- and eight-thread answers must agree
+  # C16Hash uses threads, and the one- and eight-thread answers must
+  # agree.
   cell C16Hash
   grep -q 'hash sum, eight threads' "$W/r-C16Hash.txt" \
     && ok "C16Hash runs its threaded half" \
     || { bad "C16Hash"; head -3 "$W/r-C16Hash.txt"; }
-  # TLS shim + blosc + the store this very server now hosts on 18931.
-  # It expected `store unreachable' until that thread existed, which
-  # is a gate asserting yesterday's limitation as today's contract.
+  # C8Zarr needs the TLS shim + blosc + the store this very server now
+  # hosts on 18931.  It expected `store unreachable' until that thread
+  # existed.  That was a gate asserting yesterday's limitation as
+  # today's contract.
   cell C8Zarr
   [ "$(head -1 "$W/r-C8Zarr.txt" | tr -d '\r')" = "exit 0" ] \
     && ok "C8Zarr reads the store this server hosts" \
     || { bad "C8Zarr"; head -4 "$W/r-C8Zarr.txt"; }
-  # netCDF, bundled at Alex's word: 41 DLLs and 30 MB, hdf5, curl,
+  # netCDF is bundled at Alex's word: 41 DLLs and 30 MB, hdf5, curl,
   # libxml2, libzip and the AWS SDK included, because MSYS2 builds
   # netCDF against its DAP/S3 half.  The chapter must RUN.
   # A FIGURE MUST BE CLICKABLE.  The chapters write to absolute POSIX
-  # /tmp paths; the POSIX tutor binds a private /tmp into its sandbox
-  # and this cannot, so /out looked only in the work folder and NO
-  # figure was ever offered -- while tutor.port, which the cell did
-  # not write, was (Alex, 2026-09-07).
+  # /tmp paths.  The POSIX tutor binds a private /tmp into its sandbox
+  # and this one cannot.  So /out looked only in the work folder and NO
+  # figure was ever offered, while tutor.port, which the cell did not
+  # write, was (Alex, 2026-09-07).
   cell C9Plot
   f=$(grep -o '/out/[A-Za-z0-9._-]*' "$W/r-C9Plot.txt" | head -1)
   if [ -n "$f" ]; then
@@ -261,9 +266,9 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
     head -3 "$W/r-C9Plot.txt"
   fi
 
-  # what /out will not LIST it must not SERVE: the two were separate
-  # rules and tutor.port stayed fetchable after it stopped being
-  # offered
+  # /out must not SERVE what it will not LIST.  The two were separate
+  # rules, and tutor.port stayed fetchable after it stopped being
+  # offered.
   n=$(curl -s --max-time 20 -o /dev/null -w '%{http_code}' \
         "http://127.0.0.1:$P/out/tutor.port")
   [ "$n" = 404 ] && ok "/out refuses what it does not list" \
@@ -275,14 +280,14 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
   # HDF5 and the AWS SDK among them, does not come back.  Nothing of
   # M9 is involved, and on real Windows it is expected to exit
   # normally.  But this server is single-threaded, so a cell that
-  # cannot return takes the tutorial with it -- which is why every
-  # check after it failed when it sat in the middle.
+  # cannot return takes the tutorial with it.  So every check after it
+  # failed when it sat in the middle.
   #
   # SINCE THE BOUND (System.ExecWithin, 2026-09-07) THAT HANG HAS A
   # SHAPE: the cell answers with everything it printed, the status of
   # the kill, and the line saying it was stopped.  So this branch
-  # checks the ANSWER -- the numbers are the chapter's own -- and
-  # accepts that it could not exit, which is wine's business and not
+  # checks the ANSWER (the numbers are the chapter's own).  It accepts
+  # that the cell could not exit, which is wine's business and not
   # ours.  Before the bound the reply was empty and there was nothing
   # to check at all.
   cell C14Flux
@@ -303,16 +308,16 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
   fi
 
   # A CELL THAT NEVER RETURNS HOLDS ITS OWN IMAGE OPEN, and Windows
-  # will not let the next link overwrite a running exe: the check
+  # will not let the next link overwrite a running exe.  The check
   # after this one failed with `ld.exe: cannot open output file
   # cell.exe: Permission denied'.  That is real Windows behaviour and
-  # not a wine one -- any runaway cell does it -- and it is why the
-  # cell run is bounded now (System.ExecWithin).
+  # not a wine one (any runaway cell does it), and so the cell run is
+  # bounded now (System.ExecWithin).
   #
   # THE PATTERN IS cell[0-9]*.exe, NOT cell.exe, and it was wrong
-  # here from the day FreeExe was written: the runner takes the first
+  # here from the day FreeExe was written.  The runner takes the first
   # FREE NAME, so the images are cell0.exe, cell1.exe ... and never
-  # `cell.exe' at all.  This sweep matched nothing and a hung cell
+  # `cell.exe' at all.  This sweep matched nothing, and a hung cell
   # from the unbounded days outlived the gate by ten minutes
   # (measured, 2026-09-07).
   for pid in $(ls /proc 2>/dev/null | grep -E '^[0-9]+$'); do
@@ -320,13 +325,13 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
       grep -qE 'cell[0-9]*\.exe' && kill -9 $pid 2>/dev/null
   done
 
-  # AND THE SERVER: $TUT is the `wine' that STARTED it, and killing
-  # that does not always reach the Windows process it became -- which
-  # then still holds bin\m9tutor.exe, so the m9setup run below cannot
-  # LINK its own copy and reports a build failure that is the gate's
-  # leftover rather than a bug (seen three times before this).  Kill
-  # the pid we started, then anything still answering to the image
-  # name, and only then go on.
+  # AND THE SERVER: $TUT is the `wine' that STARTED it, and a kill of
+  # that does not always reach the Windows process it became.  That
+  # process then still holds bin\m9tutor.exe.  So the m9setup run below
+  # cannot LINK its own copy, and reports a build failure that is the
+  # gate's leftover rather than a bug (seen three times before this).
+  # Kill the pid we started, then anything still answering to the
+  # image name, and only then go on.
   kill $TUT 2>/dev/null
   fuser -k $P/tcp >/dev/null 2>&1      # belt, for a wine that re-execs
   wait $TUT 2>/dev/null
@@ -340,20 +345,20 @@ else
 fi
 
 # --- 7b: the launch m9setup ITSELF performs --------------------------
-# This is the branch a reader takes, and the gate did not take it: the
-# runs above answer n to the tutorial, so `cmd /c start ...` was never
-# exercised here and a quoting bug reached a real Windows machine
-# (Alex: 'Cannot find \"M9 tutorial\"').  wine reproduces it exactly --
-# the broken spelling dies with ShellExecuteEx failed: Invalid name --
-# so there was never a reason not to check it.  A gate that tests the
-# branch it can reach instead of the branch the user takes is not a
-# gate for that branch at all.
+# This is the branch a reader takes, and the gate did not take it.
+# The runs above answer n to the tutorial, so `cmd /c start ...` was
+# never exercised here, and a quoting bug reached a real Windows
+# machine (Alex: 'Cannot find \"M9 tutorial\"').  wine reproduces it
+# exactly: the broken spelling dies with ShellExecuteEx failed:
+# Invalid name.  So there was never a reason not to check it.  A gate
+# that tests the branch it can reach instead of the branch the user
+# takes is not a gate for that branch at all.
 # NO $M9TUTORPORT here, deliberately.  m9tutor takes the first FREE
-# port from the one it is asked for and writes down which it got, and
-# this machine already has something on 8080 -- so the default run is
-# the one that exercises the search, and the gate reads the answer
-# back rather than asserting it.  (A reader whose 8080 was taken saw
-# the window flash and go; Alex, 2026-09-07.)
+# port from the one it is asked for and writes down which it got.  This
+# machine already has something on 8080.  So the default run is the one
+# that exercises the search, and the gate reads the answer back rather
+# than asserting it.  (A reader whose 8080 was taken saw the window
+# flash and go; Alex, 2026-09-07.)
 printf 'n\nn\nY\n' > "$W/tut.txt"
 ( cd "$Z" && wine cmd /c install.bat -y < "$W/tut.txt" ) \
   > "$W/third.log" 2>&1
@@ -390,17 +395,17 @@ if grep -q 'Modula-9' "$W/tutindex.html" 2>/dev/null; then
 else
   bad "nothing answers on $TP after m9setup started the tutorial"
   tail -20 "$W/third.log" | sed 's/^/        /'
-  # AND KEEP THE EVIDENCE.  This check failed intermittently -- about
+  # AND KEEP THE EVIDENCE.  This check failed intermittently: about
   # two runs in five, always with `m9: unhandled IndexError' after
   # m9setup said it was building the tutorial server, never in a hand
-  # replay -- and the evidence-keeping below was written before the
-  # cause was known.  FOUND 2026-09-11, by reading rather than by
-  # replay: m9setup polled for tutor.port in a hot loop, Io.WriteFile
-  # creates a file EMPTY and fills it at close, and Io.ReadFile passed
-  # a size of 0 back to the shim as the cap -- which is the size query
-  # again, so it was told the new length for a buffer of none.  Fixed
-  # in Io.ReadFile (runtime/test/io_driver.c pins it, 39 raises in
-  # 4000 reads before), and the port file is renamed into place.  The
+  # replay.  The evidence-keeping below was written before the cause
+  # was known.  FOUND 2026-09-11, by reading rather than by replay.
+  # m9setup polled for tutor.port in a hot loop.  Io.WriteFile creates
+  # a file EMPTY and fills it at close.  Io.ReadFile passed a size of 0
+  # back to the shim as the cap, which is the size query again, so it
+  # was told the new length for a buffer of none.  It was fixed in
+  # Io.ReadFile (runtime/test/io_driver.c pins it, 39 raises in 4000
+  # reads before), and the port file is renamed into place.  The
   # keeping stays: the next intermittent failure deserves its logs.
   keep=/tmp/winzip-failed-$$
   mkdir -p "$keep"
@@ -412,10 +417,11 @@ else
     done; } > "$keep/alive.txt" 2>/dev/null
   echo "        (logs kept in $keep)"
 fi
-# whatever it started is detached: find it by /proc, never by pattern-kill
-# a pid can vanish between the listing and the read, and the shell --
-# not tr -- reports the failed redirection, so the whole body's stderr
-# goes away rather than tr's alone
+# Whatever it started is detached.  Find it by /proc, never by
+# pattern-kill.
+# A pid can vanish between the listing and the read, and the shell
+# (not tr) reports the failed redirection.  So the whole body's stderr
+# goes away rather than tr's alone.
 for pid in $(ls /proc 2>/dev/null | grep -E '^[0-9]+$'); do
   { tr '\0' ' ' < /proc/$pid/cmdline; } 2>/dev/null |
     grep -q 'm9tutor.exe' && kill $pid 2>/dev/null
@@ -431,19 +437,20 @@ n=$(wine reg query 'HKCU\Environment' /v Path 2>/dev/null | tr -d '\r' |
 [ "$n" = 1 ] && ok "and does not append the PATH twice" || bad "PATH carries the toolchain $n times"
 
 # --- 9: not one warning ----------------------------------------------
-# A DIAGNOSTIC, not the word.  The first version grepped for
+# Match A DIAGNOSTIC, not the word.  The first version grepped for
 # warning|error and fired on the installer's own sentence "if that
-# window shows an error instead, the port is most likely in use" --
-# advice a reader wants, matched by a check meant for gcc.  What a
-# toolchain actually emits is `warning:` / `error:` with the colon,
-# and lto-wrapper's note carries neither.
+# window shows an error instead, the port is most likely in use".  That
+# is advice a reader wants, matched by a check meant for gcc.  A
+# toolchain actually emits `warning:` / `error:` with the colon, and
+# lto-wrapper's note carries neither.
 #
 # AND NOT THE HOST'S BROWSER.  The third run starts the tutorial, wine's
-# winebrowser hands the URL to the HOST's Chrome, and run headless
-# (over ssh, no DISPLAY) Chrome writes its own complaint into the log:
+# winebrowser hands the URL to the HOST's Chrome, and Chrome, run
+# headless (over ssh, no DISPLAY), writes its own complaint into the
+# log:
 #   [3332465:3332465:1001/182601.106071:ERROR:ui/ozone/...] Missing X server or $DISPLAY
-# which matched `error:` and reddened the gate on 0.12.0's release day
-# (44 of 45) for a line no Windows reader can ever see.  Lines in
+# That line matched `error:` and reddened the gate on 0.12.0's release
+# day (44 of 45), for a line no Windows reader can ever see.  Lines in
 # Chromium's own [pid:tid:MMDD/HHMMSS.usec:LEVEL:file] shape are not
 # the install's; everything else still counts.
 w=$(grep -inE 'warning:|error:|lto-wrapper|ShellExecuteEx' \

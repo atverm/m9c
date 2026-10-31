@@ -1,7 +1,7 @@
 (* EXPECT: undeclared retention: borrowed msg (carried by p) reaches module state -- declare KEPT msg (par 4.1) *)
-(* A borrow laundered through a call's ANSWER: Parts answers views of
-   its parameter (the splitter shape -- it keeps nothing, so it says
-   no KEPT), and the caller stores that answer in module state.  The
+(* This probe launders a borrow through a call's ANSWER.  Parts answers
+   views of its parameter (the splitter shape).  It keeps nothing, so it
+   says no KEPT.  The caller stores that answer in module state.  The
    retention is the caller's, and it is seen through the answer. *)
 MODULE m ;
 VAR last : SLICE OF STR ;
@@ -9,7 +9,7 @@ PROCEDURE Parts (VAR pool: POOL ; RO s: STR) : SLICE OF STR =
 VAR out : SLICE OF STR ;
 BEGIN
   out := NEW (pool, STR, 1) ;
-  out[0] := SLICE (s, 0, LEN (s)) ;
+  out[0] := SLICE (s, 0, LEN (OCTETS (s))) ;
   RETURN out
 END Parts ;
 PROCEDURE Note (VAR pool: POOL ; RO msg: STR) =

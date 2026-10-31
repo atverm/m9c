@@ -1,21 +1,21 @@
 MODULE M9fmt ;
 
-(* m9fmt -- the canonical layout, with the comments kept.
+(* m9fmt prints the canonical layout, with the comments kept.
 
    The engine has existed since P1: Print.Tree answers one spelling
    per construct, deterministic, and re-lexing its output reproduces
-   the source token stream exactly -- parsetest's own property.  What
-   Print cannot do, and says so in capitals, is keep comments: they
-   die in the lexer before a token exists.
+   the source token stream exactly: parsetest's own property.  Print
+   cannot keep comments, and says so in capitals: they die in the
+   lexer before a token exists.
 
    So this program never touches Print.  It parses with Lex.Collect
    armed (the --doc side channel), prints the canonical text, lexes
    BOTH texts, and uses the token-for-token correspondence as a map
    from source lines to output lines.  Each collected comment is
-   re-inserted at its anchor -- the first token after it in the
-   source -- with its original columns preserved verbatim, which is
-   also what keeps the --doc ownership convention (indented = owned
-   by the declaration above, column 1 = a banner) exactly as written.
+   re-inserted at its anchor, the first token after it in the source,
+   with its original columns preserved verbatim.  That also keeps the
+   --doc ownership convention (indented = owned by the declaration
+   above, column 1 = a banner) exactly as written.
 
    Stated narrowings, version 1:
    - a comment on the same line as preceding code stays on that
@@ -26,13 +26,13 @@ MODULE M9fmt ;
    - runs of blank lines collapse to one.
 
    A file that does not parse is refused with the parser's own
-   diagnostics -- a formatter must never rewrite a program it does
+   diagnostics: a formatter must never rewrite a program it does
    not understand.  If the printed text ever disagrees with the
    source token stream, m9fmt refuses rather than guesses: that
    property is what the whole design stands on.                     *)
 
 IMPORT Io ;
-IMPORT DynUtf ;
+IMPORT DynStr ;
 IMPORT Text ;
 IMPORT Lex ;
 IMPORT Ast ;
@@ -91,8 +91,8 @@ END LexAll ;
 
 (* ---- lines ------------------------------------------------------- *)
 
-(* the byte at offset i of u, as a number: the line scans below look
-   for the LF, a byte that is its own character *)
+(* B answers the byte at offset i of u, as a number: the line scans
+   below look for the LF, a byte that is its own character. *)
 PROCEDURE B (RO u: UTF ; i: I64) : I64 =
 BEGIN
   RETURN I64 (Text.BAt (u, i))
@@ -125,16 +125,17 @@ BEGIN
   RETURN out
 END SplitLines ;
 
-PROCEDURE Spaces (VAR d: PTR DynUtf.DString ; k: I64) =
+PROCEDURE Spaces (VAR d: PTR DynStr.DString ; k: I64) =
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO k - 1 DO DynUtf.AppendChar (d, ' ') END
+  FOR i := 0 TO k - 1 DO DynStr.AppendChar (d, ' ') END
 END Spaces ;
 
-(* the comment's own lines: the first at its recorded column, the
-   continuations verbatim -- the slice runs through the newlines, so
-   their original leading spaces are already inside it *)
-PROCEDURE EmitComment (VAR d: PTR DynUtf.DString ; col: I64 ;
+(* EmitComment writes the comment's own lines: the first at its
+   recorded column, the continuations verbatim.  The slice runs
+   through the newlines, so their original leading spaces are already
+   inside it. *)
+PROCEDURE EmitComment (VAR d: PTR DynStr.DString ; col: I64 ;
                        RO text: UTF) =
 VAR
   cl : SLICE OF UTF ;
@@ -144,8 +145,8 @@ BEGIN
   FOR i := 0 TO ncl - 1 DO
     IF i = 0 THEN Spaces (d, col - 1)
     END ;
-    DynUtf.Append (d, cl[i]) ;
-    DynUtf.AppendChar (d, 0AC)
+    DynStr.Append (d, cl[i]) ;
+    DynStr.AppendChar (d, 0AC)
   END
 END EmitComment ;
 
@@ -159,20 +160,20 @@ BEGIN
   Io.ErrLine ('  --check answers 1 when FILE is not already formatted')
 END Usage ;
 
-(* FILE:LINE:COL: parse: MSG -- the shape m9c prints, so an editor
-   that already reads one reads the other *)
+(* ErrPos prints FILE:LINE:COL: parse: MSG, the shape m9c prints, so
+   an editor that already reads one reads the other. *)
 PROCEDURE ErrPos (RO path: UTF ; ln, cl: I64 ; RO msg: UTF) =
-VAR d : PTR DynUtf.DString IN HEAP ;
+VAR d : PTR DynStr.DString IN HEAP ;
 BEGIN
-  d := DynUtf.New (HEAP) ;
-  DynUtf.Append (d, path) ;
-  DynUtf.AppendChar (d, ':') ;
-  DynUtf.AppendI64 (d, ln) ;
-  DynUtf.AppendChar (d, ':') ;
-  DynUtf.AppendI64 (d, cl) ;
-  DynUtf.Append (d, ': parse: ') ;
-  DynUtf.Append (d, msg) ;
-  Io.ErrLine (DynUtf.ViewIn (HEAP, d))
+  d := DynStr.New (HEAP) ;
+  DynStr.Append (d, path) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.AppendI64 (d, ln) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.AppendI64 (d, cl) ;
+  DynStr.Append (d, ': parse: ') ;
+  DynStr.Append (d, msg) ;
+  Io.ErrLine (DynStr.ViewIn (HEAP, d))
 END ErrPos ;
 
 PROCEDURE Format (RO src: UTF ; RO path: UTF) : UTF
@@ -189,7 +190,7 @@ VAR
   cblank : SLICE OF BOOL ;      (* blank line above this comment *)
   tblank : SLICE OF BOOL ;      (* blank line above this output line *)
   emitted, lastBlank : BOOL ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   cm, pm : Lex.Comment ;
 BEGIN
   Lex.Collect (TRUE) ;
@@ -220,7 +221,7 @@ BEGIN
   END ;
   lines := SplitLines (canon, nlines) ;
   (* blank lines survive by the same map: a blank source line
-     between two consecutive items -- token or comment -- asks for
+     between two consecutive items (token or comment) asks for
      ONE blank output line at the matching position.  srcAfter[i] is
      the last source line item i-1 occupies; a gap wider than one
      line means the source held at least one blank. *)
@@ -276,7 +277,7 @@ BEGIN
       IF ts.line[j] > a + 1 THEN tblank[tc.line[j]] := TRUE END
     END
   END ;
-  d := DynUtf.New (pool) ;
+  d := DynStr.New (pool) ;
   (* a #! first line is the operating system's (report par 2): the
      lexer skipped it, so the printer never saw it, and it goes back
      first and verbatim *)
@@ -284,14 +285,14 @@ BEGIN
     IF Text.StartsWithUtf (src, '#!') THEN
       a := Text.FindChar (src, 0AC) ;
       IF a < 0 THEN a := Text.BLen (src) END ;
-      DynUtf.Append (d, SLICE (src, 0, a)) ;
-      DynUtf.AppendChar (d, 0AC)
+      DynStr.Append (d, SLICE (src, 0, a)) ;
+      DynStr.AppendChar (d, 0AC)
     END
   END ;
   (* the printer emits its own blank lines between sections, so an
-     inserted one is guarded by what was ACTUALLY last emitted --
-     without this, printer blank plus mapped blank doubled, and the
-     second run fed on the first's doubling *)
+     inserted one is guarded by what was ACTUALLY last emitted.
+     Without this, printer blank plus mapped blank doubled, and the
+     second run fed on the first's doubling. *)
   lastBlank := TRUE ;
   FOR k := 1 TO nlines DO
     emitted := FALSE ;
@@ -299,7 +300,7 @@ BEGIN
       IF anchor[i] = k AND NOT trail[i] THEN
         cm := Lex.ComAt (i) ;
         IF cblank[i] AND NOT lastBlank THEN
-          DynUtf.AppendChar (d, 0AC)
+          DynStr.AppendChar (d, 0AC)
         END ;
         EmitComment (d, cm.col, cm.text) ;
         lastBlank := FALSE ;
@@ -307,28 +308,28 @@ BEGIN
       END
     END ;
     IF tblank[k] AND NOT emitted AND NOT lastBlank THEN
-      DynUtf.AppendChar (d, 0AC)
+      DynStr.AppendChar (d, 0AC)
     END ;
     lastBlank := Text.BLen (lines[k - 1]) = 0 ;
-    DynUtf.Append (d, lines[k - 1]) ;
+    DynStr.Append (d, lines[k - 1]) ;
     FOR i := 0 TO Lex.ComCount () - 1 DO
       IF anchor[i] = k AND trail[i] THEN
         cm := Lex.ComAt (i) ;
         ct := cm.text ;
-        DynUtf.Append (d, '  ') ;
+        DynStr.Append (d, '  ') ;
         (* multi-line trailing: first line here, the rest verbatim *)
         a := Text.FindChar (ct, 0AC) ;
         IF a < 0 THEN
-          DynUtf.Append (d, ct)
+          DynStr.Append (d, ct)
         ELSE
-          DynUtf.Append (d, SLICE (ct, 0, a)) ;
-          DynUtf.AppendChar (d, 0AC) ;
-          DynUtf.Append (d,
+          DynStr.Append (d, SLICE (ct, 0, a)) ;
+          DynStr.AppendChar (d, 0AC) ;
+          DynStr.Append (d,
             SLICE (ct, a + 1, Text.BLen (ct) - a - 1))
         END
       END
     END ;
-    DynUtf.AppendChar (d, 0AC)
+    DynStr.AppendChar (d, 0AC)
   END ;
   FOR i := 0 TO Lex.ComCount () - 1 DO
     IF anchor[i] = nlines + 1 THEN
@@ -336,7 +337,7 @@ BEGIN
       EmitComment (d, cm.col, cm.text)
     END
   END ;
-  RETURN DynUtf.ViewIn (pool, d)
+  RETURN DynStr.ViewIn (pool, d)
 END Format ;
 
 VAR
@@ -368,11 +369,12 @@ BEGIN
     Usage () ;
     Io.Halt (2)
   END ;
-  (* UTF-8 in and out: the file's octets validated as a UTF, written
-     back as octets.  (Read a byte a character once, every pass to
-     standard output encoded a non-ASCII character once more -- an e
-     acute in a comment of Regex.m9, the corpus's first, became two
-     characters, then four; the fmt gate's idempotence check said so) *)
+  (* This reads and writes UTF-8: the file's octets are validated as a
+     UTF and written back as octets.  When it once read a byte a
+     character, every pass to standard output encoded a non-ASCII
+     character once more.  An e acute in a comment of Regex.m9, the
+     corpus's first, became two characters, then four; the fmt gate's
+     idempotence check said so. *)
   BEGIN
     src := UTF (HEAP, Io.ReadFileBytes (HEAP, path))
   EXCEPT

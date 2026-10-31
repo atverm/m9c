@@ -1,24 +1,24 @@
 #!/usr/bin/env -S m9c --run
 MODULE MkLogo ;
 
-(* The Modula-9 mark, and every copy of it the tools show -- written,
-   and rasterised, by M9.
+(* MkLogo writes and rasterises the Modula-9 mark, and every copy of
+   it the tools show, in M9.
 
        tools/MkLogo.m9            write them
        tools/MkLogo.m9 --check    exit 1 if any written file differs
 
    (M9LIBRARY must reach corpus/: the PNGs are drawn by Png.)
 
-   The mark (chosen 2026-10-05, "Exponent"): a square-shouldered M with
-   the 9 set as an exponent -- M to the ninth -- in amber on a deep
+   The mark (chosen 2026-10-05, "Exponent") is a square-shouldered M
+   with the 9 set as an exponent, M to the ninth, in amber on a deep
    petrol tile.  It is drawn on a 128-unit grid once, here, from what
    both an SVG viewer and Png.Raster draw the same way: the M a filled
    polygon whose diagonals are as thick as its stems (15 units), the 9
-   a ring and a tail of one straight run and one arc.  No curve
-   command, no join or cap setting: Png refuses the first and does not
-   read the second.
+   a ring and a tail of one straight run and one arc.  It uses no
+   curve command and no join or cap setting: Png refuses the first and
+   does not read the second.
 
-   Where it goes, relative to the repository root:
+   The copies go here, relative to the repository root:
 
      tools/jupyter/logo/logo-svg.svg      what JupyterLab draws
      tools/jupyter/logo/logo-32x32.png    what older front ends draw;
@@ -41,8 +41,8 @@ MODULE MkLogo ;
    rounded tile would come out with white corners, which show on a dark
    theme, and a square of the tile's own colour has nothing to show.
 
-   Moved here from tools/jupyter on 2026-10-05, when the mark gained
-   its second and third home.                                          *)
+   This program moved here from tools/jupyter on 2026-10-05, when the
+   mark gained its second and third home.                             *)
 
 IMPORT Io ;
 IMPORT Png ;
@@ -58,8 +58,8 @@ CONST
   Grid = 128 ;                 (* the units the mark is drawn in *)
   Radius = 28 ;                (* the tile's corner, in the SVGs only *)
 
-  (* the targets: a path from the root, and what it holds -- 0 the
-     rounded SVG, else a square PNG of that many pixels *)
+  (* These are the targets: a path from the root, and what it holds.
+     0 is the rounded SVG, else a square PNG of that many pixels. *)
   Paths = ['tools/jupyter/logo/logo-svg.svg',
            'tools/jupyter/logo/logo-32x32.png',
            'tools/jupyter/logo/logo-64x64.png',
@@ -76,8 +76,8 @@ CONST
 VAR
   pool : POOL ;
 
-(* the mark as an SVG document; rounded asks for the tile's rounded
-   corners, otherwise it fills the square *)
+(* Svg answers the mark as an SVG document.  rounded asks for the
+   tile's rounded corners; otherwise it fills the square. *)
 PROCEDURE Svg (rounded: BOOL) : STR =
 VAR corner : STR ;
 BEGIN
@@ -97,9 +97,10 @@ BEGIN
          + '</svg>' + 0AC
 END Svg ;
 
-(* the square mark at size by size pixels, as a PNG file.  A unit of
-   the SVG is a point, so size pixels from Grid units is a resolution
-   of 72 * size / Grid; none is written into the file *)
+(* Raster answers the square mark at size by size pixels, as a PNG
+   file.  A unit of the SVG is a point, so size pixels from Grid units
+   is a resolution of 72 * size / Grid.  None is written into the
+   file. *)
 PROCEDURE Raster (size: I64) : SLICE OF BYTE
   RAISES Faults.SizeError, Faults.BadArg, ValueRange =
 VAR
@@ -111,7 +112,7 @@ BEGIN
   RETURN Png.Encode (pool, rgb, w, h, 0.0)
 END Raster ;
 
-(* the bytes target k holds *)
+(* Bytes answers the bytes target k holds. *)
 PROCEDURE Bytes (k: I64) : SLICE OF BYTE
   RAISES Faults.SizeError, Faults.BadArg, ValueRange =
 BEGIN
@@ -129,8 +130,8 @@ BEGIN
   RETURN TRUE
 END Same ;
 
-(* the repository root: this file is ROOT/tools/MkLogo.m9, and --run
-   tells it its own name *)
+(* Root answers the repository root: this file is ROOT/tools/MkLogo.m9,
+   and --run tells it its own name. *)
 PROCEDURE Root (RO self: STR) : STR =
 VAR k : I64 ;
 BEGIN
@@ -148,7 +149,7 @@ VAR
   check : BOOL ;
 
 BEGIN
-  check := (Io.ArgCount () > 1) AND DynStr.Eq (Io.Arg (pool, 1), '--check') ;
+  check := (Io.ArgCount () > 1) AND Text.Eq (Io.Arg (pool, 1), '--check') ;
   root := Text.Keep (pool, Root (Io.Arg (pool, 0))) ;
   bad := 0 ;
   FOR k := 0 TO LEN (Paths) - 1 DO

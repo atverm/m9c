@@ -1,6 +1,6 @@
 MODULE Wave ;
 
-(* Plot renders SVG as a STRING -- deterministic bytes.  Press Run
+(* Plot renders SVG as a STRING: deterministic bytes.  Press Run
    and the figure appears on the right. *)
 IMPORT Io ;
 
@@ -12,7 +12,6 @@ CONST
   N = 120 ;
 
 VAR
-  pool : POOL ;
   xs, ys : ARRAY 120 OF F64 ;
   i : I64 ;
   t, svg : STR ;
@@ -24,7 +23,7 @@ BEGIN
   END ;
   Plot.ClearFigure () ;
   Plot.AddLine (xs, ys, 0, 'sin') ;
-  svg := Plot.Render (pool, 'a sine wave', 'x', 'sin x') ;
+  svg := Plot.Render ('a sine wave', 'x', 'sin x') ;
   Io.WriteFile ('/tmp/wave.svg', svg) ;
   Io.WriteLine ('wrote wave.svg')
 EXCEPT

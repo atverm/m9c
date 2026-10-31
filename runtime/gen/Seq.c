@@ -15,16 +15,16 @@ static m9_pool m9mframe = {0};
 static int64_t Seq_Room (int64_t n, m9_state *err);
 
 
-void Seq_AddStr (m9_pool *pool, Seq_Strs *s, m9_pool *s_pool, m9_sl_CHAR v, m9_state *err)
+void Seq_AddStr (m9_pool *pool, Seq_Strs *s, m9_pool *s_pool, m9_sl_UTF8 v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
+  m9_sl_m9_sl_UTF8 nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if (((*s).n == ((*s).at).len)) {
-    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), Seq_Room ((*s).n, err), err);
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), Seq_Room ((*s).n, err), err);
       if (err->exc) goto L_ret;
       nb = m9v;
     }
@@ -33,9 +33,9 @@ void Seq_AddStr (m9_pool *pool, Seq_Strs *s, m9_pool *s_pool, m9_sl_CHAR v, m9_s
     m9t1to = m9_sub_i64 ((*s).n, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t1to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -43,9 +43,9 @@ void Seq_AddStr (m9_pool *pool, Seq_Strs *s, m9_pool *s_pool, m9_sl_CHAR v, m9_s
     } }
     (*s).at = nb;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at ((*s).at.p, (*s).n, (*s).at.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, v, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at ((*s).at.p, (*s).n, (*s).at.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, v, err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at ((*s).at.p, (*s).n, (*s).at.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at ((*s).at.p, (*s).n, (*s).at.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
   { __typeof__((*s).n) m9v = m9_add_i64 ((*s).n, INT64_C(1), err);
@@ -189,16 +189,16 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Seq_StrsOf (m9_pool *pool, Seq_Strs *s, m9_state *err)
+m9_sl_m9_sl_UTF8 Seq_StrsOf (m9_pool *pool, Seq_Strs *s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
-  m9_sl_m9_sl_CHAR m9ret = {0};
-  m9_sl_m9_sl_CHAR r = {0}; (void) r;
+  m9_sl_m9_sl_UTF8 m9ret = {0};
+  m9_sl_m9_sl_UTF8 r = {0}; (void) r;
   int64_t i = 0; (void) i;
-  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), (*s).n, err);
+  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), (*s).n, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
@@ -207,11 +207,11 @@ m9_sl_m9_sl_CHAR Seq_StrsOf (m9_pool *pool, Seq_Strs *s, m9_state *err)
   m9t1to = m9_sub_i64 ((*s).n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (m9_sl_CHAR), err))) m9a1 = (*(m9_sl_CHAR *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (m9_sl_UTF8), err))) m9a1 = (*(m9_sl_UTF8 *) m9_at ((*s).at.p, i, (*s).at.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (r.p, i, r.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a1, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (r.p, i, r.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a1, err);
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (r.p, i, r.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (r.p, i, r.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
@@ -300,16 +300,16 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Seq_Copy (m9_pool *pool, m9_sl_m9_sl_CHAR xs, m9_state *err)
+m9_sl_m9_sl_UTF8 Seq_Copy (m9_pool *pool, m9_sl_m9_sl_UTF8 xs, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
-  m9_sl_m9_sl_CHAR m9ret = {0};
-  m9_sl_m9_sl_CHAR r = {0}; (void) r;
+  m9_sl_m9_sl_UTF8 m9ret = {0};
+  m9_sl_m9_sl_UTF8 r = {0}; (void) r;
   int64_t i = 0; (void) i;
-  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), (xs).len, err);
+  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), (xs).len, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
@@ -318,11 +318,11 @@ m9_sl_m9_sl_CHAR Seq_Copy (m9_pool *pool, m9_sl_m9_sl_CHAR xs, m9_state *err)
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err))) m9a2 = (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_UTF8), err))) m9a2 = (*(m9_sl_UTF8 *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (r.p, i, r.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a2, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (r.p, i, r.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a2, err);
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (r.p, i, r.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (r.p, i, r.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
@@ -339,16 +339,16 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Seq_Concat (m9_pool *pool, m9_sl_m9_sl_CHAR a, m9_sl_m9_sl_CHAR b, m9_state *err)
+m9_sl_m9_sl_UTF8 Seq_Concat (m9_pool *pool, m9_sl_m9_sl_UTF8 a, m9_sl_m9_sl_UTF8 b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
-  m9_sl_m9_sl_CHAR m9ret = {0};
-  m9_sl_m9_sl_CHAR r = {0}; (void) r;
+  m9_sl_m9_sl_UTF8 m9ret = {0};
+  m9_sl_m9_sl_UTF8 r = {0}; (void) r;
   int64_t i = 0; (void) i;
-  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_add_i64 ((a).len, (b).len, err), err);
+  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), m9_add_i64 ((a).len, (b).len, err), err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
@@ -357,11 +357,11 @@ m9_sl_m9_sl_CHAR Seq_Concat (m9_pool *pool, m9_sl_m9_sl_CHAR a, m9_sl_m9_sl_CHAR
   m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err))) m9a3 = (*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (a.p, i, a.len, sizeof (m9_sl_UTF8), err))) m9a3 = (*(m9_sl_UTF8 *) m9_at (a.p, i, a.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (r.p, i, r.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a3, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (r.p, i, r.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a3, err);
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (r.p, i, r.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (r.p, i, r.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
@@ -373,11 +373,11 @@ m9_sl_m9_sl_CHAR Seq_Concat (m9_pool *pool, m9_sl_m9_sl_CHAR a, m9_sl_m9_sl_CHAR
   m9t2to = m9_sub_i64 ((b).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t2to) for (;;) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (b.p, i, b.len, sizeof (m9_sl_CHAR), err))) m9a4 = (*(m9_sl_CHAR *) m9_at (b.p, i, b.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (b.p, i, b.len, sizeof (m9_sl_UTF8), err))) m9a4 = (*(m9_sl_UTF8 *) m9_at (b.p, i, b.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (r.p, m9_add_i64 ((a).len, i, err), r.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a4, err);
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (r.p, m9_add_i64 ((a).len, i, err), r.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a4, err);
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (r.p, m9_add_i64 ((a).len, i, err), r.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(m9_sl_UTF8 *) m9_at (r.p, m9_add_i64 ((a).len, i, err), r.len, sizeof (m9_sl_UTF8), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
@@ -394,17 +394,17 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Seq_Distinct (m9_pool *pool, m9_sl_m9_sl_CHAR xs, m9_state *err)
+m9_sl_m9_sl_UTF8 Seq_Distinct (m9_pool *pool, m9_sl_m9_sl_UTF8 xs, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = m9res;
-  m9_sl_m9_sl_CHAR m9ret = {0};
+  m9_sl_m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_I64 ord = {0}; (void) ord;
   m9_sl_BOOL first = {0}; (void) first;
-  m9_sl_m9_sl_CHAR r = {0}; (void) r;
+  m9_sl_m9_sl_UTF8 r = {0}; (void) r;
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
   int64_t n = 0; (void) n;
@@ -428,11 +428,11 @@ m9_sl_m9_sl_CHAR Seq_Distinct (m9_pool *pool, m9_sl_m9_sl_CHAR xs, m9_state *err
       (*(bool *) m9_at (first.p, (*(int64_t *) m9_at (ord.p, k, ord.len, sizeof (int64_t), err)), first.len, sizeof (bool), err)) = true;
       if (err->exc) goto L_ret;
     } else {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (xs.p, (*(int64_t *) m9_at (ord.p, k, ord.len, sizeof (int64_t), err)), xs.len, sizeof (m9_sl_CHAR), err))) m9a5 = (*(m9_sl_CHAR *) m9_at (xs.p, (*(int64_t *) m9_at (ord.p, k, ord.len, sizeof (int64_t), err)), xs.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (xs.p, (*(int64_t *) m9_at (ord.p, k, ord.len, sizeof (int64_t), err)), xs.len, sizeof (m9_sl_UTF8), err))) m9a5 = (*(m9_sl_UTF8 *) m9_at (xs.p, (*(int64_t *) m9_at (ord.p, k, ord.len, sizeof (int64_t), err)), xs.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (xs.p, (*(int64_t *) m9_at (ord.p, m9_sub_i64 (k, INT64_C(1), err), ord.len, sizeof (int64_t), err)), xs.len, sizeof (m9_sl_CHAR), err))) m9a6 = (*(m9_sl_CHAR *) m9_at (xs.p, (*(int64_t *) m9_at (ord.p, m9_sub_i64 (k, INT64_C(1), err), ord.len, sizeof (int64_t), err)), xs.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (xs.p, (*(int64_t *) m9_at (ord.p, m9_sub_i64 (k, INT64_C(1), err), ord.len, sizeof (int64_t), err)), xs.len, sizeof (m9_sl_UTF8), err))) m9a6 = (*(m9_sl_UTF8 *) m9_at (xs.p, (*(int64_t *) m9_at (ord.p, m9_sub_i64 (k, INT64_C(1), err), ord.len, sizeof (int64_t), err)), xs.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      bool m9t2 = (!Text_Eq (m9a5, m9a6, err));
+      bool m9t2 = (!Text_EqUtf (m9a5, m9a6, err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         (*(bool *) m9_at (first.p, (*(int64_t *) m9_at (ord.p, k, ord.len, sizeof (int64_t), err)), first.len, sizeof (bool), err)) = true;
@@ -449,7 +449,7 @@ m9_sl_m9_sl_CHAR Seq_Distinct (m9_pool *pool, m9_sl_m9_sl_CHAR xs, m9_state *err
     if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
-  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), n, err);
+  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), n, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
@@ -462,11 +462,11 @@ m9_sl_m9_sl_CHAR Seq_Distinct (m9_pool *pool, m9_sl_m9_sl_CHAR xs, m9_state *err
     bool m9t5 = (*(bool *) m9_at (first.p, i, first.len, sizeof (bool), err));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err))) m9a7 = (*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_UTF8), err))) m9a7 = (*(m9_sl_UTF8 *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (r.p, k, r.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a7, err);
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (r.p, k, r.len, sizeof (m9_sl_UTF8), err))) m9v = Text_KeepUtf (pool, m9a7, err);
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (r.p, k, r.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (r.p, k, r.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       }

@@ -3,6 +3,7 @@
 #include "DynStr.h"
 #include "Io.h"
 #include "Time.h"
+#include "Text.h"
 
 const m9_exc Csv_ParseError = { "ParseError" };
 const m9_exc Csv_RangeError = { "RangeError" };
@@ -32,6 +33,8 @@ extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
 extern double m9_now (void);
 extern void m9_sleep_ms (int64_t);
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 extern double m9_strtod (const void *);
 extern double m9_strtof (const void *);
 extern int m9_csv_number (const void *, int64_t);
@@ -64,11 +67,11 @@ struct Csv_Table {
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[22] = { 119u, 114u, 111u, 110u, 103u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 111u, 102u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
-static const uint32_t m9s1[13] = { 110u, 111u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 108u, 105u, 110u, 101u };
-static const uint32_t m9s2[3] = { 110u, 97u, 110u };
-static const uint32_t m9s3[3] = { 105u, 110u, 102u };
-static const uint32_t m9s4[8] = { 105u, 110u, 102u, 105u, 110u, 105u, 116u, 121u };
+static const uint8_t m9s0[22] = { 119, 114, 111, 110, 103, 32, 110, 117, 109, 98, 101, 114, 32, 111, 102, 32, 102, 105, 101, 108, 100, 115 };
+static const uint8_t m9s1[13] = { 110, 111, 32, 102, 105, 114, 115, 116, 32, 108, 105, 110, 101 };
+static const uint8_t m9s2[3] = { 110, 97, 110 };
+static const uint8_t m9s3[3] = { 105, 110, 102 };
+static const uint8_t m9s4[8] = { 105, 110, 102, 105, 110, 105, 116, 121 };
 
 static bool Csv_IsDigit (uint8_t b, m9_state *err);
 static int64_t Csv_CountRows (m9_sl_BYTE b, int64_t from, bool quoted, m9_state *err);
@@ -78,7 +81,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options *opt, m
 static float Csv_Pow10F32 (int64_t k, m9_state *err);
 static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
 static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
-static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_CHAR w, m9_state *err);
+static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_UTF8 w, m9_state *err);
 static double Csv_FieldF64 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
 static int64_t Csv_FieldI64 (m9_sl_BYTE b, int64_t ofs, int64_t n, int64_t row, int64_t col, m9_state *err);
 static Time_Instant Csv_CompactStamp (int64_t v, bool withSeconds, m9_state *err);
@@ -109,7 +112,7 @@ L_ret: ;
   return m9ret;
 }
 
-Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options *opt, m9_state *err)
+Csv_Table * Csv_Open (m9_pool *pool, m9_sl_UTF8 path, Csv_Options *opt, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -117,7 +120,7 @@ Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options *opt, m9_state
   err->res = m9res;
   Csv_Table * m9ret = NULL;
   err->res = m9res;
-  { __typeof__(Io_ReadFileBytes (pool, path, err)) m9a1 = Io_ReadFileBytes (pool, path, err);
+  { __typeof__(Io_ReadFileBytesUtf (pool, path, err)) m9a1 = Io_ReadFileBytesUtf (pool, path, err);
     if (err->exc) goto L_ret;
   m9ret = Csv_Build (pool, m9a1, opt, err);
   if (err->exc) goto L_ret;
@@ -195,78 +198,6 @@ int64_t Csv_Cols (Csv_Table * t, m9_state *err)
   int64_t m9ret = 0;
   err->res = m9res;
   m9ret = t->ncols;
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
-m9_sl_CHAR Csv_Name (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  err->res = m9res;
-  { __typeof__(({ __auto_type m9t1 = t->buf; int64_t m9t1a = (*(int64_t *) m9_at (t->nameOfs.p, c, t->nameOfs.len, sizeof (int64_t), err)), m9t1n = (*(int64_t *) m9_at (t->nameLen.p, c, t->nameLen.len, sizeof (int64_t), err)); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a3 = ({ __auto_type m9t1 = t->buf; int64_t m9t1a = (*(int64_t *) m9_at (t->nameOfs.p, c, t->nameOfs.len, sizeof (int64_t), err)), m9t1n = (*(int64_t *) m9_at (t->nameLen.p, c, t->nameLen.len, sizeof (int64_t), err)); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
-    if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a3, err);
-  if (err->exc) goto L_ret;
-  }
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
-int64_t Csv_Find (Csv_Table * t, m9_sl_CHAR name, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  int64_t m9ret = 0;
-  int64_t c = 0; (void) c;
-  int64_t i = 0; (void) i;
-  bool same = false; (void) same;
-  { __typeof__(c) m9t1to;
-  c = INT64_C(0);
-  m9t1to = m9_sub_i64 (t->ncols, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (c <= m9t1to) for (;;) {
-    bool m9t2 = ((*(int64_t *) m9_at (t->nameLen.p, c, t->nameLen.len, sizeof (int64_t), err)) == (name).len);
-    if (err->exc) goto L_ret;
-    if (m9t2) {
-      same = true;
-      { __typeof__(i) m9t3to;
-      i = INT64_C(0);
-      m9t3to = m9_sub_i64 ((*(int64_t *) m9_at (t->nameLen.p, c, t->nameLen.len, sizeof (int64_t), err)), INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      if (i <= m9t3to) for (;;) {
-        bool m9t4 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, m9_add_i64 ((*(int64_t *) m9_at (t->nameOfs.p, c, t->nameOfs.len, sizeof (int64_t), err)), i, err), t->buf.len, sizeof (uint8_t), err))) != (int64_t)((*(uint32_t *) m9_at (name.p, i, name.len, sizeof (uint32_t), err))));
-        if (err->exc) goto L_ret;
-        if (m9t4) {
-          same = false;
-        }
-        if ((uint64_t) m9t3to - (uint64_t) i < (uint64_t) 1) break;
-        i += 1;
-      } }
-      if (same) {
-        err->res = m9res;
-        m9ret = c;
-        goto L_ret;
-      }
-    }
-    if ((uint64_t) m9t1to - (uint64_t) c < (uint64_t) 1) break;
-    c += 1;
-  } }
-  err->res = m9res;
-  m9ret = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -697,9 +628,9 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
         case Csv_Kind_Stamp:
         {
           if ((len > INT64_C(0))) {
-            { __typeof__((*(int64_t *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->formats.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->formats.len, sizeof (int64_t), err))) m9a4 = (*(int64_t *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->formats.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->formats.len, sizeof (int64_t), err));
+            { __typeof__((*(int64_t *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->formats.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->formats.len, sizeof (int64_t), err))) m9a3 = (*(int64_t *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->formats.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->formats.len, sizeof (int64_t), err));
               if (err->exc) goto L_ret;
-            { __typeof__((*(Time_Instant *) m9_at (({ m9_sl_Time_Instant m9g = ((*(m9_sl_Time_Instant *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.len, sizeof (m9_sl_Time_Instant), err))); if (err->exc) goto L_ret; m9g; }).p, row, ({ m9_sl_Time_Instant m9g = ((*(m9_sl_Time_Instant *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.len, sizeof (m9_sl_Time_Instant), err))); if (err->exc) goto L_ret; m9g; }).len, sizeof (Time_Instant), err))) m9v = Csv_FieldStamp (pool, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf, ofs, len, m9a4, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->opt.utcOffset, row, c, err);
+            { __typeof__((*(Time_Instant *) m9_at (({ m9_sl_Time_Instant m9g = ((*(m9_sl_Time_Instant *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.len, sizeof (m9_sl_Time_Instant), err))); if (err->exc) goto L_ret; m9g; }).p, row, ({ m9_sl_Time_Instant m9g = ((*(m9_sl_Time_Instant *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.len, sizeof (m9_sl_Time_Instant), err))); if (err->exc) goto L_ret; m9g; }).len, sizeof (Time_Instant), err))) m9v = Csv_FieldStamp (pool, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf, ofs, len, m9a3, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->opt.utcOffset, row, c, err);
               if (err->exc) goto L_ret;
               (*(Time_Instant *) m9_at (({ m9_sl_Time_Instant m9g = ((*(m9_sl_Time_Instant *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.len, sizeof (m9_sl_Time_Instant), err))); if (err->exc) goto L_ret; m9g; }).p, row, ({ m9_sl_Time_Instant m9g = ((*(m9_sl_Time_Instant *) m9_at (({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.p, c, ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->scols.len, sizeof (m9_sl_Time_Instant), err))); if (err->exc) goto L_ret; m9g; }).len, sizeof (Time_Instant), err)) = m9v;
               if (err->exc) goto L_ret;
@@ -735,7 +666,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
       if (err->exc) goto L_ret;
       if (m9t16) {
         if ((c != ({ __auto_type m9g = ((*t)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ncols)) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 22 })) m9t17 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }); err->s[0].p = m9t17.p; err->s[0].len = m9t17.len; m9_pay_keep (err, 0, sizeof (*m9t17.p)); }
+          { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 22 })) m9t17 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 22 }); err->s[0].p = m9t17.p; err->s[0].len = m9t17.len; m9_pay_keep (err, 0, sizeof (*m9t17.p)); }
           err->i[0] = m9_add_i64 (row, INT64_C(2), err);
           err->i[1] = c;
           m9_raise (err, &Csv_ParseError);
@@ -836,103 +767,12 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Csv_TextAt (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_BYTE raw = {0}; (void) raw;
-  m9_sl_BYTE keep = {0}; (void) keep;
-  int64_t i = 0; (void) i;
-  int64_t n = 0; (void) n;
-  { __typeof__(raw) m9v = ({ __auto_type m9t1 = t->buf; int64_t m9t1a = (*(int64_t *) m9_at (({ m9_sl_I64 m9g = ((*(m9_sl_I64 *) m9_at (t->tofs.p, c, t->tofs.len, sizeof (m9_sl_I64), err))); if (err->exc) goto L_ret; m9g; }).p, row, ({ m9_sl_I64 m9g = ((*(m9_sl_I64 *) m9_at (t->tofs.p, c, t->tofs.len, sizeof (m9_sl_I64), err))); if (err->exc) goto L_ret; m9g; }).len, sizeof (int64_t), err)), m9t1n = (*(int64_t *) m9_at (({ m9_sl_I64 m9g = ((*(m9_sl_I64 *) m9_at (t->tlen.p, c, t->tlen.len, sizeof (m9_sl_I64), err))); if (err->exc) goto L_ret; m9g; }).p, row, ({ m9_sl_I64 m9g = ((*(m9_sl_I64 *) m9_at (t->tlen.p, c, t->tlen.len, sizeof (m9_sl_I64), err))); if (err->exc) goto L_ret; m9g; }).len, sizeof (int64_t), err)); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
-    if (err->exc) goto L_ret;
-    raw = m9v;
-  }
-  if ((!t->opt.quoted)) {
-    err->res = m9res;
-    m9ret = DynStr_Chars (pool, raw, err);
-    if (err->exc) goto L_ret;
-    goto L_ret;
-  }
-  n = INT64_C(0);
-  i = INT64_C(0);
-  for (;;) {
-    if (!((i < (raw).len))) break;
-    { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      n = m9v;
-    }
-    bool m9t2 = ((((int64_t)((*(uint8_t *) m9_at (raw.p, i, raw.len, sizeof (uint8_t), err))) == INT64_C(34)) && (m9_add_i64 (i, INT64_C(1), err) < (raw).len)) && ((int64_t)((*(uint8_t *) m9_at (raw.p, m9_add_i64 (i, INT64_C(1), err), raw.len, sizeof (uint8_t), err))) == INT64_C(34)));
-    if (err->exc) goto L_ret;
-    if (m9t2) {
-      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(2), err);
-        if (err->exc) goto L_ret;
-        i = m9v;
-      }
-    } else {
-      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-        i = m9v;
-      }
-    }
-  }
-  if ((n == (raw).len)) {
-    err->res = m9res;
-    m9ret = DynStr_Chars (pool, raw, err);
-    if (err->exc) goto L_ret;
-    goto L_ret;
-  }
-  { __typeof__(keep) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
-    if (err->exc) goto L_ret;
-    keep = m9v;
-  }
-  n = INT64_C(0);
-  i = INT64_C(0);
-  for (;;) {
-    if (!((i < (raw).len))) break;
-    { __typeof__((*(uint8_t *) m9_at (keep.p, n, keep.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (raw.p, i, raw.len, sizeof (uint8_t), err));
-      if (err->exc) goto L_ret;
-      (*(uint8_t *) m9_at (keep.p, n, keep.len, sizeof (uint8_t), err)) = m9v;
-      if (err->exc) goto L_ret;
-    }
-    { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      n = m9v;
-    }
-    bool m9t3 = ((((int64_t)((*(uint8_t *) m9_at (raw.p, i, raw.len, sizeof (uint8_t), err))) == INT64_C(34)) && (m9_add_i64 (i, INT64_C(1), err) < (raw).len)) && ((int64_t)((*(uint8_t *) m9_at (raw.p, m9_add_i64 (i, INT64_C(1), err), raw.len, sizeof (uint8_t), err))) == INT64_C(34)));
-    if (err->exc) goto L_ret;
-    if (m9t3) {
-      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(2), err);
-        if (err->exc) goto L_ret;
-        i = m9v;
-      }
-    } else {
-      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-        i = m9v;
-      }
-    }
-  }
-  err->res = m9res;
-  m9ret = DynStr_Chars (pool, keep, err);
-  if (err->exc) goto L_ret;
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
 m9_sl_UTF8 Csv_NameUtf (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = m9res;
+  err->res = &m9frame;
   m9_sl_UTF8 m9ret = {0};
   m9_sl_BYTE raw = {0}; (void) raw;
   { __typeof__(raw) m9v = ({ __auto_type m9t1 = t->buf; int64_t m9t1a = (*(int64_t *) m9_at (t->nameOfs.p, c, t->nameOfs.len, sizeof (int64_t), err)), m9t1n = (*(int64_t *) m9_at (t->nameLen.p, c, t->nameLen.len, sizeof (int64_t), err)); int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
@@ -945,7 +785,7 @@ m9_sl_UTF8 Csv_NameUtf (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -955,7 +795,7 @@ m9_sl_UTF8 Csv_TextAtUtf (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, 
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = m9res;
+  err->res = &m9frame;
   m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE raw = {0}; (void) raw;
@@ -1013,7 +853,8 @@ m9_sl_UTF8 Csv_TextAtUtf (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -1253,7 +1094,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options *opt, m
     }
   }
   if ((i >= (t->buf).len)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 13 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 13 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 13 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 13 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     err->i[0] = m9_add_i64 ((*opt).skipLines, INT64_C(1), err);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Csv_ParseError);
@@ -1620,7 +1461,7 @@ static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  bool m9t4 = ((Csv_Word (b, i, e, ((m9_sl_CHAR){ (uint32_t *) m9s2, 3 }), err) || Csv_Word (b, i, e, ((m9_sl_CHAR){ (uint32_t *) m9s3, 3 }), err)) || Csv_Word (b, i, e, ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err));
+  bool m9t4 = ((Csv_Word (b, i, e, ((m9_sl_UTF8){ (uint8_t *) m9s2, 3 }), err) || Csv_Word (b, i, e, ((m9_sl_UTF8){ (uint8_t *) m9s3, 3 }), err)) || Csv_Word (b, i, e, ((m9_sl_UTF8){ (uint8_t *) m9s4, 8 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
@@ -1629,7 +1470,7 @@ static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
   }
   digits = INT64_C(0);
   for (;;) {
-    bool m9t6 = ({ bool m9t5 = (i < e); if (m9t5) { { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9a5 = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));   if (err->exc) goto L_ret; m9t5 = (Csv_IsDigit (m9a5, err)); } } m9t5; });
+    bool m9t6 = ({ bool m9t5 = (i < e); if (m9t5) { { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9a4 = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));   if (err->exc) goto L_ret; m9t5 = (Csv_IsDigit (m9a4, err)); } } m9t5; });
     if (err->exc) goto L_ret;
     if (!(m9t6)) break;
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
@@ -1649,7 +1490,7 @@ static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
       i = m9v;
     }
     for (;;) {
-      bool m9t9 = ({ bool m9t8 = (i < e); if (m9t8) { { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9a6 = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));   if (err->exc) goto L_ret; m9t8 = (Csv_IsDigit (m9a6, err)); } } m9t8; });
+      bool m9t9 = ({ bool m9t8 = (i < e); if (m9t8) { { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9a5 = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));   if (err->exc) goto L_ret; m9t8 = (Csv_IsDigit (m9a5, err)); } } m9t8; });
       if (err->exc) goto L_ret;
       if (!(m9t9)) break;
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
@@ -1693,7 +1534,7 @@ static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
     }
     digits = INT64_C(0);
     for (;;) {
-      bool m9t12 = ({ bool m9t11 = (i < e); if (m9t11) { { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9a7 = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));   if (err->exc) goto L_ret; m9t11 = (Csv_IsDigit (m9a7, err)); } } m9t11; });
+      bool m9t12 = ({ bool m9t11 = (i < e); if (m9t11) { { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9a6 = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));   if (err->exc) goto L_ret; m9t11 = (Csv_IsDigit (m9a6, err)); } } m9t11; });
       if (err->exc) goto L_ret;
       if (!(m9t12)) break;
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
@@ -1720,7 +1561,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_CHAR w, m9_state *err)
+static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_UTF8 w, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1729,7 +1570,7 @@ static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_CHAR w, m9_state
   bool m9ret = false;
   int64_t k = 0; (void) k;
   int64_t c = 0; (void) c;
-  bool m9t3 = (m9_sub_i64 (e, i, err) != (w).len);
+  bool m9t3 = (m9_sub_i64 (e, i, err) != Text_BLen (w, err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
     err->res = m9res;
@@ -1738,7 +1579,7 @@ static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_CHAR w, m9_state
   }
   { __typeof__(k) m9t4to;
   k = INT64_C(0);
-  m9t4to = m9_sub_i64 ((w).len, INT64_C(1), err);
+  m9t4to = m9_sub_i64 (Text_BLen (w, err), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   if (k <= m9t4to) for (;;) {
     { __typeof__(c) m9v = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, k, err), b.len, sizeof (uint8_t), err)));
@@ -1751,7 +1592,7 @@ static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_CHAR w, m9_state
         c = m9v;
       }
     }
-    bool m9t5 = (c != (int64_t)((*(uint32_t *) m9_at (w.p, k, w.len, sizeof (uint32_t), err))));
+    bool m9t5 = (c != (int64_t)(Text_BAt (w, k, err)));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t5) {
       err->res = m9res;
@@ -1830,9 +1671,9 @@ static int64_t Csv_FieldI64 (m9_sl_BYTE b, int64_t ofs, int64_t n, int64_t row, 
     bool m9t2 = (i < m9_add_i64 (ofs, n, err));
     if (err->exc) goto L_ret;
     if (!(m9t2)) break;
-    { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9a8 = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));
+    { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9a7 = (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err));
       if (err->exc) goto L_ret;
-    bool m9t3 = (!Csv_IsDigit (m9a8, err));
+    bool m9t3 = (!Csv_IsDigit (m9a7, err));
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->i[0] = row;
@@ -1935,11 +1776,11 @@ static Time_Instant Csv_FieldStamp (m9_pool *pool, m9_sl_BYTE b, int64_t ofs, in
   Time_Instant t = {0}; (void) t;
   if ((format == Csv_StampIso)) {
     err->res = m9res;
-    { __typeof__(({ __auto_type m9t1 = b; int64_t m9t1a = ofs, m9t1n = n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a9 = ({ __auto_type m9t1 = b; int64_t m9t1a = ofs, m9t1n = n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
+    { __typeof__(({ __auto_type m9t1 = b; int64_t m9t1a = ofs, m9t1n = n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; })) m9a8 = ({ __auto_type m9t1 = b; int64_t m9t1a = ofs, m9t1n = n; int64_t m9t1o = m9_chk_slice (m9t1a, m9t1n, m9t1.len, err); (__typeof__(m9t1)){ m9t1.p + m9t1o, err->exc ? 0 : m9t1n }; });
       if (err->exc) goto L_ret;
-    { __typeof__(DynStr_Chars (pool, m9a9, err)) m9a10 = DynStr_Chars (pool, m9a9, err);
+    { __typeof__(DynStr_Chars (pool, m9a8, err)) m9a9 = DynStr_Chars (pool, m9a8, err);
       if (err->exc) goto L_ret;
-    m9ret = Time_ParseIso (m9a10, err);
+    m9ret = Time_ParseIso (m9a9, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -1962,11 +1803,11 @@ static Time_Instant Csv_FieldStamp (m9_pool *pool, m9_sl_BYTE b, int64_t ofs, in
       goto L_ret;
     }
     err->res = m9res;
-    { __typeof__(Csv_FieldI64 (b, ofs, n, row, col, err)) m9a11 = Csv_FieldI64 (b, ofs, n, row, col, err);
+    { __typeof__(Csv_FieldI64 (b, ofs, n, row, col, err)) m9a10 = Csv_FieldI64 (b, ofs, n, row, col, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Csv_CompactStamp (m9a11, true, err)) m9a12 = Csv_CompactStamp (m9a11, true, err);
+    { __typeof__(Csv_CompactStamp (m9a10, true, err)) m9a11 = Csv_CompactStamp (m9a10, true, err);
       if (err->exc) goto L_ret;
-    m9ret = Time_AddSeconds (m9a12, (- utcOffset), err);
+    m9ret = Time_AddSeconds (m9a11, (- utcOffset), err);
     if (err->exc) goto L_ret;
     }
     }
@@ -1979,11 +1820,11 @@ static Time_Instant Csv_FieldStamp (m9_pool *pool, m9_sl_BYTE b, int64_t ofs, in
     goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(Csv_FieldI64 (b, ofs, n, row, col, err)) m9a13 = Csv_FieldI64 (b, ofs, n, row, col, err);
+  { __typeof__(Csv_FieldI64 (b, ofs, n, row, col, err)) m9a12 = Csv_FieldI64 (b, ofs, n, row, col, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Csv_CompactStamp (m9a13, false, err)) m9a14 = Csv_CompactStamp (m9a13, false, err);
+  { __typeof__(Csv_CompactStamp (m9a12, false, err)) m9a13 = Csv_CompactStamp (m9a12, false, err);
     if (err->exc) goto L_ret;
-  m9ret = Time_AddSeconds (m9a14, (- utcOffset), err);
+  m9ret = Time_AddSeconds (m9a13, (- utcOffset), err);
   if (err->exc) goto L_ret;
   }
   }
@@ -2004,6 +1845,7 @@ void Csv_m9init (m9_state *err)
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Time_m9init (err); if (err->exc) goto L_ret;
+  Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9prev;
 }

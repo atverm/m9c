@@ -1,14 +1,14 @@
 MODULE FmtTest ;
 
-(* Fmt, tested in M9 (runtime/test/m9test.sh runs every *Test.m9
+(* FmtTest tests Fmt in M9 (runtime/test/m9test.sh runs every *Test.m9
    beside its module): Short, ParseF64, Hex, and since 2026-10-10
-   Fixed and Sci, exact now and held to printf's digits through
-   Python's %-formatting.  runtime/test/fmt_driver.c keeps Bits and
-   the padding forms.
+   Fixed and Sci.  Fixed and Sci are exact now and held to printf's
+   digits through Python's %-formatting.  runtime/test/fmt_driver.c
+   keeps Bits and the padding forms.
 
-   Short against Python's repr: runtime/test/gold/Fmt.gold, written by
-   tools/fmtgold.py, inputs as Fmt.Bits so no decimal parser stands
-   between the oracle and the test. *)
+   Short is held to Python's repr: runtime/test/gold/Fmt.gold, written
+   by tools/fmtgold.py.  The inputs come as Fmt.Bits, so no decimal
+   parser stands between the oracle and the test. *)
 
 IMPORT Check ;
 IMPORT Fmt ;
@@ -44,10 +44,11 @@ BEGIN
   Check.EqStrs (t, 'Short = repr: ' + says, got, Check.GoldStrs (t, gold, name + '.want'))
 END Part ;
 
-(* ParseF64 = Python's float(): the correctly rounded double, held to
-   the bit on 2,413 strings (tools/fmtgold.py: data reprs, mantissa-
-   and-exponent strings over the whole range, twenty-digit fractions,
-   the hard cases) -- 1,314 of a like set were wrong before 2026-10-09 *)
+(* Parses holds ParseF64 to Python's float(): the correctly rounded
+   double, to the bit, on 2,413 strings (tools/fmtgold.py: data reprs,
+   mantissa-and-exponent strings over the whole range, twenty-digit
+   fractions, the hard cases).  1,314 of a like set were wrong before
+   2026-10-09. *)
 PROCEDURE Parses () =
 VAR
   gold : STR ;
@@ -72,10 +73,11 @@ EXCEPT
 | IndexError : Check.That (t, 'the parse golden lines differ in length', FALSE)
 END Parses ;
 
-(* Fixed = '%.*f' and Sci = '%.*e' with the exponent written short,
-   each value at its own decimals: the hand cases at 0, 2, 6 and 17,
-   exact ties (an odd o times 2^-(d+1)), data values, powers of two
-   and ten, random bit patterns -- 1e308 at 17 decimals included *)
+(* Formats holds Fixed to '%.*f' and Sci to '%.*e' with the exponent
+   written short, each value at its own decimals.  The values are the
+   hand cases at 0, 2, 6 and 17, exact ties (an odd o times 2^-(d+1)),
+   data values, powers of two and ten, and random bit patterns.  They
+   include 1e308 at 17 decimals. *)
 PROCEDURE Formats () =
 VAR
   gold : STR ;
@@ -95,7 +97,7 @@ BEGIN
   END ;
   Check.That (t, 'the golden file has format cases', LEN (xs) > 1000) ;
   Check.EqStrs (t, 'Fixed = printf %.*f', fixed, Check.GoldStrs (t, gold, 'fixed.want')) ;
-  (* the UTF twin, the same digits on every golden value *)
+  (* The UTF twin gives the same digits on every golden value. *)
   agree := 0 ;
   FOR i := 0 TO LEN (xs) - 1 DO
     IF Text.EqUtf (Fmt.FixedUtf (xs[i], ds[i]), UTF (fixed[i])) THEN agree := agree + 1 END
@@ -106,8 +108,8 @@ BEGIN
   Check.EqStr (t, 'I64PadUtf wider than width', STR (Fmt.I64PadUtf (123456, 3, TRUE)), '123456') ;
   Check.EqStr (t, 'FixedPadUtf = FixedPad', STR (Fmt.FixedPadUtf (3.14159, 9, 2)), Fmt.FixedPad (3.14159, 9, 2)) ;
   Check.EqStrs (t, 'Sci = printf %.*e, the exponent short', sci, Check.GoldStrs (t, gold, 'sci.want')) ;
-  (* the sign of a zero, as printf, Python and Fortran write it (a
-     port's M10, 2026-10-30): -0.0 is not 0.0 *)
+  (* Fixed and Sci keep the sign of a zero, as printf, Python and
+     Fortran write it (a port's M10, 2026-10-30): -0.0 is not 0.0. *)
   Check.EqStr (t, 'Fixed keeps the sign of -0.0', Fmt.Fixed (-0.0, 3), '-0.000') ;
   Check.EqStr (t, 'Sci keeps the sign of -0.0', Fmt.Sci (-0.0, 3), '-0.000e0') ;
   Check.EqStr (t, 'Fixed: a negative that rounds to zero keeps its sign', Fmt.Fixed (-0.0004, 3), '-0.000')
@@ -135,8 +137,9 @@ EXCEPT
 END Refused ;
 
 
-(* the parsers' UTF twins, reached by the same names (docs/utf8-plan.md,
-   stage 2): the same bits as the STR parse of the same text *)
+(* Utfs reaches the parsers' UTF twins by the same names
+   (docs/utf8-plan.md, stage 2).  They give the same bits as the STR
+   parse of the same text. *)
 PROCEDURE Utfs () =
 VAR u : UTF ; x, y : F64 ;
 BEGIN
@@ -166,7 +169,8 @@ BEGIN
   Check.That (t, 'and what is no decimal: a hex float', Refused ('0x1p3')) ;
   Check.That (t, 'and an empty exponent', Refused ('1e')) ;
   Check.That (t, 'and a leading blank, which strtod would skip', Refused (' 1')) ;
-  (* by hand, so that a reader sees the layout without the golden *)
+  (* These checks are by hand, so that a reader sees the layout
+     without the golden. *)
   Check.EqStr (t, 'Short 0.1', Fmt.Short (0.1), '0.1') ;
   Check.EqStr (t, 'Short 0.1 + 0.2', Fmt.Short (0.1 + 0.2), '0.30000000000000004') ;
   Check.EqStr (t, 'Short 1.0 keeps its point', Fmt.Short (1.0), '1.0') ;
@@ -176,7 +180,7 @@ BEGIN
   Check.EqStr (t, 'Short 0.0001 stays positional', Fmt.Short (0.0001), '0.0001') ;
   Check.EqStr (t, 'Short 0.00001 does not', Fmt.Short (0.00001), '1e-05') ;
   Check.EqStr (t, 'Short NaN', Fmt.Short (NaN), 'nan') ;
-  (* Hex, held to Python's '%0*x' (cp-kernel's issue 16) *)
+  (* These hold Hex to Python's '%0*x' (cp-kernel's issue 16). *)
   Check.EqStr (t, 'Hex of a CRC, eight digits', Fmt.Hex (3421780262, 8), 'cbf43926') ;
   Check.EqStr (t, 'Hex 255 in four', Fmt.Hex (255, 4), '00ff') ;
   Check.EqStr (t, 'Hex 0 in no width is one digit', Fmt.Hex (0, 0), '0') ;

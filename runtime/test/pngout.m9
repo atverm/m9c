@@ -5,9 +5,9 @@ MODULE pngout ;
         (300 by 5 at 72 dpi) and DIR/figure.png (640 by 400 at 300
         dpi) with Png.Encode
 
-   The second program runtime/test/deflate.sh drives.  The pictures
-   are formulas, the same ones deflatecheck.py computes: Python takes
-   the files apart and compares every pixel. *)
+   This is the second program runtime/test/deflate.sh drives.  Its
+   pictures are formulas, the same ones deflatecheck.py computes:
+   Python takes the files apart and compares every pixel. *)
 
 IMPORT Io ;
 IMPORT Faults ;
@@ -17,7 +17,8 @@ VAR
   pool : POOL ;
   dir : STR ;
 
-(* something in every byte: (5x + y, 9y + x*x, 30 ((x + y) mod 7)) *)
+(* Busy puts something in every byte: (5x + y, 9y + x*x,
+   30 ((x + y) mod 7)). *)
 PROCEDURE Busy (w, h: I64) : SLICE OF BYTE RAISES ValueRange =
 VAR
   p : SLICE OF BYTE ;
@@ -35,8 +36,8 @@ BEGIN
   RETURN p
 END Busy ;
 
-(* white, a blue line across every fortieth row and down every
-   fiftieth column, a ramp of grey along the top *)
+(* Figure draws white, a blue line across every fortieth row and down
+   every fiftieth column, a ramp of grey along the top. *)
 PROCEDURE Figure (w, h: I64) : SLICE OF BYTE RAISES ValueRange =
 VAR
   p : SLICE OF BYTE ;

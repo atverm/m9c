@@ -1,17 +1,18 @@
 #!/bin/sh
-# The statement release, end to end (docs/statement-release-plan.md,
-# stage 3): the incident's loop -- rows x ids, `Text.Eq (ids[j], '<' +
-# id + '>')` in a condition -- run at N and at 4N, and the arena it
-# leaves live must not grow with N.  The same loop with the string
-# assigned to a local first is a SINK and must grow, which is how the
-# gate shows it can fail: a generator that released nothing would pass
-# the first half's equality by making both halves equal.
+# This gate tests the statement release, end to end
+# (docs/statement-release-plan.md, stage 3).  It runs the incident's
+# loop (rows x ids, `Text.Eq (ids[j], '<' + id + '>')` in a condition)
+# at N and at 4N.  The arena the loop leaves live must not grow with N.
+# The same loop with the string assigned to a local first is a SINK
+# and must grow.  So the gate shows it can fail: a generator that
+# released nothing would pass the first half's equality by making both
+# halves equal.
 #
-# Two numbers per run, printed by the program itself: pool-kb, the
-# arena capacity live at the end of the loop (System.PoolBytes, read
-# inside the frame that holds it), and peak-kb, the process's high
-# water.  The release half may differ between N and 4N by one block
-# (64 KB) and no more.
+# The program itself prints two numbers per run.  pool-kb is the arena
+# capacity live at the end of the loop (System.PoolBytes, read inside
+# the frame that holds it).  peak-kb is the process's high water.  The
+# release half may differ between N and 4N by one block (64 KB) and no
+# more.
 set -e
 cd "$(dirname "$0")"
 REPO=$(cd ../.. && pwd)
@@ -41,8 +42,8 @@ echo "release:         sink:     pool $sp1 -> $sp4 KB, peak $sk1 -> $sk4 KB"
   echo "release: the sink loop's arena did not grow ($sp1 -> $sp4 KB): the gate cannot see a release"; exit 1; }
 [ "$rp4" -lt "$sp1" ] || {
   echo "release: released ($rp4 KB) is not below the sink's smallest ($sp1 KB)"; exit 1; }
-# and what the release must NOT take: the buffer a callee grew in the
-# caller's arena through a VAR pointer (releasegrow.m9's comment)
+# The release must NOT take the buffer a callee grew in the caller's
+# arena through a VAR pointer (releasegrow.m9's comment).
 cp releasegrow.m9 "$OUT/"
 ( cd "$OUT" && "$M9C" --make -o releasegrow releasegrow.m9 )
 "$OUT/releasegrow" > "$OUT/grow.out" 2>&1 || { echo "release: releasegrow failed"; cat "$OUT/grow.out"; exit 1; }

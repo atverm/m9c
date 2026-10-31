@@ -1,17 +1,16 @@
 MODULE CheckTest ;
 
-(* Check, held to itself.  A test library that cannot fail proves
-   nothing, so this runs every check BOTH ways: once where it must
-   hold and once where it must not, into a second counter `bad`
-   whose failure lines are the first part of this program's output.
-   The golden readers likewise: a file that is right, and the eight
-   ways one can be wrong.  Run from the repository root, as the gate
-   runs it, so that the golden file's path in a failure line is the
-   same on every machine.
-   runtime/test/m9test.sh compares that output with
-   runtime/test/checktest.want, line for line -- the format of a
-   failure line is part of what is gated -- and then this program
-   checks the two counters with Check itself. *)
+(* This program holds Check to itself.  A test library that cannot
+   fail proves nothing, so this runs every check BOTH ways: once where
+   it must hold and once where it must not, into a second counter `bad`
+   whose failure lines are the first part of this program's output.  It
+   tests the golden readers likewise: a file that is right, and the
+   eight ways one can be wrong.  Run from the repository root, as the
+   gate runs it, so that the golden file's path in a failure line is the
+   same on every machine.  runtime/test/m9test.sh compares that output
+   with runtime/test/checktest.want, line for line.  The format of a
+   failure line is part of what is gated.  Then this program checks the
+   two counters with Check itself. *)
 
 IMPORT Check ;
 IMPORT Io ;
@@ -60,7 +59,7 @@ BEGIN
 END Quiet ;
 
 PROCEDURE QuietVR () RAISES ValueRange =
-  (* says it may; does not *)
+  (* QuietVR says it may raise.  It does not. *)
 BEGIN
   IF zero > 1.0 THEN RAISE ValueRange END
 END QuietVR ;

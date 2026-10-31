@@ -1,11 +1,13 @@
 MODULE zipout ;
 
+IMPORT Text ;
+
 (* zipout OUT.zip deflate|store [NAME PATH]...
      -> writes OUT.zip with the file at each PATH as the member NAME,
         every member deflated or every member stored, each stamped
         2026-10-07 12:34:56; prints the archive's length
 
-   The program runtime/test/deflate.sh drives for the zip writer:
+   runtime/test/deflate.sh drives this program for the zip writer:
    Python's zipfile reads what it writes there, which is the whole
    check.  NAME is UTF-8 on the command line, as Python passes it. *)
 
@@ -26,7 +28,7 @@ BEGIN
     Io.Halt (2)
   END ;
   mode := Io.Arg (pool, 2) ;
-  deflate := LEN (mode) = 7 ;
+  deflate := Text.BLen (mode) = 7 ;
   w := Zip.NewWriter (pool) ;
   Zip.SetTime (w, 2026, 10, 7, 12, 34, 56) ;
   i := 3 ;

@@ -1,6 +1,6 @@
 DEFINITION MODULE GfHpB ;
 
-(* helper of GfHiddenPool: a record of the SAME NAME with no pointer *)
+(* GfHpB helps GfHiddenPool: a record of the SAME NAME, no pointer. *)
 
 TYPE
   V = RECORD

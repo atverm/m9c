@@ -1,10 +1,10 @@
 (* EXPECT: THREAD (Grow): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock *)
 MODULE m ;
-(* a call through a procedure value handed the shared record, or a
+(* A call through a procedure value handed the shared record, or a
    component of it, may allocate in its pool, and what it does there is
-   unseen: eight workers growing a builder through `f (j.out[b])' raced
-   (the fourth review's AllocValue).  Legal forms first: a procedure
-   value handed a number read out of the record. *)
+   unseen.  Eight workers growing a builder through `f (j.out[b])' raced
+   (the fourth review's AllocValue).  Legal forms come first: a
+   procedure value handed a number read out of the record. *)
 TYPE
   Cell = RECORD n : I64 END ;
   Job = RECORD c : PTR Cell ; n : I64 ; pv : PTR Cell END [SHARABLE] ;

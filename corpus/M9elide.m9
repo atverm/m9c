@@ -1,36 +1,36 @@
 MODULE M9elide ;
 
-(* m9elide -- stage 4 of docs/pool-elision-plan.md: the rewriting
+(* m9elide is stage 4 of docs/pool-elision-plan.md: the rewriting
    tool that removes a pool parameter where rules 1 and 2 make it
    redundant, and lists what it leaves.
 
-   What it does, per procedure that takes `VAR p: POOL`, in the files
+   It works per procedure that takes `VAR p: POOL`, in the files
    named on the command line:
    - it reads the body and classifies every use of p: the first
      argument of NEW, the IN clause of a local, or an argument to a
-     callee's own pool parameter -- any other use keeps the pool;
+     callee's own pool parameter.  Any other use keeps the pool;
    - a callee that keeps its pool keeps every caller's too (a
      fixpoint), and a callee in a file NOT named keeps it by
      definition, since that file is not being rewritten;
    - a procedure that ANSWERS storage (a pointer, a slice, a string, a
      record holding one) loses the parameter and its NEWs become the
-     frame form, `NEW (T)` -- rule 1 builds the answer in the caller's
+     frame form, `NEW (T)`; rule 1 builds the answer in the caller's
      arena;
    - a procedure that answers nothing pointer-shaped and has exactly
      one VAR parameter of a pointer-bearing type d loses the parameter
-     and its NEWs become `NEW (d, T)` -- rule 2 carries d's pool in;
+     and its NEWs become `NEW (d, T)`; rule 2 carries d's pool in;
    - every call to a procedure that lost its parameter loses the
      matching argument, in every file named;
    - a module's own pools (a program's, or one held in a module
      variable) and HEAP are left as they are and listed.
 
-   How it edits: NOT by printing the tree, which would drop every
+   It edits NOT by printing the tree, which would drop every
    comment, but by deleting token spans of the SOURCE TEXT at the
-   positions the parser recorded -- and then proving the edit: the
+   positions the parser recorded.  Then it proves the edit: the
    edited text is parsed again and its printed tree must equal the
    printed tree of the same edit made in memory.  Where the two
-   disagree, nothing is written and the file is named.  What the
-   tool cannot know it leaves to the checker: a frame answer stored
+   disagree, nothing is written and the file is named.  The tool
+   leaves what it cannot know to the checker: a frame answer stored
    somewhere durable is refused by `m9c --check` afterwards, by name,
    and that refusal is the decision the migration has to make.
 
@@ -39,7 +39,7 @@ MODULE M9elide ;
    goes to standard error either way.                                *)
 
 IMPORT Io ;
-IMPORT DynUtf ;
+IMPORT DynStr ;
 IMPORT Text ;
 IMPORT Lex ;
 IMPORT Ast ;
@@ -128,16 +128,16 @@ BEGIN
 END Fail ;
 
 PROCEDURE ItoA (v: I64) : UTF =
-VAR d : PTR DynUtf.DString IN pool ;
+VAR d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.AppendI64 (d, v) ;
-  RETURN DynUtf.ViewIn (pool, d)
+  d := DynStr.New (pool) ;
+  DynStr.AppendI64 (d, v) ;
+  RETURN DynStr.ViewIn (pool, d)
 END ItoA ;
 
-(* the byte at offset i of u, as a number: the path and line scans
-   below look for `/`, `\` and the LF, bytes that are their own
-   characters *)
+(* B answers the byte at offset i of u, as a number.  The path and
+   line scans below look for `/`, `\` and the LF, bytes that are their
+   own characters. *)
 PROCEDURE B (RO u: UTF ; i: I64) : I64 =
 BEGIN
   RETURN I64 (Text.BAt (u, i))
@@ -285,7 +285,8 @@ BEGIN
   RETURN NONE
 END TypeOf ;
 
-(* the declarations of one unit: its types, its procedures *)
+(* Register records the declarations of one unit: its types, its
+   procedures. *)
 PROCEDURE Register (m: I64 ; KEPT u: PTR Ast.Node) =
 VAR
   i, j, pi : I64 ;
@@ -354,8 +355,9 @@ BEGIN
   RETURN m
 END LoadFile ;
 
-(* the first NAME.m9 on the search path: -I directories, $M9LIBRARY,
-   then the importing file's own directory -- m9c's rule *)
+(* LoadImport loads the first NAME.m9 on the search path: -I
+   directories, $M9LIBRARY, then the importing file's own directory.
+   That is m9c's rule. *)
 PROCEDURE LoadImport (RO name: UTF ; RO fromDir: UTF) =
 VAR
   i, m : I64 ;
@@ -374,8 +376,8 @@ BEGIN
   cand := Join (fromDir, name + '.m9') ;
   src := TryRead (cand, ok) ;
   IF ok THEN m := LoadFile (cand, FALSE) END
-  (* not found: a foreign or absent module; its procedures are
-     unknown and every pool handed to one stays *)
+  (* Not found means a foreign or absent module.  Its procedures are
+     unknown, and every pool handed to one stays. *)
 END LoadImport ;
 
 PROCEDURE LoadImportsOf (m: I64) =
@@ -424,7 +426,8 @@ BEGIN
   RETURN NONE
 END ResolveTy ;
 
-(* can a value of this type carry a pointer?  Sem.PtrBearing's shape *)
+(* Bearing asks whether a value of this type can carry a pointer.  It
+   has Sem.PtrBearing's shape. *)
 PROCEDURE Bearing (m: I64 ; t: Ast.Kid ; depth: I64) : BOOL =
 VAR
   i, j : I64 ;
@@ -467,8 +470,9 @@ BEGIN
   RETURN FALSE
 END Bearing ;
 
-(* does a VAR parameter of this type carry its object's pool (rule 2)?
-   Sem.PtrParamTy's shape: never a bare slice, grid or string *)
+(* ObjTy asks whether a VAR parameter of this type carries its
+   object's pool (rule 2).  It has Sem.PtrParamTy's shape: never a
+   bare slice, grid or string. *)
 PROCEDURE ObjTy (m: I64 ; t: Ast.Kid) : BOOL =
 BEGIN
   IF t IS SOME n THEN
@@ -505,8 +509,9 @@ BEGIN
   RETURN FALSE
 END IsPoolTy ;
 
-(* the flattened index of the one `VAR p: POOL` parameter of a heading,
-   its name in pname; -1 when none, -2 when more than one *)
+(* PoolParam answers the flattened index of the one `VAR p: POOL`
+   parameter of a heading, with its name in pname.  It answers -1 when
+   there is none, -2 when there is more than one. *)
 PROCEDURE PoolParam (head: PTR Ast.Node ; VAR pname: UTF) : I64 =
 VAR
   i, j, ix, found : I64 ;
@@ -552,7 +557,8 @@ BEGIN
   procs[pi].why := Text.Keep (pool, why)
 END Keep ;
 
-(* the callee of a call: a bare name in the same module, or Mod.Name *)
+(* CalleeOf answers the callee of a call: a bare name in the same
+   module, or Mod.Name. *)
 PROCEDURE CalleeOf (m: I64 ; k: Ast.Kid) : I64 =
 VAR om : I64 ;
 BEGIN
@@ -591,9 +597,10 @@ BEGIN
   RETURN FALSE
 END IsName ;
 
-(* every use of the pool p in a candidate's body, given the other
-   candidates' current states: '' when all of them go, else why not *)
-(* the flattened parameter count of a heading *)
+(* UseOf checks every use of the pool p in a candidate's body, given
+   the other candidates' current states.  It answers '' when all of
+   them go, else why not. *)
+(* ParamCount answers the flattened parameter count of a heading. *)
 PROCEDURE ParamCount (head: PTR Ast.Node) : I64 =
 VAR i, n : I64 ;
 BEGIN
@@ -608,14 +615,14 @@ BEGIN
   RETURN n
 END ParamCount ;
 
-(* A STALE pool argument: the callee takes no pool at all, and the
-   call hands it exactly one argument more than its heading declares
-   -- a caller written against the library before the callee lost
-   its pool by hand (Json and Text in stage 2 of the plan, before
-   this tool existed).  The zarr proxy had 123 procedures keeping
-   their pool only to hand it to Json.Parse and kin; FLEXPART had
-   two, fixed by hand.  Such an argument goes, and is no use of the
-   caller's pool. *)
+(* StaleArg detects a STALE pool argument: the callee takes no pool
+   at all, and the call hands it exactly one argument more than its
+   heading declares.  Such a caller was written against the library
+   before the callee lost its pool by hand (Json and Text in stage 2
+   of the plan, before this tool existed).  The zarr proxy had 123
+   procedures keeping their pool only to hand it to Json.Parse and kin;
+   FLEXPART had two, fixed by hand.  Such an argument goes, and is no
+   use of the caller's pool. *)
 PROCEDURE StaleArg (ci: I64 ; al: PTR Ast.Node) : BOOL =
 BEGIN
   IF procs[ci].poolIx # -1 THEN RETURN FALSE END ;
@@ -687,13 +694,13 @@ BEGIN
   RETURN ''
 END UseOf ;
 
-(* the string-builder variant: p becomes a LOCAL pool of the same
-   name when its only uses are `DynUtf.New (p)`, locals declared IN
-   p, and arguments to callees that lose their pool -- the head of a
-   DynStr and its buffer die with the frame, and a string answer is
-   re-homed out of a local pool at exit (stage 2).  An allocation
-   from p, or p handed to any other callee that keeps its pool, is
-   not that shape. *)
+(* UseOfScratch tests the string-builder variant: p becomes a LOCAL
+   pool of the same name when its only uses are `DynUtf.New (p)`,
+   locals declared IN p, and arguments to callees that lose their
+   pool.  The head of a DynStr and its buffer die with the frame, and a
+   string answer is re-homed out of a local pool at exit (stage 2).  An
+   allocation from p, or p handed to any other callee that keeps its
+   pool, is not that shape. *)
 PROCEDURE UseOfScratch (pi: I64 ; k: Ast.Kid) : UTF =
 VAR
   i, ci : I64 ;
@@ -763,7 +770,7 @@ END UseOfScratch ;
 PROCEDURE Among0 (RO name: UTF ; ids: PTR Ast.Node) : BOOL ;
 PROCEDURE LocalDecl (head: PTR Ast.Node ; RO name: UTF ; VAR ids: Ast.Kid) : Ast.Kid ;
 
-(* the expression under parens and SOME *)
+(* Core answers the expression under parens and SOME. *)
 PROCEDURE Core (k: Ast.Kid) : Ast.Kid =
 BEGIN
   IF k IS SOME e THEN
@@ -774,7 +781,8 @@ BEGIN
   RETURN k
 END Core ;
 
-(* is NAME a parameter of the procedure under HEAD? *)
+(* IsParamOf asks whether NAME is a parameter of the procedure under
+   HEAD. *)
 PROCEDURE IsParamOf (head: PTR Ast.Node ; RO name: UTF) : BOOL =
 VAR i : I64 ;
 BEGIN
@@ -790,7 +798,8 @@ BEGIN
   RETURN FALSE
 END IsParamOf ;
 
-(* does the designator select an element -- `s[i]`, at any depth? *)
+(* HasIndex asks whether the designator selects an element, `s[i]`,
+   at any depth. *)
 PROCEDURE HasIndex (d: PTR Ast.Node) : BOOL =
 VAR i : I64 ;
 BEGIN
@@ -806,12 +815,12 @@ END HasIndex ;
    leaves the frame: `v.id := DynUtf.View (d)` through a VAR
    parameter, `s[i] := ...` into an element of a slice that is not
    the frame's, or the DString itself stored so.  A view's pool is
-   not part of a STR's type, so the checker of the day accepted it
+   not part of a STR's type.  So the checker of the day accepted it,
    and the zarr proxy's Variables.FillId answered ids like
    `realish.panel.co2\x00\x00lish` once its parameter had become a
    local pool (2026-10-01; the checker now refuses the store by
-   name, par 4.3, and the tool keeps the parameter first).  Answers
-   why, or '' *)
+   name, par 4.3, and the tool keeps the parameter first).
+   ScratchEscape answers why, or ''. *)
 PROCEDURE ScratchEscape (pi: I64 ; head: PTR Ast.Node ; k: Ast.Kid) : UTF =
 VAR
   i : I64 ;
@@ -857,14 +866,15 @@ BEGIN
   RETURN ''
 END ScratchEscape ;
 
-(* a candidate's uses, by the form it takes *)
+(* Uses answers a candidate's uses, by the form it takes. *)
 PROCEDURE Uses (pi: I64 ; k: Ast.Kid) : UTF =
 BEGIN
   IF procs[pi].form = 3 THEN RETURN UseOfScratch (pi, k) END ;
   RETURN UseOf (pi, k)
 END Uses ;
 
-(* does the heading answer `... IN p`?  Then p cannot be a local pool *)
+(* AnswersIn asks whether the heading answers `... IN p`.  Then p
+   cannot be a local pool. *)
 PROCEDURE AnswersIn (head: PTR Ast.Node ; RO pname: UTF) : BOOL =
 BEGIN
   IF head.kids[1] IS SOME rt THEN
@@ -873,7 +883,8 @@ BEGIN
   RETURN FALSE
 END AnswersIn ;
 
-(* does the body allocate from p, or declare a local IN p? *)
+(* Allocates asks whether the body allocates from p, or declares a
+   local IN p. *)
 PROCEDURE Allocates (RO pname: UTF ; k: Ast.Kid) : BOOL =
 VAR i : I64 ;
 BEGIN
@@ -902,7 +913,7 @@ BEGIN
   RETURN FALSE
 END HasShared ;
 
-(* the form a candidate takes once its pool is gone *)
+(* Decide picks the form a candidate takes once its pool is gone. *)
 PROCEDURE Decide (pi: I64) =
 VAR
   i, j, nobj : I64 ;
@@ -929,13 +940,13 @@ BEGIN
         END
       END
     END ;
-    (* one object to grow wins over an answer: a mutator that also
+    (* One object to grow wins over an answer.  A mutator that also
        answers what it linked in allocated in the object's pool before
-       (the caller passed it), and rule 2 keeps that; a frame answer
+       (the caller passed it), and rule 2 keeps that.  A frame answer
        stored through the object would be refused (Arrow.Add, found
-       on the corpus) *)
+       on the corpus). *)
     IF AnswersIn (head, procs[pi].poolName) THEN
-      (* a constructor: `: PTR T IN pool` promises the caller an
+      (* This is a constructor: `: PTR T IN pool` promises the caller an
          object in the pool it named, which a frame answer is not
          (Mat.New's matrices were linked into pooled Jobs) *)
       Keep (pi, 'it answers a pointer into its pool')
@@ -959,9 +970,9 @@ BEGIN
   END
 END Decide ;
 
-(* the candidate whose answer expression K is, or -1: a call, in
-   parens or under SOME, or a local assigned one (the shapes
-   Sem.AnswersFrame reads) *)
+(* CallOfAnswer answers the candidate whose answer expression K is,
+   or -1.  K may be a call, in parens or under SOME, or a local
+   assigned one (the shapes Sem.AnswersFrame reads). *)
 PROCEDURE CallOfAnswer (m: I64 ; k: Ast.Kid ; body: Ast.Kid ; depth: I64) : I64 =
 BEGIN
   IF k IS SOME e THEN
@@ -1000,7 +1011,8 @@ END AssignedCall ;
 (* a procedure that keeps its pool answers INTO it (docs/pools.md), so
    a candidate whose answer it RETURNs would move that answer to the
    frame (Sem.AnswersFrame reads through the RETURN): the candidate
-   keeps its pool too.  Answers TRUE when a candidate was kept. *)
+   keeps its pool too.  ReturnsElided answers TRUE when a candidate
+   was kept. *)
 PROCEDURE ReturnsElided (pi: I64 ; k: Ast.Kid ; body: Ast.Kid) : BOOL =
 VAR
   i, ci : I64 ;
@@ -1025,7 +1037,8 @@ BEGIN
   RETURN hit
 END ReturnsElided ;
 
-(* the flattened index of the object parameter NAME, or -1 *)
+(* ObjParamIx answers the flattened index of the object parameter
+   NAME, or -1. *)
 PROCEDURE ObjParamIx (head: PTR Ast.Node ; RO name: UTF) : I64 =
 VAR i, j, ix : I64 ;
 BEGIN
@@ -1083,8 +1096,9 @@ BEGIN
   RETURN FALSE
 END Among0 ;
 
-(* the type a local NAME is declared with in the body under HEAD, and
-   the identifier list of its group; NONE when it is not a local *)
+(* LocalDecl answers the type a local NAME is declared with in the
+   body under HEAD, and the identifier list of its group.  It answers
+   NONE when NAME is not a local. *)
 PROCEDURE LocalDecl (head: PTR Ast.Node ; RO name: UTF ; VAR ids: Ast.Kid) : Ast.Kid =
 VAR i, j : I64 ;
 BEGIN
@@ -1135,8 +1149,9 @@ BEGIN
   RETURN NONE
 END ModVarTy ;
 
-(* is NAME a pool where the procedure PI (heading HEAD) stands: its
-   pool parameter, HEAP, a local POOL or a module POOL? *)
+(* PoolNameHere asks whether NAME is a pool where the procedure PI
+   (heading HEAD) stands: its pool parameter, HEAP, a local POOL or a
+   module POOL. *)
 PROCEDURE PoolNameHere (pi: I64 ; head: PTR Ast.Node ; RO name: UTF) : BOOL =
 VAR
   ids : Ast.Kid ;
@@ -1144,9 +1159,10 @@ VAR
 BEGIN
   IF Text.Eq (name, 'HEAP') THEN RETURN TRUE END ;
   IF Text.Eq (name, procs[pi].poolName) THEN RETURN TRUE END ;
-  (* any POOL parameter, not only the one the candidate may lose: a
-     procedure with two keeps both, and a stale argument naming the
-     second was left standing (the proxy's Fluxnet.Handle) *)
+  (* Any POOL parameter counts, not only the one the candidate may
+     lose.  A procedure with two keeps both, and a stale argument
+     naming the second was left standing (the proxy's
+     Fluxnet.Handle). *)
   IF head.kids[0] IS SOME pl THEN
     FOR i := 0 TO pl.nkids - 1 DO
       IF pl.kids[i] IS SOME p THEN
@@ -1160,10 +1176,10 @@ BEGIN
   RETURN IsPoolTy (ModVarTy (procs[pi].mod, name))
 END PoolNameHere ;
 
-(* where the value of expression K lives: 'F' the frame (a frame NEW,
-   or the answer of a candidate that allocates from the pool it
-   loses), the name of a pool (a NEW from it, or the answer of a
-   procedure that keeps its pool and is handed it), '' unknown *)
+(* SourceOf answers where the value of expression K lives: 'F' the frame
+   (a frame NEW, or the answer of a candidate that allocates from the
+   pool it loses), the name of a pool (a NEW from it, or the answer of a
+   procedure that keeps its pool and is handed it), '' unknown. *)
 PROCEDURE SourceOf (pi: I64 ; head: PTR Ast.Node ; k: Ast.Kid) : UTF =
 VAR ci, px : I64 ;
 BEGIN
@@ -1218,9 +1234,9 @@ BEGIN
   RETURN Text.OneOf (STR (name), PredeclaredTys)
 END IsPredeclaredTy ;
 
-(* every assignment to local NAME in K, folded: src is the one source
-   they agree on, n counts them, bad says they disagree or one is
-   unknown *)
+(* Sources folds every assignment to local NAME in K: src is the one
+   source they agree on, n counts them, and bad says they disagree or
+   one is unknown. *)
 PROCEDURE Sources (pi: I64 ; head: PTR Ast.Node ; RO name: UTF ; k: Ast.Kid ;
                    VAR src: UTF ; VAR n: I64 ; VAR bad: BOOL) =
 VAR
@@ -1277,18 +1293,19 @@ BEGIN
   nAddIn := nAddIn + 1
 END AddIn ;
 
-(* Is the pool of the object rooted at NAME, in the procedure PI whose
-   heading is HEAD, one the checker names durably?  Rule 2 takes a
-   VAR parameter's hidden pool, a local's IN clause, and the module
-   frame for a module variable; a pool-less LOCAL lends the frame --
-   right for a frame value, a use-after-free for an object that
-   outlives the call (Parse held every node in a pool-less local and
-   `Ast.Add (n, kid)` grew it in the parser's frame; the first
-   gendiff run segfaulted).  So a pool-less local is read from its
-   assignments: all frame values, the frame is right; all from one
-   pool P, the declaration gains the `IN P` it had omitted (every name
-   of its group must agree); anything else, the callee keeps its
-   pool.  A binder's origin is not followed. *)
+(* RootPooled asks whether the pool of the object rooted at NAME, in
+   the procedure PI whose heading is HEAD, is one the checker names
+   durably.  Rule 2 takes a VAR parameter's hidden pool, a local's IN
+   clause, and the module frame for a module variable.  A pool-less
+   LOCAL lends the frame.  That is right for a frame value, and a
+   use-after-free for an object that outlives the call (Parse held
+   every node in a pool-less local and `Ast.Add (n, kid)` grew it in
+   the parser's frame; the first gendiff run segfaulted).  So a
+   pool-less local is read from its assignments.  If all are frame
+   values, the frame is right.  If all come from one pool P, the
+   declaration gains the `IN P` it had omitted (every name of its
+   group must agree).  For anything else, the callee keeps its pool.
+   A binder's origin is not followed. *)
 PROCEDURE RootPooled (pi: I64 ; head: PTR Ast.Node ; RO name: UTF) : BOOL =
 VAR
   i, j, n : I64 ;
@@ -1341,10 +1358,10 @@ BEGIN
   RETURN IsModVar (procs[pi].mod, name)
 END RootPooled ;
 
-(* a candidate that grows its object allocates in the pool the CALLER
-   names from the argument's root: where a caller names the frame for
+(* A candidate that grows its object allocates in the pool the CALLER
+   names from the argument's root.  Where a caller names the frame for
    an object that may outlive it, the candidate keeps its pool.
-   Answers TRUE when one was kept. *)
+   GrowsUnpooled answers TRUE when one was kept. *)
 PROCEDURE GrowsUnpooled (pi: I64 ; head: PTR Ast.Node ; k: Ast.Kid) : BOOL =
 VAR
   i, ci, ox : I64 ;
@@ -1395,9 +1412,9 @@ VAR
   r : UTF ;
 BEGIN
   FOR i := 0 TO nprocs - 1 DO
-    (* every procedure's pool parameter, so a caller can tell a pool
-       handed to a callee from any other argument; only a procedure
-       with a body in a file named here is a candidate *)
+    (* Record every procedure's pool parameter, so a caller can tell a
+       pool handed to a callee from any other argument.  Only a
+       procedure with a body in a file named here is a candidate. *)
     hasBody := FALSE ;
     IF procs[i].impl IS SOME head THEN
       hasBody := TRUE ;
@@ -1423,14 +1440,14 @@ BEGIN
     END ;
     IF procs[i].poolIx = -2 THEN procs[i].poolIx := -1 END
   END ;
-  (* what Decide and --keep settled stays settled: state 4 *)
+  (* State 4 marks what Decide and --keep settled: it stays settled. *)
   FOR i := 0 TO nprocs - 1 DO
     IF procs[i].state = 2 THEN procs[i].state := 4 END
   END ;
-  (* a callee that keeps its pool keeps its callers' too -- and a
-     caller kept only by DynStr.New may take the string-builder
-     variant instead, which can free ITS callers, so the fixpoint is
-     run again from the top until no candidate changes shape *)
+  (* A callee that keeps its pool keeps its callers' too.  A caller
+     kept only by DynStr.New may take the string-builder variant
+     instead, which can free ITS callers.  So the fixpoint is run
+     again from the top until no candidate changes shape. *)
   LOOP
     FOR i := 0 TO nprocs - 1 DO
       IF procs[i].state = 2 THEN procs[i].state := 1 END
@@ -1507,7 +1524,7 @@ VAR
   nb : SLICE OF I64 ;
   nt : SLICE OF UTF ;
 BEGIN
-  (* line starts, so a token's line:col becomes an offset *)
+  (* Record line starts, so a token's line:col becomes an offset. *)
   ls := NEW (pool, I64, 1024) ;
   nls := 0 ;
   ls[0] := 0 ;
@@ -1570,7 +1587,7 @@ BEGIN
   END
 END LexAll ;
 
-(* the token at a node's recorded position, or -1 *)
+(* TokAt answers the token at a node's recorded position, or -1. *)
 PROCEDURE TokAt (line, col: I64) : I64 =
 VAR lo, hi, mid : I64 ;
 BEGIN
@@ -1620,8 +1637,8 @@ BEGIN
   ed.n := ed.n + 1
 END EditAdd ;
 
-(* the last token of the argument that starts at token s: up to the
-   comma or closing bracket at its own depth *)
+(* ArgEnd answers the last token of the argument that starts at token
+   s: up to the comma or closing bracket at its own depth. *)
 PROCEDURE ArgEnd (s: I64) : I64 =
 VAR
   i, depth : I64 ;
@@ -1640,8 +1657,8 @@ BEGIN
   RETURN tk.n - 1
 END ArgEnd ;
 
-(* delete one argument of a bracketed list, starting at token s, and
-   one separating comma with it *)
+(* DropArg deletes one argument of a bracketed list, starting at token
+   s, and one separating comma with it. *)
 PROCEDURE DropArg (s: I64 ; VAR ok: BOOL) =
 VAR e : I64 ;
 BEGIN
@@ -1669,8 +1686,8 @@ END RemoveKid ;
 
 (* ---- the edits ----------------------------------------------------- *)
 
-(* the heading: `VAR p: POOL` and its separator go; a result's IN p
-   clause goes with it *)
+(* EditHeading removes `VAR p: POOL` and its separator from the
+   heading; a result's IN p clause goes with it. *)
 PROCEDURE EditHeading (pi: I64 ; VAR head: PTR Ast.Node ; VAR ok: BOOL) =
 VAR
   i, j, t : I64 ;
@@ -1721,7 +1738,8 @@ BEGIN
   j := 0
 END EditHeading ;
 
-(* inside a candidate's body: NEW (p, ...) and `IN p` *)
+(* EditBody edits inside a candidate's body: NEW (p, ...) and
+   `IN p`. *)
 PROCEDURE EditBody (pi: I64 ; k: Ast.Kid ; VAR ok: BOOL) =
 VAR
   i, t, e : I64 ;
@@ -1735,9 +1753,10 @@ BEGIN
           IF t < 0 THEN ok := FALSE ; RETURN END ;
           IF procs[pi].form = 2 THEN
             EditAdd (tk.off[t], tk.end[t], procs[pi].dName) ;
-            (* the tree says so too: a fresh designator in the tree's
-               pool -- pd is reached by value and its pool is not known
-               here, which a name a node owns needs (Ast.SetA) *)
+            (* The tree says so too, with a fresh designator in the
+               tree's pool.  pd is reached by value and its pool is
+               not known here, which a name a node owns needs
+               (Ast.SetA). *)
             q := Ast.NewNode (pool, Ast.NDesignator, pd.line, pd.col) ;
             Ast.SetA (pool, q, procs[pi].dName) ;
             Ast.SetB (pool, q, pd.bu) ;
@@ -1767,14 +1786,14 @@ BEGIN
   END
 END EditBody ;
 
-(* the string-builder variant: `p : POOL ;` becomes the first local,
-   in the body's VAR section or in a new one before BEGIN, and the
-   body is left as it is *)
+(* EditScratch makes the string-builder variant: `p : POOL ;` becomes
+   the first local, in the body's VAR section or in a new one before
+   BEGIN, and the body is left as it is. *)
 PROCEDURE EditScratch (pi: I64 ; VAR head: PTR Ast.Node ; VAR ok: BOOL) =
 VAR
   i, t, j : I64 ;
   sec, decl, ids, id, ty, nsec : PTR Ast.Node ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   have : Ast.Kid ;
 BEGIN
   IF head.kids[4] IS SOME body THEN
@@ -1795,7 +1814,7 @@ BEGIN
         END
       END
     END ;
-    d := DynUtf.New (pool) ;
+    d := DynStr.New (pool) ;
     IF have IS SOME s2 THEN
       (* before the section's first declaration, at its column *)
       sec := s2 ;
@@ -1806,11 +1825,11 @@ BEGIN
         END
       END ;
       IF t < 0 THEN ok := FALSE ; RETURN END ;
-      DynUtf.Append (d, procs[pi].poolName) ;
-      DynUtf.Append (d, ' : POOL ;') ;
-      DynUtf.AppendChar (d, 0AC) ;
-      FOR j := 1 TO tk.col[t] - 1 DO DynUtf.AppendChar (d, ' ') END ;
-      EditAdd (tk.off[t], tk.off[t], Text.Keep (pool, DynUtf.ViewIn (pool, d))) ;
+      DynStr.Append (d, procs[pi].poolName) ;
+      DynStr.Append (d, ' : POOL ;') ;
+      DynStr.AppendChar (d, 0AC) ;
+      FOR j := 1 TO tk.col[t] - 1 DO DynStr.AppendChar (d, ' ') END ;
+      EditAdd (tk.off[t], tk.off[t], Text.Keep (pool, DynStr.ViewIn (pool, d))) ;
       Ast.Add (pool, sec, NONE) ;
       j := sec.nkids - 1 ;
       WHILE j > 0 DO
@@ -1825,13 +1844,13 @@ BEGIN
         t := TokAt (blk.line, blk.col)
       END ;
       IF t < 0 OR NOT TokIs (t, 'BEGIN') THEN ok := FALSE ; RETURN END ;
-      DynUtf.Append (d, 'VAR') ;
-      DynUtf.AppendChar (d, 0AC) ;
-      DynUtf.Append (d, '  ') ;
-      DynUtf.Append (d, procs[pi].poolName) ;
-      DynUtf.Append (d, ' : POOL ;') ;
-      DynUtf.AppendChar (d, 0AC) ;
-      EditAdd (tk.off[t], tk.off[t], Text.Keep (pool, DynUtf.ViewIn (pool, d))) ;
+      DynStr.Append (d, 'VAR') ;
+      DynStr.AppendChar (d, 0AC) ;
+      DynStr.Append (d, '  ') ;
+      DynStr.Append (d, procs[pi].poolName) ;
+      DynStr.Append (d, ' : POOL ;') ;
+      DynStr.AppendChar (d, 0AC) ;
+      EditAdd (tk.off[t], tk.off[t], Text.Keep (pool, DynStr.ViewIn (pool, d))) ;
       nsec := Ast.NewNode (pool, Ast.NVarSection, 0, 0) ;
       Ast.Add (pool, nsec, SOME (decl)) ;
       Ast.Add (pool, body, NONE) ;
@@ -1841,9 +1860,9 @@ BEGIN
   END
 END EditScratch ;
 
-(* a pool-less local whose every assignment names pool P is declared
-   `IN P`: the text after the pointer's target type, the tree's
-   second kid of the NPtrType *)
+(* EditAddIn declares a pool-less local whose every assignment names
+   pool P `IN P`.  The clause goes into the text after the pointer's
+   target type, the tree's second kid of the NPtrType. *)
 PROCEDURE EditAddIn (pi: I64 ; head: PTR Ast.Node ; VAR ok: BOOL) =
 VAR
   i, t, e : I64 ;
@@ -1882,8 +1901,9 @@ END EditAddIn ;
 
 (* everywhere in a file: a call to a procedure that lost its pool
    loses the argument *)
-(* is NAME a pool where this call stands: in procedure PI (its
-   heading HEAD) when there is one, else at module level *)
+(* IsPoolArg asks whether NAME is a pool where this call stands: in
+   procedure PI (its heading HEAD) when there is one, else at module
+   level. *)
 PROCEDURE IsPoolArg (m: I64 ; pi: I64 ; head: Ast.Kid ; RO name: UTF) : BOOL =
 BEGIN
   IF Text.Eq (name, 'HEAP') THEN RETURN TRUE END ;
@@ -1933,10 +1953,11 @@ BEGIN
           IF n.kids[1] IS SOME al THEN
             j := procs[ci].poolIx ;
             IF j < al.nkids THEN
-              (* not `a`: this program has a module variable of that
-                 name, and the generator's scope answers the module
-                 variable for a binder of the same name (first hit
-                 wins) -- found here 2026-09-30, in the owed ledger *)
+              (* The name is not `a`: this program has a module
+                 variable of that name, and the generator's scope
+                 answers the module variable for a binder of the same
+                 name (first hit wins).  This was found here
+                 2026-09-30, in the owed ledger. *)
               IF al.kids[j] IS SOME an THEN
                 t := TokAt (an.line, an.col) ;
                 IF t < 0 OR an.kind # Ast.NDesignator THEN
@@ -1965,9 +1986,9 @@ END EditCalls ;
    which lost its pool would be refused by the checker (the head
    would die with the frame while the growth went to the pool), so
    the clause goes: the local holds frame storage now, which is what
-   the answer is.  Only a local assigned such a call DIRECTLY, and
-   only a single-name declaration; anything else is left for the
-   checker to name. *)
+   the answer is.  FrameHeld takes only a local assigned such a call
+   DIRECTLY, and only a single-name declaration.  Anything else is
+   left for the checker to name. *)
 PROCEDURE FrameHeld (m: I64 ; KEPT k: Ast.Kid ; VAR names: SLICE OF UTF ;
                      VAR nn: I64) =
 VAR
@@ -2068,7 +2089,8 @@ BEGIN
   RETURN FALSE
 END Among ;
 
-(* what stays, counted for the ledger: HEAP, and module-level pools *)
+(* CountLeft counts what stays, for the ledger: HEAP, and module-level
+   pools. *)
 PROCEDURE CountLeft (m: I64 ; k: Ast.Kid ; atTop: BOOL) =
 VAR i : I64 ;
 BEGIN
@@ -2104,11 +2126,11 @@ END CountLeft ;
 
 PROCEDURE Apply (RO src: UTF) : UTF =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, j, at, ts, te : I64 ;
   ss : UTF ;
 BEGIN
-  (* insertion sort by start; the edits never overlap *)
+  (* This is an insertion sort by start; the edits never overlap. *)
   FOR i := 1 TO ed.n - 1 DO
     j := i ;
     WHILE j > 0 AND ed.s[j - 1] > ed.s[j] DO
@@ -2118,22 +2140,22 @@ BEGIN
       j := j - 1
     END
   END ;
-  d := DynUtf.New (pool) ;
+  d := DynStr.New (pool) ;
   at := 0 ;
   FOR i := 0 TO ed.n - 1 DO
     IF ed.s[i] < at THEN
       Fail ('m9elide: two edits overlap; nothing written') ;
       RETURN src
     END ;
-    DynUtf.Append (d, SLICE (src, at, ed.s[i] - at)) ;
-    DynUtf.Append (d, ed.t[i]) ;
+    DynStr.Append (d, SLICE (src, at, ed.s[i] - at)) ;
+    DynStr.Append (d, ed.t[i]) ;
     at := ed.e[i]
   END ;
-  DynUtf.Append (d, SLICE (src, at, Text.BLen (src) - at)) ;
-  RETURN DynUtf.ViewIn (pool, d)
+  DynStr.Append (d, SLICE (src, at, Text.BLen (src) - at)) ;
+  RETURN DynStr.ViewIn (pool, d)
 END Apply ;
 
-(* one named file: the edits, the proof, the text *)
+(* Rewrite handles one named file: the edits, the proof, the text. *)
 PROCEDURE Rewrite (m: I64 ; VAR out: UTF) : BOOL =
 VAR
   i, j : I64 ;

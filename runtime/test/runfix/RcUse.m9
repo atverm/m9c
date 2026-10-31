@@ -1,7 +1,7 @@
 MODULE RcUse ;
 
-(* RcDef's answer, built in a MODULE pool, kept in a module variable:
-   legal, and refused by the region judgement of 011e837b *)
+(* RcUse keeps RcDef's answer, built in a MODULE pool, in a module
+   variable: legal, and refused by the region judgement of 011e837b. *)
 
 IMPORT Io, Fmt, RcDef ;
 

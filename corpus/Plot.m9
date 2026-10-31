@@ -1,7 +1,8 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 STATEFUL DEFINITION MODULE Plot ;
 
-(* matplotlib-styled SVG plots, restated from the M2 stack's Plot.mod.
+(* Plot draws matplotlib-styled SVG plots, restated from the M2
+   stack's Plot.mod.
    STATEFUL is the definition telling the truth: the line figure is a
    module-level builder (ClearFigure / AddLine / Render), exactly the
    hidden state the M2 version kept without saying so.  Number
@@ -12,7 +13,8 @@ STATEFUL DEFINITION MODULE Plot ;
    says a document is a value).                                      *)
 
 IMPORT Faults ;
-  (* for Faults.SizeError, which RenderTaylor raises *)
+  (* Faults is imported for Faults.SizeError, which RenderTaylor
+     raises. *)
 IMPORT Mat ;
 
 TYPE
@@ -21,10 +23,11 @@ TYPE
   END ;
 
 PROCEDURE ClearFigure () ;
-  (* discards every series added so far and starts an empty figure.
+  (* ClearFigure discards every series added so far and starts an
+     empty figure.
 
-     This module is STATEFUL -- the figure being built IS module
-     state, and the definition says so -- so a second plot in the
+     This module is STATEFUL: the figure being built IS module
+     state, and the definition says so.  So a second plot in the
      same program must start with this call or it inherits the
      first one's lines.  One figure at a time is the price of the
      state, and the alternative is a figure handle nobody asked
@@ -34,21 +37,24 @@ PROCEDURE AddLine (RO xs: SLICE OF F64 ;
                    RO ys: SLICE OF F64 ;
                    colorIdx: I64 ;
                    RO KEPT label: STR) ;
-  (* up to 4 series, up to 8192 points; colorIdx 0..3 = matplotlib
-     C0..C3; NaN values lift the pen, as mpl does.  The label slice
-     is retained until Render -- ledger material, like AddRoute.     *)
+  (* AddLine adds a line series: up to 4 series, up to 8192 points.
+     colorIdx 0..3 = matplotlib C0..C3, and NaN values lift the pen,
+     as mpl does.  The label slice is retained until Render: ledger
+     material, like AddRoute.                                        *)
 
 PROCEDURE SetDots (RO KEPT xs: SLICE OF F64 ; RO KEPT ys: SLICE OF F64) ;
-  (* one scatter layer, drawn UNDER the lines: every point a small
-     black circle, NaN points skipped, no per-series cap -- the
-     layer is for raw observations behind their summary lines.  The
+  (* SetDots sets one scatter layer, drawn UNDER the lines: every
+     point a small black circle, NaN points skipped, no per-series
+     cap.  The layer is for raw observations behind their summary
+     lines.  The
      slices are RETAINED until Render, not copied (the AddLine and
      AddRoute precedent), so the caller's arrays must outlive it.
      ClearFigure drops the layer with everything else.              *)
 
 CONST
-  (* bar style codes.  Plain I64 constants, chosen when a payload-less
-     variant constructor could not be written from another module.
+  (* These are bar style codes.  They are plain I64 constants, chosen
+     when a payload-less variant constructor could not be written from
+     another module.
      That generator gap closed 2026-09-15; the codes stay because
      every caller spells them and a named constant reads the same at
      a call site.  Ledgered in `docs/p3-ledger.md` as a workaround
@@ -64,8 +70,8 @@ PROCEDURE AddBars (RO at: SLICE OF F64 ;
                    RO v: SLICE OF F64 ;
                    colorIdx: I64 ;
                    RO KEPT label: STR) ;
-  (* one bar series: up to 4 of them, up to 8192 bars each, drawn
-     UNDER any lines and dots.
+  (* AddBars adds one bar series: up to 4 of them, up to 8192 bars
+     each, drawn UNDER any lines and dots.
 
        at -- where each bar sits on the CATEGORY axis (x for vertical
              bars, y for horizontal ones).  With BarDiscrete the
@@ -81,9 +87,9 @@ PROCEDURE AddBars (RO at: SLICE OF F64 ;
 
 PROCEDURE SetBarStyle (dir: I64 ; mode: I64 ; place: I64 ;
                        filled: BOOL ; width: F64) ;
-  (* how every bar series is drawn.  The defaults are what a caller
-     who never calls this gets: vertical, grouped, at its value,
-     filled, width 0.8.
+  (* SetBarStyle sets how every bar series is drawn.  The defaults are
+     what a caller who never calls this gets: vertical, grouped, at its
+     value, filled, width 0.8.
 
        dir   -- BarVertical or BarHorizontal
        mode  -- BarGrouped or BarStacked.  Stacking sums the series
@@ -99,49 +105,51 @@ PROCEDURE SetBarStyle (dir: I64 ; mode: I64 ; place: I64 ;
                 <= 1.  Grouped series divide that between them.   *)
 
 PROCEDURE SetBarErrors (series: I64 ; RO KEPT err: SLICE OF F64) ;
-  (* symmetric error bars for one series: a whisker of +/- err[i]
-     on the VALUE axis with a cap at each end, drawn over the bars.
-     A NaN or negative entry draws nothing for that bar, which is
-     how "no uncertainty for this one" is said.  The slice is
-     RETAINED until Render, like AddLine's label and SetDots's
-     points.                                                       *)
+  (* SetBarErrors sets symmetric error bars for one series: a whisker of
+     +/- err[i] on the VALUE axis with a cap at each end, drawn over the
+     bars.  A NaN or negative entry draws nothing for that bar, which is
+     how "no uncertainty for this one" is said.  The slice is RETAINED
+     until Render, like AddLine's label and SetDots's points. *)
 
 PROCEDURE SetBarColor (series: I64 ; RO KEPT hex: STR) ;
-  (* override the palette for one series with an SVG colour --
-     '#cc3311', 'darkgreen'.  It is written into the document
+  (* SetBarColor overrides the palette for one series with an SVG
+     colour: '#cc3311', 'darkgreen'.  It is written into the document
      verbatim, so it is the caller's business that it is a colour;
      an empty string restores the palette entry.                   *)
 
 PROCEDURE Viridis () : Cmap ;
 PROCEDURE Coolwarm () : Cmap ;
 PROCEDURE CmapHex (cmap: Cmap ; t: F64) : STR RAISES ValueRange ;
-  (* the colour at t in 0 .. 1 of a colour map, as '#rrggbb' -- what
-     RenderHeat fills a cell with, for a figure drawn elsewhere
-     (Map's colour grid, 2026-10-08); t is clamped to 0 .. 1 *)
-  (* the colour maps as PROCEDURES, written when a payload-less
-     variant constructor from ANOTHER module type-checked and the
-     generator refused it (met by RenderHeat's first caller outside
-     this file).  Since 2026-09-15 `Plot.Cmap.Viridis` works from
-     anywhere; these two remain as the shorter spelling their callers
-     use, and answer exactly that constructor. *)
+  (* CmapHex answers the colour at t in 0 .. 1 of a colour map, as
+     '#rrggbb'.  That is what RenderHeat fills a cell with, for a
+     figure drawn elsewhere (Map's colour grid, 2026-10-08); t is
+     clamped to 0 .. 1. *)
+  (* Viridis and Coolwarm are the colour maps as PROCEDURES, written
+     when a payload-less variant constructor from ANOTHER module
+     type-checked and the generator refused it (met by RenderHeat's
+     first caller outside this file).  Since 2026-09-15
+     `Plot.Cmap.Viridis` works from anywhere; these two remain as the
+     shorter spelling their callers use, and answer exactly that
+     constructor. *)
 
 PROCEDURE SetLineColor (series: I64 ; RO KEPT hex: STR) ;
-  (* the line twin of SetBarColor: override one line series' palette
-     entry with an SVG colour -- 'black', '#cc3311'.  Written into
-     the document verbatim, so it is the caller's business that it is
-     a colour; an empty string restores the C0..C3 entry.  Added
-     because the palette has no black and a measured series wants
-     one (Alex, 2026-09-01).                                        *)
+  (* SetLineColor is the line twin of SetBarColor: it overrides one
+     line series' palette entry with an SVG colour ('black',
+     '#cc3311').  The colour is written into the document verbatim, so
+     it is the caller's business that it is a colour; an empty string
+     restores the C0..C3 entry.  It was added because the palette has
+     no black and a measured series wants one (Alex, 2026-09-01).    *)
 
 PROCEDURE SetLogX (on: BOOL) ;
 PROCEDURE SetLogY (on: BOOL) ;
-  (* a base-10 logarithmic axis, for lines, dots and bars alike.
+  (* SetLogX and SetLogY give a base-10 logarithmic axis, for lines,
+     dots and bars alike.
      Ticks land on the decades rather than on NiceStep's round
      numbers, and are labelled as the values themselves (100, not
      10^2), which is what a reader of a small chart wants.
 
-     A value that cannot be shown on a log axis -- zero or negative
-     -- is SKIPPED, the same treatment NaN gets, rather than clamped
+     A value that cannot be shown on a log axis (zero or negative)
+     is SKIPPED, the same treatment NaN gets, rather than clamped
      to something that would draw a line to a place the data does
      not go.  A bar on a log value axis starts at the axis floor
      instead of at zero, because zero is not on the axis.
@@ -163,14 +171,15 @@ PROCEDURE RenderHeat (RO title: STR ;
      NaN cells render white                                          *)
 
 PROCEDURE SetHeatRange (lo: F64 ; hi: F64) ;
-  (* pin the next RenderHeat's colour range to [lo, hi], overriding
-     both the data min/max and symmetric; ClearFigure clears it.  For
-     a rounded, stable scale that a caller controls.                 *)
+  (* SetHeatRange pins the next RenderHeat's colour range to [lo, hi],
+     overriding both the data min/max and symmetric; ClearFigure
+     clears it.  It serves a rounded, stable scale that a caller
+     controls.                                                       *)
 
 (* ---- the Taylor diagram (2026-10-02; Alex: "we will also need
    taylor plots") ----------------------------------------------------
 
-   One figure for how well several fields match their references
+   It is one figure for how well several fields match their references
    (Taylor 2001, as NCL and the model-evaluation literature draw it).
    A point is one variable of one case, placed by two numbers:
 
@@ -182,8 +191,8 @@ PROCEDURE SetHeatRange (lo: F64 ; hi: F64) ;
    so the reference itself is the point REF at (1, 0), and the
    DISTANCE from a point to REF is the centred root-mean-square
    difference between the two fields, in units of the reference's
-   standard deviation -- which is why the figure works, and what the
-   solid arcs around REF measure at 0.25, 0.50 and 0.75.  The dashed
+   standard deviation.  That is why the figure works, and it is what
+   the solid arcs around REF measure at 0.25, 0.50 and 0.75.  The dashed
    arcs are ratios of 0.5, 1 and 1.5.
 
    The statistics are the caller's, two lines with Stats: the figure
@@ -196,13 +205,13 @@ CONST
 
 PROCEDURE TaylorXY (ratio, corr: F64 ; VAR x, y: F64) : BOOL
   RAISES ValueRange ;
-  (* where RenderTaylor puts a point, in the units of its 720 by 720
-     drawing (y downwards, as SVG counts).  FALSE, and x and y left
-     alone, for a point that is not on the diagram: a NaN, a
-     correlation outside 0 .. 1, a ratio below 0 or above TaylorMax.
-     Exported so that the geometry can be held to a number: the
-     distance to TaylorXY (1, 1), divided by the distance from
-     TaylorXY (0, 1) to it, is the RMS difference. *)
+  (* TaylorXY answers where RenderTaylor puts a point, in the units of
+     its 720 by 720 drawing (y downwards, as SVG counts).  It answers
+     FALSE, and leaves x and y alone, for a point that is not on the
+     diagram: a NaN, a correlation outside 0 .. 1, a ratio below 0 or
+     above TaylorMax.  It is exported so that the geometry can be held
+     to a number: the distance to TaylorXY (1, 1), divided by the
+     distance from TaylorXY (0, 1) to it, is the RMS difference. *)
 
 PROCEDURE RenderTaylor (RO title: STR ;
                         RO ratio: GRID 2 OF F64 ;
@@ -210,7 +219,7 @@ PROCEDURE RenderTaylor (RO title: STR ;
                         RO cases: SLICE OF STR ;
                         RO names: SLICE OF STR) : STR
   RAISES ValueRange, Faults.SizeError ;
-  (* the diagram as SVG.
+  (* RenderTaylor answers the diagram as SVG.
 
        ratio, corr -- one ROW a case, one COLUMN a variable
        cases       -- a name per row, for the legend; each case has
@@ -220,18 +229,19 @@ PROCEDURE RenderTaylor (RO title: STR ;
                       `3 - Prc_GPCP`; the point carries the number
 
      A point TaylorXY refuses is not drawn, and the figure says how
-     many were not.  SizeError (got, want) when the two grids differ
-     in shape or the names do not count their rows and columns. *)
+     many were not.  It raises SizeError (got, want) when the two
+     grids differ in shape or the names do not count their rows and
+     columns. *)
 
 (* ---- a time-series chart (2026-10-03; Alex: "lift chart into
    plot" -- m9curve's Chart.m9, which drew the ICOS Curve) ----------
 
-   One figure: a time axis in years, months or days as the window
-   asks, a value axis with a hairline grid, a shaded band in two
-   depths, lines, a cloud of small dots, a legend that wraps, a label
-   at the end of a line when there is room for every one, and an
-   invisible hover layer a page's script can read.  Everything about
-   the DATA is in the ChartSpec; everything about the LOOK is here.
+   Chart draws one figure: a time axis in years, months or days as the
+   window asks, a value axis with a hairline grid, a shaded band in two
+   depths, lines, a cloud of small dots, a legend that wraps, a label at
+   the end of a line when there is room for every one, and an invisible
+   hover layer a page's script can read.  Everything about the DATA is
+   in the ChartSpec; everything about the LOOK is here.
 
    WHAT CHANGED IN THE LIFT.  m9curve's figure styled itself by a
    stylesheet in the document, with CSS variables for a light and a
@@ -242,11 +252,11 @@ PROCEDURE RenderTaylor (RO title: STR ;
    nothing by themselves.  Times are DAYS since 1970-01-01
    (Time.DaysFromCivil), as there.
 
-   COLOUR IS A KEY.  A series names a slot -- 'net', 's1' .. 's6',
-   'ref', 'gray' -- chosen in m9curve by measurement: ICOS's cyan for
-   the network, six hues for stations whose neighbours stay apart for
-   a reader with a colour-vision deficiency, ink for references.  A
-   key this does not know is drawn in ink.                           *)
+   COLOUR IS A KEY.  A series names a slot ('net', 's1' .. 's6',
+   'ref', 'gray'), and m9curve chose the slots by measurement: ICOS's
+   cyan for the network, six hues for stations whose neighbours stay
+   apart for a reader with a colour-vision deficiency, ink for
+   references.  A key this does not know is drawn in ink. *)
 
 CONST
   ChartSlots = 6 ;             (* station slots s1 .. s6 *)
@@ -284,9 +294,9 @@ TYPE
     dotsLabel : STR ;
     dotsX, dotsY : SLICE OF F64 ;
 
-    (* the hover table: for each position a heading and one cell
-       for each name, already formatted; an empty cell is left out
-       of the readout.  Leave hoverX empty for no layer. *)
+    (* This is the hover table: for each position a heading and one
+       cell for each name, already formatted.  An empty cell is left
+       out of the readout.  Leave hoverX empty for no layer. *)
     hoverX : SLICE OF F64 ;
     hoverHead : SLICE OF STR ;
     hoverNames : SLICE OF STR ;
@@ -297,19 +307,20 @@ TYPE
 
 PROCEDURE Chart (RO s: ChartSpec) : STR
   RAISES ValueRange ;
-  (* the document.  A spec with nothing in its window still answers
-     a figure: the axes, and a line saying there is no data. *)
+  (* Chart answers the document.  A spec with nothing in its window
+     still answers a figure: the axes, and a line saying there is no
+     data. *)
 
 PROCEDURE MonthName (m: I64) : STR ;
-  (* 'Jan' .. 'Dec' for 1 .. 12 *)
+  (* MonthName answers 'Jan' .. 'Dec' for 1 .. 12. *)
 
 (* ---- several figures in one document: subplots (2026-10-03) ----
 
    Figures are composed AFTER they are drawn: each is the document
-   Render, RenderHeat, RenderTaylor or Chart answered, and Panels
-   puts them in a grid of cells, each scaled to its cell -- its own
-   proportions kept, centred -- inside a group with a translate and
-   a scale, which browsers and Png.FromSvg both apply.  So a panel is
+   Render, RenderHeat, RenderTaylor or Chart answered.  Panels puts
+   them in a grid of cells, each scaled to its cell (its own
+   proportions kept, centred) inside a group with a translate and a
+   scale, which browsers and Png.FromSvg both apply.  So a panel is
    any figure, and a figure needs to know nothing about panels.
 
    The ids inside a figure (a chart's clip path) would collide
@@ -318,13 +329,13 @@ PROCEDURE MonthName (m: I64) : STR ;
 PROCEDURE Panels (cols, rows: I64 ; RO figures: SLICE OF STR ;
                   RO title: STR ; width, height: I64) : STR
   RAISES Faults.SizeError, Faults.BadArg, ValueRange ;
-  (* the document, width by height points, `title` across the top
-     when it is not empty.  The figures fill the cells row by row,
-     from the top left; fewer than cols * rows leaves the last cells
-     empty, more is Faults.SizeError (got, want).  A figure must
-     begin with <svg and say its size in a viewBox (every figure
-     of this module does); Faults.BadArg otherwise, and for a grid
-     or a size that is not positive. *)
+  (* Panels answers the document, width by height points, `title` across
+     the top when it is not empty.  The figures fill the cells row by
+     row, from the top left; fewer than cols * rows leaves the last
+     cells empty, more is Faults.SizeError (got, want).  A figure must
+     begin with <svg and say its size in a viewBox (every figure of this
+     module does).  Otherwise it raises Faults.BadArg, as it does for a
+     grid or a size that is not positive. *)
 
 END Plot.
 
@@ -333,14 +344,14 @@ UNSAFE DEFINITION MODULE FOR "C" cfmt ;
 
 PROCEDURE FmtG = "fmt_g" (dst: C.MutPtr ; v: C.Double) : C.Int
   [REENTRANT] ;
-  (* sprintf "%.4g" -- the oracle's exact formatter, shared          *)
+  (* FmtG is sprintf "%.4g": the oracle's exact formatter, shared.   *)
 
 END cfmt.
 
 
 UNSAFE IMPLEMENTATION MODULE Plot ;
 
-(* UNSAFE for one reason: ADR at the fmt_g boundary.                 *)
+(* The module is UNSAFE for one reason: ADR at the fmt_g boundary.   *)
 
 FROM cfmt IMPORT FmtG ;
 IMPORT Mat ;
@@ -368,10 +379,11 @@ CONST
   MBottom = 55.0 ;
   HexDigits = '0123456789abcdef' ;
   Cap = 3.0 ;            (* half the error whisker's cap, in pixels.
-                            Module level because the generator
-                            refuses a CONST declared inside a
-                            procedure -- which the checker accepts,
-                            the same softness the reversed NEW had *)
+                            It is module level because the
+                            generator refuses a CONST declared
+                            inside a procedure.  The checker
+                            accepts one: the same softness the
+                            reversed NEW had. *)
 
 VAR
   serX, serY : ARRAY 32768 OF F64 ;      (* MaxSer x MaxPts, flat *)
@@ -379,10 +391,11 @@ VAR
   serLbl : ARRAY 4 OF STR ;
   nSer : I64 ;
 
-  (* BARS.  Same shape as the line series -- flat MaxSer x MaxPts --
-     so the two layers are read the same way.  Everything here is
-     zero or FALSE until a caller asks for it, which is what keeps a
-     figure without bars emitting exactly the bytes it always did. *)
+  (* BARS.  They have the same shape as the line series (flat MaxSer
+     x MaxPts), so the two layers are read the same way.  Everything
+     here is zero or FALSE until a caller asks for it, which is what
+     keeps a figure without bars emitting exactly the bytes it always
+     did. *)
   barAt, barV : ARRAY 32768 OF F64 ;
   barN, barCol : ARRAY 4 OF I64 ;
   barLbl, barHex : ARRAY 4 OF STR ;
@@ -449,8 +462,9 @@ END CmapPt ;
 PROCEDURE EmitHexByte (VAR d: PTR DynStr.DString ;
                        v: I64) =
 BEGIN
-  DynStr.AppendChar (d, HexDigits[v DIV 16]) ;
-  DynStr.AppendChar (d, HexDigits[v MOD 16])
+  (* the digits are ASCII: the octet IS the character *)
+  DynStr.AppendChar (d, Text.BChar (HexDigits, v DIV 16)) ;
+  DynStr.AppendChar (d, Text.BChar (HexDigits, v MOD 16))
 END EmitHexByte ;
 
 PROCEDURE EmitCmap (VAR d: PTR DynStr.DString ;
@@ -484,7 +498,7 @@ BEGIN
   RETURN DynStr.View (d)
 END CmapHex ;
 
-(* Heckbert's nice tick spacing, transcribed *)
+(* NiceStep is Heckbert's nice tick spacing, transcribed. *)
 PROCEDURE NiceStep (span: F64) : F64 =
 VAR mag, s : F64 ;
 BEGIN
@@ -552,15 +566,16 @@ BEGIN
   heatFixed := FALSE
 END ClearFigure ;
 
-(* base-10 log, by the identity log10 x = ln x / ln 10, because Math
-   is not imported here and this is the only place a log is wanted.
-   Only ever called on a positive value: Loggable is the guard. *)
+(* Log10 answers the base-10 log, by the identity log10 x = ln x /
+   ln 10, because Math is not imported here and this is the only place
+   a log is wanted.  It is only ever called on a positive value:
+   Loggable is the guard. *)
 PROCEDURE Log10 (v: F64) : F64 =
 VAR y, t, num, den : F64 ; k : I64 ;
 BEGIN
-  (* ln by the atanh series on (v-1)/(v+1), after scaling v into
-     [1, 10) by counting powers of ten -- twenty terms is far more
-     than an SVG coordinate can show *)
+  (* Compute ln by the atanh series on (v-1)/(v+1), after scaling v
+     into [1, 10) by counting powers of ten.  Twenty terms is far more
+     than an SVG coordinate can show. *)
   k := 0 ;
   y := v ;
   WHILE y >= 10.0 DO y := y / 10.0 ; k := k + 1 END ;
@@ -577,8 +592,8 @@ BEGIN
   RETURN F64 (k) + 2.0 * y / 2.302585092994046
 END Log10 ;
 
-(* a value this axis can show: everything, unless the axis is
-   logarithmic and the value is not positive *)
+(* Loggable answers whether this axis can show a value: everything,
+   unless the axis is logarithmic and the value is not positive. *)
 PROCEDURE Loggable (v: F64 ; lg: BOOL) : BOOL =
 BEGIN
   IF IsNaN (v) THEN RETURN FALSE END ;
@@ -586,7 +601,8 @@ BEGIN
   RETURN TRUE
 END Loggable ;
 
-(* the axis coordinate of a value: itself, or its logarithm.  With
+(* Axis answers the axis coordinate of a value: itself, or its
+   logarithm.  With
    the axis linear this is the identity, which is what lets every
    existing figure emit the bytes it always did. *)
 PROCEDURE Axis (v: F64 ; lg: BOOL) : F64 =
@@ -612,9 +628,9 @@ BEGIN
   barMode := mode ;
   barPlace := place ;
   barFilled := filled ;
-  (* a width outside (0, 1] is a caller's slip, and silently drawing
-     bars that overlap or vanish would hide it; the documented range
-     is kept instead *)
+  (* A width outside (0, 1] is a caller's slip.  Bars silently drawn
+     to overlap or vanish would hide it, so the documented range is
+     kept instead. *)
   IF width > 0.0 THEN
     IF width <= 1.0 THEN barWidth := width END
   END
@@ -651,11 +667,12 @@ END SetLineColor ;
 
 PROCEDURE EmitLineColor (VAR d: PTR DynStr.DString ;
                          s: I64) =
-  (* the caller's colour if one was named, else the palette.  Kept
-     as one procedure so the line and its legend swatch cannot
-     disagree -- they are two call sites of the same question. *)
+  (* EmitLineColor emits the caller's colour if one was named, else
+     the palette.  It is kept as one procedure so the line and its
+     legend swatch cannot disagree: they are two call sites of the
+     same question. *)
 BEGIN
-  IF LEN (serHex[s]) > 0 THEN
+  IF Text.BLen (serHex[s]) > 0 THEN
     DynStr.Append (d, serHex[s])
   ELSE
     EmitColor (d, serCol[s])
@@ -682,19 +699,21 @@ BEGIN
   nBar := nBar + 1
 END AddBars ;
 
-(* a bar series' colour: the caller's own if SetBarColor named one,
-   and otherwise the C0..C3 palette the lines use *)
+(* EmitBarColor emits a bar series' colour: the caller's own if
+   SetBarColor named one, and otherwise the C0..C3 palette the lines
+   use. *)
 PROCEDURE EmitBarColor (VAR d: PTR DynStr.DString ;
                         s: I64) =
 BEGIN
-  IF LEN (barHex[s]) > 0 THEN
+  IF Text.BLen (barHex[s]) > 0 THEN
     DynStr.Append (d, barHex[s])
   ELSE
     EmitColor (d, barCol[s])
   END
 END EmitBarColor ;
 
-(* an error whisker: the line, then a cap across each end.  `horiz`
+(* EmitWhisker draws an error whisker: the line, then a cap across
+   each end.  `horiz`
    says which way the caps turn, which is the only difference
    between the two directions. *)
 PROCEDURE EmitWhisker (VAR d: PTR DynStr.DString ;
@@ -732,8 +751,8 @@ BEGIN
   DynStr.Append (d, '" fill="none" stroke="#222" stroke-width="1.2"/>')
 END EmitWhisker ;
 
-(* the decade at or below an axis coordinate, which is already a
-   logarithm: the first tick a log axis wants *)
+(* DecadeFloor answers the decade at or below an axis coordinate,
+   which is already a logarithm: the first tick a log axis wants. *)
 PROCEDURE DecadeFloor (v: F64) : F64 RAISES ValueRange =
 VAR k : F64 ;
 BEGIN
@@ -742,8 +761,8 @@ BEGIN
   RETURN k
 END DecadeFloor ;
 
-(* back from an axis coordinate to the value it stands for, so a log
-   axis can be LABELLED 100 rather than 2 *)
+(* Pow10 turns an axis coordinate back into the value it stands for,
+   so a log axis can be LABELLED 100 rather than 2. *)
 PROCEDURE Pow10 (k: F64) : F64 RAISES ValueRange =
 VAR r : F64 ; n : I64 ;
 BEGIN
@@ -754,8 +773,9 @@ BEGIN
   RETURN r
 END Pow10 ;
 
-(* grow the two ranges to hold a bar's category span and value span.
-   VAR on all five because it is the range being extended, and the
+(* ExtendRange grows the two ranges to hold a bar's category span and
+   value span.  All five are VAR because it is the range being
+   extended, and the
    caller passes them in whichever order the bar direction means:
    that swap is the whole of what BarHorizontal costs. *)
 PROCEDURE ExtendRange (VAR cmin: F64 ; VAR cmax: F64 ;
@@ -775,17 +795,19 @@ BEGIN
   IF v1 > vmax THEN vmax := v1 END
 END ExtendRange ;
 
-(* where bar i of this series sits on the category axis, before the
-   grouping offset: its own position, or its index *)
+(* BarPos answers where bar i of this series sits on the category
+   axis, before the grouping offset: its own position, or its
+   index. *)
 PROCEDURE BarPos (s: I64 ; i: I64) : F64 =
 BEGIN
   IF barPlace = BarDiscrete THEN RETURN F64 (i) END ;
   RETURN barAt[s * MaxPts + i]
 END BarPos ;
 
-(* the width of one slot on the category axis: 1 for discrete bars,
-   and otherwise the CLOSEST pair of positions anywhere in the
-   figure, so the widest bar that cannot overlap is the one drawn *)
+(* SlotWidth answers the width of one slot on the category axis: 1
+   for discrete bars, and otherwise the CLOSEST pair of positions
+   anywhere in the figure, so the widest bar that cannot overlap is
+   the one drawn. *)
 PROCEDURE SlotWidth () : F64 =
 VAR s, i : I64 ; gap, w, a, b : F64 ; seen : BOOL ;
 BEGIN
@@ -809,8 +831,9 @@ BEGIN
   RETURN gap
 END SlotWidth ;
 
-(* the value a stacked bar starts from: the sum of the series below
-   it at the same index, or the baseline for the first *)
+(* StackBase answers the value a stacked bar starts from: the sum of
+   the series below it at the same index, or the baseline for the
+   first. *)
 PROCEDURE StackBase (s: I64 ; i: I64) : F64 =
 VAR k : I64 ; acc, v : F64 ;
 BEGIN
@@ -909,13 +932,14 @@ BEGIN
       END
     END
   END ;
-  (* THE BARS' CONTRIBUTION, and only when there are bars, so a
+  (* Add THE BARS' CONTRIBUTION, and only when there are bars, so a
      line-only figure computes exactly the range it always did.  A
-     bar series brings three things a line does not: the slot it
-     occupies on the category axis (half a slot either side of the
-     outermost bar), its BASELINE -- a bar hanging in the air with
-     its foot off the chart is a lie about its own length -- and,
-     where they are asked for, the ends of its error whiskers. *)
+     bar series brings three things a line does not.  One is the slot
+     it occupies on the category axis (half a slot either side of the
+     outermost bar).  Another is its BASELINE: a bar hanging in the
+     air with its foot off the chart is a lie about its own length.
+     The third, where they are asked for, is the ends of its error
+     whiskers. *)
   IF nBar > 0 THEN
     slot := SlotWidth () ;
     half := slot * 0.5 ;
@@ -934,8 +958,8 @@ BEGIN
               END
             END
           END ;
-          (* the category extent and the value extent, then mapped
-             onto x and y by the direction *)
+          (* Take the category extent and the value extent, then map
+             them onto x and y by the direction. *)
           IF barDir = BarHorizontal THEN
             c0 := Axis (v - half, logY) ; c1 := Axis (v + half, logY) ;
             IF logX AND base <= 0.0 THEN base := top / 100.0 END ;
@@ -1058,11 +1082,11 @@ BEGIN
   EmitR (d, FigH - MBottom) ;
   DynStr.Append (d, '" stroke="black" stroke-width="1.2"/>') ;
 
-  (* THE BARS, under the dots and the lines.  Each is a rectangle
+  (* Draw THE BARS, under the dots and the lines.  Each is a rectangle
      from its baseline to its value on the VALUE axis, and one slot
-     wide on the CATEGORY axis -- with the two axes swapped when the
-     bars are horizontal, which is the only thing that direction
-     changes.  A grouped series takes its own share of the slot; a
+     wide on the CATEGORY axis.  The two axes swap when the bars are
+     horizontal, which is the only thing that direction changes.  A
+     grouped series takes its own share of the slot; a
      stacked one starts where the series below it ended. *)
   IF nBar > 0 THEN
     slot := SlotWidth () * barWidth ;
@@ -1077,10 +1101,10 @@ BEGIN
           v := BarPos (s, i) + off ;
           base := StackBase (s, i) ;
           top := base + w ;
-          (* on a log value axis zero is nowhere, so the foot of the
-             bar is the axis floor -- said in the definition, because
-             a reader comparing bar HEIGHTS on a log axis is already
-             comparing ratios and should know where they start *)
+          (* On a log value axis zero is nowhere, so the foot of the
+             bar is the axis floor.  The definition says so, because a
+             reader comparing bar HEIGHTS on a log axis is already
+             comparing ratios and should know where they start. *)
           IF barDir = BarHorizontal THEN
             IF logX AND base <= 0.0 THEN base := Pow10 (xmin) END
           ELSE
@@ -1722,7 +1746,7 @@ BEGIN
   END
 END EscC ;
 
-(* a coordinate: one decimal is a tenth of a pixel *)
+(* NumC writes a coordinate: one decimal is a tenth of a pixel. *)
 PROCEDURE NumC (VAR d: PTR DynStr.DString ; v: F64)
   RAISES ValueRange =
 BEGIN
@@ -1739,7 +1763,7 @@ BEGIN
   RETURN g.bottom - (y - g.y0) / (g.y1 - g.y0) * (g.bottom - g.top)
 END Py ;
 
-(* widen [mn, mx] to hold every y whose x is in the window *)
+(* Span widens [mn, mx] to hold every y whose x is in the window. *)
 PROCEDURE Span (RO x, y: SLICE OF F64 ; lo, hi: F64 ;
                 VAR mn, mx: F64 ; VAR seen: BOOL) =
 VAR i : I64 ;
@@ -1758,8 +1782,8 @@ BEGIN
   END
 END Span ;
 
-(* 1, 2 or 5 times a power of ten: the step that gives about
-   `target` ticks over `range` *)
+(* NiceStepC answers 1, 2 or 5 times a power of ten: the step that
+   gives about `target` ticks over `range`. *)
 PROCEDURE NiceStepC (range: F64 ; target: I64) : F64
   RAISES ValueRange =
 VAR raw, mag, f : F64 ;
@@ -1783,8 +1807,9 @@ END Decimals ;
 
 (* ---- the pieces ---- *)
 
-(* <text x= y= class= fill= font-size= anchor=>t</text>: the class
-   names the role (a script may read it), the attributes draw it *)
+(* LabelC writes <text x= y= class= fill= font-size= anchor=>t</text>.
+   The class names the role (a script may read it), the attributes
+   draw it. *)
 PROCEDURE LabelC (VAR d: PTR DynStr.DString ; x, y: F64 ; RO class: STR ;
                   RO anchor: STR ; RO t: STR)
   RAISES ValueRange =
@@ -1794,7 +1819,7 @@ BEGIN
   DynStr.Append (d, '" y="') ;
   NumC (d, y) ;
   DynStr.AppendChar (d, '"') ;
-  IF LEN (class) > 0 THEN
+  IF Text.BLen (class) > 0 THEN
     DynStr.Append (d, ' class="' + class + '"')
   END ;
   IF Text.Eq (class, 'cv-title') THEN
@@ -1806,7 +1831,7 @@ BEGIN
   ELSE
     DynStr.Append (d, ' fill="' + CInk2 + '" font-size="12"')
   END ;
-  IF LEN (anchor) > 0 THEN
+  IF Text.BLen (anchor) > 0 THEN
     DynStr.Append (d, ' text-anchor="' + anchor + '"')
   END ;
   DynStr.AppendChar (d, '>') ;
@@ -1814,7 +1839,7 @@ BEGIN
   DynStr.Append (d, '</text>')
 END LabelC ;
 
-(* a gridline or an axis tick, in its colour *)
+(* Rule draws a gridline or an axis tick, in its colour. *)
 PROCEDURE Rule (VAR d: PTR DynStr.DString ; x1, y1, x2, y2: F64 ;
                 RO class: STR)
   RAISES ValueRange =
@@ -1836,8 +1861,8 @@ BEGIN
   DynStr.Append (d, '"/>')
 END Rule ;
 
-(* a marker: a dot in the series' colour with a hairline of the
-   surface around it, so that it stands off the line *)
+(* Mark draws a marker: a dot in the series' colour with a hairline of
+   the surface around it, so that it stands off the line. *)
 PROCEDURE Mark (VAR d: PTR DynStr.DString ; x, y, r: F64 ; RO key: STR ;
                 RO class: STR)
   RAISES ValueRange =
@@ -1854,8 +1879,9 @@ BEGIN
   DynStr.Append (d, '"/>')
 END Mark ;
 
-(* the legend: items flow left to right and wrap.  With draw FALSE
-   nothing is written and the answer is how many rows it takes. *)
+(* Legend draws the legend: items flow left to right and wrap.  With
+   draw FALSE nothing is written and the answer is how many rows it
+   takes. *)
 PROCEDURE Legend (VAR d: PTR DynStr.DString ; RO s: ChartSpec ;
                   left, right, top: F64 ; draw: BOOL) : I64
   RAISES ValueRange =
@@ -1869,8 +1895,8 @@ BEGIN
   rows := 1 ;
   n := LEN (s.lines) + 3 ;
   FOR i := 0 TO n - 1 DO
-    (* the order a reader meets them in: the network's line, its two
-       bands, the dots, then every other line *)
+    (* Take them in the order a reader meets them: the network's line,
+       its two bands, the dots, then every other line. *)
     label := '' ;
     key := '' ;
     kind := 0 ;                          (* 0 line, 1 inner, 2 outer, 3 dots *)
@@ -1889,8 +1915,8 @@ BEGIN
       label := s.lines[i - 3].label ;
       key := s.lines[i - 3].key
     END ;
-    IF LEN (label) > 0 THEN
-      w := 30.0 + CharW * F64 (LEN (label)) + 14.0 ;
+    IF Text.BLen (label) > 0 THEN
+      w := 30.0 + CharW * F64 (Text.BLen (label)) + 14.0 ;
       IF x > left AND x + w > right THEN
         x := left ;
         y := y + RowH ;
@@ -1905,7 +1931,7 @@ BEGIN
                             + Slot (key) + '" stroke-linecap="round" stroke-width="') ;
           IF i = 0 THEN NumC (d, 3.0) ELSE NumC (d, 2.0) END ;
           DynStr.AppendChar (d, '"') ;
-          IF i >= 4 AND LEN (s.lines[i - 3].dash) > 0 THEN
+          IF i >= 4 AND Text.BLen (s.lines[i - 3].dash) > 0 THEN
             DynStr.Append (d, ' stroke-dasharray="' + s.lines[i - 3].dash + '"')
           END ;
           DynStr.Append (d, ' d="M') ;
@@ -1983,7 +2009,7 @@ BEGIN
   Rule (d, x, g.bottom, x, g.bottom + 5.0, 'cv-axis') ;
   (* a label centred on a tick at the edge would run off the
      document: it is pinned to the edge instead *)
-  half := CharW * F64 (LEN (text)) / 2.0 ;
+  half := CharW * F64 (Text.BLen (text)) / 2.0 ;
   IF x + half > g.width - 2.0 THEN
     LabelC (d, g.width - 2.0, g.bottom + 19.0, 'cv-tick', 'end', text)
   ELSE
@@ -2172,7 +2198,7 @@ BEGIN
                       + Slot (l.key) + '" stroke-linejoin="round" stroke-linecap="round" stroke-width="') ;
     NumC (d, width) ;
     DynStr.AppendChar (d, '"') ;
-    IF LEN (l.dash) > 0 THEN
+    IF Text.BLen (l.dash) > 0 THEN
       DynStr.Append (d, ' stroke-dasharray="' + l.dash + '"')
     END ;
     DynStr.Append (d, ' d="') ;
@@ -2226,7 +2252,7 @@ VAR
 BEGIN
   n := 0 ;
   FOR i := 0 TO LEN (s.lines) - 1 DO
-    IF LEN (s.lines[i].short) > 0 THEN
+    IF Text.BLen (s.lines[i].short) > 0 THEN
       n := n + 1 ;
       xi := 0.0 ;
       yi := 0.0 ;
@@ -2235,7 +2261,7 @@ BEGIN
          inside the plot, across the others: not there *)
       IF xi < g.right - 40.0 THEN RETURN FALSE END ;
       FOR j := 0 TO i - 1 DO
-        IF LEN (s.lines[j].short) > 0 THEN
+        IF Text.BLen (s.lines[j].short) > 0 THEN
           xj := 0.0 ;
           yj := 0.0 ;
           IF EndOf (g, s.lines[j], xj, yj)
@@ -2301,8 +2327,8 @@ VAR i, k : I64 ;
 BEGIN
   FOR i := 0 TO LEN (names) - 1 DO
     IF i > 0 THEN DynStr.AppendChar (d, '|') END ;
-    FOR k := 0 TO LEN (names[i]) - 1 DO
-      IF names[i][k] = '|' THEN
+    FOR k := 0 TO Text.BLen (names[i]) - 1 DO
+      IF Text.BIs (names[i], k, '|') THEN
         DynStr.AppendChar (d, '/')
       ELSE
         EscC (d, SLICE (names[i], k, 1))
@@ -2440,7 +2466,7 @@ BEGIN
     FOR i := 0 TO LEN (s.lines) - 1 DO
       ex := 0.0 ;
       ey := 0.0 ;
-      IF LEN (s.lines[i].short) > 0 AND EndOf (g, s.lines[i], ex, ey) THEN
+      IF Text.BLen (s.lines[i].short) > 0 AND EndOf (g, s.lines[i], ex, ey) THEN
         Mark (d, ex, ey, 4.0, s.lines[i].key, 'cv-end') ;
         LabelC (d, ex + 8.0, ey + 4.0, '', '', s.lines[i].short)
       END
@@ -2477,11 +2503,11 @@ BEGIN
   i := Text.Find (svg, '<svg') ;
   IF i < 0 THEN RAISE Faults.BadArg ('Plot.Panels: a figure that does not begin with <svg') END ;
   j := i ;
-  WHILE j < LEN (svg) AND svg[j] # '>' DO j := j + 1 END ;
-  IF j >= LEN (svg) THEN RAISE Faults.BadArg ('Plot.Panels: a figure whose <svg> tag does not close') END ;
+  WHILE j < Text.BLen (svg) AND NOT Text.BIs (svg, j, '>') DO j := j + 1 END ;
+  IF j >= Text.BLen (svg) THEN RAISE Faults.BadArg ('Plot.Panels: a figure whose <svg> tag does not close') END ;
   bodyAt := j + 1 ;
-  bodyEnd := LEN (svg) ;
-  k := LEN (svg) - 6 ;
+  bodyEnd := Text.BLen (svg) ;
+  k := Text.BLen (svg) - 6 ;
   WHILE k >= bodyAt AND NOT Text.Eq (SLICE (svg, k, 6), '</svg>') DO k := k - 1 END ;
   IF k < bodyAt THEN RAISE Faults.BadArg ('Plot.Panels: a figure without its </svg>') END ;
   bodyEnd := k ;
@@ -2506,23 +2532,23 @@ VAR
   neg : BOOL ;
   f, frac : F64 ;
 BEGIN
-  n := LEN (s) ;
-  WHILE i < n AND (s[i] = ' ' OR s[i] = ',') DO i := i + 1 END ;
+  n := Text.BLen (s) ;
+  WHILE i < n AND (Text.BIs (s, i, ' ') OR Text.BIs (s, i, ',')) DO i := i + 1 END ;
   IF i >= n THEN RETURN FALSE END ;
   neg := FALSE ;
-  IF s[i] = '-' THEN neg := TRUE ; i := i + 1 END ;
+  IF Text.BIs (s, i, '-') THEN neg := TRUE ; i := i + 1 END ;
   f := 0.0 ;
   digits := 0 ;
-  WHILE i < n AND s[i] >= '0' AND s[i] <= '9' DO
-    f := f * 10.0 + F64 (ORD (s[i]) - 48) ;
+  WHILE i < n AND I64 (Text.BAt (s, i)) >= ORD ('0') AND I64 (Text.BAt (s, i)) <= ORD ('9') DO
+    f := f * 10.0 + F64 (I64 (Text.BAt (s, i)) - 48) ;
     i := i + 1 ;
     digits := digits + 1
   END ;
-  IF i < n AND s[i] = '.' THEN
+  IF i < n AND Text.BIs (s, i, '.') THEN
     i := i + 1 ;
     frac := 0.1 ;
-    WHILE i < n AND s[i] >= '0' AND s[i] <= '9' DO
-      f := f + frac * F64 (ORD (s[i]) - 48) ;
+    WHILE i < n AND I64 (Text.BAt (s, i)) >= ORD ('0') AND I64 (Text.BAt (s, i)) <= ORD ('9') DO
+      f := f + frac * F64 (I64 (Text.BAt (s, i)) - 48) ;
       frac := frac / 10.0 ;
       i := i + 1 ;
       digits := digits + 1
@@ -2551,7 +2577,7 @@ BEGIN
     RAISE Faults.SizeError (LEN (figures), cols * rows)
   END ;
   top := 0 ;
-  IF LEN (title) > 0 THEN top := 36 END ;
+  IF Text.BLen (title) > 0 THEN top := 36 END ;
   cw := F64 (width) / F64 (cols) ;
   ch := F64 (height - top) / F64 (rows) ;
   IF NOT (ch > 0.0) THEN RAISE Faults.BadArg ('Plot.Panels: no room below the title') END ;
@@ -2566,7 +2592,7 @@ BEGIN
   DynStr.Append (d, '" height="') ;
   DynStr.AppendI64 (d, height) ;
   DynStr.Append (d, '" fill="white"/>') ;
-  IF LEN (title) > 0 THEN
+  IF Text.BLen (title) > 0 THEN
     DynStr.Append (d, '<text x="') ;
     NumP (d, F64 (width) / 2.0, 1) ;
     DynStr.Append (d, '" y="24" font-size="16" fill="#111" text-anchor="middle">') ;

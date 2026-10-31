@@ -1,8 +1,8 @@
 (* EXPECT: FOR c IN takes a name -- a variable, a field, an element: give the value one first (par 10) *)
 (* FOR x IN s goes over what a NAME holds: a variable, a field, an
-   element, a constant table.  A literal or a call's answer has no
-   name to read the elements of while the loop runs; give it one.
-   The legal forms first. *)
+   element, a constant table.  A literal or a call's answer has no name
+   to read the elements of while the loop runs; give it one.  The legal
+   forms come first. *)
 MODULE m ;
 CONST
   Primes = [2, 3, 5] ;

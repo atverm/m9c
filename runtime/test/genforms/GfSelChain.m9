@@ -2,12 +2,13 @@ MODULE GfSelChain ;
 
 (* WANT: chain 30 steps: 31 *)
 
-(* A designator of thirty pointer steps.  Each step is tested before it
-   is followed (decision 58), and the test was written as `__typeof__ (E)
-   m9g = (E)', E the steps before it -- so the C doubled per step: twenty
-   steps took 1.2 GB to generate and thirty would not have finished (the
-   second review's fuzz N2, 2026-10-26).  __auto_type names the type
-   without repeating E: linear. *)
+(* This program follows a designator of thirty pointer steps.  Each
+   step is tested before it is followed (decision 58).  The test was
+   written as `__typeof__ (E) m9g = (E)', E the steps before it, so
+   the C doubled per step: twenty steps took 1.2 GB to generate and
+   thirty would not have finished (the second review's fuzz N2,
+   2026-10-26).  __auto_type names the type without repeating E:
+   linear. *)
 
 IMPORT Io, Fmt ;
 

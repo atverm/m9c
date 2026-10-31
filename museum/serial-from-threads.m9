@@ -1,16 +1,16 @@
 (* EXPECT-ERROR: foreign procedure must declare [SERIAL] or [REENTRANT] *)
-(* The blosc trap: a global-state C function raced across worker
-   threads and answered right twelve times.  The language's answer
-   is the ATTRIBUTE: every foreign procedure says [SERIAL] or
-   [REENTRANT] -- an unstated contract cannot be checked -- and the
+(* This is the blosc trap: a global-state C function raced across
+   worker threads and answered right twelve times.  The language's
+   answer is the ATTRIBUTE.  Every foreign procedure says [SERIAL] or
+   [REENTRANT], since an unstated contract cannot be checked.  The
    generator brackets every call of a [SERIAL] one with its unit's
    monitor, so threads wait (decision 8; runtime/test/serialtest.m9
    shows [REENTRANT] losing 85% of the updates where [SERIAL] is
    exact).  Until 2026-10-08 this piece expected `SERIAL procedure
-   called from THREAD context', a per-unit chain check from before
-   the emitted monitor, which refused exactly what the monitor makes
-   correct; what must not compile is the declaration that says
-   nothing. *)
+   called from THREAD context'.  That was a per-unit chain check from
+   before the emitted monitor, and it refused exactly what the monitor
+   makes correct.  The declaration that says nothing is what must not
+   compile. *)
 MODULE m ;
 IMPORT cblosc ;
 PROCEDURE Worker (arg: I64) =

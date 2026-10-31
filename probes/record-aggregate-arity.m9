@@ -12,11 +12,11 @@ VAR
   r : Row ;
   n : I64 ;
 BEGIN
-  (* legal: a record value built in a statement, from any expressions
-     of the fields' types; a record CONST and a table of records, read
-     through their fields *)
+  (* These are legal: a record value built in a statement, from any
+     expressions of the fields' types; a record CONST and a table of
+     records, read through their fields. *)
   n := Ok.code + Rows[1].code ;
   r := Row (n + 1, Rows[0].text) ;
-  (* refused: every field, in declaration order *)
+  (* Refused: an aggregate needs every field, in declaration order. *)
   r := Row (1)
 END m.

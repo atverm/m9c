@@ -16,7 +16,7 @@ extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[50] = { 67u, 104u, 97u, 114u, 115u, 46u, 83u, 116u, 114u, 73u, 58u, 32u, 116u, 104u, 101u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 119u, 97u, 115u, 32u, 109u, 97u, 100u, 101u, 32u, 102u, 114u, 111u, 109u, 32u, 97u, 110u, 111u, 116u, 104u, 101u, 114u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint8_t m9s0[50] = { 67, 104, 97, 114, 115, 46, 83, 116, 114, 73, 58, 32, 116, 104, 101, 32, 105, 110, 100, 101, 120, 32, 119, 97, 115, 32, 109, 97, 100, 101, 32, 102, 114, 111, 109, 32, 97, 110, 111, 116, 104, 101, 114, 32, 115, 116, 114, 105, 110, 103 };
 
 static int64_t Chars_Widths (int64_t t, m9_state *err);
 static int64_t Chars_FirstTags (int64_t t, int64_t r, m9_state *err);
@@ -182,7 +182,7 @@ uint32_t Chars_StrI (m9_sl_UTF8 s, int64_t x, Chars_Index *ix, m9_state *err)
   bool m9t2 = ((((*ix).octets != Text_BLen (s, err)) || ((*ix).first != f)) || ((*ix).last != l));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 50 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 50 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 50 })) m9t3 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 50 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }

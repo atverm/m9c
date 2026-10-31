@@ -2,11 +2,12 @@ MODULE GfConstNested ;
 
 (* WANT: 1 2 inner 30 outer row 5 b *)
 
-(* A record constructor inside a record CONST, and inside a constant
-   table's rows (the fuzz review's AggConstNested, 2026-10-30): the
-   generator wrote one level of brace initializer and refused the
-   second with "aggregate element unsupported yet".  A string at the
-   nested level is emitted as its own static array like any other. *)
+(* This program puts a record constructor inside a record CONST, and
+   inside a constant table's rows (the fuzz review's AggConstNested,
+   2026-10-30).  The generator wrote one level of brace initializer and
+   refused the second with "aggregate element unsupported yet".  A
+   string at the nested level is emitted as its own static array like
+   any other. *)
 IMPORT Io, Fmt ;
 
 TYPE

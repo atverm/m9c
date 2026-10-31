@@ -1,21 +1,22 @@
 #!/bin/sh
-# regions: the compiler review's checker repros held both ways
-# (2026-10-21; docs/region-plan.md, step 2).  runtime/test/regions/ holds
-# the review's checker programs: 24 that the checker ACCEPTS and that are
-# memory-unsafe under ASan+UBSan (they read freed storage or write into
-# read-only storage), and 9 refused companions of theirs; and since
-# 2026-10-26 the second review's (R2*), each accepted by 0.25.0 and
-# unsafe, each to be refused BY THE REGION JUDGEMENT (its text), and
-# the third review's ownership repros (R3Own*), refused by the owner
-# walk beside it, whose text ends the same way; and since 2026-10-28 the
-# ownership probe's field and procedure-value copies (R5Own*), held to
-# the owner walk's text too, so that par 4.2's refusal of the move
-# through a selector is not what keeps them out.
+# regions holds the compiler review's checker repros both ways
+# (2026-10-21; docs/region-plan.md, step 2).  runtime/test/regions/
+# holds the review's checker programs.  24 of them the checker ACCEPTS,
+# and they are memory-unsafe under ASan+UBSan (they read freed storage
+# or write into read-only storage).  9 are refused companions of
+# theirs.  Since 2026-10-26 it also holds the second review's (R2*).
+# Each was accepted by 0.25.0 and unsafe, and each must be refused BY
+# THE REGION JUDGEMENT (its text).  It holds the third review's
+# ownership repros (R3Own*) too.  The owner walk beside the judgement
+# refuses them, and its text ends the same way.  Since 2026-10-28 it
+# holds the ownership probe's field and procedure-value copies
+# (R5Own*), held to the owner walk's text too.  So par 4.2's refusal of
+# the move through a selector is not what keeps them out.
 #
-#   a program in regions.owed must still pass --check AND still fail
-#   under the sanitizers -- an owed line whose program is refused now,
-#   or runs clean, is red, so the list shrinks only by the fix;
-#   any other program must be refused by --check.
+#   A program in regions.owed must still pass --check AND still fail
+#   under the sanitizers.  An owed line whose program is refused now,
+#   or runs clean, is red, so the list shrinks only by the fix.
+#   Any other program must be refused by --check.
 #
 # The one region judgement of docs/region-plan.md is to empty the list.
 cd "$(dirname "$0")" || exit 1
@@ -60,11 +61,15 @@ for f in regions/*.m9; do
     bad "$name is refused now -- remove it from regions.owed:"
     sed 's/^/    /' "$W/$name.check" | head -2
   else
-    # the second review's programs (R2*) are held to the REGION
-    # judgement's own refusal: any refusal used to pass, and 9 of the
-    # first review's are refused by an older analysis's text alone
+    # The second review's programs (R2*) are held to the REGION
+    # judgement's own refusal.  Any refusal used to pass, and 9 of the
+    # first review's are refused by an older analysis's text alone.
     case $name in
-    R2*|R3Own*|R4*|R5Own*) grep -q ', regions)' "$W/$name.check" ||
+    # A repro whose hole is a character written into a STR is refused
+    # by the type since STR is the UTF-8 type (2026-10-31): a STR has no
+    # subscript, so the write cannot be written (nine of them, R2N21
+    # and the R4 read-only rows).  Either refusal closes the hole.
+    R2*|R3Own*|R4*|R5Own*) grep -q -e ', regions)' -e 'a UTF has no subscript' "$W/$name.check" ||
            { bad "$name is refused, but not by the region judgement:"; sed 's/^/    /' "$W/$name.check" | head -2; } ;;
     esac
   fi

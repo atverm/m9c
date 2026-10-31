@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
-/* m9powfive.h -- WRITTEN BY tools/powfive.py, do not edit: the top
-   128 bits of 5^q for q in -342..308 (two words, high then low), the
-   negative powers as the reciprocal rounded up, in fast_float's
-   layout.  Read by the Eisel-Lemire decimal-to-double in m9rt.c. */
+/* m9powfive.h is WRITTEN BY tools/powfive.py, do not edit.  It holds
+   the top 128 bits of 5^q for q in -342..308 (two words, high then
+   low) in fast_float's layout.  The negative powers are the
+   reciprocal rounded up.  The Eisel-Lemire decimal-to-double in
+   m9rt.c reads it. */
 #define M9_POW5_LOW (-342)
 #define M9_POW5_HIGH (308)
 static const uint64_t m9_pow5_128[651][2] = {

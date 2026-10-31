@@ -1,14 +1,15 @@
 #!/bin/sh
-# The M9 highlighter for JupyterLab (tools/jupyter/highlight) against the
-# FPC lexer, over every corpus and museum file: every token it marks as
-# a keyword or a string must be one the lexer's dump (host/fpc/lexdump)
-# has at the same line and column, and every keyword and string literal
-# the lexer has must be marked.  Keywords come from tools/edit/
-# keywords.json, which the edit gate holds to the lexer's own table.
-# Needs node; CI's lex job has it.
-# scratch files in a directory of this run's own: fixed /tmp names
+# This gate holds the M9 highlighter for JupyterLab
+# (tools/jupyter/highlight) against the FPC lexer, over every corpus and
+# museum file.  Every token it marks as a keyword or a string must be
+# one the lexer's dump (host/fpc/lexdump) has at the same line and
+# column.  Every keyword and string literal the lexer has must be
+# marked.  Keywords come from tools/edit/ keywords.json, which the edit
+# gate holds to the lexer's own table.  The gate needs node; CI's lex
+# job has it.
+# Scratch files go in a directory of this run's own.  Fixed /tmp names
 # collided between two checkouts or two gates run at once (the compiler
-# review's tier 3, 2026-10-22)
+# review's tier 3, 2026-10-22).
 TG=$(mktemp -d "${TMPDIR:-/tmp}/m9gate.XXXXXX")
 trap 'rm -rf "$TG"' EXIT
 set -e

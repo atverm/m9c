@@ -1,6 +1,7 @@
 MODULE FarUse ;
 
-(* FarLib only through FarMid's implementation: links, prints 84 *)
+(* FarUse reaches FarLib only through FarMid's implementation: it
+   links and prints 84. *)
 
 IMPORT Io ;
 IMPORT Fmt ;

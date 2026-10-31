@@ -1,15 +1,16 @@
 MODULE MapTest ;
 
-(* Map against its oracles (tools/mapgold.py): the Natural Earth
-   projection and its inverse against pyproj's natearth on the unit
-   sphere, the coast table against the GeoJSON it was cut from (read
-   by Python's json, summed by math.fsum), the colour scale's ends
-   against numpy's percentiles; the document by what it says -- the
-   markers inside the window, their labels, the colour grid's paths
-   merged along a row where equal, the backdrop placed, the geometry
-   in the plate carree where a latitude is a pixel row; the warp on a
-   picture whose colour says where a pixel came from.  The globe
-   document is written to /tmp/m9maptest-globe.svg for a look. *)
+(* MapTest holds Map against its oracles (tools/mapgold.py).  It
+   tests the Natural Earth projection and its inverse against pyproj's
+   natearth on the unit sphere, the coast table against the GeoJSON it
+   was cut from (read by Python's json, summed by math.fsum), and the
+   colour scale's ends against numpy's percentiles.  It tests the
+   document by what it says: the markers inside the window, their
+   labels, the colour grid's paths merged along a row where equal, the
+   backdrop placed, the geometry in the plate carree where a latitude
+   is a pixel row.  It tests the warp on a picture whose colour says
+   where a pixel came from.  The globe document is written to
+   /tmp/m9maptest-globe.svg for a look. *)
 
 IMPORT Arrays ;
 IMPORT Check ;
@@ -86,7 +87,7 @@ BEGIN
   Check.EqF64 (t, 'coast: the latitudes too', Arrays.NanSum (lats), sums[1])
 END Coastline ;
 
-(* the synthetic footprint of tools/mapgold.py *)
+(* Footprint answers the synthetic footprint of tools/mapgold.py. *)
 PROCEDURE Footprint () : GRID 2 OF F64 RAISES ValueRange =
 VAR
   v : GRID 2 OF F64 ;
@@ -149,14 +150,15 @@ BEGIN
   Check.That (t, 'a percentile past 100 is BadArg', RangeRefuses (spec.scale, v))
 END ScaleEnds ;
 
-(* the text of attribute NAME in the tag at or after FROM *)
+(* Attr answers the text of attribute NAME in the tag at or after
+   FROM. *)
 PROCEDURE Attr (RO doc: STR ; from: I64 ; RO name: STR) : STR =
 VAR a, b : I64 ;
 BEGIN
-  a := Text.Find (SLICE (doc, from, LEN (doc) - from), name + '="') ;
+  a := Text.Find (SLICE (doc, from, Text.BLen (doc) - from), name + '="') ;
   IF a < 0 THEN RETURN '' END ;
-  a := from + a + LEN (name) + 2 ;
-  b := Text.Find (SLICE (doc, a, LEN (doc) - a), '"') ;
+  a := from + a + Text.BLen (name) + 2 ;
+  b := Text.Find (SLICE (doc, a, Text.BLen (doc) - a), '"') ;
   IF b < 0 THEN RETURN '' END ;
   RETURN SLICE (doc, a, b)
 END Attr ;
@@ -167,15 +169,15 @@ BEGIN
   n := 0 ;
   at := 0 ;
   LOOP
-    k := Text.Find (SLICE (doc, at, LEN (doc) - at), needle) ;
+    k := Text.Find (SLICE (doc, at, Text.BLen (doc) - at), needle) ;
     IF k < 0 THEN EXIT END ;
     n := n + 1 ;
-    at := at + k + LEN (needle)
+    at := at + k + Text.BLen (needle)
   END ;
   RETURN n
 END Count ;
 
-(* the position of the last <circle before AT *)
+(* LastCircle answers the position of the last <circle before AT. *)
 PROCEDURE LastCircle (RO doc: STR ; at: I64) : I64 =
 VAR j, k : I64 ;
 BEGIN
@@ -293,7 +295,7 @@ BEGIN
   Check.That (t, 'markers are drawn', k >= 0) ;
   cx0 := Attr (doc, k, 'cx') ;
   cy0 := Attr (doc, k, 'cy') ;
-  j := k + Text.Find (SLICE (doc, k + 1, LEN (doc) - k - 1), '<circle ') + 1 ;
+  j := k + Text.Find (SLICE (doc, k + 1, Text.BLen (doc) - k - 1), '<circle ') + 1 ;
   cx1 := Attr (doc, j, 'cx') ;
   cy1 := Attr (doc, j, 'cy') ;
   Check.Near (t, 'plate carree: Hyltemossa at 13.4 E of a 960-px globe', Fmt.ParseF64 (cx0), (13.4 + 180.0) / 360.0 * 960.0, 0.06, 0.0) ;

@@ -3,7 +3,7 @@ REVIEW Arrow -- 69 procedures with a body, 49 of them functions; 22 headings in 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              49
   assignments                                   319
-  arguments                                     675
+  arguments                                     668
   RETURN values                                  85
   operands of a comparison or an operator       371
   CASE labels                                     0
@@ -39,4 +39,4 @@ COUNTED -- how much there was to check
   NEW in the frame                                0
   NEW in a named pool                            36
   calls of a STR form with a UTF twin             0
-  STR subscripts, writes and LEN                  3   len mm.k, len mm.v, len cc.name
+  STR subscripts, writes and LEN                  0

@@ -1,6 +1,6 @@
 (* EXPECT-ERROR: is moved into an OWN parameter and lent as argument 2 of the same call *)
-(* One object handed to a callee twice: once to own and DISPOSE, once
-   to read.  Observed 2026-10-21 by the compiler review (C7): it
+(* One object was handed to a callee twice: once to own and DISPOSE,
+   once to read.  The compiler review observed it 2026-10-21 (C7).  It
    compiled, the callee freed the first and read the second, ASan
    reported a heap-use-after-free, and a plain run raised a stray
    IndexError out of storage reused by the next allocation. *)

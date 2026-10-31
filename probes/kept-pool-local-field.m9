@@ -1,7 +1,7 @@
 (* EXPECT: argument 1 of Grow: a KEPT parameter cannot take the pool r.pool -- it dies with this frame *)
-(* kept-pool-local with the pool a FIELD of a local record: the record,
-   and its pool, die with this frame (2026-10-28).  Legal forms first:
-   the same field of a module variable. *)
+(* This is kept-pool-local with the pool a FIELD of a local record.  The
+   record and its pool die with this frame (2026-10-28).  Legal forms
+   come first: the same field of a module variable. *)
 MODULE m ;
 TYPE
   Cell = RECORD v : I64 END ;

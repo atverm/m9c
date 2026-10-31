@@ -7,7 +7,7 @@ MODULE m ;
 TYPE R = RECORD a : ARRAY 3 OF I64 END ;
 VAR
   r : R ;
-  s : STR ;
+  s : SLICE OF CHAR ;
   n : I64 ;
   c : CHAR ;
 BEGIN

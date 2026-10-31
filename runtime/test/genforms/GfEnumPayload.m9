@@ -2,10 +2,10 @@ MODULE GfEnumPayload ;
 
 (* WANT: enumeration payloads: Green Arr 7 *)
 
-(* An EXCEPTION field of an enumeration type, this module's and an
-   imported one: raised as its tag, bound back by the handler.  The
-   generator wrote the whole struct into an integer slot and gcc refused
-   it (2026-10-10). *)
+(* This program raises an EXCEPTION field of an enumeration type,
+   this module's and an imported one, as its tag; the handler binds
+   it back.  The generator wrote the whole struct into an integer slot
+   and gcc refused it (2026-10-10). *)
 
 IMPORT Io, Fmt, GfJv ;
 

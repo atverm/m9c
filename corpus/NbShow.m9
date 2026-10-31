@@ -1,7 +1,7 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE NbShow ;
 
-(* A value shown in a notebook cell.
+(* NbShow shows a value in a notebook cell.
 
    A cell holding only an expression shows its value
    (docs/kernel-show-plan.md): `m9c --show` asks the checker for the
@@ -39,28 +39,32 @@ PROCEDURE Strs (RO v: SLICE OF STR) ;
 PROCEDURE Grid (RO g: GRID 2 OF F64) ;
 PROCEDURE Table (f: PTR Frame.Fr) ;
 PROCEDURE Series (ts: PTR Frame.Ts) ;
-  (* each prints its value; Grid, Table and Series the HTML form too *)
+  (* These each print their value; Grid, Table and Series print the
+     HTML form too. *)
 
 PROCEDURE Raised (RO what: STR) ;
-  (* the expression raised `what` instead of answering: said on the
-     error stream, and the program exits 1 *)
+  (* Raised says on the error stream that the expression raised `what`
+     instead of answering, and the program exits 1. *)
 
 PROCEDURE StrText (RO s: STR) : STR ;
-  (* in quotes, ' unless the string holds one; over 1000 characters
-     the first 1000, then ` ... (n characters)' *)
+  (* StrText puts the string in quotes, ' unless the string holds one.
+     Over 1000 characters it gives the first 1000, then
+     ` ... (n characters)'. *)
 PROCEDURE IntsText (RO v: SLICE OF I64) : STR ;
 PROCEDURE RealsText (RO v: SLICE OF F64) : STR ;
 PROCEDURE BoolsText (RO v: SLICE OF BOOL) : STR ;
 PROCEDURE StrsText (RO v: SLICE OF STR) : STR ;
-  (* [a, b, c]; over MaxList values the first and last 10 with
-     `... n more ...` between them and the count after *)
+  (* IntsText, RealsText, BoolsText and StrsText answer [a, b, c].
+     Over MaxList values they give the first and last 10 with
+     `... n more ...` between them and the count after. *)
 PROCEDURE GridText (RO g: GRID 2 OF F64) : STR ;
 PROCEDURE GridHtml (RO g: GRID 2 OF F64) : STR ;
 PROCEDURE TableText (f: PTR Frame.Fr) : STR ;
 PROCEDURE TableHtml (f: PTR Frame.Fr) : STR ;
 PROCEDURE SeriesText (ts: PTR Frame.Ts) : STR ;
 PROCEDURE SeriesHtml (ts: PTR Frame.Ts) : STR ;
-  (* the texts the procedures above print, for a test to hold *)
+  (* These answer the texts the procedures above print, for a test to
+     hold. *)
 
 END NbShow.
 
@@ -96,9 +100,9 @@ VAR
 BEGIN
   body := s ;
   more := '' ;
-  IF LEN (s) > MaxChars THEN
+  IF Text.BLen (s) > MaxChars THEN
     body := SLICE (s, 0, MaxChars) ;
-    more := ' ... (' + Fmt.I64Str (LEN (s)) + ' characters)'
+    more := ' ... (' + Fmt.I64Str (Text.BLen (s)) + ' characters)'
   END ;
   q := "'" ;
   IF Text.FindChar (body, "'") >= 0 THEN q := '"' END ;
@@ -220,7 +224,7 @@ PROCEDURE PadLeft (RO s: STR ; w: I64) : STR =
 VAR p : STR ;
 BEGIN
   p := '' ;
-  WHILE LEN (p) + LEN (s) < w DO p := p + ' ' END ;
+  WHILE Text.BLen (p) + Text.BLen (s) < w DO p := p + ' ' END ;
   RETURN p + s
 END PadLeft ;
 
@@ -228,7 +232,7 @@ PROCEDURE PadRight (RO s: STR ; w: I64) : STR =
 VAR p : STR ;
 BEGIN
   p := '' ;
-  WHILE LEN (p) + LEN (s) < w DO p := p + ' ' END ;
+  WHILE Text.BLen (p) + Text.BLen (s) < w DO p := p + ' ' END ;
   RETURN s + p
 END PadRight ;
 
@@ -327,8 +331,9 @@ BEGIN
   RETURN 'BOOL'
 END KindName ;
 
-(* one column's cells, as text, for the rows shown; a missing value
-   is `null` -- a NaN in a real column IS missing (Frame's rule) *)
+(* Cells answers one column's cells, as text, for the rows shown.  A
+   missing value is `null`: a NaN in a real column IS missing (Frame's
+   rule). *)
 PROCEDURE Cells (VAR pool: POOL ; f: PTR Frame.Fr ; RO name: STR ;
                  RO rows: SLICE OF I64) : SLICE OF STR
   RAISES Frame.Unknown, Frame.WrongType =
@@ -399,7 +404,7 @@ BEGIN
   RETURN out
 END Cells ;
 
-(* the rows a frame of n rows shows *)
+(* RowsShown answers the rows a frame of n rows shows. *)
 PROCEDURE RowsShown (VAR pool: POOL ; n: I64) : SLICE OF I64 =
 VAR
   rows : SLICE OF I64 ;
@@ -420,9 +425,9 @@ BEGIN
   RETURN rows
 END RowsShown ;
 
-(* a table as text or HTML.  Columns are the frame's, after the
-   optional time column of a series; each has a name, a kind and its
-   cells for the rows shown. *)
+(* Render answers a table as text or HTML.  Columns are the frame's,
+   after the optional time column of a series; each has a name, a kind
+   and its cells for the rows shown. *)
 PROCEDURE Render (f: PTR Frame.Fr ; RO times: SLICE OF I64 ; html: BOOL) : STR =
 VAR
   scratch : POOL ;
@@ -483,15 +488,16 @@ BEGIN
     RETURN DynStr.View (d)
   END ;
 
-  (* text: the row numbers, then each column as wide as its widest
-     entry, a numeric one right-aligned and a string one left *)
-  iw := LEN (Fmt.I64Str (n - 1)) ;
+  (* The text form puts the row numbers first, then each column as
+     wide as its widest entry, a numeric one right-aligned and a
+     string one left. *)
+  iw := Text.BLen (Fmt.I64Str (n - 1)) ;
   IF iw < 3 THEN iw := 3 END ;
   FOR c := 0 TO nc - 1 DO
-    width[c] := LEN (names[c]) ;
-    IF LEN (kinds[c]) > width[c] THEN width[c] := LEN (kinds[c]) END ;
+    width[c] := Text.BLen (names[c]) ;
+    IF Text.BLen (kinds[c]) > width[c] THEN width[c] := Text.BLen (kinds[c]) END ;
     FOR i := 0 TO LEN (rows) - 1 DO
-      IF LEN (cells[c][i]) > width[c] THEN width[c] := LEN (cells[c][i]) END
+      IF Text.BLen (cells[c][i]) > width[c] THEN width[c] := Text.BLen (cells[c][i]) END
     END
   END ;
   DynStr.Append (d, PadLeft ('', iw)) ;

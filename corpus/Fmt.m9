@@ -1,122 +1,125 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Fmt ;
 
-(* Numbers to text, and back.
+(* Fmt turns numbers to text, and back.
 
    This exists because M9 could not format a float in M9: Plot bound
    libc's sprintf ("%.4g") through a FOR-C shim, and Io had no way to
-   print an F64 at all.  Borrowing printf is worse than it looks --
-   it is LOCALE DEPENDENT, so the same program writes 3.14 or 3,14
+   print an F64 at all.  Borrowing printf is worse than it looks.
+   It is LOCALE DEPENDENT, so the same program writes 3.14 or 3,14
    depending on the environment, and a JSON document that parses on
    one machine is malformed on another.  For a language whose whole
    claim is that boundaries do not lie quietly, owning this is not
    indulgence.
 
-   Two float paths, with different promises, both stated:
+   Fmt has two float paths, with different promises, both stated:
 
      Bits  is EXACT.  It is the IEEE-754 bit pattern in hex, so
            ParseBits (Bits (x)) = x for every finite double, and for
-           NaN and the infinities too.  Ugly for humans, correct for
-           machines and for test goldens.
+           NaN and the infinities too.  It is ugly for humans,
+           correct for machines and for test goldens.
 
      Fixed is HUMAN, and its accuracy is MEASURED, not claimed.  It
            scales by a power of ten and rounds half to even, the rule
            printf uses.  Against printf over a hundred thousand
            in-range values it disagrees on 0.71%, always by one in
-           the last digit.  The cause is not the tie rule -- that was
-           tried and moved the rate by 0.01 -- but the scaling:
-           v * 10^d rounds before any decision is taken.  Removing
-           that needs exact decimal conversion of the Dragon4 kind,
-           which nobody has written here yet.  The driver prints the
-           rate on every run and fails above 1%, so the number cannot
-           quietly rot.
+           the last digit.  The cause is not the tie rule; that was
+           tried and moved the rate by 0.01.  The cause is the
+           scaling: v * 10^d rounds before any decision is taken.
+           Removing that needs exact decimal conversion of the Dragon4
+           kind, which nobody has written here yet.  The driver prints
+           the rate on every run and fails above 1%, so the number
+           cannot quietly rot.
 
    Use Bits when a value must survive the round trip; use Fixed when
    a person is going to read it.  Saying which is which is the point.
 
-   Short is BOTH, since 2026-10-05: the shortest decimal that reads
-   back to the same double, exact by construction (Burger and Dybvig's
-   free-format digits over integers, no scaling in F64), and held to
-   Python's repr on 9,148 values by FmtTest.  Since 2026-10-25 the
-   digits come from the runtime's Dragonbox (m9rt.h, 30 ns a value
-   where these took 1,000) wherever it answers; the code here is the
-   twin, selected by M9_FMT_PORTABLE, and FmtTest runs on both. *)
+   Short is BOTH, since 2026-10-05.  It answers the shortest decimal
+   that reads back to the same double, exact by construction (Burger
+   and Dybvig's free-format digits over integers, no scaling in F64).
+   FmtTest holds it to Python's repr on 9,148 values.  Since
+   2026-10-25 the digits come from the runtime's Dragonbox (m9rt.h,
+   30 ns a value where these took 1,000) wherever it answers.  The
+   code here is the twin, selected by M9_FMT_PORTABLE, and FmtTest
+   runs on both. *)
 
 CONST
   MaxDecimals = 17 ;
 
 PROCEDURE I64Str (v: I64) : STR ;
-  (* decimal text of v, sign and all.  Total for every I64 including
-     MIN: the digits are taken in NEGATIVE space, where every I64
-     fits, because -MIN does not.
+  (* I64Str answers the decimal text of v, sign and all.  It is total
+     for every I64 including MIN: the digits are taken in NEGATIVE
+     space, where every I64 fits, because -MIN does not.
 
-     NO POOL, here or anywhere below: a formatter answers a string
-     the caller reads once, and par 2.3 places that string in the
-     caller's arena.  These took a pool until 2026-09-03, and every
+     Fmt takes NO POOL, here or anywhere below: a formatter answers a
+     string the caller reads once, and par 2.3 places that string in
+     the caller's arena.  These took a pool until 2026-09-03, and every
      caller in the corpus passed one only to throw the result at
      Append or WriteLine.                                            *)
 
 PROCEDURE Hex (v: I64 ; width: I64) : STR ;
-  (* v in lower-case hexadecimal, zero-padded to `width' digits --
-     Python's '%0*x' % (width, v) for v >= 0.  A negative v is read as
-     the 64-bit pattern it is (its two's complement, sixteen digits),
-     as a CRC or a hash word held in an I64 means.  Never truncated:
-     a wider value overflows the field (cp-kernel's issue 16). *)
+  (* Hex answers v in lower-case hexadecimal, zero-padded to `width'
+     digits: Python's '%0*x' % (width, v) for v >= 0.  A negative v is
+     read as the 64-bit pattern it is (its two's complement, sixteen
+     digits), as a CRC or a hash word held in an I64 means.  Hex never
+     truncates: a wider value overflows the field (cp-kernel's issue
+     16). *)
 
 PROCEDURE I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR ;
 PROCEDURE I64PadUtf (v: I64 ; width: I64 ; zero: BOOL) : UTF ;
-  (* right-aligned in width; zero selects '0' over ' ' as the fill.
-     A value too wide is never truncated -- silently losing digits is
-     the class of bug this language refuses -- it just overflows the
-     field, as printf does.                                          *)
+  (* I64Pad and I64PadUtf right-align v in width; zero selects '0'
+     over ' ' as the fill.  A value too wide is never truncated: it
+     just overflows the field, as printf does.  Silently losing
+     digits is the class of bug this language refuses.               *)
 
 PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
 PROCEDURE FixedUtf (v: F64 ; decimals: I64) : UTF RAISES ValueRange ;
 PROCEDURE FixedPadUtf (v: F64 ; width, decimals: I64) : UTF RAISES ValueRange ;
-  (* the UTF twins (stage 4a, 2026-10-24): the same digits; Fixed is
-     FixedUtf decoded, the digit work done once on octets *)
-  (* decimals in 0..MaxDecimals, else ValueRange; printf's %.*f to
-     the character -- the double's own decimal expansion rounded half
-     to even, every magnitude (1e308 prints its 309 digits).  A value
-     that rounds to zero keeps its '-' (-0.001 is -0.00, as printf),
-     and so does negative ZERO: -0.0 is -0.00, the sign bit read as
-     printf, Python and Fortran read it (since 2026-10-30, a port's
-     M10; until then -0.0 printed 0.00).
-     NaN prints 'nan', the infinities 'inf' and '-inf'.  Exact since
-     2026-10-10; it scaled in F64 until then and disagreed with printf
-     on 0.71% of values, 1e300 raised.  The digits are the C library's
-     since 2026-10-25 (m9_fmt_fixed, the fast-path ledger) wherever
-     the runtime trusts it, Fmt's own exact code elsewhere: the same
-     characters, 8 to 13 times sooner.                               *)
+  (* These are the UTF twins (stage 4a, 2026-10-24), with the same
+     digits.  Fixed is FixedUtf decoded, the digit work done once on
+     octets. *)
+  (* Fixed takes decimals in 0..MaxDecimals, else ValueRange.  It prints
+     printf's %.*f to the character: the double's own decimal expansion
+     rounded half to even, every magnitude (1e308 prints its 309
+     digits).  A value that rounds to zero keeps its '-' (-0.001 is
+     -0.00, as printf), and so does negative ZERO: -0.0 is -0.00, the
+     sign bit read as printf, Python and Fortran read it (since
+     2026-10-30, a port's M10; until then -0.0 printed 0.00).
+     NaN prints 'nan', the infinities 'inf' and '-inf'.  Fixed is
+     exact since 2026-10-10.  It scaled in F64 until then and
+     disagreed with printf on 0.71% of values, 1e300 raised.  The
+     digits are the C library's since 2026-10-25 (m9_fmt_fixed, the
+     fast-path ledger) wherever the runtime trusts it, Fmt's own exact
+     code elsewhere: the same characters, 8 to 13 times sooner.      *)
 
 PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
   RAISES ValueRange ;
-  (* Pascal's `v:width:decimals`, which is where the shape comes
-     from: Fixed, then right-aligned in width with BLANKS.  Pascal
-     pads a real field with blanks and never with zeros, so there is
-     no zero flag here as there is on I64Pad; a leading-zero float is
-     a different thing and nobody has asked for one.
+  (* FixedPad is Pascal's `v:width:decimals`, which is where the shape
+     comes from: Fixed, then right-aligned in width with BLANKS.  Pascal
+     pads a real field with blanks and never with zeros, so there is no
+     zero flag here as there is on I64Pad; a leading-zero float is a
+     different thing and nobody has asked for one.
 
      Too wide is never truncated -- it overflows the field, exactly
      as I64Pad does and for the same reason: silently losing digits
      is the class of bug this language refuses.                     *)
 
 PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
-  (* scientific notation, one digit before the point and `decimals`
-     after it, then 'e' and the decimal exponent: 3.14e-5.
+  (* Sci answers scientific notation: one digit before the point and
+     `decimals` after it, then 'e' and the decimal exponent: 3.14e-5.
 
      THE EXPONENT IS WRITTEN THE SHORT WAY, which is neither C's nor
      Pascal's.  printf %.2e gives 3.14e-05 and Pascal gives
-     3.14000000000000E-005; both pad the exponent to a fixed width so
-     that columns line up, and this pads with the WIDTH parameter
-     instead, which is what SciPad is for.  So: 'e', a '-' only when
-     the exponent is negative, and no leading zeros -- 3.14e-5 and
-     3.14e5.
+     3.14000000000000E-005.  Both pad the exponent to a fixed width
+     so that columns line up.  This pads with the WIDTH parameter
+     instead, which is what SciPad is for.  So the exponent is 'e', a
+     '-' only when the exponent is negative, and no leading zeros:
+     3.14e-5 and 3.14e5.
 
      Zero prints as 0.00e0, and NEGATIVE zero as -0.00e0, the sign bit
-     read as Fixed reads it -- printf's answer, so the driver compares
-     zeros like any other value (since 2026-10-30; until then neither
-     consulted the sign bit and the driver left zero out).
+     read as Fixed reads it.  That is printf's answer, so the driver
+     compares zeros like any other value (since 2026-10-30; until then
+     neither consulted the sign bit and the driver left zero out).
 
      The digits are printf's %.*e to the character, as Fixed's are
      %.*f's: exact, from the double's integer mantissa and exponent,
@@ -128,42 +131,44 @@ PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
 
 PROCEDURE SciPad (v: F64 ; width, decimals: I64) : STR
   RAISES ValueRange ;
-  (* Sci, right-aligned in width with blanks -- the `:x:y` of the
-     scientific form.  A short exponent makes the field ragged on the
-     right, which is what the width is for.                         *)
+  (* SciPad is Sci, right-aligned in width with blanks: the `:x:y` of
+     the scientific form.  A short exponent makes the field ragged on
+     the right, which is what the width is for.                      *)
 
 PROCEDURE Short (v: F64) : STR ;
-  (* the SHORTEST decimal that reads back to exactly v -- the closest
-     such when there are several, the even last digit on a tie -- in
-     Python's repr layout: positional for 1e-4 <= |v| < 1e16 (1.0,
-     0.0001, 1234.5), else one digit, a point if more follow, and a
-     signed two-digit-or-more exponent (1e+16, 2.5e-05).  -0.0 keeps
-     its sign; NaN is 'nan', the infinities 'inf' and '-inf'.  Total:
-     no RAISES, every double has an answer.  What a person reads and
-     what a machine reads back are the same number.                 *)
+  (* Short answers the SHORTEST decimal that reads back to exactly v,
+     in Python's repr layout.  It takes the closest such when there
+     are several, the even last digit on a tie.  The layout is
+     positional for 1e-4 <= |v| < 1e16 (1.0, 0.0001, 1234.5), else
+     one digit, a point if more follow, and a signed
+     two-digit-or-more exponent (1e+16, 2.5e-05).  -0.0 keeps its
+     sign; NaN is 'nan', the infinities 'inf' and '-inf'.  Short is
+     total: no RAISES, every double has an answer.  A person reads
+     and a machine reads back the same number.                      *)
 
 PROCEDURE Bits (v: F64) : STR ;
 PROCEDURE ParseBits (RO s: STR) : F64 RAISES ValueRange ;
-  (* the exact pair: 16 hex digits, low byte first, round-trip total.
-     The digits are UPPER case and the bytes LITTLE-ENDIAN -- 1.0 is
-     000000000000F03F, not Python's 3ff0000000000000 -- because this is
-     the byte order a golden file and a binary file hold, read in
-     order; it is NOT the number's hexadecimal.  For that, Hex of an
-     integer.  (cp-kernel lost a measurement to the difference.) *)
+  (* Bits and ParseBits are the exact pair: 16 hex digits, low byte
+     first, round-trip total.  The digits are UPPER case and the bytes
+     LITTLE-ENDIAN: 1.0 is 000000000000F03F, not Python's
+     3ff0000000000000.  This is the byte order a golden file and a
+     binary file hold, read in order.  It is NOT the number's
+     hexadecimal.  For that, use Hex of an integer.  (cp-kernel lost a
+     measurement to the difference.) *)
 
 PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange ;
-  (* decimal, with optional sign, fraction and exponent.  Rejects
-     anything else, because a command line or a data file that says
-     it holds a number and does not is the boundary this catches.
-     CORRECTLY ROUNDED -- the double nearest the decimal, ties to
-     even, Python's float() -- subnormals and digit strings of any
-     length included; a decimal beyond the largest double RAISES
-     ValueRange.  In M9 and in integers, no libc: Clinger's fast path,
-     else an exact quotient (the implementation says how).  Until
-     2026-10-09 it scaled in F64 and was
-     wrong in 1,314 of 3,510 strings measured -- by 1 to 10 ulp, the
-     largest double read as infinity, subnormals as zero (cp-kernel's
-     finding on 0.19.0).
+  (* ParseF64 reads a decimal, with optional sign, fraction and
+     exponent.  It rejects anything else, because a command line or a
+     data file that says it holds a number and does not is the
+     boundary this catches.  It is CORRECTLY ROUNDED: the double
+     nearest the decimal, ties to even, Python's float(), subnormals
+     and digit strings of any length included.  A decimal beyond the
+     largest double RAISES ValueRange.  It works in M9 and in
+     integers, with no libc: Clinger's fast path, else an exact
+     quotient (the implementation says how).  Until 2026-10-09 it
+     scaled in F64 and was wrong in 1,314 of 3,510 strings measured:
+     by 1 to 10 ulp, the largest double read as infinity, subnormals
+     as zero (cp-kernel's finding on 0.19.0).
      THE INTEGER READER IS Io.ParseI64 (RAISES ValueRange, Overflow):
      an optional minus and decimal digits, every I64 down to the
      smallest.  It lives in Io because Fmt imports nothing and Io is
@@ -172,10 +177,10 @@ PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange ;
 
 (* ---- the UTF twins of the parsers (docs/utf8-plan.md, stage 2):
    Fmt.ParseF64 (u) with a UTF is ParseF64Utf.  The formatters take
-   numbers, so no call could reach a twin of theirs by type: their
-   answers are ASCII and UTF (Fmt.Fixed (x, 2)) converts them, and when
-   STR becomes UTF-8 at the end of the transition they change type with
-   no call to edit. ---- *)
+   numbers, so no call could reach a twin of theirs by type.  Their
+   answers are ASCII, and UTF (Fmt.Fixed (x, 2)) converts them.  When
+   STR becomes UTF-8 at the end of the transition they change type
+   with no call to edit. ---- *)
 
 PROCEDURE ParseF64Utf (RO s: UTF) : F64 RAISES ValueRange ;
 PROCEDURE ParseBitsUtf (RO s: UTF) : F64 RAISES ValueRange ;
@@ -185,10 +190,11 @@ END Fmt.
 
 UNSAFE IMPLEMENTATION MODULE Fmt ;
 
-(* UNSAFE for ADR: Fixed's and Sci's digits come from the runtime's C
-   library path into a local buffer (cfmt, at the end of this file);
-   the M9 big-integer path below is taken whenever the runtime declines
-   (m9rt.h says when), and is the portable twin of the fast one. *)
+(* Fmt is UNSAFE for ADR: Fixed's and Sci's digits come from the
+   runtime's C library path into a local buffer (cfmt, at the end of
+   this file).  The M9 big-integer path below is taken whenever the
+   runtime declines (m9rt.h says when), and is the portable twin of
+   the fast one. *)
 
 FROM cfmt IMPORT CFixed, CSci, CShort ;
 
@@ -196,12 +202,12 @@ CONST
   HexDigits = '0123456789ABCDEF' ;
   MaxF64    = 1.7976931348623157E308 ;
 
-(* Digits are PREPENDED, least significant first, and that is a copy
-   per digit rather than the in-place extension an append gets --
-   twenty of them at most, so the arena holds under 200 characters
-   for the worst I64, and nothing here is on anyone's hot path.
-   The digit itself is a one-character SLICE of the digit table,
-   because `+` takes strings and a CHAR is not one.                  *)
+(* Digits are PREPENDED, least significant first, and that is a copy per
+   digit rather than the in-place extension an append gets.  There are
+   twenty of them at most, so the arena holds under 200 characters for
+   the worst I64, and nothing here is on anyone's hot path.  The digit
+   itself is a one-character SLICE of the digit table, because `+` takes
+   strings and a CHAR is not one.                                     *)
 PROCEDURE I64Str (v: I64) : STR =
 VAR
   s : STR ;
@@ -209,9 +215,9 @@ VAR
 BEGIN
   IF v = 0 THEN RETURN '0' END ;
   s := '' ;
-  (* negative space: q is v or -v, whichever is <= 0, and MOD / DIV
-     truncate toward zero, so one digit is negated at a time and
-     none of it can overflow *)
+  (* This works in negative space: q is v or -v, whichever is <= 0,
+     and MOD / DIV truncate toward zero.  So one digit is negated at
+     a time and none of it can overflow. *)
   q := v ;
   IF q > 0 THEN q := -q END ;
   WHILE q # 0 DO
@@ -224,8 +230,9 @@ END I64Str ;
 
 CONST
   HexLower = '0123456789abcdef' ;   (* Hex's digits; HexDigits above is upper case *)
-  (* the same sixteen as CHARACTERS, for Hex to index: a string CONST
-     is a UTF under the switch and has no subscript (2026-10-24) *)
+  (* HexChars holds the same sixteen as CHARACTERS, for Hex to index.
+     A string CONST is a UTF under the switch and has no subscript
+     (2026-10-24). *)
   HexChars = [ 030C, 031C, 032C, 033C, 034C, 035C, 036C, 037C,
                038C, 039C, 061C, 062C, 063C, 064C, 065C, 066C ] ;
 
@@ -235,9 +242,9 @@ VAR
   n, d, k, i : I64 ;
   s : STR ;
 BEGIN
-  (* nibble by nibble from the right, by floor division, so that a
-     negative v gives its two's complement: after sixteen nibbles the
-     whole pattern is out *)
+  (* Hex works nibble by nibble from the right, by floor division,
+     so that a negative v gives its two's complement.  After sixteen
+     nibbles the whole pattern is out. *)
   n := v ;
   k := 0 ;
   LOOP
@@ -326,9 +333,10 @@ BEGIN
   RETURN p
 END Pow10I ;
 
-(* Blank-padding, right-aligned.  I64Pad keeps its own copy because
-   it has the zero fill and the sign-before-the-zeros rule to obey;
-   this is the plain one that FixedPad and SciPad share. *)
+(* PadLeft and PadLeftUtf pad with blanks, right-aligned.  I64Pad
+   keeps its own copy because it has the zero fill and the
+   sign-before-the-zeros rule to obey.  This is the plain one that
+   FixedPad and SciPad share. *)
 PROCEDURE PadLeft (RO body: STR ; width: I64) : STR =
 VAR
   s : STR ;
@@ -394,16 +402,17 @@ END ParseBits ;
 (* ---- Short: Burger and Dybvig's free-format digits ----
 
    The value is f * 2^e exactly.  r / s is the value scaled so that
-   its digits come out one at a time, mp and mm are the distances to
-   the halfway points between v and its neighbours, scaled alike: any
+   its digits come out one at a time.  mp and mm are the distances to
+   the halfway points between v and its neighbours, scaled alike.  Any
    decimal strictly inside (v - mm, v + mp) reads back as v, and on
    the boundary too when f is even, because a reader rounds a tie to
    the even mantissa.  All four are integers, so nothing is rounded
-   on the way -- the reason it is exact where Fixed is measured.
+   on the way.  That is the reason it is exact where Fixed is
+   measured.
 
-   Integers of limbs of 32 bits: Short's largest is s for the smallest
-   subnormal, 2^1075 times ten, 36 limbs; ParseF64's is near 116 (it
-   says why), and Limbs serves both.                                  *)
+   The integers are of limbs of 32 bits.  Short's largest is s for the
+   smallest subnormal, 2^1075 times ten, 36 limbs.  ParseF64's is near
+   116 (it says why), and Limbs serves both.                          *)
 
 CONST
   Limbs = 128 ;
@@ -412,9 +421,9 @@ CONST
 
 (* The helpers take a Big as VAR even where they only read it: an RO
    record is passed as a COPY today (the owed ledger's "RO on a RECORD
-   copies it"), and at 128 limbs that copy was most of the time --
-   Short ran at half its speed and ParseF64's quotient loop copied two
-   kilobytes a step.  None of them writes what it only reads.         *)
+   copies it"), and at 128 limbs that copy was most of the time.
+   Short ran at half its speed, and ParseF64's quotient loop copied
+   two kilobytes a step.  None of them writes what it only reads.   *)
 
 TYPE
   Big = RECORD
@@ -432,7 +441,7 @@ BEGIN
   END
 END BigSmall ;
 
-(* a := a * m, 0 < m < 2^31 *)
+(* BigMul sets a := a * m, 0 < m < 2^31. *)
 PROCEDURE BigMul (VAR a: Big ; m: I64) =
 VAR i, x, carry : I64 ;
 BEGIN
@@ -515,7 +524,7 @@ BEGIN
   END
 END BigAdd ;
 
-(* a := a - b, a >= b *)
+(* BigSub sets a := a - b, a >= b. *)
 PROCEDURE BigSub (VAR a, b: Big) =
 VAR i, x, borrow : I64 ;
 BEGIN
@@ -534,7 +543,8 @@ BEGIN
   WHILE a.n > 0 AND a.d[a.n - 1] = 0 DO a.n := a.n - 1 END
 END BigSub ;
 
-(* r + mp reaches s: past it, or onto it when the boundary is in *)
+(* High answers whether r + mp reaches s: past it, or onto it when
+   the boundary is in. *)
 PROCEDURE High (VAR r, mp, s: Big ; even: BOOL) : BOOL =
 VAR
   t : Big ;
@@ -556,10 +566,11 @@ BEGIN
   RETURN s
 END Zeros ;
 
-(* the runtime's Dragonbox digits in repr's layout (cfmt) into s, or
-   FALSE: then Short's own digits below.  UTF validates the octets
-   and may say ValueRange; the runtime writes ASCII, so it never does,
-   and if it did Short would still answer -- it is total. *)
+(* RtShort writes the runtime's Dragonbox digits in repr's layout
+   (cfmt) into s, or answers FALSE: then Short's own digits below
+   serve.  UTF validates the octets and may say ValueRange.  The
+   runtime writes ASCII, so it never does, and if it did Short would
+   still answer: it is total. *)
 PROCEDURE RtShort (v: F64 ; VAR s: STR) : BOOL =
 VAR
   cb : ARRAY ShortBuf OF BYTE ;
@@ -631,15 +642,15 @@ BEGIN
     BigSmall (mm, 1)
   END ;
 
-  (* k, the decimal exponent, from the binary one: ceil (x log10 2)
-     in integers, 0.30103 for log10 2.  Checked over every exponent a
-     double has: never above ceil (x log10 2), at most one below it.
-     It is one below only when 2^x lies just above a power of ten, and
-     then the whole binade lies below twice that power, so the true k
-     is the estimate or ONE more and the paper's single step is
-     enough -- counted at both ends of every binade (a loop here was
-     written first; its second turn never came, and FmtTest could not
-     tell it from this). *)
+  (* This estimates k, the decimal exponent, from the binary one:
+     ceil (x log10 2) in integers, 0.30103 for log10 2.  The estimate
+     was checked over every exponent a double has: never above
+     ceil (x log10 2), at most one below it.  It is one below only
+     when 2^x lies just above a power of ten.  Then the whole binade
+     lies below twice that power, so the true k is the estimate or
+     ONE more.  The paper's single step is enough, counted at both
+     ends of every binade.  A loop here was written first; its second
+     turn never came, and FmtTest could not tell it from this. *)
   bl := 0 ;
   x := f ;
   WHILE x > 0 DO
@@ -667,10 +678,10 @@ BEGIN
   BigMul (mp, 10) ;
   BigMul (mm, 10) ;
 
-  (* digits, until one more would leave the interval; the last one is
-     the closer of d and d + 1, the even one on a tie (repr does so:
-     2^-25 is 2.98023223876953125e-08, exactly between ...12 and
-     ...13, and reads ...12) *)
+  (* This emits digits until one more would leave the interval.  The
+     last one is the closer of d and d + 1, the even one on a tie (repr
+     does so: 2^-25 is 2.98023223876953125e-08, exactly between ...12
+     and ...13, and reads ...12). *)
   nd := 0 ;
   LOOP
     d := 0 ;
@@ -737,20 +748,20 @@ END Short ;
    The digits are read into dg, so the decimal is dg * 10^e exactly.
    Most data is decided by Clinger's fast path: at most 15 digits and
    |e| <= 22, where dg and 10^|e| are both doubles and the one multiply
-   or divide rounds once.  Everything else is decided in integers:
-   num / den is the decimal, the double is m * 2^q with m the 53-bit
-   quotient of num and den * 2^q, and the remainder against half of
-   den * 2^q says which way m rounds -- ties to the even m.  Nothing
+   or divide rounds once.  Everything else is decided in integers.
+   num / den is the decimal, and the double is m * 2^q with m the
+   53-bit quotient of num and den * 2^q.  The remainder against half
+   of den * 2^q says which way m rounds, ties to the even m.  Nothing
    is estimated that is not then checked.
 
    A halfway point between two doubles has at most 767 significant
-   digits, so a decimal longer than MaxDig is cut there with a 1
-   appended when anything but zeros was cut: the 1 keeps the cut
+   digits.  So a decimal longer than MaxDig is cut there, with a 1
+   appended when anything but zeros was cut.  The 1 keeps the cut
    decimal on the same side of every halfway point as the whole one
    (fast_float's rule).  The largest integer met is then the
    denominator of a decimal at the bottom of the subnormals with all
-   768 digits, 10^1091 shifted by 54, about 3,680 bits: Limbs is 128,
-   4,096 bits.                                                        *)
+   768 digits: 10^1091 shifted by 54, about 3,680 bits.  Limbs is
+   128, 4,096 bits.                                                   *)
 
 CONST
   MaxDig = 768 ;
@@ -758,7 +769,7 @@ CONST
   Two53  = 9007199254740992 ;
   Two54  = 18014398509481984 ;
 
-(* a := a + v, 0 <= v < Base *)
+(* BigPlus sets a := a + v, 0 <= v < Base. *)
 PROCEDURE BigPlus (VAR a: Big ; v: I64) =
 VAR i, x : I64 ;
 BEGIN
@@ -788,7 +799,8 @@ BEGIN
   RETURN k
 END BitLen ;
 
-(* the top limbs of a as a double, and the power of 2^32 it stands for *)
+(* TopF answers the top limbs of a as a double, and the power of 2^32
+   it stands for. *)
 PROCEDURE TopF (VAR a: Big ; VAR k: I64) : F64 RAISES ValueRange =
 VAR
   f : F64 ;
@@ -805,7 +817,7 @@ BEGIN
   RETURN f
 END TopF ;
 
-(* a := a * m, 0 <= m < 2^54 *)
+(* BigMulWide sets a := a * m, 0 <= m < 2^54. *)
 PROCEDURE BigMulWide (VAR a: Big ; m: I64) =
 VAR t : Big ;
 BEGIN
@@ -826,10 +838,10 @@ BEGIN
   END
 END BigMulWide ;
 
-(* a DIV b, below 2^54 by the caller's choice of scale; a keeps the
-   remainder.  The quotient of the top limbs as doubles is within a
-   few units of the true one (relative error near 2^-50); the product
-   then says exactly how far, and the loops walk the rest. *)
+(* Quot answers a DIV b, below 2^54 by the caller's choice of scale;
+   a keeps the remainder.  The quotient of the top limbs as doubles is
+   within a few units of the true one (relative error near 2^-50); the
+   product then says exactly how far, and the loops walk the rest. *)
 PROCEDURE Quot (VAR a, b: Big) : I64 RAISES ValueRange =
 VAR
   t : Big ;
@@ -865,7 +877,8 @@ BEGIN
   RETURN m
 END Quot ;
 
-(* the double with this sign, biased exponent and fraction *)
+(* Make answers the double with this sign, biased exponent and
+   fraction. *)
 PROCEDURE Make (neg: BOOL ; be, fr: I64) : F64 RAISES ValueRange =
 VAR
   b : SLICE OF BYTE ;
@@ -889,13 +902,13 @@ END Make ;
    The value is f * 2^e exactly, so the number a format prints is
    N = f * 2^e * 10^p rounded to an integer, half to even, with p the
    decimals for Fixed and the decimals less the exponent for Sci.
-   Both are exact quotients of integers: whatever power of two or ten
+   Both are exact quotients of integers.  A power of two or ten that
    is negative goes into the divisor, and the remainder against half
    the divisor says which way N rounds.  So the digits are the ones
    the decimal expansion of the double has, which is what glibc's
-   printf prints -- not those of a product rounded in F64, which is
-   what these did until 2026-10-10 (0.71% of Fixed's values wrong in
-   the old driver, 1e300 refused outright).                           *)
+   printf prints.  They are not those of a product rounded in F64,
+   which is what these did until 2026-10-10 (0.71% of Fixed's values
+   wrong in the old driver, 1e300 refused outright).                  *)
 
 PROCEDURE Pow2 (k: I64) : I64 =
 VAR m : I64 ;
@@ -908,7 +921,7 @@ BEGIN
   RETURN m
 END Pow2 ;
 
-(* a := a DIV 2^k, the bits below dropped *)
+(* BigShr sets a := a DIV 2^k, the bits below dropped. *)
 PROCEDURE BigShr (VAR a: Big ; k: I64) =
 VAR q, r, lo, hi, i : I64 ;
 BEGIN
@@ -930,14 +943,14 @@ BEGIN
   WHILE a.n > 0 AND a.d[a.n - 1] = 0 DO a.n := a.n - 1 END
 END BigShr ;
 
-(* bit i of a *)
+(* BigBit answers bit i of a. *)
 PROCEDURE BigBit (VAR a: Big ; i: I64) : BOOL =
 BEGIN
   IF i DIV 32 >= a.n THEN RETURN FALSE END ;
   RETURN (a.d[i DIV 32] DIV Pow2 (i MOD 32)) MOD 2 = 1
 END BigBit ;
 
-(* some bit of a below bit k is set *)
+(* BigAnyBelow answers TRUE when some bit of a below bit k is set. *)
 PROCEDURE BigAnyBelow (VAR a: Big ; k: I64) : BOOL =
 VAR i, q : I64 ;
 BEGIN
@@ -949,7 +962,7 @@ BEGIN
   RETURN FALSE
 END BigAnyBelow ;
 
-(* a := a DIV m, answering a MOD m; 0 < m < 2^31 *)
+(* BigDivSmall sets a := a DIV m, answering a MOD m; 0 < m < 2^31. *)
 PROCEDURE BigDivSmall (VAR a: Big ; m: I64) : I64 =
 VAR i, x, r : I64 ;
 BEGIN
@@ -963,7 +976,8 @@ BEGIN
   RETURN r
 END BigDivSmall ;
 
-(* the decimal digits of a, which it consumes: '0' for zero *)
+(* BigDec answers the decimal digits of a, which it consumes: '0' for
+   zero. *)
 PROCEDURE BigDec (VAR a: Big) : STR =
 VAR
   chunk : ARRAY 160 OF I64 ;
@@ -981,7 +995,8 @@ BEGIN
   RETURN s
 END BigDec ;
 
-(* v's mantissa and exponent: |v| = f * 2^e; FALSE for a zero *)
+(* Parts answers v's mantissa and exponent: |v| = f * 2^e.  It
+   answers FALSE for a zero. *)
 PROCEDURE Parts (v: F64 ; VAR f, e: I64) : BOOL =
 VAR
   b : SLICE OF BYTE ;
@@ -1003,9 +1018,10 @@ BEGIN
   RETURN TRUE
 END Parts ;
 
-(* v's sign bit: -0.0 is negative, as Short, C's printf, Python and
-   Fortran print it, so Fixed and Sci keep the sign of a zero (a port's
-   M10, 2026-10-30: they wrote 0.000 for -0.0 since 2026-09) *)
+(* SignBit answers v's sign bit: -0.0 is negative, as Short, C's
+   printf, Python and Fortran print it.  So Fixed and Sci keep the
+   sign of a zero (a port's M10, 2026-10-30: they wrote 0.000 for -0.0
+   since 2026-09). *)
 PROCEDURE SignBit (v: F64) : BOOL =
 VAR
   b : SLICE OF BYTE ;
@@ -1016,8 +1032,9 @@ BEGIN
   RETURN I64 (b[7]) >= 128
 END SignBit ;
 
-(* the digits of Fixed, once, as octets: ds the decimal digits with at
-   least decimals + 1 of them, or special one of nan, inf, -inf *)
+(* FixedParts makes the digits of Fixed, once, as octets: ds the
+   decimal digits with at least decimals + 1 of them, or special one
+   of nan, inf, -inf. *)
 PROCEDURE FixedParts (v: F64 ; decimals: I64 ; VAR ds: UTF ; VAR special: UTF)
   RAISES ValueRange =
 VAR
@@ -1056,8 +1073,9 @@ BEGIN
   END
 END FixedParts ;
 
-(* the runtime's digits (snprintf, m9rt.h) into b, or -1: then the M9
-   path.  Fmt.Fixed on the Xeon 3.0 -> 0.2 us a value (2026-10-25). *)
+(* The runtime writes its digits (snprintf, m9rt.h) into b, or
+   answers -1: then the M9 path runs.  Fmt.Fixed on the Xeon 3.0 -> 0.2
+   us a value (2026-10-25). *)
 CONST FmtBuf = 400 ;
 
 PROCEDURE FixedUtf (v: F64 ; decimals: I64) : UTF RAISES ValueRange =
@@ -1095,10 +1113,10 @@ BEGIN
   RETURN PadLeftUtf (FixedUtf (v, decimals), width)
 END FixedPadUtf ;
 
-(* f * 2^e * 10^p rounded half to even, while that is below 2^62;
-   above, the bits of the quotient saturate at 2^62 - 1 (and the
-   rounding may add one), more than any 18 digits, which is all Sci
-   asks: the exponent was guessed too low *)
+(* Scaled answers f * 2^e * 10^p rounded half to even, while that is
+   below 2^62.  Above, the bits of the quotient saturate at 2^62 - 1
+   (and the rounding may add one), more than any 18 digits, which is
+   all Sci asks: the exponent was guessed too low. *)
 PROCEDURE Scaled (f, e, p: I64) : I64 =
 VAR
   num, den, t : Big ;
@@ -1110,7 +1128,7 @@ BEGIN
   IF p >= 0 THEN BigTen (num, p) ELSE BigTen (den, -p) END ;
   t := den ;
   BigShl (t, 62) ;
-  (* long division a bit at a time: t is den * 2^j *)
+  (* This is long division a bit at a time: t is den * 2^j. *)
   q := 0 ;
   FOR j := 61 TO 0 BY -1 DO
     BigShr (t, 1) ;
@@ -1133,8 +1151,9 @@ VAR
   b : ARRAY FmtBuf OF BYTE ;
 BEGIN
   IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
-  (* the runtime's digits (snprintf's %.*e, the exponent rewritten
-     short), or -1 and the M9 path: 6.4 -> 0.3 us a value on the Xeon *)
+  (* The runtime writes its digits (snprintf's %.*e, the exponent
+     rewritten short), or answers -1 and the M9 path runs: 6.4 -> 0.3
+     us a value on the Xeon. *)
   nn := I64 (CSci (C.Double (v), C.SSizeT (decimals), ADR (b), C.SSizeT (FmtBuf))) ;
   IF nn >= 0 THEN RETURN STR (UTF (SLICE (b, 0, nn))) END ;
   IF v # v THEN RETURN 'nan' END ;
@@ -1149,10 +1168,10 @@ BEGIN
     nn := 0
   ELSE
     (* 2^x <= |v| < 2^(x+1), so the decimal exponent is floor (x log10
-       2) or one more.  0.30103 is log10 2 a part in 10^7 HIGH, and
-       counted over every x from -1075 to 1023 the floor below is
-       floor (x log10 2) all the same: the guess is never above the
-       exponent, so the loop only ever moves it up *)
+       2) or one more.  0.30103 is log10 2 a part in 10^7 HIGH.
+       Counted over every x from -1075 to 1023, the floor below is
+       floor (x log10 2) all the same.  The guess is never above the
+       exponent, so the loop only ever moves it up. *)
     bl := 0 ;
     x := f ;
     WHILE x > 0 DO
@@ -1166,10 +1185,10 @@ BEGIN
       k := -((-x * 30103 + 99999) DIV 100000)
     END ;
     hi := Pow10I (decimals + 1) ;
-    (* N must have at most decimals + 1 digits; more, or a rounding up
-       to 10^(d+1) (9.999 at two decimals), is a guess one too low, and
-       the next turn rounds the value itself again -- never N divided
-       by ten.  Three turns at the most. *)
+    (* N must have at most decimals + 1 digits.  More, or a rounding
+       up to 10^(d+1) (9.999 at two decimals), is a guess one too
+       low.  Then the next turn rounds the value itself again, never N
+       divided by ten.  Three turns at the most. *)
     LOOP
       nn := Scaled (f, e, decimals - k) ;
       IF nn < hi THEN EXIT END ;
@@ -1205,8 +1224,9 @@ BEGIN
     i := 1
   END ;
 
-  (* the mantissa: leading zeros counted, not kept; the first MaxDig
-     significant digits kept, the rest only remembered *)
+  (* This reads the mantissa.  Leading zeros are counted, not kept.
+     The first MaxDig significant digits are kept, the rest only
+     remembered. *)
   digits := 0 ;
   kept := 0 ;
   dexp := 0 ;
@@ -1242,8 +1262,8 @@ BEGIN
   END ;
   IF digits = 0 THEN RAISE ValueRange END ;
 
-  (* the exponent; past nine digits it is beyond every double either
-     way, and stops growing *)
+  (* This reads the exponent.  Past nine digits it is beyond every
+     double either way, and stops growing. *)
   ex := 0 ;
   eneg := FALSE ;
   IF i < n THEN
@@ -1326,16 +1346,18 @@ END ParseF64 ;
 
 (* ---- the UTF twins: the same exact parsers, over the decoded text ---- *)
 
-(* octet i of o as a CHAR: an ASCII octet is its character, and any
-   other is a character the parsers below refuse as not a digit *)
+(* Cc answers octet i of o as a CHAR: an ASCII octet is its
+   character, and any other is a character the parsers below refuse
+   as not a digit. *)
 PROCEDURE Cc (RO o: SLICE OF BYTE ; i: I64) : CHAR RAISES ValueRange =
 BEGIN
   RETURN CHR (I64 (o[i]))
 END Cc ;
 
-(* ParseF64's body over the octets -- the same lines, LEN (o) for LEN (s)
-   and Cc (o, i) for s[i] (2026-10-24: the twin had decoded and called
-   ParseF64, which under the rehearsed switch is itself) *)
+(* ParseF64Utf is ParseF64's body over the octets: the same lines,
+   LEN (o) for LEN (s) and Cc (o, i) for s[i] (2026-10-24: the twin had
+   decoded and called ParseF64, which under the rehearsed switch is
+   itself). *)
 PROCEDURE ParseF64Utf (RO s: UTF) : F64 RAISES ValueRange =
 VAR
   o : SLICE OF BYTE ;
@@ -1354,8 +1376,9 @@ BEGIN
     i := 1
   END ;
 
-  (* the mantissa: leading zeros counted, not kept; the first MaxDig
-     significant digits kept, the rest only remembered *)
+  (* This reads the mantissa.  Leading zeros are counted, not kept.
+     The first MaxDig significant digits are kept, the rest only
+     remembered. *)
   digits := 0 ;
   kept := 0 ;
   dexp := 0 ;
@@ -1391,8 +1414,8 @@ BEGIN
   END ;
   IF digits = 0 THEN RAISE ValueRange END ;
 
-  (* the exponent; past nine digits it is beyond every double either
-     way, and stops growing *)
+  (* This reads the exponent.  Past nine digits it is beyond every
+     double either way, and stops growing. *)
   ex := 0 ;
   eneg := FALSE ;
   IF i < n THEN
@@ -1493,12 +1516,12 @@ END Fmt.
 
 UNSAFE DEFINITION MODULE FOR "C" cfmt ;
 
-(* runtime/m9rt.c: printf's %.*f and %.*e in Fmt's layout, and
-   Short's shortest digits by Dragonbox in repr's layout, into the
-   caller's buffer, answering the length -- or -1 when the runtime
-   declines (M9_FMT_PORTABLE, a buffer too small) and Fmt's
-   own exact code does the work (m9rt.h).  REENTRANT: into the
-   caller's buffer, no shared state. *)
+(* cfmt binds runtime/m9rt.c: printf's %.*f and %.*e in Fmt's
+   layout, and Short's shortest digits by Dragonbox in repr's layout.
+   Each writes into the caller's buffer and answers the length, or -1
+   when the runtime declines (M9_FMT_PORTABLE, a buffer too small) and
+   Fmt's own exact code does the work (m9rt.h).  They are REENTRANT:
+   they write into the caller's buffer, with no shared state. *)
 
 PROCEDURE CFixed = "m9_fmt_fixed" (v: C.Double ; decimals: C.SSizeT ;
                                    buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT

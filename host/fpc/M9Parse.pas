@@ -1,8 +1,9 @@
 unit M9Parse;
-{ Recursive descent over report par 10, one procedure per production
-  where the production earns one.  Errors are values: every problem
-  lands in Errors as 'line:col message', the parser resyncs on ';'
-  and END and keeps going, and a tree always comes back.             }
+{ M9Parse does recursive descent over report par 10, with one
+  procedure per production where the production earns one.  Errors
+  are values.  Every problem lands in Errors as 'line:col message',
+  the parser resyncs on ';' and END and keeps going, and a tree
+  always comes back. }
 {$mode objfpc}{$H+}
 interface
 
@@ -237,8 +238,8 @@ begin
       Err ('a second program module: a file may have only one');
       Break;
     end;
-    { guaranteed progress: PUnit always consumes or errs; if it
-      neither consumed nor moved, drop one token }
+    { Progress is guaranteed.  PUnit always consumes or errs; if it
+      neither consumed nor moved, drop one token. }
     if (cur.kind <> tkEOF) and (Errors.Count > before + 50) then
       Break;                       { runaway guard }
   end;
@@ -268,8 +269,9 @@ begin
     Result.a := TakeIdent ('module name');
     if cur.kind = tkLINK then
     begin
-      { LINK "w", ...: what the foreign unit links (par 7); the node
-        goes in LAST, after the declarations (mirrors Parse.PUnit) }
+      { LINK "w", ... names what the foreign unit links (par 7).  The
+        node goes in LAST, after the declarations (mirrors
+        Parse.PUnit). }
       if Result.b = '' then Err ('LINK belongs to a FOR "C" unit');
       Bump;
       links := NewNode (nkLinkList);
@@ -306,10 +308,10 @@ begin
     PDecls (Result);
     if cur.kind = tkBEGIN then
     begin
-      { a BLOCK, not a bare sequence: the module body is the root
-        frame, the one with no caller to declare RAISES to, so it is
-        exactly where a program must be able to SAY what it does
-        about failure.  PBlock consumes BEGIN .. END. }
+      { Parse a BLOCK, not a bare sequence.  The module body is the
+        root frame, the one with no caller to declare RAISES to.  So
+        it is exactly where a program must be able to SAY what it
+        does about failure.  PBlock consumes BEGIN .. END. }
       body := NewNode (nkModBody);
       body.Add (PBlock);
       Result.Add (body);
@@ -334,10 +336,10 @@ begin
     PDecls (Result);
     if cur.kind = tkBEGIN then
     begin
-      { a BLOCK, not a bare sequence: the module body is the root
-        frame, the one with no caller to declare RAISES to, so it is
-        exactly where a program must be able to SAY what it does
-        about failure.  PBlock consumes BEGIN .. END. }
+      { Parse a BLOCK, not a bare sequence.  The module body is the
+        root frame, the one with no caller to declare RAISES to.  So
+        it is exactly where a program must be able to SAY what it
+        does about failure.  PBlock consumes BEGIN .. END. }
       body := NewNode (nkModBody);
       body.Add (PBlock);
       Result.Add (body);
@@ -620,8 +622,8 @@ begin
   Result := NewNode (nkHandler);
   Expect (tkBar, '|');
   Result.Add (PQualident);
-  { `| A, B :' -- the further names go after the body (mirrors
-    Parse.PHandler, 2026-10-11) }
+  { In `| A, B :' the further names go after the body (mirrors
+    Parse.PHandler, 2026-10-11). }
   SetLength (more, 0);
   while (cur.kind = tkComma) and (Length (more) < 8) do
   begin
@@ -701,9 +703,9 @@ begin
       end;
     tkGRID :
       begin
-        { GRID r OF T -- the rank is in the type, the extents are in
-          the value.  The rank is a constant because the checker
-          checks subscript arity against it, which is the whole
+        { In GRID r OF T the rank is in the type, and the extents are
+          in the value.  The rank is a constant because the checker
+          checks subscript arity against it.  That check is the whole
           reason the type carries one: Mat.Get (m, 0, 3) on a
           three-column matrix answered element (1,0) and raised
           nothing (docs/nd-arrays.md). }
@@ -787,10 +789,10 @@ begin
       end;
     tkLParen :
       begin
-        { an enumeration: (Red, Green, Blue) -- a member per kid, in
-          declaration order, ordinals 0..n-1 (docs/enum-plan.md).  No
-          explicit values: those are protocol numbers, and a wire
-          format keeps its CONSTs }
+        { This is an enumeration: (Red, Green, Blue).  It has a member
+          per kid, in declaration order, ordinals 0..n-1
+          (docs/enum-plan.md).  It takes no explicit values: those are
+          protocol numbers, and a wire format keeps its CONSTs. }
         Result := NewNode (nkEnumType);
         Bump;
         n := NewNode (nkIdent);
@@ -807,10 +809,10 @@ begin
       end;
     tkPROCEDURE :
       begin
-        { a procedure type: PROCEDURE (params) [: T] [RAISES ...], the
-          head of a ProcDecl without a name, and the same three kids
-          so the checker's parameter walk serves both
-          (docs/proctype-plan.md) }
+        { This is a procedure type: PROCEDURE (params) [: T] [RAISES
+          ...].  It is the head of a ProcDecl without a name, with the
+          same three kids, so the checker's parameter walk serves both
+          (docs/proctype-plan.md). }
         Result := NewNode (nkProcType);
         Bump;
         Expect (tkLParen, '(');
@@ -1130,9 +1132,10 @@ begin
   Result.Add (PStmtSeq ([tkBar, tkELSE, tkEND]));
 end;
 
-{ a QUALIFIED variant with binders, `Frame.Data.F64s (v, m)', read as
-  the call it looks like and turned into the pattern it is (OneFlux,
-  2026-10-19; mirrors Parse.QualPattern) }
+{ QualPattern takes a QUALIFIED variant with binders,
+  `Frame.Data.F64s (v, m)', read as the call it looks like, and turns
+  it into the pattern it is (OneFlux, 2026-10-19; mirrors
+  Parse.QualPattern). }
 function TParser.QualPattern (e: TNode): TNode;
 var
   d, al, ids, id : TNode;
@@ -1475,13 +1478,14 @@ function TParser.PNew: TNode;
 var
   d1, d2 : TNode;
 begin
-  { NEW (T), NEW (T, n...), NEW (pool, T, n...), NEW (OWN, T): the
-    first argument says who frees the storage -- nothing (the frame),
-    a pool, or OWN.  A pool and a type are both designators, so
-    `NEW (a, b)` is resolved by NAME downstream (report par 10, item
-    6): kids[0] is the first argument or nil, kids[1] the second as an
-    EXPRESSION, kids[2..] the rest with a nil in kids[2] when there is
-    no third.  Mirrors Parse.PNew. }
+  { PNew parses NEW (T), NEW (T, n...), NEW (pool, T, n...) and
+    NEW (OWN, T).  The first argument says who frees the storage:
+    nothing (the frame), a pool, or OWN.  A pool and a type are both
+    designators, so `NEW (a, b)` is resolved by NAME downstream
+    (report par 10, item 6).  kids[0] is the first argument or nil,
+    and kids[1] the second as an EXPRESSION.  kids[2..] hold the rest,
+    with a nil in kids[2] when there is no third.  This mirrors
+    Parse.PNew. }
   Result := NewNode (nkNewExpr);
   Expect (tkNEW, 'NEW');
   Expect (tkLParen, '(');
@@ -1548,8 +1552,9 @@ begin
   PSels (Result);
 end;
 
-{ the selectors that follow a name -- or a call's closing parenthesis
-  (nkCallSel, 2026-10-09) -- appended to n (mirrors Parse.PSels) }
+{ PSels appends to n the selectors that follow a name, or a call's
+  closing parenthesis (nkCallSel, 2026-10-09).  It mirrors
+  Parse.PSels. }
 procedure TParser.PSels (n: TNode);
 var
   sel : TNode;

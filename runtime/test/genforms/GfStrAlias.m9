@@ -1,5 +1,7 @@
 MODULE GfStrAlias ;
 
+IMPORT Text ;
+
 (* WANT: alias y 2 z 3 *)
 
 (* A name for STR is a STR (2026-10-24, found writing the review
@@ -8,13 +10,17 @@ MODULE GfStrAlias ;
    unsupported yet' -- Gen.Resolve expanded the predeclared STR to its
    slice only at the START of the chain of names, not after following
    an alias to it, so the subscript met a name where it wanted a
-   slice.  Through a second alias too, and a write through one. *)
+   slice.  It covers a second alias too, and a write through one.
+   STR is the UTF-8 type since 2026-10-31 and has no subscript, so the
+   subscript and the write go through a name for SLICE OF CHAR; Name
+   stays a name for STR, read by its octets. *)
 
 IMPORT Fmt, Io ;
 
 TYPE
   Name = STR ;
-  Label = Name ;
+  Chars = SLICE OF CHAR ;
+  Label = Chars ;
 
 VAR
   nm : Name ;
@@ -28,8 +34,8 @@ BEGIN
   lb[0] := 'a' ;
   lb[1] := 'b' ;
   lb[2] := 'z' ;
-  c := nm[1] ;
+  c := Text.BChar (nm, 1) ;
   s := 'alias ' ;
-  s := s + c + ' ' + Fmt.I64Str (LEN (nm)) + ' ' + lb[2] + ' ' + Fmt.I64Str (LEN (lb)) ;
+  s := s + c + ' ' + Fmt.I64Str (Text.BLen (nm)) + ' ' + lb[2] + ' ' + Fmt.I64Str (LEN (lb)) ;
   Io.WriteLine (s)
 END GfStrAlias.

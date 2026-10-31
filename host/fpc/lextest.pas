@@ -1,8 +1,9 @@
 program lextest;
 {$mode objfpc}{$H+}
-{ Lexes every .m9 under corpus/ and museum/ (run from host/fpc).
-  Exit code 1 if any of those produce an error token -- museum pieces
-  are semantic failures and must lex clean.  The adversarial section
+{ lextest lexes every .m9 under corpus/ and museum/ (run from
+  host/fpc).  It exits with code 1 if any of those produce an error
+  token.  Museum pieces are semantic failures and must lex clean.  The
+  adversarial section
   exists to produce errors; those are printed, not gated. }
 uses SysUtils, Classes, M9Lex;
 
@@ -31,8 +32,8 @@ begin
 end;
 
 procedure LexDir (const dir: string; var errs: Integer);
-{ byte-order sorted: ext4 and NTFS disagree on enumeration order,
-  and the golden diff in CI needs one truth }
+{ LexDir sorts the names in byte order.  ext4 and NTFS disagree on
+  enumeration order, and the golden diff in CI needs one truth. }
 var
   sr : TSearchRec;
   names : array of string;

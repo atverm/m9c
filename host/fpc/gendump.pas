@@ -1,6 +1,7 @@
 program gendump;
-{ P5 stage-2 oracle side: emit the generated C for one module to
-  stdout, header then source, separated by a marker line.  The
+{ gendump is the P5 stage-2 oracle side.  It emits the generated C for
+  one module to stdout, header then source, separated by a marker
+  line.  The
   M9-compiled generator (runtime/test/gendump_m9) must produce
   identical bytes.  Usage: gendump MODULE [DEP ...]              }
 {$mode objfpc}{$H+}
@@ -37,9 +38,9 @@ begin
     Halt (1);
   end;
 
-  { the checker first, as m9c runs it: it records the types the
-    generator reads (the typed tree, 2026-10-09); its diagnostics are
-    not this tool's business -- semdiff holds them }
+  { Run the checker first, as m9c runs it.  It records the types the
+    generator reads (the typed tree, 2026-10-09).  Its diagnostics are
+    not this tool's business: semdiff holds them. }
   sem := TSem.Create;
   g := TGen.Create;
   for k := 2 to ParamCount do

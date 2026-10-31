@@ -1,11 +1,13 @@
 MODULE SmtpTest ;
 
-(* Smtp offline: the message as written, against Python's email
-   (tools/smtpgold.py, runtime/test/gold/Smtp.gold; docs/library-
-   plan-2.md, item 6): the Date line for eight instants, the RFC 2047
-   encoded word of five subjects, a body's base64 lines, the multipart
-   layout, dot-stuffing, and the refusals that need no server.  The
-   dialogue itself is runtime/test/smtp.sh's, against aiosmtpd.  *)
+(* SmtpTest tests Smtp offline.  It holds the message as written
+   against Python's email (tools/smtpgold.py,
+   runtime/test/gold/Smtp.gold; docs/library-plan-2.md, item 6): the
+   Date line for eight instants, the RFC 2047 encoded word of five
+   subjects, a body's base64 lines, a body and a subject past U+00FF,
+   the multipart layout, dot-stuffing,
+   and the refusals that need no server.  The dialogue itself is
+   runtime/test/smtp.sh's, against aiosmtpd.  *)
 
 IMPORT Check ;
 IMPORT DynStr ;
@@ -21,22 +23,24 @@ VAR
   gold : STR ;
 
 PROCEDURE Word (RO w: STR) : STR =
-  (* a golden word: %0D %0A %20 restored.  GoldStrs reads the file
-     as UTF-8 text since 2026-10-09 (Io.ReadFile decodes), so the
-     non-ASCII subjects arrive as scalars; until then this decoded
-     them itself, and the day the flip landed it decoded twice and
-     raised ValueRange on the first scalar past 255 *)
+  (* Word answers a golden word with %0D %0A %20 restored.  GoldStrs
+     reads the file as UTF-8 text since 2026-10-09 (Io.ReadFile
+     decodes), so the non-ASCII subjects arrive as scalars.  Until
+     then Word decoded them itself.  The day the flip landed it
+     decoded twice and raised ValueRange on the first scalar past
+     255. *)
 BEGIN
   RETURN Text.Replace (Text.Replace (Text.Replace (w, '%0D', '' + 0DC), '%0A', '' + 0AC), '%20', ' ')
 END Word ;
 
 PROCEDURE Count (RO hay: STR ; RO needle: STR) : I64 =
 BEGIN
-  RETURN (LEN (hay) - LEN (Text.Replace (hay, needle, ''))) DIV LEN (needle)
+  RETURN (Text.BLen (hay) - Text.BLen (Text.Replace (hay, needle, ''))) DIV Text.BLen (needle)
 END Count ;
 
 PROCEDURE Line (RO wire: STR ; RO name: STR) : STR =
-  (* the header line `name: value' of wire, its value; '' if none *)
+  (* Line answers the value of the header line `name: value' of wire,
+     or '' if there is none. *)
 VAR
   lines : SLICE OF STR ;
   i : I64 ;
@@ -44,7 +48,7 @@ BEGIN
   lines := Text.Split (wire, 0AC) ;
   FOR i := 0 TO LEN (lines) - 1 DO
     IF Text.StartsWith (lines[i], name + ': ') THEN
-      RETURN Text.TrimRight (SLICE (lines[i], LEN (name) + 2, LEN (lines[i]) - LEN (name) - 2))
+      RETURN Text.TrimRight (SLICE (lines[i], Text.BLen (name) + 2, Text.BLen (lines[i]) - Text.BLen (name) - 2))
     END
   END ;
   RETURN ''
@@ -81,17 +85,18 @@ BEGIN
     m := Smtp.New (pool, 'a@b.org', Word (text[i])) ;
     Check.EqStr (t, 'Subject ' + Fmt.I64Str (i), Line (Smtp.Wire (m), 'Subject'), Word (want[i]))
   END ;
-  (* a long one is folded: each word within RFC 2047's 75, every
-     continuation line begins with a blank, the number of words as
-     counted -- what the live gate decodes back through Python *)
+  (* Smtp folds a long subject.  Each word stays within RFC 2047's 75,
+     every continuation line begins with a blank, and the number of
+     words is as counted.  The live gate decodes this back through
+     Python. *)
   m := Smtp.New (pool, 'a@b.org', Word (text[0]) + ' ' + Word (text[0]) + ' ' + Word (text[0]) + ' ' + Word (text[0])) ;
   lines := Text.Split (Smtp.Wire (m), 0AC) ;
   n := 0 ;
   FOR i := 0 TO LEN (lines) - 1 DO
     IF Text.StartsWith (lines[i], 'Subject: ') OR Text.StartsWith (lines[i], ' =?') THEN
       n := n + 1 ;
-      Check.That (t, 'a folded subject line within 76: ' + Fmt.I64Str (LEN (lines[i]) - 1),
-                  LEN (Text.TrimRight (lines[i])) <= 76 AND Text.EndsWith (Text.TrimRight (lines[i]), '?='))
+      Check.That (t, 'a folded subject line within 76: ' + Fmt.I64Str (Text.BLen (lines[i]) - 1),
+                  Text.BLen (Text.TrimRight (lines[i])) <= 76 AND Text.EndsWith (Text.TrimRight (lines[i]), '?='))
     END
   END ;
   Check.EqI64 (t, 'a 71-character subject in two words', n, 2)
@@ -112,17 +117,35 @@ BEGIN
   wire := Smtp.Wire (m) ;
   at := Text.Find (wire, '' + 0DC + 0AC + 0DC + 0AC) ;
   Check.That (t, 'the headers end with an empty line', at > 0) ;
-  body := SLICE (wire, at + 4, LEN (wire) - at - 4) ;
+  body := SLICE (wire, at + 4, Text.BLen (wire) - at - 4) ;
   Check.EqStr (t, 'the body as base64 lines of 76', body, Word (want[0])) ;
   Check.EqStr (t, 'Content-Type of a text message', Line (wire, 'Content-Type'), 'text/plain; charset=utf-8') ;
   Check.EqStr (t, 'To', Line (wire, 'To'), 'c@d.org') ;
   Check.That (t, "a Message-ID with the sender's host", Text.EndsWith (Line (wire, 'Message-ID'), '@b.org>')) ;
-  (* dot-stuffing: the transport's, held on the text itself *)
+  (* These hold the transport's dot-stuffing on the text itself. *)
   Check.EqStr (t, 'Stuffed', Smtp.Stuffed ('a' + 0AC + '.b' + 0AC + '..c' + 0AC + '.'),
                'a' + 0AC + '..b' + 0AC + '...c' + 0AC + '..') ;
   Check.EqStr (t, 'Stuffed, a dot first', Smtp.Stuffed ('.x'), '..x') ;
   Check.EqStr (t, 'Stuffed, nothing to stuff', Smtp.Stuffed ('a.b' + 0AC + 'c'), 'a.b' + 0AC + 'c')
 END Bodies ;
+
+PROCEDURE Unicode () RAISES ValueRange =
+  (* Unicode holds characters past U+00FF in the body and the subject.
+     Each goes out as its UTF-8 octets, in base64.  Python's base64 and
+     email.header wrote the two wanted values. *)
+VAR
+  m : PTR Smtp.Message IN pool ;
+  wire : STR ;
+BEGIN
+  m := Smtp.New (pool, 'a@b.org', 'Schnee ' + 2603C + ' ' + 20ACC) ;
+  Smtp.AddTo (m, 'c@d.org') ;
+  Smtp.SetText (m, 'snow ' + 2603C + ' ' + 20ACC) ;
+  wire := Smtp.Wire (m) ;
+  Check.EqStr (t, 'a subject past U+00FF as UTF-8 in an encoded word',
+               Line (wire, 'Subject'), '=?utf-8?b?U2NobmVlIOKYgyDigqw=?=') ;
+  Check.That (t, 'a body past U+00FF as the base64 of its UTF-8',
+              Text.EndsWith (wire, '' + 0DC + 0AC + 0DC + 0AC + 'c25vdyDimIMg4oKs' + 0DC + 0AC))
+END Unicode ;
 
 PROCEDURE Multipart () RAISES ValueRange =
 VAR
@@ -143,7 +166,7 @@ BEGIN
   wire := Smtp.Wire (m) ;
   ctype := Line (wire, 'Content-Type') ;
   Check.That (t, 'multipart/mixed with a boundary', Text.StartsWith (ctype, 'multipart/mixed; boundary="')) ;
-  q := Text.FindChar (SLICE (ctype, 27, LEN (ctype) - 27), '"') ;
+  q := Text.FindChar (SLICE (ctype, 27, Text.BLen (ctype) - 27), '"') ;
   boundary := SLICE (ctype, 27, q) ;
   Check.EqI64 (t, 'two parts opened', Count (wire, '--' + boundary + 0DC + 0AC), 2) ;
   Check.That (t, 'and the multipart closed', Text.Contains (wire, '--' + boundary + '--' + 0DC + 0AC)) ;
@@ -186,7 +209,7 @@ BEGIN
   Check.That (t, 'an unknown security: refused by name', Text.Contains (em, 'security')) ;
   em := '' ;
   BEGIN
-    (* port 1 on loopback: nothing listens, tcpmux least of all *)
+    (* Nothing listens on port 1 on loopback, tcpmux least of all. *)
     Smtp.Send ('127.0.0.1', 1, Smtp.Plain, '', '', m) ;
     Check.That (t, 'a refused connection is an Error', FALSE)
   EXCEPT
@@ -194,7 +217,7 @@ BEGIN
       em := msg
   END ;
   Check.That (t, 'a refused connection: cannot connect', Text.Contains (em, 'cannot connect')) ;
-  (* SendOctets: the same refusals before any connection *)
+  (* SendOctets makes the same refusals before any connection. *)
   em := '' ;
   code := -1 ;
   BEGIN
@@ -241,6 +264,7 @@ BEGIN
     Dates () ;
     Subjects () ;
     Bodies () ;
+    Unicode () ;
     Multipart () ;
     Refusals ()
   EXCEPT

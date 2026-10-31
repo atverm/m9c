@@ -1,0 +1,18 @@
+{
+    "chunks": [
+        2
+    ],
+    "compressor": null,
+    "dtype": "|O",
+    "fill_value": "",
+    "filters": [
+        {
+            "id": "vlen-utf8"
+        }
+    ],
+    "order": "C",
+    "shape": [
+        5
+    ],
+    "zarr_format": 2
+}

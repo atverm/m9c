@@ -1,7 +1,7 @@
 MODULE R4CopyHead ;
 (* R4FieldRowsAlias through the other field, one level: the head the
-   copy took is the caller's literal-backed slice, an element of it
-   replaced.  Accepted by 0.25.1 *)
+   copy took is the caller's literal-backed slice, and an element of
+   it is replaced.  0.25.1 accepted it. *)
 IMPORT Io ;
 TYPE
   Strs = SLICE OF STR ;

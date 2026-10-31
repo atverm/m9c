@@ -1,9 +1,9 @@
 # Regex
 
-Regular expressions: the subset Python's re and RE2 share, matched
-by a Pike VM -- the NFA simulation RE2 uses -- in time linear in
-the subject whatever the pattern, so that no pattern can hang the
-program that runs it (docs/datalib-plan.md par 3).
+Regex matches regular expressions: the subset Python's re and RE2
+share.  A Pike VM, the NFA simulation RE2 uses, matches them in
+time linear in the subject whatever the pattern, so that no pattern
+can hang the program that runs it (docs/datalib-plan.md par 3).
 
 THE LANGUAGE is Python's, and a match is the one Python's re finds:
 literals and escapes (\n \t \x41 é ...), . and classes with
@@ -13,7 +13,7 @@ alternation, * + ? {m} {m,} {,n} {m,n} each greedy or lazy, and
 the flags i m s and u -- as letters to Compile, inline at the
 start (?ims), or scoped (?i:...) (?-i:...).  Leftmost-first, with
 Python's rule for a loop whose body matched nothing: the loop ends
-there.  Held to re on 3,135 searches, 845 find-alls, 645
+there.  It is held to re on 3,135 searches, 845 find-alls, 645
 substitutions and 445 splits, of generated patterns and written
 ones (RegexTest).
 
@@ -49,29 +49,30 @@ seen, or -1 for the flags or a replacement template
 
 ### Compile (VAR pool: POOL ; RO pattern: STR ; RO flags: STR) : PTR Re IN pool RAISES BadPattern
 
-pattern compiled; flags is letters from imsu, '' for none:
-i caseless, m ^ and $ at every line, s . matches a line feed
-too, u Unicode classes
+Compile answers the pattern compiled; flags is letters from imsu,
+'' for none: i caseless, m ^ and $ at every line, s . matches a
+line feed too, u Unicode classes.
 
 ### Groups (re: PTR Re) : I64
 
-how many capturing groups the pattern has
+Groups answers how many capturing groups the pattern has.
 
 ### GroupIndex (re: PTR Re ; RO name: STR) : I64
 
-the number of the group named so, or -1
+GroupIndex answers the number of the group named so, or -1.
 
 ### Search (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found
 
-the first match at or after from (clamped to 0 .. LEN (s))
+Search answers the first match at or after from (clamped to
+0 .. LEN (s)).
 
 ### Match (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found
 
-a match that starts at from
+Match answers a match that starts at from.
 
 ### FullMatch (re: PTR Re ; RO s: STR) : OPT PTR Found
 
-a match of the whole of s
+FullMatch answers a match of the whole of s.
 
 ### Start (m: PTR Found ; k: I64) : I64 RAISES IndexError
 
@@ -83,26 +84,28 @@ _(documented with the group below)_
 
 ### Took (m: PTR Found ; k: I64) : BOOL RAISES IndexError
 
-group k's start, end, and whether it took part
+Start, End and Took answer group k's start, end, and whether it
+took part.
 
 ### Group (RO s: STR ; m: PTR Found ; k: I64) : STR RAISES IndexError
 
-the text group k matched in s, the subject m was found in; '' for
-a group that took no part (Took says which)
+Group answers the text group k matched in s, the subject m was
+found in; '' for a group that took no part (Took says which).
 
 ### FindAll (re: PTR Re ; RO s: STR) : SLICE OF PTR Found
 
-every match, left to right, as Python's finditer: an empty match
-may follow a non-empty one where it ends, never another empty one
+FindAll answers every match, left to right, as Python's finditer:
+an empty match may follow a non-empty one where it ends, never
+another empty one.
 
 ### Sub (re: PTR Re ; RO s: STR ; RO repl: STR ; count: I64) : STR RAISES BadPattern
 
-s with the first count matches (0 for all) replaced by repl, in
-which \g<0> \g<name> \g<n> and \1 .. \99 name a group's text ('' if
-it took no part), and \n \t \r \\ are escapes
+Sub answers s with the first count matches (0 for all) replaced by
+repl.  In repl \g<0> \g<name> \g<n> and \1 .. \99 name a group's
+text ('' if it took no part), and \n \t \r \\ are escapes.
 
 ### Split (re: PTR Re ; RO s: STR ; maxsplit: I64) : SLICE OF STR
 
-s cut at the first maxsplit matches (0 for all), each match's
-groups between the pieces -- '' for one that took no part, where
-Python says None
+Split answers s cut at the first maxsplit matches (0 for all),
+each match's groups between the pieces: '' for one that took no
+part, where Python says None.

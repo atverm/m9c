@@ -1,8 +1,8 @@
 MODULE ExportUse ;
 
-(* An importer of ExportDef's variables (decision 28): reads them, writes
-   them -- a scalar, a slice element, a field through a pointer -- and
-   asks ExportDef what it sees, which must be what was written. *)
+(* ExportUse imports ExportDef's variables (decision 28).  It reads and
+   writes them (a scalar, a slice element, a field through a pointer)
+   and asks ExportDef what it sees, which must be what was written. *)
 
 IMPORT Io ;
 IMPORT Fmt ;
@@ -11,10 +11,13 @@ VAR
   row : ARRAY ExportDef.Width OF F64 ;   (* an imported CONST as a bound *)
   c : PTR ExportDef.Cell ;
 BEGIN
-  (* a field of an imported record compared with an imported
-     enumeration's member: `c.shade = ExportDef.Shade.Dark' was a C
-     struct == until 2026-10-09 (cp-kernel's Jv.Kind finding) *)
+  (* This compares a field of an imported record with an imported
+     enumeration's member.  `c.shade = ExportDef.Shade.Dark' was a C
+     struct == until 2026-10-09 (cp-kernel's Jv.Kind finding). *)
   c := NEW (ExportDef.Cell) ;
+  (* LEN (row) folds to a constant, so the C would never name row.
+     This write keeps the array a variable the C uses. *)
+  row[0] := 1.0 ;
   c.shade := ExportDef.Shade.Dark ;
   IF c.shade = ExportDef.Shade.Dark THEN Io.WriteLine ('ExportUse compares a Shade across modules') END ;
   IF c.shade # ExportDef.Shade.Light THEN Io.WriteLine ('and its negation') END ;

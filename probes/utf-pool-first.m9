@@ -1,7 +1,7 @@
 (* EXPECT: UTF (pool, x) takes the pool first, not I64 *)
 MODULE m ;
-(* legal forms first: a UTF placed in a module pool and kept there, from
-   a STR, a UTF and a literal *)
+(* Legal forms come first: a UTF placed in a module pool and kept there,
+   from a STR, a UTF and a literal. *)
 VAR
   keep : POOL ;
   u, kept : UTF ;

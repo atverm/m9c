@@ -1,15 +1,16 @@
-/* bar_driver -- Plot's bar charts, every option Alex asked for, and
-   the one property that matters for a plotting library nobody can
-   eyeball in CI: the SVG says what the numbers say.
+/* bar_driver tests Plot's bar charts, every option Alex asked for.
+   It also tests the one property that matters for a plotting library
+   nobody can eyeball in CI: the SVG says what the numbers say.
 
-   The three line/heat SVGs are held byte-identical to the Modula-2
-   oracle by plot_driver; bars have no oracle, so these checks are
-   STRUCTURAL and arithmetic -- how many rectangles, where their
-   edges are, that a stacked pair sums to the height of one bar of
-   the total, that an unfilled bar carries a stroke and no fill, that
-   error whiskers appear once per bar that has one, and that a log
-   axis ticks on the decades.  Every one of them would fail if the
-   feature were absent, which is more than "it rendered" proves.  */
+   plot_driver holds the three line/heat SVGs byte-identical to the
+   Modula-2 oracle.  Bars have no oracle, so these checks are
+   STRUCTURAL and arithmetic.  They check how many rectangles there
+   are and where their edges are.  They check that a stacked pair sums
+   to the height of one bar of the total, and that an unfilled bar
+   carries a stroke and no fill.  They check that error whiskers
+   appear once per bar that has one, and that a log axis ticks on the
+   decades.  Every one of them would fail if the feature were absent,
+   which is more than "it rendered" proves.                         */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -25,7 +26,7 @@ static void ok (const char *what, int cond)
   if (!cond) { bad++; printf ("FAIL: %s\n", what); }
 }
 
-/* the number of times needle occurs in hay */
+/* count answers the number of times needle occurs in hay. */
 static int count (const char *hay, size_t n, const char *needle)
 {
   int c = 0;
@@ -35,9 +36,9 @@ static int count (const char *hay, size_t n, const char *needle)
   return c;
 }
 
-/* the figures a person can actually LOOK at: the checks below read
-   the document, but a plotting library also has to be seen, so every
-   case writes its SVG beside plot_driver's three. */
+/* These are the figures a person can actually LOOK at.  The checks
+   below read the document, but a plotting library also has to be
+   seen.  So every case writes its SVG beside plot_driver's three. */
 static void save (const char *name, const char *svg, size_t n)
 {
   char path[256];
@@ -48,20 +49,23 @@ static void save (const char *name, const char *svg, size_t n)
   fclose (f);
 }
 
-static char *flat (m9_sl_CHAR s, size_t *n)
+/* flat copies the UTF-8 octets of s into a C string. */
+static char *flat (m9_sl_UTF8 s, size_t *n)
 {
-  char *b = malloc (s.len + 1);
-  for (int64_t i = 0; i < s.len; i++) b[i] = (char) s.p[i];
+  char *b = malloc ((size_t) s.len + 1);
+  if (s.len > 0) memcpy (b, s.p, (size_t) s.len);
   b[s.len] = 0;
   *n = (size_t) s.len;
   return b;
 }
 
-static m9_sl_CHAR sl (const char *t, uint32_t *buf)
+/* A STR is UTF-8 octets.  The C literal is already UTF-8, so sl copies
+   its bytes. */
+static m9_sl_UTF8 sl (const char *t, uint8_t *buf)
 {
   size_t n = strlen (t);
-  for (size_t i = 0; i < n; i++) buf[i] = (uint32_t) t[i];
-  return (m9_sl_CHAR){ buf, (int64_t) n };
+  memcpy (buf, t, n);
+  return (m9_sl_UTF8){ buf, (int64_t) n };
 }
 
 static m9_sl_F64 f64s (double *v, int64_t n) { return (m9_sl_F64){ v, n }; }
@@ -70,7 +74,7 @@ int main (void)
 {
   m9_pool pool = {0};
   m9_state err = {0};
-  uint32_t t1[120], t2[120], t3[120], t4[120];
+  uint8_t t1[120], t2[120], t3[120], t4[120];
   char *svg; size_t n;
 
   double at[4]   = { 0, 1, 2, 3 };
@@ -113,8 +117,8 @@ int main (void)
                            sl ("y", t4), &err), &n);
   ok ("horizontal bars render", !err.exc && count (svg, n, "<rect") == 6);
   {
-    /* every bar starts at the same x (the baseline) and differs in
-       width -- the signature of a horizontal bar chart */
+    /* Every bar starts at the same x (the baseline) and differs in
+       width.  That is the signature of a horizontal bar chart. */
     const char *p = strstr (svg, "<rect x=\"");
     p = strstr (p + 1, "<rect x=\"");            /* skip the ground */
     double x0 = atof (p + 9);
@@ -133,13 +137,14 @@ int main (void)
   Plot_AddBars (f64s (at, 4), f64s (v2, 4), 1, sl ("b", t2), &err);
   svg = flat (Plot_Render ( sl ("stacked", t3), sl ("x", t4),
                            sl ("y", t3), &err), &n);
-  /* the ground, eight bars, and a legend swatch PER SERIES */
+  /* Expect the ground, eight bars, and a legend swatch PER
+       SERIES. */
   ok ("two stacked series draw eight bars", count (svg, n, "<rect") == 11);
   {
-    /* the two series' rectangles at slot 0 must TOUCH: the second
-       starts where the first ends.  Parsed out of the document
-       rather than assumed, because that is the whole claim of
-       stacking. */
+    /* The two series' rectangles at slot 0 must TOUCH: the second
+       starts where the first ends.  The edges are parsed out of the
+       document rather than assumed, because that is the whole claim
+       of stacking. */
     const char *p = strstr (svg, "<rect x=\"");
     p = strstr (p + 1, "<rect x=\"");
     double y0 = atof (strstr (p, "y=\"") + 3);
@@ -149,9 +154,9 @@ int main (void)
     for (int i = 0; i < 4; i++) q = strstr (q + 1, "<rect x=\"");
     double y1 = atof (strstr (q, "y=\"") + 3);
     double h1 = atof (strstr (q, "height=\"") + 8);
-    /* the tolerance is the DOCUMENT's, not the arithmetic's: every
+    /* The tolerance is the DOCUMENT's, not the arithmetic's.  Every
        coordinate is printed through the oracle's %.4g, so two edges
-       that meet exactly are written 296.4 and 296.47 */
+       that meet exactly are written 296.4 and 296.47. */
     ok ("a stack's second bar ends where the first begins",
         y1 + h1 > y0 - 0.2 && y1 + h1 < y0 + 0.2);
     ok ("the stacked bars have height", h0 > 1.0 && h1 > 1.0);
@@ -192,10 +197,10 @@ int main (void)
     svg = flat (Plot_Render ( sl ("log", t2), sl ("x", t3),
                              sl ("y", t4), &err), &n);
     ok ("a log axis renders", !err.exc && n > 0);
-    /* every decade the data spans is ticked, and each is labelled
-       with the VALUE.  (Not "no 3 anywhere": the category axis has a
-       bar at 3, which is what the first version of this check
-       tripped over.) */
+    /* Every decade the data spans is ticked, and each is labelled
+       with the VALUE.  The check is not "no 3 anywhere": the
+       category axis has a bar at 3, which is what the first version
+       of this check tripped over. */
     ok ("every decade is ticked, labelled by value",
         count (svg, n, ">1</text>") >= 1 && count (svg, n, ">10</text>") >= 1 &&
         count (svg, n, ">100</text>") >= 1 && count (svg, n, ">1000</text>") >= 1);

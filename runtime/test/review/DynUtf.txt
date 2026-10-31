@@ -2,7 +2,7 @@ REVIEW DynUtf -- 14 procedures with a body, 8 of them functions; 12 headings in 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               8
-  assignments                                    30
+  assignments                                    29
   arguments                                      47
   RETURN values                                  10
   operands of a comparison or an operator        50
@@ -39,4 +39,4 @@ COUNTED -- how much there was to check
   NEW in the frame                                0
   NEW in a named pool                             4
   calls of a STR form with a UTF twin             0
-  STR subscripts, writes and LEN                  1   index s[0]
+  STR subscripts, writes and LEN                  0

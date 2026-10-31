@@ -203,7 +203,7 @@ L_ret: ;
   return;
 }
 
-void DynUtf_AppendStr (DynUtf_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err)
+void DynUtf_AppendStr (DynUtf_DString * *d, m9_pool *d_pool, m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -211,7 +211,7 @@ void DynUtf_AppendStr (DynUtf_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_st
   err->res = &m9frame;
   uint32_t c = 0; (void) c;
   { __typeof__(s) m9t1s = s;
-  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; m9t1i++) { c = m9t1s.p[m9t1i];
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     DynUtf_AppendChar (d, d_pool, c, err);
     if (err->exc) goto L_ret;
   } }
@@ -243,7 +243,7 @@ m9_sl_UTF8 DynUtf_View (DynUtf_DString * d, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = m9res;
+  err->res = &m9frame;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = m9_utf_from_bytes (err->res, ({ __auto_type m9t3 = d->buf; int64_t m9t3a = INT64_C(0), m9t3n = d->len; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; }), err);
@@ -263,7 +263,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
-  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -273,7 +273,7 @@ m9_sl_UTF8 DynUtf_ViewIn (m9_pool *pool, DynUtf_DString * d, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = m9res;
+  err->res = &m9frame;
   m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
   m9ret = m9_utf_from_bytes (&((*pool)), ({ __auto_type m9t3 = d->buf; int64_t m9t3a = INT64_C(0), m9t3n = d->len; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; }), err);
@@ -293,7 +293,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
-  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -412,7 +412,7 @@ m9_sl_UTF8 DynUtf_Chars (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = m9res;
+  err->res = &m9frame;
   m9_sl_UTF8 m9ret = {0};
   DynUtf_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -441,7 +441,7 @@ m9_sl_UTF8 DynUtf_Chars (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

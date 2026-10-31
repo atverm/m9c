@@ -1,6 +1,6 @@
 MODULE R5OwnFieldCopyElem ;
-(* R5OwnFieldCopy with an ELEMENT: `r := a[0] ; Eat (a[0]) ; r.v'
-   (2026-10-28) -- accepted by 0.25.1, a heap-use-after-free. *)
+(* This is R5OwnFieldCopy with an ELEMENT: `r := a[0] ; Eat (a[0]) ;
+   r.v' (2026-10-28).  0.25.1 accepted it, a heap-use-after-free. *)
 IMPORT Io, Fmt ;
 TYPE
   T = RECORD v : I64 END ;

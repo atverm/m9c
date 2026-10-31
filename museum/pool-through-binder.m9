@@ -1,16 +1,16 @@
 (* EXPECT-ERROR: is bound from the value parameter root *)
-(* Observed 2026-10-04 building exported variables, understood
-   2026-10-10.  The checker's CheckFile took the file's root BY VALUE,
-   bound u to each unit (`IF root.kids[i] IS SOME u'), and handed u to
-   a walk taking `VAR n: PTR Node', which rewrote a name with
-   `NEW (n, CHAR, ...)' -- in n's pool, the hidden one a VAR pointer
+(* This was observed 2026-10-04 building exported variables, and
+   understood 2026-10-10.  The checker's CheckFile took the file's root
+   BY VALUE and bound u to each unit (`IF root.kids[i] IS SOME u').  It
+   handed u to a walk taking `VAR n: PTR Node', which rewrote a name
+   with `NEW (n, CHAR, ...)' in n's pool, the hidden one a VAR pointer
    brings.  A binder's pool is its origin's, and the origin was a value
-   parameter's component, whose pool nobody named: the generator fell
-   back to the calling frame, the name was freed when CheckFile
-   returned, and the compiler read `unknown name: const voi' where a
-   name had been.  The checker refused a value parameter's component
-   as such a root, but not a binder on one.  It does now; the walk's
-   holder takes the root VAR, so the pool comes with it. *)
+   parameter's component, whose pool nobody named.  The generator fell
+   back to the calling frame, and the name was freed when CheckFile
+   returned.  The compiler read `unknown name: const voi' where a name
+   had been.  The checker refused a value parameter's component as such
+   a root, but not a binder on one.  It does now; the walk's holder
+   takes the root VAR, so the pool comes with it. *)
 MODULE PoolThroughBinder ;
 
 TYPE

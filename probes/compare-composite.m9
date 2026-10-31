@@ -1,6 +1,6 @@
 (* EXPECT: no '=' between two values of type ARRAY 3 OF I64 *)
-(* and what must stay legal, after it: a CHAR against a one-character
-   literal, two enumeration values, two numbers *)
+(* The forms after it must stay legal: a CHAR against a one-character
+   literal, two enumeration values, two numbers. *)
 MODULE m ;
 TYPE Colour = (Red, Green) ;
 VAR

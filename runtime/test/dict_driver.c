@@ -1,9 +1,9 @@
-/* dict_driver.c -- Dict.m9 through the generator, exercised from C.
-   Four design decisions get tested, one per claim: the value is a
-   VARIANT so heterogeneous tables need no second module, iteration
-   is insertion-ordered across growth and rehash, keys are BORROWED
-   (a mutated source shows through the table), and absence is an
-   exception rather than a sentinel -- because with a variant value
+/* dict_driver.c exercises Dict.m9 through the generator, from C.
+   Four design decisions get tested, one per claim.  The value is a
+   VARIANT, so heterogeneous tables need no second module.  Iteration
+   is insertion-ordered across growth and rehash.  Keys are BORROWED
+   (a mutated source shows through the table).  Absence is an
+   exception rather than a sentinel, because with a variant value
    there is no spare bit pattern to reserve for "missing".          */
 #include <stdio.h>
 #include <string.h>
@@ -17,34 +17,33 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-/* A CHAR slice over a C string.  Dict BORROWS keys, so every key
+/* S copies a C string's octets into an arena.  A C literal is UTF-8
+   already, so no octet is widened.  Dict BORROWS keys, so every key
    needs storage that outlives the table: this bumps through one
    arena and never recycles.  An earlier version of this driver
    rotated 64 buffers and watched the first keys rot out from under
-   the table -- the contract doing exactly what it says.            */
-static uint32_t arena[64 * 1024];
+   the table.  The contract did exactly what it says.               */
+static uint8_t arena[64 * 1024];
 static size_t used = 0;
 
-static m9_sl_CHAR S (const char *s)
-{
-  size_t i, n = strlen (s);
-  uint32_t *p = arena + used;
-  used += n;
-  for (i = 0; i < n; i++) p[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ p, (int64_t) n };
-}
-
-static int slice_is (m9_sl_CHAR a, const char *s)
+static m9_sl_UTF8 S (const char *s)
 {
   size_t n = strlen (s);
-  int64_t i;
-  if (a.len != (int64_t) n) return 0;
-  for (i = 0; i < a.len; i++)
-    if (a.p[i] != (uint32_t) (unsigned char) s[i]) return 0;
-  return 1;
+  uint8_t *p = arena + used;
+  used += n;
+  memcpy (p, s, n);
+  return (m9_sl_UTF8){ p, (int64_t) n };
 }
 
-/* the variant constructors, as M9 writes Dict.Value.Int (n) */
+static int slice_is (m9_sl_UTF8 a, const char *s)
+{
+  size_t n = strlen (s);
+  if (a.len != (int64_t) n) return 0;
+  return n == 0 || memcmp (a.p, s, n) == 0;
+}
+
+/* These are the variant constructors, as M9 writes
+   Dict.Value.Int (n). */
 static Dict_Value VInt (int64_t n)
 { Dict_Value v; v.tag = Dict_Value_Int; v.u.Int.i = n; return v; }
 static Dict_Value VStr (const char *s)
@@ -68,9 +67,9 @@ int main (void)
   int64_t i;
   char name[32];
 
-  /* the frame form: a C caller has no frame, so err.res says where
-     New builds the head; Put then grows it in the pool named beside
-     the table (rule 2 of docs/pool-elision-plan.md) */
+  /* This is the frame form.  A C caller has no frame, so err.res says
+     where New builds the head.  Put then grows it in the pool named
+     beside the table (rule 2 of docs/pool-elision-plan.md). */
   err.res = &pool;
   d = Dict_New (&err);
   ok ("new is empty", Dict_Count (d, &err) == 0);
@@ -87,8 +86,9 @@ int main (void)
   ok ("has known", Dict_Has (d, S ("beta"), &err));
   ok ("has unknown", !Dict_Has (d, S ("delta"), &err));
 
-  /* one table, mixed values: the whole reason the value is a variant.
-     A config or a database row is heterogeneous by nature. */
+  /* One table holds mixed values: the whole reason the value is a
+     variant.  A config or a database row is heterogeneous by
+     nature. */
   Dict_Put (&d, &pool,S ("host"), VStr ("localhost"), &err);
   Dict_Put (&d, &pool,S ("ratio"), VReal (0.25), &err);
   Dict_Put (&d, &pool,S ("debug"), VBool (true), &err);
@@ -113,22 +113,22 @@ int main (void)
   ok ("replace keeps position", slice_is (Dict_KeyAt (d, 0, &err), "alpha"));
   Dict_Put (&d, &pool,S ("alpha"), VInt (11), &err);
 
-  /* every bit pattern is a value some caller meant to store, so
-     absence cannot be a sentinel -- it is an exception carrying the
-     key that was missing */
+  /* Every bit pattern is a value some caller meant to store, so
+     absence cannot be a sentinel.  It is an exception carrying the
+     key that was missing. */
   ok ("find present", Dict_Find (d, S ("beta"), &v, &pool, &err) && is_int (v, 20));
   ok ("find absent is false", !Dict_Find (d, S ("nope"), &v, &pool, &err));
   ok ("find never raises", err.exc == NULL);
   Dict_Get (d, S ("nope"), &err);
   ok ("get absent raises", err.exc == &Dict_NotFound);
   {
-    const uint32_t *kp = (const uint32_t *) err.s[0].p;
+    const uint8_t *kp = (const uint8_t *) err.s[0].p;
     ok ("payload is the key",
         err.s[0].len == 4 && kp[0] == 'n' && kp[3] == 'e');
   }
   err.exc = NULL;
 
-  /* growth: 200 keys forces several rehashes of both arrays */
+  /* Growth: 200 keys force several rehashes of both arrays. */
   for (i = 0; i < 200; i++)
     {
       snprintf (name, sizeof name, "k%lld", (long long) i);
@@ -147,7 +147,8 @@ int main (void)
   v = Dict_Get (d, S ("host"), &err);
   ok ("string survives rehash", slice_is (v.u.Str.s, "localhost"));
 
-  /* insertion order survives every rehash -- the whole point */
+  /* Insertion order survives every rehash.  That is the whole
+     point. */
   ok ("order[0]", slice_is (Dict_KeyAt (d, 0, &err), "alpha"));
   ok ("order[1]", slice_is (Dict_KeyAt (d, 1, &err), "beta"));
   ok ("order[2]", slice_is (Dict_KeyAt (d, 2, &err), "gamma"));
@@ -162,23 +163,23 @@ int main (void)
   ok ("IndexError payload", err.i[0] == 207 && err.i[1] == 207);
   err.exc = NULL;
 
-  /* keys are borrowed, and that is a documented promise rather than
-     an implementation detail: mutate the caller's storage and the
-     table shows the change, because it never took a copy */
+  /* Keys are borrowed, and that is a documented promise rather than
+     an implementation detail.  Mutate the caller's storage and the
+     table shows the change, because it never took a copy. */
   {
-    m9_sl_CHAR k = S ("mutable");
+    m9_sl_UTF8 k = S ("mutable");
     Dict_Put (&d, &pool,k, VInt (99), &err);
     ok ("borrowed key found before",
         is_int (Dict_Get (d, S ("mutable"), &err), 99));
-    ((uint32_t *) k.p)[0] = 'M';
+    k.p[0] = 'M';
     ok ("table sees the mutation",
         slice_is (Dict_KeyAt (d, Dict_Count (d, &err) - 1, &err), "Mutable"));
     ok ("old spelling no longer found", !Dict_Has (d, S ("mutable"), &err));
     ok ("borrow checks raised nothing", err.exc == NULL);
   }
 
-  /* the hash is pinned, not just its effects: a polynomial mod a
-     prime, so the value is reproducible by hand */
+  /* The hash is pinned, not just its effects.  It is a polynomial mod
+     a prime, so the value is reproducible by hand. */
   {
     int64_t h = 0; const char *s = "alpha"; size_t k;
     for (k = 0; k < strlen (s); k++)

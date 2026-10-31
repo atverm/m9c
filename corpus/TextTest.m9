@@ -1,10 +1,11 @@
 MODULE TextTest ;
 
-(* Text, tested in M9 (runtime/test/m9test.sh runs every *Test.m9
-   beside its module).  The same ground as runtime/test/text_driver.c
-   covers from C, and it stays while that driver does: the point of
-   this file is that a change to Text's headings is a compile error
-   HERE, where the C driver would have to be told.
+(* TextTest tests Text in M9 (runtime/test/m9test.sh runs every
+   *Test.m9 beside its module).  It covers the ground that
+   runtime/test/text_driver.c covers from C, and that driver stays
+   while it does.  This file exists so that a change to Text's
+   headings is a compile error HERE, where the C driver would have to
+   be told.
 
    It found one before it ran: Join took its pieces by value, so a
    constant table could not be joined (read-only storage is lent only
@@ -29,12 +30,12 @@ VAR
   kept, joined : STR ;
   src : ARRAY 3 OF CHAR ;
 
-(* Upper and Lower at EVERY code point against Python's str.upper
-   and str.lower of that one character: runtime/test/gold/
-   TextCase.gold (tools/textucd.py --gold) lists each code point whose
-   case is not itself, how long its answer is and the answer; every
-   other code point must come back as itself.  Answers the number of
-   code points that disagree. *)
+(* CaseSweep holds Upper and Lower at EVERY code point against
+   Python's str.upper and str.lower of that one character.
+   runtime/test/gold/TextCase.gold (tools/textucd.py --gold) lists each
+   code point whose case is not itself, how long its answer is and the
+   answer.  Every other code point must come back as itself.
+   CaseSweep answers the number of code points that disagree. *)
 PROCEDURE CaseSweep (up: BOOL) : I64 =
 VAR
   gold, tag, got, want : STR ;
@@ -73,9 +74,9 @@ EXCEPT
 | IndexError : RETURN -2
 END CaseSweep ;
 
-(* AllIn against fnmatch, character by character: Text.gold's allin
-   lines (tools/textgold.py) -- random bracket sets, words from their
-   own alphabet, the empty word *)
+(* AllIns holds AllIn against fnmatch, character by character, on
+   Text.gold's allin lines (tools/textgold.py): random bracket sets,
+   words from their own alphabet, the empty word. *)
 PROCEDURE AllIns () =
 VAR
   gold : STR ;
@@ -102,9 +103,10 @@ BEGIN
   RETURN n
 END Agree ;
 
-(* Replace against Python's str.replace, Match against its
-   fnmatch.fnmatchcase: runtime/test/gold/Text.gold, written by
-   tools/textgold.py.  A string there is a word and '' the empty one. *)
+(* Replaces holds Replace against Python's str.replace, and Match
+   against its fnmatch.fnmatchcase, on runtime/test/gold/Text.gold,
+   written by tools/textgold.py.  A string there is a word and '' the
+   empty one. *)
 
 PROCEDURE Replaces () =
 VAR
@@ -170,27 +172,29 @@ BEGIN
 END HexVal ;
 
 PROCEDURE Octets (RO hex: STR) : SLICE OF BYTE RAISES ValueRange =
-  (* a golden hex word as octets (GoldStrs gives '' for none) *)
+  (* Octets answers a golden hex word as octets (GoldStrs gives ''
+     for none). *)
 VAR
   b : SLICE OF BYTE ;
   i : I64 ;
 BEGIN
-  b := NEW (BYTE, LEN (hex) DIV 2) ;
+  b := NEW (BYTE, Text.BLen (hex) DIV 2) ;
   FOR i := 0 TO LEN (b) - 1 DO
-    b[i] := BYTE (HexVal (hex[2 * i]) * 16 + HexVal (hex[2 * i + 1]))
+    b[i] := BYTE (HexVal (Text.BChar (hex, 2 * i)) * 16 + HexVal (Text.BChar (hex, 2 * i + 1)))
   END ;
   RETURN b
 END Octets ;
 
 PROCEDURE Word (RO w: STR) : STR =
-  (* a golden word as text: %0A and %20 the two characters the
-     format cannot hold *)
+  (* Word answers a golden word as text.  %0A and %20 stand for the
+     two characters the format cannot hold. *)
 BEGIN
   RETURN Text.Replace (Text.Replace (w, '%0A', '' + 0AC), '%20', ' ')
 END Word ;
 
 PROCEDURE Decoded (RO s: STR ; VAR got: STR) : BOOL RAISES ValueRange =
-  (* FromBase64's answer as hex in got, or FALSE for a refusal *)
+  (* Decoded puts FromBase64's answer as hex in got, or answers FALSE
+     for a refusal. *)
 VAR
   scratch : POOL ;
   b : SLICE OF BYTE ;
@@ -207,8 +211,8 @@ BEGIN
   digits := '0123456789abcdef' ;
   d := DynStr.New (scratch) ;
   FOR i := 0 TO LEN (b) - 1 DO
-    DynStr.AppendChar (d, digits[I64 (b[i]) DIV 16]) ;
-    DynStr.AppendChar (d, digits[I64 (b[i]) MOD 16])
+    DynStr.AppendChar (d, Text.BChar (digits, I64 (b[i]) DIV 16)) ;
+    DynStr.AppendChar (d, Text.BChar (digits, I64 (b[i]) MOD 16))
   END ;
   got := DynStr.View (d) ;
   RETURN TRUE
@@ -264,8 +268,9 @@ EXCEPT
 END UrlRefused ;
 
 PROCEDURE Base64Urls () RAISES ValueRange =
-  (* base64url without padding: Python's urlsafe_b64encode (b).rstrip
-     (b'=') on the four tail lengths and the alphabet's two letters *)
+  (* Base64Urls holds base64url without padding to Python's
+     urlsafe_b64encode (b).rstrip (b'=') on the four tail lengths and
+     the alphabet's two letters. *)
 VAR b : SLICE OF BYTE ;
 BEGIN
   b := NEW (BYTE, 3) ;
@@ -284,8 +289,8 @@ BEGIN
 END Base64Urls ;
 
 PROCEDURE SameDecode (RO s: STR) : BOOL =
-  (* FromBase64Utf and FromBase64 agree on s: both refuse, or the
-     same octets *)
+  (* SameDecode asks whether FromBase64Utf and FromBase64 agree on s:
+     both refuse, or both answer the same octets. *)
 VAR
   b, c : SLICE OF BYTE ;
   rb, rc : BOOL ;
@@ -312,9 +317,9 @@ EXCEPT
 END UrlRefusedUtf ;
 
 PROCEDURE UtfTwins () RAISES ValueRange =
-  (* stage 4a's first eleven twins (2026-10-24): each held to its STR
-     form on the goldens, and to fnmatch's str behaviour where a
-     character is more than one octet *)
+  (* UtfTwins holds stage 4a's first eleven twins (2026-10-24) each to
+     its STR form on the goldens, and to fnmatch's str behaviour where
+     a character is more than one octet. *)
 VAR
   gold : STR ;
   bytes, text, dec, pat, name : SLICE OF STR ;
@@ -357,7 +362,8 @@ BEGIN
     IF Text.MatchUtf (UTF (pat[i]), UTF (name[i])) = want[i] THEN agree := agree + 1 END
   END ;
   Check.EqI64 (t, 'MatchUtf agreeing with fnmatch on the goldens', agree, LEN (pat)) ;
-  (* and over characters wider than an octet, fnmatchcase on str *)
+  (* These hold MatchUtf over characters wider than an octet to
+     fnmatchcase on str. *)
   Check.That (t, 'MatchUtf ? takes a whole character', Text.MatchUtf ('Gr?ße', 'Grüße')) ;
   Check.That (t, 'MatchUtf ? is not one octet', NOT Text.MatchUtf ('Gr??ße', 'Grüße')) ;
   Check.That (t, 'MatchUtf a range of code points', Text.MatchUtf ('Gr[ä-ü]ße', 'Grüße')) ;
@@ -387,8 +393,8 @@ BEGIN
 END UtfTwins ;
 
 PROCEDURE Compares () =
-  (* Text.Compare: Sort.Strs's order, by code point, the shorter
-     first; the values Python's (a > b) - (a < b) gives *)
+  (* Text.Compare gives Sort.Strs's order, by code point, the shorter
+     first.  It answers the values Python's (a > b) - (a < b) gives. *)
 BEGIN
   Check.EqI64 (t, 'Compare equal', Text.Compare ('abc', 'abc'), 0) ;
   Check.EqI64 (t, 'Compare a < b', Text.Compare ('a', 'b'), -1) ;
@@ -403,10 +409,10 @@ BEGIN
 END Compares ;
 
 
-(* UTF (docs/utf8-plan.md, stage 1): the octets, the code points and
-   the validation held to Python's str.encode, len and its strict
-   bytes.decode ('Grüße ✓ 𝄞' is 16 octets and 9 code points; each
-   refused sequence is refused at offset 0 by Python too) *)
+(* These hold UTF (docs/utf8-plan.md, stage 1): the octets, the code
+   points and the validation, to Python's str.encode, len and its
+   strict bytes.decode.  'Grüße ✓ 𝄞' is 16 octets and 9 code points.
+   Python refuses each refused sequence at offset 0 too. *)
 PROCEDURE Bad (VAR o: SLICE OF BYTE ; RO label: STR) =
 VAR u : UTF ;
 BEGIN
@@ -460,12 +466,12 @@ BEGIN
   w := w + ' ' + 2713C + ' ' + 'x' ;
   Check.EqStr (t, 'UTF + literal + CHAR', Text.FromUtf (w), 'Grüße ✓ x') ;
   Check.EqI64 (t, 'and its octets', Text.BLen (w), 13) ;
-  (* Compare's order, which for UTF-8 is the octets' *)
+  (* Compare's order is the octets' for UTF-8. *)
   Check.EqI64 (t, 'CompareUtf a < ab', Text.CompareUtf ('a', 'ab'), -1) ;
   Check.EqI64 (t, 'CompareUtf z < e-acute', Text.CompareUtf ('z', 'é'), -1) ;
   Check.EqI64 (t, 'CompareUtf G clef > e-acute', Text.CompareUtf ('𝄞', 'é'), 1) ;
   Check.EqI64 (t, 'CompareUtf equal', Text.CompareUtf ('é', 'é'), 0) ;
-  (* validation, held to Python's strict decoder *)
+  (* These hold validation to Python's strict decoder. *)
   o := Octs (226, 156, 147, 0, 3) ;
   BEGIN
     v := Text.FromUtf8 (o) ;
@@ -503,9 +509,9 @@ BEGIN
   Check.That (t, 'Text.Eq of two UTF is EqUtf', Text.Eq (u, Text.ToUtf ('Grüße ✓ 𝄞'))) ;
   Check.That (t, 'Text.Eq of a UTF and a literal', NOT Text.Eq (u, 'Grüße')) ;
   Check.EqI64 (t, 'Text.Compare of two UTF is CompareUtf', Text.Compare (v, u), 1) ;
-  (* stage 2: the UTF twins, reached by the STR forms' names (twins by
-     type), held to Python's bytes.find/rfind/count, str.split, join,
-     replace, strip and upper *)
+  (* Stage 2: the UTF twins are reached by the STR forms' names (twins
+     by type).  These hold them to Python's bytes.find/rfind/count,
+     str.split, join, replace, strip and upper. *)
   w := 'Grüße ✓ ✓ x' ;
   Check.EqI64 (t, 'Find of a UTF answers a byte offset', Text.Find (w, '✓'), 8) ;
   Check.EqI64 (t, 'Find of what is not there', Text.Find (w, 'zz'), -1) ;
@@ -538,8 +544,9 @@ BEGIN
   w := '' ;
   FOR i := 1 TO 100000 DO w := w + 'abcdefghij' END ;
   Check.EqI64 (t, 'a 1 MB UTF built by + in a loop', Text.BLen (w), 1000000) ;
-  (* ... and only exactly there: a prefix view of the top string is not
-     extended over the rest of it (the STR form's 2026-10-05 defect) *)
+  (* ... and + does it only exactly there.  A prefix view of the top
+     string is not extended over the rest of it (the STR form's
+     2026-10-05 defect). *)
   v := UTF (Text.FromUtf ('2767')) ;
   w := SLICE (v, 0, 3) + '.' + SLICE (v, 3, 1) ;
   Check.That (t, 'a prefix view is not extended over its string', Text.Eq (w, '276.7')) ;
@@ -553,15 +560,16 @@ BEGIN
   END
 END Utfs ;
 
-(* the clusters of every line of Unicode's GraphemeBreakTest-16.0.0.txt
-   (tools/graphemeucd.py writes them into Grapheme.gold): NextGr's
-   breaks, in code points, against the file's; GrCount and the last
-   GrAt of each line against the same *)
+(* Graphemes reads the clusters of every line of Unicode's
+   GraphemeBreakTest-16.0.0.txt (tools/graphemeucd.py writes them into
+   Grapheme.gold).  It holds NextGr's breaks, in code points, against
+   the file's, and GrCount and the last GrAt of each line against the
+   same. *)
 PROCEDURE Graphemes () RAISES ValueRange =
 VAR
   gold : STR ;
   ncp, nend, cps, ends, got : SLICE OF I64 ;
-  s : STR ;
+  s : SLICE OF CHAR ;          (* a case's code points, by index *)
   u, g : UTF ;
   k, i, cp0, e0, at, n, bad, badCount, badLast, badAt : I64 ;
 BEGIN
@@ -685,9 +693,9 @@ BEGIN
   Check.EqStr (t, 'Lower of İ is i and a combining dot', Text.Lower ('İ'), 'i' + 0307C) ;
   Check.EqStr (t, 'Lower of a final Σ is σ: no context', Text.Lower ('ΟΔΟΣ'), 'οδοσ') ;
 
-  (* a copy that outlives what it was copied from *)
+  (* A copy outlives what it was copied from. *)
   src[0] := 'x' ; src[1] := 'y' ; src[2] := 'z' ;
-  kept := Text.Keep (pool, src) ;
+  kept := Text.Keep (pool, UTF (SLICE (src, 0, 3))) ;
   src[0] := '?' ;
   Check.EqStr (t, 'Keep is a copy', kept, 'xyz') ;
   Check.EqStr (t, 'Cat', Text.Cat (pool, 'ab', 'cd'), 'abcd') ;

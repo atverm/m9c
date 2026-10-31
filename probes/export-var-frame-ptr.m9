@@ -1,10 +1,10 @@
 (* EXPECT: a frame allocation dies with this frame; it cannot be stored in module variable Lib.box *)
-(* another module's variable is a module variable: a FRAME value from
-   a procedure may not reach it (decision 18) -- it would dangle in Lib
-   once the procedure returned.  What must NOT be refused comes first:
-   a write into the exporter's own storage, and a frame NEW stored by
-   the module BODY, whose frame lives as long as the program.  Then
-   the same NEW inside a procedure. *)
+(* Another module's variable is a module variable.  A FRAME value from a
+   procedure may not reach it (decision 18): it would dangle in Lib once
+   the procedure returned.  The forms that must NOT be refused come
+   first: a write into the exporter's own storage, and a frame NEW
+   stored by the module BODY, whose frame lives as long as the program.
+   Then comes the same NEW inside a procedure. *)
 STATEFUL DEFINITION MODULE Lib ;
 TYPE Box = RECORD n : I64 END ;
 VAR

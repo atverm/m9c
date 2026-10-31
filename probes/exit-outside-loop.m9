@@ -1,8 +1,8 @@
 (* EXPECT: EXIT outside a loop: EXIT leaves the innermost LOOP, WHILE or FOR (par 5) *)
-(* EXIT leaves the innermost LOOP, WHILE or FOR -- from a CASE arm
-   too since 2026-10-09 -- and outside every loop it has nothing to
+(* EXIT leaves the innermost LOOP, WHILE or FOR, and since 2026-10-09 it
+   does so from a CASE arm too.  Outside every loop it has nothing to
    leave (the generator wrote a `break' C refused).  The legal forms
-   first. *)
+   come first. *)
 MODULE m ;
 VAR i, k : I64 ;
 BEGIN

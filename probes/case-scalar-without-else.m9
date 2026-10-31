@@ -1,9 +1,9 @@
 (* EXPECT: a CASE over I64 needs an ELSE: a value no label names would have nowhere to go (par 8) *)
-(* A CASE over a CHAR or an integer names some of its values; one no
-   label names must have somewhere to go.  The generator refused it
+(* A CASE over a CHAR or an integer names some of its values.  A value
+   no label names must have somewhere to go.  The generator refused it
    ("unmatched-label semantics undecided") and the checker passed it;
    since 2026-10-09 the checker says so.  An enumeration or CASE RECORD
-   is held total instead.  The legal forms first. *)
+   is held total instead.  The legal forms come first. *)
 MODULE m ;
 TYPE
   Colour = (Red, Green) ;

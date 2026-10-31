@@ -1,16 +1,16 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE ZarrStore ;
 
-(* The day's zarr reader, restated as an M9 contract.  Each comment
-   names the 2026-08-20 bug the construct makes uncompilable.
-   HTTP-backed zarr v2 store, as the M2 stack's zarrhttp was: C-order,
-   little-endian numeric dtypes, blosc or raw chunks, missing chunk
-   means fill_value.  Since 2026-10-03 a store on the LOCAL DISK too:
-   Open takes `file:///data/co2.zarr`, or a bare path; a key is then a
-   file under that directory, and one that is not there is a missing
-   chunk, as a 404 is.  Held to zarr-python's reading of the two
-   stores checked in under docs/tutorial/examples/data by
-   corpus/ZarrStoreTest.m9.                                          *)
+(* ZarrStore restates the day's zarr reader as an M9 contract.  Each
+   comment names the 2026-08-20 bug the construct makes uncompilable.
+   It reads an HTTP-backed zarr v2 store, as the M2 stack's zarrhttp
+   did: C-order, little-endian numeric dtypes, blosc or raw chunks,
+   and a missing chunk means fill_value.  Since 2026-10-03 it reads a
+   store on the LOCAL DISK too: Open takes `file:///data/co2.zarr`, or
+   a bare path.  A key is then a file under that directory, and one
+   that is not there is a missing chunk, as a 404 is.
+   corpus/ZarrStoreTest.m9 holds it to zarr-python's reading of the
+   two stores checked in under docs/tutorial/examples/data.          *)
 
 TYPE
   Store ;                                  (* opaque *)
@@ -28,13 +28,14 @@ EXCEPTION
 
 PROCEDURE Open (RO url: STR) : SHARED PTR Store
   RAISES StoreError, FormatError ;
-  (* `http://host[:port]/root`, `https://...`, `file://PATH` or a
-     PATH with no scheme at all.  Nothing is read at Open: a store
-     that is not there is found out by the first OpenArray.
-     SHARED because every Array retains its Store -- retention is
-     part of the contract, and plain borrows refuse it (par 4.2).
-     FormatError is in the signature: the caller that ignored a bad
-     url today cannot exist -- unhandled RAISES does not compile.    *)
+  (* Open takes `http://host[:port]/root`, `https://...`,
+     `file://PATH` or a PATH with no scheme at all.  Nothing is read
+     at Open: a store that is not there is found out by the first
+     OpenArray.  The Store is SHARED because every Array retains it:
+     retention is part of the contract, and plain borrows refuse it
+     (par 4.2).  FormatError is in the signature: the caller that
+     ignored a bad url today cannot exist, because unhandled RAISES
+     does not compile.                                               *)
 
 PROCEDURE OpenArray (s: SHARED PTR Store ; RO path: STR)
   : PTR Array
@@ -58,33 +59,49 @@ PROCEDURE GetI64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : I64
 PROCEDURE ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
   : RO SLICE OF BYTE
   RAISES StoreError ;
-  (* READONLY slice into the cache: the caller can read at native
-     speed but cannot retain it past the next call or mutate it --
-     the FPC cache-aliasing hazard is a compile error, and the
-     zero-copy path stays zero-copy.                                 *)
+  (* ReadChunk answers a READONLY slice into the cache: the caller can
+     read at native speed but cannot retain it past the next call or
+     mutate it.  The FPC cache-aliasing hazard is a compile error, and
+     the zero-copy path stays zero-copy.                             *)
 
 PROCEDURE Rank (a: PTR Array) : I64 ;
 PROCEDURE Extent (a: PTR Array ; axis: I64) : I64 RAISES IndexError ;
 PROCEDURE HasFill (a: PTR Array) : BOOL ;
 PROCEDURE Fill (a: PTR Array) : F64 ;
-  (* what THIS array calls a missing value, as a number -- the float
-     fill for a float dtype, the integer one widened for an integer
-     dtype.  A caller comparing two copies of a dataset has to ask
-     per array and not per file: in ICOS's FLUXNET store the floats
-     fill with 9.969e36 and the quality flags are |u1 filling with
-     255, and a reader that assumes either one reports 173,899
-     disagreements that are not there.  Measured, twice: the same
-     mistake first showed up against the NetCDF copy.               *)
-  (* the shape, which the caller could not ask for until now: every
-     existing caller hardcoded the geometry it expected, which is
-     fine for a store you wrote and useless for one you did not.
-     Found by trying to walk a public store whose 2202 arrays are not
-     all on the same time axis.                                     *)
+  (* Fill answers what THIS array calls a missing value, as a number:
+     the float fill for a float dtype, the integer one widened for an
+     integer dtype.  A caller comparing two copies of a dataset has to
+     ask per array and not per file: in ICOS's FLUXNET store the floats
+     fill with 9.969e36 and the quality flags are |u1 filling with 255,
+     and a reader that assumes either one reports 173,899 disagreements
+     that are not there.  This was measured twice: the same mistake
+     first showed up against the NetCDF copy. *)
+  (* Rank and Extent answer the shape, which the caller could not ask
+     for until now.  Every existing caller hardcoded the geometry it
+     expected, which is fine for a store you wrote and useless for one
+     you did not.  An attempt to walk a public store whose 2202 arrays
+     are not all on the same time axis found the gap.               *)
 
+PROCEDURE IsStr (a: PTR Array) : BOOL ;
+  (* IsStr answers TRUE for a STRING array: dtype |O with the one
+     filter vlen-utf8 (zarr's numcodecs.VLenUTF8).  ReadStrs reads it.
+     GetF64, GetI64 and ReadChunk refuse it by name.  OpenArray refused
+     bigask's icos-fluxnet station axis as "numeric LE only" until
+     2026-10-30.                                                     *)
+PROCEDURE ReadStrs (VAR pool: POOL ; VAR a: PTR Array ;
+                    RO coords: SLICE OF I64) : SLICE OF STR
+  RAISES StoreError, FormatError ;
+  (* ReadStrs answers every item one chunk of a string array holds,
+     each decoded from UTF-8 into pool.  An edge chunk holds the full
+     chunk length; zarr pads it with fill_value.  Extent says how many
+     items belong to the array.  A missing chunk answers fill_value for
+     every item.  Nothing is cached: a string axis is read once.  On
+     the wire, after the compressor, a chunk is a 4-byte count; each
+     item is then a 4-byte length and its UTF-8 bytes, little-endian. *)
 PROCEDURE CloseArray (OWN a: PTR Array) ;
 PROCEDURE Close (OWN s: SHARED PTR Store) ;
-  (* OWN: closing consumes the handle; a use after Close is a
-     compile error, not a crash.                                     *)
+  (* Close takes OWN: it consumes the handle, and a use after Close
+     is a compile error, not a crash.                                *)
 
 END ZarrStore.
 
@@ -98,8 +115,8 @@ PROCEDURE DecompressCtx = "blosc_decompress_ctx"
 PROCEDURE Decompress = "blosc_decompress"
   (src: C.ConstPtr ; dest: C.MutPtr ; destsize: C.SizeT)
   : C.Int  [SERIAL] ;
-  (* SERIAL: calling this from parbench's Worker threads is a type
-     error; the compiler forces _ctx or a MONITOR wrapper.
+  (* Decompress is SERIAL: a call from parbench's Worker threads is a
+     type error; the compiler forces _ctx or a MONITOR wrapper.
      [the blosc global-state trap, moved into the signature]         *)
 
 END cblosc.
@@ -107,10 +124,12 @@ END cblosc.
 
 UNSAFE IMPLEMENTATION MODULE ZarrStore ;
 
-(* UNSAFE for one reason: ADR at the blosc boundary.  Grep ADR.      *)
+(* The module is UNSAFE for one reason: ADR at the blosc boundary.
+   Grep ADR.                                                         *)
 
 FROM cblosc IMPORT DecompressCtx ;
 IMPORT Json ;
+IMPORT Text ;
 IMPORT Http ;
 IMPORT DynStr ;
 IMPORT Io ;
@@ -118,6 +137,7 @@ IMPORT Io ;
 CONST
   MaxRank = 8 ;
   MetaMax = 65536 ;
+  StrChunkMax = 268435456 ;       (* A string chunk holds this many bytes at most. *)
 
 TYPE
   Comp = CASE RECORD
@@ -135,6 +155,8 @@ TYPE
     fillI  : I64 ;
     fillB  : ARRAY 8 OF BYTE ;    (* fillI on the wire, see OpenArray *)
     hasFill : BOOL ;              (* present and not null *)
+    vlen   : BOOL ;               (* |O with vlen-utf8: IsStr *)
+    fillS  : STR ;                (* a string array's fill, in cache *)
   END ;
 
   Store = RECORD
@@ -164,22 +186,17 @@ TYPE
 
 PROCEDURE CopyChars (VAR pool: POOL ; RO s: STR)
   : STR =
-VAR
-  b : STR ;
-  i : I64 ;
 BEGIN
-  b := NEW (pool, CHAR, LEN (s)) ;
-  FOR i := 0 TO LEN (s) - 1 DO b[i] := s[i] END ;
-  RETURN b
+  RETURN UTF (pool, s)
 END CopyChars ;
 
 PROCEDURE StartsWith (RO s: STR ;
                       RO p: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (s) < LEN (p) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (p) - 1 DO
-    IF s[i] # p[i] THEN RETURN FALSE END
+  IF Text.BLen (s) < Text.BLen (p) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (p) - 1 DO
+    IF Text.BAt (s, i) # Text.BAt (p, i) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END StartsWith ;
@@ -200,8 +217,9 @@ BEGIN
   DynStr.AppendChar (d, '/') ;
   DynStr.Append (d, rel) ;
   IF st.local THEN
-    (* a file under the directory; one that is not there is what a
-       404 is to the HTTP store, and the callers read it the same *)
+    (* The key is a file under the directory.  One that is not there
+       is what a 404 is to the HTTP store, and the callers read it the
+       same. *)
     IF NOT Io.Exists (DynStr.View (d)) THEN RAISE HttpStatus (404) END ;
     buf := Io.ReadFileBytes (pool, DynStr.View (d)) ;
     IF LEN (buf) > maxLen THEN
@@ -235,11 +253,12 @@ BEGIN
   s := NEW (OWN, Store) ;
   s.local := NOT (StartsWith (url, 'https://') OR StartsWith (url, 'http://')) ;
   IF s.local THEN
-    (* a directory: file://PATH, or PATH; a trailing slash dropped *)
+    (* The store is a directory: file://PATH, or PATH; a trailing
+       slash is dropped. *)
     start := 0 ;
     IF StartsWith (url, 'file://') THEN start := 7 END ;
-    j := LEN (url) ;
-    WHILE j > start + 1 AND url[j - 1] = '/' DO j := j - 1 END ;
+    j := Text.BLen (url) ;
+    WHILE j > start + 1 AND Text.BIs (url, j - 1, '/') DO j := j - 1 END ;
     IF j = start THEN RAISE FormatError ('a store needs a path') END ;
     s.secure := FALSE ;
     s.host := '' ;
@@ -249,23 +268,23 @@ BEGIN
     s.secure := StartsWith (url, 'https://') ;
     IF s.secure THEN start := 8 ELSE start := 7 END ;
     j := start ;
-    WHILE j < LEN (url) AND url[j] # ':' AND url[j] # '/' DO
+    WHILE j < Text.BLen (url) AND NOT Text.BIs (url, j, ':') AND NOT Text.BIs (url, j, '/') DO
       j := j + 1
     END ;
     s.host := CopyChars (s.pool, SLICE (url, start, j - start)) ;
-    IF LEN (s.host) = 0 THEN RAISE FormatError ('url has no host') END ;
+    IF Text.BLen (s.host) = 0 THEN RAISE FormatError ('url has no host') END ;
     IF s.secure THEN s.port := 443 ELSE s.port := 80 END ;
-    IF j < LEN (url) THEN
-      IF url[j] = ':' THEN
+    IF j < Text.BLen (url) THEN
+      IF Text.BIs (url, j, ':') THEN
         j := j + 1 ;
         s.port := 0 ;
-        WHILE j < LEN (url) AND url[j] >= '0' AND url[j] <= '9' DO
-          s.port := s.port * 10 + ORD (url[j]) - 48 ;
+        WHILE j < Text.BLen (url) AND I64 (Text.BAt (url, j)) >= ORD ('0') AND I64 (Text.BAt (url, j)) <= ORD ('9') DO
+          s.port := s.port * 10 + I64 (Text.BAt (url, j)) - 48 ;
           j := j + 1
         END
       END
     END ;
-    s.root := CopyChars (s.pool, SLICE (url, j, LEN (url) - j))
+    s.root := CopyChars (s.pool, SLICE (url, j, Text.BLen (url) - j))
   END ;
   RETURN SHARED (s)
 END Open ;
@@ -303,18 +322,18 @@ BEGIN
   RETURN n
 END ReadDims ;
 
-(* An integer fill_value on the wire, little-endian, computed ONCE at
-   open.  Answers FALSE if the value does not fit the dtype it was
-   declared for -- a |u1 array with fill 300 is a broken store, and
-   saying so at open is the same contract as the NaN-into-an-integer
-   check beside it.
+(* IntFillBytes computes an integer fill_value on the wire,
+   little-endian, ONCE at open.  It answers FALSE if the value does
+   not fit the dtype it was declared for: a |u1 array with fill 300 is
+   a broken store, and a refusal at open is the same contract as the
+   NaN-into-an-integer check beside it.
 
-   Doing it here rather than in FillChunk is what keeps FillChunk
-   raise-free: it copies bytes, so nothing downstream of it grows a
-   ValueRange in its signature.
+   The work happens here rather than in FillChunk, and that keeps
+   FillChunk raise-free: it copies bytes, so nothing downstream of it
+   grows a ValueRange in its signature.
 
-   No bit operations, because M9 has none yet (a Bits module is
-   pre-registered).  `v MOD 256` normalised to 0..255 and then
+   It uses no bit operations, because M9 has none yet (a Bits module
+   is pre-registered).  `v MOD 256` normalised to 0..255 and then
    `(v - b) DIV 256` is exact whichever way MOD rounds negatives,
    including at MIN.                                               *)
 PROCEDURE IntFillBytes (v: I64 ; w: I64 ; signed: BOOL ;
@@ -332,8 +351,8 @@ BEGIN
     END
   END ;
   (* eight bytes needs no test: an I64 fill fits an eight-byte dtype,
-     and an unsigned fill above MAX I64 never got here -- Json.AsI64
-     raised ValueRange on it *)
+     and an unsigned fill above MAX I64 never got here, because
+     Json.AsI64 raised ValueRange on it. *)
   FOR i := 0 TO w - 1 DO
     b := v MOD 256 ;
     IF b < 0 THEN b := b + 256 END ;
@@ -343,7 +362,8 @@ BEGIN
   RETURN TRUE
 END IntFillBytes ;
 
-(* the sextet value of a base64 character, -1 for anything else *)
+(* Sextet answers the sextet value of a base64 character, -1 for
+   anything else. *)
 PROCEDURE Sextet (ch: CHAR) : I64 =
 BEGIN
   IF ch >= 'A' AND ch <= 'Z' THEN RETURN ORD (ch) - ORD ('A') END ;
@@ -354,19 +374,20 @@ BEGIN
   RETURN -1
 END Sextet ;
 
-(* a string fill_value encoding exactly one byte, base64: 'XX=='.
-   Answers FALSE for anything else -- a numeric fill, a longer
-   string -- so the caller falls through to the numeric path. *)
+(* S1Fill reads a string fill_value encoding exactly one byte,
+   base64: 'XX=='.  It answers FALSE for anything else (a numeric
+   fill, a longer string), so the caller falls through to the numeric
+   path. *)
 PROCEDURE S1Fill (fv: PTR Json.Node ; VAR b: I64) : BOOL =
 VAR
   t : STR ;
   hi, lo : I64 ;
 BEGIN
   t := Json.AsStr (fv) ;
-  IF LEN (t) # 4 THEN RETURN FALSE END ;
-  IF t[2] # '=' OR t[3] # '=' THEN RETURN FALSE END ;
-  hi := Sextet (t[0]) ;
-  lo := Sextet (t[1]) ;
+  IF Text.BLen (t) # 4 THEN RETURN FALSE END ;
+  IF NOT Text.BIs (t, 2, '=') OR NOT Text.BIs (t, 3, '=') THEN RETURN FALSE END ;
+  hi := Sextet (Text.BChar (t, 0)) ;
+  lo := Sextet (Text.BChar (t, 1)) ;
   IF hi < 0 OR lo < 0 THEN RETURN FALSE END ;
   b := hi * 4 + lo DIV 16 ;
   RETURN TRUE
@@ -385,11 +406,14 @@ VAR
   raw : SLICE OF BYTE ;
   root : PTR Json.Node ;      (* Parse answers into this frame *)
   crank, sfb : I64 ;
+  vf : BOOL ;
 BEGIN
   a := NEW (OWN, Array) ;
   a.st := s ;
   a.path := CopyChars (a.cache, path) ;
   a.last := NONE ;
+  a.meta.vlen := FALSE ;
+  a.meta.fillS := '' ;
 
   d := DynStr.New (scratch) ;
   DynStr.Append (d, path) ;
@@ -429,22 +453,29 @@ BEGIN
     ELSIF Json.StrIs (dt, '<u2') THEN a.meta.dt := Dtype.Int (2, FALSE)
     ELSIF Json.StrIs (dt, '|u1') THEN a.meta.dt := Dtype.Int (1, FALSE)
     ELSIF Json.StrIs (dt, '<M8[ns]') THEN
-      (* xarray's datetime64: an <i8 of epoch NANOSECONDS wearing a
-         unit.  Read as what it is -- GetI64 answers the nanoseconds
-         and the caller divides -- rather than refused for the name.
-         Only [ns] is accepted: another unit is a different scale and
-         guessing which would be how a time axis silently shifts.
+      (* This is xarray's datetime64: an <i8 of epoch NANOSECONDS
+         wearing a unit.  It is read as what it is (GetI64 answers the
+         nanoseconds and the caller divides) rather than refused for
+         the name.  Only [ns] is accepted: another unit is a different
+         scale, and a guess at which would be how a time axis silently
+         shifts.
          (ICOS obspack moved its time axis to this in 2026.) *)
       a.meta.dt := Dtype.Int (8, TRUE)
     ELSIF Json.StrIs (dt, '|S1') THEN
-      (* a ONE-BYTE string element read as its byte: GetI64 answers
+      (* A ONE-BYTE string element is read as its byte: GetI64 answers
          the character code, which is what a categorical flag is.
-         Demanded by ICOS ObsPack, whose qc_flag is |S1 ('U'/'O' =
-         usable, the ATC convention).  Wider S-dtypes stay refused:
-         a string column is not a number and pretending otherwise is
+         ICOS ObsPack demanded it: its qc_flag is |S1 ('U'/'O' =
+         usable, the ATC convention).  Wider S-dtypes stay refused: a
+         string column is not a number, and a pretence otherwise is
          how mojibake gets averaged. *)
       a.meta.dt := Dtype.Int (1, FALSE)
-    ELSE RAISE FormatError ('dtype not supported (numeric LE only)')
+    ELSIF Json.StrIs (dt, '|O') THEN
+      (* An OBJECT array is a string array when its one filter is
+         vlen-utf8; the filters below check that.  ReadStrs reads its
+         items, never as numbers. *)
+      a.meta.vlen := TRUE ;
+      a.meta.dt := Dtype.Int (1, FALSE)
+    ELSE RAISE FormatError ('dtype not supported (numeric LE only, or |O with vlen-utf8)')
     END
   ELSE
     RAISE FormatError ('dtype missing')
@@ -455,7 +486,19 @@ BEGIN
       RAISE FormatError ('F-order arrays not supported')
     END
   END ;
-  IF Json.Field (root, 'filters') IS SOME f THEN
+  IF a.meta.vlen THEN
+    vf := FALSE ;
+    IF Json.Field (root, 'filters') IS SOME vfs THEN
+      IF NOT Json.IsNull (vfs) THEN
+        IF Json.Count (vfs) = 1 THEN
+          IF Json.Field (Json.Item (vfs, 0), 'id') IS SOME vid THEN
+            vf := Json.StrIs (vid, 'vlen-utf8')
+          END
+        END
+      END
+    END ;
+    IF NOT vf THEN RAISE FormatError ('an object (|O) array is read only with the one filter vlen-utf8') END
+  ELSIF Json.Field (root, 'filters') IS SOME f THEN
     IF NOT Json.IsNull (f) THEN
       RAISE FormatError ('filter pipelines not supported')
     END
@@ -464,12 +507,20 @@ BEGIN
   a.meta.fillF := NaN ;
   a.meta.fillI := 0 ;
   a.meta.hasFill := FALSE ;
-  IF Json.Field (root, 'fill_value') IS SOME fv THEN
+  IF a.meta.vlen THEN
+    (* A string array's fill is a JSON string, or null for none. *)
+    IF Json.Field (root, 'fill_value') IS SOME sfv THEN
+      IF NOT Json.IsNull (sfv) THEN
+        a.meta.hasFill := TRUE ;
+        a.meta.fillS := CopyChars (a.cache, Json.Text (sfv))
+      END
+    END
+  ELSIF Json.Field (root, 'fill_value') IS SOME fv THEN
     IF Json.IsNull (fv) THEN
-      (* NaN for floats, zero for ints: the zarr default.  Null is
+      (* The zarr default is NaN for floats, zero for ints.  Null is
          "this array declares no fill", which is not the same as "its
-         fill is zero", and HasFill is how a caller tells them
-         apart -- the store's time coordinate is exactly this case. *)
+         fill is zero", and HasFill is how a caller tells them apart.
+         The store's time coordinate is exactly this case. *)
     ELSIF Json.StrIs (fv, 'NaN') THEN
       a.meta.hasFill := TRUE ;
       a.meta.fillF := NaN
@@ -499,10 +550,10 @@ BEGIN
              stated narrowing to be widened when a real store demanded
              it.  ICOS's public FLUXNET store is that store: its
              quality flags are |u1 with fill_value 255, and a reader
-             that refuses them cannot read half the archive.  What
-             the narrowing was really protecting was FillChunk, which
-             wrote nothing because pool storage is defined-zero; that
-             is now a real write of the fill's bytes.                *)
+             that refuses them cannot read half the archive.  The
+             narrowing was really protecting FillChunk, which wrote
+             nothing because pool storage is defined-zero; that is
+             now a real write of the fill's bytes.                   *)
           IF a.meta.fillI # 0 THEN
             IF NOT IntFillBytes (a.meta.fillI, w, signed,
                                  SLICE (a.meta.fillB, 0, 8)) THEN
@@ -580,18 +631,18 @@ EXCEPT
 | ValueRange : RAISE StoreError ('a chunk larger than blosc takes (a C int)')
 END Decompress ;
 
-(* The ONE chunk buffer an Array holds (2026-10-24, Alex: "reuse memory
-   on a miss"): made on the first read and REUSED after -- a hit answers
-   it, a miss refills it in place, a missing chunk is filled with
-   fill_value in place.  Its coords say which chunk it holds; while it
-   is being refilled they are -1, which no chunk has, so a fetch that
-   fails leaves nothing that reads as a chunk.  Until then every miss
-   allocated a new ChunkBuf and buffer in the cache pool and abandoned
-   the old one until CloseArray, and a MISSING chunk was filled afresh
-   for every element read from it and never became `last': a scan over
-   co2.zarr's deleted chunk cost 4,800 bytes an element.  ReadChunk's
-   contract -- the answer is not retained past the next call -- has
-   always allowed this. *)
+(* Slot answers the ONE chunk buffer an Array holds (2026-10-24, Alex:
+   "reuse memory on a miss").  It is made on the first read and REUSED
+   after: a hit answers it, a miss refills it in place, a missing
+   chunk is filled with fill_value in place.  Its coords say which chunk
+   it holds; while it is being refilled they are -1, which no chunk has,
+   so a fetch that fails leaves nothing that reads as a chunk.  Until
+   then every miss allocated a new ChunkBuf and buffer in the cache pool
+   and abandoned the old one until CloseArray, and a MISSING chunk was
+   filled afresh for every element read from it and never became `last':
+   a scan over co2.zarr's deleted chunk cost 4,800 bytes an element.
+   ReadChunk's contract has always allowed this: the answer is not
+   retained past the next call. *)
 PROCEDURE Slot (VAR a: PTR Array) : PTR ChunkBuf IN a.cache =
 VAR p : PTR ChunkBuf IN a.cache ;
 BEGIN
@@ -604,9 +655,9 @@ BEGIN
 END Slot ;
 
 PROCEDURE FillChunk (VAR a: PTR Array ; VAR p: PTR ChunkBuf) =
-  (* p.buf filled with fill_value, every byte: the buffer is reused,
-     so a zero fill is written too (it was left to the pool's
-     defined-zero storage when every fill got a fresh buffer) *)
+  (* FillChunk fills p.buf with fill_value, every byte: the buffer is
+     reused, so a zero fill is written too (it was left to the pool's
+     defined-zero storage when every fill got a fresh buffer). *)
 VAR n, i, k, w : I64 ;
 BEGIN
   CASE a.meta.dt OF
@@ -641,6 +692,9 @@ VAR
   p : PTR ChunkBuf IN a.cache ;
   i : I64 ;
 BEGIN
+  IF a.meta.vlen THEN
+    RAISE StoreError ('a string array (|O, vlen-utf8): read it with ReadStrs')
+  END ;
   IF a.last IS SOME q THEN
     IF SameCoords (a, q, coords) THEN RETURN q END
   END ;
@@ -730,9 +784,9 @@ BEGIN
   | Float (w) :
       IF w = 8 THEN
         RETURN F64.FromBytesLE (SLICE (buf, ofs, 8))
-        (* explicit width + explicit endianness at the wire boundary:
-           the LONGREAL/long-double 16-byte-stride bug cannot be
-           written -- there is no native type whose size is a
+        (* With explicit width + explicit endianness at the wire
+           boundary, the LONGREAL/long-double 16-byte-stride bug
+           cannot be written: there is no native type whose size is a
            platform opinion.                                          *)
       ELSE
         RETURN F64 (F32.FromBytesLE (SLICE (buf, ofs, 4)))
@@ -762,7 +816,8 @@ VAR
 BEGIN
   IF (NOT signed) AND (w = 8) AND (ORD (buf[ofs + 7]) >= 128) THEN
     RAISE ValueRange
-    (* u64 beyond I64: numpy wrapped it negative, silently.  Named.  *)
+    (* A u64 beyond I64 raises: numpy wrapped it negative, silently.
+       Here it is named.                                             *)
   END ;
   v := ORD (buf[ofs + w - 1]) ;
   IF signed AND (v >= 128) THEN v := v - 256 END ;
@@ -794,8 +849,8 @@ BEGIN
       RETURN ReadInt (p.buf, ofs, w, signed)
   | Float (w) :
       RETURN I64 (ElemF64 (p.buf, ofs, a.meta.dt))
-      (* checked conversion: RAISES ValueRange on NaN, Inf, or
-         overflow -- par 2.1; the declared, catchable Trunc(NaN)     *)
+      (* The checked conversion RAISES ValueRange on NaN, Inf, or
+         overflow (par 2.1): the declared, catchable Trunc(NaN).     *)
   END
 END GetI64 ;
 
@@ -823,6 +878,84 @@ BEGIN
   END
 END Fill ;
 
+(* ---- string arrays ---- *)
+
+PROCEDURE IsStr (a: PTR Array) : BOOL =
+BEGIN
+  RETURN a.meta.vlen
+END IsStr ;
+
+(* U32At reads a little-endian u32 at ofs of b.  It raises FormatError
+   past the end. *)
+PROCEDURE U32At (RO b: SLICE OF BYTE ; ofs: I64) : I64 RAISES FormatError =
+BEGIN
+  IF ofs < 0 OR ofs + 4 > LEN (b) THEN RAISE FormatError ('vlen-utf8 chunk cut short') END ;
+  RETURN I64 (b[ofs]) + 256 * (I64 (b[ofs + 1]) + 256 * (I64 (b[ofs + 2]) + 256 * I64 (b[ofs + 3])))
+EXCEPT
+| ValueRange : RAISE FormatError ('vlen-utf8 chunk cut short')
+END U32At ;
+
+PROCEDURE ReadStrs (VAR pool: POOL ; VAR a: PTR Array ;
+                    RO coords: SLICE OF I64) : SLICE OF STR
+  RAISES StoreError, FormatError =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  raw, plain : SLICE OF BYTE ;
+  out : SLICE OF STR ;
+  n, i, k, ofs, len : I64 ;
+BEGIN
+  IF NOT a.meta.vlen THEN RAISE StoreError ('not a string array: ReadStrs reads |O with vlen-utf8') END ;
+  IF LEN (coords) # a.meta.rank THEN RAISE StoreError ('chunk coordinates of the wrong rank') END ;
+  n := 1 ;
+  FOR i := 0 TO a.meta.rank - 1 DO n := n * a.meta.chunks[i] END ;
+  d := DynStr.New (scratch) ;
+  DynStr.Append (d, a.path) ;
+  DynStr.AppendChar (d, '/') ;
+  FOR i := 0 TO a.meta.rank - 1 DO
+    IF i > 0 THEN DynStr.AppendChar (d, a.meta.sep) END ;
+    DynStr.AppendI64 (d, coords[i])
+  END ;
+  BEGIN
+    raw := Fetch (a.st, scratch, DynStr.View (d), StrChunkMax)
+  EXCEPT
+  | HttpStatus (404) :
+      (* A missing chunk holds the fill in every item. *)
+      out := NEW (pool, STR, n) ;
+      FOR i := 0 TO n - 1 DO out[i] := Text.Keep (pool, a.meta.fillS) END ;
+      RETURN out
+  | HttpStatus (code) :
+      RAISE StoreError ('chunk fetch failed')
+  END ;
+  CASE a.meta.comp OF
+  | Blosc :
+      (* Blosc's header holds the uncompressed size in bytes 4 to 7. *)
+      len := U32At (raw, 4) ;
+      plain := NEW (scratch, BYTE, len) ;
+      IF len > 0 THEN
+        IF DecompressCtx (ADR (raw), ADR (plain), C.SizeT (len), C.Int (1)) # C.Int (len) THEN
+          RAISE StoreError ('blosc decompress failed or short')
+        END
+      END
+  | Raw :
+      plain := raw
+  END ;
+  k := U32At (plain, 0) ;
+  IF k # n THEN RAISE FormatError ('vlen-utf8 chunk holds another count than its chunk') END ;
+  out := NEW (pool, STR, n) ;
+  ofs := 4 ;
+  FOR i := 0 TO n - 1 DO
+    len := U32At (plain, ofs) ;
+    ofs := ofs + 4 ;
+    IF len < 0 OR ofs + len > LEN (plain) THEN RAISE FormatError ('vlen-utf8 item runs past its chunk') END ;
+    out[i] := UTF (pool, SLICE (plain, ofs, len)) ;
+    ofs := ofs + len
+  END ;
+  RETURN out
+EXCEPT
+| ValueRange : RAISE FormatError ('vlen-utf8 item is not UTF-8')
+END ReadStrs ;
+
 PROCEDURE CloseArray (OWN a: PTR Array) =
 BEGIN
   DISPOSE (a)                      (* cache pool goes with it *)
@@ -830,8 +963,9 @@ END CloseArray ;
 
 PROCEDURE Close (OWN s: SHARED PTR Store) =
 BEGIN
-  DISPOSE (s)                      (* releases this handle; the store
-                                      dies with its last one *)
+  DISPOSE (s)                      (* DISPOSE releases this handle;
+                                      the store dies with its last
+                                      one. *)
 END Close ;
 
 END ZarrStore.

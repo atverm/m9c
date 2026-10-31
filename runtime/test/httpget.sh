@@ -1,10 +1,11 @@
 #!/bin/sh
-# Http's URL fetcher against a fixture server: redirects, chunked
-# bodies, the licence cookie, and a body framed only by the close.
+# This gate holds Http's URL fetcher against a fixture server:
+# redirects, chunked bodies, the licence cookie, and a body framed only
+# by the close.
 #
 # LOCAL BY CONSTRUCTION.  Every shape here was measured on the ICOS
-# Carbon Portal first -- see corpus/Http.m9's note -- and is then
-# reproduced by httpfix.py so the gate needs no network and cannot go
+# Carbon Portal first (see corpus/Http.m9's note).  httpfix.py then
+# reproduces it, so the gate needs no network and cannot go
 # red because a repository is slow.  $M9HTTP_LIVE=1 adds the live
 # checks against data.icos-cp.eu for the day someone wants them.
 set -e
@@ -19,10 +20,10 @@ rm -rf "$OUT"; mkdir -p "$OUT"
 cp httpget.m9 httpfix.py "$OUT/"
 export M9RUNTIME="$REPO/runtime"
 export M9LIBRARY="$REPO/corpus"
-# -c and then gcc by hand: m9c links m9rt, tcpshim and fmtshim on
-# its own but not tlsshim, which needs OpenSSL named -- and passing
-# CCFLAGS after -- would make m9c stand aside from its own -O2 and
-# -flto, which this repository has already paid for once.
+# Compile with -c and then link with gcc by hand.  m9c links m9rt,
+# tcpshim and fmtshim on its own but not tlsshim, which needs OpenSSL
+# named.  CCFLAGS passed after -- would make m9c stand aside from its
+# own -O2 and -flto, which this repository has already paid for once.
 ( cd "$OUT" && "$M9C" --make -c httpget.m9 -I. >/dev/null )
 gcc -O2 -iquote "$REPO/runtime" "$OUT"/*.o \
     "$REPO/runtime/m9rt.c" "$REPO/runtime/tcpshim.c" \
@@ -70,7 +71,7 @@ ck "a chunked body, five chunks, one over the read block" \
 ck "a body framed only by the close" \
    "status 200 chars 1500" "$("$OUT/httpget" text "$U/toclose" | head -1)"
 
-# a body that stops short of its framing is a lost connection, not a
+# A body that stops short of its framing is a lost connection, not a
 # short document (Python: IncompleteRead).  Until 2026-10-02 the first
 # of these answered `status 200 chars 10`.
 ck "a body shorter than its Content-Length is refused by name" \
@@ -125,8 +126,8 @@ print("same" if open(sys.argv[1], "rb").read() == want else "DIFFERENT")
 PY
 ck "and the 5 MB file is what the server sent" "same" "$(cat "$OUT/bigcmp")"
 
-# the peak is one read block, not one download: 5 MB through a
-# process that stays small is the whole claim of the streaming form
+# The peak is one read block, not one download.  5 MB through a
+# process that stays small is the whole claim of the streaming form.
 RSS=$(/usr/bin/time -f '%M' "$OUT/httpget" file "$U/big" '' '' "$OUT/big2.bin" 2>&1 >/dev/null | tail -1)
 if [ "$RSS" -lt 32768 ] 2>/dev/null; then
   echo "  ok   5 MB downloaded in ${RSS} KB of RSS -- the block, not the file"
@@ -153,10 +154,10 @@ ck "PUT with no body still says Content-Length: 0" \
 ck "DELETE reaches the server as DELETE" \
    "DELETE|0|||" "$($R DELETE "$U/reflect" | tail -1)"
 
-# a Host line among the caller's headers replaces the URL's, any case
-# (zarrm9's mcpd asks a loopback server as a public name, 2026-10-30)
-# (the URL's host goes out without its port, as it always has; RFC 9112
-# wants a port that is not the default -- owed)
+# A Host line among the caller's headers replaces the URL's, in any
+# case (zarrm9's mcpd asks a loopback server as a public name,
+# 2026-10-30).  The URL's host goes out without its port, as it always
+# has.  RFC 9112 wants a port that is not the default; that is owed.
 HP=${U#http://} ; HP=${HP%%[:/]*}
 ck "without a Host line, the URL's host goes out, once" \
    "1|$HP" "$($R GET "$U/host" | tail -1)"
@@ -184,18 +185,19 @@ ck "a chunked response to a POST takes the same decoder" \
    "0123456789abcdefghijklmnopqrstuvwxyz" \
    "$($R POST "$U/chunked-reflect" '0123456789abcdefghijklmnopqrstuvwxyz' | tail -1)"
 
-# m9flexdev's two wishes (2026-09-27), in one check: meta.icos-cp.eu
+# One check covers m9flexdev's two wishes (2026-09-27).  meta.icos-cp.eu
 # answers a SPARQL POST chunked, and the answer is UTF-8 that a parser
-# reads -- not a printable rendering that turned Křešín into dots
+# reads, not a printable rendering that turned Křešín into dots.
 ck "a chunked POST answer arrives decoded from UTF-8, chunk boundaries inside a character" \
    "Křešín u Pacova" \
    "$($R POST "$U/chunked-reflect" 'Křešín u Pacova' | tail -1)"
 
-# a 3 MB body, from a file because an argument stops at 128 KB: larger
-# than any socket buffer, so it arrives whole only if every write went
-# out (a blocking write(2) on a stream socket finishes the buffer on
-# its own, so SendAll's loop is insurance against the short write the
-# API permits rather than something this fixture can provoke)
+# Send a 3 MB body, from a file because an argument stops at 128 KB.
+# It is larger than any socket buffer, so it arrives whole only if
+# every write went out.  A blocking write(2) on a stream socket
+# finishes the buffer on its own.  So SendAll's loop is insurance
+# against the short write the API permits, rather than something this
+# fixture can provoke.
 python3 -c 'print("x" * 3000000, end="")' > "$OUT/big.txt"
 ck "a 3 MB POST body arrives whole" \
    "POST|3000000|||" \
@@ -204,10 +206,11 @@ ck "a 3 MB POST body arrives whole" \
 ck "a 404 to a POST is reported, not raised" \
    "status 404 chars 0" "$($R POST "$U/nowhere" | head -1)"
 
-# Http.FormBody (cp-kernel's issue 17), read by Python's MIME parser:
-# the fields as text past ASCII and empty, a file holding the first
-# boundary the builder would try (so it must choose another), and a
-# file name with a quote in it, percent-encoded as browsers do
+# Python's MIME parser reads Http.FormBody (cp-kernel's issue 17).  The
+# body holds fields as text past ASCII and empty, and a file holding
+# the first boundary the builder would try (so it must choose another).
+# It also holds a file name with a quote in it, percent-encoded as
+# browsers do.
 FORM=$("$OUT/httpget" form "$U/form")
 ck "a form POSTed whole" "status 200" "$(echo "$FORM" | sed -n 1p)"
 ck "a form's type is multipart/form-data" "ct|multipart/form-data" "$(echo "$FORM" | sed -n 2p)"
@@ -275,9 +278,9 @@ ck "a fresh Client has an empty jar" \
 # ---- Http.RequestRetry: a server that is busy for a while.  The
 # server counts the requests it saw per key (`ok at request K`), the
 # client says how many tries it made, and the two must agree.  Each
-# check has a key of its own, so a rerun of one line means what it
-# meant the first time only against a fresh server -- which every run
-# of this gate starts. ----
+# check has a key of its own.  So a rerun of one line means what it
+# meant the first time only against a fresh server, and every run of
+# this gate starts one. ----
 T="$OUT/httpget retry"
 ms () { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
 between () {                 # between <what> <lo> <hi> <got>
@@ -305,8 +308,8 @@ ck "a POST is never sent twice on a status" \
 ck "a PUT is idempotent and goes again" \
    "status 200 tries 2 ok at request 2" "$($T PUT "$U/flaky/d/1" 3 0)"
 
-# a method goes on the wire as it was written, and `get` is not GET to
-# a server: the 501 is an answer, and not one to ask again for
+# A method goes on the wire as it was written, and `get` is not GET to
+# a server.  The 501 is an answer, and not one to ask again for.
 ck "a 501 is not tried again" \
    "status 501 tries 1" "$($T get "$U/flaky/dd/1" 3 0 | head -1 | cut -c1-18)"
 
@@ -344,16 +347,16 @@ ck "a connection never made is tried again, and raised when the tries are out" \
 ck "whatever the method: nothing was sent" \
    "transport: connect failed tries 3" "$($T POST "http://127.0.0.1:1/x" 2 0 || true)"
 
-# 5 MB against this program's cap of 4 MB: it would fail the same way
-# every time, and it fails AFTER part of an answer arrived, which is
-# the line RequestRetry draws
+# Send 5 MB against this program's cap of 4 MB.  It would fail the
+# same way every time, and it fails AFTER part of an answer arrived.
+# RequestRetry draws its line there.
 ck "a failure after part of an answer arrived is not tried again" \
    "transport: the document is larger than the cap tries 1" \
    "$($T GET "$U/big" 3 0 || true)"
 
-# the backoff: nothing before the first retry, then 0.4 s and 0.8 s
-# for a factor of 0.2 -- 1.2 s in all, and not 2.8 s (a wait before
-# the first retry too) nor 0.6 s (the factor not doubled)
+# Check the backoff: nothing before the first retry, then 0.4 s and
+# 0.8 s for a factor of 0.2.  That is 1.2 s in all, and not 2.8 s (a
+# wait before the first retry too) nor 0.6 s (the factor not doubled).
 t0=$(date +%s%N)
 ck "three 503s with a factor of 0.2 s: four tries" \
    "status 200 tries 4 ok at request 4" "$($T GET "$U/flaky/l/3" 3 200)"

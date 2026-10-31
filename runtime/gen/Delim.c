@@ -2,6 +2,7 @@
 #include "Delim.h"
 #include "DynStr.h"
 #include "Io.h"
+#include "Text.h"
 
 const m9_exc Delim_Error = { "Error" };
 
@@ -28,11 +29,13 @@ extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 extern double m9_strtof (const void *);
 extern double m9_strtod (const void *);
 
 struct Delim_Reader {
-  m9_sl_CHAR path;
+  m9_sl_UTF8 path;
   uint8_t delim;
   int64_t block;
   m9_sl_BYTE buf;
@@ -52,11 +55,11 @@ struct Delim_Reader {
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[28] = { 70u, 101u, 101u, 100u, 32u, 111u, 110u, 32u, 97u, 32u, 102u, 105u, 108u, 101u, 45u, 98u, 97u, 99u, 107u, 101u, 100u, 32u, 114u, 101u, 97u, 100u, 101u, 114u };
-static const uint32_t m9s1[46] = { 97u, 32u, 114u, 111u, 119u, 32u, 119u, 105u, 116u, 104u, 32u, 109u, 111u, 114u, 101u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 97u, 100u, 101u, 114u, 32u, 97u, 99u, 99u, 101u, 112u, 116u, 115u };
-static const uint32_t m9s2[46] = { 97u, 32u, 114u, 111u, 119u, 32u, 119u, 105u, 116u, 104u, 32u, 109u, 111u, 114u, 101u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 97u, 100u, 101u, 114u, 32u, 97u, 99u, 99u, 101u, 112u, 116u, 115u };
-static const uint32_t m9s3[33] = { 97u, 32u, 108u, 105u, 110u, 101u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 98u, 108u, 111u, 99u, 107u, 44u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s4[47] = { 97u, 32u, 98u, 108u, 111u, 99u, 107u, 32u, 117u, 110u, 100u, 101u, 114u, 32u, 52u, 48u, 57u, 54u, 32u, 98u, 121u, 116u, 101u, 115u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 119u, 111u, 114u, 116u, 104u, 32u, 97u, 32u, 115u, 121u, 115u, 99u, 97u, 108u, 108u };
+static const uint8_t m9s0[28] = { 70, 101, 101, 100, 32, 111, 110, 32, 97, 32, 102, 105, 108, 101, 45, 98, 97, 99, 107, 101, 100, 32, 114, 101, 97, 100, 101, 114 };
+static const uint8_t m9s1[46] = { 97, 32, 114, 111, 119, 32, 119, 105, 116, 104, 32, 109, 111, 114, 101, 32, 102, 105, 101, 108, 100, 115, 32, 116, 104, 97, 110, 32, 116, 104, 101, 32, 114, 101, 97, 100, 101, 114, 32, 97, 99, 99, 101, 112, 116, 115 };
+static const uint8_t m9s2[46] = { 97, 32, 114, 111, 119, 32, 119, 105, 116, 104, 32, 109, 111, 114, 101, 32, 102, 105, 101, 108, 100, 115, 32, 116, 104, 97, 110, 32, 116, 104, 101, 32, 114, 101, 97, 100, 101, 114, 32, 97, 99, 99, 101, 112, 116, 115 };
+static const uint8_t m9s3[33] = { 97, 32, 108, 105, 110, 101, 32, 108, 111, 110, 103, 101, 114, 32, 116, 104, 97, 110, 32, 116, 104, 101, 32, 98, 108, 111, 99, 107, 44, 32, 105, 110, 32 };
+static const uint8_t m9s4[47] = { 97, 32, 98, 108, 111, 99, 107, 32, 117, 110, 100, 101, 114, 32, 52, 48, 57, 54, 32, 98, 121, 116, 101, 115, 32, 105, 115, 32, 110, 111, 116, 32, 119, 111, 114, 116, 104, 32, 97, 32, 115, 121, 115, 99, 97, 108, 108 };
 
 static Delim_Reader * Delim_New (m9_pool *pool, uint8_t delim, int64_t block, m9_state *err);
 static void Delim_Compact (Delim_Reader * *r, m9_pool *r_pool, m9_state *err);
@@ -64,7 +67,7 @@ static void Delim_Refill (Delim_Reader * *r, m9_pool *r_pool, m9_state *err);
 static bool Delim_SplitLine (Delim_Reader * *r, m9_pool *r_pool, m9_state *err);
 
 
-Delim_Reader * Delim_Open (m9_pool *pool, m9_sl_CHAR path, uint8_t delim, int64_t block, m9_state *err)
+Delim_Reader * Delim_Open (m9_pool *pool, m9_sl_UTF8 path, uint8_t delim, int64_t block, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -122,7 +125,7 @@ int64_t Delim_Feed (Delim_Reader * *r, m9_pool *r_pool, m9_sl_BYTE src, m9_state
   int64_t take = 0; (void) take;
   int64_t i = 0; (void) i;
   if ((!({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->push)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 28 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 28 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 28 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 28 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Delim_Error);
     goto L_ret;
   }
@@ -240,7 +243,7 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
       bool m9t3 = (!Delim_SplitLine (r, r_pool, err));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 46 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+        { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 46 })) m9t4 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
         m9_raise (err, &Delim_Error);
         goto L_ret;
       }
@@ -272,7 +275,7 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
         bool m9t6 = (!Delim_SplitLine (r, r_pool, err));
         if (err->exc) goto L_ret;
         if (m9t6) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 46 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 46 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
+          { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 46 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 46 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
           m9_raise (err, &Delim_Error);
           goto L_ret;
         }
@@ -290,7 +293,7 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
       goto L_ret;
     }
     if (((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos == INT64_C(0)) && (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len == (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf).len))) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s3, 33 }), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->path, err)) m9t8 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s3, 33 }), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->path, err); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s3, 33 }), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->path, err)) m9t8 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s3, 33 }), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->path, err); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
       m9_raise (err, &Delim_Error);
       goto L_ret;
     }
@@ -401,7 +404,7 @@ L_ret: ;
   return m9ret;
 }
 
-bool Delim_Is (Delim_Reader * r, int64_t i, m9_sl_CHAR s, m9_state *err)
+bool Delim_Is (Delim_Reader * r, int64_t i, m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -414,31 +417,33 @@ bool Delim_Is (Delim_Reader * r, int64_t i, m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     f = m9v;
   }
-  if (((f).len != (s).len)) {
+  bool m9t1 = ((f).len != Text_BLen (s, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
-  { __typeof__(k) m9t1to;
+  { __typeof__(k) m9t2to;
   k = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
+  m9t2to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (k <= m9t1to) for (;;) {
-    bool m9t2 = ((int64_t)((*(uint32_t *) m9_at (s.p, k, s.len, sizeof (uint32_t), err))) > INT64_C(127));
-    if (err->exc) goto L_ret;
-    if (m9t2) {
-      err->res = m9res;
-      m9ret = false;
-      goto L_ret;
-    }
-    bool m9t3 = ((int64_t)((*(uint8_t *) m9_at (f.p, k, f.len, sizeof (uint8_t), err))) != (int64_t)((*(uint32_t *) m9_at (s.p, k, s.len, sizeof (uint32_t), err))));
+  if (k <= m9t2to) for (;;) {
+    bool m9t3 = ((int64_t)(Text_BAt (s, k, err)) > INT64_C(127));
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
-    if ((uint64_t) m9t1to - (uint64_t) k < (uint64_t) 1) break;
+    bool m9t4 = ((int64_t)((*(uint8_t *) m9_at (f.p, k, f.len, sizeof (uint8_t), err))) != (int64_t)(Text_BAt (s, k, err)));
+    if (err->exc) goto L_ret;
+    if (m9t4) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+    if ((uint64_t) m9t2to - (uint64_t) k < (uint64_t) 1) break;
     k += 1;
   } }
   err->res = m9res;
@@ -450,23 +455,20 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Delim_Text (m9_pool *pool, Delim_Reader * r, int64_t i, m9_state *err)
+m9_sl_UTF8 Delim_Text (m9_pool *pool, Delim_Reader * r, int64_t i, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   err->res = m9res;
-  { __typeof__(Delim_Field (r, i, err)) m9a1 = Delim_Field (r, i, err);
-    if (err->exc) goto L_ret;
-  m9ret = DynStr_FromUtf8 (pool, m9a1, err);
+  m9ret = m9_utf_from_bytes (&((*pool)), Delim_Field (r, i, err), err);
   if (err->exc) goto L_ret;
-  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -655,7 +657,7 @@ static Delim_Reader * Delim_New (m9_pool *pool, uint8_t delim, int64_t block, m9
     block = Delim_DefaultBlock;
   }
   if ((block < INT64_C(4096))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 47 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 47 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s4, 47 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s4, 47 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Delim_Error);
     goto L_ret;
   }
@@ -663,7 +665,7 @@ static Delim_Reader * Delim_New (m9_pool *pool, uint8_t delim, int64_t block, m9
     if (err->exc) goto L_ret;
     r = m9v;
   }
-  r->path = (m9_sl_CHAR){ NULL, 0 };
+  r->path = ((m9_sl_UTF8){ NULL, 0 });
   r->delim = delim;
   r->block = block;
   { __typeof__(r->buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_mul_i64 (block, INT64_C(2), err), err);
@@ -741,11 +743,11 @@ static void Delim_Refill (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
   if (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->eof) {
     goto L_ret;
   }
-  { __typeof__(m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->off, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, err)) m9a2 = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->off, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, err);
+  { __typeof__(m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->off, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, err)) m9a1 = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->off, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, err);
     if (err->exc) goto L_ret;
-  { __typeof__(m9_sub_i64 ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf).len, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, err)) m9a3 = m9_sub_i64 ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf).len, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, err);
+  { __typeof__(m9_sub_i64 ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf).len, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, err)) m9a2 = m9_sub_i64 ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->buf).len, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->len, err);
     if (err->exc) goto L_ret;
-  { __typeof__(got) m9v = Io_ReadFileAt (&(scratch), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->path, m9a2, m9a3, err);
+  { __typeof__(got) m9v = Io_ReadFileAt (&(scratch), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->path, m9a1, m9a2, err);
     if (err->exc) goto L_ret;
     got = m9v;
   }
@@ -852,6 +854,7 @@ void Delim_m9init (m9_state *err)
   err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
+  Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9prev;
 }

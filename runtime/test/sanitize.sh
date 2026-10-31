@@ -1,31 +1,32 @@
 #!/bin/sh
-# sanitize -- the programs the suite already trusts, run again under
+# sanitize runs the programs the suite already trusts again, under
 # AddressSanitizer and UBSan with the runtime's -DM9_ASAN arenas
-# (m9rt.h): a use of frame or pool storage after its release or free,
-# a run past an allocation inside its block, a float-to-integer
-# conversion out of range and C's undefined behaviour all TRAP, where
-# a plain run reads a usually-right value (the compiler review of
-# 2026-10-21, item 9: every oracle of the compiler was the compiler's
-# twin, and two checkers that share a misconception agree).
+# (m9rt.h).  These all TRAP: a use of frame or pool storage after its
+# release or free, a run past an allocation inside its block, a
+# float-to-integer conversion out of range, and C's undefined
+# behaviour.  A plain run reads a usually-right value there.  (The
+# compiler review of 2026-10-21, item 9: every oracle of the compiler
+# was the compiler's twin, and two checkers that share a misconception
+# agree.)
 #
-# What runs: every corpus/*Test.m9 (from the repository root, as
-# m9test), every genforms program genforms.owed does not list, and
-# sanitize/*.m9 -- the review's run-time defects, each with the WANT
-# line only the correct behaviour prints, owed until its fix -- each
-# built by `m9c --run` with CC=lib/sancc -- m9c's own flags and
-# link, the wrapper adds the sanitizers to every compile and the link.
-# A program passes when it shows no sanitizer report and gives the
-# verdict it gives unsanitized: a test exits 0 ending `PASS (n checks)
-# -- Mod`, a genforms or sanitize program exits 0 printing its WANT
-# line.
+# The gate runs every corpus/*Test.m9 (from the repository root, as
+# m9test) and every genforms program genforms.owed does not list.  It
+# also runs sanitize/*.m9: the review's run-time defects, each with the
+# WANT line only the correct behaviour prints, owed until its fix.
+# `m9c --run` builds each with CC=lib/sancc.  m9c keeps its own flags
+# and link, and the wrapper adds the sanitizers to every compile and
+# the link.  A program passes when it shows no sanitizer report and
+# gives the verdict it gives unsanitized.  A test exits 0 ending
+# `PASS (n checks) -- Mod`.  A genforms or sanitize program exits 0
+# printing its WANT line.
 #
-# sanitize.owed names what fails today, each with its reason, and is
-# held BOTH ways: an owed program must still fail (a line that
-# outlives its reason is red), any other must pass.
+# sanitize.owed names what fails today, each with its reason.  The
+# gate holds it BOTH ways: an owed program must still fail (a line
+# that outlives its reason is red), any other must pass.
 #
 # The control: sanitize/arena_control.c must die with ASan's report
 # three ways (storage a release rewound, a freed pool, an allocation's
-# padding) -- a sanitized runtime that traps nothing would pass every
+# padding).  A sanitized runtime that traps nothing would pass every
 # program above.
 #
 # Leaks are not judged here (detect_leaks=0): HEAP and the module
@@ -43,14 +44,14 @@ gcc -std=c11 -O2 -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c" 
 # A CACHE THAT OUTLIVES THE RUN: the sanitized builds of every module
 # were made afresh each time (2.5 minutes on the MacBook).  m9c keys a
 # build by the source text of the module and its closure, the runtime
-# and its own binary's mtime -- so the binary is kept beside the cache
+# and its own binary's mtime.  So the binary is kept beside the cache
 # and replaced only when the one just built differs, and an unchanged
-# module is not rebuilt.  M9_SANITIZE_CACHE moves it; deleting it is
-# always safe.
+# module is not rebuilt.  M9_SANITIZE_CACHE moves the cache; deleting
+# it is always safe.
 # A module's key names the runtime's DIRECTORY, not m9rt.h's text, and
-# every module includes the header (its checks are inline): the cache
-# is one per header, by checksum, and the others go; past 2 GB it is
-# started again, so it cannot grow without bound.
+# every module includes the header (its checks are inline).  So the
+# cache is one per header, by checksum, and the others go.  Past 2 GB
+# it is started again, so it cannot grow without bound.
 C=${M9_SANITIZE_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/m9-sanitize}
 H=$(cksum < ../m9rt.h | cut -d' ' -f1)
 mkdir -p "$C"
@@ -86,7 +87,8 @@ for c in r f o; do
     bad "the control arena_control $c was not reported: the sanitized arenas trap nothing"
 done
 
-# judge NAME STATUS OUT OK: OK is 1 when the program gave its verdict
+# judge NAME STATUS OUT OK judges one run.  OK is 1 when the program
+# gave its verdict.
 judge () {
   n=$((n+1))
   if reported "$3"; then ok=0; else ok=$4; fi
@@ -115,8 +117,8 @@ for f in "$ROOT"/corpus/*Test.m9; do
 done
 
 # ---- programs with a WANT line: genforms that build, sanitize/ ----
-# wanted DIR SKIPLIST: every MODULE in DIR not named in SKIPLIST must
-# exit 0 printing its WANT line
+# wanted DIR SKIPLIST demands that every MODULE in DIR not named in
+# SKIPLIST exits 0 printing its WANT line.
 wanted () {
   rm -rf "$W/src" ; mkdir -p "$W/src"
   cp "$1"/*.m9 "$W/src/"

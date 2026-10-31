@@ -1,7 +1,7 @@
 (* EXPECT: argument 1 of Eat: cannot move through a selector of h into an OWN parameter *)
-(* own-move-through-field through an owned POINTER: `Eat (h.p)' freed
-   the object h's field still names (2026-10-28).  Legal forms first:
-   the owner moved whole, its field read. *)
+(* This is own-move-through-field through an owned POINTER.  `Eat (h.p)'
+   freed the object h's field still names (2026-10-28).  Legal forms
+   come first: the owner moved whole, its field read. *)
 MODULE m ;
 TYPE
   T = RECORD v : I64 END ;

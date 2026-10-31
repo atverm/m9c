@@ -1,5 +1,5 @@
-/* mat_driver.c -- differential checks for generated Mat code.
-   Expectations computed by hand, independently of the code:
+/* mat_driver.c makes differential checks for generated Mat code.
+   The expectations are computed by hand, independently of the code:
      3x2 matrix   row0 (1,2)  row1 (NaN,4)  row2 (5,6)
      col0 finite {1,5}: mean 3, sum 6, min 1, max 5, count 2
      col1 finite {2,4,6}: mean 4, sum 12, min 2, max 6, count 3   */
@@ -58,21 +58,22 @@ int main (void)
   Mat_MinMax (m, &mn, &mx, &err);
   ck (mn == 1.0 && mx == 6.0, "MinMax");
 
-  /* broadcast: result[r,c] = m[r,c] - v[c], v = (1,2) */
+  /* Broadcast: result[r,c] = m[r,c] - v[c], v = (1,2). */
   double vv[2] = { 1.0, 2.0 };
   Mat_Matrix *s = Mat_SubRowVector (&pool, m, (m9_sl_F64){ vv, 2 }, &err);
   ck (err.exc == NULL && Mat_Get (s, 0, 0, &err) == 0.0 &&
       Mat_Get (s, 2, 0, &err) == 4.0 && Mat_Get (s, 1, 1, &err) == 2.0 &&
       isnan (Mat_Get (s, 1, 0, &err)), "SubRowVector");
 
-  /* an all-NaN column answers NaN, not 0.0 -- the M2 lie refused */
+  /* An all-NaN column answers NaN, not 0.0.  This refuses the M2
+     lie. */
   Mat_Matrix *z = Mat_New (&pool, 1, 1, &err);
   Mat_Set (&z, &pool,0, 0, NAN, &err);
   double zout[1];
   Mat_ColReduce (z, op (Mat_ReduceOp_Mean), (m9_sl_F64){ zout, 1 }, &err);
   ck (isnan (zout[0]), "all-NaN column answers NaN");
 
-  /* SizeError with payload, through the slot ABI */
+  /* SizeError comes with payload, through the slot ABI. */
   Mat_New (&pool, 0, 5, &err);
   ck (err.exc == &Faults_SizeError && err.i[0] == 0 && err.i[1] == 5,
       "New(0,5) raises SizeError(0,5)");
@@ -87,12 +88,12 @@ int main (void)
   ck (err.exc == &m9_exc_IndexError, "Get [3,0] raises IndexError");
   err.exc = NULL;
 
-  /* THE COLUMN CHECK, which is why Matrix is a GRID and not a flat
-     slice with arithmetic on top.  While this module said
+  /* THE COLUMN CHECK is why Matrix is a GRID and not a flat slice
+     with arithmetic on top.  While this module said
      d[r * cols + c], Get (m, 0, 3) on a three-column matrix answered
-     element (1,0) -- measured, 20.0, no exception -- because index 3
-     is inside a six-element slice.  Every axis is now checked against
-     its own extent, so the column overflow is an IndexError and not a
+     element (1,0): measured, 20.0, no exception.  Index 3 is inside
+     a six-element slice.  Every axis is now checked against its own
+     extent, so the column overflow is an IndexError and not a
      plausible number from the next row. */
   {
     Mat_Matrix *w = Mat_New (&pool, 2, 3, &err);
@@ -109,7 +110,7 @@ int main (void)
 
   m9_pool_free (&pool);
   /* ---- linear algebra against numpy (matinv.golden) ----
-     Cholesky, solve and inverse to 1e-13 relative -- numpy runs
+     Cholesky, solve and inverse hold to 1e-13 relative.  numpy runs
      LAPACK, this module runs the textbook loops, and the digits
      they can disagree on are the association's.  The last block is
      a complete small Bayesian inversion composed from the
@@ -166,9 +167,10 @@ int main (void)
           if (d > worst) worst = d;
         }
       ck (worst < 1e-13, "SpdInverse matches numpy.linalg.inv");
-      /* CholInverse: the same inverse from the factor, contiguous and
-         banded -- against numpy, and 1 thread against 3 BIT FOR BIT,
-         which is the claim the banding makes */
+      /* CholInverse gives the same inverse from the factor, contiguous
+         and banded.  It is checked against numpy, and 1 thread
+         against 3 BIT FOR BIT, which is the claim the banding
+         makes. */
       Mat_Matrix *Ci1 = Mat_CholInverse (&pool, L, 1, &err);
       ck (err.exc == NULL, "CholInverse from the factor succeeds");
       worst = 0;
@@ -188,9 +190,9 @@ int main (void)
             if (memcmp (&a, &b, sizeof (double)) != 0) same = false;
           }
       ck (same, "CholInverse on 3 threads is bit-identical to 1");
-      /* a larger one, so every band holds more than the whole: a
+      /* A larger one makes every band hold more than the whole.  For a
          diagonally dominant 100 x 100, its inverse by SpdInverse and
-         by CholInverse on 4 threads agree to 1e-13 relative */
+         by CholInverse on 4 threads agree to 1e-13 relative. */
       {
         int n = 100;
         Mat_Matrix *G = Mat_New (&pool, n, n, &err);
@@ -209,8 +211,9 @@ int main (void)
           }
         ck (err.exc == NULL && w / sc < 1e-13, "CholInverse (4 threads, 100 x 100) matches SpdInverse to 1e-13");
         /* CholeskyT: the blocked, banded factor must be the serial
-           factor BIT FOR BIT -- on the 100 x 100 (three panels of 32
-           and a rest) at 1 and 4 threads, and on the 4 x 4 */
+           factor BIT FOR BIT.  It is checked on the 100 x 100 (three
+           panels of 32 and a rest) at 1 and 4 threads, and on the
+           4 x 4. */
         Mat_Matrix *GT1 = Mat_CholeskyT (&pool, G, 1, &err);
         Mat_Matrix *GT4 = Mat_CholeskyT (&pool, G, 4, &err);
         bool bit = err.exc == NULL;
@@ -245,7 +248,7 @@ int main (void)
       ck (err.exc == &Mat_NotSPD, "a negative pivot raises NotSPD");
       err.exc = NULL;
 
-      /* the Bayesian inversion, composed exactly as a user would */
+      /* Compose the Bayesian inversion exactly as a user would. */
       double Hv[3][4] = {{1.0, 0.5, 0.0, 0.2}, {0.0, 1.0, 0.7, 0.0},
                          {0.3, 0.0, 1.0, 0.5}};
       double xbv[4] = {1.0, 2.0, -0.5, 0.7};
@@ -261,8 +264,9 @@ int main (void)
       for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
           Mat_Set (&Bc, &pool,i, j, 0.5 * Av[i][j], &err);
-      /* AddNormal: K += H^T R^-1 H, against the same thing composed
-         from Transpose and MulM, to 1e-14; 1 thread and 2 bit-identical */
+      /* AddNormal does K += H^T R^-1 H.  It is checked against the same
+         thing composed from Transpose and MulM, to 1e-14.  1 thread
+         and 2 are bit-identical. */
       {
         double wv[3] = {1.0 / Rv[0], 1.0 / Rv[1], 1.0 / Rv[2]};
         m9_sl_F64 ws = { wv, 3 };

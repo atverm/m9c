@@ -1,11 +1,11 @@
-REVIEW Text -- 97 procedures with a body, 97 of them functions; 77 headings in a DEFINITION
+REVIEW Text -- 93 procedures with a body, 93 of them functions; 75 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              97
-  assignments                                   372
-  arguments                                     247
-  RETURN values                                 175
-  operands of a comparison or an operator       629
+  functions answering on every path              93
+  assignments                                   236
+  arguments                                     196
+  RETURN values                                 113
+  operands of a comparison or an operator       372
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -34,9 +34,9 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               21
-  handlers                                       11
-  NEW in the frame                               15
+  RAISE statements                               15
+  handlers                                       12
+  NEW in the frame                               14
   NEW in a named pool                             2
   calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

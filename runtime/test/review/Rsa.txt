@@ -3,9 +3,9 @@ REVIEW Rsa -- 12 procedures with a body, 11 of them functions; 7 headings in a D
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
   assignments                                    52
-  arguments                                      74
+  arguments                                      93
   RETURN values                                  16
-  operands of a comparison or an operator       108
+  operands of a comparison or an operator       104
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        5
   NEW in the frame                                2
   NEW in a named pool                             4
-  calls of a STR form with a UTF twin             5   Text.Find -> Text.FindUtf, Text.Find -> Text.FindUtf, Text.FindChar -> Text.FindCharUtf, Text.Contains -> Text.ContainsUtf, Text.FromBase64 -> Text.FromBase64Utf
-  STR subscripts, writes and LEN                 14   len pem, index pem[i], index pem[i], index pem[i], index pem[i], index body[n], +8 more
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

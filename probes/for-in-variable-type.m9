@@ -1,7 +1,7 @@
 (* EXPECT: FOR variable x is F64, and the elements it goes over are I64 *)
 (* The loop variable is held to the element type exactly, as an
    assignment is: no conversion happens in the loop's head.  The legal
-   form first. *)
+   form comes first. *)
 MODULE m ;
 VAR
   xs : SLICE OF I64 ;

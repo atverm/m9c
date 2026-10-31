@@ -3,7 +3,7 @@ REVIEW JsonUtf -- 71 procedures with a body, 56 of them functions; 44 headings i
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              56
   assignments                                   259
-  arguments                                     447
+  arguments                                     470
   RETURN values                                  83
   operands of a comparison or an operator       182
   CASE labels                                     3
@@ -39,4 +39,4 @@ COUNTED -- how much there was to check
   NEW in the frame                               10
   NEW in a named pool                            25
   calls of a STR form with a UTF twin             0
-  STR subscripts, writes and LEN                 15   len lit, len lit, index lit[i], len lit, len lit, len t, +9 more
+  STR subscripts, writes and LEN                  0

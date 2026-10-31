@@ -1,18 +1,19 @@
-/* utf8io.h -- the dump drivers' view of a source file and of a CHAR
-   slice, since 2026-10-09.  m9c reads a source as UTF-8 (Io.ReadFile
-   decodes) and a literal's CHARs are Unicode scalars; the drivers used
-   to widen each OCTET to a CHAR, so the M9 side emitted `195u, 169u'
-   for an `é' the oracle emitted as `233u' and bootstrap diverged on
-   ShareUse.Accents.  Decoding here is lenient, like M9AST.Utf8Next: a
-   malformed byte counts as itself (nothing in the corpus is malformed,
-   and the lexer never refuses one).  Printing encodes back, so the
-   bytes compared by lexdiff/parsediff/comdiff are the file's own. */
+/* utf8io.h gives the dump drivers' view of a source file and of a
+   CHAR slice, since 2026-10-09.  m9c reads a source as UTF-8
+   (Io.ReadFile decodes), and a literal's CHARs are Unicode scalars.
+   The drivers used to widen each OCTET to a CHAR.  So the M9 side
+   emitted `195u, 169u' for an `é' the oracle emitted as `233u', and
+   bootstrap diverged on ShareUse.Accents.  Decoding here is lenient,
+   like M9AST.Utf8Next: a malformed byte counts as itself.  Nothing in
+   the corpus is malformed, and the lexer never refuses one.  Printing
+   encodes back, so the bytes compared by lexdiff/parsediff/comdiff
+   are the file's own. */
 #ifndef M9_UTF8IO_H
 #define M9_UTF8IO_H
 #include <stdint.h>
 #include <stdio.h>
 
-static int64_t m9t_decode (const unsigned char *b, int64_t len, uint32_t *out)
+static inline int64_t m9t_decode (const unsigned char *b, int64_t len, uint32_t *out)
 {
   int64_t i = 0, n = 0;
   while (i < len) {
@@ -47,13 +48,14 @@ static inline void m9t_putc (uint32_t c)   /* inline: a dump that writes octets 
   }
 }
 
-/* a text the M9 side answers, written as UTF-8: a slice of CHARs
-   encoded, a UTF's octets as they are.  Chosen by the slice's type
-   (2026-10-23, Lex's texts became UTF): lib/gen.sh builds the dumps
-   against the checked-in runtime/gen first, the previous generator's,
-   so a helper must take both.  The escaped form is comdump's (newline,
-   CR and backslash shown, so a comment stays one line) -- the three
-   are ASCII, so a byte-wise escape of the octets is the same text */
+/* m9t_put_text writes a text the M9 side answers as UTF-8.  It
+   encodes a slice of CHARs and writes a UTF's octets as they are.
+   The slice's type chooses (2026-10-23, Lex's texts became UTF).
+   lib/gen.sh builds the dumps against the checked-in runtime/gen
+   first, the previous generator's, so a helper must take both.  The
+   escaped form is comdump's: newline, CR and backslash are shown, so
+   a comment stays one line.  The three are ASCII, so a byte-wise
+   escape of the octets is the same text. */
 static inline void m9t_put_chars (m9_sl_CHAR s)
 {
   int64_t i;

@@ -1,53 +1,55 @@
 DEFINITION MODULE Parse ;
 
-(* Recursive descent over report par 10, in M9 -- restated from
-   host/fpc/M9Parse.pas for P5 stage 1.  ERRORS ARE VALUES: every one
-   lands in the parser as line, col and a message, in the oracle's own
-   wording, and a tree always comes back.
+(* Parse is a recursive descent over report par 10, in M9, restated
+   from host/fpc/M9Parse.pas for P5 stage 1.  ERRORS ARE VALUES: every
+   one lands in the parser as line, col and a message, in the oracle's
+   own wording, and a tree always comes back.
 
    The messages were the stage-2 work this header used to promise and
-   defer -- "the count is all there is today" -- and the deferral
-   cost a bisect every time a program was written outside the corpus,
-   most recently inside the tutorial, where a reader following the
-   chapter's own advice got `1 parse errors` and no line.  Written
-   2026-08-30.                                                       *)
+   defer: "the count is all there is today".  The deferral cost a
+   bisect every time a program was written outside the corpus, most
+   recently inside the tutorial.  There a reader following the
+   chapter's own advice got `1 parse errors` and no line.  It was
+   written 2026-08-30.                                               *)
 
 IMPORT Ast ;
 IMPORT Lex ;
 
 CONST
   MaxErr = 64 ;
-  (* the first MaxErr are KEPT, all of them are COUNTED.  A fixed
-     array rather than a pool: Init takes no pool (the Parser is a
-     record the caller owns, and Doc/M9c/parsetest all rely on that),
+  (* The parser KEEPS the first MaxErr and COUNTS all of them.  It uses
+     a fixed array rather than a pool: Init takes no pool (the Parser is
+     a record the caller owns, and Doc/M9c/parsetest all rely on that),
      and a module-level list would make this module STATEFUL for the
      sake of a diagnostic.  Nothing reads past the eighth. *)
   MaxDepth = 1000 ;
-  (* the deepest tree the parser builds: a level for each nested
-     expression, statement or type and for each further operand of a
-     chain like 1 + 1 + ... (2026-10-21, the compiler review's F3).
+  (* MaxDepth is the deepest tree the parser builds: a level for each
+     nested expression, statement or type and for each further operand
+     of a chain like 1 + 1 + ... (2026-10-21, the compiler review's F3).
      Every pass after the parser walks the tree by recursion, and a
      source nested 12,000 deep or a sum of 60,000 terms ran the stack
-     out with no message; under a 1 MB stack the walks reach 1,000 and
+     out with no message.  Under a 1 MB stack the walks reach 1,000 and
      not 2,000, so a deeper source is refused here, where the line is
      known. *)
   MaxTypeDepth = 100 ;
-  (* the deepest TYPE: a type's text is carried whole at every
-     level it is resolved through, so `SLICE OF' 990 deep took 0.66
-     GB and `ARRAY 2 OF' 1.1 GB within MaxDepth; 100 levels is a few
-     megabytes, and no type written to be read nests a tenth of it *)
+  (* MaxTypeDepth is the deepest TYPE.  A type's text is carried whole
+     at every level it is resolved through, so `SLICE OF' 990 deep took
+     0.66 GB and `ARRAY 2 OF' 1.1 GB within MaxDepth.  100 levels is a
+     few megabytes, and no type written to be read nests a tenth of
+     it. *)
 
 TYPE
   Perr = RECORD
     line, col : I64 ;
     msg : UTF ;
   END ;
-  (* one kept error.  An ARRAY OF it in Parser, bounded by MaxErr: the
-     parser kept three parallel arrays with the literal 64 until
-     2026-10-10, because the generator wrote the array's typedef after
-     every struct (gcc: unknown type name) and read the bare bound in
-     an IMPORTER's namespace (array count form unsupported).  Both
-     fixed in both generators; genforms' GfArrRecField holds them. *)
+  (* Perr is one kept error.  Parser holds an ARRAY OF it, bounded by
+     MaxErr.  The parser kept three parallel arrays with the literal 64
+     until 2026-10-10, because the generator wrote the array's typedef
+     after every struct (gcc: unknown type name) and read the bare bound
+     in an IMPORTER's namespace (array count form unsupported).  Both
+     are fixed in both generators; genforms' GfArrRecField holds
+     them. *)
   Parser = RECORD
     lx : Lex.Lexer ;
     cur, peekTok : Lex.Token ;
@@ -61,7 +63,7 @@ TYPE
   END ;
 
 PROCEDURE Init (VAR p: Parser ; RO src: STR) ;
-  (* points a parser at source text and reads the first token.
+  (* Init points a parser at source text and reads the first token.
 
        src -- BORROWED for as long as p is used, and for as long as
               the tree p builds is used: identifier and literal text
@@ -69,16 +71,17 @@ PROCEDURE Init (VAR p: Parser ; RO src: STR) ;
               caller's buffer must outlive both, which is the same
               contract Json.Parse has with its document.          *)
 PROCEDURE InitUtf (VAR p: Parser ; RO src: UTF) ;
-  (* Init over a UTF, the same contract; the text is lexed as it is *)
+  (* InitUtf is Init over a UTF, the same contract; the text is lexed
+     as it is. *)
 
 PROCEDURE File (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node ;
-  (* parses a whole file and answers its NFile node, whose kids are
+  (* File parses a whole file and answers its NFile node, whose kids are
      the definition and implementation units in source order.
 
      ERRORS ARE VALUES and the tree is always answered: the parser
      resyncs on ';' and END rather than stopping, so one mistake
      does not hide the rest of the file.  Check `p.nerr` before
-     trusting the tree -- the record is transparent for exactly
+     trusting the tree.  The record is transparent for exactly
      that, and a caller that skips the check gets a tree with holes
      in it and no warning.  p.errs[0 .. p.nkept - 1]
      carry the first MaxErr of them; p.nerr counts all.  A caller
@@ -96,7 +99,7 @@ IMPORT Lex ;
 IMPORT Text ;
 
 CONST
-  (* token kind codes, matching Lex *)
+  (* These are the token kind codes, matching Lex. *)
   TkEOF = 0 ; TkError = 1 ; TkIdent = 2 ; TkInt = 3 ; TkReal = 4 ;
   TkChar = 5 ; TkStr = 6 ;
   TkAND = 7 ; TkARRAY = 8 ; TkBEGIN = 9 ; TkBY = 10 ; TkCASE = 11 ;
@@ -124,8 +127,8 @@ CONST
   TkComma = 218 ; TkSemi = 219 ; TkColon = 220 ; TkDot = 221 ;
   TkDotDot = 222 ; TkBar = 223 ; TkCaret = 224 ;
 
-  (* stop-set ids: M9 has no set type, so each distinct stop set is
-     a named predicate case *)
+  (* These are stop-set ids.  M9 has no set type, so each distinct
+     stop set is a named predicate case. *)
   SEnd = 0 ;            (* END *)
   SBlock = 1 ;          (* EXCEPT FINALLY END *)
   SIf = 2 ;             (* ELSIF ELSE END *)
@@ -197,10 +200,10 @@ BEGIN
   END
 END OpText ;
 
-(* THE SPELLING of a token kind, which is what a message says was
-   expected: 'MODULE', ';', ':='.  Lex.KindName answers the kind's
-   NAME ('Semi'), which is what a message says was FOUND -- the two
-   are different questions and the oracle asks both.  Keywords spell
+(* Spell answers THE SPELLING of a token kind, which is what a message
+   says was expected: 'MODULE', ';', ':='.  Lex.KindName answers the
+   kind's NAME ('Semi'), which is what a message says was FOUND.  The
+   two are different questions and the oracle asks both.  Keywords spell
    themselves, so KwName is the whole answer for them. *)
 PROCEDURE Spell (k: I64) : UTF =
 BEGIN
@@ -227,15 +230,15 @@ END Spell ;
 
 (* A RETAINED MESSAGE MUST BE COPIED, and this is the one place that
    decides it.  Every caller composes its text with `+`, and the
-   answer lives wherever the caller's concatenation put it -- which
+   answer lives wherever the caller's concatenation put it.  That
    was HEAP, and is the caller's FRAME once frame pools land
    (docs/frame-pools.md).  A Parser outlives the procedure that
    reported into it, so keeping the caller's slice is a borrow held
    past its frame: par 4.1 retention, and ownledger has named this
    exact line for months (`Parse.ErrAt: retention: borrowed msg
-   stored into p`).  HEAP is the right home -- a compiler's
-   diagnostics die with the process, which is what HEAP is for --
-   and at most MaxErr of them are ever kept. *)
+   stored into p`).  HEAP is the right home: a compiler's
+   diagnostics die with the process, which is what HEAP is for.
+   And at most MaxErr of them are ever kept. *)
 PROCEDURE ErrAt (VAR p: Parser ; ln: I64 ; cl: I64 ; RO msg: UTF) =
 BEGIN
   (* past MaxDepth the parser unwinds through an EOF it made: what it
@@ -250,7 +253,8 @@ BEGIN
   p.nerr := p.nerr + 1
 END ErrAt ;
 
-(* at the current token, which is where all but the lexical ones are *)
+(* Rerr reports at the current token, which is where all but the
+   lexical ones are. *)
 PROCEDURE Rerr (VAR p: Parser ; RO msg: UTF) =
 BEGIN
   ErrAt (p, p.cur.line, p.cur.col, msg)
@@ -306,11 +310,11 @@ END Expect ;
 
 (* `what` names the identifier the grammar wanted -- 'module name',
    'field name' -- because "identifier expected" in a file with
-   twenty identifiers on the line says nothing.  The oracle's own
-   phrases, kept word for word so the two parsers can be held to the
-   same diagnostics. *)
-(* the identifier's text, a view of the source (Ast.SetA copies it into
-   the node) *)
+   twenty identifiers on the line says nothing.  They are the
+   oracle's own phrases, kept word for word so the two parsers can be
+   held to the same diagnostics. *)
+(* TakeIdent answers the identifier's text, a view of the source
+   (Ast.SetA copies it into the node). *)
 PROCEDURE TakeIdent (VAR p: Parser ; RO what: UTF) : UTF =
 VAR s : UTF ;
 BEGIN
@@ -324,9 +328,10 @@ BEGIN
   RETURN ''
 END TakeIdent ;
 
-(* one more level open; past MaxDepth the one refusal, and the parser
-   sees the end of the file from here on, so it returns through every
-   level it opened without opening another *)
+(* Deeper opens one more level.  Past MaxDepth it makes the one
+   refusal, and the parser sees the end of the file from here on, so
+   it returns through every level it opened without opening
+   another. *)
 PROCEDURE Deeper (VAR p: Parser ; by: I64) =
 BEGIN
   p.depth := p.depth + by ;
@@ -343,8 +348,8 @@ BEGIN
   RETURN Ast.NewNode (pool, kind, p.cur.line, p.cur.col)
 END Nn ;
 
-(* the state once the lexer is pointed: no error, no depth, the first
-   token read *)
+(* Started sets the state once the lexer is pointed: no error, no
+   depth, the first token read. *)
 PROCEDURE Started (VAR p: Parser) =
 BEGIN
   p.peeked := FALSE ;
@@ -367,7 +372,7 @@ BEGIN
   Started (p)
 END InitUtf ;
 
-(* forward heads for the mutual recursion *)
+(* These are forward heads for the mutual recursion. *)
 PROCEDURE PExpr (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node ;
 PROCEDURE PType (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node ;
@@ -438,12 +443,13 @@ BEGIN
   RETURN n
 END DesigToQual ;
 
-(* NEW (T), NEW (T, n...), NEW (pool, T, n...), NEW (OWN, T).  The
-   first argument says who frees the storage: nothing (the frame, par
-   4.3), a pool's name, or OWN (one binding, DISPOSE).  A pool and a
+(* PNew parses NEW (T), NEW (T, n...), NEW (pool, T, n...) and
+   NEW (OWN, T).  The first argument says who frees the storage:
+   nothing (the frame, par 4.3), a pool's name, or OWN (one binding,
+   DISPOSE).  A pool and a
    type are both spelled as a designator, so `NEW (a, b)` is resolved
    by NAME in the checkers and generators, not here (report par 10,
-   item 6): kids[0] is the first argument or NONE, kids[1] the second
+   item 6).  kids[0] is the first argument or NONE, kids[1] the second
    as an EXPRESSION (a type name in the pool and OWN forms, an extent
    in the frame form), kids[2..] the rest, with a NONE in kids[2] when
    there is no third.  The single-argument form keeps kids[1] as a
@@ -491,7 +497,8 @@ BEGIN
   RETURN n
 END PNew ;
 
-(* does the token end a statement, a list or a construct? *)
+(* Closes asks whether the token ends a statement, a list or a
+   construct. *)
 PROCEDURE Closes (k: I64) : BOOL =
 BEGIN
   RETURN k = TkSemi OR k = TkEND OR k = TkELSE OR k = TkELSIF OR
@@ -589,10 +596,11 @@ BEGIN
     Rerr (p, 'expression expected, found ' + UTF (Lex.KindName (p.cur.kind))) ;
     n := Nn (pool, p, Ast.NInt) ;
     Ast.SetA (pool, n, '0') ;
-    (* a token that ends a statement or a construct is left for whoever
-       owns it: consuming the `;' of `x := 1 + ;' made the next statement
-       an error too, and a literal the lexer refused cascaded to 65
-       errors (2026-10-22, the compiler review's tier 3) *)
+    (* A token that ends a statement or a construct is left for
+       whoever owns it.  A parser that consumed the `;' of `x := 1 + ;'
+       made the next statement an error too, and a literal the lexer
+       refused cascaded to 65 errors (2026-10-22, the compiler
+       review's tier 3). *)
     IF NOT Closes (p.cur.kind) THEN Bump (p) END
   END ;
   p.depth := p.depth - 1 ;
@@ -623,9 +631,9 @@ PROCEDURE PSimple (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r, sgn : PTR Ast.Node ;
   k : I64 ;
 BEGIN
-  (* the sign and its operand on one path: under a flag set by one IF
-     and read by another, definite assignment cannot see that sgn was
-     given a value *)
+  (* Keep the sign and its operand on one path.  Under a flag set by
+     one IF and read by another, definite assignment cannot see that
+     sgn was given a value. *)
   IF p.cur.kind = TkPlus OR p.cur.kind = TkMinus THEN
     sgn := Nn (pool, p, Ast.NUn) ;
     Ast.SetA (pool, sgn, OpText (p.cur.kind)) ;
@@ -745,8 +753,8 @@ BEGIN
   RETURN n
 END PDesignator ;
 
-(* the selectors that follow a name -- or a call's closing parenthesis
-   (NCallSel, 2026-10-09) -- appended to n *)
+(* PSels appends to n the selectors that follow a name, or a call's
+   closing parenthesis (NCallSel, 2026-10-09). *)
 PROCEDURE PSels (VAR pool: POOL ; VAR KEPT p: Parser ; VAR n: PTR Ast.Node) =
 VAR sel : PTR Ast.Node ;
 BEGIN
@@ -922,10 +930,10 @@ BEGIN
     Ast.Add (pool, n, SOME (PType (pool, p))) ;
     RETURN n
   ELSIF p.cur.kind = TkLParen THEN
-    (* an enumeration: (Red, Green, Blue) -- a member per kid, in
-       declaration order, ordinals 0..n-1 (docs/enum-plan.md).  No
-       explicit values: those are protocol numbers, and a wire format
-       keeps its CONSTs *)
+    (* This parses an enumeration: (Red, Green, Blue), a member per
+       kid, in declaration order, ordinals 0..n-1 (docs/enum-plan.md).
+       It takes no explicit values: those are protocol numbers, and a
+       wire format keeps its CONSTs. *)
     n := Nn (pool, p, Ast.NEnumType) ;
     Bump (p) ;
     n2 := Nn (pool, p, Ast.NIdent) ;
@@ -940,9 +948,10 @@ BEGIN
     Expect (p, TkRParen) ;
     RETURN n
   ELSIF p.cur.kind = TkPROCEDURE THEN
-    (* a procedure type: PROCEDURE (params) [: T] [RAISES ...], the
-       head of a ProcDecl without a name, and the same three kids so
-       the checker's parameter walk serves both (docs/proctype-plan.md) *)
+    (* This parses a procedure type: PROCEDURE (params) [: T]
+       [RAISES ...], the head of a ProcDecl without a name.  It has the
+       same three kids, so the checker's parameter walk serves both
+       (docs/proctype-plan.md). *)
     n := Nn (pool, p, Ast.NProcType) ;
     Bump (p) ;
     Expect (p, TkLParen) ;
@@ -989,15 +998,17 @@ BEGIN
   RETURN n
 END PType ;
 
-(* a QUALIFIED variant with binders, `Frame.Data.F64s (v, m)', read
-   as the call it looks like and turned into the pattern it is: the
-   callee nothing but field selectors, every argument a bare name.
+(* QualPattern reads a QUALIFIED variant with binders,
+   `Frame.Data.F64s (v, m)', as the call it looks like and turns it
+   into the pattern it is: the callee nothing but field selectors,
+   every argument a bare name.
    The one-token lookahead cannot see past `Frame.' to the `(', so the
    label went down as an expression and its binders as unknown names
-   (OneFlux, 2026-10-19 -- and the m9 skill's own example is the
-   qualified form).  The variant is the last selector; the type the
+   (OneFlux, 2026-10-19; the m9 skill's own example is the qualified
+   form).  The variant is the last selector; the type the
    qualification names is the selector's, which the checker holds the
-   label to as for the bare form.  NONE when E is anything else. *)
+   label to as for the bare form.  It answers NONE when E is anything
+   else. *)
 PROCEDURE QualPattern (VAR pool: POOL ; VAR KEPT p: Parser ;
                        e: PTR Ast.Node) : Ast.Kid =
 VAR
@@ -1491,11 +1502,12 @@ BEGIN
   RETURN n
 END PProcDecl ;
 
-(* Aggregate = "[" ConstExpr { "," ConstExpr } "]" -- the value of a
-   CONST and nothing else (report par 10).  The elements are parsed
-   as expressions; that they are constants, and of one type, is the
-   checker's to say, with a position.  An empty list is a parse
-   error: an aggregate with no element has no element type. *)
+(* PAggregate parses Aggregate = "[" ConstExpr { "," ConstExpr } "]":
+   the value of a CONST and nothing else (report par 10).  The
+   elements are parsed as expressions.  The checker says, with a
+   position, whether they are constants and of one type.  An empty
+   list is a parse error: an aggregate with no element has no element
+   type. *)
 PROCEDURE PAggregate (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
@@ -1643,15 +1655,15 @@ BEGIN
       END
     END ;
     Ast.SetA (pool, n, TakeIdent (p, 'module name')) ;
-    (* a placeholder until LINK makes the list: hasLinks guards every
-       use, and a PTR that is not OPT is given a value before it can be
-       read (par 4, definite assignment, 2026-10-21) -- a node of its
-       own, since `links := n' would move n *)
+    (* This is a placeholder until LINK makes the list.  hasLinks
+       guards every use, and a PTR that is not OPT is given a value
+       before it can be read (par 4, definite assignment, 2026-10-21).
+       It is a node of its own, since `links := n' would move n. *)
     links := Nn (pool, p, Ast.NLinkList) ;
     IF p.cur.kind = TkLINK THEN
-      (* LINK "w", ...: what the foreign unit links (par 7); the node
-         goes in LAST, after the declarations, so that nothing walking
-         a unit's kids by position moves *)
+      (* LINK "w", ... says what the foreign unit links (par 7).  The
+         node goes in LAST, after the declarations, so that nothing
+         walking a unit's kids by position moves. *)
       IF Text.BLen (n.bu) = 0 THEN Rerr (p, 'LINK belongs to a FOR "C" unit') END ;
       Bump (p) ;
       links := Nn (pool, p, Ast.NLinkList) ;

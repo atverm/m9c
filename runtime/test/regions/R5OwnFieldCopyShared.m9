@@ -1,11 +1,11 @@
 MODULE R5OwnFieldCopyShared ;
-(* R5OwnFieldCopy with SHARED for the move: `r := b.p ; s := SHARED
-   (b.p) ; DISPOSE (s) ; r.v' -- the only handle's DISPOSE frees what
-   the copy names.  NOT a hole before 2026-10-28: the owner walk
-   already refused the read (q's bit reached r through the field, and
-   the handle's DISPOSE killed it); held here so that the SHARED variant
-   of the move stays refused by the walk, beside par 4.2's refusal of
-   SHARED through a selector. *)
+(* This is R5OwnFieldCopy with SHARED for the move: `r := b.p ; s :=
+   SHARED (b.p) ; DISPOSE (s) ; r.v'.  The only handle's DISPOSE frees
+   what the copy names.  It was NOT a hole before 2026-10-28: the owner
+   walk already refused the read (q's bit reached r through the field,
+   and the handle's DISPOSE killed it).  It is held here so that the
+   SHARED variant of the move stays refused by the walk, beside par
+   4.2's refusal of SHARED through a selector. *)
 IMPORT Io, Fmt ;
 TYPE
   T = RECORD v : I64 END ;

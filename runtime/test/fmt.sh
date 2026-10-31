@@ -1,15 +1,16 @@
 #!/bin/sh
-# m9fmt -- the canonical layout with the comments kept, gated on the
-# properties it stands on rather than on corpus identity: the corpus
-# is hand-laid-out and the formatter is not its fixpoint (the
-# divergence is MEASURED and printed, never gated -- normalising the
-# corpus is a decision, not a side effect of a test).
+# m9fmt gives the canonical layout with the comments kept.  This gate
+# holds it to the properties it stands on rather than to corpus
+# identity.  The corpus is hand-laid-out, and the formatter is not its
+# fixpoint.  The gate MEASURES the divergence and prints it, but never
+# gates it.  Normalising the corpus is a decision, not a side effect of
+# a test.
 #
-# Gated: every corpus, bench and museum file formats without refusal;
-# formatting is IDEMPOTENT byte for byte; every comment survives
-# (counted by the same comdump comdiff trusts); a file that does not
-# parse is refused with the parser's own positions; --check answers
-# both ways; -w rewrites once and then never again.
+# The gate holds these: every corpus, bench and museum file formats
+# without refusal; formatting is IDEMPOTENT byte for byte; every
+# comment survives (counted by the same comdump comdiff trusts); a file
+# that does not parse is refused with the parser's own positions;
+# --check answers both ways; -w rewrites once and then never again.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
@@ -26,11 +27,11 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
   { echo "fmt: FAIL building m9fmt:"; tail -5 "$W/build.log"; exit 1; }
 FMT="$W/m9fmt"
 
-# comdump counts the comments.  Built fresh where fpc exists, and a
-# failed build is a FAILURE: until 2026-10-22 it was `|| true', and a
-# comdump left by an earlier build was then used as if it were this
-# tree's (the compiler review's tier 3).  Only without fpc is the count
-# skipped, and the gate says so.
+# comdump counts the comments.  The gate builds it fresh where fpc
+# exists, and a failed build is a FAILURE.  Until 2026-10-22 it was
+# `|| true', and a comdump left by an earlier build was then used as
+# if it were this tree's (the compiler review's tier 3).  Only without
+# fpc is the count skipped, and the gate says so.
 CD=../../host/fpc/comdump
 if command -v fpc > /dev/null 2>&1; then
   rm -f "$CD"
@@ -55,18 +56,18 @@ for f in ../../corpus/*.m9 ../../bench/*.m9 ../../museum/*.m9; do
 done
 echo "         $files files: idempotent, comments kept ($div diverge from hand layout, measured not gated)"
 
-# a #! first line is the operating system's: the lexer skips it, so
-# the printer never sees it, and m9fmt must give it back -- first,
-# verbatim -- or formatting a script would stop it being one
+# A #! first line is the operating system's.  The lexer skips it, so
+# the printer never sees it.  m9fmt must give it back, first and
+# verbatim, or formatting a script would stop it being one.
 "$FMT" runfix/Shebang.m9 > "$W/sb" || { echo "fmt: REFUSED runfix/Shebang.m9"; exit 1; }
 [ "$(head -1 "$W/sb")" = "$(head -1 runfix/Shebang.m9)" ] ||
   { echo "fmt: the #! line was not kept:"; head -2 "$W/sb"; exit 1; }
 "$FMT" "$W/sb" > "$W/sb2" && cmp -s "$W/sb" "$W/sb2" ||
   { echo "fmt: NOT IDEMPOTENT on a script"; exit 1; }
 
-# text that is not ASCII comes back as written: m9fmt read a byte a
+# Text that is not ASCII comes back as written.  m9fmt read a byte a
 # character and wrote UTF-8 to standard output, so every pass encoded
-# an e acute once more (Regex.m9's comment, 2026-10-07)
+# an e acute once more (Regex.m9's comment, 2026-10-07).
 printf 'MODULE U ;\n\n(* caf\303\251 *)\n\nVAR\n  s : STR ;\n\nBEGIN\n  s := %s\nEND U.\n' \
   "'na$(printf '\303\257')ve'" > "$W/U.m9"
 "$FMT" "$W/U.m9" > "$W/U.fmt" || { echo "fmt: REFUSED a UTF-8 source"; exit 1; }

@@ -1,13 +1,13 @@
 (* EXPECT: undeclared retention: borrowed items reaches module state -- declare KEPT items (par 4.1) *)
-(* A borrow handed BACK through a VAR parameter.  Pick fills the
-   caller's variable with views of items and keeps nothing, so it
+(* This probe hands a borrow BACK through a VAR parameter.  Pick fills
+   the caller's variable with views of items and keeps nothing, so it
    says no KEPT; Fill does the same into a record.  Until 2026-10-18
    both had to say KEPT, and KEPT on Png.NextTag then rippled up to
    Png.Raster and refused every caller that rasterised a frame string.
-   The argument CARRIES the borrow in the caller's frame instead: a
-   local Tag filled by Fill dies with the frame (legal), a module
-   variable filled by Pick is the retention, and it is the caller's
-   to declare.  A store THROUGH a pointer parameter is not a hand-back
+   The argument CARRIES the borrow in the caller's frame instead.  A
+   local Tag filled by Fill dies with the frame (legal).  A module
+   variable filled by Pick is the retention, and it is the caller's to
+   declare.  A store THROUGH a pointer parameter is not a hand-back
    (kept-via-record.m9). *)
 MODULE m ;
 TYPE Tag = RECORD name : STR ; n : I64 END ;
@@ -20,14 +20,14 @@ BEGIN
   out := NEW (pool, STR, LEN (items)) ;
   n := 0 ;
   FOR i := 0 TO LEN (items) - 1 DO
-    IF LEN (items[i]) > 0 THEN out[n] := items[i] ; n := n + 1 END
+    IF LEN (OCTETS (items[i])) > 0 THEN out[n] := items[i] ; n := n + 1 END
   END ;
   res := SLICE (out, 0, n)
 END Pick ;
 PROCEDURE Fill (RO s: STR ; VAR tg: Tag) =
 BEGIN
   tg.name := SLICE (s, 0, 1) ;
-  tg.n := LEN (s)
+  tg.n := LEN (OCTETS (s))
 END Fill ;
 PROCEDURE Scan (RO s: STR) : I64 =
 VAR tg : Tag ;

@@ -1,22 +1,21 @@
 #!/bin/sh
-# m9elide -- stage 4 of docs/pool-elision-plan.md: the tool that
-# removes a pool parameter where rules 1 and 2 make it redundant,
-# rewrites every call, and proves each edit by re-parsing.
+# m9elide is stage 4 of docs/pool-elision-plan.md.  The tool removes a
+# pool parameter where rules 1 and 2 make it redundant, rewrites every
+# call, and proves each edit by re-parsing.
 #
-# Gated: the fixture pair (a constructor that promises its pool, a
-# mutator, a slice, a string and a frame-built list answered, a
-# wrapper, a keeper, an output slot, a view stored through a VAR
-# parameter) is rewritten EXACTLY as
-# expected, comments and layout kept; the program prints the same
-# lines before and after; the tool is idempotent; what it leaves to
-# the checker is refused there BY NAME, and the decided variant
-# compiles and runs; a stale pool argument (the callee lost its pool
-# by hand, before the tool) goes by arity; --keep holds a procedure
-# back; a file that does
-# not parse is refused with its position and nothing is written; and
-# every edit over the WHOLE CORPUS is proved (the counts are printed,
-# never gated -- stage 5 ran the migration, so a run over the
-# migrated corpus without its --keep list finds the readers again).
+# The gate holds these.  The fixture pair (a constructor that promises
+# its pool, a mutator, a slice, a string and a frame-built list
+# answered, a wrapper, a keeper, an output slot, a view stored through
+# a VAR parameter) is rewritten EXACTLY as expected, comments and
+# layout kept.  The program prints the same lines before and after.
+# The tool is idempotent.  The checker refuses BY NAME what the tool
+# leaves to it, and the decided variant compiles and runs.  A stale
+# pool argument (the callee lost its pool by hand, before the tool)
+# goes by arity.  --keep holds a procedure back.  A file that does not
+# parse is refused with its position, and nothing is written.  Every
+# edit over the WHOLE CORPUS is proved.  The counts are printed, never
+# gated: stage 5 ran the migration, so a run over the migrated corpus
+# without its --keep list finds the readers again.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh          # runtime/gen is BUILT here, not found
@@ -83,9 +82,9 @@ cp "$F/Grow.m9" "$W/decided/" && cp "$F/Pooled.decided.m9" "$W/decided/Pooled.m9
 echo "         a frame answer stored in a pooled module variable is refused by name; the decision compiles"
 
 # ---- a stale pool argument goes by arity ------------------------------
-# a caller written before its callee lost its pool by hand (Json and
-# Text in stage 2): the callee takes none and the call hands one
-# argument too many, so the argument goes and the caller's pool is
+# A caller was written before its callee lost its pool by hand (Json
+# and Text in stage 2).  The callee takes none, and the call hands one
+# argument too many.  So the argument goes, and the caller's pool is
 # not thereby kept.
 mkdir -p "$W/stale"; cp "$F/Grow.m9" "$F/Stale.m9" "$W/stale/"
 ( cd "$W/stale" && "$EL" -w Grow.m9 Stale.m9 2> ledger.txt ) || \
@@ -96,7 +95,8 @@ grep -q '1 stale pool arguments go' "$W/stale/ledger.txt" || \
   { echo "elide: the stale argument is not in the ledger:"; tail -1 "$W/stale/ledger.txt"; exit 1; }
 ( cd "$W/stale" && "$M9C" --make -o stale Stale.m9 -I . > build.log 2>&1 ) || \
   { echo "elide: the stale fixture does not build after the tool:"; cat "$W/stale/build.log"; exit 1; }
-[ "$("$W/stale/stale")" = "9" ] || { echo "elide: the stale fixture is wrong"; exit 1; }
+# 9 from Total, then 0 from Count: nothing was remembered.
+[ "$("$W/stale/stale")" = "90" ] || { echo "elide: the stale fixture is wrong"; exit 1; }
 echo "         a pool handed to a callee that takes none goes by arity, and is no reason to keep"
 
 # ---- --keep holds a procedure back -----------------------------------

@@ -1,7 +1,7 @@
 STATEFUL DEFINITION MODULE ShObs ;
 
-(* run.sh's --show fixture: an exported variable of a type from a
-   module the show cell does not import (the notebook's Obs.f) *)
+(* ShObs, run.sh's --show fixture, exports a variable of a type from a
+   module the show cell does not import (the notebook's Obs.f). *)
 
 IMPORT Frame ;
 VAR f : PTR Frame.Fr ;

@@ -1,13 +1,13 @@
 (* EXPECT: CASE label 200 appears twice *)
 MODULE CaseLabelTwice ;
 
-(* A repeated label is settled at compile time, and until 2026-08-31
-   only the C compiler settled it -- reporting `duplicate case value`
+(* A repeated label is settled at compile time.  Until 2026-08-31 only
+   the C compiler settled it, and it reported `duplicate case value`
    against generated code the author never wrote.
 
-   Single literal labels only: a range needs interval overlap and a
-   CONST designator needs the value, and guessing at either would be
-   worse than the gap. *)
+   The check covers single literal labels only.  A range needs interval
+   overlap and a CONST designator needs the value, and guessing at
+   either would be worse than the gap. *)
 
 PROCEDURE Reason (status: I64) : I64 =
 BEGIN

@@ -3,7 +3,7 @@ MODULE m ;
 (* CASE totality kept 16 labels: a CASE naming every one of 17 or more
    members was refused as missing the 17th on (the second review's fuzz
    N5, a false refusal; the Pascal twin's list never had the cap).
-   Legal form first: all twenty members named; then one missing. *)
+   The legal form first names all twenty; then one member is missing. *)
 TYPE E = (e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19) ;
 PROCEDURE All (x: E) : I64 =
 BEGIN

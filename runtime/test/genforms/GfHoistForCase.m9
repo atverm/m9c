@@ -1,5 +1,7 @@
 MODULE GfHoistForCase ;
 
+IMPORT Text ;
+
 (* WANT: for: IndexError ran FALSE, case: IndexError ran FALSE *)
 
 (* A raising argument in a FOR bound or a CASE selector is guarded
@@ -17,7 +19,7 @@ VAR
 PROCEDURE Len (RO s: STR) : I64 =
 BEGIN
   ran := TRUE ;
-  RETURN LEN (s)
+  RETURN Text.BLen (s)
 END Len ;
 
 PROCEDURE Said () : STR =

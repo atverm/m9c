@@ -1,8 +1,8 @@
 (* EXPECT: argument 1 of FwdKept: a KEPT parameter cannot take the pool scratch -- it dies with this frame *)
-(* kept-pool-local through a KEPT forwarder: the local pool is refused
-   where it is handed to the first KEPT parameter, however many calls
-   down the keeping happens (2026-10-28).  Legal forms first: the
-   forwarder given the module's pool. *)
+(* This is kept-pool-local through a KEPT forwarder.  The local pool is
+   refused where it is handed to the first KEPT parameter, however many
+   calls down the keeping happens (2026-10-28).  Legal forms come first:
+   the forwarder given the module's pool. *)
 MODULE m ;
 TYPE Cell = RECORD v : I64 END ;
 VAR

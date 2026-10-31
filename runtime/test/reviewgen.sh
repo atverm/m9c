@@ -2,13 +2,14 @@
 # Re-record runtime/test/review/*.txt, the pages reviewdiff compares
 # against: `m9c --review' of every module build.sh installs.
 #
-# Separate from reviewdiff on purpose: a gate that regenerates what it
-# compares against cannot fail.  Run this when a module gains or loses
-# a named pool, a KEPT parameter, a foreign procedure -- anything the
-# page counts -- READ THE DIFF, and commit it with the change: the
-# diff is the review the page exists for.  The recorded page carries
-# no line numbers (lib/reviewnorm.sh says why), so an edit that only
-# moves lines needs no re-recording and makes no diff.
+# This script stays separate from reviewdiff on purpose: a gate that
+# regenerates what it compares against cannot fail.  Run this when a
+# module gains or loses a named pool, a KEPT parameter, a foreign
+# procedure, or anything else the page counts.  READ THE DIFF, and
+# commit it with the change.  The diff is the review the page exists
+# for.  The recorded page carries no line numbers (lib/reviewnorm.sh
+# says why).  So an edit that only moves lines needs no re-recording
+# and makes no diff.
 set -e
 cd "$(dirname "$0")"
 . ./lib/gen.sh
@@ -23,8 +24,8 @@ mkdir -p "$GOLD"
 export M9RUNTIME=$(cd .. && pwd)
 export M9LIBRARY=$SRC
 n=0
-# build.sh's LIBRARY, the range closing on the line that ends the
-# string (docgen.sh says what happened when it closed on a name)
+# Take build.sh's LIBRARY.  The range closes on the line that ends the
+# string (docgen.sh says what happened when it closed on a name).
 for m in $(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh |
            sed 's/LIBRARY="//; s/"$//; s/\\$//' | tr -s ' \n' ' '); do
   d=""

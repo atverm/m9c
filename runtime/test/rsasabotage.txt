@@ -1,0 +1,97 @@
+# runtime/test/Sabotage.m9 rsa reads this list.  Each entry is one
+# small break of a COPY of corpus/Rsa.m9 (the default file) or of the
+# shim in runtime/tlsshim.c (m9_rsa_verify).  RsaTest must go red on
+# it.  A file outside corpus/ is edited in the copied runtime, by its
+# base name.  docs/library-plan-2.md, section 13.
+#
+# The form, one entry:
+#
+#   @name what the edit breaks
+#   @file another file        (optional; the default above without it)
+#   @old
+#   the text to replace: it must occur in the file exactly once
+#   @new
+#   the text put in its place
+#   @end
+#
+# A text is the lines between its two markers, joined by newlines, taken
+# exactly: leading spaces count, and no escapes exist.  A text that ends
+# in a newline has one empty line before the next marker.  An empty text
+# has no lines.  A line beginning with # is a comment only outside an
+# entry.
+
+@name shim: PSS verified as PKCS#1
+@file runtime/tlsshim.c
+@old
+pss ? RSA_PKCS1_PSS_PADDING : RSA_PKCS1_PADDING
+@new
+RSA_PKCS1_PADDING
+@end
+
+@name shim: a 20-octet salt
+@file runtime/tlsshim.c
+@old
+EVP_PKEY_CTX_set_rsa_pss_saltlen (ctx, 32)
+@new
+EVP_PKEY_CTX_set_rsa_pss_saltlen (ctx, 20)
+@end
+
+@name shim: MGF1 over SHA-1
+@file runtime/tlsshim.c
+@old
+EVP_PKEY_CTX_set_rsa_mgf1_md (ctx, EVP_sha256 ())
+@new
+EVP_PKEY_CTX_set_rsa_mgf1_md (ctx, EVP_sha1 ())
+@end
+
+@name shim: the signature digest said to be SHA-1
+@file runtime/tlsshim.c
+@old
+EVP_PKEY_CTX_set_signature_md (ctx, EVP_sha256 ())
+@new
+EVP_PKEY_CTX_set_signature_md (ctx, EVP_sha1 ())
+@end
+
+@name shim: any answer of OpenSSL's taken as verified
+@file runtime/tlsshim.c
+@old
+rc = EVP_PKEY_verify (ctx, sig, slen, digest, hlen) == 1 ? 1 : 0;
+@new
+rc = EVP_PKEY_verify (ctx, sig, slen, digest, hlen) >= 0 ? 1 : 0;
+@end
+
+@name the OID not checked
+@old
+    IF NOT RsaOid (der, at) THEN RAISE Error ('not an rsaEncryption key') END ;
+@new
+@end
+
+@name the bit count off by one
+@old
+  k.bits := LEN (n) * 8 ;
+  WHILE top
+@new
+  k.bits := LEN (n) * 8 - 1 ;
+  WHILE top
+@end
+
+@name the key's form told wrong to OpenSSL
+@old
+  IF k.pkcs1 THEN pk := 1 ELSE pk := 0 END ;
+@new
+  IF k.pkcs1 THEN pk := 0 ELSE pk := 1 END ;
+@end
+
+@name the scheme told wrong to OpenSSL
+@old
+  IF scheme = Pss THEN pss := 1 ELSE pss := 0 END ;
+@new
+  IF scheme = Pss THEN pss := 0 ELSE pss := 1 END ;
+@end
+
+@name the modulus's leading zero kept
+@old
+  WHILE i < len - 1 AND I64 (d[start + i]) = 0 DO i := i + 1 END ;
+@new
+  i := 0 ;
+@end

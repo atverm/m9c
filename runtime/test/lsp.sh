@@ -1,10 +1,10 @@
 #!/bin/sh
-# m9lsp -- the language server, gated the way the tutor is: a real
-# session over the real transport, byte-framed, with the server built
-# from the tree and speaking for the m9c built beside it.
+# m9lsp is the language server.  This gate holds it the way the tutor
+# is held: a real session over the real transport, byte-framed.  The
+# server is built from the tree and speaks for the m9c built beside it.
 #
-# The client half is python3 because a shell cannot portably read
-# exact byte counts; the SERVER half is the M9 under test.  Checks:
+# The client half is python3, because a shell cannot portably read
+# exact byte counts.  The SERVER half is the M9 under test.  Checks:
 # initialize answers the name and version; a broken file yields
 # publishDiagnostics carrying m9c's own message at its position; a
 # clean file yields an empty list; an unknown REQUEST is answered
@@ -21,13 +21,13 @@ RT=$(cd .. && pwd)
 W=/tmp/m9lsp-gate
 rm -rf "$W"; mkdir -p "$W"
 
-# the compiler the server invokes, built from the gen just made --
-# never a leftover binary (the stale-artifact trap, twice bitten)
+# Build the compiler the server invokes from the gen just made, never
+# a leftover binary (the stale-artifact trap, twice bitten).
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
     -iquote .. -iquote ../gen ../m9rt.c $COMPILERC -lm -o "$W/m9c"
 
-# the server, compiled by the m9c it will later invoke
+# The m9c the server will later invoke compiles the server.
 cd "$W"
 M9RUNTIME="$RT" M9LIBRARY="$SRC" ./m9c --make -o m9lsp "$SRC/Lsp.m9" >build.log 2>&1 || \
   { echo "lsp: FAIL building m9lsp:"; tail -5 build.log; exit 1; }
@@ -46,16 +46,16 @@ BEGIN
   i := 42
 END Fine.
 FIN
-# accepted by the checker, refused by the generator: until 2026-09-27
-# --check stopped before the generator and the editor called this
-# clean (docs/agent-review-2026-09-27.md F4)
-# (the form changes as the generator learns them: EXCEPT and FINALLY
-# on one block until 2026-10-09, an expression as a CASE label until
-# stage 2 of the typed tree the same evening, a variable FOR step until
-# stage 3, when the checker learned to refuse it, a SLICE of a call's
-# array until the checker refused that too, a VIEW of a call's grid
-# until the generator learned it (2026-10-25), two VAR arguments in two
-# pools now)
+# The checker accepts this file and the generator refuses it.  Until
+# 2026-09-27 --check stopped before the generator, and the editor
+# called this clean (docs/agent-review-2026-09-27.md F4).
+# The form changes as the generator learns them.  It was EXCEPT and
+# FINALLY on one block until 2026-10-09.  It was an expression as a
+# CASE label until stage 2 of the typed tree the same evening.  It was
+# a variable FOR step until stage 3, when the checker learned to refuse
+# it.  It was a SLICE of a call's array until the checker refused that
+# too.  It was a VIEW of a call's grid until the generator learned it
+# (2026-10-25).  It is two VAR arguments in two pools now.
 cat > Late.m9 <<'LATE'
 MODULE Late ;
 IMPORT Io ;
@@ -71,8 +71,8 @@ BEGIN
 END Late.
 LATE
 
-# the version the server announces is gated against debian/changelog
-# exactly as m9c --version is in m9c.sh: 0.4.1 shipped an m9lsp that
+# The version the server announces is gated against debian/changelog,
+# exactly as m9c --version is in m9c.sh.  0.4.1 shipped an m9lsp that
 # said 0.4.0, because Lsp.m9's Version is a second hand-bumped
 # constant and nothing compared it to anything.
 CLV=$(cd "$SRC/.." && sh tools/release/version.sh)

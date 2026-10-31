@@ -1,0 +1,196 @@
+# runtime/test/Sabotage.m9 smtp reads this list.  Each entry is one
+# small edit to a COPY of corpus/Smtp.m9.  The edit breaks one property
+# the smtp gate (smtp.sh) claims to hold, so the gate must FAIL on it.
+# docs/library-plan-2.md, item 6.
+#
+# The form, one entry:
+#
+#   @name what the edit breaks
+#   @file corpus/Smtp.m9      (optional; corpus/Smtp.m9 without it)
+#   @old
+#   the text to replace: it must occur in the file exactly once
+#   @new
+#   the text put in its place
+#   @end
+#
+# A text is the lines between its two markers, joined by newlines, taken
+# exactly: leading spaces count, and no escapes exist.  A text that ends
+# in a newline has one empty line before the next marker.  An empty text
+# has no lines.  A line beginning with # is a comment only outside an
+# entry.
+#
+# Not here: dot-stuffing.  Every part is base64 and no header begins
+# with a dot, so the wire never carries a line to stuff.  SmtpTest holds
+# Stuffed on text directly.
+
+@name Bcc written in the headers
+@old
+  Addresses (d, 'Cc', m.cc, m.ncc) ;
+
+@new
+  Addresses (d, 'Cc', m.cc, m.ncc) ;
+  Addresses (d, 'Bcc', m.bcc, m.nbcc) ;
+
+@end
+
+@name Bcc left out of the envelope
+@old
+  FOR i := 0 TO m.nbcc - 1 DO rcpts[n] := m.bcc[i] ; n := n + 1 END ;
+@new
+  FOR i := 0 TO -1 DO rcpts[n] := m.bcc[i] ; n := n + 1 END ;
+@end
+
+@name the subject's non-ASCII sent raw
+@old
+  IF IsAscii (m.subject) THEN DynStr.Append (d, m.subject)
+@new
+  IF TRUE THEN DynStr.Append (d, m.subject)
+@end
+
+@name a folded subject word over the line
+@old
+  room := 63 - Text.BLen ('Subject: ') + 1 ;
+@new
+  room := 63 ;
+@end
+
+@name the attachment's octets shifted
+@old
+  FOR i := 0 TO LEN (data) - 1 DO copy[i] := data[i] END ;
+@new
+  FOR i := 0 TO LEN (data) - 2 DO copy[i] := data[i + 1] END ;
+@end
+
+@name the text part not base64
+@old
+  DynStr.Append (d, 'Content-Transfer-Encoding: base64') ;
+  CrLf (d) ;
+  CrLf (d) ;
+  Lines (d, Text.ToBase64 (OCTETS (text)))
+@new
+  CrLf (d) ;
+  Lines (d, Text.ToBase64 (OCTETS (text)))
+@end
+
+@name AUTH PLAIN's identity without its first NUL
+@old
+    ident := NEW (scratch, BYTE, LEN (u) + LEN (p) + 2) ;
+    ident[0] := 0 ;
+@new
+    ident := NEW (scratch, BYTE, LEN (u) + LEN (p) + 1) ;
+    ident := SLICE (ident, 0, LEN (ident)) ;
+@end
+
+@name LOGIN's user and password swapped
+@old
+    Cmd (c, Text.ToBase64 (u)) ;
+    Need (c, 334, 'AUTH LOGIN, the user', text) ;
+    Cmd (c, Text.ToBase64 (p)) ;
+@new
+    Cmd (c, Text.ToBase64 (p)) ;
+    Need (c, 334, 'AUTH LOGIN, the user', text) ;
+    Cmd (c, Text.ToBase64 (u)) ;
+@end
+
+@name a 4xx taken for success
+@old
+  IF (want = 2 AND code DIV 100 # 2) OR (want # 2 AND code # want) THEN
+@new
+  IF (want = 2 AND code DIV 100 = 5) OR (want # 2 AND code # want) THEN
+@end
+
+@name STARTTLS not offered, sent plain anyway
+@old
+      IF NOT Offers (ehlo, 'STARTTLS') THEN
+@new
+      IF FALSE THEN
+@end
+
+@name STARTTLS's handshake skipped
+@old
+      h := I64 (TlsWrap (C.Int (c.fd), ADR (hz))) ;
+@new
+      h := -1 ;
+@end
+
+@name the second EHLO after STARTTLS skipped
+@old
+      Cmd (c, Ehlo) ;
+      Need (c, 250, 'EHLO after STARTTLS', ehlo)
+
+@new
+      ehlo := ehlo
+
+@end
+
+@name a reply read only to its first line
+@old
+           IsDigit (buf[ls + 2]) AND I64 (buf[ls + 3]) = 32 THEN
+@new
+           IsDigit (buf[ls + 2]) THEN
+@end
+
+@name a UTF-8 reply read one character per octet
+@old
+  text := DynStr.Decoded (scratch, SLICE (buf, 0, total)) ;
+@new
+  text := DynStr.Chars (scratch, SLICE (buf, 0, total)) ;
+@end
+
+@name the message body sent one octet per character
+@old
+            OCTETS (Stuffed (Wire (m)) + '.' + 0DC + 0AC))
+@new
+            DynStr.Bytes (scratch, Stuffed (Wire (m)) + '.' + 0DC + 0AC, FALSE))
+@end
+
+@name SMTPUTF8 never named on MAIL FROM
+@old
+      params := ' SMTPUTF8' ;
+@new
+      params := '' ;
+@end
+
+@name SMTPUTF8 sent raw without checking the offer
+@old
+      IF NOT Offers (ehlo, 'SMTPUTF8') THEN
+@new
+      IF FALSE THEN
+@end
+
+@name BODY=8BITMIME left off beside SMTPUTF8
+@old
+      IF Offers (ehlo, '8BITMIME') THEN params := params + ' BODY=8BITMIME' END
+@new
+      params := params
+@end
+
+@name an ASCII message sent with SMTPUTF8
+@old
+  RETURN FALSE
+END NeedsUtf8 ;
+@new
+  RETURN TRUE
+END NeedsUtf8 ;
+@end
+
+@name the message octets not scanned for SMTPUTF8
+@old
+  IF HasHigh (data) OR HasHigh (OCTETS (from)) THEN RETURN TRUE END ;
+@new
+  IF HasHigh (OCTETS (from)) THEN RETURN TRUE END ;
+@end
+
+@name the recipients not scanned for SMTPUTF8
+@old
+    IF HasHigh (OCTETS (r)) THEN RETURN TRUE END
+@new
+    IF FALSE THEN RETURN TRUE END
+@end
+
+@name the reply code not reported
+@old
+    RAISE Error ('smtp: ' + stage + ': ' + Text.Trim (text), code)
+@new
+    RAISE Error ('smtp: ' + stage + ': ' + Text.Trim (text), 0)
+@end

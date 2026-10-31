@@ -2,8 +2,8 @@ MODULE GfOwnerPassBack ;
 
 (* WANT: 41 *)
 
-(* q := Pass (o), Pass answering its OWN parameter back: a move, not a
-  kill (F3) *)
+(* q := Pass (o), with Pass answering its OWN parameter back, is a
+  move, not a kill (F3). *)
 (* FALSE REFUSAL? an owner handed through OWN and answered back; the view read while the object lives *)
 IMPORT Io, Fmt ;
 TYPE Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 END ;

@@ -57,7 +57,7 @@ struct Arrays_Acc {
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[26] = { 97u, 120u, 105u, 115u, 32u, 111u, 102u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 32u, 50u, 32u, 105u, 115u, 32u, 48u, 32u, 111u, 114u, 32u, 49u };
+static const uint8_t m9s0[26] = { 97, 120, 105, 115, 32, 111, 102, 32, 97, 32, 71, 82, 73, 68, 32, 50, 32, 105, 115, 32, 48, 32, 111, 114, 32, 49 };
 
 static void Arrays_Take (Arrays_Acc *s, double v, m9_state *err);
 static double Arrays_SumOf (Arrays_Acc *s, m9_state *err);
@@ -1643,7 +1643,7 @@ static m9_sl_Arrays_Acc Arrays_Along (m9_gd2_double g, int64_t axis, m9_state *e
         r += 1;
       } }
   } else {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 26 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 26 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 26 })) m9t5 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 26 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } }

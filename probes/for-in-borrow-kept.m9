@@ -1,8 +1,8 @@
 (* EXPECT: undeclared retention: borrowed rows (carried by p) reaches module state -- declare KEPT rows (par 4.1) *)
-(* FOR p IN rows gives p each element: a pointer the caller lent, as
-   `p := rows[i]' would.  Keeping it in module state is a retention the
-   heading must declare.  The legal forms first: reading through it,
-   and keeping what a KEPT parameter lent. *)
+(* FOR p IN rows gives p each element: a pointer the caller lent, as `p
+   := rows[i]' would.  Keeping it in module state is a retention the
+   heading must declare.  The legal forms come first: reading through
+   it, and keeping what a KEPT parameter lent. *)
 MODULE m ;
 TYPE
   T = RECORD n : I64 END ;

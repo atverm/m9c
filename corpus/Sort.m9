@@ -1,38 +1,38 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Sort ;
 
-(* Sorting, stable, in place, over a slice -- so a sub-range needs no
-   offsets in the signature: name the view, then sort it,
+(* This module sorts over a slice, stable and in place.  So a sub-range
+   needs no offsets in the signature.  Name the view, then sort it,
 
        sub := SLICE (a, start, len) ;
        Sort.I64s (sub) ;
 
    and the parent's elements move, since a view shares the buffer.
-   The two lines are not one: `Sort.I64s (SLICE (a, 0, n))` is
+   The two lines are not one.  `Sort.I64s (SLICE (a, 0, n))` is
    refused, because a VAR argument must be a designator and a SLICE
-   expression is not one (probe `var-arg-not-designator`; the zarr
-   proxy port hit it on 2026-09-28 after this comment had said
-   otherwise).
+   expression is not one (probe `var-arg-not-designator`).  The zarr
+   proxy port hit it on 2026-09-28, after this comment had said
+   otherwise.
 
-   Until 2026-09-27 the corpus exported no sort at all: Stats kept a
+   Until 2026-09-27 the corpus exported no sort at all.  Stats kept a
    private heapsort, Zarr an insertion sort whose comment said "the
-   corpus exports none", Json a third, m9edit a fourth, and the
-   ONEFlux port wrote its own merge sort when a heapsort's instability
-   changed an answer.  The review of that day counted them
-   (docs/agent-review-2026-09-27.md F7) and the port asked for exactly
+   corpus exports none", Json a third, m9edit a fourth.  The ONEFlux
+   port wrote its own merge sort when a heapsort's instability changed
+   an answer.  The review of that day counted them
+   (docs/agent-review-2026-09-27.md F7).  The port asked for exactly
    two properties: a sort over a sub-range, and a stable one.  Both
    are here, as a merge sort: n log n, stable by construction, the
    scratch half in a pool that dies with the call.
 
    `By` is the corpus's first use of a procedure type (report par
-   2.2.3): the caller's own order over I64 keys, which is how a table
-   of records is sorted by any column -- sort its row indices with a
-   Less that reads the column.                                       *)
+   2.2.3).  It takes the caller's own order over I64 keys.  A table of
+   records is sorted by any column this way: sort its row indices
+   with a Less that reads the column.                                *)
 
 TYPE
   Less = PROCEDURE (a: I64 ; b: I64) : BOOL ;
-  (* a strict order: TRUE when a goes before b, FALSE for equal keys,
-     which is what keeps the sort stable *)
+  (* Less is a strict order.  It answers TRUE when a goes before b and
+     FALSE for equal keys, which is what keeps the sort stable *)
 
 EXCEPTION
   NotANumber (at: I64) ;
@@ -41,54 +41,56 @@ EXCEPTION
      rule, par 2.1) *)
 
 PROCEDURE F64s (VAR a: SLICE OF F64) RAISES NotANumber ;
-  (* ascending, stable; -0.0 and 0.0 are equal and keep their order *)
+  (* F64s sorts ascending, stable.  -0.0 and 0.0 are equal and keep
+     their order *)
 
 PROCEDURE I64s (VAR a: SLICE OF I64) ;
-  (* ascending, stable *)
+  (* I64s sorts ascending, stable *)
 
 PROCEDURE Strs (VAR a: SLICE OF STR) ;
-  (* ascending by scalar value, position by position, the shorter
-     first when one is a prefix of the other; stable.  No locale:
-     'B' sorts before 'a'.
+  (* Strs sorts ascending by scalar value, position by position, the
+     shorter first when one is a prefix of the other.  It is stable.
+     It uses no locale: 'B' sorts before 'a'.
 
-     Not KEPT, on purpose.  The first version merged through a
-     scratch SLICE OF STR, and `tmp[k] := a[j]` is, to the checker,
-     a borrowed string stored into another parameter's storage: it
-     demanded KEPT a, and the mark climbed into every caller -- in
-     the zarr proxy port from Shuttle.FlatVars up into SetupRun, a
-     thread root (2026-09-28).  This version
-     sorts an index permutation (the strings are only READ, through
-     RO) and applies it in place through one local, which the
-     checker sees as movement within the caller's own slice.  Same
-     n log n, same stability, no scratch strings. *)
+     Strs is not KEPT, on purpose.  The first version merged through
+     a scratch SLICE OF STR.  To the checker, `tmp[k] := a[j]` is a
+     borrowed string stored into another parameter's storage.  The
+     checker demanded KEPT a, and the mark climbed into every caller.
+     In the zarr proxy port it climbed from Shuttle.FlatVars up into
+     SetupRun, a thread root (2026-09-28).  This version sorts an
+     index permutation (the strings are only READ, through RO).  It
+     applies the permutation in place through one local, which the
+     checker sees as movement within the caller's own slice.  It keeps
+     the same n log n and the same stability, with no scratch
+     strings. *)
 
 PROCEDURE ArgF64 (RO v: SLICE OF F64 ; VAR idx: SLICE OF I64)
   RAISES NotANumber, IndexError ;
-  (* the indices 0 .. LEN (v) - 1 in the order that sorts v, stable:
-     equal values keep index order.  LEN (idx) must be LEN (v)
-     (IndexError otherwise); v is not moved *)
+  (* ArgF64 gives the indices 0 .. LEN (v) - 1 in the order that sorts
+     v, stable: equal values keep index order.  LEN (idx) must be
+     LEN (v) (IndexError otherwise).  v is not moved *)
 
 PROCEDURE ArgI64 (RO v: SLICE OF I64 ; VAR idx: SLICE OF I64)
   RAISES IndexError ;
 PROCEDURE ArgStr (RO v: SLICE OF STR ; VAR idx: SLICE OF I64)
   RAISES IndexError ;
-  (* ArgF64 for integers and for strings (in Strs's order): the
-     indices that sort v, stable, v not moved; LEN (idx) must be
-     LEN (v) *)
+  (* ArgI64 and ArgStr are ArgF64 for integers and for strings (in
+     Strs's order).  They give the indices that sort v, stable, and v
+     is not moved.  LEN (idx) must be LEN (v) *)
 
 PROCEDURE By (VAR keys: SLICE OF I64 ; less: Less) ;
-  (* the keys in the caller's order, stable *)
+  (* By sorts the keys in the caller's order, stable *)
 
 PROCEDURE UniqueF64 (RO v: SLICE OF F64) : SLICE OF F64
   RAISES NotANumber ;
 PROCEDURE UniqueI64 (RO v: SLICE OF I64) : SLICE OF I64 ;
 PROCEDURE UniqueStrs (RO v: SLICE OF STR) : SLICE OF STR ;
-  (* the distinct values of v, ascending: numpy.unique.  The answer
-     is new storage in the caller's frame and v is not moved; the
-     strings of UniqueStrs are copies, so the answer does not hold
-     on to v.  -0.0 and 0.0 are
-     one value (the first met stays); a NaN is NotANumber, as it is
-     for the sort this stands on. *)
+  (* These answer the distinct values of v, ascending: numpy.unique.
+     The answer is new storage in the caller's frame, and v is not
+     moved.  The strings of UniqueStrs are copies, so the answer does
+     not hold on to v.  -0.0 and 0.0 are one value (the first met
+     stays).  A NaN is NotANumber, as it is for the sort this stands
+     on. *)
 
 PROCEDURE LowerF64 (RO a: SLICE OF F64 ; x: F64) : I64 ;
 PROCEDURE UpperF64 (RO a: SLICE OF F64 ; x: F64) : I64 ;
@@ -97,9 +99,9 @@ PROCEDURE LowerI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
 PROCEDURE UpperI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
 PROCEDURE FindI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
 PROCEDURE FindStr (RO a: SLICE OF STR ; RO s: STR) : I64 ;
-  (* BINARY SEARCH in a slice that is ASCENDING -- which is the
-     caller's to ensure: these read about log2 (LEN (a)) elements and
-     cannot notice a slice that is not sorted.
+  (* These do a BINARY SEARCH in a slice that is ASCENDING.  The
+     caller must ensure the order.  These read about log2 (LEN (a))
+     elements and cannot notice a slice that is not sorted.
 
        Lower:  the first index whose element is not less than x,
                0 .. LEN (a): where x would be inserted to stay
@@ -117,20 +119,24 @@ END Sort.
 
 UNSAFE IMPLEMENTATION MODULE Sort ;
 
-(* UNSAFE for ADR: a slice's storage goes to the runtime's radix sorts
-   (csort, at the end of this file; m9rt.h); the merge sorts below are
-   the portable twin, taken where the runtime declines (no memory, or
-   M9_SORT_PORTABLE in the environment -- the gates run both ways).
-   2026-10-25, Alex: "then sort": a million F64s 125 -> 52 ms on the
-   Xeon, the argsort 156 -> 53. *)
+IMPORT Text ;
+
+(* The module is UNSAFE for ADR.  A slice's storage goes to the
+   runtime's radix sorts (csort, at the end of this file; m9rt.h).
+   The merge sorts below are the portable twin.  The module takes them
+   where the runtime declines: no memory, or M9_SORT_PORTABLE in the
+   environment.  The gates run both ways.  Alex, 2026-10-25: "then
+   sort".  A million F64s went 125 -> 52 ms on the Xeon, the argsort
+   156 -> 53. *)
 
 IMPORT Math ;
 FROM csort IMPORT CSortF64, CSortI64, CArgF64, CArgI64 ;
 
-(* one merge sort per element type -- no generics, per-type twins as
-   Math and Frame do -- each the same twenty lines: halve, sort the
-   halves, merge into scratch, copy back.  The comparison is the one
-   place they differ, and By's is a call through the caller's Less. *)
+(* Each element type has one merge sort.  There are no generics, so
+   these are per-type twins, as in Math and Frame.  Each is the same
+   twenty lines: halve, sort the halves, merge into scratch, copy
+   back.  The comparison is the one place they differ, and By's is a
+   call through the caller's Less. *)
 
 PROCEDURE MergeF64 (VAR a: SLICE OF F64 ; VAR tmp: SLICE OF F64 ;
                     lo: I64 ; mid: I64 ; hi: I64) =
@@ -138,7 +144,8 @@ VAR i, j, k : I64 ;
 BEGIN
   i := lo ; j := mid ; k := lo ;
   WHILE i < mid AND j < hi DO
-    (* take from the right only when strictly smaller: stability *)
+    (* Take from the right only when strictly smaller.  This keeps
+       the sort stable. *)
     IF a[j] < a[i] THEN tmp[k] := a[j] ; j := j + 1
     ELSE tmp[k] := a[i] ; i := i + 1 END ;
     k := k + 1
@@ -209,21 +216,23 @@ BEGIN
   SortI64 (a, tmp, 0, LEN (a))
 END I64s ;
 
-(* scalar order, the shorter first on a common prefix *)
+(* StrLess is the scalar order, with the shorter first on a common
+   prefix *)
 PROCEDURE StrLess (RO a: STR ; RO b: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i < LEN (a) AND i < LEN (b) DO
-    IF a[i] # b[i] THEN RETURN a[i] < b[i] END ;
+  WHILE i < Text.BLen (a) AND i < Text.BLen (b) DO
+    IF Text.BAt (a, i) # Text.BAt (b, i) THEN RETURN Text.BAt (a, i) < Text.BAt (b, i) END ;
     i := i + 1
   END ;
-  RETURN LEN (a) < LEN (b)
+  RETURN Text.BLen (a) < Text.BLen (b)
 END StrLess ;
 
-(* the string sort is an ARGSORT over indices (the ArgF64 shape below)
-   followed by an in-place permutation: the strings are read through
-   RO and moved only within a, so no KEPT -- see the definition *)
+(* The string sort is an ARGSORT over indices (the ArgF64 shape below)
+   followed by an in-place permutation.  The strings are read through
+   RO and moved only within a, so there is no KEPT.  The definition
+   explains why. *)
 PROCEDURE MergeArgStrs (RO v: SLICE OF STR ; VAR idx: SLICE OF I64 ;
                         VAR tmp: SLICE OF I64 ; lo: I64 ; mid: I64 ;
                         hi: I64) =
@@ -286,8 +295,8 @@ BEGIN
   END
 END Strs ;
 
-(* indices ordered by the values they index: the merge compares
-   v[a[i]] where the plain sort compares a[i] *)
+(* MergeArg and SortArg order indices by the values they index.  The
+   merge compares v[a[i]] where the plain sort compares a[i] *)
 PROCEDURE MergeArg (RO v: SLICE OF F64 ; VAR a: SLICE OF I64 ;
                     VAR tmp: SLICE OF I64 ; lo: I64 ; mid: I64 ; hi: I64)
   RAISES IndexError =
@@ -333,7 +342,8 @@ BEGIN
   SortArg (v, idx, tmp, 0, LEN (v))
 END ArgF64 ;
 
-(* the integer twin of MergeArg and SortArg: one comparison differs *)
+(* MergeArgI64 and SortArgI64 are the integer twin of MergeArg and
+   SortArg.  One comparison differs *)
 PROCEDURE MergeArgI64 (RO v: SLICE OF I64 ; VAR a: SLICE OF I64 ;
                        VAR tmp: SLICE OF I64 ; lo: I64 ; mid: I64 ;
                        hi: I64) =
@@ -388,9 +398,10 @@ BEGIN
   SortArgStrs (v, idx, tmp, 0, LEN (v))
 END ArgStr ;
 
-(* the caller's order, called through: the one comparison that is a
-   procedure value.  Stable for the same reason as the others -- the
-   right side is taken only when less (right, left) holds. *)
+(* MergeBy calls through to the caller's order.  It is the one
+   comparison that is a procedure value.  It is stable for the same
+   reason as the others: the right side is taken only when
+   less (right, left) holds. *)
 PROCEDURE MergeBy (VAR a: SLICE OF I64 ; VAR tmp: SLICE OF I64 ;
                    less: Less ; lo: I64 ; mid: I64 ; hi: I64) =
 VAR i, j, k : I64 ;
@@ -473,12 +484,13 @@ BEGIN
   RETURN out
 END UniqueI64 ;
 
-(* the indices are sorted, and the answer takes a COPY of the first
-   string of each run of equals.  A copy, because an answer holding
-   v's own strings is a retention: the checker asks for KEPT on v
-   (it did, on the first version of this), and a KEPT parameter
-   refuses a caller whose strings are frame values -- the pieces of a
-   Text.Split, which is who asks for unique strings. *)
+(* UniqueStrs sorts the indices, and the answer takes a COPY of the
+   first string of each run of equals.  It copies because an answer
+   holding v's own strings is a retention.  The checker asks for KEPT
+   on v (it did, on the first version of this).  A KEPT parameter
+   refuses a caller whose strings are frame values.  The pieces of a
+   Text.Split are such values, and they are who asks for unique
+   strings. *)
 PROCEDURE UniqueStrs (RO v: SLICE OF STR) : SLICE OF STR =
 VAR
   scratch : POOL ;
@@ -597,7 +609,8 @@ BEGIN
     IF StrLess (a[mid], s) THEN lo := mid + 1 ELSE hi := mid END
   END ;
   IF lo < LEN (a) THEN
-    (* a[lo] is not less than s; equal when s is not less than it *)
+    (* a[lo] is not less than s.  It is equal when s is not less
+       than it *)
     IF NOT StrLess (s, a[lo]) THEN RETURN lo END
   END ;
   RETURN -1
@@ -608,10 +621,11 @@ END Sort.
 
 UNSAFE DEFINITION MODULE FOR "C" csort ;
 
-(* runtime/m9rt.c (m9rt.h): LSD radix sorts over a slice's storage,
-   stable, answering 1 when done and 0 when the caller's merge sort
-   must do it.  No LINK: the runtime's.  REENTRANT: scratch from
-   malloc, no shared state. *)
+(* csort binds the LSD radix sorts of runtime/m9rt.c (m9rt.h).  They
+   sort a slice's storage, stable, and answer 1 when done and 0 when
+   the caller's merge sort must do it.  There is no LINK: the sorts
+   are the runtime's.  They are REENTRANT: their scratch comes from
+   malloc, and they share no state. *)
 
 PROCEDURE CSortF64 = "m9_sort_f64" (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT] ;
 PROCEDURE CSortI64 = "m9_sort_i64" (a: C.MutPtr ; n: C.SSizeT) : C.Int [REENTRANT] ;

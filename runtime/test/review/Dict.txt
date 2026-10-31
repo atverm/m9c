@@ -3,7 +3,7 @@ REVIEW Dict -- 14 procedures with a body, 11 of them functions; 10 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
   assignments                                    33
-  arguments                                      15
+  arguments                                      25
   RETURN values                                  15
   operands of a comparison or an operator        33
   CASE labels                                     0
@@ -39,4 +39,4 @@ COUNTED -- how much there was to check
   NEW in the frame                                1
   NEW in a named pool                             5
   calls of a STR form with a UTF twin             0
-  STR subscripts, writes and LEN                  7   len key, index key[i], len a, len b, len a, index a[i], +1 more
+  STR subscripts, writes and LEN                  0

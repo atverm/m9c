@@ -1,18 +1,19 @@
 unit M9Gen;
-{ FROZEN 2026-10-22 (Alex's decision on the compiler review's item 14,
-  docs/twin-plan.md): the generator that runtime/gen and every gate
-  read is corpus/Gen.m9.  This unit stays as it was on that day -- it
-  agreed with Gen.m9 byte for byte over all 69 gendiff modules -- and
-  nothing builds it any more.  A change to code generation goes in
-  Gen.m9 alone. }
-{ P4 code generator, first cut: emits C11 per report par 11 for the
-  subset the DynStr milestone needs -- records, slices, pools,
-  checked arithmetic and conversions, FOR/WHILE/IF/RETURN, calls.
-  Anything outside the subset lands in Errors, loudly; a silent
-  wrong translation is the one unforgivable output.
-  ABI: every procedure takes a trailing m9_state *err; checks emit as
-  m9rt helper calls that poison their result and set the slot; after
-  any statement that can raise, `if (err->exc) goto L_ret;`.        }
+{ This unit is FROZEN since 2026-10-22 (Alex's decision on the
+  compiler review's item 14, docs/twin-plan.md).  The generator that
+  runtime/gen and every gate read is corpus/Gen.m9.  This unit stays
+  as it was on that day, and nothing builds it any more.  It agreed
+  with Gen.m9 byte for byte over all 69 gendiff modules.  A change to
+  code generation goes in Gen.m9 alone. }
+{ M9Gen is the P4 code generator, first cut.  It emits C11 per report
+  par 11 for the subset the DynStr milestone needs: records, slices,
+  pools, checked arithmetic and conversions, FOR/WHILE/IF/RETURN,
+  calls.  Anything outside the subset lands in Errors, loudly; a
+  silent wrong translation is the one unforgivable output.
+  ABI: every procedure takes a trailing m9_state *err.  Checks emit as
+  m9rt helper calls that poison their result and set the slot.  After
+  any statement that can raise, the code tests
+  `if (err->exc) goto L_ret;`. }
 {$mode objfpc}{$H+}
 interface
 
@@ -62,9 +63,9 @@ type
     { Gen.KArrRec / KHdrArrRec: an ARRAY OF a record of this module,
       typedef'd after the struct it contains }
     arrRec, hdrArrRec : TStringList;
-    { Gen.arrInto: while a record's field types are computed, where an
-      ARRAY OF a record of this module goes instead -- the record's own
-      buffer; nil otherwise }
+    { Gen.arrInto: while a record's field types are computed, it says
+      where an ARRAY OF a record of this module goes instead: the
+      record's own buffer.  It is nil otherwise. }
     arrInto : TStringList;
     foreignProcs : TStringList; { bare name -> foreign head node }
     foreignUnit : TStringList;  { bare name -> its FOR-C unit }
@@ -210,8 +211,9 @@ implementation
 const
   Builtins : array [0..12] of string = ('I8','I16','I32','I64','U8',
     'U16','U32','U64','F32','F64','BYTE','BOOL','CHAR');
-  { the calls CallC answers by name, not through a head; none keeps an
-    argument (SinkAlloc; mirrors Gen.BuiltinCalls) }
+  { BuiltinCalls lists the calls CallC answers by name, not through a
+    head.  None keeps an argument (SinkAlloc; mirrors
+    Gen.BuiltinCalls). }
   BuiltinCalls : array [0..8] of string = ('ADR','ByteSize','CHR','LEN',
     'MAX','NAME','ORD','SizeOf','VIEW');
 
@@ -225,11 +227,12 @@ end;
 
 { an M9 identifier that is a C keyword (or our err slot) gets a
   trailing underscore -- par 11's naming rule, completed }
-{ libm functions a FOR-C unit may bind (C99 math.h, double + float):
-  a LOCAL named like one shadows the extern -- `float cosf;` beside
-  `extern float cosf (float);` makes a call to cosf resolve to the
-  variable, "called object is not a function".  Escaped like the C
-  keywords below.  No corpus identifier matches one; the beneficiaries
+{ IsLibM names the libm functions a FOR-C unit may bind (C99 math.h,
+  double + float).  A LOCAL named like one shadows the extern:
+  `float cosf;` beside `extern float cosf (float);` makes a call to
+  cosf resolve to the variable, "called object is not a function".
+  They are escaped like the C keywords below.  No corpus identifier
+  matches one; the beneficiaries
   are float-heavy modules with their own math bindings. }
 function IsLibM (const n: string): boolean;
 begin
@@ -277,10 +280,11 @@ begin
      or (n = 'volatile') or (n = 'register') or (n = 'auto')
      or (n = 'sizeof') or (n = 'inline') or (n = 'restrict')
      or (n = 'bool') or (n = 'true') or (n = 'false') or (n = 'err')
-     or (n = 'main') then   { not a keyword, but reserved at file
-                              scope in a hosted environment -- the
-                              gm2 collision in the ledger, met again
-                              by M9's own compiler }
+     or (n = 'main') then   { main is not a keyword, but it is
+                              reserved at file scope in a hosted
+                              environment.  This is the gm2 collision
+                              in the ledger, met again by M9's own
+                              compiler. }
     Exit (n + '_');
   if IsLibM (n) then Exit (n + '_');
   Result := n;
@@ -520,9 +524,9 @@ begin
         for j := 0 to High (u.kids[i].kids) do
           extConsts.AddObject (u.a + '.' + u.kids[i].kids[j].a,
             TObject (u.kids[i].kids[j].kids[0]));
-      { the definition's variables: an importer's Mod.v, a pointer to the
-        exporter's storage in VAR-parameter mode, C name Mod_v (decision 28;
-        Gen.RegisterExtern) }
+      { Register the definition's variables.  An importer's Mod.v is a
+        pointer to the exporter's storage in VAR-parameter mode, with C
+        name Mod_v (decision 28; Gen.RegisterExtern). }
       if u.kids[i].kind = nkVarSection then
         for j := 0 to High (u.kids[i].kids) do
           for k := 0 to High (u.kids[i].kids[j].kids[0].kids) do
@@ -531,17 +535,19 @@ begin
     end;
 end;
 
-{ a DIRECT import: its declarations are registered and its header is
-  included, because this module names things in it }
+{ LoadExtern loads a DIRECT import.  Its declarations are registered
+  and its header is included, because this module names things in
+  it. }
 procedure TGen.LoadExtern (u: TNode);
 begin
   RegisterExtern (u, True);
 end;
 
-{ a dependency of a dependency: its declarations are registered so
-  that a callee's signature can be RESOLVED -- Qvsat.Ew answers a
-  Kind.FlexFloat and its caller has no business importing Kind -- but
-  no #include is emitted, because this module names nothing in it }
+{ LoadExternDeep loads a dependency of a dependency.  Its declarations
+  are registered so that a callee's signature can be RESOLVED:
+  Qvsat.Ew answers a Kind.FlexFloat, and its caller has no business
+  importing Kind.  But no #include is emitted, because this module
+  names nothing in it. }
 procedure TGen.LoadExternDeep (u: TNode);
 begin
   RegisterExtern (u, False);
@@ -625,13 +631,14 @@ end;
 
 { ---- type mapping ---- }
 
-{ the checked helper's width suffix for an integer type tag.  Each of
+{ ISuf answers the checked helper's width suffix for an integer type
+  tag.  Each of
   the eight exact widths has its own helper since 2026-09-27: before
   that everything went through the I64 one and a narrow result was
   stored unchecked, so `I32 max + 1` wrapped in silence
   (docs/agent-review-2026-09-27.md F1).  A tag that is none of the
-  eight -- a C.* value, an enumeration's ordinal -- is a 64-bit value
-  to the checker and keeps the I64 helper.  Mirrors Gen.ISuf. }
+  eight (a C.* value, an enumeration's ordinal) is a 64-bit value to
+  the checker and keeps the I64 helper.  ISuf mirrors Gen.ISuf. }
 function TGen.ISuf (const t: string): string;
 begin
   if t = 'I8' then Exit ('i8');
@@ -662,10 +669,11 @@ begin
   Result := '';
 end;
 
-{ Gen.ArrBucket: where an ARRAY OF elem's typedef goes -- after the
-  struct of a record of this module (arrRec for a private one,
-  hdrArrRec for a transparent one), with the other typedefs
-  otherwise; a nested array follows its innermost element }
+{ Gen.ArrBucket answers where an ARRAY OF elem's typedef goes.  It
+  goes after the struct of a record of this module (arrRec for a
+  private one, hdrArrRec for a transparent one), and with the other
+  typedefs otherwise.  A nested array follows its innermost
+  element. }
 function TGen.ArrBucket (elem: TNode): TStringList;
 var i : Integer;
 begin
@@ -758,14 +766,15 @@ begin
     nkGridType : Exit (GridTy (t.kids[1], ArrCount (t.kids[0])));
     nkArrayType :
       begin
-        { the element's own typedefs first (idempotent), and the
+        { Emit the element's own typedefs first (idempotent).  The
           NAME derives from the element's C type the way SliceTy's
-          does: TagOfType collapsed every nested array to ARR and
+          does.  TagOfType collapsed every nested array to ARR and
           every record to REC, so ARRAY 8 OF ARRAY 160 OF CHAR and
-          ARRAY 8 OF ARRAY 262144 OF CHAR shared one typedef and the
-          second field was silently laid out as the first -- found
-          by ASan under the proxy's session registry, checked writes
-          landing past a 72 KB struct the source said was 9 MB }
+          ARRAY 8 OF ARRAY 262144 OF CHAR shared one typedef.  The
+          second field was silently laid out as the first.  ASan
+          found it under the proxy's session registry: checked
+          writes landed past a 72 KB struct the source said was
+          9 MB. }
         nested := TyC (t.kids[1]);
         s := 'm9_arr_' + ArrCount (t.kids[0]) + '_';
         for i := 1 to Length (nested) do
@@ -803,7 +812,7 @@ begin
   if (r <> nil) and (r.kind = nkQualident) and (r.b = '') and
      InL (r.a, Builtins) then
     Exit ('m9_sl_' + r.a);
-  { any other element: a typedef derived from its C type }
+  { Any other element gets a typedef derived from its C type. }
   ec := TyC (elem);
   nm := 'm9_sl_';
   for i := 1 to Length (ec) do
@@ -821,12 +830,13 @@ begin
   Result := nm;
 end;
 
-{ one struct per rank per element type, guarded like the slice
-  typedefs: each typedef defines a fresh anonymous struct, so the
-  same name from two modules is a conflicting type rather than a
-  legal C11 redefinition }
-{ the ALL axis marker: a predeclared identifier, so it is a bare
-  designator with that name and nothing else }
+{ GridTy makes one struct per rank per element type, guarded like the
+  slice typedefs.  Each typedef defines a fresh anonymous struct, so
+  the same name from two modules is a conflicting type rather than a
+  legal C11 redefinition. }
+{ IsAllArg tests for the ALL axis marker.  The marker is a predeclared
+  identifier, so it is a bare designator with that name and nothing
+  else. }
 function TGen.IsAllArg (e: TNode): Boolean;
 begin
   Result := (e <> nil) and (e.kind = nkDesignator) and (e.a = 'ALL') and
@@ -854,8 +864,9 @@ begin
   Result := nm;
 end;
 
-{ the enumeration or case-record type node an ARRAY bound names, or
-  nil when the bound is an integer.  ARRAY Colour OF T is indexed by
+{ ArrEnumBoundNode answers the enumeration or case-record type node an
+  ARRAY bound names, or nil when the bound is an integer.  ARRAY
+  Colour OF T is indexed by
   the type: its length is the variant count and its subscript is a
   member, not an ordinal (docs/enum-plan.md, part 2). }
 function TGen.ArrEnumBoundNode (b: TNode): TNode;
@@ -913,16 +924,17 @@ end;
 
 { ---- a case record that lives in another module ----
 
-  A CR: tag names the case record type; until 2026-09-15 it named it
-  BARE, so every consumer prefixed modName and looked it up locally,
-  and a value typed `Shape.Kind' -- a parameter, a variable, a call
-  result -- could not be CASEd ("CASE over this selector unsupported
-  yet") nor built ("unknown name: Shape").  Csv, Frame and Plot each
+  A CR: tag names the case record type.  Until 2026-09-15 it named it
+  BARE, so every consumer prefixed modName and looked it up locally.
+  A value typed `Shape.Kind' (a parameter, a variable, a call result)
+  could not be CASEd ("CASE over this selector unsupported yet") nor
+  built ("unknown name: Shape").  Csv, Frame and Plot each
   grew an integer face to route around it, in their own comments.
 
-  Now the tag carries the module when there is one -- `CR:Kind' at
-  home, `CR:Shape.Kind' abroad -- and these two answer, for either
-  spelling, the C prefix and the declaring node.  The header of the
+  Now the tag carries the module when there is one: `CR:Kind' at
+  home, `CR:Shape.Kind' abroad.  CRPrefix and CRNode answer, for
+  either spelling, the C prefix and the declaring node.  The header of
+  the
   other module already declares Shape_Kind and its tags; nothing has
   to be re-emitted. }
 
@@ -947,7 +959,8 @@ begin
   Result := FindType (tn);
 end;
 
-{ the C tag of an exception's k-th field (mirrors Gen.FieldTagAt) }
+{ FieldTagAt answers the C tag of an exception's k-th field (mirrors
+  Gen.FieldTagAt). }
 function TGen.FieldTagAt (fields: TNode; k: Integer): string;
 var g, j, ix : Integer;
 begin
@@ -1002,9 +1015,10 @@ begin
   end;
 end;
 
-{ a name in the scope table, by the language's order: parameters and
-  locals, then the binders pushed on top of the module block (innermost
-  first), then module state and the constant tables.  corpus/Gen.m9's
+{ ScopeFind looks up a name in the scope table, by the language's
+  order: parameters and locals, then the binders pushed on top of the
+  module block (innermost first), then module state and the constant
+  tables.  corpus/Gen.m9's
   ScopeFind says why (2026-10-03). }
 function TGen.ScopeFind (const n: string): Integer;
 var i, lo, hi : Integer;
@@ -1022,8 +1036,9 @@ begin
   Result := -1;
 end;
 
-{ the module block: this module's variables, then every imported
-  module's exports as Mod.v in VAR-parameter mode (Gen.ModuleScope) }
+{ ModuleScope adds the module block to the scope: this module's
+  variables, then every imported module's exports as Mod.v in
+  VAR-parameter mode (Gen.ModuleScope). }
 procedure TGen.ModuleScope;
 var i : Integer;
 begin
@@ -1034,10 +1049,11 @@ begin
     scope.AddObject (extVars[i] + '=v', extVars.Objects[i]);
 end;
 
-{ Gen.QualIn: a type node from module modName with its bare type names
-  qualified, so an importer reads it where it was declared }
-{ Gen.QualBound: an array bound written as a bare CONST of module
-  inMod, as `inMod.N'; any other bound as it is }
+{ Gen.QualIn answers a type node from module modName with its bare
+  type names qualified, so an importer reads it where it was
+  declared. }
+{ Gen.QualBound answers an array bound written as a bare CONST of
+  module inMod as `inMod.N', and any other bound as it is. }
 function TGen.QualBound (b: TNode; const inMod: string): TNode;
 var d, sf : TNode;
 begin
@@ -1091,9 +1107,9 @@ begin
   end;
 end;
 
-{ Gen.NoteMod/InMod: the module a qualified type name points into,
-  so a foreign aggregate's component types are read where they were
-  declared (canonCtx) }
+{ Gen.NoteMod/InMod track the module a qualified type name points
+  into, so a foreign aggregate's component types are read where they
+  were declared (canonCtx). }
 procedure TGen.NoteMod (t: TNode; var m: string);
 begin
   if (t <> nil) and (t.kind = nkQualident) and (t.b <> '') then m := t.a;
@@ -1240,9 +1256,10 @@ begin
   end;
 end;
 
-{ 'frame' for NEW (T) and NEW (T, n...), 'pool' for NEW (pool, T...),
-  'own' for NEW (OWN, T), told apart by NAME; the checker has refused
-  anything else.  ty is the type's node, ext0 the first extent's index. }
+{ NewShape answers 'frame' for NEW (T) and NEW (T, n...), 'pool' for
+  NEW (pool, T...), and 'own' for NEW (OWN, T), told apart by NAME.
+  The checker has refused anything else.  ty is the type's node, ext0
+  the first extent's index. }
 function TGen.NewShape (e: TNode; out ty: TNode; out ext0: Integer): string;
 var
   d : TNode;
@@ -1281,7 +1298,8 @@ begin
   Result := 'frame';
 end;
 
-{ can a value of this type carry a pointer into the frame? }
+{ HasPtr asks whether a value of this type can carry a pointer into
+  the frame. }
 function TGen.HasPtr (t: TNode; depth: Integer): Boolean;
 var
   r, fs : TNode;
@@ -1313,9 +1331,10 @@ begin
   end;
 end;
 
-{ does a VAR parameter of this type carry its object's pool as a
-  hidden argument (docs/pool-elision-plan.md, rule 2)?  Mirrors
-  Gen.PoolParamTy: PTR and OPT PTR by node kind, a pointer-bearing
+{ PoolParamTy asks whether a VAR parameter of this type carries its
+  object's pool as a hidden argument (docs/pool-elision-plan.md, rule
+  2).  It mirrors Gen.PoolParamTy: PTR and OPT PTR by node kind, a
+  pointer-bearing
   record, monitor, array or variant by resolution, never a bare slice
   or grid. }
 function TGen.PoolParamTy (t: TNode): Boolean;
@@ -1337,9 +1356,10 @@ begin
     Result := HasPtr (t, 0);
 end;
 
-{ the exit test, one line per pointer component of EXPR of type T,
-  each adopting the frame into DST: the caller's arena for a result,
-  the object's own pool for a VAR parameter's target (rule 2) }
+{ AdoptEmit emits the exit test, one line per pointer component of
+  EXPR of type T, each adopting the frame into DST: the caller's arena
+  for a result, the object's own pool for a VAR parameter's target
+  (rule 2). }
 procedure TGen.AdoptEmit (const expr: string; t: TNode; const dst: string;
                           ind, depth: Integer);
 var
@@ -1405,9 +1425,10 @@ begin
   end;
 end;
 
-{ the C address of the pool a NEW's first argument names: a POOL
-  variable or HEAP by designator, or a VAR parameter's hidden pool
-  (rule 2), which is a pointer already.  Mirrors Gen.PoolAddrC. }
+{ PoolAddrC answers the C address of the pool a NEW's first argument
+  names: a POOL variable or HEAP by designator, or a VAR parameter's
+  hidden pool (rule 2), which is a pointer already.  It mirrors
+  Gen.PoolAddrC. }
 function TGen.PoolAddrC (pd: TNode): string;
 var tg : string;
 begin
@@ -1417,11 +1438,12 @@ begin
   Result := '&(' + DES (pd, tg) + ')';
 end;
 
-{ the pool of the object a designator names, from its ROOT (rule 2
-  of docs/pool-elision-plan.md).  Mirrors Gen.ObjPoolC, which says
-  which root gets what. }
-{ is the bare name a MODULE variable -- this module's, or another's
-  exported `Mod.v'?  Mirrors Gen.ModVarRoot }
+{ ObjPoolC answers the pool of the object a designator names, from
+  its ROOT (rule 2 of docs/pool-elision-plan.md).  It mirrors
+  Gen.ObjPoolC, which says which root gets what. }
+{ ModVarRoot asks whether the bare name is a MODULE variable: this
+  module's, or another's exported `Mod.v'.  It mirrors
+  Gen.ModVarRoot. }
 function TGen.ModVarRoot (const nm: string): Boolean;
 var ix : Integer;
 begin
@@ -1472,12 +1494,13 @@ begin
   Result := 'err->res';
 end;
 
-{ the typed tree's stage 3: the generator's tag for the checker's
-  canonical type string -- one map, so that the tag is read off what
-  the checker decided instead of worked out again.  A named type is
-  fully qualified there (Mod.T, aliases resolved), so it is looked up
-  by its whole name: this module's own, or an imported one's.  '?' for
-  what has no tag (unknown, C.*, <void>) }
+{ TagOfCanon is the typed tree's stage 3.  It answers the generator's
+  tag for the checker's canonical type string.  It is one map, so the
+  tag is read off what the checker decided instead of worked out
+  again.  A named type is fully qualified there (Mod.T, aliases
+  resolved), so it is looked up by its whole name: this module's own,
+  or an imported one's.  It answers '?' for what has no tag (unknown,
+  C.*, <void>). }
 function TGen.TagOfCanon (const s: string): string;
 var
   dot : Integer;
@@ -1522,12 +1545,13 @@ begin
   if n.kind in [nkRecordType, nkMonitorType] then Exit ('REC');
 end;
 
-{ an expression's tag: the checker's type, recorded where it computed
-  it (stage 3), when there is one; else the generator works it out --
-  for a literal the checker typed by another path, a CONST's
-  expression, and anything the checker did not know.  Measured over
-  the library the day it was built: where both answered, they agreed
-  but at one binder, where the checker's was the more precise }
+{ TagOfExpr answers an expression's tag.  It is the checker's type,
+  recorded where it computed it (stage 3), when there is one.  Else
+  the generator works it out: for a literal the checker typed by
+  another path, a CONST's expression, and anything the checker did
+  not know.  It was measured over the library the day it was built.
+  Where both answered, they agreed but at one binder, where the
+  checker's was the more precise. }
 function TGen.TagOfExpr (e: TNode): string;
 begin
   if e = nil then Exit ('?');
@@ -1535,10 +1559,11 @@ begin
   if Result = '?' then Result := TagOfExprOwn (e);
 end;
 
-{ what the checker did not record: a literal it typed by another path,
-  and the operators over such values (mirrors Gen.TagOfExprOwn: the
-  designator, call, NEW, SLICE, GRID and NONE arms, which re-ran DES and
-  CallC "dry", were measured to contribute nothing and removed) }
+{ TagOfExprOwn types what the checker did not record: a literal it
+  typed by another path, and the operators over such values.  It
+  mirrors Gen.TagOfExprOwn.  The designator, call, NEW, SLICE, GRID
+  and NONE arms, which re-ran DES and CallC "dry", were measured to
+  contribute nothing and removed. }
 function TGen.TagOfExprOwn (e: TNode): string;
 var
   t, u : string;
@@ -1578,8 +1603,9 @@ begin
   end;
 end;
 
-{ the value node of a designator naming a CONST, or nil.  Both
-  spellings: a bare name in this module, and Mod.Name imported. }
+{ ConstValue answers the value node of a designator naming a CONST,
+  or nil.  It takes both spellings: a bare name in this module, and
+  Mod.Name imported. }
 function TGen.ConstValue (e: TNode): TNode;
 var ci : Integer;
 begin
@@ -1598,14 +1624,15 @@ begin
   end;
 end;
 
-{ ADAPTIVE: carries no width of its own, so it takes the other
-  operand's.  A real or integer literal, arithmetic over such, and a
-  CONST whose value is one -- M9's CONST is an untyped literal, not a
-  typed constant, which is the whole reason `Satfwb * p` is legal at
-  either width. }
-{ a constant where C needs one -- a CASE label, an array bound --
-  through the one evaluator, M9AST.ScalarConst, after a CONST's name is
-  followed to its value (mirrors Gen.ScalarC) }
+{ An ADAPTIVE operand carries no width of its own, so it takes the
+  other operand's.  The adaptive operands are a real or integer
+  literal, arithmetic over such, and a CONST whose value is one.  M9's
+  CONST
+  is an untyped literal, not a typed constant, which is the whole
+  reason `Satfwb * p` is legal at either width. }
+{ ScalarC answers a constant where C needs one (a CASE label, an
+  array bound) through the one evaluator, M9AST.ScalarConst, after a
+  CONST's name is followed to its value (mirrors Gen.ScalarC). }
 function TGen.ScalarC (e: TNode): string;
 var
   cv0 : TNode;
@@ -1620,8 +1647,8 @@ begin
   Result := 'INT64_C(' + IntToStr (v) + ')';
 end;
 
-{ a FOR step's value as C text, signed, '' when it is no constant
-  (mirrors Gen.StepC) }
+{ StepC answers a FOR step's value as C text, signed, or '' when it
+  is no constant (mirrors Gen.StepC). }
 function TGen.StepC (e: TNode): string;
 var
   cv0 : TNode;
@@ -1677,8 +1704,8 @@ begin
       Exit (n);
     end;
   end;
-  { an integer CONST over an expression folded to its literal (mirrors
-    Gen.FoldStr; Ast.FoldInt / M9AST.FoldInt) }
+  { Fold an integer CONST over an expression to its literal (mirrors
+    Gen.FoldStr; Ast.FoldInt / M9AST.FoldInt). }
   if (e.kind = nkBin) or (e.kind = nkParen) or
      ((e.kind = nkUn) and not ((e.a = '-') and (Length (e.kids) = 1) and (e.kids[0] <> nil) and
                                (e.kids[0].kind in [nkInt, nkReal]))) then
@@ -1697,8 +1724,8 @@ begin
     end;
 end;
 
-{ a real CONST over an expression of real literals, as the C expression
-  of those literals (mirrors Gen.RealC) }
+{ RealC answers a real CONST over an expression of real literals as
+  the C expression of those literals (mirrors Gen.RealC). }
 function TGen.RealC (e: TNode): string;
 var l, r : string;
 begin
@@ -1728,11 +1755,11 @@ begin
   Result := CharCode (lit);
 end;
 
-{ a constant table (par 2.2.4): CONST X = [ e1, ..., en ] is kept as
-  an ARRAY n OF T built here, T read off the first element -- the
-  checker has held every element to it }
-{ Gen.RecordConstQual: the record a CONST's call names, as a type
-  node, an alias followed -- or nil }
+{ A constant table (par 2.2.4), CONST X = [ e1, ..., en ], is kept as
+  an ARRAY n OF T built here.  T is read off the first element: the
+  checker has held every element to it. }
+{ Gen.RecordConstQual answers the record a CONST's call names, as a
+  type node, an alias followed, or nil. }
 function TGen.RecordConstQual (e: TNode): TNode;
 var
   name, ct, m, tn : string;
@@ -1809,9 +1836,10 @@ begin
   aggV[High (aggV)] := ag;
 end;
 
-{ ... visible in every body after the module variables, in the mode
-  of a VAR parameter: the name is a POINTER to the table, so index,
-  LEN and lending take the paths a VAR array parameter takes }
+{ PushAggs makes the tables visible in every body after the module
+  variables, in the mode of a VAR parameter.  The name is a POINTER
+  to the table, so index, LEN and lending take the paths a VAR array
+  parameter takes. }
 procedure TGen.PushAggs;
 var i : Integer;
 begin
@@ -1819,10 +1847,12 @@ begin
     scope.AddObject (aggN[i] + '=v', TObject (aggT[i]));
 end;
 
-{ ... and emitted as const data -- read-only storage, so a write the
-  checker missed is a fault and not a changed constant -- with the
-  name a pointer to it.  One element per line: a table is read. }
-{ Gen.LitC: a literal of a constant table or record CONST as C }
+{ The tables are emitted as const data, with the name a pointer to
+  it.  Const data is read-only storage, so a write the checker missed
+  is a fault and not a changed constant.  They print one element per
+  line: a table is read. }
+{ Gen.LitC answers a literal of a constant table or record CONST as
+  C. }
 function TGen.LitC (e: TNode; const sname, what: string): string;
 begin
   Result := '0';
@@ -1930,8 +1960,8 @@ var
   i : Integer;
   cs : string;
 begin
-  { every Unicode scalar as its code: the literal's text is UTF-8
-    octets here (M9AST.Utf8Next), scalars on the M9 side }
+  { Emit every Unicode scalar as its code.  The literal's text is
+    UTF-8 octets here (M9AST.Utf8Next), and scalars on the M9 side. }
   cs := '';
   i := 1;
   while i <= Length (s) do
@@ -1944,9 +1974,10 @@ end;
 
 { ---- designators ---- }
 
-{ the selectors of d from kid FROM on, applied to the C expression
-  RES0 of type TND0 (mirrors Gen.DESSel): a designator's from its name,
-  a call's answer -- F (x).f, nkCallSel -- from its temporary }
+{ DESSel applies the selectors of d from kid FROM on to the C
+  expression RES0 of type TND0 (mirrors Gen.DESSel).  A designator's
+  selectors start from its name.  A call's answer (F (x).f,
+  nkCallSel) starts from its temporary. }
 function TGen.DESSel (d: TNode; from: Integer; const res0: string;
                       tnd0: TNode; out tag: string): string;
 var
@@ -1957,16 +1988,17 @@ var
   enumIx, pendAt, viaSel : Boolean;
   tmod : string;
 
-  { the error test before a step THROUGH what a subscript answered
-    (mirrors Gen.AtGuard; the compiler review's G3) }
+  { AtGuard emits the error test before a step THROUGH what a
+    subscript answered (mirrors Gen.AtGuard; the compiler review's
+    G3). }
   function AtGuard (const res: string; t: TNode): string;
   begin
     Result := '({ ' + TyC (t) + ' m9g = (' + res + '); if (err->exc) goto ' +
       raiseLbl + '; m9g; })';
   end;
 
-  { the NULL test before following a pointer read out of a field or an
-    element (mirrors Gen.NnGuard; the review's C8) }
+  { NnGuard emits the NULL test before following a pointer read out of
+    a field or an element (mirrors Gen.NnGuard; the review's C8). }
   function NnGuard (const res: string; t: TNode; pend: Boolean): string;
   var e : string;
   begin
@@ -2010,10 +2042,10 @@ begin
         begin
           if r.kind in [nkPtrType, nkSharedType] then
           begin
-            { the target's module noted, so that its fields' bare type
-              names are read where they were declared -- the step the
-              checker took and this generator did not, until the review
-              of 2026-10-09 }
+            { Note the target's module, so that its fields' bare type
+              names are read where they were declared.  The checker
+              took this step and this generator did not, until the
+              review of 2026-10-09. }
             px := InMod (r.kids[0], tmod);
             NoteMod (px, tmod);
             inner := Resolve (px);
@@ -2039,8 +2071,8 @@ begin
         begin
           if r.kind = nkGridType then
           begin
-            { every axis checked against its own extent, in one call:
-              the check a hand-rolled d[r*cols+c] cannot make }
+            { Check every axis against its own extent, in one call.  A
+              hand-rolled d[r*cols+c] cannot make that check. }
             if pendAt then begin Result := AtGuard (Result, tnd); pendAt := False end;
             base := Result;
             ec := TyC (r.kids[1]);
@@ -2055,8 +2087,8 @@ begin
             begin
               { ranks 1..4 go to the written-out form: extents and
                 strides by value, no index array, no loop over the
-                rank.  2.60x -> 1.29x on the port's kernel, with the
-                same checks -- see runtime/m9rt.h and
+                rank.  The cost went 2.60x -> 1.29x on the port's
+                kernel, with the same checks: see runtime/m9rt.h and
                 the port's gat_cost.c. }
               nsx := '';
               for k := 0 to rk - 1 do
@@ -2092,9 +2124,10 @@ begin
           begin
             base := Result;
             ec := TyC (r.kids[1]);
-            { ARRAY Colour OF T: the subscript is an enum value, its
-              tag 0..n-1 by construction -- no runtime bounds check,
-              a.v[(k).tag] directly.  Detect it from the SUBSCRIPT's
+            { In ARRAY Colour OF T the subscript is an enum value, its
+              tag 0..n-1 by construction.  So there is no runtime
+              bounds check: a.v[(k).tag] directly.  Detect it from the
+              SUBSCRIPT's
               type, not the array's bound: an imported enum indexes an
               imported record's field the same way, where the bound
               resolves only in its own module (docs/enum-plan.md). }
@@ -2160,8 +2193,8 @@ begin
         Exit (d.a + '_' + d.kids[0].a);
       end;
     end;
-    { a top-level procedure named as a VALUE (par 2.2.3): its C
-      function, this module's or an imported module's }
+    { A top-level procedure named as a VALUE (par 2.2.3) is its C
+      function, this module's or an imported module's. }
     if (Length (d.kids) = 0) and (FindProc (d.a) >= 0) then
     begin
       tag := 'PROC';
@@ -2182,8 +2215,9 @@ begin
       Exit ('((' + modName + '_' + d.a + '){ .tag = ' + modName +
         '_' + d.a + '_' + d.kids[0].a + ' })');
     end;
-    { and across a module: Mod.Type.Variant, the checker's spelling
-      for an imported variant, refused here until 2026-09-15 }
+    { The same works across a module.  Mod.Type.Variant is the
+      checker's spelling for an imported variant.  It was refused here
+      until 2026-09-15. }
     if (extMods.IndexOf (d.a) >= 0) and (Length (d.kids) = 2) and
        (d.kids[0].kind = nkSelField) and (d.kids[1].kind = nkSelField) then
     begin
@@ -2199,8 +2233,8 @@ begin
         end;
       end;
     end;
-    { HEAP: the predeclared pool that is never freed (par 4.3).  A
-      name in both ends or neither -- the checker types it, so the
+    { HEAP is the predeclared pool that is never freed (par 4.3).  It
+      is a name in both ends or neither: the checker types it, so the
       generator emits it. }
     if (d.a = 'HEAP') and (Length (d.kids) = 0) then
     begin
@@ -2218,9 +2252,9 @@ end;
 
 { ---- calls ---- }
 
-{ the member count of a type convertible from an integer -- an
-  enumeration, or a case record all of whose variants are payload-less
-  -- else -1 (docs/enum-plan.md, part 2). }
+{ EnumConvCount answers the member count of a type convertible from
+  an integer (an enumeration, or a case record all of whose variants
+  are payload-less), else -1 (docs/enum-plan.md, part 2). }
 function TGen.EnumConvCount (n: TNode): Integer;
 var i : Integer;
 begin
@@ -2235,8 +2269,8 @@ begin
   end;
 end;
 
-{ Gen.RecordAt: the RECORD a callee names and its C type name,
-  following an alias by name to the record it stands for }
+{ Gen.RecordAt answers the RECORD a callee names and its C type name,
+  following an alias by name to the record it stands for. }
 function TGen.RecordAt (const name: string; out ctype: string): TNode;
 var
   dot, depth, ei : Integer;
@@ -2293,11 +2327,12 @@ begin
   hoistOk := False;
 end;
 
-{ a conversion's argument x of tag at as the int64_t the checked
-  narrowings take: a real through m9_i64_f64 and a U64 through
-  m9_i64_u64, each checked -- until 2026-10-21 both went through C's
-  own conversion, so I32 (NaN) answered 0 without ValueRange and
-  I32 (MAX (U64)) answered -1 (the compiler review's G2) }
+{ IntArgC answers a conversion's argument x of tag at as the int64_t
+  the checked narrowings take.  A real goes through m9_i64_f64 and a
+  U64 through m9_i64_u64, each checked.  Until 2026-10-21 both went
+  through C's own conversion, so I32 (NaN) answered 0 without
+  ValueRange and I32 (MAX (U64)) answered -1 (the compiler review's
+  G2). }
 function IntArgC (const x, at: string): string;
 begin
   if (at = 'F64') or (at = 'F32') then
@@ -2325,19 +2360,19 @@ begin
   pmod := '';
   rpool := '';
   name := dnode.a;
-  { the dotted callee name: every field selector joins, so
-    Mod.Type.Variant reaches the constructor branch whole -- the
+  { Build the dotted callee name.  Every field selector joins, so
+    Mod.Type.Variant reaches the constructor branch whole.  The
     two-part cut read it as procedure `Csv' and refused it as
-    `callee unsupported yet' until 2026-09-15 }
+    `callee unsupported yet' until 2026-09-15. }
   for k := 0 to High (dnode.kids) do
     if dnode.kids[k].kind = nkSelField then
       name := name + '.' + dnode.kids[k].a;
   nargs := 0;
   if argl <> nil then nargs := Length (argl.kids);
 
-  { A RECORD AGGREGATE: Row (a, b), or Mod.Row (a, b) -- a compound
-    literal of the record's C type, the fields in declaration order,
-    which is the struct's order (Gen.RecordAt) }
+  { A RECORD AGGREGATE, Row (a, b) or Mod.Row (a, b), becomes a
+    compound literal of the record's C type.  The fields go in
+    declaration order, which is the struct's order (Gen.RecordAt). }
   rec := RecordAt (name, ctype);
   if rec <> nil then
   begin
@@ -2362,8 +2397,8 @@ begin
     Exit ('((' + ctype + '){ ' + args + ' })');
   end;
 
-  { AN INTEGER TO AN ENUMERATION: Colour (i), or Palette.Hue (i), the
-    checked inverse of ORD.  The callee is a type -- an enum or a
+  { AN INTEGER TO AN ENUMERATION: Colour (i), or Palette.Hue (i), is
+    the checked inverse of ORD.  The callee is a type -- an enum or a
     payload-less case record -- and CRNode/CRPrefix resolve it for
     either spelling.  m9_enum raises ValueRange for a value that names
     no member (docs/enum-plan.md, part 2). }
@@ -2383,14 +2418,14 @@ begin
 
   { An ALIAS FOR A SCALAR IS A CONVERSION under its own name.  The
     checker already treats `TYPE Real = F32` as F32 for assignment,
-    arguments and RETURN -- aliases chase to structure -- so `Real
-    (x)` meaning anything other than `F32 (x)` would be the odd case.
-    Chased here, once, so every conversion below applies unchanged.
-    Forced by a Fortran port, which needs one source buildable at
-    both of the original's real kinds (-fdefault-real-8 is commented
-    out in its makefile, so single is what ships and double is what
-    the flag is for), and that needs the default kind to have a name
-    that also converts. }
+    arguments and RETURN, because aliases chase to structure.  So if
+    `Real (x)` meant anything other than `F32 (x)`, that would be the
+    odd case.  The alias is chased here, once, so every conversion
+    below applies unchanged.  A Fortran port forced this.  It needs
+    one source buildable at both of the original's real kinds
+    (-fdefault-real-8 is commented out in its makefile, so single is
+    what ships and double is what the flag is for).  That needs the
+    default kind to have a name that also converts. }
   if (nargs = 1) and not InL (name, Builtins) then
   begin
     dot := Pos ('.', name);
@@ -2428,8 +2463,8 @@ begin
     if at = 'SLICE' then begin tag := 'I64'; Exit ('(' + EX (argl.kids[0], '') + ').len') end;
     if at = 'ARR' then
     begin
-      { Gen: a bare name, its declaration's count; anything with
-        selectors, C counts itself }
+      { As in Gen, a bare name takes its declaration's count.  For
+        anything with selectors, C counts itself. }
       if (argl.kids[0].kind = nkDesignator) and (Length (argl.kids[0].kids) = 0) then
       begin
         arg := Resolve (ScopeNode (argl.kids[0].a));
@@ -2449,9 +2484,10 @@ begin
     tag := 'I64';
     Exit ('(' + EX (argl.kids[0], '') + ').len');
   end;
-  { VIEW (g, i, ALL, ...): a borrowed sub-grid.  The axes are known
-    here, so the loop is unrolled and the result's rank is a compile
-    time fact -- which is what lets a view have a type at all.  The
+  { VIEW (g, i, ALL, ...) takes a borrowed sub-grid.  The axes are
+    known here, so the loop is unrolled and the result's rank is a
+    compile time fact.  That is what lets a view have a type at all.
+    The
     dropped axes are CHECKED where the view is taken, not later where
     it is read, so an out-of-range view is diagnosed at the mistake. }
   if name = 'VIEW' then
@@ -2500,8 +2536,8 @@ begin
   end;
   if name = 'NAME' then
   begin
-    { the member's identifier as a STR, from the table emitted beside
-      the tag #defines: NAME (Colour.Red) is 'Red' }
+    { NAME answers the member's identifier as a STR, from the table
+      emitted beside the tag #defines: NAME (Colour.Red) is 'Red'. }
     tag := 'SLICE';
     at := TagOfExpr (argl.kids[0]);
     Exit ('(' + CRPrefix (Copy (at, 4, MaxInt)) + '_names[(' +
@@ -2520,12 +2556,12 @@ begin
     stRaise := True;
     Exit ('m9_byte (' + IntArgC (e1, at) + ', err)');
   end;
-  { the other widths, each a checked narrowing: the museum's founding
-    bug is a width that converted itself, so every one of these is a
-    call that can raise rather than a cast that cannot.  By SOURCE as
-    well as target: a real or a U64 is checked on its way to int64_t
-    (IntArgC), and a U64 target takes a real through its own range
-    and a U64 as it is }
+  { The other widths are each a checked narrowing.  The museum's
+    founding bug is a width that converted itself, so every one of
+    these is a call that can raise rather than a cast that cannot.
+    They check by SOURCE as well as target.  A real or a U64 is
+    checked on its way to int64_t (IntArgC).  A U64 target takes a
+    real through its own range and a U64 as it is. }
   if (name = 'I8') or (name = 'I16') or (name = 'I32') or
      (name = 'U8') or (name = 'U16') or (name = 'U32') or
      (name = 'U64') then
@@ -2594,12 +2630,13 @@ begin
     Err (site, 'MAX of ' + argl.kids[0].a + ' unsupported yet');
     Exit ('0');
   end;
-  { SizeOf (x): the byte size of x's TYPE, a compile-time constant
-    folding to C sizeof.  A bare builtin or user type name asks the
+  { SizeOf (x) answers the byte size of x's TYPE, a compile-time
+    constant folding to C sizeof.  A bare builtin or user type name
+    asks the
     named type; anything else asks the value's type (sizeof does not
     evaluate its operand).  A slice's own SizeOf is its descriptor;
-    the DATA a slice points at is ByteSize.  In-memory only -- a wire
-    uses the exact-width types and ToBytesLE. }
+    the DATA a slice points at is ByteSize.  It is in-memory only: a
+    wire uses the exact-width types and ToBytesLE. }
   if name = 'SizeOf' then
   begin
     tag := 'I64';
@@ -2613,7 +2650,8 @@ begin
     end;
     Exit ('((int64_t) sizeof (' + EX (argl.kids[0], '') + '))');
   end;
-  { ByteSize (s): the bytes s's elements occupy -- LEN * elem size.
+  { ByteSize (s) answers the bytes s's elements occupy: LEN * elem
+    size.
     sizeof (*(s).p) reads the element size off the slice's own pointer
     type without evaluating s. }
   if name = 'ByteSize' then
@@ -2639,18 +2677,20 @@ begin
     the call must be EMITTED to the same procedure or the two ends
     disagree about which program this is.
 
-    HERE, and not before the builtins: up there it asked TagOfExpr
-    for the first argument's type on every call, and `MAX (I64)`
-    passes a TYPE NAME, not an expression.  A builtin has no twin by
+    This sits HERE, and not before the builtins.  Up there it asked
+    TagOfExpr for the first argument's type on every call, and
+    `MAX (I64)` passes a TYPE NAME, not an expression.  A builtin has
+    no twin by
     construction, so the only place this can apply is where user
     procedures are resolved. }
   if (nargs >= 1) and (Length (name) > 3) and
      (Copy (name, Length (name) - 2, 3) <> 'F32') and
      ((Pos ('.', name) > 0) or (FindProc (name) >= 0)) then
   begin
-    { SOME argument is F32 and NONE is F64 -- the checker's rule,
-      character for character, because the two must agree about which
-      procedure this call is.  A literal types as neither width, so
+    { SOME argument is F32 and NONE is F64.  This is the checker's
+      rule, character for character, because the two must agree about
+      which procedure this call is.  A literal types as neither width,
+      so
       `Math.Pow (10.0, c)` dispatches on c. }
     g := 0; j := 0;
     for k := 0 to nargs - 1 do
@@ -2738,9 +2778,10 @@ begin
     end;
     { variant constructor with payload: Type.Variant (args) }
     vt := FindType (tn);
-    { and Mod.Type.Variant (args), the type's module named: the
-      callee split at its first dot reads as module Mod, procedure
-      `Type.Variant', which is no procedure.  CRPrefix and the CR:
+    { The same handles Mod.Type.Variant (args), the type's module
+      named.  The callee split at its first dot reads as module Mod,
+      procedure `Type.Variant', which is no procedure.  CRPrefix and
+      the CR:
       tag both carry `Mod.Type' since 2026-09-15. }
     if (vt = nil) and (Pos ('.', vn) > 0) then
     begin
@@ -2798,8 +2839,9 @@ begin
   end
   else
   begin
-    { a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or an
-      IS SOME binder whose type is a procedure type.  Its head drives
+    { This is a call THROUGH A PROCEDURE VALUE (par 2.2.3): a
+      parameter or an IS SOME binder whose type is a procedure type.
+      Its head drives
       the argument conversion below exactly as a declaration's would,
       and the call is `name (args, err)` on the C pointer. }
     pv := False;
@@ -2849,21 +2891,22 @@ begin
         { [SERIAL] MEANS SERIALISED, NOT FORBIDDEN.
 
           The attribute says this foreign procedure may not be called
-          concurrently -- ecCodes on a global context, blosc on global
+          concurrently: ecCodes on a global context, blosc on global
           state, the museum's founding race.  The checker's rule was
           that a THREAD may not REACH one, which is unenforceable in
           practice: its BFS walks a per-unit call graph and cannot see
           a [SERIAL] two modules away, which is every realistic case.
 
-          So the generator makes it true instead of checking it.  One
-          gate per FOR-C unit, because the state these procedures
-          share is the LIBRARY's, not the procedure's; a caller that
-          arrives while another thread is inside waits.  Single
+          So the generator makes it true instead of checking it.
+          There is one gate per FOR-C unit, because the state these
+          procedures share is the LIBRARY's, not the procedure's.  A
+          caller that arrives while another thread is inside waits.
+          Single
           threaded the mutex is uncontended and costs about twenty
           nanoseconds against a foreign call that costs microseconds.
 
-          A GNU statement expression, because a call is an expression
-          and the lock has to bracket it. }
+          The code is a GNU statement expression, because a call is an
+          expression and the lock has to bracket it. }
         gname := foreignUnit.Values[name];
         if (vt.kids[3] <> nil) and (vt.kids[3].a = 'SERIAL') and
            (gname <> '') then
@@ -2998,8 +3041,8 @@ end;
 
 { ---- expressions ---- }
 
-{ is d, as a value, a non-OPT pointer read out of a field or an element
-  (mirrors Gen.NnCopy; the review's C8) }
+{ NnCopy asks whether d, as a value, is a non-OPT pointer read out of
+  a field or an element (mirrors Gen.NnCopy; the review's C8). }
 function TGen.NnCopy (d: TNode): Boolean;
 var dt : TNode;
 begin
@@ -3041,8 +3084,8 @@ begin
         Result := '(m9_sl_CHAR){ NULL, 0 }'
       else
       begin
-        { static storage, never a stack compound literal: a returned
-          literal (Reason's 'Not Found') must not dangle }
+        { Use static storage, never a stack compound literal: a
+          returned literal (Reason's 'Not Found') must not dangle. }
         l := 'm9s' + IntToStr (litBuf.Count);
         litBuf.Add ('static const uint32_t ' + l + '[' +
           IntToStr (Utf8Len (e.a)) + '] = { ' + StrCodes (e.a, e) + ' };');
@@ -3126,9 +3169,9 @@ begin
           if e.kids[0] <> nil then r := PoolAddrC (e.kids[0]);
         end
         else
-          { the frame form: the result slot, which is this frame's
-            arena in the body and the caller's while a RETURN
-            expression is emitted -- `+`'s rule exactly (par 2.3) }
+          { The frame form uses the result slot.  That is this frame's
+            arena in the body, and the caller's while a RETURN
+            expression is emitted: `+`'s rule exactly (par 2.3). }
           r := 'err->res';
         nx := 0;
         for j := ext0 to High (e.kids) do
@@ -3293,9 +3336,9 @@ begin
           widens the whole expression and narrows once at the end }
         if lt = 'F32' then w := 'F32';
         if lt = 'U64' then w := 'U64';
-        { and an adaptive node -- `5.02808 * 0.43429`, all literals --
-          has no width of its own, so it takes the context's rather
-          than recomputing one from operands that have none }
+        { An adaptive node (`5.02808 * 0.43429`, all literals) has no
+          width of its own, so it takes the context's rather than
+          recomputing one from operands that have none. }
         if (want <> '') and IsAdaptive (e) then w := want;
         l := EX (e.kids[0], w);
         { the right operand of AND and OR is evaluated only when the
@@ -3318,9 +3361,9 @@ begin
         begin
           { AN UNKNOWN TYPE MUST NOT BECOME INTEGER ARITHMETIC.  A
             tag of '?' here means the generator could not resolve one
-            operand's type -- most often a callee whose signature
-            names a type from a module this one does not import --
-            and falling through to m9_add_i64 emits checked 64-bit
+            operand's type.  Most often that is a callee whose
+            signature names a type from a module this one does not
+            import.  A fall-through to m9_add_i64 emits checked 64-bit
             integer arithmetic over doubles.  That compiles, runs,
             and answers plausible numbers: rhoh 0.3% out, found by
             the one kernel held to bit-identity. }
@@ -3352,8 +3395,8 @@ begin
         else if cop = '*%' then Result := 'm9_mulw_i64 (' + l + ', ' + r + ')'
         else if ((cop = '==') or (cop = '!=')) and
                 ((Copy (lt, 1, 3) = 'CR:') or (Copy (TagOfExpr (e.kids[1]), 1, 3) = 'CR:')) then
-          { either side says so: a field of an IMPORTED record has a tag
-            the left side does not report (mirrors Gen) }
+          { Either side may say so: a field of an IMPORTED record has a
+            tag the left side does not report (mirrors Gen). }
           { two enumeration (or case-record) values compare by tag: a
             struct == is not valid C (docs/enum-plan.md) }
           Result := '((' + l + ').tag ' + cop + ' (' + r + ').tag)'
@@ -3377,7 +3420,8 @@ begin
   end;
 end;
 
-{ an integer-constant CASE label: local CONST or imported Mod.CONST }
+{ ConstLbl answers an integer-constant CASE label: a local CONST or an
+  imported Mod.CONST. }
 function TGen.ConstLbl (d: TNode): string;
 var
   ci : Integer;
@@ -3399,10 +3443,12 @@ begin
     Result := 'INT64_C(' + e.a + ')';
 end;
 
-{ the declared type node a designator lands on (no code emitted) }
-{ the type a selector reaches: the checker's, from the typed tree,
-  when it recorded one; else what this generator worked out itself
-  (the review of 2026-10-09: one computation, the checker's) }
+{ DesigDecl answers the declared type node a designator lands on (no
+  code emitted). }
+{ Checked answers the type a selector reaches.  It is the checker's,
+  from the typed tree, when it recorded one; else what this generator
+  worked out itself (the review of 2026-10-09: one computation, the
+  checker's). }
 function TGen.Checked (sel, own: TNode): TNode;
 begin
   Result := TypeAt (sel);
@@ -3444,16 +3490,17 @@ begin
   end;
 end;
 
-{ exception descriptor reference: this module, the predeclared four,
-  then imported definitions.  A QUALIFIED name resolves in exactly
-  the module it states: Io.IOError and ZarrStore.IOError are two
-  descriptors, and the first version dropped the qualifier and
-  answered whichever module registered the bare name first -- a
-  handler for ZarrStore.IOError compiled to a test against
-  &Io_IOError and matched nothing, found by the tutorial service's
-  no-network zarr cell. }
-{ IndexError (index, length : I64) as the field sequence a declared
-  exception would have parsed to (mirrors Sem/Gen.IxFields) }
+{ ExcRef answers an exception descriptor reference.  It looks in this
+  module, the predeclared four, then imported definitions.  A
+  QUALIFIED name resolves in exactly the module it states:
+  Io.IOError and ZarrStore.IOError are two descriptors.  The first
+  version dropped the qualifier and answered whichever module
+  registered the bare name first.  A handler for ZarrStore.IOError
+  compiled to a test against &Io_IOError and matched nothing; the
+  tutorial service's no-network zarr cell found it. }
+{ IxFields answers IndexError (index, length : I64) as the field
+  sequence a declared exception would have parsed to (mirrors
+  Sem/Gen.IxFields). }
 function TGen.IxFields: TNode;
 var fs, g, il, i1, i2, ty : TNode;
 begin
@@ -3510,8 +3557,8 @@ begin
   Result := '';
 end;
 
-{ the OPT payload type of an IS SOME operand: a designator's declared
-  type or a call's return type }
+{ OptInner answers the OPT payload type of an IS SOME operand: a
+  designator's declared type or a call's return type. }
 function TGen.OptInner (e: TNode): TNode;
 var
   r : TNode;
@@ -3560,8 +3607,9 @@ begin
   end;
 end;
 
-{ one EXCEPT arm: identity match, literal payload guards, binders
-  copied out of the slots before the slot is cleared }
+{ EmitHandler emits one EXCEPT arm: identity match, literal payload
+  guards, binders copied out of the slots before the slot is
+  cleared. }
 procedure TGen.EmitHandler (h: TNode; const dlbl: string; ind: Integer);
 var
   nm, qual, desc, cond, slot, ety : string;
@@ -3582,8 +3630,8 @@ begin
     Exit;
   end;
   cond := 'err->exc == &' + desc;
-  { `| A, B :' -- any of the further names enters the arm (mirrors
-    Gen.EmitHandler, 2026-10-11) }
+  { In `| A, B :' any of the further names enters the arm (mirrors
+    Gen.EmitHandler, 2026-10-11). }
   for k := 3 to High (h.kids) do
   begin
     if h.kids[k].b <> '' then desc := ExcRef (h.kids[k].a, h.kids[k].b, fx)
@@ -3627,8 +3675,9 @@ begin
           if arg.kind = nkIdent then
           begin
             if ety = 'SLICE' then
-              { a copy in this procedure's frame: the in-flight one is
-                overwritten by the next raise (m9rt.h, m9_pay_take) }
+              { Take a copy in this procedure's frame: the in-flight
+                one is overwritten by the next raise (m9rt.h,
+                m9_pay_take). }
               binderLines.Add (TyC (fld) + ' ' + CN (arg.a) + ' = { (' +
                 TyC (Resolve (fld).kids[0]) + ' *) m9_pay_take (err, ' +
                 IntToStr (si - 1) + ', sizeof (' +
@@ -3677,12 +3726,13 @@ begin
   dbgSrc := f;
 end;
 
-{ One directive per statement, at column 0 and into the procedure
-  buffer, so the C compiler attributes what follows to the M9 line it
-  came from.  Nothing when dbgSrc is empty (the default, and what
-  every gate compares). }
-{ register a pool to be freed at L_ret.  Two callers: a local
-  `VAR p: POOL`, and the implicit frame arena every procedure gets. }
+{ DbgLine emits one directive per statement, at column 0 and into the
+  procedure buffer, so the C compiler attributes what follows to the
+  M9 line it came from.  It emits nothing when dbgSrc is empty (the
+  default, and what every gate compares). }
+{ PoolReg registers a pool to be freed at L_ret.  It has two callers:
+  a local `VAR p: POOL`, and the implicit frame arena every procedure
+  gets. }
 procedure TGen.PoolReg (const nm: string);
 begin
   SetLength (localPools, Length (localPools) + 1);
@@ -3693,9 +3743,9 @@ procedure TGen.DbgLine (st: TNode);
 begin
   if dbgSrc = '' then Exit;
   Line (pbuf, 0, '#line ' + IntToStr (st.line) + ' "' + dbgSrc + '"');
-  { and record it for an unhandled exception's message: one store
-    per statement, under -g only, so hot production code (no -g) is
-    untouched and its default generated C is unchanged }
+  { Also record it for an unhandled exception's message.  That is one
+    store per statement, under -g only, so hot production code (no
+    -g) is untouched and its default generated C is unchanged. }
   Line (pbuf, 1, 'err->line = ' + IntToStr (st.line) + ';');
 end;
 
@@ -3762,8 +3812,9 @@ end;
        Allocates / CalleeHead / SinkAlloc / Releasable / CondMark, and
        gendiff holds the two identical) ---- }
 
-{ does the expression under K carve the arena: a string +, a frame-form
-  NEW, a call whose answer carries a pointer? }
+{ Allocates asks whether the expression under K carves the arena: a
+  string +, a frame-form NEW, a call whose answer carries a
+  pointer. }
 function TGen.Allocates (k: TNode): Boolean;
 var
   i, ext0 : Integer;
@@ -3787,9 +3838,10 @@ begin
     if Allocates (k.kids[i]) then Exit (True);
 end;
 
-{ the callee's head the way CallC finds it: Mod.Proc in the loaded
-  definitions, a procedure value in scope, this module's own; nil for
-  a builtin, a foreign procedure, a constructor or anything unknown }
+{ CalleeHead answers the callee's head the way CallC finds it:
+  Mod.Proc in the loaded definitions, a procedure value in scope,
+  this module's own.  It answers nil for a builtin, a foreign
+  procedure, a constructor or anything unknown. }
 function TGen.CalleeHead (dn: TNode): TNode;
 var
   name : string;
@@ -3816,12 +3868,13 @@ begin
   if g >= 0 then Result := procs[g].node;
 end;
 
-{ does a sink under K receive an expression containing an allocation:
-  an argument in VAR, OWN or KEPT position, or any argument of a
-  callee without a head (a builtin keeps nothing and is walked through) }
+{ SinkAlloc asks whether a sink under K receives an expression
+  containing an allocation: an argument in VAR, OWN or KEPT position,
+  or any argument of a callee without a head (a builtin keeps nothing
+  and is walked through). }
 
-{ a parameter type of the head a call names, read in the module that
-  wrote it (mirrors Gen.HeadType) }
+{ HeadType answers a parameter type of the head a call names, read in
+  the module that wrote it (mirrors Gen.HeadType). }
 function TGen.HeadType (t, dn: TNode): TNode;
 begin
   Result := t;
@@ -3876,14 +3929,16 @@ begin
     if SinkAlloc (k.kids[i]) then Exit (True);
 end;
 
-{ is this call statement or assignment released with the statement? }
+{ Releasable asks whether this call statement or assignment is
+  released with the statement. }
 function TGen.Releasable (st: TNode): Boolean;
 var lt : TNode;
 begin
   Result := False;
-  { never in a module body: the marked arena is &m9mframe, the pool of
-    every module variable without IN and where a callee's kept frame
-    allocations are adopted (OneFlux, 2026-10-19; mirrors Gen.Releasable) }
+  { Never release in a module body.  There the marked arena is
+    &m9mframe: the pool of every module variable without IN, and where
+    a callee's kept frame allocations are adopted (OneFlux,
+    2026-10-19; mirrors Gen.Releasable). }
   if inMain then Exit;
   if st.kind = nkCallStmt then
     Exit (Allocates (st.kids[1]) and not SinkAlloc (st));
@@ -3899,8 +3954,9 @@ begin
   end;
 end;
 
-{ a condition's release: the mark before its evaluation; '' when the
-  condition allocates nothing it could not also leak }
+{ CondMark answers a condition's release: the mark before its
+  evaluation.  It answers '' when the condition allocates nothing it
+  could not also leak. }
 function TGen.CondMark (k: TNode; ind: Integer): string;
 begin
   Result := '';
@@ -3940,14 +3996,15 @@ begin
         { copying a SHARED handle refcounts it (par 4.2); SHARED(x)
           itself already set rc=1 and is not re-counted }
         shared := (tg = 'SHARED') and (TagOfExpr (st.kids[1]) = 'SHARED');
-        { ... and only a copy OF A BINDING counts; SHARED (o) and a call's
-          answer are moves (mirrors Gen's NAssign; the review's G7) }
+        { Only a copy OF A BINDING counts.  SHARED (o) and a call's
+          answer are moves (mirrors Gen's NAssign; the review's G7). }
         if st.kids[1].kind <> nkDesignator then shared := False;
         if stRaise then
         begin
-          { a call that raised answered nothing (report par 5,
-            2026-10-03): the right side into a temporary, the error
-            slot read, then the store.  corpus/Gen.m9 says why. }
+          { A call that raised answered nothing (report par 5,
+            2026-10-03).  So the right side goes into a temporary, the
+            error slot is read, then the store happens.  corpus/Gen.m9
+            says why. }
           Line (pbuf, ind, '{ __typeof__(' + l + ') m9v = ' + r + ';');
           Line (pbuf, ind + 1, 'if (err->exc) goto ' + raiseLbl + ';');
           if shared then
@@ -4131,7 +4188,8 @@ begin
         Line (pbuf, ind, 'for (;;) {');
         mk := CondMark (st.kids[0], ind + 1);
         stRaise := False;
-        { hoisted INSIDE the loop, closed at the end of the body }
+        { The hoist goes INSIDE the loop, closed at the end of the
+          body. }
         hoistOk := True;
         hoistInd := ind + 1;
         cnd := EX (st.kids[0], '');
@@ -4211,8 +4269,8 @@ begin
         hoistInd := ind;
         l := EX (st.kids[0], '');
         w := NewTmp;
-        { the bound in the VARIABLE's type, and the test before the step
-          (mirrors Gen's NFor; the compiler review's G5) }
+        { Keep the bound in the VARIABLE's type, and test before the
+          step (mirrors Gen's NFor; the compiler review's G5). }
         Line (pbuf, ind, '{ __typeof__(' + CN (st.a) + ') ' + w + 'to;');
         Line (pbuf, ind, CN (st.a) + ' = ' + l + ';');
         r := EX (st.kids[1], '');
@@ -4230,8 +4288,8 @@ begin
             stp := '-' + st.kids[2].kids[0].a
           else
           begin
-            { any other constant step, through the one evaluator
-              (mirrors Gen.StepC); the checker refused the rest }
+            { Any other constant step goes through the one evaluator
+              (mirrors Gen.StepC).  The checker refused the rest. }
             stp := StepC (st.kids[2]);
             if stp = '' then
             begin
@@ -4301,8 +4359,8 @@ begin
         begin
           if vd <> nil then
           begin
-            { the handlers on an inner block, the FINALLY on an outer
-              one around it (mirrors Gen.SplitFinally) }
+            { Put the handlers on an inner block, and the FINALLY on
+              an outer one around it (mirrors Gen.SplitFinally). }
             EmitStmt (SplitFinally (st), ind);
             Exit;
           end;
@@ -4328,9 +4386,9 @@ begin
           EmitSeq (st.kids[0], ind);
           Exit;
         end;
-        { FINALLY as a goto cleanup chain (par 11): raises and
-          RETURNs inside the block land on the label; the cleanup
-          runs; then whatever was pending continues outward }
+        { FINALLY becomes a goto cleanup chain (par 11).  Raises and
+          RETURNs inside the block land on the label.  The cleanup
+          runs, then whatever was pending continues outward. }
         w := NewTmp;
         l := 'L_fin_' + NewTmp;
         Line (pbuf, ind, 'bool ' + w + ' = false; (void) ' + w + ';');
@@ -4356,8 +4414,8 @@ begin
     nkCase :
       begin
         stRaise := False;
-        { the selector's raising arguments hoisted, closed after the
-          switch (mirrors Gen's NCase; the compiler review's G6) }
+        { Hoist the selector's raising arguments, and close them after
+          the switch (mirrors Gen's NCase; the compiler review's G6). }
         hoistOk := True;
         hoistInd := ind;
         cnd := EX (st.kids[0], '');
@@ -4529,11 +4587,11 @@ begin
           Line (pbuf, ind, 'm9_mon_signal (&(' + l + ').m9mon);');
       end;
 
-    { THREAD (P, arg).  ONE TRAMPOLINE PER PROCEDURE, not per site:
-      par 6's SHARABLE argument is a MONITOR or an owned value moved
-      in, both pointer-shaped, so the argument goes through void*
-      with no allocation.  The trampoline carries its own error slot
-      because a thread has no caller to check one -- and an unhandled
+    { THREAD (P, arg).  There is ONE TRAMPOLINE PER PROCEDURE, not per
+      site.  par 6's SHARABLE argument is a MONITOR or an owned value
+      moved in, both pointer-shaped, so the argument goes through
+      void* with no allocation.  The trampoline carries its own error
+      slot because a thread has no caller to check one.  An unhandled
       raise there is fatal and says so, rather than becoming the one
       silence in this language. }
     nkThread :
@@ -4547,7 +4605,7 @@ begin
           l := DES (st.kids[1], tg);
           vd := DesigDecl (st.kids[1]);      { the DECLARED type node }
           vtN := Resolve (vd);               { what it resolves to }
-          { par 6: the argument must be SHARABLE -- immutable, a
+          { Per par 6 the argument must be SHARABLE: immutable, a
             MONITOR, or an owned value moved in.  A MONITOR is shared
             BY REFERENCE (its whole point is that one lock guards one
             record), and M9 gives no way to take its address outside
@@ -4562,8 +4620,8 @@ begin
                      'pointer-shaped (par 6: SHARABLE)')
           else
           begin
-            { TyC wants the DECLARED type -- a qualident it can name --
-              not the resolved node: a bare MONITOR node has no name
+            { TyC wants the DECLARED type (a qualident it can name),
+              not the resolved node.  A bare MONITOR node has no name
               to emit, exactly as a bare RECORD node has none. }
             if vtN.kind = nkMonitorType then
             begin
@@ -4632,10 +4690,11 @@ begin
       begin
         stRaise := False;
         l := DES (st.kids[0], tg);
-        { interior pools die with their record (par 4.3) and interior
-          SHARED handles are released -- but only when THIS is the
-          last handle: a shared object's interior outlives any one
-          Close (found by the bench driver closing the store first) }
+        { Interior pools die with their record (par 4.3), and interior
+          SHARED handles are released.  But that happens only when THIS
+          is the last handle: a shared object's interior outlives any
+          one Close (found by the bench driver closing the store
+          first). }
         opened := False;
         vtN := Resolve (DesigDecl (st.kids[0]));
         if (vtN <> nil) and (vtN.kind in [nkPtrType, nkSharedType]) then
@@ -4710,8 +4769,8 @@ begin
                 m9_state carries i[4], d[2], s[2]; before this check a
                 seventh integer or a third real simply wrote past the
                 end of the struct, and the generated C compiled.
-                Found by declaring an exception with six F64 fields
-                and reading the emitted code. }
+                It was found by declaring an exception with six F64
+                fields and reading the emitted code. }
               if j2 >= 2 then
               begin
                 Err (st, 'RAISE payload: more than 2 real fields ' +
@@ -4763,8 +4822,9 @@ begin
         begin
           stRaise := False;
           { the answer outlives this frame, so it is built in the
-            caller's arena.  Intermediates land there too -- generous,
-            and the price of not tracking tail position through EX. }
+            caller's arena.  Intermediates land there too.  That is
+            generous, and the price of not tracking tail position
+            through EX. }
           Line (pbuf, ind, 'err->res = m9res;');
           hoistOk := True;
           hoistInd := ind;
@@ -4846,8 +4906,8 @@ begin
       for j := 0 to High (grp.kids[0].kids) do
       begin
         { A BOUND PROCEDURE IS ONE WHOSE FIRST PARAMETER IS THE
-          MONITOR TYPE -- M9 has no method syntax, so the parameter
-          is the binding (docs/concurrency.md).  Its body is wrapped
+          MONITOR TYPE.  M9 has no method syntax, so the parameter is
+          the binding (docs/concurrency.md).  Its body is wrapped
           in enter/leave, which is how par 6's "all access to the
           record's fields is implicitly serialized" becomes a
           property of the emitted code rather than a rule to keep. }
@@ -4913,15 +4973,16 @@ begin
   pbuf.Add ('');
   pbuf.Add (sig);
   pbuf.Add ('{');
-  { THE FRAME ARENA.  Empty costs nothing -- m9_pool is one NULL
-    pointer and the first block is created lazily -- so a procedure
-    that never concatenates pays for a zeroed word.  Registered like
-    any local POOL, which frees it on EVERY exit: par 11 routes
+  { THE FRAME ARENA.  An empty one costs nothing: m9_pool is one NULL
+    pointer and the first block is created lazily.  So a procedure
+    that never concatenates pays for a zeroed word.  It is registered
+    like any local POOL, which frees it on EVERY exit: par 11 routes
     return, raise and FINALLY through L_ret alike.
 
-    And the result slot: err->res is the CALLER's arena when we are
-    entered, so it is captured before our own calls overwrite it, then
-    claimed for them -- a callee's answer lands in OUR frame.  Each
+    The result slot is set here too.  err->res is the CALLER's arena
+    when we are entered, so it is captured before our own calls
+    overwrite it, then claimed for them: a callee's answer lands in
+    OUR frame.  Each
     procedure restores it at L_ret, which is why a caller sets it once
     rather than around every call.  NULL means a caller that does not
     play (a hand-written C driver) and HEAP is the fallback, which is
@@ -4933,7 +4994,7 @@ begin
   { a function whose answer carries a pointer builds in its CALLER's
     arena from the first statement (rule 1 of docs/pool-elision-
     plan.md): the slot is left as the caller's and the frame stays
-    empty.  Mirrors Gen.GenProc, which says why. }
+    empty.  This mirrors Gen.GenProc, which says why. }
   if (d.kids[1] <> nil) and (retC <> 'm9_sl_CHAR') and
      HasPtr (d.kids[1], 0) then
     Line (pbuf, 1, 'err->res = m9res;')
@@ -4941,10 +5002,11 @@ begin
     Line (pbuf, 1, 'err->res = &m9frame;');
   if dbgSrc <> '' then
     Line (pbuf, 1, 'err->file = "' + dbgSrc + '";');
-  { PROCEDURE-LOCAL CONSTs, in the same map the module's own use.  The
-    map answers the first hit, so a local that shadowed a module CONST
-    would lose silently -- the checker refuses that, which is what
-    makes appending safe here.  Truncated when the procedure ends. }
+  { PROCEDURE-LOCAL CONSTs go in the same map the module's own use.
+    The map answers the first hit, so a local that shadowed a module
+    CONST would lose silently.  The checker refuses that, which is
+    what makes appending safe here.  The map is truncated when the
+    procedure ends. }
   svConsts := consts.Count;
   if gp.body <> nil then
     for ci2 := 0 to High (gp.body.kids) do
@@ -4958,8 +5020,8 @@ begin
     if Pos ('*', retC) > 0 then init := ' = NULL'
     else if (retC = 'double') or (retC = 'float') then init := ' = 0'
     else if (retC = 'bool') then init := ' = false'
-    { the fixed-width integers by NAME (mirrors Gen.ZeroInit): a Pos
-      of '_t' also matched m9_arr_4_int64_t }
+    { Match the fixed-width integers by NAME (mirrors Gen.ZeroInit): a
+      Pos of '_t' also matched m9_arr_4_int64_t. }
     else if (retC = 'int8_t') or (retC = 'int16_t') or (retC = 'int32_t') or
             (retC = 'int64_t') or (retC = 'uint8_t') or (retC = 'uint16_t') or
             (retC = 'uint32_t') or (retC = 'uint64_t') or (retC = 'size_t') or
@@ -4985,11 +5047,12 @@ begin
         begin
           scope.AddObject (
             body.kids[i].kids[g].kids[0].kids[j].a + '=l', TObject (vt));
-          { the structural test comes FIRST: a GRID of I64 is called
-            m9_gd3_int64_t, which contains _t and is not a scalar --
-            it emitted `= 0` and gcc refused it.  Found by the second
-            kernel of the port; a SLICE OF I64 had the same defect and
-            no corpus module had happened to declare one as a local }
+          { The structural test comes FIRST.  A GRID of I64 is called
+            m9_gd3_int64_t, which contains _t and is not a scalar: it
+            emitted `= 0` and gcc refused it.  The second kernel of
+            the port found it.  A SLICE OF I64 had the same defect,
+            and no corpus module had happened to declare one as a
+            local. }
           if Pos ('*', cty) > 0 then init := ' = NULL'
           else if (r <> nil) and
                   (r.kind in [nkGridType, nkSliceType, nkArrayType,
@@ -5026,15 +5089,16 @@ begin
 
   Line (pbuf, 0, 'L_ret: ;');
   Line (pbuf, 1, 'err->res = m9res;');
-  { par 2.3: a string leaving this frame -- the result, or a VAR/OWN
-    STR parameter's target -- is copied into the caller's arena IF it
-    lives in the frame that is about to be freed.  Asked of the
-    address, at the exit: a `+`, a callee's re-homed answer, a view
-    of either, are all caught; a literal, a borrow, or a string in a
-    pool the caller named is not moved.  This is what lets a string
-    procedure take no pool. }
-  { ... and from every LOCAL named pool as well (the frame is
-    localPools[0]); mirrors Gen.GenProc, which says why }
+  { par 2.3: a string leaving this frame (the result, or a VAR/OWN
+    STR parameter's target) is copied into the caller's arena IF it
+    lives in the frame that is about to be freed.  The test asks the
+    address, at the exit.  A `+`, a callee's re-homed answer, and a
+    view of either are all caught.  A literal, a borrow, or a string
+    in a pool the caller named is not moved.  This is what lets a
+    string procedure take no pool. }
+  { A string in every LOCAL named pool is copied out as well (the
+    frame is localPools[0]).  This mirrors Gen.GenProc, which says
+    why. }
   if retC = 'm9_sl_CHAR' then
     for i := 0 to High (localPools) do
       Line (pbuf, 1, 'm9ret = m9_rehome (&' + localPools[i] +
@@ -5044,9 +5108,9 @@ begin
       Line (pbuf, 1, '*' + outStr[i] + ' = m9_rehome (&' + localPools[k] +
         ', m9res, *' + outStr[i] + ', err);');
   { rule 1 of docs/pool-elision-plan.md: a frame allocation that
-    leaves -- through the result, or a VAR/OWN parameter's target --
-    takes the whole arena with it into the caller's, which a copy
-    could not do for a graph.  Mirrors Gen.GenProc. }
+    leaves (through the result, or a VAR/OWN parameter's target)
+    takes the whole arena with it into the caller's.  A copy could
+    not do that for a graph.  This mirrors Gen.GenProc. }
   if (d.kids[1] <> nil) and (retC <> 'm9_sl_CHAR') and
      HasPtr (d.kids[1], 0) then
     AdoptEmit ('m9ret', d.kids[1], 'm9res', 1, 0);
@@ -5135,7 +5199,7 @@ begin
   Line (pbuf, 1, 'm9done = 1;');
   { the init body's frame is the MODULE's lifetime (the checker
     exempts a store into a module variable here, par 2.3), so the
-    arena is static and never freed -- mirrors Gen.GenInit }
+    arena is static and never freed.  This mirrors Gen.GenInit. }
   Line (pbuf, 1, 'm9_pool *m9prev = err->res;');
   Line (pbuf, 1, 'err->res = &m9mframe;');
   for i := 0 to extMods.Count - 1 do
@@ -5150,10 +5214,11 @@ begin
   pbuf.Add ('}');
 end;
 
-{ the C typedef of a procedure type: `typedef R (*Mod_Name) (T1, T2 *,
-  m9_state *err);` -- a value parameter is its C type, VAR and OWN a
-  pointer to it, exactly the heading rule, so a procedure of the same
-  head IS a value of the type in C.  Mirrors Gen.ProcTypedefC. }
+{ ProcTypedefC answers the C typedef of a procedure type:
+  `typedef R (*Mod_Name) (T1, T2 *, m9_state *err);`.  A value
+  parameter is its C type, and VAR and OWN a pointer to it, exactly
+  the heading rule.  So a procedure of the same head IS a value of
+  the type in C.  It mirrors Gen.ProcTypedefC. }
 function TGen.ProcTypedefC (const name: string; ptn: TNode): string;
 var
   retC, ps, cty : string;
@@ -5181,8 +5246,9 @@ begin
     + 'm9_state *err);';
 end;
 
-{ the header guard's part from the file's name (mirrors Gen.GuardName):
-  a character that is no letter or digit is `_' and its code }
+{ GuardName answers the header guard's part from the file's name
+  (mirrors Gen.GuardName).  A character that is no letter or digit
+  becomes `_' and its code. }
 function GuardName (const n: string): string;
 var i : Integer;
 begin
@@ -5209,8 +5275,8 @@ begin
   arrSeen.Clear; litBuf.Clear; hdrRecs.Clear; hdrProtos.Clear;
   hdrConsts.Clear; rec2 := TStringList.Create;
   arrRec.Clear; hdrArrRec.Clear; rec3 := TStringList.Create;
-  { Gen.ExportWalks: Mod.v... to the one name Mod.v, before anything
-    is emitted }
+  { Gen.ExportWalks: rewrite Mod.v... to the one name Mod.v, before
+    anything is emitted. }
   if extVars.Count > 0 then
   begin
     for i := 0 to High (procs) do ExportWalk (procs[i].node, nil);
@@ -5234,7 +5300,7 @@ begin
     src.Add ('#include "' + extMods[i] + '.h"');
   src.Add ('');
 
-  { forward typedefs for every record type: slice typedefs and
+  { Emit forward typedefs for every record type.  Slice typedefs and
     mutually recursive fields need the names before the structs
     (typedef redefinition is legal C11, so the transparent structs'
     own typedef lines are harmless duplicates) }
@@ -5246,18 +5312,18 @@ begin
         modName + '_' + tyNames[i] + ';');
   hdr.Add ('');
 
-  { procedure types (par 2.2.3): a function-pointer typedef with the
-    err slot last, the same C signature a procedure of that head
-    gets.  Into the discovered-typedef stream, AFTER the slice
-    typedefs its parameters register on the way and BEFORE the record
-    bodies that may hold a field of it. }
+  { A procedure type (par 2.2.3) becomes a function-pointer typedef
+    with the err slot last, the same C signature a procedure of that
+    head gets.  It goes into the discovered-typedef stream, AFTER the
+    slice typedefs its parameters register on the way and BEFORE the
+    record bodies that may hold a field of it. }
   for i := 0 to High (tyNames) do
     if (tyNodes[i] <> nil) and (tyNodes[i].kind = nkProcType) then
       tdefs.Add (ProcTypedefC (tyNames[i], tyNodes[i]));
 
-  { case records: tagged structs, tags from 0 in declaration order;
-    variants with payload fields become union members named after
-    the variant }
+  { Case records become tagged structs, tags from 0 in declaration
+    order.  Variants with payload fields become union members named
+    after the variant. }
   for i := 0 to High (tyNames) do
     if (tyNodes[i] <> nil) and (tyNodes[i].kind in [nkCaseRecordType, nkEnumType]) then
     begin
@@ -5266,9 +5332,9 @@ begin
       cs := '';
       for ci := 0 to High (d.kids) do
         if (Length (d.kids[ci].kids) > 0) and (d.kids[ci].kids[0] <> nil) then cs := 'y';
-      { a NAMED struct, like records: an anonymous typedef cannot be
-        forward-declared, so a SLICE OF this variant put an undeclared
-        name in the header (demo/functional/SliceVar.m9) }
+      { Emit a NAMED struct, like records.  An anonymous typedef
+        cannot be forward-declared, so a SLICE OF this variant put an
+        undeclared name in the header (demo/functional/SliceVar.m9). }
       if not IsOpaque (tyNames[i]) then
         tgt.Add ('typedef struct ' + modName + '_' + tyNames[i] + ' ' +
           modName + '_' + tyNames[i] + ';');
@@ -5331,9 +5397,9 @@ begin
         ' = { "' + excN[i] + '" };');
   if Length (excN) > 0 then begin hdr.Add (''); src.Add (''); end;
 
-  { record bodies -- into rec2 (spliced after the typedefs their
+  { Record bodies go into rec2 (spliced after the typedefs their
     field types register), except transparent DEFINITION records,
-    which callers must see: those go to the header }
+    which callers must see.  Those go to the header. }
   for i := 0 to High (tyNames) do
     if (tyNodes[i] <> nil) and
        (tyNodes[i].kind in [nkRecordType, nkMonitorType]) then
@@ -5345,8 +5411,9 @@ begin
         tgt := rec2;
       if d.kind = nkMonitorType then fseq := d.kids[0]
       else fseq := d.kids[1];
-      { Gen.Emit: the field types FIRST, an ARRAY OF a record of this
-        module's typedef into this record's buffer, computed once }
+      { As in Gen.Emit, compute the field types FIRST, once.  An ARRAY
+        OF a record of this module puts its typedef into this record's
+        buffer. }
       SetLength (fts, 0);
       if fseq <> nil then
       begin
@@ -5364,11 +5431,13 @@ begin
         is layout-compatible with the record it is and the lock needs
         no offset arithmetic.  It needs no constructor: M9 records
         arrive zeroed and a zeroed pthread_mutex_t is
-        PTHREAD_MUTEX_INITIALIZER on glibc -- measured, see m9rt.h. }
+        PTHREAD_MUTEX_INITIALIZER on glibc.  This was measured: see
+        m9rt.h. }
       if tyNodes[i].kind = nkMonitorType then
         tgt.Add ('  m9_mon m9mon;');
-      { one declarator per line: `T * a, b` is one pointer and one
-        struct in C -- the star binds to the declarator, not the type }
+      { Emit one declarator per line.  `T * a, b` is one pointer and
+        one struct in C: the star binds to the declarator, not the
+        type. }
       if fseq <> nil then
         for ci := 0 to High (fseq.kids) do
         begin
@@ -5403,9 +5472,9 @@ begin
         e.a + ')')
     else if RealC (e) <> '' then
       hdrConsts.Add ('#define ' + modName + '_' + consts[ci] + ' ' + RealC (e))
-    { a BOOLEAN constant.  the ported model's parameter module has four of them and
-      Fortran calls them parameters, which is what they are: a switch
-      a program cannot flip at run time }
+    { This is a BOOLEAN constant.  The ported model's parameter module
+      has four of them, and Fortran calls them parameters.  That is
+      what they are: a switch a program cannot flip at run time. }
     else if e.kind = nkTrue then
       hdrConsts.Add ('#define ' + modName + '_' + consts[ci] + ' true')
     else if e.kind = nkFalse then
@@ -5423,8 +5492,9 @@ begin
     else if e.kind = nkString then
       hdrConsts.Add ('#define ' + modName + '_' + consts[ci] +
         ' ((m9_sl_CHAR){ NULL, 0 })')
-    { a CHAR constant: one code point, emitted like the char literal it
-      names -- <cp>u -- so `s + NL` joins it as a code point (par 2.2) }
+    { A CHAR constant is one code point, emitted like the char literal
+      it names (<cp>u), so `s + NL` joins it as a code point
+      (par 2.2). }
     else if e.kind = nkChar then
       hdrConsts.Add ('#define ' + modName + '_' + consts[ci] +
         ' (' + IntToStr (CharVal (e.a)) + 'u)')
@@ -5432,8 +5502,8 @@ begin
       Err (e, 'const form unsupported yet: ' + consts[ci]);
   end;
 
-  { foreign procedures: extern declarations against the C ABI, the
-    names passing through verbatim (par 7) }
+  { Foreign procedures become extern declarations against the C ABI,
+    the names passing through verbatim (par 7). }
   for i := 0 to foreignProcs.Count - 1 do
   begin
     d := TNode (foreignProcs.Objects[i]);
@@ -5451,13 +5521,13 @@ begin
   end;
   if foreignProcs.Count > 0 then src.Add ('');
 
-  { STATEFUL module state: statics, zero like every C static --
-    which is also M9's defined-zero story.  Emitted into rec2 now so
-    their array typedefs register before tdefs is spliced. }
+  { STATEFUL module state becomes statics, zero like every C static.
+    That is also M9's defined-zero story.  They are emitted into rec2
+    now so their array typedefs register before tdefs is spliced. }
   for i := 0 to High (modVarN) do
     rec3.Add ('static ' + TyC (modVarT[i]) + ' ' + CN (modVarN[i]) + ';');
   EmitAggs (rec3);
-  { the MODULE FRAME, static and at file scope, so that a module
+  { Emit the MODULE FRAME, static and at file scope, so that a module
     variable declared without a pool has one to be grown in (rule 2
     of docs/pool-elision-plan.md; mirrors Gen.Emit) }
   rec3.Add ('static m9_pool m9mframe = {0};');
@@ -5471,8 +5541,8 @@ begin
   if isProgram then begin if mainBody <> nil then GenMain; end
   else GenInit (forModule);
 
-  { header assembly: consts, discovered typedefs, transparent def
-    records, prototypes -- in dependency order }
+  { Assemble the header in dependency order: consts, discovered
+    typedefs, transparent def records, prototypes. }
   hdr.AddStrings (hdrConsts);
   if hdrConsts.Count > 0 then hdr.Add ('');
   hdr.AddStrings (tdefs);

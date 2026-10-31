@@ -1,7 +1,8 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE OpenApi ;
 
-(* Minimal OpenAPI 3.0 document from an HttpServer route table.
+(* OpenApi derives a minimal OpenAPI 3.0 document from an HttpServer
+   route table.
    Routes are data, so the description is derived, not maintained:
    a path the server answers is a path the document lists, by
    construction.  Serve the result on /openapi.json and the router
@@ -14,7 +15,7 @@ PROCEDURE Document (RO title: STR ;
                     r: PTR HttpServer.Router)
   : RO STR ;
   (* the document text lives in pool.  Title, version, and summaries
-     are emitted verbatim -- no JSON escaping, so a quote in them is
+     are emitted verbatim, with no JSON escaping, so a quote in them is
      the caller's bug.  Escape when a real client demands it, with a
      museum piece.                                                   *)
 
@@ -23,6 +24,8 @@ END OpenApi.
 
 IMPLEMENTATION MODULE OpenApi ;
 
+IMPORT Text ;
+
 IMPORT HttpServer ;
 IMPORT DynStr ;
 
@@ -30,7 +33,7 @@ PROCEDURE PathSeen (r: PTR HttpServer.Router ; i: I64) : BOOL =
 VAR j : I64 ;
 BEGIN
   FOR j := 0 TO i - 1 DO
-    IF DynStr.Eq (HttpServer.RoutePath (r, j),
+    IF Text.Eq (HttpServer.RoutePath (r, j),
                   HttpServer.RoutePath (r, i)) THEN
       RETURN TRUE
     END
@@ -41,14 +44,14 @@ END PathSeen ;
 PROCEDURE AppendMethod (VAR d: PTR DynStr.DString ;
                         RO m: STR) =
 BEGIN
-  (* OpenAPI wants lowercase method keys; the known verbs map, an
+  (* OpenAPI wants lowercase method keys.  The known verbs map; an
      unknown verb passes through verbatim and the document's reader
-     rejects it -- the failure stays visible                         *)
-  IF DynStr.Eq (m, 'GET') THEN DynStr.Append (d, 'get')
-  ELSIF DynStr.Eq (m, 'POST') THEN DynStr.Append (d, 'post')
-  ELSIF DynStr.Eq (m, 'PUT') THEN DynStr.Append (d, 'put')
-  ELSIF DynStr.Eq (m, 'DELETE') THEN DynStr.Append (d, 'delete')
-  ELSIF DynStr.Eq (m, 'HEAD') THEN DynStr.Append (d, 'head')
+     rejects it.  The failure stays visible.                         *)
+  IF Text.Eq (m, 'GET') THEN DynStr.Append (d, 'get')
+  ELSIF Text.Eq (m, 'POST') THEN DynStr.Append (d, 'post')
+  ELSIF Text.Eq (m, 'PUT') THEN DynStr.Append (d, 'put')
+  ELSIF Text.Eq (m, 'DELETE') THEN DynStr.Append (d, 'delete')
+  ELSIF Text.Eq (m, 'HEAD') THEN DynStr.Append (d, 'head')
   ELSE DynStr.Append (d, m)
   END
 END AppendMethod ;
@@ -57,8 +60,8 @@ PROCEDURE Operation (VAR d: PTR DynStr.DString ;
                      r: PTR HttpServer.Router ; j: I64) =
 BEGIN
   (* "get":{"summary":S,"responses":{"200":{"description":S,
-     "content":{"text/plain":{}}}}} -- the summary doubles as the
-     response description: one string, two mandatory slots           *)
+     "content":{"text/plain":{}}}}}.  The summary doubles as the
+     response description: one string, two mandatory slots.          *)
   DynStr.AppendChar (d, '"') ;
   AppendMethod (d, HttpServer.RouteMethod (r, j)) ;
   DynStr.Append (d, '":{"summary":"') ;
@@ -92,7 +95,7 @@ BEGIN
   firstPath := TRUE ;
   FOR i := 0 TO n - 1 DO
     IF NOT PathSeen (r, i) THEN
-      (* one path object per distinct path; every method on that
+      (* Emit one path object per distinct path; every method on that
          path becomes an operation inside it.  O(n^2) over a route
          table: measure before believing it matters.                 *)
       IF NOT firstPath THEN DynStr.AppendChar (d, ',') END ;
@@ -102,7 +105,7 @@ BEGIN
       DynStr.Append (d, '":{') ;
       firstOp := TRUE ;
       FOR j := i TO n - 1 DO
-        IF DynStr.Eq (HttpServer.RoutePath (r, j),
+        IF Text.Eq (HttpServer.RoutePath (r, j),
                       HttpServer.RoutePath (r, i)) THEN
           IF NOT firstOp THEN DynStr.AppendChar (d, ',') END ;
           firstOp := FALSE ;

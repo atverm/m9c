@@ -1,10 +1,10 @@
 (* EXPECT: GRID needs a slice, not I64 *)
 (* GRID (s, n0, ..., nR) lays a grid of rank R over a slice's storage
-   (par 2.2.1, 2026-10-08): GRID R OF T for a SLICE OF T, row-major,
-   the extents integers held to the slice's length at run time
-   (IndexError, and an empty grid).  The legal forms first: rank 2
-   and rank 1 over a slice, a grid lent to an RO parameter; the last
-   lays a grid over an integer. *)
+   (par 2.2.1, 2026-10-08).  It makes a GRID R OF T for a SLICE OF T,
+   row-major.  The extents are integers held to the slice's length at
+   run time (IndexError, and an empty grid).  The legal forms come
+   first: rank 2 and rank 1 over a slice, a grid lent to an RO
+   parameter; the last lays a grid over an integer. *)
 MODULE m ;
 VAR
   s : SLICE OF F64 ;

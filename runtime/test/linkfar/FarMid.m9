@@ -1,7 +1,7 @@
 DEFINITION MODULE FarMid ;
 
-(* reaches FarLib in its IMPLEMENTATION only, as Frame reaches NetCDF
-   and NbCells reaches Parquet *)
+(* FarMid reaches FarLib in its IMPLEMENTATION only, as Frame reaches
+   NetCDF and NbCells reaches Parquet. *)
 
 PROCEDURE Twice () : I64 ;
 

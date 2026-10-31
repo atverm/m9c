@@ -3,7 +3,7 @@ REVIEW Sparql -- 15 procedures with a body, 13 of them functions; 11 headings in
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              13
   assignments                                    35
-  arguments                                      92
+  arguments                                      94
   RETURN values                                  15
   operands of a comparison or an operator        25
   CASE labels                                     0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        6
   NEW in the frame                                0
   NEW in a named pool                             3
-  calls of a STR form with a UTF twin             7   Text.Keep -> Text.KeepUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Keep -> Text.KeepUtf, Text.FindChar -> Text.FindCharUtf, +1 more
-  STR subscripts, writes and LEN                  2   len url, len body
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

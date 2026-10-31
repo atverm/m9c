@@ -1,31 +1,31 @@
 #!/bin/sh
-# The manual page against the program.
+# This gate holds the manual page against the program.
 #
 # A help text that drifts from the behaviour is worse than none, and a
 # manual page drifts faster than a help text because nobody reads it
-# while developing.  So it is not inspected, it is COMPARED: the set of
-# options m9c --help lists and the set the OPTIONS section of m9c.1
-# documents must be equal, in both directions.
+# while developing.  So the gate does not inspect it; it COMPARES it.
+# The set of options m9c --help lists and the set the OPTIONS section
+# of m9c.1 documents must be equal, in both directions.
 #
-# Only option SPELLINGS are compared -- what a reader looks up and what
-# a script types.  Comparing prose would be a diff of two documents
-# rather than a check of one claim.
+# The gate compares only option SPELLINGS: what a reader looks up and
+# what a script types.  A comparison of prose would be a diff of two
+# documents rather than a check of one claim.
 #
-# Both sides normalise -Idir to -I: the joined spelling is the same
+# Both sides normalise -Idir to -I.  The joined spelling is the same
 # option, and a set that distinguished them would report a difference
 # that does not exist.
-# scratch files in a directory of this run's own: fixed /tmp names
+# Scratch files go in a directory of this run's own.  Fixed /tmp names
 # collided between two checkouts or two gates run at once (the compiler
-# review's tier 3, 2026-10-22)
+# review's tier 3, 2026-10-22).
 TG=$(mktemp -d "${TMPDIR:-/tmp}/m9gate.XXXXXX")
 trap 'rm -rf "$TG"' EXIT
 set -e
 cd "$(dirname "$0")"
 MAN=../../man/m9c.1
 
-# $M9C, else the harness build, else the source-tree build.  A package
-# build has only the latter, and a check that only runs where it is
-# convenient is a check that stops running.
+# Use $M9C, else the harness build, else the source-tree build.  A
+# package build has only the latter, and a check that only runs where
+# it is convenient is a check that stops running.
 . ./lib/freshm9c.sh   # M9C: built from runtime/gen, or the caller's $M9C
 [ -f "$MAN" ] || { echo "mandiff: no manual page at $MAN"; exit 1; }
 
@@ -42,8 +42,8 @@ flags () {
  "$M9C" --help | sed -n 's/^  \(-.*\)/\1/p' | sed 's/   .*//' | tr ',' ' ' |
   flags > "$TG"/m9c-help-opts.txt
 
-# the OPTIONS section only: the rest of the page mentions cc's flags in
-# its examples, and -iquote is not ours to document
+# Read the OPTIONS section only.  The rest of the page mentions cc's
+# flags in its examples, and -iquote is not ours to document.
 sed -n '/^\.SH OPTIONS/,/^\.SH [A-Z]/p' "$MAN" | sed 's/\\-/-/g' |
   flags > "$TG"/m9c-man-opts.txt
 

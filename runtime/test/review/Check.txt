@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                       10
   NEW in the frame                               16
   NEW in a named pool                             0
-  calls of a STR form with a UTF twin            23   Text.Eq -> Text.EqUtf, Io.WriteLine -> Io.WriteLineUtf, Io.WriteLine -> Io.WriteLineUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf, +17 more
+  calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

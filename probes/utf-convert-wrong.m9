@@ -1,7 +1,7 @@
 (* EXPECT: UTF converts a STR (encoding it) or a SLICE OF BYTE (validating it), not I64 *)
 MODULE m ;
-(* legal forms first: UTF of a STR, of a UTF, of a literal; STR and
-   OCTETS of a UTF *)
+(* Legal forms come first: UTF of a STR, of a UTF, of a literal; STR and
+   OCTETS of a UTF. *)
 VAR
   u : UTF ;
   s : STR ;

@@ -1,18 +1,19 @@
 #!/bin/sh
-# arrowread -- Arrow.m9's stream READER against pyarrow (2026-10-30;
+# arrowread holds Arrow.m9's stream READER against pyarrow (2026-10-30;
 # zarrm9's mcpd reads zpd's `format=arrow' answers).  arrowread/
-# ArrowRead.m9 prints what the reader finds in a stream -- the fields,
-# metadata, every batch's null counts and every cell -- and that text
-# must be what pyarrow reads from the same bytes (arrowread.py).
+# ArrowRead.m9 prints what the reader finds in a stream: the fields,
+# metadata, every batch's null counts and every cell.  That text must
+# be what pyarrow reads from the same bytes (arrowread.py).
 #
-# Two halves, as for the other columnar formats: the streams pyarrow
-# 26.0.0 wrote and its text for each are CHECKED IN (arrowread/gold/:
-# every type and width extreme, nulls and NaN over two batches, a time
-# zone, ZSTD, an empty batch, and three refusals by name -- an unsigned
-# column, a dictionary column, LZ4), so the gate holds the reader on
-# a machine without pyarrow, CI's included; where pyarrow is
-# ($COLUMNAR_PY, else python3), it writes the streams afresh and the
-# reader is held to those too, so a newer pyarrow's bytes are read.
+# The gate has two halves, as for the other columnar formats.  First,
+# the streams pyarrow 26.0.0 wrote and its text for each are CHECKED IN
+# (arrowread/gold/: every type and width extreme, nulls and NaN over
+# two batches, a time zone, ZSTD, an empty batch, and three refusals by
+# name -- an unsigned column, a dictionary column, LZ4).  So the gate
+# holds the reader on a machine without pyarrow, CI's included.
+# Second, where pyarrow is ($COLUMNAR_PY, else python3), it writes the
+# streams afresh and the reader is held to those too.  So a newer
+# pyarrow's bytes are read.
 cd "$(dirname "$0")" || exit 1
 . ./lib/freshm9c.sh                      # M9C, built from runtime/gen
 

@@ -1,13 +1,13 @@
 MODULE TlsPar ;
 
-(* Eight concurrent HTTPS fetches, to prove the TLS shim is what its
-   [REENTRANT] tag now says.  Run by runtime/test/threads.sh against a
-   local TLS server with a certificate the run generates and trusts
-   through $SSL_CERT_FILE -- a real handshake per connection, real
-   verification, and the hostname `localhost` so the certificate's
-   name is checked rather than waved through.
+(* TlsPar makes eight concurrent HTTPS fetches, to prove the TLS shim
+   is what its [REENTRANT] tag now says.  runtime/test/threads.sh runs
+   it against a local TLS server, with a certificate the run generates
+   and trusts through $SSL_CERT_FILE.  That means a real handshake per
+   connection, real verification, and the hostname `localhost`, so the
+   certificate's name is checked rather than waved through.
 
-   What is proved: every fetch answers 200 with the SAME bytes as the
+   It proves this: every fetch answers 200 with the SAME bytes as the
    sequential pass, and the process does not crash or corrupt a slot.
    The shim's table used to be claimed without a lock, so two threads
    could take the same slot and one would tear down the other's SSL
@@ -26,9 +26,9 @@ TYPE
      a field of Job until 2026-08-31, so Claim read it, added one and
      wrote it back with no lock -- two workers took the same page and
      one slot was never filled, which this gate then reported as a
-     difference from the sequential pass.  A race in the TEST, read
-     as a race in the shim under test.  Same bug, same day, as the
-     tutorial's C11Fetch. *)
+     difference from the sequential pass.  It was a race in the TEST,
+     read as a race in the shim under test: the same bug, the same
+     day, as the tutorial's C11Fetch. *)
   Work = MONITOR RECORD
     n : I64 ;
     next : I64 ;
@@ -62,7 +62,7 @@ END One ;
 PROCEDURE Claim (VAR w: Work) : I64 =
 VAR k : I64 ;
 BEGIN
-  (* bound to the monitor: the read and the write are one claim *)
+  (* Bound to the monitor, the read and the write are one claim. *)
   k := w.next ;
   w.next := w.next + 1 ;
   RETURN k

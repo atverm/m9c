@@ -1,23 +1,23 @@
 # Time
 
-Instants, civil time, and calendar arithmetic.
+Time handles instants, civil time, and calendar arithmetic.
 
-Designed against the failure modes rather than toward a feature
-list, because this is the module every language gets wrong:
+It is designed against the failure modes rather than toward a
+feature list, because this is the module every language gets wrong:
 
   ONE instant type, always UTC.  Python's original sin is naive
-  versus aware -- two types that look identical, compare wrongly,
-  and silently mean different things -- and its utcnow () returns
+  versus aware: two types that look identical, compare wrongly,
+  and silently mean different things.  And its utcnow () returns
   a naive value that looks like UTC and is not.  There is nothing
   here to get wrong because there is nothing else to be.
 
-  NO timezone database and NO daylight saving.  Rendering a local
+  NO timezone database and NO daylight saving.  A rendered local
   wall clock needs tzdata and answers questions that have no
   answer ("2:30 happened twice last Sunday").  That belongs in a
   module that ships the data, not in this one.
 
-  NO strftime zoo.  One output format and one input format, RFC
-  3339 with Z.  Anything else is Fmt and a slice.
+  NO strftime zoo.  There is one output format and one input
+  format, RFC 3339 with Z.  Anything else is Fmt and a slice.
 
 The representation is F64 seconds since 1970-01-01T00:00:00Z, as
 the CF conventions and netCDF use, so arithmetic is subtraction
@@ -43,56 +43,60 @@ proleptic Gregorian, month 1..12
 
 ### TYPE Span
 
-a CALENDAR span: years and months are symbolic, the rest are
-exact.  Not a duration -- it cannot be converted to seconds
-without knowing which instant it is measured from.
+Span is a CALENDAR span: years and months are symbolic, the
+rest are exact.  It is not a duration: it cannot be converted
+to seconds without knowing which instant it is measured from.
 
 ### Elapsed (a, b: Instant) : F64
 
-b - a in seconds.  Physics: exact, total, no convention.
+Elapsed answers b - a in seconds.  It is physics: exact, total,
+no convention.
 
 ### AddSeconds (t: Instant ; s: F64) : Instant
 
-t moved by s seconds; negative moves back.  Physics again, like
-Elapsed: no calendar, no leap second, no zone, so this is exact
-and total and has nothing to raise.  Arithmetic on the CIVIL
-side goes through ToCivil, which can fail.
+AddSeconds moves t by s seconds; negative moves back.  It is
+physics again, like Elapsed: no calendar, no leap second, no
+zone, so this is exact and total and has nothing to raise.
+Arithmetic on the CIVIL side goes through ToCivil, which can
+fail.
 
 ### ToCivil (t: Instant) : Civil RAISES ValueRange
 
-an Instant holding NaN, or seconds beyond what a day count can
-hold, has no civil form and says so rather than inventing one
+ToCivil refuses an Instant holding NaN, or seconds beyond what a
+day count can hold.  Such an Instant has no civil form, and
+ToCivil says so rather than inventing one.
 
 ### FromCivil (c: Civil) : Instant RAISES ValueRange
 
 FromCivil validates: month 1..12, day within the month for that
 year, hour 0..23, minute 0..59, second 0..<60.  A date that does
-not exist raises rather than silently normalising -- 31 February
+not exist raises rather than silently normalising: 31 February
 is a bug in the caller, not an input to be guessed at.
 
 ### Diff (a, b: Instant) : Span RAISES ValueRange
 
-the calendar difference from a to b, as a person states it:
-whole years, then whole months, then days, then time of day.
-Negative when b precedes a.  The property that matters is
-Add (a, Diff (a, b)) = b, and the driver checks it over a large
-sample rather than asserting it.
+Diff answers the calendar difference from a to b, as a person
+states it: whole years, then whole months, then days, then time
+of day.  It is negative when b precedes a.  The property that
+matters is Add (a, Diff (a, b)) = b, and the driver checks it over
+a large sample rather than asserting it.
 
 ### Add (t: Instant ; s: Span) : Instant RAISES ValueRange
 
-years and months first, on the civil calendar, CLAMPING the day
-to the last of the target month: 31 January plus one month is
-28 or 29 February.  Then days, hours, minutes and seconds as
-exact durations.  The order is part of the definition, because
-a different order gives a different answer.
+Add applies years and months first, on the civil calendar, CLAMPING
+the day to the last of the target month: 31 January plus one month
+is 28 or 29 February.  Then days, hours, minutes and seconds as
+exact durations.  The order is part of the definition, because a
+different order gives a different answer.
 
 ### Iso (t: Instant ; decimals: I64) : STR RAISES ValueRange
 
-RFC 3339, always Z: 2026-08-22T14:03:09.250Z
+Iso writes RFC 3339, always Z: 2026-08-22T14:03:09.250Z.
 
 ### ParseIso (RO s: STR) : Instant RAISES ValueRange
 
-the same shape, with or without fractional seconds, Z required.
+ParseIso reads the same shape, with or without fractional
+seconds, Z required.
 Offsets are not accepted: an offset is a local-time claim and
 this module does not do local time.
 
@@ -102,24 +106,25 @@ seconds since 1970-01-01T00:00:00Z
 
 ### ParseNanos (RO s: STR) : Nanos RAISES ValueRange
 
-java.time's ISO_OFFSET_DATE_TIME, held to OffsetDateTime.parse
-on 434 strings: yyyy-MM-ddTHH:mm[:ss[.f]] and an offset -- Z, or
-+HH, +HH:MM, +HH:MM:SS up to 18 hours -- the T and the Z in
-either case, 0 to 9 fraction digits (a point with none is
-accepted, as Java does), the date and time held to the calendar
-(no 24:00, no 60th second, no 30 February).  A year has four
-digits.  Anything else raises ValueRange.
+ParseNanos reads java.time's ISO_OFFSET_DATE_TIME, held to
+OffsetDateTime.parse on 434 strings.  It takes
+yyyy-MM-ddTHH:mm[:ss[.f]] and an offset (Z, or +HH, +HH:MM,
++HH:MM:SS up to 18 hours), the T and the Z in either case, 0 to 9
+fraction digits (a point with none is accepted, as Java does).
+It holds the date and time to the calendar (no 24:00, no 60th
+second, no 30 February).  A year has four digits.  Anything else
+raises ValueRange.
 
 ### IsoNanos (t: Nanos) : STR RAISES ValueRange
 
-java.time.Instant.toString: always Z, seconds always written, a
-fraction of 3, 6 or 9 digits only when nanos is not 0.  Years
-0000 to 9999; outside them, or nanos outside 0 .. 999999999,
-raises ValueRange.
+IsoNanos writes as java.time.Instant.toString does: always Z,
+seconds always written, a fraction of 3, 6 or 9 digits only when
+nanos is not 0.  Years run 0000 to 9999.  A year outside them, or
+nanos outside 0 .. 999999999, raises ValueRange.
 
 ### NanosBefore (a, b: Nanos) : BOOL
 
-a is strictly earlier than b
+NanosBefore asks whether a is strictly earlier than b.
 
 ### Now () : Instant
 
@@ -127,26 +132,28 @@ _(documented with the group below)_
 
 ### Sleep (ms: I64)
 
-wait, and do nothing else -- no timer, no signal, no
+Sleep waits, and does nothing else: no timer, no signal, no
 cancellation.  It exists for BACKOFF: a retry loop that cannot
 pause is a retry loop that hammers whatever refused it.
 
 ### CivilFromDays (z: I64 ; VAR y, m, d: I64)
 
-the inverse of DaysFromCivil: the proleptic Gregorian date of
-day z since 1970-01-01.  Private until 2026-09-27; the ONEFlux
-port had written its own (M9-REPORT.md item 12).
+CivilFromDays is the inverse of DaysFromCivil: the proleptic
+Gregorian date of day z since 1970-01-01.  It was private until
+2026-09-27; the ONEFlux port had written its own (M9-REPORT.md
+item 12).
 
 ### DaysFromCivil (y, m, d: I64) : I64
 
-days since 1970-01-01 for a proleptic Gregorian date, Howard
-Hinnant's algorithm, exact for any year this type can hold.
+DaysFromCivil answers days since 1970-01-01 for a proleptic
+Gregorian date, by Howard Hinnant's algorithm, exact for any year
+this type can hold.
 
-EXPORTED because Instant is F64 SECONDS and a nanosecond stamp
-does not fit one: 1.5e9 seconds with nanosecond resolution wants
-eighteen significant digits and a double has sixteen.  A caller
-building `datetime64[ns]` -- which is what a zarr time axis is --
-must do the arithmetic in I64, and this is the only part of it
+It is EXPORTED because Instant is F64 SECONDS and a nanosecond
+stamp does not fit one: 1.5e9 seconds with nanosecond resolution
+wants eighteen significant digits and a double has sixteen.  A
+caller building `datetime64[ns]`, which is what a zarr time axis
+is, must do the arithmetic in I64, and this is the only part of it
 that is a calendar rather than a multiplication.
 
 It does NOT validate: FromCivil is where a month of 13 or a
@@ -161,9 +168,9 @@ _(documented with the group below)_
 
 ### DaysInMonth (year, month: I64) : I64 RAISES ValueRange
 
-the proleptic Gregorian rule, applied to every year including
-those before it existed -- which is what "proleptic" means and
-is the same choice ToCivil makes.
+DaysInMonth applies the proleptic Gregorian rule to every year,
+including those before it existed.  That is what "proleptic"
+means, and it is the same choice ToCivil makes.
 
   month -- 1..12.  Anything else RAISES rather than being
            reduced modulo 12: a month of 13 is a caller's
@@ -176,5 +183,6 @@ _(documented with the group below)_
 
 ### SleepMs (ms: C.SSizeT) [REENTRANT]
 
-clock_gettime (CLOCK_REALTIME) as seconds; REENTRANT because
-the call is, which is a fact about POSIX and not an assumption
+Realtime answers clock_gettime (CLOCK_REALTIME) as seconds.  It
+is REENTRANT because the call is, which is a fact about POSIX and
+not an assumption.

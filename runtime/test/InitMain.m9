@@ -1,7 +1,7 @@
 MODULE InitMain ;
 
-(* reads a value the imported module set in its BODY.  If the body
-   never ran, this prints 0; it must print 42. *)
+(* InitMain reads a value the imported module set in its BODY.  If the
+   body never ran, this prints 0; it must print 42. *)
 
 IMPORT Io ;
 IMPORT InitState ;

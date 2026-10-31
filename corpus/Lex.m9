@@ -1,18 +1,19 @@
 STATEFUL DEFINITION MODULE Lex ;
 
-(* The M9 lexer, in M9 -- the first thousandth of the self-hosted
-   compiler (P5 stage 1), restated from host/fpc/M9Lex.pas, which
-   now serves as its differential oracle: both must emit identical
-   token streams over every corpus and museum file.
+(* Lex is the M9 lexer, in M9: the first thousandth of the
+   self-hosted compiler (P5 stage 1).  It is restated from
+   host/fpc/M9Lex.pas, which now serves as its differential oracle:
+   both must emit identical token streams over every corpus and
+   museum file.
    Kinds are I64 codes, stable and documented: 0 EOF, 1 Error,
    2 Ident, 3 IntLit, 4 RealLit, 5 CharLit, 6 StrLit, then keywords
    from 7 and operators from 200.  Codes are identifiers, not
    positions in a sorted list: a new keyword APPENDS at the next
    free code rather than renumbering its alphabetical neighbours.
    Errors are tokens carrying their message; lexing continues.
-   STATEFUL for the comment side channel's list (Collect, below); the
-   unexpected-character message was the other reason, a module buffer
-   until 2026-10-23.  The source is UTF-8 (step 4 of
+   Lex is STATEFUL for the comment side channel's list (Collect,
+   below).  The unexpected-character message was the other reason, a
+   module buffer until 2026-10-23.  The source is UTF-8 (step 4 of
    docs/utf8-stage3-plan.md): Init takes a STR and encodes it, InitUtf
    takes the octets as they are.                                     *)
 
@@ -31,32 +32,34 @@ TYPE
     pos, line, col : I64 ;
   END ;
 
-  (* A comment, for the callers that want the documentation rather
-     than the program.  text is VERBATIM and includes the opening
-     `(*` and closing `*)`, because a reader that wants them stripped
-     can strip them and one that wants the nesting cannot put them
-     back. *)
+  (* A Comment holds a comment, for the callers that want the
+     documentation rather than the program.  text is VERBATIM and
+     includes the opening `(*` and closing `*)`, because a reader that
+     wants them stripped can strip them and one that wants the nesting
+     cannot put them back. *)
   Comment = RECORD
     line, col, endLine : I64 ;
     text : UTF ;
   END ;
 
 PROCEDURE Init (VAR lx: Lexer ; RO src: STR) ;
-  (* src encoded into the lexer's own pool: the STR form, for a caller
-     that has not moved to UTF; Lex.Init (lx, u) with a UTF is InitUtf *)
+  (* Init encodes src into the lexer's own pool: the STR form, for a
+     caller that has not moved to UTF.  Lex.Init (lx, u) with a UTF is
+     InitUtf. *)
 
 PROCEDURE InitUtf (VAR lx: Lexer ; RO src: UTF) ;
-  (* the lexer keeps the source; keep it alive while lexing -- the
-     Json.Parse contract again.  Nothing is copied *)
+  (* The lexer keeps the source; keep it alive while lexing.  That is
+     the Json.Parse contract again.  Nothing is copied. *)
 
 PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) ;
-  (* the next token, skipping blanks and nested comments on the way.
+  (* Next answers the next token, skipping blanks and nested comments
+     on the way.
 
      ERRORS ARE TOKENS: a bad character or an unterminated comment
      comes back as an Error token carrying the message and its
      line:col, and lexing CONTINUES.  There is no error state to
      check and no exception to handle, so a caller can report every
-     mistake in a file in one pass -- which is what lextest does.
+     mistake in a file in one pass, which is what lextest does.
 
        t -- VAR rather than a result because a Token is a record and
             this is called once per token; the caller reuses one.
@@ -65,7 +68,8 @@ PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) ;
      the count lextest.golden records is a count of code.          *)
 
 PROCEDURE KindName (k: I64) : STR ;
-  (* the FPC oracle's names, for dumps and diagnostics *)
+  (* KindName answers the FPC oracle's names, for dumps and
+     diagnostics. *)
 
 (* ---- comments, BESIDE the token stream ----
 
@@ -81,8 +85,8 @@ PROCEDURE KindName (k: I64) : STR ;
    caller that never arms it pays one BOOL test per comment.
 
    Storage is HEAP, the predeclared pool: the list outlives the
-   Lexer that filled it -- a caller reads it after parsing, not
-   during -- and Init takes no pool to borrow.  It is therefore
+   Lexer that filled it (a caller reads it after parsing, not
+   during), and Init takes no pool to borrow.  It is therefore
    never freed, which is what HEAP means, and is the same bargain
    every other one-module-per-process registry here makes.
 
@@ -92,15 +96,16 @@ PROCEDURE KindName (k: I64) : STR ;
    states, extended past the last token. *)
 
 PROCEDURE Collect (on: BOOL) ;
-  (* arm or disarm.  Arming also CLEARS what was collected, so one
-     process can lex several files and keep them apart; disarming
+  (* Collect arms or disarms.  Arming also CLEARS what was collected, so
+     one process can lex several files and keep them apart; disarming
      keeps it, so a caller can arm, parse one file, disarm, and then
-     read the comments of that file only while its dependencies go
-     past uncollected.  That is exactly what m9c --doc needs.       *)
+     read the comments of that file only while its dependencies go past
+     uncollected.  That is exactly what m9c --doc needs.              *)
 
 PROCEDURE ComCount () : I64 ;
 PROCEDURE ComAt (i: I64) : Comment RAISES IndexError ;
-  (* what was collected, in source order.
+  (* ComCount and ComAt answer what was collected, in source
+     order.
 
        i -- 0 .. ComCount - 1.  An UNTERMINATED comment is not in
             here at all: it never closed, so it has no end line and
@@ -132,7 +137,7 @@ CONST
      next free code and the table stops being alphabetical.  That is
      deliberate: deriving a code from spelling means an unrelated
      keyword renumbers its neighbours, which churns both lexers, the
-     parser's token table and every recorded stream -- a code that
+     parser's token table and every recorded stream.  A code that
      moves is a code no one can rely on.  Lookup is a linear scan,
      so alphabetical order buys nothing but the reading.
      Keywords own 7..199 and grow upward; operators start at 200.   *)
@@ -149,9 +154,9 @@ CONST
 
   HexMsg   = '0123456789abcdef' ;
   HexUp    = '0123456789ABCDEF' ;
-  (* the ASCII characters by code: a byte below 128 read as its CHAR
-     with no conversion to check -- CHR would put a RAISES ValueRange
-     on every Peek *)
+  (* Ascii holds the ASCII characters by code: a byte below 128 is
+     read as its CHAR with no conversion to check.  CHR would put a
+     RAISES ValueRange on every Peek. *)
   Ascii = [
     0C, 1C, 2C, 3C, 4C, 5C, 6C, 7C, 8C, 9C, 0AC, 0BC,
     0CC, 0DC, 0EC, 0FC, 10C, 11C, 12C, 13C, 14C, 15C, 16C, 17C,
@@ -188,7 +193,8 @@ BEGIN
   RETURN coms[i]
 END ComAt ;
 
-(* one comment onto the list, doubling the vector when it is full.
+(* Note puts one comment onto the list, doubling the vector when it
+   is full.
    The abandoned vector stays in HEAP, which is the same trade
    DynStr.Grow makes and for the same reason.  The text is COPIED
    into HEAP too: a view of the source would be module state keeping
@@ -276,7 +282,8 @@ BEGIN
   | 62 : RETURN 'VAR'
   | 63 : RETURN 'WAIT'
   | 64 : RETURN 'WHILE'
-  (* appended after the alphabetical 58: codes are identifiers *)
+  (* These are appended after the alphabetical 58: codes are
+     identifiers. *)
   | 65 : RETURN 'RO'
   | 66 : RETURN 'GRID'
   | 67 : RETURN 'KEPT'
@@ -327,8 +334,9 @@ BEGIN
   END
 END KindName ;
 
-(* the character the byte at i of u is, for an ASCII run (digits,
-   names): 0C for a byte past ASCII, which no such run holds *)
+(* At answers the character the byte at i of u is, for an ASCII run
+   (digits, names): 0C for a byte past ASCII, which no such run
+   holds. *)
 PROCEDURE At (RO u: UTF ; i: I64) : CHAR =
 VAR b : I64 ;
 BEGIN
@@ -337,13 +345,14 @@ BEGIN
   RETURN 0C
 END At ;
 
-(* u, an identifier's octets, spells the keyword s *)
+(* SpellsKw answers whether u, an identifier's octets, spells the
+   keyword s. *)
 PROCEDURE SpellsKw (RO u: UTF ; RO s: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF Text.BLen (u) # LEN (s) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF At (u, i) # s[i] THEN RETURN FALSE END
+  IF Text.BLen (u) # Text.BLen (s) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF At (u, i) # Text.BChar (s, i) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END SpellsKw ;
@@ -371,11 +380,13 @@ BEGIN
   lx.col := 1 ;
   (* a first line beginning #! is the operating system's, naming the
      program that runs this file as a script (`#!/usr/bin/m9c --run`),
-     and is not M9 (report par 2).  Skipped to its line end, not past
-     it, so the newline is counted and every line keeps its number. *)
+     and is not M9 (report par 2).  It is skipped to its line end, not
+     past it, so the newline is counted and every line keeps its
+     number. *)
   (* a byte order mark (U+FEFF), which some editors write first, is
-     not M9 either: skipped, the column stays 1.  It was refused as
-     `unexpected character 0xff', its low byte (the review's F6) *)
+     not M9 either: it is skipped, and the column stays 1.  It was
+     refused as `unexpected character 0xff', its low byte (the
+     review's F6). *)
   IF Text.BLen (src) >= 3 THEN
     at := 0 ;
     IF Text.NextCp (src, at) = 0FEFFC THEN lx.pos := at END
@@ -389,9 +400,9 @@ BEGIN
   END
 END InitUtf ;
 
-(* the character ahead characters on from pos (0 the one at pos); 0C
-   past the end.  An ASCII byte is its character; past ASCII the
-   character is decoded *)
+(* Peek answers the character ahead characters on from pos (0 the one
+   at pos); 0C past the end.  An ASCII byte is its character; past
+   ASCII the character is decoded. *)
 PROCEDURE Peek (VAR lx: Lexer ; ahead: I64) : CHAR =
 VAR
   at, k, b : I64 ;
@@ -424,7 +435,8 @@ BEGIN
   ELSE
     lx.col := lx.col + 1
   END ;
-  (* past the character: one byte, or the octets of one past ASCII *)
+  (* Advance moves past the character: one byte, or the octets of one
+     past ASCII. *)
   IF lx.pos < Text.BLen (lx.src) AND I64 (Text.BAt (lx.src, lx.pos)) >= 128 THEN
     c := Text.NextCp (lx.src, lx.pos)
   ELSE
@@ -453,8 +465,8 @@ BEGIN
   RETURN IsDigit (c) OR (c >= 'A' AND c <= 'F')
 END IsHexUp ;
 
-(* skip blanks and nested comments; bad=TRUE means an unterminated
-   comment opened at eline:ecol *)
+(* Skip skips blanks and nested comments; bad=TRUE means an
+   unterminated comment opened at eline:ecol. *)
 PROCEDURE Skip (VAR lx: Lexer ; VAR bad: BOOL ; VAR eline, ecol: I64) =
 VAR
   depth, cstart : I64 ;
@@ -520,7 +532,7 @@ END Mk ;
 PROCEDURE Punct (VAR lx: Lexer ; VAR t: Token ; c: CHAR ;
                  ln, cl: I64) : BOOL =
 BEGIN
-  (* two-char lookahead forms first: longest match *)
+  (* Two-char lookahead forms go first: longest match. *)
   IF c = ':' THEN
     Advance (lx) ;
     IF Peek (lx, 0) = '=' THEN Advance (lx) ; Mk (t, KAssign, ':=', ln, cl)
@@ -572,21 +584,23 @@ BEGIN
 END Punct ;
 
 (* ---- literals beyond 64 bits (2026-10-21, the compiler review's F1).
-   A literal the lexer accepted was any length: `18446744073709551617'
-   reached C as an integer constant too large for its type, which gcc
-   truncates with a warning -- the program printed 1 -- and a real
-   literal past F64's range became an infinity.  Refused here, in both
-   lexers, where the digits are.  An integer literal is at most 64 bits,
-   decimal or hex (one past MAX (I64) is a U64, which the checker
-   types it as); a real must not round to infinity as an F64, held
-   EXACTLY: it does when its value is at least 2^1024 - 2^970, whose
-   309 digits are F64Top (written by Python's int, round to nearest
-   even sends that value itself to infinity). ---- *)
+   A literal the lexer accepted was any length.
+   `18446744073709551617' reached C as an integer constant too large
+   for its type, which gcc truncates with a warning (the program
+   printed 1), and a real literal past F64's range became an
+   infinity.  Both lexers refuse them here, where the digits are.  An
+   integer literal is at most 64 bits, decimal or hex (one past
+   MAX (I64) is a U64, which the checker types it as).  A real must
+   not round to infinity as an F64, held EXACTLY: it does when its
+   value is at least 2^1024 - 2^970, whose 309 digits are F64Top
+   (written by Python's int, round to nearest even sends that value
+   itself to infinity). ---- *)
 CONST
   U64Top = '18446744073709551615' ;
   F64Top = '179769313486231580793728971405303415079934132710037826936173778980444968292764750946649017977587207096330286416692887910946555547851940402630657488671505820681908902000708383676273854845817711531764475730270069855571366959622842914819860834936475292719074168444365510704342711559699508093042880177904174497792' ;
 
-(* the digits of a run with its leading zeros dropped *)
+(* Significant answers the digits of a run with its leading zeros
+   dropped. *)
 PROCEDURE Significant (RO run: UTF ; from: I64) : I64 =
 VAR i : I64 ;
 BEGIN
@@ -595,22 +609,24 @@ BEGIN
   RETURN i
 END Significant ;
 
-(* a decimal integer literal past 64 bits *)
+(* IntPast64 asks whether a decimal integer literal is past 64
+   bits. *)
 PROCEDURE IntPast64 (RO run: UTF) : BOOL =
 VAR i, n, k : I64 ;
 BEGIN
   i := Significant (run, 0) ;
   n := Text.BLen (run) - i ;
-  IF n # LEN (U64Top) THEN RETURN n > LEN (U64Top) END ;
+  IF n # Text.BLen (U64Top) THEN RETURN n > Text.BLen (U64Top) END ;
   FOR k := 0 TO n - 1 DO
-    IF At (run, i + k) # U64Top[k] THEN RETURN At (run, i + k) > U64Top[k] END
+    IF At (run, i + k) # Text.BChar (U64Top, k) THEN RETURN At (run, i + k) > Text.BChar (U64Top, k) END
   END ;
   RETURN FALSE
 END IntPast64 ;
 
-(* a real literal `ddd.ddd' with an optional exponent that rounds to
-   infinity as an F64: its value is 0.D * 10^n with D its digits, the
-   leading zeros moved into n, compared with F64Top digit by digit *)
+(* RealTooBig asks whether a real literal `ddd.ddd' with an optional
+   exponent rounds to infinity as an F64.  Its value is 0.D * 10^n
+   with D its digits, the leading zeros moved into n, compared with
+   F64Top digit by digit. *)
 PROCEDURE RealTooBig (RO run: UTF) : BOOL =
 VAR
   i, m, e, nInt, lead, n, j : I64 ;
@@ -631,8 +647,8 @@ BEGIN
       i := i + 1
     END ;
     WHILE i < Text.BLen (run) DO
-      (* capped: E999999999999999999 is past every bound, and its value
-         must not overflow the counting *)
+      (* The exponent is capped: E999999999999999999 is past every
+         bound, and its value must not overflow the counting. *)
       IF e < 100000 THEN e := e * 10 + (ORD (At (run, i)) - 48) END ;
       i := i + 1
     END ;
@@ -646,20 +662,20 @@ BEGIN
   END ;
   IF i = m THEN RETURN FALSE END ;             (* zero *)
   n := nInt - lead + e ;
-  IF n # LEN (F64Top) THEN RETURN n > LEN (F64Top) END ;
+  IF n # Text.BLen (F64Top) THEN RETURN n > Text.BLen (F64Top) END ;
   j := 0 ;
   WHILE i < m DO
     IF At (run, i) # '.' THEN
-      IF j = LEN (F64Top) THEN RETURN TRUE END ;
-      IF At (run, i) # F64Top[j] THEN RETURN At (run, i) > F64Top[j] END ;
+      IF j = Text.BLen (F64Top) THEN RETURN TRUE END ;
+      IF At (run, i) # Text.BChar (F64Top, j) THEN RETURN At (run, i) > Text.BChar (F64Top, j) END ;
       j := j + 1
     END ;
     i := i + 1
   END ;
   (* the literal's digits ran out first: it is below the threshold
      unless every digit of the threshold left is a zero *)
-  WHILE j < LEN (F64Top) DO
-    IF F64Top[j] # '0' THEN RETURN FALSE END ;
+  WHILE j < Text.BLen (F64Top) DO
+    IF NOT Text.BIs (F64Top, j, '0') THEN RETURN FALSE END ;
     j := j + 1
   END ;
   RETURN TRUE
@@ -849,19 +865,21 @@ BEGIN
 
   IF Punct (lx, t, c, ln, cl) THEN RETURN END ;
 
-  (* 'unexpected character 0xNN', composed as a UTF in the frame and
-     adopted with the token (it was a module buffer until 2026-10-23,
-     the reason Lex was STATEFUL then) *)
+  (* The message 'unexpected character 0xNN' is composed as a UTF in
+     the frame and adopted with the token.  It was a module buffer
+     until 2026-10-23, the reason Lex was STATEFUL then. *)
   Advance (lx) ;
   n := ORD (Text.NextCp (lx.src, start)) ;
   IF n < 128 THEN
     msg := 'unexpected character 0x' ;
-    (* the digit as the octet it is (ASCII): the same both sides of the
-       UTF switch, where a subscript of a string CONST is refused *)
+    (* This takes the digit as the octet it is (ASCII): the same both
+       sides of the UTF switch, where a subscript of a string CONST is
+       refused. *)
     msg := msg + Text.BChar (HexMsg, (n DIV 16) MOD 16) + Text.BChar (HexMsg, n MOD 16)
   ELSE
-    (* past ASCII the scalar, U+XXXX with at least four digits: its
-       low byte named another character (U+FEFF read 0xff) *)
+    (* Past ASCII the message names the scalar, U+XXXX with at least
+       four digits: its low byte named another character (U+FEFF read
+       0xff). *)
     msg := 'unexpected character U+' ;
     nd := 4 ;
     IF n >= 65536 THEN nd := 5 END ;

@@ -1,15 +1,16 @@
-/* Zip.m9 -- a ZIP member read as a stream.
+/* This tests Zip.m9 reading a ZIP member as a stream.
  *
  * The fixtures are written by python's `zipfile`, which is stdlib, so
  * the oracle is a real zip writer rather than bytes this repository
  * made up.  The payloads and the expectations are written here.
  *
  * THE CASES THAT MATTER are the ones a small hand-made zip would not
- * have: a ZIP64 member (SOCAT's is 9 GB uncompressed, so the classic
- * 32-bit size fields cannot hold it and the truth is in an extra
- * field), an archive COMMENT after the end-of-central-directory
- * record (so the record must be found by scanning back), and a member
- * read in pieces far smaller than its inflate boundaries.
+ * have.  One is a ZIP64 member.  SOCAT's is 9 GB uncompressed, so the
+ * classic 32-bit size fields cannot hold it and the truth is in an
+ * extra field.  One is an archive COMMENT after the
+ * end-of-central-directory record, so the record must be found by
+ * scanning back.  One is a member read in pieces far smaller than its
+ * inflate boundaries.
  */
 #define _POSIX_C_SOURCE 200112L
 #include <stdio.h>
@@ -17,11 +18,13 @@
 #include <stdlib.h>
 #include "Zip.h"
 
-static m9_sl_CHAR sl (const char *s, uint32_t *buf)
+/* A STR is UTF-8 octets.  The C literal is already UTF-8, so sl copies
+   its bytes. */
+static m9_sl_UTF8 sl (const char *s, uint8_t *buf)
 {
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
+  int64_t n = (int64_t) strlen (s);
+  memcpy (buf, s, (size_t) n);
+  return (m9_sl_UTF8){ buf, n };
 }
 
 static int checks = 0, fails = 0;
@@ -35,8 +38,8 @@ static void ck (bool okp, const char *what)
 #define ZIP "/tmp/m9-zip-test.zip"
 #define Z64 "/tmp/m9-zip-test64.zip"
 
-/* the payload the fixtures carry, generated the same way on both
-   sides: line i is "row<i> <i*7 mod 1000>\n" */
+/* This is the payload the fixtures carry, generated the same way on
+   both sides: line i is "row<i> <i*7 mod 1000>\n". */
 static int64_t payload (char *buf, int64_t rows)
 {
   int64_t i, n = 0;
@@ -70,7 +73,7 @@ int main (int argc, char **argv)
 {
   m9_state errv = {0}, *err = &errv;
   m9_pool pool = {0};
-  uint32_t nb[8][256];
+  uint8_t nb[8][256];
   Zip_Archive *a;
   static char want[1 << 20];
   int64_t wantn, n;
@@ -86,8 +89,9 @@ int main (int argc, char **argv)
   }
   wantn = payload (want, 3000);
 
-  /* three members: deflated, STORED, and one with a non-ASCII name;
-     plus an archive comment, so the EOCD is not the last 22 bytes */
+  /* The archive has three members: deflated, STORED, and one with a
+     non-ASCII name.  It also has an archive comment, so the EOCD is
+     not the last 22 bytes. */
   if (system (
     "python3 - <<'PY'\n"
     "import zipfile\n"
@@ -112,13 +116,16 @@ int main (int argc, char **argv)
   ck (Zip_MethodAt (a, 0, err) == 8 && Zip_MethodAt (a, 1, err) == 0,
       "deflated and stored are told apart");
   {
-    m9_sl_CHAR nm = Zip_NameAt ( a, 2, err);
-    ck (nm.len == 8 && nm.p[3] == 0x00e9,
+    /* The name is UTF-8 octets now.  The check compares all nine bytes
+       and also counts the eight code points. */
+    m9_sl_UTF8 nm = Zip_NameAt ( a, 2, err);
+    ck (nm.len == 9 && memcmp (nm.p, "caf\xc3\xa9.txt", 9) == 0
+        && m9_utf_cpcount (nm) == 8,
         "a UTF-8 name is decoded when the flag says it is UTF-8");
   }
 
-  /* the DEFLATED member, read in 64-byte bites -- far smaller than
-     any inflate boundary, so Read must loop internally */
+  /* Read the DEFLATED member in 64-byte bites.  They are far smaller
+     than any inflate boundary, so Read must loop internally. */
   n = drain (&pool, a, 0, 64, 4096, err);
   ck (n == wantn && memcmp (out, want, (size_t) wantn) == 0,
       "a deflated member inflates byte-for-byte in 64-byte reads");

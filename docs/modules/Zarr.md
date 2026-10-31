@@ -1,10 +1,10 @@
 # Zarr
 
-WRITING a zarr v2 store: groups, attributes, chunked arrays and the
-consolidated index.
+Zarr WRITES a zarr v2 store: groups, attributes, chunked arrays and
+the consolidated index.
 
-The corpus could already READ one -- ZarrStore over HTTP, and the
-zarr proxy's own Zread over local files -- and nothing anywhere could
+The corpus could already READ one (ZarrStore over HTTP, and the
+zarr proxy's own Zread over local files), and nothing anywhere could
 write one.  That was the single prerequisite standing between the
 ICOS store builders (about 10,000 lines of Python) and one M9
 program, so the subset here is chosen to be exactly what Zread
@@ -21,7 +21,7 @@ The subset, and everything outside it is refused BY NAME:
     and the THREE string forms  |S<n>,  <U<n>  and
     |O + vlen-utf8.  Single-byte
     types take '|' because they have no byte order; the rest '<'.
-  * blosc with the shuffle filter -- lz4 or zstd -- or no
+  * blosc with the shuffle filter (lz4 or zstd), or no
     compressor at all.
 
 FILL VALUES ARE NOT A PARAMETER on the plain writers, and that is
@@ -36,7 +36,7 @@ rather than a weaker rule.  The writers above INVENT an array, and
 for an invented array a fill nobody chose is the right answer.  A
 builder TRANSCRIBING a CF variable is not inventing: the netCDF
 file already declares `_FillValue`, xarray carries it into the
-zarr `fill_value`, and a reader masks on it -- so an ICOS ObsPack
+zarr `fill_value`, and a reader masks on it.  So an ICOS ObsPack
 `nvalue`'s -9 and `icos_datalevel`'s 127 MUST be written, or the
 store says those observations are real.  The twins take the fill
 the SOURCE declares, and they are spelled differently so a call
@@ -52,26 +52,29 @@ the chunk is stored raw
 
 ### Lz4 (clevel: I64) : I64 RAISES Error, ValueRange
 
-clevel 1..9
+Lz4 takes clevel 1..9.
 
 ### Zstd (clevel: I64) : I64 RAISES Error, ValueRange
 
-clevel 1..9
+Zstd takes clevel 1..9.
 
 ### CreateGroup (VAR pool: POOL ; RO dir: STR) RAISES Error, ValueRange
 
-dir and every parent, then its .zgroup.  Exist-ok: a builder
-re-running over a half-written store must not fail here.
+CreateGroup makes dir and every parent, then its .zgroup.  It is
+exist-ok: a builder re-running over a half-written store must not
+fail here.
 
 ### WriteAttrs (VAR pool: POOL ; RO dir: STR ; RO json: STR) RAISES Error, ValueRange
 
-dir/.zattrs, the document written VERBATIM.  The caller owns the
-JSON -- this module does not compose it, because the attributes a
-store needs are the domain's business and not the format's.
+WriteAttrs writes dir/.zattrs, the document VERBATIM.  The caller
+owns the JSON: this module does not compose it, because the
+attributes a store needs are the domain's business and not the
+format's.
 
 ### WriteF32 (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF F32 ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-adir/.zarray plus every chunk file.  `data` is C-order and must be
+WriteF32 writes adir/.zarray plus every chunk file.  `data` is
+C-order and must be
 the product of `shape`; `dims` names the axes for
 _ARRAY_DIMENSIONS and may be empty.  comp 0 stores raw.
 
@@ -81,87 +84,92 @@ _(undocumented)_
 
 ### WriteInt (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF I64 ; width: I64 ; signed: BOOL ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-width 1, 2, 4 or 8 bytes.  `signed` FALSE is offered at widths 1
-and 2 -- |u1 and <u2, the only unsigned dtypes the ICOS stores
-carry: the flag columns and NOAA ObsPack's obspack_id_src, which
-indexes a short list of source-dataset prefixes.
+WriteInt takes width 1, 2, 4 or 8 bytes.  `signed` FALSE is
+offered at widths 1 and 2 (|u1 and <u2), the only unsigned dtypes
+the ICOS stores carry: the flag columns and NOAA ObsPack's
+obspack_id_src, which indexes a short list of source-dataset
+prefixes.
 
 ### WriteTimeNs (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF I64 ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-<M8[ns]: epoch NANOSECONDS, the only datetime64 unit Zread reads.
+WriteTimeNs writes <M8[ns]: epoch NANOSECONDS, the only datetime64
+unit Zread reads.
 
 ### WriteBool (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF BOOL ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-|b1: one octet per value, 0 or 1, fill_value null.  numpy's own
-bool_ dtype, and the ICOS ocean store's `fixed` column -- a
-per-cruise flag saying whether the platform is a buoy or a ship
--- is written by numpy exactly this way.  It is a dtype of its
-own rather than |u1 because numpy reads |u1 back as an integer
-and a caller comparing `fixed == True` would then get an array
-of numbers.
+WriteBool writes |b1: one octet per value, 0 or 1, fill_value
+null.  It is numpy's own bool_ dtype.  numpy writes the ICOS ocean
+store's `fixed` column exactly this way: a per-cruise flag saying
+whether the platform is a buoy or a ship.  It is a dtype of its
+own rather than |u1 because numpy reads |u1 back as an integer,
+and a caller comparing `fixed == True` would then get an array of
+numbers.
 
 ### GuessChunks (VAR pool: POOL ; RO shape: SLICE OF I64 ; typesize: I64) : SLICE OF I64 RAISES Error, ValueRange
 
-ZARR'S OWN `guess_chunks`, transcribed: halve along successive
-axes until a chunk is near a target that itself scales with the
-array's size.  It is here rather than in a builder because it is
-the FORMAT's rule and not a domain one -- xarray passes an
-encoding for a data variable and none for a coordinate, so any
-array written without one gets this, and two builders in this
-family already need it.
+GuessChunks is ZARR'S OWN `guess_chunks`, transcribed: halve
+along successive axes until a chunk is near a target that itself
+scales with the array's size.  It is here rather than in a
+builder because it is the FORMAT's rule and not a domain one.
+xarray passes an encoding for a data variable and none for a
+coordinate, so any array written without one gets this, and two
+builders in this family already need it.
 
-Worth transcribing rather than approximating: 500 of the NOAA
+It is worth transcribing rather than approximating: 500 of the NOAA
 ObsPack store's 971 time axes are neither the whole array nor
 the 50,000 its data columns take.
 
 ### DeclareF32 (VAR pool: POOL ; RO adir: STR ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-THE CHUNK-WISE WRITER, half one: `.zarray` (an `<f4` with a NaN
-fill) and `.zattrs` for an array whose chunks the caller will
-write ONE AT A TIME with PutChunkF32 -- a panel too large to hold
-whole (fluxnet-shuttle's era5_hh is 771 x 788,928, 2.4 GB per
-variable) is written one time band at a time, 27 MB.  A declared
+DeclareF32 is THE CHUNK-WISE WRITER, half one.  It writes
+`.zarray` (an `<f4` with a NaN fill) and `.zattrs` for an array
+whose chunks the caller will write ONE AT A TIME with
+PutChunkF32.  A panel too large to hold whole (fluxnet-shuttle's
+era5_hh is 771 x 788,928, 2.4 GB per variable) is written one
+time band at a time, 27 MB.  A declared
 array with no chunks READS AS ALL FILL, so this is for a caller
 that will write every chunk.
 
 ### PutChunkF32 (VAR pool: POOL ; RO adir: STR ; RO ci: SLICE OF I64 ; RO data: SLICE OF F32 ; RO chunks: SLICE OF I64 ; comp: I64) RAISES Error, ValueRange
 
-half two: ONE WHOLE CHUNK at grid index `ci` (per axis), `data`
-holding exactly the product of `chunks` elements in C order --
-an edge chunk padded by the caller with the fill, as zarr pads
-it -- to `<ci0>.<ci1>...` under adir, compressed as declared.
+PutChunkF32 is half two.  It writes ONE WHOLE CHUNK at grid index
+`ci` (per axis) to `<ci0>.<ci1>...` under adir, compressed as
+declared.  `data` holds exactly the product of `chunks` elements
+in C order; the caller pads an edge chunk with the fill, as zarr
+pads it.
 
 ### WriteIntFill (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF I64 ; width: I64 ; signed: BOOL ; hasFill: BOOL ; fill: I64 ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-WriteInt, with the fill the SOURCE declares: `hasFill` FALSE
-writes `null` exactly as WriteInt does, and TRUE writes the
-value -- which must fit the width, and is refused by name when
-it does not.  An ABSENT chunk then reads back as that fill,
+WriteIntFill is WriteInt with the fill the SOURCE declares.
+`hasFill` FALSE writes `null` exactly as WriteInt does, and TRUE
+writes the value, which must fit the width and is refused by name
+when it does not.  An ABSENT chunk then reads back as that fill,
 which is the whole point of writing it.
 
 ### WriteF32Fill (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF F32 ; hasFill: BOOL ; fill: F64 ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-WriteF32, with a declared fill.  `hasFill` FALSE is NaN, which is
-what WriteF32 writes, so the two agree where they overlap.
+WriteF32Fill is WriteF32 with a declared fill.  `hasFill` FALSE is
+NaN, which is what WriteF32 writes, so the two agree where they
+overlap.
 
 ### WriteF64Fill (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF F64 ; hasFill: BOOL ; fill: F64 ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-the same for `<f8`.
+WriteF64Fill does the same for `<f8`.
 
 ### WriteStrFixedFill (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF STR ; width: I64 ; hasFill: BOOL ; RO fill: STR ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-WriteStrFixed, with a declared fill.  zarr spells a `|S` fill as
-the BASE64 of its padded octets -- which is what zarr-python
-writes and a reader decodes -- and this writes that spelling;
-`hasFill` FALSE writes `null`.
+WriteStrFixedFill is WriteStrFixed with a declared fill.  zarr
+spells a `|S` fill as the BASE64 of its padded octets, which is
+what zarr-python writes and a reader decodes, and this writes that
+spelling.  `hasFill` FALSE writes `null`.
 
 ### WriteStrFixed (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF STR ; width: I64 ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-|S<width>: every element UTF-8 encoded into exactly `width`
-octets and NUL-padded on the right, chunked like any other
-fixed-width array.  A string whose encoding does not FIT is
-refused BY NAME rather than truncated -- a shortened expocode is
-a different cruise, not a shorter one, and numpy's own
+WriteStrFixed writes |S<width>: every element UTF-8 encoded into
+exactly `width` octets and NUL-padded on the right, chunked like
+any other fixed-width array.  A string whose encoding does not
+FIT is refused BY NAME rather than truncated: a shortened
+expocode is a different cruise, not a shorter one, and numpy's own
 assignment would have cut it silently.
 
 PREFER THIS FORM, and the reason is measured on a live store:
@@ -170,58 +178,60 @@ the vlen form took 3.3 s.  A fixed width is a stride; a vlen
 table is a decode of the whole chunk to reach any of it.
 
 BUT |S CARRIES OCTETS, NOT TEXT, and the two readers disagree
-about what that means -- measured, not deduced.  The six
+about what that means.  That was measured, not deduced.  The six
 scalars B a r U+00E1 t h go in as the SEVEN octets
 42 61 72 C3 A1 74 68.  numpy hands those octets back and a
 caller who decodes UTF-8 recovers the six scalars; Zread turns
 each octet into one scalar and answers SEVEN, the C3 arriving
-as a character of its own.  That is the dtype's own property --
-numpy will not build |S from a non-ASCII str at all -- so use
+as a character of its own.  That is the dtype's own property
+(numpy will not build |S from a non-ASCII str at all), so use
 this form for what the live stores use it for (expocodes, flag
 letters, ids) and reach for WriteStrVlen for anything that can
 carry an accent.
 
 ### WriteOctets (VAR pool: POOL ; RO adir: STR ; RO raw: SLICE OF BYTE ; width: I64 ; hasFill: BOOL ; RO fill: STR ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-|S<width> straight from the OCTETS, already padded: LEN (raw)
-must be the product of `shape` times `width`.
+WriteOctets writes |S<width> straight from the OCTETS, already
+padded: LEN (raw) must be the product of `shape` times `width`.
 
 It exists because a TRANSCRIBED string column already has its
 bytes.  WriteStrFixed takes a STR per element and re-encodes
 each, which for one ICOS ObsPack station's 85,344 obspack_ids at
-200 octets is 68 MB of CHARs to produce 17 MB of array -- and
-the CHARs were made by decoding the very octets being rebuilt.
+200 octets is 68 MB of CHARs to produce 17 MB of array.  The
+CHARs were made by decoding the very octets being rebuilt.
 
 ### WriteStrUcs4 (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF STR ; width: I64 ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-`<U<width>`: numpy's OWN fixed-width string -- `width` UCS-4 code
-points little-endian, NUL-padded, `fill_value` null.
+WriteStrUcs4 writes `<U<width>`, numpy's OWN fixed-width string:
+`width` UCS-4 code points little-endian, NUL-padded, `fill_value`
+null.
 
-THE THIRD STRING FORM, AND IT IS NOT A DUPLICATE OF THE OTHER
-TWO.  `|S` carries OCTETS and numpy will not build one from a
+THIS IS THE THIRD STRING FORM, AND IT IS NOT A DUPLICATE OF THE
+OTHER TWO.  `|S` carries OCTETS and numpy will not build one from a
 non-ASCII `str` at all; `|O` carries UTF-8 behind a filter and
 cannot be chunked.  `<U` is what xarray writes for a small
-LABELLED COORDINATE -- the ICOS ecosystem store's
-`nee_variant`, `ustar_threshold`, `partition_method`,
-`corr_pct` and the 0-d `temporal_resolution` are all `<U` -- and
-it is the only one of the three that is both chunkable and able
-to hold a scalar past U+00FF.
+LABELLED COORDINATE: the ICOS ecosystem store's `nee_variant`,
+`ustar_threshold`, `partition_method`, `corr_pct` and the 0-d
+`temporal_resolution` are all `<U`.  It is the only one of the
+three that is both chunkable and able to hold a scalar past
+U+00FF.
 
-Four bytes per code point whatever the text, so it is for SHORT
-labels and the module says so: a `<U200` identity column would
-be four times the `|S200` the same data fits in.  A value longer
-than `width` is REFUSED, not truncated, for the reason
+It takes four bytes per code point whatever the text, so it is for
+SHORT labels, and the module says so: a `<U200` identity column
+would be four times the `|S200` the same data fits in.  A value
+longer than `width` is REFUSED, not truncated, for the reason
 WriteStrFixed gives.
 
 ### WriteStrVlen (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF STR ; RO shape: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
-|O carrying the vlen-utf8 filter: a u32-LE item count, then per
-item a u32-LE octet length and the UTF-8 octets.
+WriteStrVlen writes |O carrying the vlen-utf8 filter: a u32-LE
+item count, then per item a u32-LE octet length and the UTF-8
+octets.
 
 THERE IS NO `chunks` PARAMETER because there is only one legal
 grid: the whole shape in one chunk.  A vlen chunk declares its
 own item count, and the readers this writes for check that count
-against the SHAPE -- so a second chunk makes the store
+against the SHAPE.  So a second chunk makes the store
 unreadable rather than merely differently laid out.  That is no
 narrowing in practice: this form carries identity lists (cruise
 expocodes, station names, citations) and the live ICOS stores
@@ -258,7 +268,7 @@ _(documented with the group below)_
 ### PutI64 (VAR s: PTR Sink ; v: I64) RAISES Error, ValueRange
 
 the value goes in at the sink's own width, and a value that does
-not fit is a CHECKED CONVERSION rather than a wrap -- an int8 QC
+not fit is a CHECKED CONVERSION rather than a wrap: an int8 QC
 column handed 300 raises instead of storing 44.
 
 ### Rows (s: PTR Sink) : I64
@@ -267,49 +277,50 @@ _(documented with the group below)_
 
 ### Seal (VAR s: PTR Sink) RAISES Error, ValueRange
 
-flush the partial chunk, then write .zarray and .zattrs.  A sink
-is finished exactly once.
+Seal flushes the partial chunk, then writes .zarray and .zattrs.
+A sink is finished exactly once.
 
 ### Consolidate (VAR pool: POOL ; RO store: STR) RAISES Error, ValueRange
 
-store/.zmetadata over the WHOLE tree: every .zgroup, .zattrs and
-.zarray beneath it.  This is what `consolidated=True` opens, and
+Consolidate writes store/.zmetadata over the WHOLE tree: every
+.zgroup, .zattrs and .zarray beneath it.  This is what
+`consolidated=True` opens, and
 for a store of many small arrays it is the difference between one
 request and tens of thousands.
 
 IT REFUSES A SLIM STORE BY NAME, and that refusal is the point of
-having two procedures rather than a flag: running this over a
-shallow-root store is the foot-gun that re-bloated one ICOS root
+having two procedures rather than a flag.  This, run over a
+shallow-root store, is the foot-gun that re-bloated one ICOS root
 from ~7 MB to ~1.2 GB and took the viewers down.  The marker in
 the root .zattrs is what makes the refusal possible, which is why
 ConsolidateSlim writes it.
 
 ### ConsolidateSlim (VAR pool: POOL ; RO store: STR) RAISES Error, ValueRange
 
-the SHALLOW root: the store's own .zgroup and .zattrs, each
-top-level entity's .zgroup and .zattrs, and the FULL subtree under
-_combined -- and nothing else.
+ConsolidateSlim indexes the SHALLOW root: the store's own .zgroup
+and .zattrs, each top-level entity's .zgroup and .zattrs, and the
+FULL subtree under _combined.  It indexes nothing else.
 
 THIS IS NOT AN OPTIMISATION.  A full consolidate over a store with
 hundreds of entities re-bloated one ICOS root from ~7 MB to
-~1.2 GB and took the viewers down; the largest store on disk (82 GB
-over 783 sites) is servable only because its root indexes 488
-entries instead of hundreds of thousands.  THE MARKER IS WRITTEN
-HERE, not left to the caller: this procedure puts
+~1.2 GB and took the viewers down.  The largest store on disk
+(82 GB over 783 sites) is servable only because its root indexes
+488 entries instead of hundreds of thousands.  THE MARKER IS
+WRITTEN HERE, not left to the caller: this procedure puts
 `"metadata_layout":"shallow-root"` into the root .zattrs before
 indexing it, so a store is marked by the ACT of being
 consolidated this way and cannot be left unmarked by a builder
 that forgot.  Consolidate above keys its refusal off it.
 
 `_`-prefixed top-level groups other than `_combined` are NOT
-indexed at all, and a child without a .zgroup is skipped -- both
+indexed at all, and a child without a .zgroup is skipped.  Both
 are the reference policy (icos_ingest.finalize), and both are
 load-bearing rather than tidy: the whole point is that the root
 stays small.
 
-blosc's CONTEXT form only, as everywhere else in this tree: the
-plain blosc_compress carries global state and would have to be
-[SERIAL], which a THREAD root may not call.
+czw binds blosc's CONTEXT form only, as everywhere else in this
+tree: the plain blosc_compress carries global state and would have
+to be [SERIAL], which a THREAD root may not call.
 
 ### CompressCtx (comp: C.Int ; doshuffle: C.Int ; typesize: C.SizeT ; nbytes: C.SizeT ; src: C.ConstPtr ; dest: C.MutPtr ; destsize: C.SizeT ; compressor: C.ConstPtr ; blocksize: C.SizeT ; nthreads: C.Int) : C.Int [REENTRANT]
 

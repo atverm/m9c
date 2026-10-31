@@ -1,11 +1,12 @@
 program parsetest;
-{ P1 exit harness (ROADMAP):
+{ parsetest is the P1 exit harness (ROADMAP):
     1. every corpus/ and museum/ file parses with zero errors;
     2. fixpoint: print(parse(print(parse(src)))) = print(parse(src))
        byte for byte;
-    3. re-lexing the printed text yields the source token sequence
+    3. the printed text, re-lexed, yields the source token sequence
        (kind and text) exactly.
-  Exit code 1 on any failure.  Failing printed text is dumped next to
+  It exits with code 1 on any failure.  Failing printed text is dumped
+  next to
   the binary as parsefail-<name>.txt for inspection.                 }
 {$mode objfpc}{$H+}
 uses SysUtils, Classes, M9Lex, M9AST, M9Parse, M9Print;

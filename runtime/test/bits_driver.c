@@ -1,23 +1,23 @@
-/* bits_driver.c -- Bits.m9 against C's own operators, and against its
-   stated refusals.
+/* bits_driver.c holds Bits.m9 to C's own operators, and to its stated
+   refusals.
 
    The VALUES are held to the C operators on uint64_t, bit for bit,
-   over a sweep: the patterns a bit library is written for (0, -1,
-   the sign bit, alternating bits, one bit at each position) crossed
-   with each other and with a seeded stream of random words.  The
-   oracle is the operator itself, which is what the helper claims to
-   be, so a disagreement here is the binding or the generator and not
-   arithmetic.
+   over a sweep.  The sweep crosses the patterns a bit library is
+   written for (0, -1, the sign bit, alternating bits, one bit at each
+   position) with each other and with a seeded stream of random words.
+   The oracle is the operator itself, which is what the helper claims
+   to be.  So a disagreement here is the binding or the generator and
+   not arithmetic.
 
-   The REFUSALS are the reason the module has a RAISES clause: a
-   shift count outside 0..63 is undefined in C and ValueRange in M9,
-   so each edge is asserted to raise, with the exception identity
+   The REFUSALS are the reason the module has a RAISES clause.  A
+   shift count outside 0..63 is undefined in C and ValueRange in M9.
+   So each edge is asserted to raise, with the exception identity
    checked and the count carried as the payload.  Two algebraic
    identities close the loop between Bits and the arithmetic the
-   corpus used before it existed -- Shl is the wrapping multiply by a
-   power of two, Shr on a non-negative word is the DIV -- because the
-   next thing anyone does with this module is replace a MOD/DIV
-   spelling and expect the same bytes.                              */
+   corpus used before it existed.  Shl is the wrapping multiply by a
+   power of two, and Shr on a non-negative word is the DIV.  The next
+   thing anyone does with this module is replace a MOD/DIV spelling
+   and expect the same bytes.                                       */
 #include <stdio.h>
 #include <string.h>
 #include "Bits.h"
@@ -30,8 +30,8 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-/* the same generator Stats uses (Knuth's MMIX constants), so the
-   sweep is reproducible without a seed file */
+/* This is the same generator Stats uses (Knuth's MMIX constants).
+   So the sweep is reproducible without a seed file. */
 static uint64_t st = 42;
 static int64_t rnd (void)
 {
@@ -79,7 +79,7 @@ static void pair (int64_t a, int64_t b)
         !e.exc && (uint64_t) s == (ua >> n));
     ok ("Test is bit n of the pattern",
         !e.exc && Bits_Test (a, n, &e) == (((ua >> n) & 1) == 1));
-    /* the identities the corpus's MOD/DIV spellings rely on */
+    /* Check the identities the corpus's MOD/DIV spellings rely on. */
     ok ("Shl (a, n) is the wrapping multiply by 2^n",
         (uint64_t) Bits_Shl (a, n, &e) == ua * ((uint64_t) 1 << n));
     if (a >= 0)
@@ -113,7 +113,7 @@ int main (void)
   int i, j;
   m9_state e = { 0 };
 
-  /* the named facts from the definition module */
+  /* Check the named facts from the definition module. */
   ok ("Not (0) = -1", Bits_Not (0, &e) == -1);
   ok ("Shr (-1, 1) is the largest I64", Bits_Shr (-1, 1, &e) == INT64_MAX);
   ok ("Shl (1, 63) is the smallest I64, not an Overflow",

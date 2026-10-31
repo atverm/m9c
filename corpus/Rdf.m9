@@ -1,10 +1,10 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Rdf ;
 
-(* RDF 1.1 graphs read from N-Triples, Turtle and RDF/XML and written
-   as N-Triples or Turtle (docs/datalib-plan.md par 2; RDF/XML and the
-   Turtle writer from docs/library-plan-2.md).  What Sparql.Construct
-   answers is read here.
+(* Rdf reads RDF 1.1 graphs from N-Triples, Turtle and RDF/XML and
+   writes them as N-Triples or Turtle (docs/datalib-plan.md par 2;
+   RDF/XML and the Turtle writer from docs/library-plan-2.md).  Rdf
+   reads what Sparql.Construct answers.
 
    READING follows the W3C grammars production by production: IRIs
    resolved against a base by RFC 3986 par 5.2; prefixed names,
@@ -12,18 +12,19 @@ DEFINITION MODULE Rdf ;
    boolean short forms and all four string forms of Turtle; UCHAR and
    ECHAR escapes; blank-node labels scoped to the document.  A
    document that is not in the language is a SyntaxError naming the
-   line and column where it stops being one -- nothing is guessed,
-   and nothing is half-read: the graph is answered whole or not at
-   all.  Held to the W3C's own suites, every positive document read
-   and every negative one refused (RdfTest), and every evaluation
-   document's graph isomorphic to the W3C's expected one, judged by
-   rdflib (runtime/test/rdf.sh).
+   line and column where it stops being one.  Nothing is guessed, and
+   nothing is half-read: the graph is answered whole or not at all.
+   The reader is held to the W3C's own suites: every positive document
+   is read and every negative one refused (RdfTest), and every
+   evaluation document's graph is isomorphic to the W3C's expected
+   one, judged by rdflib (runtime/test/rdf.sh).
 
    WRITING is N-Triples, one triple a line in the order read, blank
    nodes labelled _:b0, _:b1 ... in the order they were first seen,
-   or Turtle (Turtle below: grouped, prefixed, the short forms);
-   a literal's quote, backslash and control characters escaped, every
-   other character as itself (UTF-8 when written to a file).
+   or Turtle (Turtle below: grouped, prefixed, the short forms).  A
+   literal's quote, backslash and control characters are escaped, and
+   every other character is written as itself (UTF-8 when written to
+   a file).
 
    Out: JSON-LD, TriG and named graphs, and any inference.  Language tags are kept as written.                  *)
 
@@ -58,82 +59,91 @@ CONST
 
 PROCEDURE ParseNTriples (VAR pool: POOL ; RO text: STR) : PTR Graph IN pool
   RAISES SyntaxError, ValueRange ;
-  (* an N-Triples document: every IRI absolute, no base *)
+  (* ParseNTriples reads an N-Triples document: every IRI absolute, no
+     base. *)
 
 PROCEDURE ParseTurtle (VAR pool: POOL ; RO text: STR ; RO base: STR)
   : PTR Graph IN pool RAISES SyntaxError, ValueRange ;
-  (* a Turtle document; base is the IRI relative references resolve
-     against until the document says @base or BASE ('' for none, and
-     then a relative reference is a SyntaxError) *)
+  (* ParseTurtle reads a Turtle document.  base is the IRI relative
+     references resolve against until the document says @base or BASE
+     ('' for none, and then a relative reference is a SyntaxError). *)
 
 PROCEDURE ParseRdfXml (VAR pool: POOL ; RO doc: SLICE OF BYTE ; RO base: STR)
   : PTR Graph IN pool RAISES SyntaxError, ValueRange ;
-  (* an RDF/XML document (octets: the XML says its encoding); base is
-     the document's IRI, which rdf:ID and a relative rdf:about resolve
-     against until the document says xml:base ('' for none).  A
-     document that is not well-formed XML, or not in the RDF/XML
-     grammar, is a SyntaxError -- the XML's with its line and column,
-     the grammar's without (the tree has no positions) *)
+  (* ParseRdfXml reads an RDF/XML document (octets: the XML says its
+     encoding).  base is the document's IRI, which rdf:ID and a
+     relative rdf:about resolve against until the document says
+     xml:base ('' for none).  A document that is not well-formed XML,
+     or not in the RDF/XML grammar, is a SyntaxError: the XML's with
+     its line and column, the grammar's without (the tree has no
+     positions). *)
 
 PROCEDURE ParseJsonLd (VAR pool: POOL ; RO text: STR ; RO base: STR ;
                        context: OPT PTR Json.Node) : PTR Graph IN pool
   RAISES SyntaxError, ValueRange ;
-  (* a JSON-LD document (JSON-LD 1.0's expansion and conversion to
-     RDF; its default graph; named graphs read and dropped); base is
-     the document's IRI; context a context the caller hands in, as
-     Json.Parse read it, applied before the document's own -- NONE
-     for none.  A context given as a URL is refused by name: nothing
-     is fetched.  A refusal carries the JSON-LD API's error code *)
+  (* ParseJsonLd reads a JSON-LD document (JSON-LD 1.0's expansion and
+     conversion to RDF; its default graph; named graphs read and
+     dropped).  base is the document's IRI.  context is a context the
+     caller hands in, as Json.Parse read it, applied before the
+     document's own, or NONE for none.  A context given as a URL is
+     refused by name: nothing is fetched.  A refusal carries the
+     JSON-LD API's error code. *)
 
 PROCEDURE JsonLd (g: PTR Graph ; context: OPT PTR Json.Node) : STR RAISES ValueRange ;
-  (* the graph as JSON-LD: the flattened form -- every node once, in
-     first-seen order, "@id", "@type", properties as arrays --
-     compacted against the context handed in (its terms, prefixes,
-     @vocab, @language and coercions), which is written as "@context";
-     "@graph" holds the nodes; a chain of rdf:first/rest cells nothing
-     else refers to is "@list".  Deterministic; ParseJsonLd reads it
-     back.  Characters, as NTriples *)
+  (* JsonLd answers the graph as JSON-LD in the flattened form: every
+     node once, in first-seen order, "@id", "@type", properties as
+     arrays.  It is compacted against the context handed in (its
+     terms, prefixes, @vocab, @language and coercions), which is
+     written as "@context".  "@graph" holds the nodes, and a chain of
+     rdf:first/rest cells nothing else refers to is "@list".  The
+     answer is deterministic, and ParseJsonLd reads it back.  It is
+     characters, as NTriples' answer is. *)
 
 PROCEDURE RdfXml (g: PTR Graph) : STR RAISES ValueRange, Xml.WriteError, NotWritable ;
-  (* the graph as RDF/XML: one rdf:Description per subject in first-
-     seen order (rdf:about an IRI, rdf:nodeID a blank node), a property
-     element per triple with the predicate split into a namespace and
-     a local name (the longest NCName tail; a predicate that has none
-     is NotWritable, as every writer finds), an IRI object as
-     rdf:resource, a blank one as rdf:nodeID, a literal as text with
-     xml:lang or rdf:datatype (none for xsd:string).  The namespaces
-     met are declared on rdf:RDF as rdf and ns1, ns2 ...  Xml's writer
-     refuses a character XML 1.0 cannot carry.  ParseRdfXml reads it
-     back; rdflib does in rdf.sh.  cp-kernel's issue 10, 2026-10-09. *)
+  (* RdfXml answers the graph as RDF/XML.  It writes one
+     rdf:Description per subject in first-seen order (rdf:about an
+     IRI, rdf:nodeID a blank node).  It writes a property element per
+     triple, with the predicate split into a namespace and a local
+     name (the longest NCName tail; a predicate that has none is
+     NotWritable, as every writer finds).  An IRI object is written as
+     rdf:resource, a blank one as rdf:nodeID, and a literal as text
+     with xml:lang or rdf:datatype (none for xsd:string).  The
+     namespaces met are declared on rdf:RDF as rdf and ns1, ns2 ...
+     Xml's writer refuses a character XML 1.0 cannot carry.  ParseRdfXml
+     reads it back; rdflib does in rdf.sh.  cp-kernel's issue 10,
+     2026-10-09. *)
 
 PROCEDURE Count (g: PTR Graph) : I64 ;
-  (* how many triples were read; a triple stated twice is there twice *)
+  (* Count answers how many triples were read; a triple stated twice
+     is there twice. *)
 
 PROCEDURE Get (g: PTR Graph ; i: I64) : Triple RAISES IndexError ;
 
 PROCEDURE NTriples (g: PTR Graph) : STR RAISES ValueRange ;
-  (* the graph as N-Triples text, a line feed after every triple;
-     characters, so written to a file as UTF-8 (DynStr.Utf8 and
-     Io.WriteFileBytes) -- Io.WriteFile's Latin-1 refuses most of
-     the world's scripts *)
+  (* NTriples answers the graph as N-Triples text, a line feed after
+     every triple.  The answer is characters, so it is written to a
+     file as UTF-8 (DynStr.Utf8 and Io.WriteFileBytes): Io.WriteFile's
+     Latin-1 refuses most of the world's scripts. *)
 
 PROCEDURE Turtle (g: PTR Graph ; RO names: SLICE OF STR ;
                   RO iris: SLICE OF STR) : STR RAISES ValueRange ;
-  (* the graph as Turtle (2026-10-07, docs/library-plan-2.md item 2):
-     triples grouped by subject in the order subjects were first seen,
-     a subject's predicates in the order first seen with `;', a
-     predicate's objects in insertion order with `,'; `a' for
-     rdf:type as a predicate; a prefixed name wherever one of the
-     prefixes applies -- names[i] abbreviates iris[i], and rdf, rdfs,
-     xsd and owl are known without being given -- and only the
-     prefixes USED are declared, in that order; the short forms for
-     an xsd:integer, decimal, double or boolean whose lexical form is
-     one Turtle reads back unchanged (a sign and digits; digits, a
-     dot, digits; a double with its exponent; true/false -- 01 and +1
-     included, since the grammar takes them and keeps the lexical
-     form), every other literal quoted with its type; a literal holding a line end as a long string.  Blank
-     nodes keep their labels.  Deterministic: the same graph is the
-     same text.  Characters, as NTriples. *)
+  (* Turtle answers the graph as Turtle (2026-10-07,
+     docs/library-plan-2.md item 2).  Triples are grouped by subject
+     in the order subjects were first seen.  A subject's predicates
+     come in the order first seen, with `;', and a predicate's objects
+     in insertion order, with `,'.  `a' stands for rdf:type as a
+     predicate.  A prefixed name is written wherever one of the
+     prefixes applies: names[i] abbreviates iris[i], and rdf, rdfs,
+     xsd and owl are known without being given.  Only the prefixes
+     USED are declared, in that order.  The short forms are written
+     for an xsd:integer, decimal, double or boolean whose lexical form
+     is one Turtle reads back unchanged (a sign and digits; digits, a
+     dot, digits; a double with its exponent; true/false).  01 and +1
+     are included, since the grammar takes them and keeps the lexical
+     form.  Every other literal is quoted with its type, and a literal
+     holding a line end is written as a long string.  Blank nodes keep
+     their labels.  Deterministic: the same graph is the same text.
+     The answer is characters, as NTriples' answer is. *)
 
 END Rdf.
 
@@ -156,8 +166,8 @@ TYPE
     t : SLICE OF Triple ;
   END ;
 
-  (* the reader's state: the text, where it is, and what the document
-     has declared so far *)
+  (* A Reader holds the reader's state: the text, where it is, and
+     what the document has declared so far. *)
   Reader = RECORD
     src : STR ;
     pos, line, lineStart : I64 ;
@@ -182,7 +192,7 @@ BEGIN
 END NewGraph ;
 
 PROCEDURE Hold (VAR pool: POOL ; RO tm: Term) : Term =
-  (* a term whose strings live in pool *)
+  (* Hold answers a term whose strings live in pool. *)
 VAR c : Term ;
 BEGIN
   c.kind := tm.kind ;
@@ -251,44 +261,55 @@ END Fail ;
 
 PROCEDURE AtEnd (VAR r: Reader) : BOOL =
 BEGIN
-  RETURN r.pos >= LEN (r.src)
+  RETURN r.pos >= Text.BLen (r.src)
 END AtEnd ;
 
-PROCEDURE Peek (VAR r: Reader) : CHAR RAISES IndexError =
-BEGIN
-  RETURN r.src[r.pos]
-END Peek ;
-
 PROCEDURE PeekAt (VAR r: Reader ; k: I64) : CHAR =
-  (* the character k ahead, or a NUL past the end *)
+  (* PeekAt answers the character k ahead, or a NUL past the end. *)
+VAR
+  at, j : I64 ;
+  c : CHAR ;
 BEGIN
-  IF r.pos + k >= LEN (r.src) THEN RETURN 00C END ;
-  RETURN r.src[r.pos + k]
+  at := r.pos ;
+  c := 00C ;
+  FOR j := 0 TO k DO
+    IF at >= Text.BLen (r.src) THEN RETURN 00C END ;
+    c := Text.NextCp (r.src, at)
+  END ;
+  RETURN c
+EXCEPT
+| IndexError : RETURN 00C
 END PeekAt ;
 
 PROCEDURE Advance (VAR r: Reader) =
+  (* past one CHARACTER: one to four octets *)
+VAR
+  at : I64 ;
+  c : CHAR ;
 BEGIN
-  IF r.pos < LEN (r.src) THEN
-    IF r.src[r.pos] = 0AC THEN
+  IF r.pos < Text.BLen (r.src) THEN
+    IF Text.BIs (r.src, r.pos, 0AC) THEN
       r.line := r.line + 1 ;
       r.lineStart := r.pos + 1
     END ;
-    r.pos := r.pos + 1
+    at := r.pos ;
+    c := Text.NextCp (r.src, at) ;
+    r.pos := at
   END
 END Advance ;
 
 PROCEDURE SkipWs (VAR r: Reader) =
-  (* blanks, line ends and comments; in N-Triples a line end is a
-     separator too, and skipped here because the grammar's EOL is
-     only ever optional where this is called *)
+  (* SkipWs skips blanks, line ends and comments.  In N-Triples a line
+     end is a separator too, and is skipped here because the grammar's
+     EOL is only ever optional where this is called. *)
 VAR c : CHAR ;
 BEGIN
-  WHILE r.pos < LEN (r.src) DO
-    c := r.src[r.pos] ;
+  WHILE r.pos < Text.BLen (r.src) DO
+    c := Text.BChar (r.src, r.pos) ;
     IF c = ' ' OR c = 09C OR c = 0AC OR c = 0DC THEN
       Advance (r)
     ELSIF c = '#' THEN
-      WHILE r.pos < LEN (r.src) AND r.src[r.pos] # 0AC DO Advance (r) END
+      WHILE r.pos < Text.BLen (r.src) AND NOT Text.BIs (r.src, r.pos, 0AC) DO Advance (r) END
     ELSE
       RETURN
     END
@@ -347,8 +368,8 @@ PROCEDURE IsLocalEsc (c: CHAR) : BOOL =
 VAR esc : STR ; i : I64 ;
 BEGIN
   esc := "_~.-!$&'()*+,;=/?#@%" ;
-  FOR i := 0 TO LEN (esc) - 1 DO
-    IF c = esc[i] THEN RETURN TRUE END
+  FOR i := 0 TO Text.BLen (esc) - 1 DO
+    IF Text.BIs (esc, i, c) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END IsLocalEsc ;
@@ -356,7 +377,8 @@ END IsLocalEsc ;
 (* ---- escapes ---------------------------------------------------------- *)
 
 PROCEDURE Uchar (VAR r: Reader) : CHAR RAISES SyntaxError, ValueRange =
-  (* at the backslash of \uXXXX or \UXXXXXXXX: the code point *)
+  (* Uchar starts at the backslash of \uXXXX or \UXXXXXXXX and answers
+     the code point. *)
 VAR n, i, v : I64 ;
 BEGIN
   IF PeekAt (r, 1) = 'u' THEN n := 4
@@ -379,7 +401,7 @@ END Uchar ;
 (* ---- IRIs ----------------------------------------------------------- *)
 
 PROCEDURE IriRef (VAR r: Reader) : STR RAISES SyntaxError, ValueRange =
-  (* <...>, escapes decoded, NOT yet resolved *)
+  (* IriRef reads <...>, escapes decoded, NOT yet resolved. *)
 VAR
   s : STR ;
   c : CHAR ;
@@ -395,7 +417,7 @@ BEGIN
     ELSE
       Advance (r)
     END ;
-    (* what IRIREF excludes, escaped or not *)
+    (* IRIREF excludes these, escaped or not. *)
     IF ORD (c) <= 0x20 OR c = '<' OR c = '>' OR c = '"' OR c = '{' OR
        c = '}' OR c = '|' OR c = '^' OR c = '`' OR c = '\' THEN
       Fail (r, 'a character an IRI may not hold')
@@ -406,14 +428,15 @@ BEGIN
 END IriRef ;
 
 PROCEDURE SchemeEnd (RO s: STR) : I64 =
-  (* the index of the colon ending a scheme, or -1 (RFC 3986 par 3.1) *)
+  (* SchemeEnd answers the index of the colon ending a scheme, or -1
+     (RFC 3986 par 3.1). *)
 VAR i : I64 ; c : CHAR ;
 BEGIN
-  IF LEN (s) = 0 THEN RETURN -1 END ;
-  c := s[0] ;
+  IF Text.BLen (s) = 0 THEN RETURN -1 END ;
+  c := Text.BChar (s, 0) ;
   IF NOT ((c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z')) THEN RETURN -1 END ;
-  FOR i := 1 TO LEN (s) - 1 DO
-    c := s[i] ;
+  FOR i := 1 TO Text.BLen (s) - 1 DO
+    c := Text.BChar (s, i) ;
     IF c = ':' THEN RETURN i END ;
     IF NOT ((c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z') OR
             (c >= '0' AND c <= '9') OR c = '+' OR c = '-' OR c = '.') THEN
@@ -424,25 +447,25 @@ BEGIN
 END SchemeEnd ;
 
 PROCEDURE RemoveDots (RO path: STR) : STR =
-  (* RFC 3986 par 5.2.4, remove_dot_segments *)
+  (* RemoveDots is RFC 3986 par 5.2.4, remove_dot_segments. *)
 VAR
   input, output : STR ;
   i : I64 ;
 BEGIN
   input := path ;
   output := '' ;
-  WHILE LEN (input) > 0 DO
+  WHILE Text.BLen (input) > 0 DO
     IF Text.StartsWith (input, '../') THEN
-      input := SLICE (input, 3, LEN (input) - 3)
+      input := SLICE (input, 3, Text.BLen (input) - 3)
     ELSIF Text.StartsWith (input, './') THEN
-      input := SLICE (input, 2, LEN (input) - 2)
+      input := SLICE (input, 2, Text.BLen (input) - 2)
     ELSIF Text.StartsWith (input, '/./') THEN
-      input := SLICE (input, 2, LEN (input) - 2)
+      input := SLICE (input, 2, Text.BLen (input) - 2)
     ELSIF Text.Eq (input, '/.') THEN
       input := '/'
     ELSIF Text.StartsWith (input, '/../') OR Text.Eq (input, '/..') THEN
       IF Text.Eq (input, '/..') THEN input := '/'
-      ELSE input := SLICE (input, 3, LEN (input) - 3)
+      ELSE input := SLICE (input, 3, Text.BLen (input) - 3)
       END ;
       i := Text.LastChar (output, '/') ;
       IF i >= 0 THEN output := SLICE (output, 0, i) ELSE output := '' END
@@ -451,11 +474,11 @@ BEGIN
     ELSE
       (* the first segment, with its leading slash *)
       i := 1 ;
-      IF input[0] # '/' THEN i := 0 END ;
-      WHILE i < LEN (input) AND input[i] # '/' DO i := i + 1 END ;
-      IF input[0] = '/' AND i = 0 THEN i := 1 END ;
+      IF NOT Text.BIs (input, 0, '/') THEN i := 0 END ;
+      WHILE i < Text.BLen (input) AND NOT Text.BIs (input, i, '/') DO i := i + 1 END ;
+      IF Text.BIs (input, 0, '/') AND i = 0 THEN i := 1 END ;
       output := output + SLICE (input, 0, i) ;
-      input := SLICE (input, i, LEN (input) - i)
+      input := SLICE (input, i, Text.BLen (input) - i)
     END
   END ;
   RETURN output
@@ -463,7 +486,7 @@ END RemoveDots ;
 
 PROCEDURE Split (RO s: STR ; VAR scheme, auth, path, query, frag: STR ;
                  VAR hasAuth, hasQuery, hasFrag: BOOL) =
-  (* RFC 3986 appendix B's five parts *)
+  (* Split answers RFC 3986 appendix B's five parts. *)
 VAR i, j, e : I64 ;
 BEGIN
   scheme := '' ; auth := '' ; path := '' ; query := '' ; frag := '' ;
@@ -474,39 +497,39 @@ BEGIN
     scheme := SLICE (s, 0, e) ;
     i := e + 1
   END ;
-  IF i + 1 < LEN (s) AND s[i] = '/' AND s[i + 1] = '/' THEN
+  IF i + 1 < Text.BLen (s) AND Text.BIs (s, i, '/') AND Text.BIs (s, i + 1, '/') THEN
     hasAuth := TRUE ;
     j := i + 2 ;
-    WHILE j < LEN (s) AND s[j] # '/' AND s[j] # '?' AND s[j] # '#' DO j := j + 1 END ;
+    WHILE j < Text.BLen (s) AND NOT Text.BIs (s, j, '/') AND NOT Text.BIs (s, j, '?') AND NOT Text.BIs (s, j, '#') DO j := j + 1 END ;
     auth := SLICE (s, i + 2, j - i - 2) ;
     i := j
   END ;
   j := i ;
-  WHILE j < LEN (s) AND s[j] # '?' AND s[j] # '#' DO j := j + 1 END ;
+  WHILE j < Text.BLen (s) AND NOT Text.BIs (s, j, '?') AND NOT Text.BIs (s, j, '#') DO j := j + 1 END ;
   path := SLICE (s, i, j - i) ;
   i := j ;
-  IF i < LEN (s) AND s[i] = '?' THEN
+  IF i < Text.BLen (s) AND Text.BIs (s, i, '?') THEN
     hasQuery := TRUE ;
     j := i + 1 ;
-    WHILE j < LEN (s) AND s[j] # '#' DO j := j + 1 END ;
+    WHILE j < Text.BLen (s) AND NOT Text.BIs (s, j, '#') DO j := j + 1 END ;
     query := SLICE (s, i + 1, j - i - 1) ;
     i := j
   END ;
-  IF i < LEN (s) AND s[i] = '#' THEN
+  IF i < Text.BLen (s) AND Text.BIs (s, i, '#') THEN
     hasFrag := TRUE ;
-    frag := SLICE (s, i + 1, LEN (s) - i - 1)
+    frag := SLICE (s, i + 1, Text.BLen (s) - i - 1)
   END
 END Split ;
 
 PROCEDURE Resolve (RO base: STR ; RO ref: STR) : STR =
-  (* RFC 3986 par 5.2.2, strict *)
+  (* Resolve follows RFC 3986 par 5.2.2, strict. *)
 VAR
   rs, ra, rp, rq, rf, bs, ba, bp, bq, bf, ts, ta, tp, tq, out : STR ;
   rha, rhq, rhf, bha, bhq, bhf, tha, thq : BOOL ;
   k : I64 ;
 BEGIN
   Split (ref, rs, ra, rp, rq, rf, rha, rhq, rhf) ;
-  IF LEN (rs) > 0 THEN
+  IF Text.BLen (rs) > 0 THEN
     ts := rs ; ta := ra ; tha := rha ; tp := RemoveDots (rp) ; tq := rq ; thq := rhq
   ELSE
     Split (base, bs, ba, bp, bq, bf, bha, bhq, bhf) ;
@@ -515,15 +538,15 @@ BEGIN
       ta := ra ; tha := TRUE ; tp := RemoveDots (rp) ; tq := rq ; thq := rhq
     ELSE
       ta := ba ; tha := bha ;
-      IF LEN (rp) = 0 THEN
+      IF Text.BLen (rp) = 0 THEN
         tp := bp ;
         IF rhq THEN tq := rq ; thq := TRUE ELSE tq := bq ; thq := bhq END
       ELSE
-        IF rp[0] = '/' THEN
+        IF Text.BIs (rp, 0, '/') THEN
           tp := RemoveDots (rp)
         ELSE
           (* merge (par 5.2.3) *)
-          IF bha AND LEN (bp) = 0 THEN
+          IF bha AND Text.BLen (bp) = 0 THEN
             tp := RemoveDots ('/' + rp)
           ELSE
             k := Text.LastChar (bp, '/') ;
@@ -537,7 +560,7 @@ BEGIN
     END
   END ;
   out := '' ;
-  IF LEN (ts) > 0 THEN out := ts + ':' END ;
+  IF Text.BLen (ts) > 0 THEN out := ts + ':' END ;
   IF tha THEN out := out + '//' + ta END ;
   out := out + tp ;
   IF thq THEN out := out + '?' + tq END ;
@@ -546,12 +569,12 @@ BEGIN
 END Resolve ;
 
 PROCEDURE Absolute (VAR r: Reader ; RO iri: STR) : STR RAISES SyntaxError =
-  (* an IRI as a term: resolved in Turtle, required absolute in
-     N-Triples *)
+  (* Absolute answers an IRI as a term: resolved in Turtle, required
+     absolute in N-Triples. *)
 BEGIN
   IF SchemeEnd (iri) >= 0 THEN RETURN iri END ;
   IF NOT r.turtle THEN Fail (r, 'a relative IRI in N-Triples') END ;
-  IF LEN (r.base) = 0 THEN Fail (r, 'a relative IRI and no base to resolve it') END ;
+  IF Text.BLen (r.base) = 0 THEN Fail (r, 'a relative IRI and no base to resolve it') END ;
   RETURN Resolve (r.base, iri)
 END Absolute ;
 
@@ -570,7 +593,7 @@ BEGIN
 END PrefixOf ;
 
 PROCEDURE PnPrefix (VAR r: Reader) : STR RAISES SyntaxError =
-  (* PN_PREFIX? up to the colon, which is consumed *)
+  (* PnPrefix reads PN_PREFIX? up to the colon, which is consumed. *)
 VAR
   s : STR ;
   c : CHAR ;
@@ -591,15 +614,16 @@ BEGIN
         EXIT
       END
     END ;
-    IF s[LEN (s) - 1] = '.' THEN Fail (r, 'a prefix name ends with a dot') END
+    IF Text.BIs (s, Text.BLen (s) - 1, '.') THEN Fail (r, 'a prefix name ends with a dot') END
   END ;
   Expect (r, ':', 'a colon') ;
   RETURN s
 END PnPrefix ;
 
 PROCEDURE PnLocal (VAR r: Reader) : STR RAISES SyntaxError =
-  (* PN_LOCAL, possibly empty: %HH kept as written, \x unescaped; a
-     dot is part of the name only when a name character follows *)
+  (* PnLocal reads PN_LOCAL, possibly empty: %HH kept as written, \x
+     unescaped.  A dot is part of the name only when a name character
+     follows. *)
 VAR
   s : STR ;
   c : CHAR ;
@@ -623,7 +647,8 @@ BEGIN
           (NOT first AND IsPnChars (c)) THEN
       s := s + c ; Advance (r)
     ELSIF c = '.' AND NOT first THEN
-      (* only inside the name: what follows must continue it *)
+      (* A dot counts only inside the name: what follows must continue
+         it. *)
       IF IsPnChars (PeekAt (r, 1)) OR PeekAt (r, 1) = ':' OR
          PeekAt (r, 1) = '%' OR PeekAt (r, 1) = '\' OR PeekAt (r, 1) = '.' THEN
         s := s + c ; Advance (r)
@@ -653,22 +678,22 @@ END PrefixedName ;
 (* ---- blank nodes ---------------------------------------------------- *)
 
 PROCEDURE Fresh (VAR pool: POOL ; VAR r: Reader) : STR RAISES ValueRange =
-  (* a blank node no label in the document can name *)
+  (* Fresh answers a blank node no label in the document can name. *)
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
   DynStr.Append (d, 'b') ;
   DynStr.AppendI64 (d, r.fresh) ;
   r.fresh := r.fresh + 1 ;
-  (* ViewIn: the id is kept in the reader's pool, where the builder is
-     -- a View is a frame copy under the UTF switch *)
+  (* ViewIn keeps the id in the reader's pool, where the builder is.
+     A View is a frame copy under the UTF switch. *)
   RETURN DynStr.ViewIn (pool, d)
 END Fresh ;
 
 PROCEDURE Labelled (VAR pool: POOL ; VAR r: Reader ; RO lab: STR) : STR
   RAISES ValueRange =
-  (* the blank node a document label names: the same label, the same
-     node, throughout the document *)
+  (* Labelled answers the blank node a document label names: the same
+     label, the same node, throughout the document. *)
 VAR
   i : I64 ;
   nl, ni : SLICE OF STR ;
@@ -691,7 +716,7 @@ END Labelled ;
 
 PROCEDURE BlankLabel (VAR pool: POOL ; VAR r: Reader) : STR
   RAISES SyntaxError, ValueRange =
-  (* at `_:' *)
+  (* BlankLabel starts at `_:'. *)
 VAR
   s : STR ;
   c : CHAR ;
@@ -713,14 +738,15 @@ BEGIN
       EXIT
     END
   END ;
-  IF s[LEN (s) - 1] = '.' THEN Fail (r, 'a blank node label ends with a dot') END ;
+  IF Text.BIs (s, Text.BLen (s) - 1, '.') THEN Fail (r, 'a blank node label ends with a dot') END ;
   RETURN Labelled (pool, r, s)
 END BlankLabel ;
 
 (* ---- literals ------------------------------------------------------- *)
 
 PROCEDURE Echar (VAR r: Reader) : CHAR RAISES SyntaxError, ValueRange =
-  (* at a backslash in a string: ECHAR or UCHAR *)
+  (* Echar starts at a backslash in a string and reads ECHAR or
+     UCHAR. *)
 VAR c : CHAR ;
 BEGIN
   c := PeekAt (r, 1) ;
@@ -737,7 +763,8 @@ BEGIN
 END Echar ;
 
 PROCEDURE StringLit (VAR r: Reader) : STR RAISES SyntaxError, ValueRange =
-  (* at a quote: the four forms of Turtle, the first of N-Triples *)
+  (* StringLit starts at a quote: the four forms of Turtle, the first
+     of N-Triples. *)
 VAR
   s : STR ;
   q, c : CHAR ;
@@ -773,7 +800,7 @@ BEGIN
 END StringLit ;
 
 PROCEDURE LangTag (VAR r: Reader) : STR RAISES SyntaxError =
-  (* at `@': [a-zA-Z]+ ('-' [a-zA-Z0-9]+)* *)
+  (* LangTag starts at `@': [a-zA-Z]+ ('-' [a-zA-Z0-9]+)*. *)
 VAR
   s : STR ;
   c : CHAR ;
@@ -825,26 +852,27 @@ BEGIN
 END StartsIri ;
 
 PROCEDURE Word (VAR r: Reader ; RO w: STR) : BOOL =
-  (* the keyword w at the reader, not followed by a name character *)
+  (* Word asks whether the keyword w is at the reader, not followed by
+     a name character. *)
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO LEN (w) - 1 DO
-    IF PeekAt (r, i) # w[i] THEN RETURN FALSE END
+  FOR i := 0 TO Text.BLen (w) - 1 DO
+    IF PeekAt (r, i) # Text.BChar (w, i) THEN RETURN FALSE END
   END ;
-  RETURN NOT (IsPnChars (PeekAt (r, LEN (w))) OR PeekAt (r, LEN (w)) = ':' OR
-              PeekAt (r, LEN (w)) = '.' AND IsPnChars (PeekAt (r, LEN (w) + 1)))
+  RETURN NOT (IsPnChars (PeekAt (r, Text.BLen (w))) OR PeekAt (r, Text.BLen (w)) = ':' OR
+              PeekAt (r, Text.BLen (w)) = '.' AND IsPnChars (PeekAt (r, Text.BLen (w) + 1)))
 END Word ;
 
 PROCEDURE WordCi (VAR r: Reader ; RO w: STR) : BOOL RAISES ValueRange =
-  (* the same, in any case: BASE and PREFIX *)
+  (* WordCi asks the same, in any case: BASE and PREFIX. *)
 VAR i : I64 ; c : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (w) - 1 DO
+  FOR i := 0 TO Text.BLen (w) - 1 DO
     c := PeekAt (r, i) ;
     IF c >= 'a' AND c <= 'z' THEN c := CHR (ORD (c) - 32) END ;
-    IF c # w[i] THEN RETURN FALSE END
+    IF NOT Text.BIs (w, i, c) THEN RETURN FALSE END
   END ;
-  RETURN NOT IsPnChars (PeekAt (r, LEN (w)))
+  RETURN NOT IsPnChars (PeekAt (r, Text.BLen (w)))
 END WordCi ;
 
 PROCEDURE Skip (VAR r: Reader ; n: I64) =
@@ -854,7 +882,8 @@ BEGIN
 END Skip ;
 
 PROCEDURE Numeric (VAR r: Reader ; VAR dt: STR) : STR RAISES SyntaxError =
-  (* INTEGER, DECIMAL or DOUBLE, its lexical form as written *)
+  (* Numeric reads INTEGER, DECIMAL or DOUBLE, its lexical form as
+     written. *)
 VAR
   s : STR ;
   c : CHAR ;
@@ -928,7 +957,8 @@ END Literal ;
 
 PROCEDURE Collection (VAR pool: POOL ; VAR r: Reader ; VAR g: PTR Graph)
   : Term RAISES SyntaxError, ValueRange, IndexError =
-  (* ( o1 o2 ... ): rdf:first/rdf:rest cells ending in rdf:nil *)
+  (* Collection reads ( o1 o2 ... ): rdf:first/rdf:rest cells ending
+     in rdf:nil. *)
 VAR
   head, prev, cell, o : Term ;
   any : BOOL ;
@@ -958,7 +988,7 @@ END Collection ;
 
 PROCEDURE PropertyList (VAR pool: POOL ; VAR r: Reader ; VAR g: PTR Graph)
   : Term RAISES SyntaxError, ValueRange, IndexError =
-  (* [ ... ] -- the empty one is ANON *)
+  (* PropertyList reads [ ... ]; the empty one is ANON. *)
 VAR b : Term ;
 BEGIN
   Expect (r, '[', '[') ;
@@ -1026,7 +1056,8 @@ END PredObjList ;
 
 PROCEDURE Directive (VAR pool: POOL ; VAR r: Reader) : BOOL
   RAISES SyntaxError, ValueRange =
-  (* @prefix, @base, PREFIX or BASE; FALSE when there is none here *)
+  (* Directive reads @prefix, @base, PREFIX or BASE, and answers FALSE
+     when there is none here. *)
 VAR
   name, iri : STR ;
   sparql : BOOL ;
@@ -1102,9 +1133,9 @@ END Triples ;
 PROCEDURE NewReader (VAR pool: POOL ; VAR r: Reader ; RO text: STR ; RO base: STR ;
                      turtle: BOOL) =
 BEGIN
-  (* copied into the reader's pool: a borrow kept in the reader would
-     be a retention the caller's heading has to declare, and the
-     reader dies with the parse anyway *)
+  (* The text is copied into the reader's pool: a borrow kept in the
+     reader would be a retention the caller's heading has to declare,
+     and the reader dies with the parse anyway. *)
   r.src := Text.Keep (pool, text) ;
   r.pos := 0 ;
   r.line := 1 ;
@@ -1161,7 +1192,8 @@ BEGIN
 END NtTerm ;
 
 PROCEDURE SkipBlanks (VAR r: Reader) =
-  (* blanks and tabs only: an N-Triples statement is one line *)
+  (* SkipBlanks skips blanks and tabs only: an N-Triples statement is
+     one line. *)
 BEGIN
   WHILE PeekAt (r, 0) = ' ' OR PeekAt (r, 0) = 09C DO Advance (r) END
 END SkipBlanks ;
@@ -1206,8 +1238,8 @@ PROCEDURE Hex2 (VAR d: PTR DynStr.DString ; v: I64) RAISES ValueRange =
 VAR h : STR ;
 BEGIN
   h := '0123456789ABCDEF' ;
-  DynStr.AppendChar (d, h[v DIV 16]) ;
-  DynStr.AppendChar (d, h[v MOD 16])
+  DynStr.AppendChar (d, Text.BChar (h, v DIV 16)) ;   (* ASCII digits *)
+  DynStr.AppendChar (d, Text.BChar (h, v MOD 16))
 EXCEPT
 | IndexError :
     RETURN
@@ -1253,10 +1285,10 @@ BEGIN
         END
       END ;
       DynStr.AppendChar (d, '"') ;
-      IF LEN (t.lang) > 0 THEN
+      IF Text.BLen (t.lang) > 0 THEN
         DynStr.AppendChar (d, '@') ;
         DynStr.Append (d, t.lang)
-      ELSIF LEN (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
+      ELSIF Text.BLen (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
         DynStr.Append (d, '^^') ;
         PutIri (d, t.datatype)
       END
@@ -1290,7 +1322,8 @@ CONST
   Owl = 'http://www.w3.org/2002/07/owl#' ;
 
 TYPE
-  (* the prefixes offered and which of them the body used *)
+  (* Prefixes holds the prefixes offered and which of them the body
+     used. *)
   Prefixes = RECORD
     names, iris : SLICE OF STR ;
     used : SLICE OF BOOL ;
@@ -1298,12 +1331,12 @@ TYPE
   END ;
 
 PROCEDURE LocalOk (RO s: STR) : BOOL =
-  (* a PN_LOCAL Turtle reads back as itself with no escape: first a
-     name character, a digit or a colon; then name characters, dots
-     and colons; not ending in a dot *)
-  (* by FOR c IN s, over CHARACTERS (a name may hold letters past
-     ASCII; under the UTF switch a subscript is an octet), the first
-     and the last carried *)
+  (* LocalOk asks whether s is a PN_LOCAL Turtle reads back as itself
+     with no escape: first a name character, a digit or a colon; then
+     name characters, dots and colons; not ending in a dot. *)
+  (* It goes by FOR c IN s, over CHARACTERS (a name may hold letters
+     past ASCII; under the UTF switch a subscript is an octet), and
+     carries the first and the last. *)
 VAR
   c, last : CHAR ;
   first : BOOL ;
@@ -1323,18 +1356,18 @@ BEGIN
 END LocalOk ;
 
 PROCEDURE PrefixFor (VAR p: Prefixes ; RO iri: STR) : I64 =
-  (* the longest prefix IRI that begins iri and leaves a local name
-     Turtle can spell, or -1 *)
+  (* PrefixFor answers the longest prefix IRI that begins iri and
+     leaves a local name Turtle can spell, or -1. *)
 VAR i, best, bestLen : I64 ;
 BEGIN
   best := -1 ;
   bestLen := -1 ;
   FOR i := 0 TO p.n - 1 DO
-    IF LEN (p.iris[i]) > bestLen AND LEN (p.iris[i]) <= LEN (iri) AND
+    IF Text.BLen (p.iris[i]) > bestLen AND Text.BLen (p.iris[i]) <= Text.BLen (iri) AND
        Text.StartsWith (iri, p.iris[i]) AND
-       LocalOk (SLICE (iri, LEN (p.iris[i]), LEN (iri) - LEN (p.iris[i]))) THEN
+       LocalOk (SLICE (iri, Text.BLen (p.iris[i]), Text.BLen (iri) - Text.BLen (p.iris[i]))) THEN
       best := i ;
-      bestLen := LEN (p.iris[i])
+      bestLen := Text.BLen (p.iris[i])
     END
   END ;
   RETURN best
@@ -1349,41 +1382,42 @@ BEGIN
     p.used[k] := TRUE ;
     DynStr.Append (d, p.names[k]) ;
     DynStr.AppendChar (d, ':') ;
-    DynStr.Append (d, SLICE (iri, LEN (p.iris[k]), LEN (iri) - LEN (p.iris[k])))
+    DynStr.Append (d, SLICE (iri, Text.BLen (p.iris[k]), Text.BLen (iri) - Text.BLen (p.iris[k])))
   ELSE
     PutIri (d, iri)
   END
 END TtlIri ;
 
 PROCEDURE Digits (RO s: STR ; from, to: I64) : BOOL =
-  (* s[from .. to - 1] is one or more digits *)
+  (* Digits asks whether s[from .. to - 1] is one or more digits. *)
 VAR i : I64 ;
 BEGIN
   IF to <= from THEN RETURN FALSE END ;
   FOR i := from TO to - 1 DO
-    IF s[i] < '0' OR s[i] > '9' THEN RETURN FALSE END
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END Digits ;
 
 PROCEDURE ShortForm (RO t: Term) : BOOL RAISES ValueRange =
-  (* a typed literal Turtle may write bare: the forms the grammar's
-     INTEGER, DECIMAL, DOUBLE and BooleanLiteral read back to the
-     same lexical form -- a double without an exponent, a decimal
-     without a digit after its dot, are written quoted *)
+  (* ShortForm asks whether t is a typed literal Turtle may write
+     bare: the forms the grammar's INTEGER, DECIMAL, DOUBLE and
+     BooleanLiteral read back to the same lexical form.  A double
+     without an exponent, or a decimal without a digit after its dot,
+     is written quoted. *)
 VAR
   s : STR ;
   i, dot, e : I64 ;
 BEGIN
-  IF LEN (t.lang) > 0 OR LEN (t.value) = 0 THEN RETURN FALSE END ;
+  IF Text.BLen (t.lang) > 0 OR Text.BLen (t.value) = 0 THEN RETURN FALSE END ;
   s := t.value ;
   i := 0 ;
-  IF s[0] = '-' OR s[0] = '+' THEN i := 1 END ;
+  IF Text.BIs (s, 0, '-') OR Text.BIs (s, 0, '+') THEN i := 1 END ;
   IF Text.Eq (t.datatype, Xsd + 'integer') THEN
-    RETURN Digits (s, i, LEN (s))
+    RETURN Digits (s, i, Text.BLen (s))
   ELSIF Text.Eq (t.datatype, Xsd + 'decimal') THEN
     dot := Text.FindChar (s, '.') ;
-    RETURN dot >= i AND (dot = i OR Digits (s, i, dot)) AND Digits (s, dot + 1, LEN (s))
+    RETURN dot >= i AND (dot = i OR Digits (s, i, dot)) AND Digits (s, dot + 1, Text.BLen (s))
   ELSIF Text.Eq (t.datatype, Xsd + 'double') THEN
     e := Text.FindChar (s, 'e') ;
     IF e < 0 THEN e := Text.FindChar (s, 'E') END ;
@@ -1398,8 +1432,8 @@ BEGIN
       IF dot + 1 < e AND NOT Digits (s, dot + 1, e) THEN RETURN FALSE END
     END ;
     i := e + 1 ;
-    IF i < LEN (s) AND (s[i] = '+' OR s[i] = '-') THEN i := i + 1 END ;
-    RETURN Digits (s, i, LEN (s))
+    IF i < Text.BLen (s) AND (Text.BIs (s, i, '+') OR Text.BIs (s, i, '-')) THEN i := i + 1 END ;
+    RETURN Digits (s, i, Text.BLen (s))
   ELSIF Text.Eq (t.datatype, Xsd + 'boolean') THEN
     RETURN Text.Eq (s, 'true') OR Text.Eq (s, 'false')
   END ;
@@ -1433,10 +1467,10 @@ BEGIN
     END
   END ;
   IF long THEN DynStr.Append (d, '"""') ELSE DynStr.AppendChar (d, '"') END ;
-  IF LEN (t.lang) > 0 THEN
+  IF Text.BLen (t.lang) > 0 THEN
     DynStr.AppendChar (d, '@') ;
     DynStr.Append (d, t.lang)
-  ELSIF LEN (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
+  ELSIF Text.BLen (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
     DynStr.Append (d, '^^') ;
     TtlIri (d, p, t.datatype)
   END
@@ -1474,7 +1508,7 @@ VAR
   i, j, k, n : I64 ;
   firstPred : BOOL ;
 BEGIN
-  (* the caller's prefixes, then the four everybody knows *)
+  (* Take the caller's prefixes, then the four everybody knows. *)
   n := LEN (names) ;
   IF LEN (iris) < n THEN n := LEN (iris) END ;
   p.names := NEW (scratch, STR, n + 4) ;
@@ -1493,7 +1527,8 @@ BEGIN
   done := NEW (scratch, BOOL, g.n) ;
   FOR i := 0 TO g.n - 1 DO
     IF NOT done[i] THEN
-      (* the subject's block: every triple of it, by predicate *)
+      (* Write the subject's block: every triple of it, by
+         predicate. *)
       TtlTerm (body, p, g.t[i].s, FALSE) ;
       firstPred := TRUE ;
       FOR j := i TO g.n - 1 DO
@@ -1526,13 +1561,14 @@ BEGIN
       DynStr.Append (out, ' .' + 0AC)
     END
   END ;
-  IF DynStr.Len (out) > 0 AND g.n > 0 THEN DynStr.AppendChar (out, 0AC) END ;
+  IF DynStr.BLen (out) > 0 AND g.n > 0 THEN DynStr.AppendChar (out, 0AC) END ;
   DynStr.Append (out, DynStr.View (body)) ;
   RETURN DynStr.View (out)
 END Turtle ;
 
 PROCEDURE AddDefault (VAR p: Prefixes ; RO KEPT name: STR ; RO KEPT iri: STR) =
-  (* a default prefix, unless the caller gave the name *)
+  (* AddDefault adds a default prefix, unless the caller gave the
+     name. *)
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO p.n - 1 DO
@@ -1547,18 +1583,18 @@ END AddDefault ;
 
 (* ---- RDF/XML in (2026-10-07; docs/library-plan-2.md item 3) -----------
 
-   RDF 1.1 XML Syntax par 7, walked over the tree Xml.Parse answers:
-   rdf:RDF or a bare node element; node elements with rdf:ID,
+   The reader walks RDF 1.1 XML Syntax par 7 over the tree Xml.Parse
+   answers: rdf:RDF or a bare node element; node elements with rdf:ID,
    rdf:nodeID or rdf:about and property attributes; property elements
-   holding a literal, one node element, nothing, or parseType
-   Resource, Collection or Literal (anything else is Literal); rdf:li
-   numbered per parent; rdf:ID on a property element reifying it;
-   xml:base and xml:lang scoped; the core syntax terms and the old
-   ones refused where the grammar refuses them.  An XML literal is the
-   EXCLUSIVE canonical form of the content: the namespaces an element
-   visibly uses declared on it unless an ancestor inside the literal
-   already did, attributes sorted, an empty element as a start and an
-   end tag -- what the W3C's expected results hold.                   *)
+   holding a literal, one node element, nothing, or parseType Resource,
+   Collection or Literal (anything else is Literal); rdf:li numbered per
+   parent; rdf:ID on a property element reifying it; xml:base and
+   xml:lang scoped; the core syntax terms and the old ones refused where
+   the grammar refuses them.  An XML literal is the EXCLUSIVE canonical
+   form of the content: the namespaces an element visibly uses declared
+   on it unless an ancestor inside the literal already did, attributes
+   sorted, an empty element as a start and an end tag.  That is what the
+   W3C's expected results hold.                                       *)
 
 CONST
   XmlNsUri = 'http://www.w3.org/XML/1998/namespace' ;
@@ -1579,15 +1615,16 @@ END XFail ;
 PROCEDURE IsWs (RO s: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] # ' ' AND s[i] # 09C AND s[i] # 0AC AND s[i] # 0DC THEN RETURN FALSE END
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF NOT Text.BIs (s, i, ' ') AND NOT Text.BIs (s, i, 09C) AND NOT Text.BIs (s, i, 0AC) AND NOT Text.BIs (s, i, 0DC) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END IsWs ;
 
 PROCEDURE NcName (RO s: STR) : BOOL =
-  (* an XML NCName: a letter or _ first, then name characters, no
-     colon -- by FOR c IN s, over characters *)
+  (* NcName asks whether s is an XML NCName: a letter or _ first,
+     then name characters, no colon.  It goes by FOR c IN s, over
+     characters. *)
 VAR
   c : CHAR ;
   first : BOOL ;
@@ -1619,12 +1656,12 @@ END IsOldTerm ;
 
 PROCEDURE Scoped (e: PTR Xml.Element ; VAR st: XState ; VAR base: STR ; VAR lang: STR)
   RAISES SyntaxError, ValueRange =
-  (* xml:base and xml:lang on e, into the scope *)
+  (* Scoped takes xml:base and xml:lang on e into the scope. *)
 VAR v : STR ;
 BEGIN
   IF Xml.HasAttr (e, XmlNsUri, 'base') THEN
     v := Xml.AttrValue (e, XmlNsUri, 'base') ;
-    IF LEN (base) > 0 THEN base := Resolve (base, v)
+    IF Text.BLen (base) > 0 THEN base := Resolve (base, v)
     ELSIF SchemeEnd (v) > 0 THEN base := v
     ELSE XFail ('a relative xml:base and no base to resolve it')
     END
@@ -1633,10 +1670,10 @@ BEGIN
 END Scoped ;
 
 PROCEDURE XIri (VAR st: XState ; RO base: STR ; RO ref: STR) : STR RAISES SyntaxError =
-  (* ref resolved against base *)
+  (* XIri answers ref resolved against base. *)
 BEGIN
   IF SchemeEnd (ref) >= 0 THEN RETURN ref END ;
-  IF LEN (base) = 0 THEN XFail ('a relative IRI and no base to resolve it: ' + ref) END ;
+  IF Text.BLen (base) = 0 THEN XFail ('a relative IRI and no base to resolve it: ' + ref) END ;
   RETURN Resolve (base, ref)
 END XIri ;
 
@@ -1650,14 +1687,15 @@ END NoFragment ;
 
 PROCEDURE IdIri (VAR pool: POOL ; VAR st: XState ; RO base: STR ; RO id: STR) : STR
   RAISES SyntaxError, ValueRange =
-  (* rdf:ID="id": base#id, an NCName, once in the document *)
+  (* IdIri answers rdf:ID="id" as base#id, an NCName, once in the
+     document. *)
 VAR
   iri : STR ;
   i : I64 ;
   more : SLICE OF STR ;
 BEGIN
   IF NOT NcName (id) THEN XFail ('rdf:ID is not an XML name: ' + id) END ;
-  IF LEN (base) = 0 THEN XFail ('rdf:ID and no base to resolve it against') END ;
+  IF Text.BLen (base) = 0 THEN XFail ('rdf:ID and no base to resolve it against') END ;
   iri := NoFragment (base) + '#' + id ;
   FOR i := 0 TO st.nids - 1 DO
     IF Text.Eq (st.ids[i], iri) THEN XFail ('rdf:ID used twice: ' + id) END
@@ -1678,7 +1716,8 @@ BEGIN
 END IsRdf ;
 
 PROCEDURE ContentIsElements (e: PTR Xml.Element) : BOOL =
-  (* no character data but white space around the children *)
+  (* ContentIsElements asks whether there is no character data but
+     white space around the children. *)
 VAR i : I64 ;
 BEGIN
   IF NOT IsWs (e.text) THEN RETURN FALSE END ;
@@ -1692,8 +1731,8 @@ PROCEDURE PropertyAttr (VAR pool: POOL ; VAR st: XState ; VAR g: PTR Graph ;
                         RO subj: Term ; RO ns: STR ; RO local: STR ;
                         RO value: STR ; RO base: STR ; RO lang: STR)
   RAISES SyntaxError, ValueRange =
-  (* an attribute that states a property: rdf:type an IRI, the rest a
-     literal in the language in scope *)
+  (* PropertyAttr reads an attribute that states a property: rdf:type
+     an IRI, the rest a literal in the language in scope. *)
 BEGIN
   IF Text.Eq (ns, RdfNs) THEN
     IF Text.Eq (local, 'type') THEN
@@ -1724,7 +1763,7 @@ BEGIN
       XFail ('rdf:' + e.local + ' is not a node element')
     END
   END ;
-  IF LEN (e.ns) = 0 THEN XFail ('an element without a namespace: ' + e.name) END ;
+  IF Text.BLen (e.ns) = 0 THEN XFail ('an element without a namespace: ' + e.name) END ;
   (* the subject: at most one of rdf:ID, rdf:nodeID, rdf:about *)
   named := 0 ;
   IF Xml.HasAttr (e, RdfNs, 'ID') THEN
@@ -1750,7 +1789,7 @@ BEGIN
   FOR i := 0 TO LEN (e.attrs) - 1 DO
     IF Text.Eq (e.attrs[i].ns, XmlnsUri) OR Text.Eq (e.attrs[i].ns, XmlNsUri) THEN
       (* a declaration, or xml:base, xml:lang, xml:space, xml:anything *)
-    ELSIF LEN (e.attrs[i].ns) = 0 THEN
+    ELSIF Text.BLen (e.attrs[i].ns) = 0 THEN
       (* an unprefixed name beginning with xml is XML's own, ignored *)
       IF NOT Text.StartsWith (e.attrs[i].name, 'xml') THEN
         XFail ('an attribute without a namespace: ' + e.attrs[i].name)
@@ -1770,7 +1809,8 @@ END NodeElement ;
 PROCEDURE PropertyElts (VAR pool: POOL ; VAR st: XState ; e: PTR Xml.Element ;
                         VAR g: PTR Graph ; RO subj: Term ; RO base: STR ; RO lang: STR)
   RAISES SyntaxError, ValueRange =
-  (* e's children as the property elements of subj *)
+  (* PropertyElts reads e's children as the property elements of
+     subj. *)
 VAR i, li : I64 ;
 BEGIN
   IF NOT ContentIsElements (e) THEN XFail ('character data among the property elements of ' + e.name) END ;
@@ -1782,7 +1822,8 @@ END PropertyElts ;
 
 PROCEDURE Reify (VAR pool: POOL ; VAR st: XState ; VAR g: PTR Graph ; RO base: STR ;
                  RO id: STR ; RO s, p, o: Term) RAISES SyntaxError, ValueRange =
-  (* rdf:ID on a property element: the statement, named *)
+  (* Reify handles rdf:ID on a property element: the statement,
+     named. *)
 VAR r : Term ;
 BEGIN
   r := IriT (IdIri (pool, st, base, id)) ;
@@ -1804,7 +1845,7 @@ BEGIN
   base := base0 ;
   lang := lang0 ;
   Scoped (pe, st, base, lang) ;
-  IF LEN (pe.ns) = 0 THEN XFail ('an element without a namespace: ' + pe.name) END ;
+  IF Text.BLen (pe.ns) = 0 THEN XFail ('an element without a namespace: ' + pe.name) END ;
   IF IsRdf (pe) THEN
     IF IsCoreSyntax (pe.local) OR IsOldTerm (pe.local) OR Text.Eq (pe.local, 'Description') THEN
       XFail ('rdf:' + pe.local + ' is not a property element')
@@ -1824,7 +1865,7 @@ BEGIN
   id := '' ; parseType := '' ; datatype := '' ;
   FOR i := 0 TO LEN (pe.attrs) - 1 DO
     IF Text.Eq (pe.attrs[i].ns, XmlnsUri) OR Text.Eq (pe.attrs[i].ns, XmlNsUri) THEN
-    ELSIF LEN (pe.attrs[i].ns) = 0 THEN
+    ELSIF Text.BLen (pe.attrs[i].ns) = 0 THEN
       IF NOT Text.StartsWith (pe.attrs[i].name, 'xml') THEN
         XFail ('an attribute without a namespace: ' + pe.attrs[i].name)
       END
@@ -1889,7 +1930,7 @@ BEGIN
     obj := NodeElement (pool, st, pe.kids[0], g, base, lang) ;
     Add (pool, g, subj, pred, obj) ;
     IF hasId THEN Reify (pool, st, g, base, id, subj, pred, obj) END
-  ELSIF LEN (pe.text) > 0 THEN
+  ELSIF Text.BLen (pe.text) > 0 THEN
     IF hasResource OR hasNodeId OR props THEN
       XFail ('attributes beside a literal on ' + pe.name)
     END ;
@@ -1922,7 +1963,7 @@ BEGIN
     IF props THEN
       FOR i := 0 TO LEN (pe.attrs) - 1 DO
         IF Text.Eq (pe.attrs[i].ns, XmlnsUri) OR Text.Eq (pe.attrs[i].ns, XmlNsUri) OR
-           LEN (pe.attrs[i].ns) = 0 THEN
+           Text.BLen (pe.attrs[i].ns) = 0 THEN
         ELSIF Text.Eq (pe.attrs[i].ns, RdfNs) AND
               (Text.Eq (pe.attrs[i].local, 'ID') OR Text.Eq (pe.attrs[i].local, 'resource') OR
                Text.Eq (pe.attrs[i].local, 'nodeID')) THEN
@@ -1965,7 +2006,7 @@ BEGIN
 END EscAttr ;
 
 PROCEDURE Prefix (RO name: STR) : STR =
-  (* the prefix of a qualified name, '' for none *)
+  (* Prefix answers the prefix of a qualified name, '' for none. *)
 VAR i : I64 ;
 BEGIN
   i := Text.FindChar (name, ':') ;
@@ -1974,16 +2015,16 @@ BEGIN
 END Prefix ;
 
 PROCEDURE StrLess (RO a, b: STR) : BOOL =
-  (* code-point order, as canonical XML sorts *)
+  (* StrLess compares in code-point order, as canonical XML sorts. *)
 VAR i : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i < LEN (a) AND i < LEN (b) DO
-    IF a[i] < b[i] THEN RETURN TRUE END ;
-    IF a[i] > b[i] THEN RETURN FALSE END ;
+  WHILE i < Text.BLen (a) AND i < Text.BLen (b) DO
+    IF Text.BAt (a, i) < Text.BAt (b, i) THEN RETURN TRUE END ;
+    IF Text.BAt (a, i) > Text.BAt (b, i) THEN RETURN FALSE END ;
     i := i + 1
   END ;
-  RETURN LEN (a) < LEN (b)
+  RETURN Text.BLen (a) < Text.BLen (b)
 END StrLess ;
 
 PROCEDURE Declared (RO dn, du: SLICE OF STR ; n: I64 ; RO prefix: STR ; RO uri: STR) : BOOL =
@@ -1997,8 +2038,9 @@ END Declared ;
 
 PROCEDURE Serialize (VAR pool: POOL ; VAR d: PTR DynStr.DString ; e: PTR Xml.Element ;
                      VAR dn, du: SLICE OF STR ; n: I64) RAISES ValueRange =
-  (* e in exclusive canonical form; dn[0 .. n) and du are the prefixes
-     and namespaces an ancestor in the literal has declared *)
+  (* Serialize writes e in exclusive canonical form.  dn[0 .. n) and
+     du are the prefixes and namespaces an ancestor in the literal has
+     declared. *)
 VAR
   i, j, m : I64 ;
   px, uri : STR ;
@@ -2008,15 +2050,16 @@ VAR
 BEGIN
   DynStr.AppendChar (d, '<') ;
   DynStr.Append (d, e.name) ;
-  (* the namespaces this element visibly uses and nobody declared *)
+  (* Collect the namespaces this element visibly uses and nobody
+     declared. *)
   names := NEW (STR, LEN (e.attrs) + 1) ;
   uris := NEW (STR, LEN (e.attrs) + 1) ;
   m := 0 ;
-  IF LEN (e.ns) > 0 THEN
+  IF Text.BLen (e.ns) > 0 THEN
     names[0] := Prefix (e.name) ; uris[0] := e.ns ; m := 1
   END ;
   FOR i := 0 TO LEN (e.attrs) - 1 DO
-    IF LEN (e.attrs[i].ns) > 0 AND NOT Text.Eq (e.attrs[i].ns, XmlnsUri) AND
+    IF Text.BLen (e.attrs[i].ns) > 0 AND NOT Text.Eq (e.attrs[i].ns, XmlnsUri) AND
        NOT Text.Eq (e.attrs[i].ns, XmlNsUri) THEN
       px := Prefix (e.attrs[i].name) ;
       j := 0 ;
@@ -2024,7 +2067,7 @@ BEGIN
       IF j = m THEN names[m] := px ; uris[m] := e.attrs[i].ns ; m := m + 1 END
     END
   END ;
-  (* sorted by prefix, the default (empty) first *)
+  (* Sort by prefix, the default (empty) first. *)
   FOR i := 0 TO m - 1 DO
     FOR j := i + 1 TO m - 1 DO
       IF StrLess (names[j], names[i]) THEN
@@ -2035,7 +2078,7 @@ BEGIN
   END ;
   FOR i := 0 TO m - 1 DO
     IF NOT Declared (dn, du, n, names[i], uris[i]) THEN
-      IF LEN (names[i]) = 0 THEN DynStr.Append (d, ' xmlns="')
+      IF Text.BLen (names[i]) = 0 THEN DynStr.Append (d, ' xmlns="')
       ELSE DynStr.Append (d, ' xmlns:') ; DynStr.Append (d, names[i]) ; DynStr.Append (d, '="')
       END ;
       EscAttr (d, uris[i]) ;
@@ -2045,7 +2088,8 @@ BEGIN
       END
     END
   END ;
-  (* attributes sorted by namespace then local name, declarations out *)
+  (* Sort the attributes by namespace then local name, declarations
+     out. *)
   ai := NEW (I64, LEN (e.attrs)) ;
   m := 0 ;
   FOR i := 0 TO LEN (e.attrs) - 1 DO
@@ -2079,7 +2123,8 @@ BEGIN
 END Serialize ;
 
 PROCEDURE XmlLiteral (pe: PTR Xml.Element) : STR RAISES ValueRange =
-  (* the content of pe: its text and its children serialized *)
+  (* XmlLiteral answers the content of pe: its text and its children
+     serialized. *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
@@ -2146,23 +2191,23 @@ END ParseRdfXml ;
 
 (* ---- JSON-LD in (2026-10-07; docs/library-plan-2.md item 3) -----------
 
-   JSON-LD 1.0's algorithms over Json's tree: context processing (the
-   terms, @base, @vocab, @language; @id, @type, @language, @container
-   list/set/index/language, @reverse in a definition; compact IRIs;
-   a context given inline or handed in by the caller), expansion
-   (values, lists, sets, language and index maps, @reverse, @graph,
-   keyword aliases), then node-map generation and the RDF
-   conversion of the DEFAULT graph: lists as rdf:first/rest, numbers
+   This runs JSON-LD 1.0's algorithms over Json's tree: context
+   processing (the terms, @base, @vocab, @language; @id, @type,
+   @language, @container list/set/index/language, @reverse in a
+   definition; compact IRIs; a context given inline or handed in by the
+   caller), expansion (values, lists, sets, language and index maps,
+   @reverse, @graph, keyword aliases), then node-map generation and the
+   RDF conversion of the DEFAULT graph: lists as rdf:first/rest, numbers
    as xsd:integer or a canonical xsd:double, booleans, typed and
-   language-tagged strings, blank nodes relabelled.  NO remote
-   contexts: a context that is a string is refused by name, since a
-   reader that fetches on the way to a graph fails at 03:00.  Named
-   graphs are read and dropped: the Graph has one graph.  JSON-LD 1.1's
-   additions (scoped contexts, @nest, @included, @json, @direction,
-   @protected, @propagate) are not read; a document leaning on one is
-   refused as 1.0 refuses it, or read as 1.0 reads it.  Every refusal
-   carries the error code of the API spec ("invalid IRI mapping" and
-   the rest) so that a test suite can name it.                        *)
+   language-tagged strings, blank nodes relabelled.  NO remote contexts:
+   a context that is a string is refused by name, since a reader that
+   fetches on the way to a graph fails at 03:00.  Named graphs are read
+   and dropped: the Graph has one graph.  JSON-LD 1.1's additions
+   (scoped contexts, @nest, @included, @json, @direction, @protected,
+   @propagate) are not read; a document leaning on one is refused as 1.0
+   refuses it, or read as 1.0 reads it.  Every refusal carries the error
+   code of the API spec ("invalid IRI mapping" and the rest) so that a
+   test suite can name it.                                            *)
 
 CONST
   KwIndex = 0 ;                  (* a term's language mapping states *)
@@ -2182,7 +2227,7 @@ TYPE
     hasVocab, hasLang : BOOL ;
   END ;
 
-  (* terms being defined: 0 in progress, 1 done *)
+  (* Defining holds the terms being defined: 0 in progress, 1 done. *)
   Defining = RECORD
     terms : SLICE OF STR ;
     state : SLICE OF I64 ;
@@ -2195,9 +2240,9 @@ TYPE
   END ;
 
 PROCEDURE JFail (RO code: STR ; RO what: STR) RAISES SyntaxError =
-  (* the API's error code, and what was found *)
+  (* JFail raises with the API's error code, and what was found. *)
 BEGIN
-  IF LEN (what) = 0 THEN RAISE SyntaxError (code, 0, 0) END ;
+  IF Text.BLen (what) = 0 THEN RAISE SyntaxError (code, 0, 0) END ;
   RAISE SyntaxError (code + ': ' + what, 0, 0)
 END JFail ;
 
@@ -2212,7 +2257,8 @@ BEGIN
 END IsKeyword ;
 
 PROCEDURE IsAbsolute (RO s: STR) : BOOL =
-  (* a scheme before the first colon: an absolute IRI *)
+  (* IsAbsolute asks whether a scheme comes before the first colon: an
+     absolute IRI. *)
 BEGIN
   RETURN SchemeEnd (s) > 0
 END IsAbsolute ;
@@ -2282,7 +2328,7 @@ BEGIN
 END DefineTerm ;
 
 PROCEDURE DefState (RO df: Defining ; RO term: STR) : I64 =
-  (* -1 unknown, 0 in progress, 1 done *)
+  (* DefState answers -1 unknown, 0 in progress, 1 done. *)
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO df.n - 1 DO
@@ -2313,7 +2359,7 @@ BEGIN
 END SetDefState ;
 
 PROCEDURE JStr (n: PTR Json.Node) : STR RAISES ValueRange =
-  (* the decoded text of a string node *)
+  (* JStr answers the decoded text of a string node. *)
 BEGIN
   RETURN Json.Text (n)
 EXCEPT
@@ -2378,8 +2424,9 @@ BEGIN
 END Has ;
 
 PROCEDURE JGet (obj: PTR Json.Node ; RO key: STR) : PTR Json.Node =
-  (* the member, which the caller has checked is there (the object
-     itself otherwise: an answer that lives where the tree lives) *)
+  (* JGet answers the member, which the caller has checked is there
+     (the object itself otherwise: an answer that lives where the tree
+     lives). *)
 BEGIN
   IF Json.Field (obj, key) IS SOME f THEN RETURN f END ;
   RETURN obj
@@ -2400,7 +2447,8 @@ EXCEPT
 END Items ;
 
 PROCEDURE SortedNames (obj: PTR Json.Node) : SLICE OF STR RAISES ValueRange =
-  (* the member names in code-point order, as the algorithms walk them *)
+  (* SortedNames answers the member names in code-point order, as the
+     algorithms walk them. *)
 VAR
   names : SLICE OF STR ;
   i, j : I64 ;
@@ -2430,8 +2478,8 @@ END SortedNames ;
 PROCEDURE ExpandIri (VAR pool: POOL ; VAR c: Ctx ; RO value: STR ; docRel, vocab: BOOL ;
                      local: OPT PTR Json.Node ; VAR df: Defining ; VAR nul: BOOL) : STR
   RAISES SyntaxError, ValueRange =
-  (* JSON-LD 1.0 par 6.2: a term, a compact IRI, a keyword, a
-     relative IRI; nul when the term is defined as null *)
+  (* ExpandIri follows JSON-LD 1.0 par 6.2: a term, a compact IRI, a
+     keyword, a relative IRI; nul when the term is defined as null. *)
 VAR
   k, colon : I64 ;
   prefix, suffix : STR ;
@@ -2443,7 +2491,8 @@ BEGIN
       CreateTerm (pool, c, lc, value, df)
     END
   END ;
-  (* a term only where vocabulary-relative: an @id is not a term *)
+  (* A term counts only where vocabulary-relative: an @id is not a
+     term. *)
   k := FindTerm (c, value) ;
   IF vocab AND k >= 0 THEN
     IF c.defs[k].isNull THEN nul := TRUE ; RETURN '' END ;
@@ -2452,7 +2501,7 @@ BEGIN
   colon := Text.FindChar (value, ':') ;
   IF colon >= 0 THEN
     prefix := SLICE (value, 0, colon) ;
-    suffix := SLICE (value, colon + 1, LEN (value) - colon - 1) ;
+    suffix := SLICE (value, colon + 1, Text.BLen (value) - colon - 1) ;
     IF Text.Eq (prefix, '_') OR Text.StartsWith (suffix, '//') THEN RETURN value END ;
     IF local IS SOME lc THEN
       IF Has (lc, prefix) AND DefState (df, prefix) # 1 THEN
@@ -2466,7 +2515,7 @@ BEGIN
   END ;
   IF vocab AND c.hasVocab THEN RETURN c.vocab + value END ;
   IF docRel THEN
-    IF LEN (c.base) > 0 THEN RETURN Resolve (c.base, value) END ;
+    IF Text.BLen (c.base) > 0 THEN RETURN Resolve (c.base, value) END ;
     RETURN value
   END ;
   RETURN value
@@ -2474,7 +2523,7 @@ END ExpandIri ;
 
 PROCEDURE CreateTerm (VAR pool: POOL ; VAR c: Ctx ; local: PTR Json.Node ; RO term: STR ;
                       VAR df: Defining) RAISES SyntaxError, ValueRange =
-  (* JSON-LD 1.0 par 6.2 Create Term Definition *)
+  (* CreateTerm follows JSON-LD 1.0 par 6.2 Create Term Definition. *)
 VAR
   st, colon, k : I64 ;
   value, tv, idv : PTR Json.Node ;
@@ -2487,7 +2536,7 @@ BEGIN
   IF st = 0 THEN JFail ('cyclic IRI mapping', term) END ;
   SetDefState (pool, df, term, 0) ;
   IF IsKeyword (term) THEN JFail ('keyword redefinition', term) END ;
-  IF LEN (term) = 0 THEN JFail ('invalid term definition', 'an empty term') END ;
+  IF Text.BLen (term) = 0 THEN JFail ('invalid term definition', 'an empty term') END ;
   RemoveTerm (c, term) ;
   value := JGet (local, term) ;
   d.term := Text.Keep (pool, term) ;
@@ -2550,7 +2599,7 @@ BEGIN
       IF Has (local, prefix) THEN CreateTerm (pool, c, local, prefix, df) END ;
       k := FindTerm (c, prefix) ;
       IF k >= 0 AND NOT c.defs[k].isNull THEN
-        d.iri := Text.Keep (pool, c.defs[k].iri + SLICE (term, colon + 1, LEN (term) - colon - 1))
+        d.iri := Text.Keep (pool, c.defs[k].iri + SLICE (term, colon + 1, Text.BLen (term) - colon - 1))
       ELSE
         d.iri := d.term
       END
@@ -2588,8 +2637,9 @@ END CreateTerm ;
 
 PROCEDURE ProcessContext (VAR pool: POOL ; VAR st: JState ; RO active: Ctx ;
                           local: PTR Json.Node) : Ctx RAISES SyntaxError, ValueRange =
-  (* JSON-LD 1.0 par 6.1: the local context, an object, a string
-     (refused: remote), null, or an array of those *)
+  (* ProcessContext follows JSON-LD 1.0 par 6.1: the local context is
+     an object, a string (refused: remote), null, or an array of
+     those. *)
 VAR
   result : Ctx ;
   i, k, n : I64 ;
@@ -2615,7 +2665,7 @@ BEGIN
         ELSIF IsStr (v) THEN
           s := JStr (v) ;
           IF IsAbsolute (s) THEN result.base := Text.Keep (pool, s)
-          ELSIF LEN (result.base) > 0 THEN result.base := Text.Keep (pool, Resolve (result.base, s))
+          ELSIF Text.BLen (result.base) > 0 THEN result.base := Text.Keep (pool, Resolve (result.base, s))
           ELSE JFail ('invalid base IRI', s)
           END
         ELSE JFail ('invalid base IRI', '')
@@ -2658,8 +2708,9 @@ END ProcessContext ;
 
 PROCEDURE Arrayified (VAR pool: POOL ; v: PTR Json.Node) : PTR Json.Node IN pool
   RAISES ValueRange =
-  (* v as an array: itself, or [v]; the nodes CLONED into pool so
-     that Add may take them (a node has one parent) *)
+  (* Arrayified answers v as an array: itself, or [v].  The nodes are
+     CLONED into pool so that Add may take them (a node has one
+     parent). *)
 VAR
   a, c : PTR Json.Node IN pool ;
   i : I64 ;
@@ -2682,7 +2733,7 @@ END Arrayified ;
 
 PROCEDURE AddTo (VAR pool: POOL ; VAR KEPT obj: PTR Json.Node ; RO key: STR ; v: PTR Json.Node)
   RAISES ValueRange =
-  (* obj[key] as an array, v (or v's items) appended *)
+  (* AddTo makes obj[key] an array, with v (or v's items) appended. *)
 VAR
   a, c : PTR Json.Node IN pool ;
   i : I64 ;
@@ -2734,7 +2785,7 @@ END IsValueObj ;
 
 PROCEDURE ExpandValue (VAR pool: POOL ; VAR c: Ctx ; RO activeProp: STR ; value: PTR Json.Node)
   : PTR Json.Node IN pool RAISES SyntaxError, ValueRange =
-  (* JSON-LD 1.0 par 7.2 Value Expansion *)
+  (* ExpandValue follows JSON-LD 1.0 par 7.2 Value Expansion. *)
 VAR
   k : I64 ;
   o, s : PTR Json.Node IN pool ;
@@ -2751,13 +2802,13 @@ BEGIN
     RETURN o
   END ;
   SetKey (pool, o, '@value', value) ;
-  IF k >= 0 AND LEN (c.defs[k].typeMap) > 0 AND NOT Text.Eq (c.defs[k].typeMap, '@id') AND
+  IF k >= 0 AND Text.BLen (c.defs[k].typeMap) > 0 AND NOT Text.Eq (c.defs[k].typeMap, '@id') AND
      NOT Text.Eq (c.defs[k].typeMap, '@vocab') THEN
     s := Json.NewStrIn (pool, c.defs[k].typeMap) ;
     Json.Set (o, '@type', s)
   ELSIF IsStr (value) THEN
     IF k >= 0 AND c.defs[k].hasLang THEN
-      IF LEN (c.defs[k].lang) > 0 THEN
+      IF Text.BLen (c.defs[k].lang) > 0 THEN
         s := Json.NewStrIn (pool, c.defs[k].lang) ;
         Json.Set (o, '@language', s)
       END
@@ -2774,7 +2825,8 @@ END ExpandValue ;
 PROCEDURE Expand (VAR pool: POOL ; VAR st: JState ; RO c0: Ctx ; RO activeProp: STR ;
                   hasProp: BOOL ; element: PTR Json.Node) : OPT PTR Json.Node
   RAISES SyntaxError, ValueRange =
-  (* JSON-LD 1.0 par 7.1 Expansion; NONE for null *)
+  (* Expand follows JSON-LD 1.0 par 7.1 Expansion; it answers NONE for
+     null. *)
 VAR
   c : Ctx ;
   result, arr, item, value, ev, inner, langObj, s, rev : PTR Json.Node IN pool ;
@@ -2822,7 +2874,7 @@ BEGIN
     IF Text.Eq (key, '@context') THEN
     ELSE
       prop := ExpandIri (pool, c, key, FALSE, TRUE, NONE, df, nul) ;
-      IF nul OR LEN (prop) = 0 OR NOT (Text.FindChar (prop, ':') >= 0 OR IsKeyword (prop)) THEN
+      IF nul OR Text.BLen (prop) = 0 OR NOT (Text.FindChar (prop, ':') >= 0 OR IsKeyword (prop)) THEN
         (* a key that expands to nothing is dropped *)
       ELSIF IsKeyword (prop) THEN
         IF hasProp AND Text.Eq (activeProp, '@reverse') THEN JFail ('invalid reverse property map', '') END ;
@@ -2981,7 +3033,7 @@ BEGIN
       END
     END
   END ;
-  (* the shape of what came out *)
+  (* Check the shape of what came out. *)
   IF Has (result, '@value') THEN
     n := Members (result) ;
     FOR i := 0 TO n - 1 DO
@@ -3026,8 +3078,9 @@ END Expand ;
 (* ---- the node map and the triples ------------------------------------- *)
 
 TYPE
-  (* a graph's nodes, each an expanded node object with @id and its
-     properties as arrays, built in insertion order *)
+  (* A NodeMap holds a graph's nodes, each an expanded node object
+     with @id and its properties as arrays, built in insertion
+     order. *)
   NodeP = PTR Json.Node ;      (* NEW takes a type's name *)
 
   NodeMap = RECORD
@@ -3037,9 +3090,10 @@ TYPE
   END ;
 
 PROCEDURE BlankFor (VAR pool: POOL ; VAR st: JState ; RO id: STR) : STR RAISES ValueRange =
-  (* an input blank node id relabelled, the same label the same node *)
+  (* BlankFor answers an input blank node id relabelled: the same
+     label, the same node. *)
 BEGIN
-  RETURN '_:' + Labelled (pool, st.r, SLICE (id, 2, LEN (id) - 2))
+  RETURN '_:' + Labelled (pool, st.r, SLICE (id, 2, Text.BLen (id) - 2))
 END BlankFor ;
 
 PROCEDURE FreshBlank (VAR pool: POOL ; VAR st: JState) : STR RAISES ValueRange =
@@ -3048,7 +3102,7 @@ BEGIN
 END FreshBlank ;
 
 PROCEDURE NodeFor (VAR pool: POOL ; VAR nm: NodeMap ; RO id: STR) : PTR Json.Node =
-  (* the node of that id, made if new *)
+  (* NodeFor answers the node of that id, made if new. *)
 VAR
   i : I64 ;
   o, s : PTR Json.Node IN pool ;
@@ -3080,7 +3134,8 @@ BEGIN
 END NodeFor ;
 
 PROCEDURE SameNode (a, b: PTR Json.Node) : BOOL =
-  (* two expanded values the same, as the node map deduplicates *)
+  (* SameNode asks whether two expanded values are the same, as the
+     node map deduplicates. *)
 BEGIN
   RETURN Text.Eq (Json.CompactSorted (a), Json.CompactSorted (b))
 EXCEPT
@@ -3091,7 +3146,8 @@ END SameNode ;
 
 PROCEDURE AddUnique (VAR pool: POOL ; VAR KEPT node: PTR Json.Node ; RO prop: STR ; v: PTR Json.Node)
   RAISES ValueRange =
-  (* v appended to node[prop] unless an equal value is there *)
+  (* AddUnique appends v to node[prop] unless an equal value is
+     there. *)
 VAR
   a, c : PTR Json.Node IN pool ;
   i : I64 ;
@@ -3129,9 +3185,10 @@ PROCEDURE MapElement (VAR pool: POOL ; VAR st: JState ; VAR dflt: NodeMap ; inDe
                       element: PTR Json.Node ; RO subject: STR ; RO prop: STR ;
                       reverse: BOOL ; list: OPT PTR Json.Node)
   RAISES SyntaxError, ValueRange =
-  (* JSON-LD 1.0 par 8.1 Node Map Generation, for the default graph;
-     subject '' is none; inDefault FALSE is a named graph, whose nodes
-     are walked (for their ids) but kept nowhere *)
+  (* MapElement follows JSON-LD 1.0 par 8.1 Node Map Generation, for
+     the default graph.  Subject '' is none.  inDefault FALSE is a
+     named graph, whose nodes are walked (for their ids) but kept
+     nowhere. *)
 VAR
   i, j : I64 ;
   id, s, k : STR ;
@@ -3154,7 +3211,7 @@ BEGIN
       lp := l ;
       AddTo (pool, lp, '@list', item)
     ELSE
-      IF LEN (subject) > 0 AND inDefault THEN
+      IF Text.BLen (subject) > 0 AND inDefault THEN
         node := NodeFor (pool, dflt, subject) ;
         AddUnique (pool, node, prop, element)
       END
@@ -3170,7 +3227,7 @@ BEGIN
       lp := l ;
       AddTo (pool, lp, '@list', listObj)
     ELSE
-      IF LEN (subject) > 0 AND inDefault THEN
+      IF Text.BLen (subject) > 0 AND inDefault THEN
         node := NodeFor (pool, dflt, subject) ;
         AddUnique (pool, node, prop, listObj)
       END
@@ -3185,7 +3242,7 @@ BEGIN
     id := FreshBlank (pool, st)
   END ;
   IF inDefault THEN node := NodeFor (pool, dflt, id) END ;
-  IF LEN (subject) > 0 THEN
+  IF Text.BLen (subject) > 0 THEN
     IF reverse THEN
       (* the element says: element prop subject *)
       IF inDefault THEN
@@ -3252,24 +3309,25 @@ EXCEPT
 END MapElement ;
 
 PROCEDURE IntOf (RO s: STR) : I64 =
-  (* a signed decimal, as Fmt.Short writes an exponent *)
+  (* IntOf reads a signed decimal, as Fmt.Short writes an exponent. *)
 VAR i, v, sign : I64 ;
 BEGIN
   v := 0 ; sign := 1 ; i := 0 ;
-  IF LEN (s) > 0 AND (s[0] = '-' OR s[0] = '+') THEN
-    IF s[0] = '-' THEN sign := -1 END ;
+  IF Text.BLen (s) > 0 AND (Text.BIs (s, 0, '-') OR Text.BIs (s, 0, '+')) THEN
+    IF Text.BIs (s, 0, '-') THEN sign := -1 END ;
     i := 1
   END ;
-  WHILE i < LEN (s) DO
-    IF s[i] >= '0' AND s[i] <= '9' THEN v := v * 10 + ORD (s[i]) - 48 END ;
+  WHILE i < Text.BLen (s) DO
+    IF I64 (Text.BAt (s, i)) >= ORD ('0') AND I64 (Text.BAt (s, i)) <= ORD ('9') THEN v := v * 10 + I64 (Text.BAt (s, i)) - 48 END ;
     i := i + 1
   END ;
   RETURN sign * v
 END IntOf ;
 
 PROCEDURE CanonDouble (r: F64) : STR RAISES ValueRange =
-  (* xsd:double's canonical form, from the shortest decimal that reads
-     back (Fmt.Short): 1.0E0, 1.2345E2, 1.0E21, 1.0E-3 *)
+  (* CanonDouble answers xsd:double's canonical form, from the
+     shortest decimal that reads back (Fmt.Short): 1.0E0, 1.2345E2,
+     1.0E21, 1.0E-3. *)
 VAR
   s, digits, mant : STR ;
   e, exp, dot, lead : I64 ;
@@ -3277,29 +3335,29 @@ VAR
   neg : BOOL ;
 BEGIN
   s := Fmt.Short (r) ;
-  neg := LEN (s) > 0 AND s[0] = '-' ;
-  IF neg THEN s := SLICE (s, 1, LEN (s) - 1) END ;
+  neg := Text.BLen (s) > 0 AND Text.BIs (s, 0, '-') ;
+  IF neg THEN s := SLICE (s, 1, Text.BLen (s) - 1) END ;
   e := Text.FindChar (s, 'e') ;
   exp := 0 ;
   IF e >= 0 THEN
-    exp := IntOf (SLICE (s, e + 1, LEN (s) - e - 1)) ;
+    exp := IntOf (SLICE (s, e + 1, Text.BLen (s) - e - 1)) ;
     s := SLICE (s, 0, e)
   END ;
   dot := Text.FindChar (s, '.') ;
-  IF dot < 0 THEN dot := LEN (s) END ;
+  IF dot < 0 THEN dot := Text.BLen (s) END ;
   digits := '' ;
   FOR c IN s DO
     IF c # '.' THEN digits := digits + c END
   END ;
   exp := exp + dot - 1 ;
   lead := 0 ;
-  WHILE lead < LEN (digits) - 1 AND digits[lead] = '0' DO lead := lead + 1 END ;
-  digits := SLICE (digits, lead, LEN (digits) - lead) ;
+  WHILE lead < Text.BLen (digits) - 1 AND Text.BIs (digits, lead, '0') DO lead := lead + 1 END ;
+  digits := SLICE (digits, lead, Text.BLen (digits) - lead) ;
   exp := exp - lead ;
-  WHILE LEN (digits) > 1 AND digits[LEN (digits) - 1] = '0' DO digits := SLICE (digits, 0, LEN (digits) - 1) END ;
+  WHILE Text.BLen (digits) > 1 AND Text.BIs (digits, Text.BLen (digits) - 1, '0') DO digits := SLICE (digits, 0, Text.BLen (digits) - 1) END ;
   IF Text.Eq (digits, '0') THEN RETURN '0.0E0' END ;
   mant := SLICE (digits, 0, 1) + '.' ;
-  IF LEN (digits) > 1 THEN mant := mant + SLICE (digits, 1, LEN (digits) - 1) ELSE mant := mant + '0' END ;
+  IF Text.BLen (digits) > 1 THEN mant := mant + SLICE (digits, 1, Text.BLen (digits) - 1) ELSE mant := mant + '0' END ;
   IF neg THEN mant := '-' + mant END ;
   RETURN mant + 'E' + Fmt.I64Str (exp)
 EXCEPT
@@ -3308,8 +3366,9 @@ END CanonDouble ;
 
 PROCEDURE ObjectToTerm (VAR pool: POOL ; VAR st: JState ; item: PTR Json.Node ; VAR ok: BOOL) : Term
   RAISES SyntaxError, ValueRange =
-  (* JSON-LD 1.0 par 8.6 Object to RDF: a node reference, or a value
-     object as a literal; ok FALSE for what makes no term *)
+  (* ObjectToTerm follows JSON-LD 1.0 par 8.6 Object to RDF: a node
+     reference, or a value object as a literal.  ok is FALSE for what
+     makes no term. *)
 VAR
   v, tv : PTR Json.Node ;
   s, dt : STR ;
@@ -3318,7 +3377,7 @@ BEGIN
   ok := TRUE ;
   IF Has (item, '@id') AND NOT Has (item, '@value') THEN
     s := JStr (JGet (item, '@id')) ;
-    IF IsBlankId (s) THEN RETURN BlankT (SLICE (s, 2, LEN (s) - 2)) END ;
+    IF IsBlankId (s) THEN RETURN BlankT (SLICE (s, 2, Text.BLen (s) - 2)) END ;
     IF NOT IsAbsolute (s) THEN ok := FALSE ; RETURN IriT (s) END ;
     RETURN IriT (s)
   END ;
@@ -3326,21 +3385,21 @@ BEGIN
   dt := '' ;
   IF Has (item, '@type') THEN dt := JStr (JGet (item, '@type')) END ;
   IF IsBool (v) THEN
-    IF LEN (dt) = 0 THEN dt := Xsd + 'boolean' END ;
+    IF Text.BLen (dt) = 0 THEN dt := Xsd + 'boolean' END ;
     IF Json.AsBool (v) THEN RETURN LitT ('true', '', dt) ELSE RETURN LitT ('false', '', dt) END
   ELSIF IsNum (v) THEN
     s := Json.NumText (v) ;
     IF Text.FindChar (s, '.') >= 0 OR Text.FindChar (s, 'e') >= 0 OR Text.FindChar (s, 'E') >= 0 OR
        Text.Eq (dt, Xsd + 'double') THEN
-      IF LEN (dt) = 0 THEN dt := Xsd + 'double' END ;
+      IF Text.BLen (dt) = 0 THEN dt := Xsd + 'double' END ;
       RETURN LitT (CanonDouble (Json.AsF64 (v)), '', dt)
     END ;
-    IF LEN (dt) = 0 THEN dt := Xsd + 'integer' END ;
+    IF Text.BLen (dt) = 0 THEN dt := Xsd + 'integer' END ;
     RETURN LitT (Fmt.I64Str (Json.AsI64 (v)), '', dt)
   ELSIF IsStr (v) THEN
     s := JStr (v) ;
     IF Has (item, '@language') THEN RETURN LitT (s, JStr (JGet (item, '@language')), '') END ;
-    IF LEN (dt) = 0 THEN dt := XsdString END ;
+    IF Text.BLen (dt) = 0 THEN dt := XsdString END ;
     RETURN LitT (s, '', dt)
   END ;
   ok := FALSE ;
@@ -3351,7 +3410,8 @@ END ObjectToTerm ;
 
 PROCEDURE ListToTerm (VAR pool: POOL ; VAR st: JState ; VAR g: PTR Graph ; items: PTR Json.Node) : Term
   RAISES SyntaxError, ValueRange =
-  (* JSON-LD 1.0 par 8.5 List to RDF: the head *)
+  (* ListToTerm follows JSON-LD 1.0 par 8.5 List to RDF and answers
+     the head. *)
 VAR
   i, n : I64 ;
   head, prev, cell, o : Term ;
@@ -3413,9 +3473,10 @@ BEGIN
   IF Expand (scratch, st, c, '', FALSE, doc) IS SOME x THEN
     MapElement (scratch, st, nm, TRUE, x, '', '', FALSE, NONE)
   END ;
-  (* the triples of the default graph, nodes in first-seen order *)
+  (* Make the triples of the default graph, nodes in first-seen
+     order. *)
   FOR i := 0 TO nm.n - 1 DO
-    IF IsBlankId (nm.ids[i]) THEN subj := BlankT (SLICE (nm.ids[i], 2, LEN (nm.ids[i]) - 2))
+    IF IsBlankId (nm.ids[i]) THEN subj := BlankT (SLICE (nm.ids[i], 2, Text.BLen (nm.ids[i]) - 2))
     ELSE subj := IriT (nm.ids[i])
     END ;
     IF IsAbsolute (nm.ids[i]) OR IsBlankId (nm.ids[i]) THEN
@@ -3456,19 +3517,20 @@ END ParseJsonLd ;
 
 (* ---- JSON-LD out (2026-10-07; docs/library-plan-2.md item 3) ----------
 
-   The FLATTENED form -- every node once, in first-seen order, with
-   "@id", "@type" and its properties as arrays of node references,
-   value objects and lists -- compacted against the context the caller
-   hands in: its terms for properties and types, its prefixes for
-   compact IRIs, @vocab, and the coercions a term states (@type @id
-   or a datatype, @language, @container @list) so that a value the
-   term already describes is written bare.  A chain of rdf:first/rest
-   cells that nothing else refers to comes back as "@list".  The
-   document is {"@context": ..., "@graph": [...]}, Json.Pretty's
-   layout.  Deterministic, and read back by ParseJsonLd.              *)
+   JsonLd writes the FLATTENED form: every node once, in first-seen
+   order, with "@id", "@type" and its properties as arrays of node
+   references, value objects and lists.  It is compacted against the
+   context the caller hands in: its terms for properties and types, its
+   prefixes for compact IRIs, @vocab, and the coercions a term states
+   (@type @id or a datatype, @language, @container @list) so that a
+   value the term already describes is written bare.  A chain of
+   rdf:first/rest cells that nothing else refers to comes back as
+   "@list".  The document is {"@context": ..., "@graph": [...]},
+   Json.Pretty's layout.  The document is deterministic, and ParseJsonLd
+   reads it back.                                                     *)
 
 PROCEDURE RefCount (g: PTR Graph ; RO id: STR) : I64 =
-  (* how many objects name the blank node id *)
+  (* RefCount answers how many objects name the blank node id. *)
 VAR i, n : I64 ;
 BEGIN
   n := 0 ;
@@ -3479,9 +3541,9 @@ BEGIN
 END RefCount ;
 
 PROCEDURE IsCell (g: PTR Graph ; RO id: STR ; VAR first: I64 ; VAR rest: I64) : BOOL =
-  (* the blank node id is a list cell: exactly one rdf:first, one
-     rdf:rest, at most rdf:type rdf:List beside them, referenced once;
-     first and rest are the triples' indices *)
+  (* IsCell asks whether the blank node id is a list cell: exactly one
+     rdf:first, one rdf:rest, at most rdf:type rdf:List beside them,
+     referenced once.  first and rest are the triples' indices. *)
 VAR i, nf, nr, other : I64 ;
 BEGIN
   nf := 0 ; nr := 0 ; other := 0 ;
@@ -3500,7 +3562,8 @@ BEGIN
 END IsCell ;
 
 PROCEDURE TermObj (VAR pool: POOL ; RO t: Term) : PTR Json.Node IN pool RAISES ValueRange =
-  (* a term as an expanded value: a node reference or a value object *)
+  (* TermObj answers a term as an expanded value: a node reference or
+     a value object. *)
 VAR o, s : PTR Json.Node IN pool ;
 BEGIN
   o := Json.NewObjIn (pool) ;
@@ -3514,10 +3577,10 @@ BEGIN
   | Literal :
       s := Json.NewStrIn (pool, t.value) ;
       Json.Set (o, '@value', s) ;
-      IF LEN (t.lang) > 0 THEN
+      IF Text.BLen (t.lang) > 0 THEN
         s := Json.NewStrIn (pool, t.lang) ;
         Json.Set (o, '@language', s)
-      ELSIF LEN (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
+      ELSIF Text.BLen (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
         s := Json.NewStrIn (pool, t.datatype) ;
         Json.Set (o, '@type', s)
       END
@@ -3529,8 +3592,9 @@ END TermObj ;
 
 PROCEDURE ListObj (VAR pool: POOL ; g: PTR Graph ; RO head: STR ; VAR consumed: SLICE OF BOOL)
   : OPT PTR Json.Node RAISES ValueRange =
-  (* the chain from the blank node head as {"@list": [...]}, its cells
-     marked consumed; NONE when it is not a well-formed list *)
+  (* ListObj answers the chain from the blank node head as
+     {"@list": [...]}, its cells marked consumed, or NONE when it is
+     not a well-formed list. *)
 VAR
   o, arr, item : PTR Json.Node IN pool ;
   id : STR ;
@@ -3561,8 +3625,8 @@ EXCEPT
 END ListObj ;
 
 PROCEDURE CompactIri (RO c: Ctx ; RO iri: STR ; vocab: BOOL) : STR =
-  (* a term (when vocabulary-relative), a compact IRI by a prefix, a
-     @vocab-relative name, else the IRI *)
+  (* CompactIri answers a term (when vocabulary-relative), a compact
+     IRI by a prefix, a @vocab-relative name, else the IRI. *)
 VAR i, best, bestLen : I64 ;
 BEGIN
   IF vocab THEN
@@ -3577,24 +3641,25 @@ BEGIN
     (* a prefix is a term whose IRI ends in a delimiter (/, #, :, ?):
        `n' for http://e/n would make http://e/note into n:ote, which
        expands back but reads as nonsense *)
-    IF NOT c.defs[i].isNull AND NOT c.defs[i].reverse AND LEN (c.defs[i].iri) > bestLen AND
-       LEN (c.defs[i].iri) < LEN (iri) AND Text.StartsWith (iri, c.defs[i].iri) AND
+    IF NOT c.defs[i].isNull AND NOT c.defs[i].reverse AND Text.BLen (c.defs[i].iri) > bestLen AND
+       Text.BLen (c.defs[i].iri) < Text.BLen (iri) AND Text.StartsWith (iri, c.defs[i].iri) AND
        Text.FindChar (c.defs[i].term, ':') < 0 AND
-       Text.FindChar ('/#:?@[]', c.defs[i].iri[LEN (c.defs[i].iri) - 1]) >= 0 THEN
-      best := i ; bestLen := LEN (c.defs[i].iri)
+       Text.FindChar ('/#:?@[]', Text.BChar (c.defs[i].iri, Text.BLen (c.defs[i].iri) - 1)) >= 0 THEN
+      best := i ; bestLen := Text.BLen (c.defs[i].iri)
     END
   END ;
-  IF best >= 0 THEN RETURN c.defs[best].term + ':' + SLICE (iri, bestLen, LEN (iri) - bestLen) END ;
-  IF vocab AND c.hasVocab AND LEN (c.vocab) < LEN (iri) AND Text.StartsWith (iri, c.vocab) THEN
-    RETURN SLICE (iri, LEN (c.vocab), LEN (iri) - LEN (c.vocab))
+  IF best >= 0 THEN RETURN c.defs[best].term + ':' + SLICE (iri, bestLen, Text.BLen (iri) - bestLen) END ;
+  IF vocab AND c.hasVocab AND Text.BLen (c.vocab) < Text.BLen (iri) AND Text.StartsWith (iri, c.vocab) THEN
+    RETURN SLICE (iri, Text.BLen (c.vocab), Text.BLen (iri) - Text.BLen (c.vocab))
   END ;
   RETURN iri
 END CompactIri ;
 
 PROCEDURE CompactValue (VAR pool: POOL ; RO c: Ctx ; k: I64 ; v: PTR Json.Node)
   : PTR Json.Node IN pool RAISES ValueRange =
-  (* an expanded value under the term k (-1 for none): bare where the
-     term's coercion says what it is, an object else *)
+  (* CompactValue answers an expanded value under the term k (-1 for
+     none): bare where the term's coercion says what it is, an object
+     else. *)
 VAR
   o, s, arr, item : PTR Json.Node IN pool ;
   i : I64 ;
@@ -3628,7 +3693,7 @@ BEGIN
     IF k >= 0 AND c.defs[k].hasLang AND Text.Eq (c.defs[k].lang, lg) THEN
       RETURN Json.NewStrIn (pool, JStr (JGet (v, '@value')))
     END ;
-    IF k >= 0 AND NOT c.defs[k].hasLang AND c.hasLang AND Text.Eq (c.lang, lg) AND LEN (tm) = 0 THEN
+    IF k >= 0 AND NOT c.defs[k].hasLang AND c.hasLang AND Text.Eq (c.lang, lg) AND Text.BLen (tm) = 0 THEN
       RETURN Json.NewStrIn (pool, JStr (JGet (v, '@value')))
     END ;
     o := Json.NewObjIn (pool) ;
@@ -3647,7 +3712,7 @@ BEGIN
     RETURN o
   END ;
   (* a plain string: bare unless a language would attach to it *)
-  IF LEN (tm) = 0 AND ((k >= 0 AND c.defs[k].hasLang AND LEN (c.defs[k].lang) = 0) OR
+  IF Text.BLen (tm) = 0 AND ((k >= 0 AND c.defs[k].hasLang AND Text.BLen (c.defs[k].lang) = 0) OR
                        NOT c.hasLang) THEN
     RETURN Json.NewStrIn (pool, JStr (JGet (v, '@value')))
   END ;
@@ -3660,7 +3725,8 @@ EXCEPT
 END CompactValue ;
 
 PROCEDURE PropTerm (RO c: Ctx ; RO iri: STR ; isList: BOOL) : I64 =
-  (* the term for a property, a list container preferred for a list *)
+  (* PropTerm answers the term for a property, a list container
+     preferred for a list. *)
 VAR i, any : I64 ;
 BEGIN
   any := -1 ;
@@ -3713,8 +3779,8 @@ BEGIN
       END
     END
   END ;
-  (* the node map: subjects in first-seen order, each object as an
-     expanded value *)
+  (* Build the node map: subjects in first-seen order, each object as
+     an expanded value. *)
   FOR i := 0 TO g.n - 1 DO
     IF NOT consumed[i] THEN
       IF g.t[i].s.kind = Kind.Blank THEN sid := '_:' + g.t[i].s.value ELSE sid := g.t[i].s.value END ;
@@ -3807,16 +3873,27 @@ BEGIN
   RETURN NcStart (c) OR (c >= '0' AND c <= '9') OR c = '-' OR c = '.'
 END NcChar ;
 
-(* where the local name of an IRI starts: the longest NCName tail;
-   LEN (iri) when there is none *)
+(* LocalStart answers where the local name of an IRI starts: the
+   longest NCName tail, or LEN (iri) when there is none. *)
 PROCEDURE LocalStart (RO iri: STR) : I64 =
-VAR i, best : I64 ;
+  (* forward over CODE POINTS (a backward walk cannot step octets):
+     the last run of name characters that reaches the end, and in it
+     the first that may start a name *)
+VAR
+  at, p, best, n : I64 ;
+  c : CHAR ;
 BEGIN
-  best := LEN (iri) ;
-  i := LEN (iri) - 1 ;
-  WHILE i >= 0 AND NcChar (iri[i]) DO
-    IF NcStart (iri[i]) THEN best := i END ;
-    i := i - 1
+  n := Text.BLen (iri) ;
+  best := n ;
+  at := 0 ;
+  WHILE at < n DO
+    p := at ;
+    c := Text.NextCp (iri, at) ;
+    IF NcChar (c) THEN
+      IF best = n AND NcStart (c) THEN best := p END
+    ELSE
+      best := n
+    END
   END ;
   RETURN best
 END LocalStart ;
@@ -3836,7 +3913,7 @@ BEGIN
   nns := 1 ;
   FOR i := 0 TO g.n - 1 DO
     at := LocalStart (g.t[i].p.value) ;
-    IF at = 0 OR at >= LEN (g.t[i].p.value) THEN RAISE NotWritable (g.t[i].p.value) END ;
+    IF at = 0 OR at >= Text.BLen (g.t[i].p.value) THEN RAISE NotWritable (g.t[i].p.value) END ;
     ns := SLICE (g.t[i].p.value, 0, at) ;
     k := -1 ;
     FOR j := 0 TO nns - 1 DO IF Text.Eq (nss[j], ns) THEN k := j END END ;
@@ -3861,7 +3938,7 @@ BEGIN
           done[j] := TRUE ;
           at := LocalStart (g.t[j].p.value) ;
           ns := SLICE (g.t[j].p.value, 0, at) ;
-          local := SLICE (g.t[j].p.value, at, LEN (g.t[j].p.value) - at) ;
+          local := SLICE (g.t[j].p.value, at, Text.BLen (g.t[j].p.value) - at) ;
           k := 0 ;
           WHILE NOT Text.Eq (nss[k], ns) DO k := k + 1 END ;
           IF k = 0 THEN
@@ -3873,9 +3950,9 @@ BEGIN
           | Iri : Xml.Attribute (w, 'rdf:resource', g.t[j].o.value)
           | Blank : Xml.Attribute (w, 'rdf:nodeID', g.t[j].o.value)
           | Literal :
-              IF LEN (g.t[j].o.lang) > 0 THEN
+              IF Text.BLen (g.t[j].o.lang) > 0 THEN
                 Xml.Attribute (w, 'xml:lang', g.t[j].o.lang)
-              ELSIF LEN (g.t[j].o.datatype) > 0 AND NOT Text.Eq (g.t[j].o.datatype, XsdString) THEN
+              ELSIF Text.BLen (g.t[j].o.datatype) > 0 AND NOT Text.Eq (g.t[j].o.datatype, XsdString) THEN
                 Xml.Attribute (w, 'rdf:datatype', g.t[j].o.datatype)
               END ;
               Xml.Chars (w, g.t[j].o.value)

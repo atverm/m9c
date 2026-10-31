@@ -5,12 +5,12 @@ VAR
   y : F32 ;
   b : BOOL ;
 BEGIN
-  (* legal: NaN is a real, of either width, in arithmetic too, and a
-     value is NaN exactly when it differs from itself *)
+  (* These are legal.  NaN is a real, of either width, in arithmetic
+     too, and a value is NaN exactly when it differs from itself. *)
   x := NaN ;
   y := NaN ;
   x := 2.0 * NaN + x ;
   b := x # x ;
-  (* refused: never TRUE, whatever x is *)
+  (* Refused: x = NaN is never TRUE, whatever x is. *)
   b := x = NaN
 END m.

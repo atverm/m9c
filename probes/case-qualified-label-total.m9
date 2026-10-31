@@ -1,9 +1,9 @@
 (* EXPECT: CASE over CASE RECORD is not total (missing Irods) *)
-(* A CASE over an enumeration may spell its labels qualified --
-   Store.Fs -- and is then held total like the bare spelling
-   (cp-kernel's issue 13, 2026-10-09: the qualified form was accepted
-   by the checker, refused by the generator, and never held total).
-   The legal forms first; the last CASE forgets a member. *)
+(* A CASE over an enumeration may spell its labels qualified, as
+   Store.Fs.  It is then held total like the bare spelling (cp-kernel's
+   issue 13, 2026-10-09).  Before then the checker accepted the
+   qualified form, the generator refused it, and nothing held it total.
+   The legal forms come first; the last CASE forgets a member. *)
 MODULE m ;
 TYPE
   Store = (Fs, Irods) ;

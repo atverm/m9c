@@ -1,19 +1,19 @@
-REVIEW HttpServer -- 94 procedures with a body, 66 of them functions; 23 headings in a DEFINITION
+REVIEW HttpServer -- 96 procedures with a body, 68 of them functions; 23 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              66
-  assignments                                   471
-  arguments                                     844
-  RETURN values                                 249
-  operands of a comparison or an operator       535
+  functions answering on every path              68
+  assignments                                   473
+  arguments                                    1109
+  RETURN values                                 252
+  operands of a comparison or an operator       496
   CASE labels                                    35
   THREAD arguments                                1
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                    17   Head.scratch, NotFound.scratch, FilePiece.scratch, SendFile.scratch, Itoa.scratch, IsDir.scratch, +11 more
-  pool parameters                                 1   NewRouter
+  local pools                                    16   Head.scratch, FilePiece.scratch, SendFile.scratch, Itoa.scratch, IsDir.scratch, FileFor.scratch, +10 more
+  pool parameters                                 2   NewRouter, HeadText
   KEPT parameters                                22   Link, AddRoute, AddRoute, AddRoute, AddRoute, AddRoute, +16 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
@@ -25,11 +25,11 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    2   csrv, HttpServer
-  foreign procedures                             12
+  foreign procedures                             14
     of them [SERIAL]                              5
-    of them [REENTRANT]                           7
+    of them [REENTRANT]                           9
   THREADs writing STATEFUL state                  0
-  ADR sites (C reading or writing M9 storage)     8   reads in WriteAll, writes or reads in Fill, writes or reads in ReadFixed, writes or reads in Serve1, writes or reads in Busy, writes or reads in Run, +2 more
+  ADR sites (C reading or writing M9 storage)     7   reads in WriteAll, writes or reads in Fill, writes or reads in ReadFixed, writes or reads in Serve1, writes or reads in Busy, writes or reads in Run, +1 more
     of them filling a descriptor ([FRESH])        0
 
 COUNTED -- how much there was to check
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                       18
   NEW in the frame                                0
   NEW in a named pool                            10
-  calls of a STR form with a UTF twin             3   Io.FileSize -> Io.FileSizeUtf, Io.ListDir -> Io.ListDirUtf, Io.Exists -> Io.ExistsUtf
-  STR subscripts, writes and LEN                165   len path, index path[i], index path[i], index path[i], len path, len r.headers, +159 more
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

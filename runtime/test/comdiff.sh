@@ -1,19 +1,19 @@
 #!/bin/sh
-# The comment side channel, differential.
+# This gate runs the comment side channel as a differential.
 #
-# lexdiff compares TOKEN streams and must keep doing exactly that:
+# lexdiff compares TOKEN streams and must keep doing exactly that.
 # "token streams byte-identical to the oracle" is a claim worth
 # keeping literally true, and comments are not tokens.  So the side
 # channel gets its own pair of dumps and its own gate.
 #
-# The two lexers are not shaped alike and need not be: TLexer is a
-# class and collects per instance, while corpus/Lex.m9's Lexer is a
-# record whose Init takes no pool, so it keeps one module-level list
-# in HEAP.  What is held identical is the OUTPUT -- position, extent
-# and verbatim text of every comment in every corpus and museum file.
-# scratch files in a directory of this run's own: fixed /tmp names
+# The two lexers are not shaped alike and need not be.  TLexer is a
+# class and collects per instance.  corpus/Lex.m9's Lexer is a record
+# whose Init takes no pool, so it keeps one module-level list in HEAP.
+# The gate holds the OUTPUT identical: position, extent and verbatim
+# text of every comment in every corpus and museum file.
+# Scratch files go in a directory of this run's own.  Fixed /tmp names
 # collided between two checkouts or two gates run at once (the compiler
-# review's tier 3, 2026-10-22)
+# review's tier 3, 2026-10-22).
 TG=$(mktemp -d "${TMPDIR:-/tmp}/m9gate.XXXXXX")
 trap 'rm -rf "$TG"' EXIT
 set -e

@@ -1,28 +1,30 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Png ;
 
-(* PNG files, written in M9 (2026-10-02; Alex: "encoder for
+(* Png writes PNG files in M9 (2026-10-02; Alex: "encoder for
    rasterizing svg to png").  This is the ENCODER: pixels in, the
-   bytes of a .png file out.  Eight bits a channel, red green blue,
-   no transparency and no palette -- what a figure on white paper is.
+   bytes of a .png file out.  It writes eight bits a channel, red
+   green blue, no transparency and no palette: what a figure on white
+   paper is.
 
    The image data is compressed by Zip.Compress, which is a plain
    deflate: a file from here is two to four times the size an
    optimising PNG writer makes of the same picture, and every PNG
    reader reads it.
 
-   Held by corpus/PngTest.m9, which reads its own files back through
-   Zip.Decompress, and by runtime/test/deflate.sh, where Python does:
+   corpus/PngTest.m9 holds it, reading its own files back through
+   Zip.Decompress; so does runtime/test/deflate.sh, where Python does:
    every chunk's CRC, the header's fields, and each pixel. *)
 
 IMPORT Faults ;
 IMPORT Zip ;
-  (* for Zip.Error, which Decode lets through *)
+  (* Png imports Zip for Zip.Error, which Decode lets through. *)
 
 PROCEDURE Encode (VAR pool: POOL ; RO rgb: SLICE OF BYTE ;
                   width, height: I64 ; dpi: F64) : SLICE OF BYTE
   RAISES Faults.SizeError, Faults.BadArg, ValueRange ;
-  (* the file for an image of width by height pixels.
+  (* Encode answers the file for an image of width by height
+     pixels.
 
        rgb -- three bytes a pixel, red green blue, the rows from the
               TOP down and each from the left: 3 * width * height of
@@ -31,17 +33,17 @@ PROCEDURE Encode (VAR pool: POOL ; RO rgb: SLICE OF BYTE ;
               the file (a pHYs chunk) so that a program placing it
               gives it its size on paper; 0.0 writes none
 
-     Faults.BadArg for a width or a height that is not positive, and
-     for a dpi that is negative or not a number. *)
+     It raises Faults.BadArg for a width or a height that is not
+     positive, and for a dpi that is negative or not a number. *)
 
 (* ---- the rasteriser: SVG to pixels (2026-10-03) ----
 
-   The SVG a figure of this library is -- Plot's, and m9curve's when
-   it is written in attributes -- drawn onto pixels, with the edges
-   anti-aliased and the text from DejaVu Sans, the face those figures
-   name, whose outlines are tables in this module.  A unit of the SVG
-   is a point, 1/72 inch, so a 720 by 440 figure at 300 dpi is 3000
-   by 1833 pixels.
+   The rasteriser draws the SVG a figure of this library is (Plot's,
+   and m9curve's when it is written in attributes) onto pixels, with
+   the edges anti-aliased and the text from DejaVu Sans, the face
+   those figures name, whose outlines are tables in this module.  A unit
+   of the SVG is a point, 1/72 inch, so a 720 by 440 figure at 300 dpi
+   is 3000 by 1833 pixels.
 
    WHAT IS DRAWN: svg (its viewBox, or width and height), rect, line,
    circle, path (M L H V Z A, absolute and relative), polyline,
@@ -54,38 +56,43 @@ PROCEDURE Encode (VAR pool: POOL ; RO rgb: SLICE OF BYTE ;
    and any other element.  An attribute this does not read is passed
    over (font-family: it is always DejaVu Sans here).
 
-   Held by corpus/PngTest.m9 to pictures headless Chrome drew of the
+   corpus/PngTest.m9 holds it to pictures headless Chrome drew of the
    same SVG, and to arithmetic: a shape covers as many pixels as its
    area says. *)
 
 EXCEPTION
   Error (RO msg: STR) ;
-  (* a PNG file Decode cannot read: not a PNG, a chunk's CRC wrong,
-     a kind of image this does not read (interlaced, palette, 16-bit) *)
+  (* Error reports a PNG file Decode cannot read: not a PNG, a chunk's
+     CRC wrong, a kind of image this does not read (interlaced,
+     palette, 16-bit). *)
 
 PROCEDURE FromSvg (VAR pool: POOL ; RO svg: STR ; dpi: F64) : SLICE OF BYTE
   RAISES Faults.SizeError, Faults.BadArg, ValueRange ;
-  (* the figure as a PNG file at dpi dots an inch, which is written
-     into the file too *)
+  (* FromSvg answers the figure as a PNG file at dpi dots an inch,
+     which is written into the file too. *)
 
 PROCEDURE Raster (VAR pool: POOL ; RO svg: STR ; dpi: F64 ;
                   VAR width, height: I64) : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange ;
-  (* the same as pixels, three bytes each, rows from the top: what
-     Encode takes, for a caller that draws on or compares them *)
+  (* Raster answers the same as pixels, three bytes each, rows from
+     the top: what Encode takes, for a caller that draws on or
+     compares them. *)
 
 PROCEDURE Decode (VAR pool: POOL ; RO file: SLICE OF BYTE ;
                   VAR width, height: I64) : SLICE OF BYTE
   RAISES Error, Zip.Error, ValueRange ;
-  (* a PNG file's pixels, as Raster answers them: 8-bit RGB or RGBA
-     (transparency laid on white), not interlaced -- what Encode and
-     a browser's screenshot write.  For a test that compares two
-     pictures, and for a program that reads one back. *)
+  (* Decode answers a PNG file's pixels, as Raster answers them: 8-bit
+     RGB or RGBA (transparency laid on white), not interlaced.  That is
+     what Encode and a browser's screenshot write.  Decode serves a
+     test that compares two pictures, and a program that reads one
+     back. *)
 
 END Png.
 
 
 IMPLEMENTATION MODULE Png ;
+
+IMPORT Text ;
 
 IMPORT Zip ;
 IMPORT Math ;
@@ -1829,7 +1836,8 @@ CONST
     35, 82, 30, 107] ;
 (* END OF FONT TABLE *)
 
-(* v as four bytes at b[at], the highest first: PNG's order *)
+(* Put4 writes v as four bytes at b[at], the highest first: PNG's
+   order. *)
 PROCEDURE Put4 (VAR b: SLICE OF BYTE ; at, v: I64) RAISES ValueRange =
 VAR k : I64 ;
 BEGIN
@@ -1839,9 +1847,9 @@ BEGIN
   END
 END Put4 ;
 
-(* one chunk at out[at]: the length of its data, four letters, the
-   data, and the CRC of the letters and the data.  Answers where the
-   next chunk goes. *)
+(* Chunk writes one chunk at out[at]: the length of its data, four
+   letters, the data, and the CRC of the letters and the data.  It
+   answers where the next chunk goes. *)
 PROCEDURE Chunk (VAR out: SLICE OF BYTE ; at: I64 ; RO kind: STR ;
                  RO data: SLICE OF BYTE) : I64
   RAISES ValueRange =
@@ -1849,26 +1857,26 @@ VAR k, n, crc : I64 ;
 BEGIN
   n := LEN (data) ;
   Put4 (out, at, n) ;
-  FOR k := 0 TO 3 DO out[at + 4 + k] := BYTE (ORD (kind[k])) END ;
+  FOR k := 0 TO 3 DO out[at + 4 + k] := BYTE (I64 (Text.BAt (kind, k))) END ;
   FOR k := 0 TO n - 1 DO out[at + 8 + k] := data[k] END ;
   crc := Zip.Crc32 (SLICE (out, at + 4, 4 + n)) ;
   Put4 (out, at + 8 + n, crc) ;
   RETURN at + 12 + n
 END Chunk ;
 
-(* a byte of a filtered row counts as its distance from zero either
-   way round: 255 is one away *)
+(* Weight counts a byte of a filtered row as its distance from zero
+   either way round: 255 is one away. *)
 PROCEDURE Weight (v: I64) : I64 =
 BEGIN
   IF v > 127 THEN RETURN 256 - v END ;
   RETURN v
 END Weight ;
 
-(* the rows as PNG stores them: each behind one byte that says how it
-   was filtered -- as it is (0), each byte less the byte one pixel to
-   its left (1), or less the byte above (2), whichever leaves the
-   least: flat colour then becomes rows of zeros, which is what the
-   compressor is good at *)
+(* Filtered answers the rows as PNG stores them, each behind one byte
+   that says how it was filtered: as it is (0), each byte less the
+   byte one pixel to its left (1), or less the byte above (2),
+   whichever leaves the least.  Flat colour then becomes rows of
+   zeros, which is what the compressor is good at. *)
 PROCEDURE Filtered (VAR pool: POOL ; RO rgb: SLICE OF BYTE ;
                     width, height: I64) : SLICE OF BYTE
   RAISES ValueRange =
@@ -1974,12 +1982,13 @@ PROCEDURE IsKind (RO b: SLICE OF BYTE ; at: I64 ; RO kind: STR) : BOOL =
 VAR k : I64 ;
 BEGIN
   FOR k := 0 TO 3 DO
-    IF I64 (b[at + k]) # ORD (kind[k]) THEN RETURN FALSE END
+    IF I64 (b[at + k]) # I64 (Text.BAt (kind, k)) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END IsKind ;
 
-(* Paeth's predictor: the neighbour nearest to a + b - c *)
+(* Paeth is Paeth's predictor: it answers the neighbour nearest to
+   a + b - c. *)
 PROCEDURE Paeth (a, b, c: I64) : I64 =
 VAR p, pa, pb, pc : I64 ;
 BEGIN
@@ -2054,7 +2063,7 @@ BEGIN
   IF LEN (rows) # height * (row + 1) THEN
     RAISE Error ('the PNG image data is not as long as its rows')
   END ;
-  (* the filters undone in place, then the pixels taken out *)
+  (* The filters are undone in place, then the pixels taken out. *)
   FOR y := 0 TO height - 1 DO
     kind := I64 (rows[y * (row + 1)]) ;
     FOR x := 0 TO row - 1 DO
@@ -2092,13 +2101,13 @@ END Decode ;
 
 (* ---- the rasteriser ----------------------------------------------------
 
-   A canvas of pixels, a mask the shape being drawn is gathered into,
-   and the shape itself as polygons: every mark -- a line of some
-   width, a disc, a glyph, an arc flattened to pieces -- is a polygon
-   or several, filled by the nonzero rule so that the pieces of one
-   stroke cover each other without doubling, with Sub rows of
-   coverage to a pixel for the edges.  Paint lays the mask on the
-   pixels in one colour and clears it. *)
+   The rasteriser keeps a canvas of pixels, a mask the shape being
+   drawn is gathered into, and the shape itself as polygons.  Every
+   mark (a line of some width, a disc, a glyph, an arc flattened to
+   pieces) is a polygon or several, filled by the nonzero rule so
+   that the pieces of one stroke cover each other without doubling,
+   with Sub rows of coverage to a pixel for the edges.  Paint lays the
+   mask on the pixels in one colour and clears it. *)
 
 CONST
   Sub = 8 ;
@@ -2134,8 +2143,9 @@ TYPE
     gox, goy, gsc : SLICE OF F64 ;        (* the transform each group found *)
   END ;
 
-(* the pixels in `pool`, which is the caller's -- they are the answer
-   -- and everything else in `scratch`, which is not *)
+(* NewCanvas puts the pixels in `pool`, which is the caller's (they
+   are the answer), and everything else in `scratch`, which is
+   not. *)
 PROCEDURE NewCanvas (VAR pool: POOL ; VAR scratch: POOL ; w, h: I64 ;
                      sc: F64 ; VAR c: Canvas)
   RAISES ValueRange =
@@ -2178,8 +2188,8 @@ BEGIN
   c.gsc := NEW (scratch, F64, MaxGroups)
 END NewCanvas ;
 
-(* a user coordinate as a pixel: through the groups' translate and
-   scale, then the figure's *)
+(* PX and PY answer a user coordinate as a pixel: through the groups'
+   translate and scale, then the figure's. *)
 PROCEDURE PX (RO c: Canvas ; x: F64) : F64 =
 BEGIN
   RETURN c.ox + x * c.sc
@@ -2211,7 +2221,8 @@ BEGIN
   END
 END CloseContour ;
 
-(* coverage w for the span [xa, xb) of one sub-row, into cover *)
+(* Span adds coverage w for the span [xa, xb) of one sub-row, into
+   cover. *)
 PROCEDURE Span (VAR c: Canvas ; xa, xb, w: F64) RAISES ValueRange =
 VAR
   i0, i1, i : I64 ;
@@ -2239,10 +2250,10 @@ BEGIN
   IF hi > lo THEN c.cover[i1] := c.cover[i1] + w * (hi - lo) END
 END Span ;
 
-(* the shape gathered so far, into the mask by the nonzero rule, and
-   the shape forgotten.  The contours are sorted by their first row
-   (a counting sort over the rows) and a row meets only the ones that
-   reach it: a dashed arc at 600 dpi is thousands of small pieces,
+(* Flush puts the shape gathered so far into the mask by the nonzero
+   rule, and forgets the shape.  The contours are sorted by their first
+   row (a counting sort over the rows) and a row meets only the ones
+   that reach it: a dashed arc at 600 dpi is thousands of small pieces,
    and every row looking at every piece was the cost. *)
 PROCEDURE Flush (VAR c: Canvas) RAISES Faults.BadArg, ValueRange =
 VAR
@@ -2252,8 +2263,8 @@ VAR
 BEGIN
   IF c.ncont = 0 OR c.npts = 0 THEN RETURN END ;
   CloseContour (c) ;
-  (* each contour's rows, clipped to the canvas; its columns widen
-     the row's range *)
+  (* This finds each contour's rows, clipped to the canvas; its
+     columns widen the row's range. *)
   minx := F64 (c.w) ; maxx := 0.0 ;
   FOR k := 0 TO c.h + 1 DO c.count[k] := 0 END ;
   first := 0 ;
@@ -2281,7 +2292,7 @@ BEGIN
     IF hi >= lo THEN c.count[lo] := c.count[lo] + 1 END ;
     first := c.cend[i]
   END ;
-  (* the contours in order of their first row *)
+  (* This sorts the contours in order of their first row. *)
   q := 0 ;
   FOR k := 0 TO c.h + 1 DO
     r := c.count[k] ;
@@ -2383,7 +2394,7 @@ BEGIN
   c.ncont := 0
 END Flush ;
 
-(* the mask laid on the pixels in one colour, and cleared *)
+(* Paint lays the mask on the pixels in one colour, and clears it. *)
 PROCEDURE Paint (VAR c: Canvas ; r, g, b: I64 ; alpha: F64)
   RAISES Faults.BadArg, ValueRange =
 VAR
@@ -2411,10 +2422,10 @@ BEGIN
   c.bx0 := c.w ; c.by0 := c.h ; c.bx1 := -1 ; c.by1 := -1
 END Paint ;
 
-(* an axis-aligned rectangle, in pixels, straight onto the pixels:
-   each pixel covered as much as the two overlap -- the background of
-   a 600 dpi figure is 36 million of them, and a polygon would cost
-   Sub rows for each *)
+(* RectFill puts an axis-aligned rectangle, in pixels, straight onto
+   the pixels: each pixel covered as much as the two overlap.  The
+   background of a 600 dpi figure is 36 million of them, and a polygon
+   would cost Sub rows for each. *)
 PROCEDURE RectFill (VAR c: Canvas ; x0, y0, x1, y1: F64 ; r, g, b: I64 ;
                     alpha: F64)
   RAISES ValueRange =
@@ -2463,26 +2474,9 @@ BEGIN
   END
 END RectFill ;
 
-(* a line of some width as a quadrilateral, butt ends, pixels *)
-PROCEDURE Quad (VAR c: Canvas ; x1, y1, x2, y2, wid: F64)
-  RAISES Faults.BadArg, ValueRange =
-VAR dx, dy, len, nx, ny : F64 ;
-BEGIN
-  dx := x2 - x1 ;
-  dy := y2 - y1 ;
-  len := Math.Sqrt (dx * dx + dy * dy) ;
-  IF len <= 0.0 THEN RETURN END ;
-  nx := -dy / len * wid / 2.0 ;
-  ny := dx / len * wid / 2.0 ;
-  Pt (c, x1 + nx, y1 + ny) ;
-  Pt (c, x2 + nx, y2 + ny) ;
-  Pt (c, x2 - nx, y2 - ny) ;
-  Pt (c, x1 - nx, y1 - ny) ;
-  CloseContour (c)
-END Quad ;
-
-(* a disc, as a polygon of as many sides as its size asks for; r < 0
-   turns it the other way round, which is how a ring gets its hole *)
+(* Disc draws a disc, as a polygon of as many sides as its size asks
+   for; r < 0 turns it the other way round, which is how a ring gets
+   its hole. *)
 PROCEDURE Disc (VAR c: Canvas ; cx, cy, r: F64)
   RAISES Faults.BadArg, ValueRange =
 VAR
@@ -2501,14 +2495,15 @@ BEGIN
   CloseContour (c)
 END Disc ;
 
-(* a polyline stroked as ONE outline: its left side forward and its
-   right side back, each corner the point where the two offset lines
-   meet (a mitre), or two points when the corner is so sharp the mitre
-   would run away.  One polygon, so that the pieces of a curve meet
-   without a seam -- as separate quads they left a gap of coverage at
-   every joint, and a quarter arc came out at sixty percent of its
-   area.  A closed polyline is two loops, the inner one the other way
-   round, which the nonzero rule reads as a ring.  Butt ends. *)
+(* Outline strokes a polyline as ONE outline: its left side forward
+   and its right side back, each corner the point where the two offset
+   lines meet (a mitre), or two points when the corner is so sharp the
+   mitre would run away.  It is one polygon, so that the pieces of a
+   curve meet without a seam.  As separate quads they left a gap of
+   coverage at every joint, and a quarter arc came out at sixty
+   percent of its area.  A closed polyline is two loops, the inner one
+   the other way round, which the nonzero rule reads as a ring.  The
+   ends are butt ends. *)
 PROCEDURE Outline (VAR c: Canvas ; RO xs, ys: SLICE OF F64 ; n: I64 ;
                    hw: F64 ; closed: BOOL)
   RAISES Faults.BadArg, ValueRange =
@@ -2516,8 +2511,8 @@ VAR
   i, m, k, prev, next, pass : I64 ;
   ux, uy, vx, vy, len, nix, niy, nox, noy, dot, f, side : F64 ;
 BEGIN
-  (* the points, a repeated one dropped: a corner between equal points
-     has no direction *)
+  (* This takes the points, a repeated one dropped: a corner between
+     equal points has no direction. *)
   m := 0 ;
   FOR i := 0 TO n - 1 DO
     IF m = 0 OR xs[i] # c.tx[m - 1] OR ys[i] # c.ty[m - 1] THEN
@@ -2584,9 +2579,9 @@ BEGIN
   IF NOT closed THEN CloseContour (c) END
 END Outline ;
 
-(* the polyline in c.lx, c.ly stroked, the dashes walked along it
-   (dash in pixels, on and off in turn; the phase carried from piece
-   to piece): each run of ink is an outline of its own *)
+(* StrokeLine strokes the polyline in c.lx, c.ly, the dashes walked
+   along it (dash in pixels, on and off in turn; the phase carried
+   from piece to piece): each run of ink is an outline of its own. *)
 PROCEDURE StrokeLine (VAR c: Canvas ; wid: F64 ; RO dash: SLICE OF F64 ;
                       closed: BOOL)
   RAISES Faults.BadArg, ValueRange =
@@ -2651,7 +2646,8 @@ BEGIN
   IF on AND nr > 1 THEN Outline (c, c.rx, c.ry, nr, wid / 2.0, FALSE) END
 END StrokeLine ;
 
-(* the subpath in c.lx, c.ly as one contour of the shape *)
+(* FillLine adds the subpath in c.lx, c.ly as one contour of the
+   shape. *)
 PROCEDURE FillLine (VAR c: Canvas) RAISES Faults.BadArg =
 VAR i : I64 ;
 BEGIN
@@ -2670,10 +2666,11 @@ BEGIN
   c.nl := c.nl + 1
 END LinePt ;
 
-(* an SVG arc from the current point to (x2, y2), in user units, as
-   pieces of the current subpath: the centre from the ends as the
-   specification's appendix F.6.5 has it, the radii grown when they
-   are too small for the ends, and about 1.5 pixels to a piece *)
+(* ArcTo adds an SVG arc from the current point to (x2, y2), in user
+   units, as pieces of the current subpath.  The centre comes from the
+   ends as the specification's appendix F.6.5 has it, the radii grown
+   when they are too small for the ends, and about 1.5 pixels to a
+   piece. *)
 PROCEDURE ArcTo (VAR c: Canvas ; rx, ry, rotDeg: F64 ; large, sweep: BOOL ;
                  x2, y2: F64)
   RAISES Faults.BadArg, ValueRange =
@@ -2758,8 +2755,8 @@ BEGIN
   RETURN -1
 END Glyph ;
 
-(* the glyph of a code, or the question mark's for one the face has
-   not *)
+(* GlyphOrAsk answers the glyph of a code, or the question mark's for
+   one the face has not. *)
 PROCEDURE GlyphOrAsk (code: I64) : I64 =
 VAR g : I64 ;
 BEGIN
@@ -2768,11 +2765,11 @@ BEGIN
   RETURN g
 END GlyphOrAsk ;
 
-(* the width of a text in font units *)
+(* TextWidth answers the width of a text in font units. *)
 PROCEDURE TextWidth (RO s: STR) : I64 RAISES ValueRange =
-  (* by FOR ch IN s, over characters: the same both sides of the UTF
-     switch -- a subscript there is an octet, and `µ' would be looked
-     up by the first octet of its two *)
+  (* This walks by FOR ch IN s, over characters: the same both sides
+     of the UTF switch.  A subscript there is an octet, and `µ' would
+     be looked up by the first octet of its two. *)
 VAR
   w : I64 ;
   ch : CHAR ;
@@ -2784,9 +2781,10 @@ BEGIN
   RETURN w
 END TextWidth ;
 
-(* the text as polygons: its origin at (x, y) in pixels, `size` pixels
-   to the em, the pen moved left by `anchor` -- 0, half or all of the
-   width -- then the whole turned by deg degrees about (rx, ry) *)
+(* DrawText draws the text as polygons: its origin at (x, y) in
+   pixels, `size` pixels to the em, the pen moved left by `anchor` (0,
+   half or all of the width), then the whole turned by deg degrees
+   about (rx, ry). *)
 PROCEDURE DrawText (VAR c: Canvas ; RO s: STR ; x, y, size, anchor, deg,
                     rx, ry: F64)
   RAISES Faults.BadArg, ValueRange =
@@ -2851,14 +2849,15 @@ END IsNameCh ;
 PROCEDURE Same (RO a: STR ; RO b: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (a) - 1 DO
-    IF a[i] # b[i] THEN RETURN FALSE END
+  IF Text.BLen (a) # Text.BLen (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (a) - 1 DO
+    IF Text.BAt (a, i) # Text.BAt (b, i) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END Same ;
 
-(* the next tag from position i: FALSE at the end of the document.
+(* NextTag reads the next tag from position i: FALSE at the end of
+   the document.
    Comments, the XML declaration and a DOCTYPE are passed over. *)
 PROCEDURE NextTag (RO s: STR ; VAR i: I64 ; VAR tg: Tag) : BOOL
   RAISES Faults.BadArg, ValueRange =
@@ -2866,18 +2865,18 @@ VAR
   n, a, b : I64 ;
   quote : CHAR ;
 BEGIN
-  n := LEN (s) ;
+  n := Text.BLen (s) ;
   LOOP
-    WHILE i < n AND s[i] # '<' DO i := i + 1 END ;
+    WHILE i < n AND NOT Text.BIs (s, i, '<') DO i := i + 1 END ;
     IF i >= n THEN RETURN FALSE END ;
-    IF i + 3 < n AND s[i + 1] = '!' AND s[i + 2] = '-' AND s[i + 3] = '-' THEN
+    IF i + 3 < n AND Text.BIs (s, i + 1, '!') AND Text.BIs (s, i + 2, '-') AND Text.BIs (s, i + 3, '-') THEN
       i := i + 4 ;
-      WHILE i + 2 < n AND NOT (s[i] = '-' AND s[i + 1] = '-' AND s[i + 2] = '>') DO
+      WHILE i + 2 < n AND NOT (Text.BIs (s, i, '-') AND Text.BIs (s, i + 1, '-') AND Text.BIs (s, i + 2, '>')) DO
         i := i + 1
       END ;
       i := i + 3
-    ELSIF i + 1 < n AND (s[i + 1] = '?' OR s[i + 1] = '!') THEN
-      WHILE i < n AND s[i] # '>' DO i := i + 1 END ;
+    ELSIF i + 1 < n AND (Text.BIs (s, i + 1, '?') OR Text.BIs (s, i + 1, '!')) THEN
+      WHILE i < n AND NOT Text.BIs (s, i, '>') DO i := i + 1 END ;
       i := i + 1
     ELSE
       EXIT
@@ -2887,43 +2886,43 @@ BEGIN
   tg.closing := FALSE ;
   tg.selfClosing := FALSE ;
   tg.nattr := 0 ;
-  IF i < n AND s[i] = '/' THEN
+  IF i < n AND Text.BIs (s, i, '/') THEN
     tg.closing := TRUE ;
     i := i + 1
   END ;
   a := i ;
-  WHILE i < n AND IsNameCh (s[i]) DO i := i + 1 END ;
+  WHILE i < n AND IsNameCh (Text.BChar (s, i)) DO i := i + 1 END ;
   tg.name := SLICE (s, a, i - a) ;
   LOOP
-    WHILE i < n AND IsBlank (s[i]) DO i := i + 1 END ;
+    WHILE i < n AND IsBlank (Text.BChar (s, i)) DO i := i + 1 END ;
     IF i >= n THEN RAISE Faults.BadArg ('Png.FromSvg: the SVG ends inside a tag') END ;
-    IF s[i] = '>' THEN
+    IF Text.BIs (s, i, '>') THEN
       i := i + 1 ;
       EXIT
     END ;
-    IF s[i] = '/' THEN
+    IF Text.BIs (s, i, '/') THEN
       tg.selfClosing := TRUE ;
       i := i + 1
     ELSE
       a := i ;
-      WHILE i < n AND IsNameCh (s[i]) DO i := i + 1 END ;
+      WHILE i < n AND IsNameCh (Text.BChar (s, i)) DO i := i + 1 END ;
       IF i = a THEN RAISE Faults.BadArg ('Png.FromSvg: a tag this cannot read') END ;
       IF tg.nattr >= MaxAttrs THEN
         RAISE Faults.BadArg ('Png.FromSvg: a tag of more than 48 attributes')
       END ;
       tg.an[tg.nattr] := SLICE (s, a, i - a) ;
       tg.av[tg.nattr] := '' ;
-      WHILE i < n AND IsBlank (s[i]) DO i := i + 1 END ;
-      IF i < n AND s[i] = '=' THEN
+      WHILE i < n AND IsBlank (Text.BChar (s, i)) DO i := i + 1 END ;
+      IF i < n AND Text.BIs (s, i, '=') THEN
         i := i + 1 ;
-        WHILE i < n AND IsBlank (s[i]) DO i := i + 1 END ;
-        IF i >= n OR (s[i] # '"' AND s[i] # "'") THEN
+        WHILE i < n AND IsBlank (Text.BChar (s, i)) DO i := i + 1 END ;
+        IF i >= n OR (NOT Text.BIs (s, i, '"') AND NOT Text.BIs (s, i, "'")) THEN
           RAISE Faults.BadArg ('Png.FromSvg: an attribute value without quotes')
         END ;
-        quote := s[i] ;
+        quote := Text.BChar (s, i) ;
         i := i + 1 ;
         b := i ;
-        WHILE i < n AND s[i] # quote DO i := i + 1 END ;
+        WHILE i < n AND NOT Text.BIs (s, i, quote) DO i := i + 1 END ;
         IF i >= n THEN RAISE Faults.BadArg ('Png.FromSvg: an attribute value without its closing quote') END ;
         tg.av[tg.nattr] := SLICE (s, b, i - b) ;
         i := i + 1
@@ -2953,48 +2952,48 @@ BEGIN
   RETURN ''
 END Attr ;
 
-(* a number at s[i], after blanks and one comma; FALSE when there is
-   none.  Digits, a point, an exponent -- what SVG writes; a unit
-   after it (px, pt) is passed over. *)
+(* Num reads a number at s[i], after blanks and one comma; FALSE when
+   there is none.  It reads digits, a point, an exponent: what SVG
+   writes.  A unit after it (px, pt) is passed over. *)
 PROCEDURE Num (RO s: STR ; VAR i: I64 ; VAR v: F64) : BOOL RAISES ValueRange =
 VAR
   n, digits, k : I64 ;
   neg, eneg : BOOL ;
   f, frac, e : F64 ;
 BEGIN
-  n := LEN (s) ;
-  WHILE i < n AND (IsBlank (s[i]) OR s[i] = ',') DO i := i + 1 END ;
+  n := Text.BLen (s) ;
+  WHILE i < n AND (IsBlank (Text.BChar (s, i)) OR Text.BIs (s, i, ',')) DO i := i + 1 END ;
   IF i >= n THEN RETURN FALSE END ;
   neg := FALSE ;
-  IF s[i] = '-' THEN neg := TRUE ; i := i + 1
-  ELSIF s[i] = '+' THEN i := i + 1 END ;
+  IF Text.BIs (s, i, '-') THEN neg := TRUE ; i := i + 1
+  ELSIF Text.BIs (s, i, '+') THEN i := i + 1 END ;
   f := 0.0 ;
   digits := 0 ;
-  WHILE i < n AND s[i] >= '0' AND s[i] <= '9' DO
-    f := f * 10.0 + F64 (I64 (s[i]) - 48) ;
+  WHILE i < n AND I64 (Text.BAt (s, i)) >= ORD ('0') AND I64 (Text.BAt (s, i)) <= ORD ('9') DO
+    f := f * 10.0 + F64 (I64 (Text.BAt (s, i)) - 48) ;
     i := i + 1 ;
     digits := digits + 1
   END ;
-  IF i < n AND s[i] = '.' THEN
+  IF i < n AND Text.BIs (s, i, '.') THEN
     i := i + 1 ;
     frac := 0.1 ;
-    WHILE i < n AND s[i] >= '0' AND s[i] <= '9' DO
-      f := f + frac * F64 (I64 (s[i]) - 48) ;
+    WHILE i < n AND I64 (Text.BAt (s, i)) >= ORD ('0') AND I64 (Text.BAt (s, i)) <= ORD ('9') DO
+      f := f + frac * F64 (I64 (Text.BAt (s, i)) - 48) ;
       frac := frac / 10.0 ;
       i := i + 1 ;
       digits := digits + 1
     END
   END ;
   IF digits = 0 THEN RETURN FALSE END ;
-  IF i < n AND (s[i] = 'e' OR s[i] = 'E') THEN
+  IF i < n AND (Text.BIs (s, i, 'e') OR Text.BIs (s, i, 'E')) THEN
     k := i + 1 ;
     eneg := FALSE ;
-    IF k < n AND s[k] = '-' THEN eneg := TRUE ; k := k + 1
-    ELSIF k < n AND s[k] = '+' THEN k := k + 1 END ;
-    IF k < n AND s[k] >= '0' AND s[k] <= '9' THEN
+    IF k < n AND Text.BIs (s, k, '-') THEN eneg := TRUE ; k := k + 1
+    ELSIF k < n AND Text.BIs (s, k, '+') THEN k := k + 1 END ;
+    IF k < n AND I64 (Text.BAt (s, k)) >= ORD ('0') AND I64 (Text.BAt (s, k)) <= ORD ('9') THEN
       e := 0.0 ;
-      WHILE k < n AND s[k] >= '0' AND s[k] <= '9' DO
-        e := e * 10.0 + F64 (I64 (s[k]) - 48) ;
+      WHILE k < n AND I64 (Text.BAt (s, k)) >= ORD ('0') AND I64 (Text.BAt (s, k)) <= ORD ('9') DO
+        e := e * 10.0 + F64 (I64 (Text.BAt (s, k)) - 48) ;
         k := k + 1
       END ;
       IF eneg THEN e := -e END ;
@@ -3002,7 +3001,7 @@ BEGIN
       i := k
     END
   END ;
-  IF i + 1 < n AND ((s[i] = 'p' AND (s[i + 1] = 'x' OR s[i + 1] = 't'))) THEN
+  IF i + 1 < n AND ((Text.BIs (s, i, 'p') AND (Text.BIs (s, i + 1, 'x') OR Text.BIs (s, i + 1, 't')))) THEN
     i := i + 2
   END ;
   IF neg THEN f := -f END ;
@@ -3010,7 +3009,8 @@ BEGIN
   RETURN TRUE
 END Num ;
 
-(* an attribute as a number, or dflt when it is not there *)
+(* NumAttr answers an attribute as a number, or dflt when it is not
+   there. *)
 PROCEDURE NumAttr (RO tg: Tag ; RO name: STR ; dflt: F64) : F64
   RAISES Faults.BadArg, ValueRange =
 VAR
@@ -3050,26 +3050,26 @@ CONST
                   8421376, 65280, 16766720, 16761035, 11119017, 11119017,
                   4620980, 14423100] ;
 
-(* a colour as SVG writes one: #rgb, #rrggbb, or a name; FALSE for
-   `none' and for nothing *)
+(* Colour reads a colour as SVG writes one: #rgb, #rrggbb, or a name;
+   FALSE for `none' and for nothing. *)
 PROCEDURE Colour (RO s: STR ; VAR r, g, b: I64) : BOOL RAISES Faults.BadArg, ValueRange =
 VAR k, v, d : I64 ;
 BEGIN
-  IF LEN (s) = 0 OR Same (s, 'none') OR Same (s, 'transparent') THEN RETURN FALSE END ;
-  IF s[0] = '#' THEN
+  IF Text.BLen (s) = 0 OR Same (s, 'none') OR Same (s, 'transparent') THEN RETURN FALSE END ;
+  IF Text.BIs (s, 0, '#') THEN
     v := 0 ;
-    FOR k := 1 TO LEN (s) - 1 DO
-      d := HexDigit (s[k]) ;
+    FOR k := 1 TO Text.BLen (s) - 1 DO
+      d := HexDigit (Text.BChar (s, k)) ;
       IF d < 0 THEN RAISE Faults.BadArg ('Png.FromSvg: a colour this cannot read: ' + s) END ;
       v := v * 16 + d
     END ;
-    IF LEN (s) = 4 THEN
+    IF Text.BLen (s) = 4 THEN
       r := (v DIV 256) * 17 ;
       g := ((v DIV 16) MOD 16) * 17 ;
       b := (v MOD 16) * 17 ;
       RETURN TRUE
     END ;
-    IF LEN (s) = 7 THEN
+    IF Text.BLen (s) = 7 THEN
       r := v DIV 65536 ;
       g := (v DIV 256) MOD 256 ;
       b := v MOD 256 ;
@@ -3089,8 +3089,9 @@ BEGIN
   RAISE Faults.BadArg ('Png.FromSvg: a colour this does not know: ' + s)
 END Colour ;
 
-(* the dashes of a stroke, in pixels: the attribute's numbers, each
-   times the scale; an odd count is written twice, as SVG reads it *)
+(* Dashes answers the dashes of a stroke, in pixels: the attribute's
+   numbers, each times the scale.  An odd count is written twice, as
+   SVG reads it. *)
 PROCEDURE Dashes (VAR pool: POOL ; RO s: STR ; sc: F64) : SLICE OF F64
   RAISES ValueRange =
 VAR
@@ -3114,35 +3115,39 @@ BEGIN
   RETURN out
 END Dashes ;
 
-(* the text between a <text> tag and its </text>, its entities read:
-   the five named ones and the numbered form *)
+(* Content answers the text between a <text> tag and its </text>,
+   its entities read: the five named ones and the numbered form. *)
 PROCEDURE Content (VAR pool: POOL ; RO s: STR ; from: I64 ; VAR after: I64) : STR
   RAISES Faults.BadArg, ValueRange =
+  (* the text between entities goes over as RUNS, SLICE (s, run, i -
+     run): an octet appended as a character would encode `µ' twice *)
 VAR
   d : PTR DynStr.DString IN pool ;
-  i, n, j, k, code : I64 ;
+  i, n, j, k, code, run : I64 ;
   ent : STR ;
 BEGIN
   d := DynStr.New (pool) ;
-  n := LEN (s) ;
+  n := Text.BLen (s) ;
   i := from ;
-  WHILE i < n AND s[i] # '<' DO
-    IF s[i] = '&' THEN
+  run := from ;
+  WHILE i < n AND NOT Text.BIs (s, i, '<') DO
+    IF Text.BIs (s, i, '&') THEN
+      DynStr.Append (d, SLICE (s, run, i - run)) ;
       j := i + 1 ;
-      WHILE j < n AND s[j] # ';' AND j < i + 12 DO j := j + 1 END ;
-      IF j >= n OR s[j] # ';' THEN RAISE Faults.BadArg ('Png.FromSvg: an & that is not an entity') END ;
+      WHILE j < n AND NOT Text.BIs (s, j, ';') AND j < i + 12 DO j := j + 1 END ;
+      IF j >= n OR NOT Text.BIs (s, j, ';') THEN RAISE Faults.BadArg ('Png.FromSvg: an & that is not an entity') END ;
       ent := SLICE (s, i + 1, j - i - 1) ;
       IF Same (ent, 'amp') THEN DynStr.AppendChar (d, '&')
       ELSIF Same (ent, 'lt') THEN DynStr.AppendChar (d, '<')
       ELSIF Same (ent, 'gt') THEN DynStr.AppendChar (d, '>')
       ELSIF Same (ent, 'quot') THEN DynStr.AppendChar (d, '"')
       ELSIF Same (ent, 'apos') THEN DynStr.AppendChar (d, "'")
-      ELSIF LEN (ent) > 1 AND ent[0] = '#' THEN
+      ELSIF Text.BLen (ent) > 1 AND Text.BIs (ent, 0, '#') THEN
         code := 0 ;
-        IF ent[1] = 'x' THEN
-          FOR k := 2 TO LEN (ent) - 1 DO code := code * 16 + HexDigit (ent[k]) END
+        IF Text.BIs (ent, 1, 'x') THEN
+          FOR k := 2 TO Text.BLen (ent) - 1 DO code := code * 16 + HexDigit (Text.BChar (ent, k)) END
         ELSE
-          FOR k := 1 TO LEN (ent) - 1 DO code := code * 10 + I64 (ent[k]) - 48 END
+          FOR k := 1 TO Text.BLen (ent) - 1 DO code := code * 10 + I64 (Text.BAt (ent, k)) - 48 END
         END ;
         IF code <= 0 OR code > 1114111 THEN
           RAISE Faults.BadArg ('Png.FromSvg: a character reference out of range')
@@ -3151,17 +3156,19 @@ BEGIN
       ELSE
         RAISE Faults.BadArg ('Png.FromSvg: an entity this does not know: &' + ent + ';')
       END ;
-      i := j + 1
+      i := j + 1 ;
+      run := i
     ELSE
-      DynStr.AppendChar (d, s[i]) ;
       i := i + 1
     END
   END ;
+  DynStr.Append (d, SLICE (s, run, i - run)) ;
   after := i ;
-  RETURN DynStr.View (d)
+  RETURN DynStr.ViewIn (pool, d)
 END Content ;
 
-(* the attributes every drawn element may carry, read once *)
+(* A Style holds the attributes every drawn element may carry, read
+   once. *)
 TYPE
   Style = RECORD
     fill, stroke : BOOL ;
@@ -3200,8 +3207,8 @@ BEGIN
   st.dash := Dashes (pool, Attr (tg, 'stroke-dasharray'), sc)
 END ReadStyle ;
 
-(* the shape gathered in the canvas, filled and stroked as the style
-   says; the stroke is the subpath in lx, ly *)
+(* PaintFill fills and strokes the shape gathered in the canvas as
+   the style says; the stroke is the subpath in lx, ly. *)
 PROCEDURE PaintFill (VAR c: Canvas ; RO st: Style) RAISES Faults.BadArg, ValueRange =
 BEGIN
   IF st.fill THEN
@@ -3213,17 +3220,18 @@ BEGIN
   END
 END PaintFill ;
 
-(* `rotate(a)' or `rotate(a x y)': the angle and its centre, which is
-   (x0, y0) when none is written.  Anything else is refused. *)
+(* Rotation reads `rotate(a)' or `rotate(a x y)': the angle and its
+   centre, which is (x0, y0) when none is written.  Anything else is
+   refused. *)
 PROCEDURE Rotation (RO s: STR ; x0, y0: F64 ; VAR deg, rx, ry: F64)
   RAISES Faults.BadArg, ValueRange =
 VAR i : I64 ;
 BEGIN
   deg := 0.0 ; rx := x0 ; ry := y0 ;
-  IF LEN (s) = 0 THEN RETURN END ;
+  IF Text.BLen (s) = 0 THEN RETURN END ;
   i := 0 ;
-  WHILE i < LEN (s) AND IsBlank (s[i]) DO i := i + 1 END ;
-  IF LEN (s) - i < 8 OR NOT Same (SLICE (s, i, 7), 'rotate(') THEN
+  WHILE i < Text.BLen (s) AND IsBlank (Text.BChar (s, i)) DO i := i + 1 END ;
+  IF Text.BLen (s) - i < 8 OR NOT Same (SLICE (s, i, 7), 'rotate(') THEN
     RAISE Faults.BadArg ('Png.FromSvg: a transform other than rotate(...): ' + s)
   END ;
   i := i + 7 ;
@@ -3233,8 +3241,8 @@ BEGIN
   END
 END Rotation ;
 
-(* a path's d attribute, drawn: M L H V Z and A, absolute and
-   relative; a curve (C S Q T) is refused by its letter *)
+(* DrawPath draws a path's d attribute: M L H V Z and A, absolute and
+   relative; a curve (C S Q T) is refused by its letter. *)
 PROCEDURE DrawPath (VAR c: Canvas ; RO d: STR ; RO st: Style)
   RAISES Faults.BadArg, ValueRange =
 VAR
@@ -3243,7 +3251,7 @@ VAR
   x, y, sx, sy, a, b, rx, ry, rot, fa, fs : F64 ;
   rel, closed, haveCmd : BOOL ;
 BEGIN
-  n := LEN (d) ;
+  n := Text.BLen (d) ;
   i := 0 ;
   x := 0.0 ; y := 0.0 ; sx := 0.0 ; sy := 0.0 ;
   a := 0.0 ; b := 0.0 ; rx := 0.0 ; ry := 0.0 ; rot := 0.0 ; fa := 0.0 ; fs := 0.0 ;
@@ -3253,11 +3261,11 @@ BEGIN
   haveCmd := FALSE ;
   c.nl := 0 ;
   LOOP
-    WHILE i < n AND (IsBlank (d[i]) OR d[i] = ',') DO i := i + 1 END ;
+    WHILE i < n AND (IsBlank (Text.BChar (d, i)) OR Text.BIs (d, i, ',')) DO i := i + 1 END ;
     IF i >= n THEN EXIT END ;
-    IF (d[i] >= 'A' AND d[i] <= 'Z') OR (d[i] >= 'a' AND d[i] <= 'z') THEN
-      cmd := d[i] ;
-      rel := d[i] >= 'a' ;
+    IF (I64 (Text.BAt (d, i)) >= ORD ('A') AND I64 (Text.BAt (d, i)) <= ORD ('Z')) OR (I64 (Text.BAt (d, i)) >= ORD ('a') AND I64 (Text.BAt (d, i)) <= ORD ('z')) THEN
+      cmd := Text.BChar (d, i) ;
+      rel := I64 (Text.BAt (d, i)) >= ORD ('a') ;
       IF rel THEN cmd := CHR (I64 (cmd) - 32) END ;
       IF cmd # 'M' AND cmd # 'L' AND cmd # 'H' AND cmd # 'V' AND cmd # 'Z' AND cmd # 'A' THEN
         RAISE Faults.BadArg ('Png.FromSvg: a path command this does not draw: ' + SLICE (d, i, 1))
@@ -3323,7 +3331,7 @@ BEGIN
   c.nl := 0
 END DrawPath ;
 
-(* a polyline's or polygon's points attribute *)
+(* DrawPoints draws a polyline's or polygon's points attribute. *)
 PROCEDURE DrawPoints (VAR c: Canvas ; RO pts: STR ; RO st: Style ; closed: BOOL)
   RAISES Faults.BadArg, ValueRange =
 VAR
@@ -3342,25 +3350,27 @@ BEGIN
   c.nl := 0
 END DrawPoints ;
 
-(* the stroke gathered, painted; then the shape is empty again *)
+(* PaintStroke paints the stroke gathered; then the shape is empty
+   again. *)
 PROCEDURE PaintStroke (VAR c: Canvas ; RO st: Style) RAISES Faults.BadArg, ValueRange =
 BEGIN
   IF st.stroke THEN Paint (c, st.sr, st.sg, st.sb, st.strokeOpacity) ELSE Flush (c) END
 END PaintStroke ;
 
-(* a group's transform: translate(a b) and scale(k), any number of
-   them in a row, applied in the order written -- the first named is
-   the outermost.  Anything else is refused. *)
+(* Transform applies a group's transform: translate(a b) and
+   scale(k), any number of them in a row, applied in the order
+   written.  The first named is the outermost.  Anything else is
+   refused. *)
 PROCEDURE Transform (RO s: STR ; VAR c: Canvas)
   RAISES Faults.BadArg, ValueRange =
 VAR
   i, n : I64 ;
   a, b : F64 ;
 BEGIN
-  n := LEN (s) ;
+  n := Text.BLen (s) ;
   i := 0 ;
   LOOP
-    WHILE i < n AND (IsBlank (s[i]) OR s[i] = ',') DO i := i + 1 END ;
+    WHILE i < n AND (IsBlank (Text.BChar (s, i)) OR Text.BIs (s, i, ',')) DO i := i + 1 END ;
     IF i >= n THEN EXIT END ;
     IF n - i >= 10 AND Same (SLICE (s, i, 10), 'translate(') THEN
       i := i + 10 ;
@@ -3381,8 +3391,8 @@ BEGIN
     ELSE
       RAISE Faults.BadArg ('Png.FromSvg: a transform on a group other than translate and scale: ' + s)
     END ;
-    WHILE i < n AND IsBlank (s[i]) DO i := i + 1 END ;
-    IF i < n AND s[i] = ')' THEN i := i + 1 ELSE RAISE Faults.BadArg ('Png.FromSvg: a transform without its closing parenthesis') END
+    WHILE i < n AND IsBlank (Text.BChar (s, i)) DO i := i + 1 END ;
+    IF i < n AND Text.BIs (s, i, ')') THEN i := i + 1 ELSE RAISE Faults.BadArg ('Png.FromSvg: a transform without its closing parenthesis') END
   END
 END Transform ;
 
@@ -3416,8 +3426,8 @@ BEGIN
   WHILE NextTag (svg, i, tg) DO
     i := tg.endAt ;
     IF tg.closing THEN
-      (* what a closing tag ends was drawn when it opened; a group
-         that set the clip takes it with it *)
+      (* The element a closing tag ends was drawn when it opened; a
+         group that set the clip takes it with it. *)
       IF Same (tg.name, 'g') THEN
         IF depth = clipDepth THEN
           c.clipped := FALSE ;
@@ -3452,7 +3462,7 @@ BEGIN
       vb := Attr (tg, 'viewBox') ;
       k := 0 ;
       vw := 0.0 ; vh := 0.0 ; x := 0.0 ; y := 0.0 ;
-      IF LEN (vb) > 0 THEN
+      IF Text.BLen (vb) > 0 THEN
         IF NOT (Num (vb, k, x) AND Num (vb, k, y) AND Num (vb, k, vw) AND Num (vb, k, vh)) THEN
           RAISE Faults.BadArg ('Png.FromSvg: a viewBox that is not four numbers')
         END ;
@@ -3477,8 +3487,8 @@ BEGIN
     ELSIF NOT seenSvg THEN
       RAISE Faults.BadArg ('Png.FromSvg: an element before <svg>: ' + tg.name)
     ELSIF Hidden (tg) THEN
-      (* visibility="hidden" or display="none": not drawn, but its
-         text, if any, is passed over too *)
+      (* An element with visibility="hidden" or display="none" is not
+         drawn, but its text, if any, is passed over too. *)
       IF Same (tg.name, 'text') AND NOT tg.selfClosing THEN
         after := i ;
         txt := Content (scratch, svg, i, after) ;
@@ -3574,7 +3584,7 @@ BEGIN
       IF Same (Attr (tg, 'text-anchor'), 'middle') THEN anchor := 0.5
       ELSIF Same (Attr (tg, 'text-anchor'), 'end') THEN anchor := 1.0 END ;
       Rotation (Attr (tg, 'transform'), x, y, deg, rx, ry) ;
-      IF st.fill AND LEN (txt) > 0 THEN
+      IF st.fill AND Text.BLen (txt) > 0 THEN
         DrawText (c, txt, PX (c, x), PY (c, y + dy), size * c.sc, anchor, deg, PX (c, rx), PY (c, ry)) ;
         PaintFill (c, st)
       END
@@ -3599,12 +3609,12 @@ BEGIN
         Transform (Attr (tg, 'transform'), c)
       END ;
       want := Attr (tg, 'clip-path') ;
-      IF LEN (want) > 0 THEN
+      IF Text.BLen (want) > 0 THEN
         (* url(#id): the rectangle of that clipPath, while the group lasts *)
-        IF LEN (want) < 6 OR NOT Same (SLICE (want, 0, 5), 'url(#') OR tg.selfClosing THEN
+        IF Text.BLen (want) < 6 OR NOT Same (SLICE (want, 0, 5), 'url(#') OR tg.selfClosing THEN
           RAISE Faults.BadArg ('Png.FromSvg: a clip-path that is not url(#id): ' + want)
         END ;
-        want := SLICE (want, 5, LEN (want) - 6) ;
+        want := SLICE (want, 5, Text.BLen (want) - 6) ;
         k := 0 ;
         WHILE k < nclip AND NOT Same (clipIds[k], want) DO k := k + 1 END ;
         IF k >= nclip THEN RAISE Faults.BadArg ('Png.FromSvg: a clip-path naming no clipPath: ' + want) END ;

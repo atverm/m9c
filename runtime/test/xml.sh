@@ -1,16 +1,17 @@
 #!/bin/sh
-# xml -- Xml held to the W3C XML conformance suite (docs/datalib-plan.md
-# par 4): every not-well-formed document refused, every well-formed one
-# read the way expat (libxml2 for the fifth edition's names) reads it or
-# refused by name -- XmlTest, against tools/xmlgold.py's golden.
+# xml holds Xml to the W3C XML conformance suite (docs/datalib-plan.md
+# par 4).  Xml must refuse every not-well-formed document.  It must read
+# every well-formed one the way expat (libxml2 for the fifth edition's
+# names) reads it, or refuse it by name.  XmlTest runs this, against
+# tools/xmlgold.py's golden.
 #
 # The suite is NOT in this repository: Sun's part is "All Rights
 # Reserved" and James Clark's may be passed on only as his unmodified
 # zip.  This gate fetches the W3C's archive once into a cache
 # ($M9_CACHE, else ~/.cache/m9), holds it to its SHA-256, unpacks it in
 # runtime/test/xmlconf (gitignored) and runs XmlTest there.  Without
-# the network it SKIPS out loud on a workstation and FAILS on CI.  Uses
-# an m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
+# the network it SKIPS out loud on a workstation and FAILS on CI.  It
+# uses an m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
 set -e
 cd "$(dirname "$0")"
 

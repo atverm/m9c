@@ -1,8 +1,9 @@
 program lexbench;
 {$mode objfpc}{$H+}
-{ Throughput: corpus concatenated to ~8MB in memory, lexed twice.
-  Report the second run (first run warms; page cache lies -- the
-  7402ms -> 114ms "speedup" of 2026-08-20 was cache warming). }
+{ lexbench measures throughput.  It concatenates the corpus to ~8MB in
+  memory and lexes it twice.  Report the second run: the first run
+  warms, and the page cache lies.  The 7402ms -> 114ms "speedup" of
+  2026-08-20 was cache warming. }
 uses SysUtils, Classes, M9Lex;
 
 function Load (const fn: string): string;

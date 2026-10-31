@@ -1,7 +1,7 @@
 # Check
 
-A test written in M9: checks that count, say what they found, and
-end in an exit status.
+Check lets a test be written in M9.  Its checks count, say what
+they found, and end in an exit status.
 
     MODULE TextTest ;
     IMPORT Check, Io, Text ;
@@ -12,17 +12,17 @@ end in an exit status.
       Io.Halt (Check.Done (t, 'Text'))
     END TextTest.
 
-Written because the corpus was gated by C drivers, by hand, against
-generated headers, and a change to the C a module turns into
+It was written because C drivers gated the corpus, by hand, against
+generated headers.  A change to the C a module turns into
 stranded them without a word: twelve calls in one driver at the
 0.13.0 release, three hundred in an application's.  A test in M9
 is checked by the compiler, so the same change is a compile error
 at the call.
 
-A check that fails prints ONE line -- FAIL, the caller's label,
-what was got and what was wanted -- and the run goes on: errors
-are values here, and a test that stops at its first failure hides
-the second.  Done prints the count and answers the exit status.
+A check that fails prints ONE line: FAIL, the caller's label, what
+was got and what was wanted.  The run goes on.  Errors are values
+here, and a test that stops at its first failure hides the second.
+Done prints the count and answers the exit status.
 
 The state is a record the test owns, not this module's: a zeroed
 T is ready (a module variable is zero), two of them count apart,
@@ -57,19 +57,20 @@ _(documented with the group below)_
 
 ### TYPE Raiser
 
-what Raises and RaisesValueRange run: a top-level procedure of
-the test, with no parameters, raising ValueRange or nothing
-(IndexError and Overflow need no clause).  ONE type since
-2026-10-08: a procedure fits a procedure type when it raises
-no MORE than the type allows (decision 25), so a quiet one
-fits too.  Raiser is the old name, kept for the tests that
-wrote it; there were two types while RAISES had to match to
-the letter.
+Action is what Raises and RaisesValueRange run: a top-level
+procedure of the test, with no parameters, raising ValueRange
+or nothing (IndexError and Overflow need no clause).  It has
+been ONE type since 2026-10-08.  A procedure fits a procedure
+type when it raises no MORE than the type allows (decision 25),
+so a quiet one fits too.  Raiser is the old name, kept for
+the tests that wrote it.  There were two types while RAISES had
+to match to the letter.
 
 ### That (VAR t: T ; RO label: STR ; ok: BOOL)
 
-the plain form: ok must be TRUE.  The line it prints on failure
-is the label alone, so let the label say what was expected.
+That is the plain form: ok must be TRUE.  The line it prints on
+failure is the label alone, so let the label say what was
+expected.
 
 ### EqI64 (VAR t: T ; RO label: STR ; got, want: I64)
 
@@ -81,18 +82,19 @@ _(documented with the group below)_
 
 ### EqStr (VAR t: T ; RO label: STR ; RO got, want: STR)
 
-equal, and on failure both values on the line; strings in
-quotes, so that a trailing blank shows
+EqI64, EqBool and EqStr demand equal values.  On failure they put
+both values on the line, strings in quotes, so that a trailing
+blank shows.
 
 ### EqF64 (VAR t: T ; RO label: STR ; got, want: F64)
 
-EXACTLY equal: no tolerance.  Stated, because the comparison
-alone does not say it: NaN equals NaN here -- a golden NaN is
-met by a NaN -- and -0.0 equals 0.0.
+EqF64 demands EXACTLY equal: no tolerance.  This is stated
+because the comparison alone does not say it.  NaN equals NaN
+here (a golden NaN is met by a NaN), and -0.0 equals 0.0.
 
 ### Near (VAR t: T ; RO label: STR ; got, want: F64 ; absTol, relTol: F64)
 
-|got - want| <= absTol + relTol * |want|.
+Near holds when |got - want| <= absTol + relTol * |want|.
 
   absTol -- the absolute tolerance; 0.0 for none
   relTol -- the relative one, a fraction of |want|; 0.0 for none
@@ -115,11 +117,11 @@ _(documented with the group below)_
 
 ### NearF64s (VAR t: T ; RO label: STR ; RO got, want: SLICE OF F64 ; absTol, relTol: F64)
 
-a slice against a slice, ONE check however long: the lengths
-must agree, then every element as EqI64, EqStr, EqBool or Near
-would have it (NearF64s with both tolerances 0.0 is exact
-equality, NaN meeting NaN).  The failure line gives how many elements differ and
-the first of them, index and both values.
+These hold a slice against a slice, ONE check however long.  The
+lengths must agree, then every element as EqI64, EqStr, EqBool or
+Near would have it.  (NearF64s with both tolerances 0.0 is exact
+equality, NaN meeting NaN.)  The failure line gives how many
+elements differ and the first of them, index and both values.
 
 ### Raises (VAR t: T ; RO label: STR ; act: Action ; RO want: STR)
 
@@ -163,10 +165,10 @@ _(documented with the group below)_
 
 ### GoldI64 (VAR t: T ; RO path: STR ; RO name: STR) : I64
 
-GOLDEN VALUES: what an outside oracle -- numpy, scipy, polars --
-answered, written once into a checked-in file by a generator
-under tools/ and read here, so that a test needs no Python to
-run and cannot regenerate what it is compared against.
+These read GOLDEN VALUES: what an outside oracle (numpy, scipy,
+polars) answered.  A generator under tools/ writes them once into
+a checked-in file, and these read them here.  So a test needs no
+Python to run and cannot regenerate what it is compared against.
 
 The file holds one vector a line, `NAME KIND N V1 ... VN`:
 
@@ -190,15 +192,15 @@ disagree about what was computed on.
   name -- the vector's; GoldF64 and GoldI64 answer its first
           value
 
-Errors are values here too: a file that cannot be read, a name
+Errors are values here too.  A file that cannot be read, a name
 that is not in it, a vector asked for as another kind, a count
-that disagrees with the values -- each is ONE FAILED CHECK with
-its line, and the answer is empty (or 0), so the test goes on
-and its comparisons say the rest.
+that disagrees with the values: each is ONE FAILED CHECK with its
+line.  The answer is then empty (or 0), so the test goes on and
+its comparisons say the rest.
 
 ### Done (RO t: T ; RO name: STR) : I64
 
-prints `PASS (n checks) -- name` or `FAILED k of n -- name` and
-answers the exit status, 0 or 1: Io.Halt (Check.Done (t, 'M'))
+Done prints `PASS (n checks) -- name` or `FAILED k of n -- name`
+and answers the exit status, 0 or 1.  Io.Halt (Check.Done (t, 'M'))
 is a test's last line.  A run that made NO checks is a failure:
 a test that checks nothing has not passed.

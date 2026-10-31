@@ -1,18 +1,18 @@
 (* EXPECT-ERROR: an allocation in pool scratch escapes its pool *)
-(* The same slice, through a field.  Observed 2026-10-03 writing
-   Png.Raster: a canvas record held its pixels in a field, the pixels
-   were allocated in the procedure's own scratch pool, and the
-   procedure answered `c.pix'.  `RETURN c' -- the whole record --
-   was refused, because a frame value stored into a component had
-   tainted the local since stage 5 of the pool elision; `RETURN
-   c.pix' was not, because the storage rules followed a bare local
-   and a view of one, never a component.  The checker said nothing,
-   the C compiled, and the caller read freed memory in Png.Encode.
+(* The same slice leaks through a field.  It was observed 2026-10-03
+   writing Png.Raster.  A canvas record held its pixels in a field, the
+   pixels were allocated in the procedure's own scratch pool, and the
+   procedure answered `c.pix'.  `RETURN c', the whole record, was
+   refused: a frame value stored into a component had tainted the local
+   since stage 5 of the pool elision.  `RETURN c.pix' was not refused,
+   because the storage rules followed a bare local and a view of one,
+   never a component.  The checker said nothing, the C compiled, and the
+   caller read freed memory in Png.Encode.
 
-   A component that was itself given frame storage now carries it,
-   by its path -- `c.pix', not `c' -- so that an element of a slice
-   that merely LIVES in a local pool (a string header whose bytes
-   were made elsewhere) is still a value anyone may keep. *)
+   A component that was itself given frame storage now carries it, by
+   its path: `c.pix', not `c'.  So an element of a slice that merely
+   LIVES in a local pool (a string header whose bytes were made
+   elsewhere) is still a value anyone may keep. *)
 MODULE Canvas ;
 TYPE Canvas = RECORD w, h : I64 ; pix : SLICE OF BYTE END ;
 VAR out : SLICE OF BYTE ;

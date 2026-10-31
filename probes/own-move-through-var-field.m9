@@ -1,8 +1,8 @@
 (* EXPECT: argument 1 of Eat: cannot move through a selector of b into an OWN parameter *)
-(* own-move-through-field through a VAR parameter: `Steal (VAR b: B)'
-   moving b.p into Eat freed what the CALLER's record still held -- no
-   use in this procedure shows it (2026-10-28).  Legal forms first: the
-   VAR record's field read, and replaced by a fresh owned pointer. *)
+(* This is own-move-through-field through a VAR parameter.  `Steal (VAR
+   b: B)' moving b.p into Eat freed what the CALLER's record still held;
+   no use in this procedure shows it (2026-10-28).  Legal forms first:
+   the VAR record's field read, and replaced by a fresh owned one. *)
 MODULE m ;
 TYPE
   T = RECORD v : I64 END ;

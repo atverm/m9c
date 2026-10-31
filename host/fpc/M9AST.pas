@@ -1,7 +1,8 @@
 unit M9AST;
-{ M9 abstract syntax: one homogeneous node type, kinds mirroring the
-  productions of report par 10.  Fixed child slots may be nil (they
-  print as absence); a/b carry ident and literal text VERBATIM so the
+{ M9AST defines the M9 abstract syntax: one homogeneous node type,
+  whose kinds mirror the productions of report par 10.  Fixed child
+  slots may be nil (they print as absence).  a/b carry ident and
+  literal text VERBATIM so the
   printer can reproduce the exact token (0x1F stays 0x1F).           }
 {$mode objfpc}{$H+}
 interface
@@ -123,24 +124,26 @@ type
                              type the checker gave this expression
                              (SetTyStr/TyStrAt); '' unknown }
     ty        : TNode;     { the TYPED TREE (2026-10-09), through
-                             SetType/TypeAt below: corpus/Ast.m9 keys
-                             a table by node id, because the M9
+                             SetType/TypeAt below.  corpus/Ast.m9
+                             keys a table by node id, because the M9
                              checker reads the tree through borrowed
-                             pointers; a class field is the same
-                             thing here }
+                             pointers.  A class field is the same
+                             thing here. }
     constructor Create (k: TNodeKind);
     procedure Add (n: TNode);          { nil is a legal child }
   end;
 
-{ THE TYPED TREE (2026-10-09, the review's decision): the checker
-  records the type it resolved at a node -- on a designator's selector,
-  the component the selector reaches, qualified in its declaring module
-  -- and the generator reads it instead of working the type out again;
-  nil where no checker has run or it did not know }
+{ SetType and TypeAt keep THE TYPED TREE (2026-10-09, the review's
+  decision).  The checker records the type it resolved at a node.  On
+  a designator's selector, that is the component the selector
+  reaches, qualified in its declaring module.  The generator reads it
+  instead of working the type out again.  TypeAt answers nil where no
+  checker has run or it did not know. }
 procedure SetType (n, t: TNode);
 function TypeAt (n: TNode): TNode;
-{ stage 3: an EXPRESSION's type, as the checker's canonical string
-  ('I64', 'PTR Mod.T', '<str1>', ...); '' where none was recorded }
+{ SetTyStr and TyStrAt are stage 3.  They keep an EXPRESSION's type,
+  as the checker's canonical string ('I64', 'PTR Mod.T', '<str1>',
+  ...).  TyStrAt answers '' where none was recorded. }
 procedure SetTyStr (n: TNode; const t: string);
 function TyStrAt (n: TNode): string;
 
@@ -148,11 +151,12 @@ function Utf8Next (const s: string; var i: Integer): Cardinal;
 function Utf8Len (const s: string): Integer;
 function Utf8Enc (c: Cardinal): string;
 function LabelName (lv: TNode): string;
-{ A constant's VALUE, one evaluator for every place C needs one -- a
-  CASE label, an array bound (the typed tree's stage 2, 2026-10-09):
-  an integer literal or an expression of them (FoldInt), a CHAR
-  literal, a one-character string.  ch says the value is a character.
-  False for anything else.  (corpus/Ast.m9 ScalarConst/CharCode) }
+{ ScalarConst answers a constant's VALUE.  It is one evaluator for
+  every place C needs one: a CASE label, an array bound (the typed
+  tree's stage 2, 2026-10-09).  It takes an integer literal or an
+  expression of them (FoldInt), a CHAR literal, a one-character
+  string.  ch says the value is a character.  It answers False for
+  anything else.  (corpus/Ast.m9 ScalarConst/CharCode) }
 function ScalarConst (e: TNode; var v: Int64; var ch: Boolean): Boolean;
 function CharCode (const lit: string): Int64;
 function FoldInt (e: TNode; var v: Int64): Boolean;
@@ -164,7 +168,7 @@ var
   i : Integer;
   c : Char;
 begin
-  { hex digits + trailing C: 0AC = U+000A }
+  { The literal is hex digits + trailing C: 0AC = U+000A. }
   Result := 0;
   for i := 1 to Length (lit) - 1 do
   begin
@@ -223,10 +227,11 @@ begin
   Result := n.tys;
 end;
 
-{ A string literal's text is UTF-8 octets on this side (FPC reads the
-  file as bytes; m9c reads it as scalars since 2026-10-09): these two
-  read it as the scalars the M9 side holds.  Lenient: a malformed
-  sequence counts byte by byte, as the lexer never refuses one. }
+{ A string literal's text is UTF-8 octets on this side.  FPC reads the
+  file as bytes; m9c reads it as scalars since 2026-10-09.  Utf8Next
+  and Utf8Len read it as the scalars the M9 side holds.  They are
+  lenient: a malformed sequence counts byte by byte, as the lexer
+  never refuses one. }
 function Utf8Next (const s: string; var i: Integer): Cardinal;
 var b : Byte; n, k : Integer;
 begin
@@ -251,7 +256,8 @@ begin
   while i <= Length (s) do begin Utf8Next (s, i); Inc (Result); end;
 end;
 
-{ a scalar as its UTF-8 bytes (the inverse of Utf8Next) }
+{ Utf8Enc answers a scalar as its UTF-8 bytes (the inverse of
+  Utf8Next). }
 function Utf8Enc (c: Cardinal): string;
 begin
   if c < $80 then Result := Chr (c)
@@ -271,9 +277,10 @@ begin
   kids[High (kids)] := n;
 end;
 
-{ the member a CASE label names: `Fs', `Kind.Fs', `Mod.Kind.Fs' --
-  the last field of a designator of field selectors only; '' else
-  (mirrors Sem/Gen.LabelName; cp-kernel's issue 13, 2026-10-09) }
+{ LabelName answers the member a CASE label names: `Fs', `Kind.Fs',
+  `Mod.Kind.Fs'.  It is the last field of a designator of field
+  selectors only, and '' else.  It mirrors Sem/Gen.LabelName
+  (cp-kernel's issue 13, 2026-10-09). }
 function LabelName (lv: TNode): string;
 var i : Integer;
 begin
@@ -285,8 +292,9 @@ begin
   Result := lv.kids[High (lv.kids)].a;
 end;
 
-{ the value of an integer CONSTANT EXPRESSION, with the runtime's
-  arithmetic: checked, DIV and MOD truncating (mirrors Ast.FoldInt) }
+{ FoldLit and FoldInt answer the value of an integer CONSTANT
+  EXPRESSION, with the runtime's arithmetic: checked, DIV and MOD
+  truncating.  They mirror Ast.FoldInt. }
 function FoldLit (const s: string; var v: Int64): Boolean;
 var i, d, base, from : Integer; hi : Int64;
 begin

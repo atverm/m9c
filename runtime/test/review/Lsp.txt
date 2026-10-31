@@ -3,7 +3,7 @@ REVIEW Lsp -- 18 procedures with a body, 13 of them functions; 0 headings in a D
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              13
   assignments                                    70
-  arguments                                     188
+  arguments                                     189
   RETURN values                                  26
   operands of a comparison or an operator        69
   CASE labels                                     0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        6
   NEW in the frame                                1
   NEW in a named pool                             2
-  calls of a STR form with a UTF twin             3   Io.ErrLine -> Io.ErrLineUtf, Io.Env -> Io.EnvUtf, Io.ErrLine -> Io.ErrLineUtf
-  STR subscripts, writes and LEN                  1   len m9c
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

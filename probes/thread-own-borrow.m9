@@ -1,8 +1,8 @@
 (* EXPECT: THREAD (Work): cannot move borrowed p into its OWN parameter (par 4.2) *)
-(* thread-own-through-field with a BORROW: `THREAD (Work, p)', p a
-   value parameter, was a lend, and Work's DISPOSE freed the caller's
-   object (2026-10-28) -- the call `Work (p)' was refused all along.
-   Legal forms first: the borrow lent to a target that takes a value. *)
+(* This is thread-own-through-field with a BORROW.  `THREAD (Work, p)',
+   p a value parameter, was a lend, and Work's DISPOSE freed the
+   caller's object (2026-10-28); the call `Work (p)' was refused all
+   along.  The borrow lent to a target taking a value is legal. *)
 MODULE m ;
 TYPE T = RECORD v : I64 END [SHARABLE] ;
 PROCEDURE Work (OWN p: PTR T) =

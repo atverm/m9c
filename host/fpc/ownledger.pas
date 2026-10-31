@@ -1,18 +1,21 @@
 program ownledger;
-{ P3 measurement harness: prints the contortion ledger over corpus/
-  and the kill-gate statistic.  ROADMAP, binding: if >~20% of corpus
-  procedures need contortions, par 4.1 is wrong -- revise toward
-  region annotations.  Decided by this number, not by mood.
-  A CI GATE since the ledger silently shrank once: semtest gates
-  ownership ERRORS, this measures the PRICE of the borrow discipline
-  and FAILS THE BUILD over the gate, because a pre-registered rule
-  that only prints a verdict is not a rule.  Watch the count as well
+{ ownledger is the P3 measurement harness.  It prints the contortion
+  ledger over corpus/ and the kill-gate statistic.  ROADMAP, binding:
+  if >~20% of corpus procedures need contortions, par 4.1 is wrong.
+  Revise toward region annotations then.  This number decides it, not
+  mood.
+  ownledger is a CI GATE since the ledger silently shrank once.
+  semtest gates ownership ERRORS.  This measures the PRICE of the
+  borrow discipline and FAILS THE BUILD over the gate.  A
+  pre-registered rule that only prints a verdict is not a rule.
+  Watch the count as well
   as the rate: an RO sweep once dropped five procedures out of the
   ledger unnoticed, understating 4.0% as 2.4%.
-  Known under-measurement, stated honestly: only DIRECT stores of a
-  borrowed parameter are counted; a borrow laundered through a call
-  result, a variant constructor, or a VAR-record intermediary is
-  not seen (Json's tree-building src slices travel that way).       }
+  The harness under-measures, and this states it honestly.  Only
+  DIRECT stores of a borrowed parameter are counted.  A borrow
+  laundered through a call result, a variant constructor, or a
+  VAR-record intermediary is not seen (Json's tree-building src
+  slices travel that way). }
 {$mode objfpc}{$H+}
 uses SysUtils, Classes, M9Lex, M9AST, M9Parse, M9Print, M9Sem;
 
@@ -67,7 +70,8 @@ begin
         Inc (Result);
 end;
 
-{ ledger lines are 'line:col ctx: msg' -- ctx is field 2 }
+{ CtxOf answers the ctx of a ledger line.  Ledger lines are
+  'line:col ctx: msg', and ctx is field 2. }
 function CtxOf (const s: string): string;
 var a, b : Integer;
 begin
@@ -122,12 +126,12 @@ begin
       WriteLn ('  ', sem.Errors[i]);
   end;
 
-  { the ledger is DIRECTIONAL now: 'retention:' entries reach storage
-    that outlives the frame (and name what it reaches); 'self-store:'
+  { The ledger is DIRECTIONAL now.  'retention:' entries reach storage
+    that outlives the frame (and name what it reaches).  'self-store:'
     entries reach the caller only through the borrow itself (a tree
-    growing through its own node); 'frame-store:' entries die with
+    growing through its own node).  'frame-store:' entries die with
     the frame.  Only retentions are contortions, so only they feed
-    the kill-gate -- the other classes are printed because a
+    the kill-gate.  The other classes are printed because a
     measurement that discards data silently is the thing this
     harness exists to refuse. }
   nRet := 0; nSelf := 0; nFrame := 0; nUnseen := 0;
@@ -163,8 +167,8 @@ begin
     begin
       WriteLn ('VERDICT: over the gate -- par 4.1 must be revised ' +
         '(region annotations), per the pre-registered rule');
-      { the pre-registered rule is a RULE: over the gate fails the
-        build rather than printing a verdict nobody reads }
+      { The pre-registered rule is a RULE.  A rate over the gate fails
+        the build rather than printing a verdict nobody reads. }
       ExitCode := 1;
     end
     else
@@ -172,11 +176,11 @@ begin
   end;
   ctxs.Free;
 
-  { RO evidence (par 4.1 candidate mode): M9's only non-copying
-    parameter mode is VAR, which also grants the right to write.  A
-    VAR parameter never written through and never lent onward is a
-    read-only borrow wearing a mutator's mark -- and a place where
-    the checker cannot tell a reader from a writer. }
+  { This prints the RO evidence (par 4.1 candidate mode).  M9's only
+    non-copying parameter mode is VAR, which also grants the right to
+    write.  A VAR parameter never written through and never lent
+    onward is a read-only borrow wearing a mutator's mark.  It is also
+    a place where the checker cannot tell a reader from a writer. }
   WriteLn;
   WriteLn ('RO candidates (VAR params never written through):');
   for i := 0 to sem.RoCand.Count - 1 do

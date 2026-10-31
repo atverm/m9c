@@ -1,6 +1,6 @@
 DEFINITION MODULE GfKc ;
 
-(* A helper for the genforms fixtures: constants declared in another
+(* GfKc helps the genforms fixtures: constants declared in another
    module, one a literal and one an expression folded at registration
    (decision 38).                                                    *)
 

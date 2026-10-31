@@ -1,7 +1,7 @@
 (* EXPECT: FOR x IN goes over a slice, an array or a string, not I64 (par 10) *)
-(* FOR x IN s takes the elements of a slice, an array or a string --
-   STR is a slice of CHAR.  A GRID is gone over by its indexes.  The
-   legal forms first. *)
+(* FOR x IN s takes the elements of a slice, an array or a string.  STR
+   is a slice of CHAR.  A GRID is gone over by its indexes.  The legal
+   forms come first. *)
 MODULE m ;
 VAR
   xs : SLICE OF I64 ;

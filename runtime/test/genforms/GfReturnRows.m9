@@ -2,11 +2,11 @@ MODULE GfReturnRows ;
 
 (* WANT: 3b *)
 
-(* oneflux's RoLent (its item 27, 2026-10-27): rows of strings an RO
-   parameter lends, a fresh string put in one row through the outer
-   slice, the rows RETURNed.  The RETURN made the depth scan give the name
-   up, and the flow walk's one contents set read the write as one into
-   the lent text.  A returned name stays followed. *)
+(* This is oneflux's RoLent (its item 27, 2026-10-27): rows of strings
+   an RO parameter lends, a fresh string put in one row through the
+   outer slice, the rows RETURNed.  The RETURN made the depth scan give
+   the name up, and the flow walk's one contents set read the write as
+   one into the lent text.  A returned name stays followed. *)
 (* SAFE: the write replaces a slot of a fresh row; the lent text is only read *)
 IMPORT Io, Fmt ;
 TYPE

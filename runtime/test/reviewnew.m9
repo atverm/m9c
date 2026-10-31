@@ -1,10 +1,10 @@
 MODULE reviewnew ;
 
-(* The three NEW rows of `m9c --review', held to a program whose
-   sites are counted by hand: who frees the storage is what a reviewer
-   reads those rows for, and the first argument that says so is a
-   pool or a type by NAME, which the page once got wrong -- every NEW
-   with two arguments was counted as a pool's (2026-10-02; Frame's
+(* The three NEW rows of `m9c --review' are held to this program,
+   whose sites are counted by hand.  A reviewer reads those rows to
+   learn who frees the storage, and the first argument that says so
+   is a pool or a type by NAME, which the page once got wrong: every
+   NEW with two arguments was counted as a pool's (2026-10-02; Frame's
    page said 0 in the frame where there were nine).  Each comment
    says which row its line adds to; reviewdiff.sh compares the three
    rows with reviewnew.want.

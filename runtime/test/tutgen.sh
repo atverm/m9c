@@ -1,6 +1,6 @@
 #!/bin/sh
-# tutgen: RE-RECORD the tutorial's expected outputs.  Separate from
-# tutdiff on purpose -- a gate that regenerates what it compares
+# tutgen RE-RECORDS the tutorial's expected outputs.  It stays separate
+# from tutdiff on purpose: a gate that regenerates what it compares
 # against cannot fail (the docgen/docdiff rule).  Run this after
 # deliberately changing an example, read the diff, then commit both.
 set -e
@@ -24,8 +24,8 @@ for f in "$EXA"/C*.m9; do
   ( cd "$EXA" && "$W/$m" > "expect/$m.out" ) || exit 1
   echo "recorded expect/$m.out"
 done
-# the plot chapter's SVG is part of the expectation: deterministic
-# bytes are the point being taught
+# The plot chapter's SVG is part of the expectation.  Deterministic
+# bytes are the point being taught.
 cp /tmp/damped.svg "$EXA/expect/damped.svg"
 echo "recorded expect/damped.svg"
 cp /tmp/htm.svg "$EXA/expect/htm.svg"

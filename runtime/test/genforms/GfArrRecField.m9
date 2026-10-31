@@ -2,11 +2,11 @@ MODULE GfArrRecField ;
 
 (* WANT: arrays of records as fields: 7:1 a 9:2 b of 5 kept 4 here 3 *)
 
-(* An ARRAY OF a record as a field of another record, imported from
-   GfPw (its header) and declared here (this C file).  The array's
-   typedef was emitted after every struct, so the record holding it
-   named an unknown type: gcc refused "unknown type name
-   m9_arr_64_Pw_Perr" (2026-10-10). *)
+(* This program holds an ARRAY OF a record as a field of another
+   record, imported from GfPw (its header) and declared here (this C
+   file).  The array's typedef was emitted after every struct, so the
+   record holding it named an unknown type: gcc refused "unknown type
+   name m9_arr_64_Pw_Perr" (2026-10-10). *)
 
 IMPORT Io, Fmt, GfPw ;
 

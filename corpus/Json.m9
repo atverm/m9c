@@ -3,10 +3,10 @@ DEFINITION MODULE Json ;
 
 IMPORT DynStr ;
 
-(* JSON parsing for M9.  The 2026-08-20 Modula-2 version leaked every
-   node by design and capped strings at 255 characters; here the pool
-   owns the tree and slices are unbounded.  Failure is in the
-   signature, not in a JErrorK node the caller can forget to check.   *)
+(* Json parses JSON for M9.  The 2026-08-20 Modula-2 version leaked
+   every node by design and capped strings at 255 characters; here the
+   pool owns the tree and slices are unbounded.  Failure is in the
+   signature, not in a JErrorK node the caller can forget to check. *)
 
 TYPE
   Node ;                                 (* opaque; lives in a POOL *)
@@ -28,14 +28,15 @@ EXCEPTION
 
 PROCEDURE Parse (RO src: STR) : PTR Node
   RAISES ParseError ;
-  (* the whole tree is built in the caller's frame (par 4.3): it lives
-     as long as the caller does, and a caller that must keep it longer
-     Clones it into a pool.
-     ParseError carries line and column -- errors are values.          *)
+  (* Parse builds the whole tree in the caller's frame (par 4.3): it
+     lives as long as the caller does, and a caller that must keep it
+     longer Clones it into a pool.
+     ParseError carries line and column: errors are values. *)
 
 PROCEDURE Field (obj: PTR Node ; RO name: STR)
   : OPT PTR Node ;
-  (* absence is OPT, not NIL: the caller must guard before use.        *)
+  (* Field answers absence as OPT, not NIL: the caller must guard
+     before use. *)
 
 PROCEDURE Item (arr: PTR Node ; i: I64) : PTR Node
   RAISES TypeMismatch, IndexError ;
@@ -44,42 +45,44 @@ PROCEDURE Item (arr: PTR Node ; i: I64) : PTR Node
 
 PROCEDURE Count (arr: PTR Node) : I64
   RAISES TypeMismatch ;
-  (* how many elements an array has, so a walk is a FOR over it.
+  (* Count answers how many elements an array has, so a walk is a FOR
+     over it.
 
-       arr -- must BE an array.  Asking an object or a string how
-              many elements it has is a question about the document's
-              shape that the caller got wrong, so it raises rather
-              than answering 0 -- an empty array and a value that is
-              not an array are different, and 0 would merge them.  *)
+       arr -- must BE an array.  A caller that asks an object or a
+              string how many elements it has got the document's
+              shape wrong.  So Count raises rather than answering 0.
+              An empty array and a value that is not an array are
+              different, and 0 would merge them.                    *)
 
 PROCEDURE MemberCount (obj: PTR Node) : I64
   RAISES TypeMismatch ;
-  (* how many members an Object has -- the object twin of Count,
-     with the same refusal for a non-object.                          *)
+  (* MemberCount answers how many members an Object has: the object
+     twin of Count, with the same refusal for a non-object.           *)
 
 PROCEDURE NameAt (obj: PTR Node ; i: I64) : STR
   RAISES TypeMismatch, IndexError ;
-  (* the i-th member's NAME, document order -- with MemberAt this is
-     the walk Field cannot do: reading an object whose keys are data
-     (the proxy's host map).                                          *)
+  (* NameAt answers the i-th member's NAME, in document order.  With
+     MemberAt it makes the walk Field cannot do: reading an object
+     whose keys are data (the proxy's host map).                      *)
 
 PROCEDURE MemberAt (obj: PTR Node ; i: I64) : PTR Node
   RAISES TypeMismatch, IndexError ;
-  (* the i-th member's value node, document order.                    *)
+  (* MemberAt answers the i-th member's value node, in document
+     order.                                                           *)
 
 PROCEDURE AsI64 (n: PTR Node) : I64
   RAISES TypeMismatch, ValueRange ;
-  (* TypeMismatch if not Num; ValueRange if a float value is
-     non-finite or beyond I64 -- the Trunc(NaN) crash and numpy's
-     silent INT64_MIN, both named in the contract.                     *)
+  (* AsI64 raises TypeMismatch if n is not Num, and ValueRange if a
+     float value is non-finite or beyond I64.  The contract names both
+     the Trunc(NaN) crash and numpy's silent INT64_MIN. *)
 
 PROCEDURE AsF64 (n: PTR Node) : F64
   RAISES TypeMismatch ;
-  (* the numeric value as it was parsed.  Unlike AsI64 this cannot
-     raise ValueRange: every JSON number has an F64 value, and it is
-     only the narrowing to an integer that can fail.  Reach for this
-     one when the document says 3.5 and for AsI64 when it says a
-     count.                                                         *)
+  (* AsF64 answers the numeric value as it was parsed.  Unlike AsI64
+     this cannot raise ValueRange: every JSON number has an F64 value,
+     and it is only the narrowing to an integer that can fail.  Reach
+     for this one when the document says 3.5 and for AsI64 when it says
+     a count. *)
 
 PROCEDURE AsBool (n: PTR Node) : BOOL
   RAISES TypeMismatch ;
@@ -90,40 +93,41 @@ PROCEDURE AsBool (n: PTR Node) : BOOL
 
 PROCEDURE AsStr (n: PTR Node) : STR
   RAISES TypeMismatch ;
-  (* the TEXT of a JSON string.  A VIEW into the document the tree
-     was parsed from -- nothing is copied and nothing is unescaped,
-     which is exactly what Parse promises about the source it retains
-     -- so a caller that outlives the source must copy it, the same
-     contract Parse already states.
+  (* AsStr answers the TEXT of a JSON string.  It is a VIEW into the
+     document the tree was parsed from: nothing is copied and nothing
+     is unescaped, which is exactly what Parse promises about the
+     source it retains.  So a caller that outlives the source must
+     copy it, the same contract Parse already states.
 
      Until this existed a document's strings could only be COMPARED,
      through StrIs, so a configuration could ask "is the mode 'fast'"
-     and could not read a path out of the file.  Found by the ported model's
-     pathnames moving into the options document.                    *)
+     and could not read a path out of the file.  The need showed when
+     the ported model's pathnames moved into the options document.  *)
 
 PROCEDURE ParseIn (VAR pool: POOL ; RO src: STR) : PTR Node IN pool
   RAISES ParseError ;
-  (* Parse with the tree in pool: for a document a module keeps past
-     the frame that read it.  String payloads are VIEWS into src, as
-     Parse's are, so src must outlive the tree -- a file read into
-     the same pool, or a literal. *)
+  (* ParseIn is Parse with the tree in pool: for a document a module
+     keeps past the frame that read it.  String payloads are VIEWS
+     into src, as Parse's are, so src must outlive the tree: a file
+     read into the same pool, or a literal. *)
 
 PROCEDURE Text (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
-  (* the DECODED text of a JSON string: escapes resolved the way
-     json.loads resolves them -- quote, backslash, slash, the five
-     control shorthands, unicode escapes with surrogate pairs
-     combined.  A string holding no backslash answers the same VIEW
-     AsStr does, nothing copied, so the escape-free common case
-     stays free; a malformed escape raises TypeMismatch naming it,
-     and a LONE surrogate is refused the same way where Python would
-     carry the unpaired code unit -- stated, since no real document
-     wants one.  Demanded by the zarr proxy's ledger: AsStr's raw
-     view is right for comparing and wrong for READING a value
-     somebody escaped.                                              *)
+  (* Text answers the DECODED text of a JSON string, with escapes
+     resolved the way json.loads resolves them: quote, backslash,
+     slash, the five control shorthands, unicode escapes with
+     surrogate pairs combined.  A string holding no backslash answers
+     the same VIEW AsStr does, nothing copied, so the escape-free
+     common case stays free.  A malformed escape raises TypeMismatch
+     naming it.  A LONE surrogate is refused the same way, where
+     Python would carry the unpaired code unit; this is stated, since
+     no real document wants one.  The zarr proxy's ledger demanded
+     it: AsStr's raw view is right for comparing and wrong for
+     READING a value somebody escaped.                              *)
 
 PROCEDURE StrIs (n: PTR Node ; RO s: STR) : BOOL ;
-  (* is n a string equal to s?  Total, and deliberately so: it
+  (* StrIs asks whether n is a string equal to s.  It is total, and
+     deliberately so: it
      answers FALSE for a number, an object or a missing member, so a
      caller testing `"type" is "array"` writes one call and no
      handler.  Comparison against a value the caller supplies cannot
@@ -133,48 +137,52 @@ PROCEDURE IsNull (n: PTR Node) : BOOL ;
 
 PROCEDURE CompactSorted (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange, IndexError ;
-  (* Compact with every object's members sorted by name -- the
-     json.dumps(sort_keys=True, separators=(",", ":")) rendering the
-     proxy's passportSha256 canonicalises over.  Same float refusal
-     as Compact.                                                      *)
+  (* CompactSorted is Compact with every object's members sorted by
+     name: the json.dumps(sort_keys=True, separators=(",", ":"))
+     rendering the proxy's passportSha256 canonicalises over.  It has
+     the same float refusal as Compact.                               *)
 
 PROCEDURE Pretty (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
-  (* json.dumps(indent=2): document order, two-space indentation,
-     ": " after keys, one element per line, empty containers inline
-     -- the rendering the proxy's saved passport files use.           *)
+  (* Pretty renders json.dumps(indent=2): document order, two-space
+     indentation, ": " after keys, one element per line, empty
+     containers inline.  It is the rendering the proxy's saved
+     passport files use.                                              *)
 
 PROCEDURE ReprText (r: F64) : STR
   RAISES ValueRange ;
-  (* a bare F64 exactly as json.dumps renders it -- Python repr for
-     finite values, the NaN / Infinity tokens otherwise.  For
-     composers that hold the value, not a Node.
+  (* ReprText renders a bare F64 exactly as json.dumps renders it:
+     Python repr for finite values, the NaN / Infinity tokens
+     otherwise.  It is for composers that hold the value, not a Node.
 
      ReprText ALLOCATES: it carves a DString to hold one number and
-     answers a view of it.  In a loop that is a pool block per value --
+     answers a view of it.  In a loop that is a pool block per value:
      the zarr proxy measured five million of them emitting a million
-     ndjson rows -- so a composer that already HAS a buffer should call
+     ndjson rows.  So a composer that already HAS a buffer should call
      AppendF64 below and copy nothing.                                *)
 
 PROCEDURE AppendF64 (VAR d: PTR DynStr.DString ; r: F64)
   RAISES ValueRange ;
-  (* ReprText's own body, appending straight into d.  Identical bytes,
-     no intermediate string: this is what a row emitter wants.        *)
+  (* AppendF64 is ReprText's own body, appending straight into d.  It
+     gives identical bytes and no intermediate string: this is what a
+     row emitter wants.                                               *)
 
 PROCEDURE NumText (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
-  (* the number as Python str() renders it -- the digits for an
-     integer, repr for a float.  TypeMismatch when n is not Num.     *)
+  (* NumText answers the number as Python str() renders it: the
+     digits for an integer, repr for a float.  It raises TypeMismatch
+     when n is not Num.                                              *)
 
 (* ---- building a document ------------------------------------- *)
 
 PROCEDURE AppendJString (VAR d: PTR DynStr.DString ;
                          RO t: STR)
   RAISES ValueRange ;
-  (* t appended as a JSON string literal, quotes included -- the
-     same escaping Compact uses, exported for callers composing
-     JSON documents directly (the proxy's catalog builder).  The
-     declared raise is conversion accounting; it cannot fire.       *)
+  (* AppendJString appends t as a JSON string literal, quotes
+     included.  It uses the same escaping Compact uses, exported for
+     callers composing JSON documents directly (the proxy's catalog
+     builder).  The declared raise is conversion accounting; it cannot
+     fire. *)
 
 (* ---- building a document -----------------------------------------
 
@@ -186,23 +194,23 @@ PROCEDURE AppendJString (VAR d: PTR DynStr.DString ;
    json.dumps.
 
    ORDER IS THE POINT.  Set APPENDS a name that is new and REPLACES
-   one that is already there IN PLACE -- which is what Python's
-   {**a, "k": v} does, a shared key keeping a's position and taking
-   b's value.  The ICOS store attributes this was added for are
+   one that is already there IN PLACE.  Python's {**a, "k": v} does
+   the same: a shared key keeps a's position and takes b's value.
+   The ICOS store attributes this was added for are
    re-derived and diffed against live stores, where a member in the
    right place with the right value is the whole test.
 
    A node belongs to at most ONE parent: Set and Add LINK the node
-   given, they do not copy it, so handing the same node to two
+   given, they do not copy it.  So the same node handed to two
    parents makes a cycle or a shared tail.  Build a child, place it,
-   go on filling it -- that order is fine, because the link is by
+   go on filling it: that order is fine, because the link is by
    pointer.
 
    Set walks the member chain, so an object of n members costs
-   O(n^2) to build.  That is right for what this exists for -- a
-   store's .zattrs, an agent guide: tens of members -- and wrong for
-   a consolidated index of 100,000 entries, which is composed as
-   text and always was.                                             *)
+   O(n^2) to build.  That is right for what this exists for, a
+   store's .zattrs or an agent guide with tens of members.  It is
+   wrong for a consolidated index of 100,000 entries, which is
+   composed as text and always was.                                 *)
 
 PROCEDURE NewObj () : PTR Node ;
 PROCEDURE NewArr () : PTR Node ;
@@ -210,35 +218,36 @@ PROCEDURE NewArr () : PTR Node ;
 PROCEDURE NewStr (RO s: STR) : PTR Node
   RAISES ValueRange ;
   (* s is the string's VALUE, not document text.  It is escaped
-     here, because a Node's Str payload is always DOCUMENT text --
-     Text decodes it, Compact decodes it and re-escapes -- so a
-     value carrying a literal backslash stored raw would be read
-     back as an escape and could fail to parse at all.  Escaping at
-     construction keeps built and parsed nodes indistinguishable,
-     which is what lets one tree mix them.                          *)
+     here, because a Node's Str payload is always DOCUMENT text: Text
+     decodes it, Compact decodes it and re-escapes.  A value carrying
+     a literal backslash stored raw would be read back as an escape
+     and could fail to parse at all.  NewStr escapes at construction,
+     and that keeps built and parsed nodes indistinguishable, which
+     is what lets one tree mix them.                                *)
 
 PROCEDURE NewI64 (v: I64) : PTR Node ;
 PROCEDURE NewF64 (r: F64) : PTR Node ;
 PROCEDURE NewBool (b: BOOL) : PTR Node ;
 PROCEDURE NewNull () : PTR Node ;
 
-(* THE SAME CONSTRUCTORS WITH THE NODE IN A NAMED POOL, for a tree
-   that outlives the frame that builds it: a cache, a passport, a
-   store's metadata held by a server between requests.  The frame
-   forms above build in the caller's arena, which is right for a
-   tree that is composed and serialised in one frame and wrong for
-   one a module keeps -- the checker refuses a frame node stored
-   anywhere durable.  A node made here carries no frame taint, so a
-   helper that takes the tree VAR KEPT may make a member in the
-   tree's pool and Set it (`n := NewStrIn (pool, v) ; Set (o, k, n)`),
-   which is the shape the zarr proxy composes its documents in.
-   Dict spells the same pair as New/NewIn.  Members of one tree share
-   a pool: Set and Add link by pointer and copy nothing. *)
+(* These are THE SAME CONSTRUCTORS WITH THE NODE IN A NAMED POOL, for a
+   tree that outlives the frame that builds it: a cache, a passport, a
+   store's metadata held by a server between requests.  The frame forms
+   above build in the caller's arena, which is right for a tree that is
+   composed and serialised in one frame and wrong for one a module
+   keeps: the checker refuses a frame node stored anywhere durable.  A
+   node made here carries no frame taint, so a helper that takes the
+   tree VAR KEPT may make a member in the tree's pool and Set it
+   (`n := NewStrIn (pool, v) ; Set (o, k, n)`), which is the shape the
+   zarr proxy composes its documents in.  Dict spells the same pair as
+   New/NewIn.  Members of one tree share a pool: Set and Add link by
+   pointer and copy nothing. *)
 PROCEDURE NewObjIn (VAR pool: POOL) : PTR Node IN pool ;
 PROCEDURE NewArrIn (VAR pool: POOL) : PTR Node IN pool ;
 PROCEDURE NewStrIn (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
   RAISES ValueRange ;
-  (* NewStr with the node and its escaped payload in pool *)
+  (* NewStrIn is NewStr with the node and its escaped payload in
+     pool. *)
 PROCEDURE NewI64In (VAR pool: POOL ; v: I64) : PTR Node IN pool ;
 PROCEDURE NewF64In (VAR pool: POOL ; r: F64) : PTR Node IN pool ;
 
@@ -246,71 +255,74 @@ PROCEDURE NewRaw (RO text: STR) : PTR Node
   RAISES ParseError, TypeMismatch ;
 PROCEDURE NewRawIn (VAR pool: POOL ; RO text: STR) : PTR Node IN pool
   RAISES ParseError, TypeMismatch ;
-  (* a NUMBER written exactly as `text' says it -- `1.0E-5', `2.50',
-     `1e400' -- where NewF64 would write the double's shortest repr.
-     For an output whose numbers follow another program's printing
-     (Java's Double.toString, a fixed number of decimals).  text must
-     be one JSON number: anything else raises ParseError, a JSON value
-     of another kind TypeMismatch, so a document stays JSON.  The node
-     is a Num like any other -- AsF64 and AsI64 read its value -- and
-     Compact, Pretty, NumText and Clone keep the text (2026-10-10,
-     cp-kernel's proposal: its view printed numbers through a JSON
-     builder of its own). *)
+  (* NewRaw and NewRawIn make a NUMBER written exactly as `text' says
+     it (`1.0E-5', `2.50', `1e400'), where NewF64 would write the
+     double's shortest repr.  They serve an output whose numbers
+     follow another program's printing (Java's Double.toString, a
+     fixed number of decimals).  text must be one JSON number:
+     anything else raises ParseError, and a JSON value of another kind
+     raises TypeMismatch, so a document stays JSON.  The node is a Num
+     like any other: AsF64 and AsI64 read its value.  Compact, Pretty,
+     NumText and Clone keep the text (2026-10-10, cp-kernel's
+     proposal: its view printed numbers through a JSON builder of its
+     own). *)
 PROCEDURE NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool ;
 PROCEDURE NewNullIn (VAR pool: POOL) : PTR Node IN pool ;
 
 PROCEDURE Name (RO s: STR) : STR
   RAISES ValueRange ;
-  (* the DOCUMENT spelling of a member name whose VALUE is s -- what
-     Set and Field expect, since a name inside a Node is document
-     text exactly as a Str payload is.  A literal name needs none of
-     this; a name that comes from DATA does: the FLUXNET shuttle's
-     BADM export put a Windows path into a group name, and
+  (* Name answers the DOCUMENT spelling of a member name whose VALUE
+     is s: what Set and Field expect, since a name inside a Node is
+     document text exactly as a Str payload is.  A literal name needs
+     none of this; a name that comes from DATA does.  The FLUXNET
+     shuttle's BADM export put a Windows path into a group name, and
      `badm_c:\users\...` set raw was read back as a broken escape.
-     Escaped exactly as NewStr escapes a value, so a name built here
-     and one parsed from a document compare equal.                *)
+     Name escapes exactly as NewStr escapes a value, so a name built
+     here and one parsed from a document compare equal.           *)
 
 PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ;
                VAR KEPT v: PTR Node)
   RAISES TypeMismatch ;
-  (* append v under name, or put it where a member of that name
-     already stands.  TypeMismatch when obj is not an object.
+  (* Set appends v under name, or puts it where a member of that name
+     already stands.  It raises TypeMismatch when obj is not an
+     object.
 
      BOTH POINTERS ARE VAR, and that is par 4.1 rather than a
      preference: linking WRITES through them, and a value PTR
      parameter is a shared borrow the checker will not let a
      procedure write through.  So a member is a named local, not an
-     argument spelled inline -- `n := NewStr (p, s) ; Set (o, k, n)`
-     -- and a composer that wants the one-liner back wraps these in
-     its own helper, where the skip-blanks policy belongs anyway. *)
+     argument spelled inline: `n := NewStr (p, s) ; Set (o, k, n)`.
+     A composer that wants the one-liner back wraps these in its own
+     helper, where the skip-blanks policy belongs anyway. *)
 
 PROCEDURE Add (VAR arr: PTR Node ; VAR KEPT v: PTR Node)
   RAISES TypeMismatch ;
-  (* append to an array, count kept.                               *)
+  (* Add appends to an array, count kept.                          *)
 
 PROCEDURE CloneIn (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
   RAISES TypeMismatch ;
-  (* Clone with every node, payload and member name in pool *)
+  (* CloneIn is Clone with every node, payload and member name in
+     pool. *)
 
 PROCEDURE Clone (n: PTR Node) : PTR Node
   RAISES TypeMismatch ;
-  (* a DEEP copy, in the caller's frame.  A node belongs to at most one parent --
-     Set and Add relink the node they are given -- so a subtree that
-     is to appear in a second document is cloned, never linked twice.
-     Merging a shared vocabulary into a per-store document is exactly
-     that case, and linking would quietly corrupt the vocabulary for
-     every later store.
+  (* Clone makes a DEEP copy, in the caller's frame.  A node belongs
+     to at most one parent: Set and Add relink the node they are
+     given.  So a subtree that is to appear in a second document is
+     cloned, never linked twice.  A shared vocabulary merged into a
+     per-store document is exactly that case, and a link would
+     quietly corrupt the vocabulary for every later store.
 
-     Deep rather than shallow on purpose: a shallow copy would share
-     the child chain, so a later Set on the copy would reach into the
-     original.  These documents are tens of members; the copy is not
-     worth being clever about.
+     The copy is deep rather than shallow on purpose: a shallow copy
+     would share the child chain, so a later Set on the copy would
+     reach into the original.  These documents are tens of members;
+     the copy is not worth being clever about.
 
      STRING PAYLOADS AND MEMBER NAMES ARE COPIED TOO, which is what
      makes a clone that outlives its source document safe.  A Str's
-     text is a VIEW -- of the document when the node came from Parse,
-     of a builder's buffer when it came from NewStr -- so a clone
-     that kept the view would dangle the moment the source pool went
+     text is a VIEW: of the document when the node came from Parse,
+     of a builder's buffer when it came from NewStr.  A clone that
+     kept the view would dangle the moment the source pool went
      away.  Nothing in the type system can see that: a POOL is not
      part of a STR's type.                                         *)
 
@@ -323,19 +335,19 @@ PROCEDURE Spaced (n: PTR Node) : STR
      It exists because that is the spelling zarr-python 3 writes a
      consolidated `.zmetadata` in, and the one icos_ingest.finalize
      writes a slim root in.  A store's metadata is otherwise NOT
-     byte-comparable across implementations at all -- measured
-     2026-09-09: zarr 2.18.7 indents by four and sorts its keys,
-     zarr 3.3.0 indents by two and keeps insertion order, and the
+     byte-comparable across implementations at all.  A measurement on
+     2026-09-09 showed it: zarr 2.18.7 indents by four and sorts its
+     keys, zarr 3.3.0 indents by two and keeps insertion order, and the
      live ICOS stores carry BOTH because one store is rebuilt nightly
      and the others are not.  The one-line spaced form is the only
-     spelling two of those three agree on.                          *)
+     spelling two of those three agree on. *)
 
 PROCEDURE Compact (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
-  (* the tree re-serialised COMPACT, python-json.dumps style:
+  (* Compact re-serialises the tree COMPACT, python-json.dumps style:
      member order preserved (the parser keeps document order),
      separators bare, floats as Python repr (shortest round-trip,
-     m9_repr_double -- held to repr digit for digit over 300k
+     m9_repr_double, held to repr digit for digit over 300k
      values), non-finite values as dumps' NaN/Infinity tokens,
      strings escaped exactly as ensure_ascii=False
      escapes them (quote, backslash, the five control shorthands,
@@ -343,22 +355,23 @@ PROCEDURE Compact (n: PTR Node) : STR
      wire).  Tree strings are DECODED first (Text's rules) and
      re-escaped, which is exactly loads-then-dumps: a document
      spelling a quote as \" emits \" again, not the doubled
-     re-escape a raw pass would make of it.  Demanded by the zarr
-     proxy, whose reference answers json.loads-then-JSONResponse
-     and must be matched byte for byte.                              *)
-  (* is n the literal null?  A JSON null is a VALUE, not an absence
-     -- a member present and null is different from a member that is
-     not there, and Field raises for the second -- so this asks
-     about the first and nothing else.                              *)
+     re-escape a raw pass would make of it.  The zarr proxy demanded
+     it: its reference answers json.loads-then-JSONResponse and must
+     be matched byte for byte.                                       *)
+  (* IsNull asks whether n is the literal null.  A JSON null is a
+     VALUE, not an absence: a member present and null is different
+     from a member that is not there, and Field raises for the
+     second.  So IsNull asks about the first and nothing else.      *)
 
 END Json.
 
 
 UNSAFE DEFINITION MODULE FOR "C" cjrepr ;
 
-(* m9rt's shortest-round-trip float printer: CPython's repr(float),
-   probed with %.*e and judged by strtod.  REENTRANT -- all state on
-   the caller's stack.  buf needs 32 bytes; answers the length.     *)
+(* ReprF64 is m9rt's shortest-round-trip float printer:
+   CPython's repr(float), probed with %.*e and judged by strtod.  It
+   is REENTRANT: all state is on the caller's stack.  buf needs 32
+   bytes; ReprF64 answers the length.                               *)
 
 PROCEDURE ReprF64 = "m9_repr_double" (v: C.Double ; buf: C.MutPtr)
   : C.SSizeT
@@ -371,7 +384,9 @@ END cjrepr.
 
 UNSAFE IMPLEMENTATION MODULE Json ;
 
-(* UNSAFE for ADR at the float-printing boundary. *)
+IMPORT Text ;
+
+(* The module is UNSAFE for ADR at the float-printing boundary. *)
 
 FROM cjrepr IMPORT ReprF64, StrToD ;
 
@@ -393,7 +408,7 @@ TYPE
 
 PROCEDURE Cur (VAR c: PTR Cursor) : CHAR =
 BEGIN
-  IF c.pos < LEN (c.src) THEN RETURN c.src[c.pos] ELSE RETURN 0C END
+  IF c.pos < Text.BLen (c.src) THEN RETURN Text.BChar (c.src, c.pos) ELSE RETURN 0C END
 END Cur ;
 
 PROCEDURE Bump (VAR c: PTR Cursor) =
@@ -442,9 +457,9 @@ BEGIN
       RAISE ParseError ('value expected', c.line, c.col)
     END
   END
-  (* no fall-through returns exist: every path RETURNs or RAISEs,
-     and the compiler proves it -- the uninitialized-Result class,
-     closed at the language level.  (True since 2026-10-01.  For
+  (* No fall-through returns exist: every path RETURNs or RAISEs,
+     and the compiler proves it.  That closes the uninitialized-Result
+     class at the language level.  (True since 2026-10-01.  For
      five weeks before that this comment was the only thing saying
      so: with `Fail (c, ...)` as the last branch the function could
      reach its END, and both checkers accepted it.)                   *)
@@ -459,7 +474,7 @@ BEGIN
   ELSE RETURN NONE
   END ;
   WHILE c IS SOME p DO
-    IF DynStr.Eq (p.name, name) THEN RETURN SOME (p) END ;
+    IF Text.Eq (p.name, name) THEN RETURN SOME (p) END ;
     c := p.next
   END ;
   RETURN NONE
@@ -471,8 +486,9 @@ BEGIN
   CASE n.v OF
   | Num (r, i, isInt) :
       IF isInt THEN RETURN i END ;
-      RETURN I64 (r)            (* checked conversion: RAISES ValueRange
-                                   on NaN, Inf, or overflow -- par 2.1 *)
+      RETURN I64 (r)            (* The checked conversion RAISES
+                                   ValueRange on NaN, Inf, or
+                                   overflow: par 2.1. *)
   ELSE
     RAISE TypeMismatch ('number expected')
   END
@@ -553,7 +569,7 @@ BEGIN
   Bump (c) ;
   start := c.pos ;
   WHILE Cur (c) # '"' DO
-    IF c.pos >= LEN (c.src) THEN Fail (c, 'unterminated string') END ;
+    IF c.pos >= Text.BLen (c.src) THEN Fail (c, 'unterminated string') END ;
     IF Cur (c) = '\' THEN Bump (c) END ;           (* skip escaped char *)
     Bump (c)
   END ;
@@ -587,7 +603,7 @@ BEGIN
     IF isInt AND (ip <= (MAX (I64) - d) DIV 10) THEN ip := ip * 10 + d
     ELSE isInt := FALSE END ;
     (* overflow never traps here: past I64 the number demotes to F64.
-       The M2 version wrapped silently -- par 2.1's Overflow trap is
+       The M2 version wrapped silently.  Par 2.1's Overflow trap is
        for arithmetic, not for deciding a representation.             *)
     Bump (c)
   END ;
@@ -615,7 +631,8 @@ BEGIN
     ex := 0 ;
     WHILE Cur (c) >= '0' AND Cur (c) <= '9' DO
       IF ex < 1000 THEN ex := ex * 10 + ORD (Cur (c)) - ORD ('0') END ;
-      (* clamped: past any F64 range already; r saturates below *)
+      (* ex is clamped: it is past any F64 range already, and r
+         saturates below. *)
       Bump (c)
     END ;
     WHILE ex > 0 DO
@@ -637,7 +654,8 @@ BEGIN
   RETURN n
 EXCEPT
 | ValueRange :
-    (* DynStr.Bytes' accounting arm; a digit token cannot fire it *)
+    (* This is DynStr.Bytes' accounting arm; a digit token cannot fire
+       it. *)
     Fail (c, 'number unrepresentable') ;
     RETURN NEW (c, Node)
 END ParseNumber ;
@@ -645,12 +663,12 @@ END ParseNumber ;
 PROCEDURE Match (VAR c: PTR Cursor ; RO lit: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF c.pos + LEN (lit) > LEN (c.src) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (lit) - 1 DO
-    IF c.src[c.pos + i] # lit[i] THEN RETURN FALSE END
+  IF c.pos + Text.BLen (lit) > Text.BLen (c.src) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (lit) - 1 DO
+    IF Text.BAt (c.src, c.pos + i) # Text.BAt (lit, i) THEN RETURN FALSE END
   END ;
-  c.pos := c.pos + LEN (lit) ;
-  c.col := c.col + LEN (lit) ;      (* keywords never contain newlines *)
+  c.pos := c.pos + Text.BLen (lit) ;
+  c.col := c.col + Text.BLen (lit) ;      (* keywords never contain newlines *)
   RETURN TRUE
 END Match ;
 
@@ -660,15 +678,15 @@ VAR
   c : PTR Cursor ;
   n : PTR Node ;
 BEGIN
-  (* the cursor is the parser's allocation root: every node is NEW
-     (c, Node), so the tree lands where the cursor lives -- here the
-     frame, which for a function answering a pointer is the caller's
-     arena; in ParseIn the pool *)
+  (* The cursor is the parser's allocation root: every node is NEW
+     (c, Node), so the tree lands where the cursor lives.  Here that
+     is the frame, which for a function answering a pointer is the
+     caller's arena.  In ParseIn it is the pool. *)
   c := NEW (Cursor) ;
   c.src := src ; c.pos := 0 ; c.line := 1 ; c.col := 1 ;
   n := ParseValue (c) ;
   Skip (c) ;
-  IF c.pos < LEN (c.src) THEN Fail (c, 'trailing characters after value') END ;
+  IF c.pos < Text.BLen (c.src) THEN Fail (c, 'trailing characters after value') END ;
   RETURN n
 END Parse ;
 
@@ -682,7 +700,7 @@ BEGIN
   c.src := src ; c.pos := 0 ; c.line := 1 ; c.col := 1 ;
   n := ParseValue (c) ;
   Skip (c) ;
-  IF c.pos < LEN (c.src) THEN Fail (c, 'trailing characters after value') END ;
+  IF c.pos < Text.BLen (c.src) THEN Fail (c, 'trailing characters after value') END ;
   RETURN n
 END ParseIn ;
 
@@ -702,8 +720,8 @@ BEGIN
         j := j - 1 ;
         c := p.next
       END ;
-      RAISE IndexError (i, count)   (* count and chain disagree: only
-                                       reachable through a broken tree *)
+      RAISE IndexError (i, count)   (* Count and chain disagree.  Only
+                                       a broken tree reaches this. *)
   ELSE
     RAISE TypeMismatch ('array expected')
   END
@@ -803,7 +821,7 @@ END AsStr ;
 PROCEDURE StrIs (n: PTR Node ; RO s: STR) : BOOL =
 BEGIN
   CASE n.v OF
-  | Str (t) : RETURN DynStr.Eq (t, s)
+  | Str (t) : RETURN Text.Eq (t, s)
   ELSE RETURN FALSE
   END
 END StrIs ;
@@ -814,8 +832,8 @@ VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
 BEGIN
-  (* built in a scratch pool that dies here; the answer is re-homed
-     into the caller's frame at exit (par 2.3) *)
+  (* The text is built in a scratch pool that dies here; the answer is
+     re-homed into the caller's frame at exit (par 2.3). *)
   d := DynStr.New (scratch) ;
   AppendF64 (d, r) ;
   RETURN DynStr.View (d)
@@ -827,7 +845,7 @@ VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
 BEGIN
-  IF LEN (n.raw) > 0 THEN RETURN n.raw END ;
+  IF Text.BLen (n.raw) > 0 THEN RETURN n.raw END ;
   CASE n.v OF
   | Num (r, i, isInt) :
       d := DynStr.New (scratch) ;
@@ -841,16 +859,11 @@ BEGIN
   END
 END NumText ;
 
-(* a copy of s in the pool dst lives in (rule 2): the payloads and
-   member names of a clone share their tree's pool *)
+(* CopyStrTo answers a copy of s in the pool dst lives in (rule 2).
+   The payloads and member names of a clone share their tree's pool. *)
 PROCEDURE CopyStrTo (VAR dst: PTR Node ; RO s: STR) : STR =
-VAR
-  c : STR ;
-  i : I64 ;
 BEGIN
-  c := NEW (dst, CHAR, LEN (s)) ;
-  FOR i := 0 TO LEN (s) - 1 DO c[i] := s[i] END ;
-  RETURN c
+  RETURN UTF (dst, s)
 END CopyStrTo ;
 
 PROCEDURE Clone (n: PTR Node) : PTR Node
@@ -871,14 +884,15 @@ BEGIN
   RETURN c
 END CloneIn ;
 
-(* the deep copy itself: c already exists, in the frame or in a pool,
-   and every node, payload and name the copy makes is allocated where
-   the ROOT lives -- root is the clone's root, carried down the
-   recursion as its own VAR parameter so that NEW (root, T) names the
-   tree's pool at every depth; a child held in a local would name
-   this frame instead (rule 2 reads the pool off the argument's root,
-   and a pool-less local is the frame), which is how the first
-   CloneIn handed back grandchildren that died with the copy.  So
+(* CopyInto is the deep copy itself.  c already exists, in the frame
+   or in a pool, and every node, payload and name the copy makes is
+   allocated where the ROOT lives.  root is the clone's root, carried
+   down the recursion as its own VAR parameter so that NEW (root, T)
+   names the tree's pool at every depth.  A child held in a local
+   would name this frame instead: rule 2 reads the pool off the
+   argument's root, and a pool-less local is the frame.  That is how
+   the first CloneIn handed back grandchildren that died with the
+   copy.  So
    Clone and CloneIn differ only in where the root was made.  The
    member chains are linked here as the parser links them, not
    through Set and Add, which KEEP their object and would want c
@@ -919,22 +933,22 @@ BEGIN
       c.v := Value.Arr (head, k)
   | Str (t) :
       (* THE PAYLOAD IS COPIED, and that is the difference between a
-         clone and a share.  A Str's `s` is a VIEW -- of document text
+         clone and a share.  A Str's `s` is a VIEW: of document text
          when the node came from Parse, of a builder's buffer when it
-         came from NewStr -- and a clone into a DIFFERENT pool that
-         kept the view would dangle the moment the source pool went
+         came from NewStr.  A clone into a DIFFERENT pool that kept
+         the view would dangle the moment the source pool went
          away.  Nothing in the type system can see it: a POOL is not
          part of a STR's type, and the ICOS ObsPack builder segfaulted
          on exactly this, with the member NAMES dangling too.  The
          names are copied above for the same reason. *)
       c.v := Value.Str (CopyStrTo (root, t))
-  (* Num, Bool, Null: the variant IS the value -- rebuilt arm by arm,
-     so that the checker sees scalars copied and not n's storage
-     shared (`c.v := n.v' under an ELSE read as a retention of n once
-     a record value counted as one, 2026-10-08) *)
+  (* For Num, Bool and Null the variant IS the value.  It is rebuilt
+     arm by arm, so that the checker sees scalars copied and not n's
+     storage shared.  (`c.v := n.v' under an ELSE read as a retention
+     of n once a record value counted as one, 2026-10-08.) *)
   | Num (r, i, isInt) :
       c.v := Value.Num (r, i, isInt) ;
-      IF LEN (n.raw) > 0 THEN c.raw := CopyStrTo (root, n.raw) END
+      IF Text.BLen (n.raw) > 0 THEN c.raw := CopyStrTo (root, n.raw) END
   | Bool (b) :
       c.v := Value.Bool (b)
   | Null :
@@ -951,14 +965,14 @@ END AppendJString ;
 PROCEDURE HasBackslash (RO t: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO LEN (t) - 1 DO
-    IF ORD (t[i]) = 92 THEN RETURN TRUE END
+  FOR i := 0 TO Text.BLen (t) - 1 DO
+    IF I64 (Text.BAt (t, i)) = 92 THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END HasBackslash ;
 
 PROCEDURE HexVal (ch: CHAR) : I64 =
-  (* -1 when ch is not a hex digit *)
+  (* HexVal answers -1 when ch is not a hex digit. *)
 BEGIN
   IF ch >= '0' AND ch <= '9' THEN RETURN ORD (ch) - ORD ('0') END ;
   IF ch >= 'a' AND ch <= 'f' THEN
@@ -972,15 +986,16 @@ END HexVal ;
 
 PROCEDURE Hex4 (RO t: STR ; at: I64) : I64
   RAISES TypeMismatch =
-  (* four hex digits of a unicode escape, starting at 'at' *)
+  (* Hex4 reads four hex digits of a unicode escape, starting at
+     'at'. *)
 VAR v, k, h : I64 ;
 BEGIN
-  IF at + 3 >= LEN (t) THEN
+  IF at + 3 >= Text.BLen (t) THEN
     RAISE TypeMismatch ('truncated unicode escape')
   END ;
   v := 0 ;
   FOR k := 0 TO 3 DO
-    h := HexVal (t[at + k]) ;
+    h := HexVal (Text.BChar (t, at + k)) ;
     IF h < 0 THEN
       RAISE TypeMismatch ('bad hex in unicode escape')
     END ;
@@ -991,26 +1006,31 @@ END Hex4 ;
 
 PROCEDURE DecodeStr (RO t: STR) : STR
   RAISES TypeMismatch, ValueRange =
-  (* the raw source text of a parsed string, decoded json.loads'
-     way.  Escape-free input answers the input view unchanged; a
-     decoded one is built in a scratch pool and re-homed out (par
-     2.3).                                                          *)
+  (* DecodeStr decodes the raw source text of a parsed string
+     json.loads' way.  Escape-free input answers the input view
+     unchanged; a decoded one is built in a scratch pool and re-homed
+     out (par 2.3). *)
+  (* the characters between escapes go over as RUNS, SLICE (t, from,
+     i - from), whose ends are at a backslash or after an escape --
+     ASCII, so a character boundary; an octet appended as a character
+     would encode a character past ASCII twice *)
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
-  i, v, lo : I64 ;
+  i, v, lo, from : I64 ;
   ch : CHAR ;
 BEGIN
   IF NOT HasBackslash (t) THEN RETURN t END ;
   d := DynStr.New (scratch) ;
   i := 0 ;
-  WHILE i < LEN (t) DO
-    ch := t[i] ;
-    IF ORD (ch) = 92 THEN
-      IF i + 1 >= LEN (t) THEN
+  from := 0 ;
+  WHILE i < Text.BLen (t) DO
+    IF I64 (Text.BAt (t, i)) = 92 THEN
+      DynStr.Append (d, SLICE (t, from, i - from)) ;
+      IF i + 1 >= Text.BLen (t) THEN
         RAISE TypeMismatch ('escape at end of string')
       END ;
-      ch := t[i + 1] ;
+      ch := Text.BChar (t, i + 1) ;
       i := i + 2 ;
       IF ch = '"' OR ch = '/' OR ORD (ch) = 92 THEN
         DynStr.AppendChar (d, ch)
@@ -1023,9 +1043,10 @@ BEGIN
         v := Hex4 (t, i) ;
         i := i + 4 ;
         IF v >= 55296 AND v <= 56319 THEN
-          (* high surrogate: only legal with a low one right after *)
-          IF i + 5 < LEN (t) AND ORD (t[i]) = 92 AND
-             t[i + 1] = 'u' THEN
+          (* A high surrogate is only legal with a low one right
+             after. *)
+          IF i + 5 < Text.BLen (t) AND I64 (Text.BAt (t, i)) = 92 AND
+             Text.BIs (t, i + 1, 'u') THEN
             lo := Hex4 (t, i + 2) ;
             IF lo < 56320 OR lo > 57343 THEN
               RAISE TypeMismatch ('lone surrogate in unicode escape')
@@ -1041,12 +1062,13 @@ BEGIN
         DynStr.AppendChar (d, CHR (v))
       ELSE
         RAISE TypeMismatch ('unknown escape in string')
-      END
+      END ;
+      from := i
     ELSE
-      DynStr.AppendChar (d, ch) ;
       i := i + 1
     END
   END ;
+  DynStr.Append (d, SLICE (t, from, i - from)) ;
   RETURN DynStr.View (d)
 END DecodeStr ;
 
@@ -1068,8 +1090,8 @@ BEGIN
   DynStr.AppendChar (d, '"')
 END EmitJStr ;
 
-(* the same escaping WITHOUT the quotes: what a Str node's payload
-   holds, since that payload is document text *)
+(* EscapeBody does the same escaping WITHOUT the quotes: what a Str
+   node's payload holds, since that payload is document text. *)
 PROCEDURE EscapeBody (VAR d: PTR DynStr.DString ;
                       RO t: STR)
   RAISES ValueRange =
@@ -1077,8 +1099,8 @@ VAR
   v : I64 ;
   ch : CHAR ;
 BEGIN
-  (* FOR ch IN t: over characters, the same both sides of the UTF
-     switch; a subscript there would be an octet *)
+  (* FOR ch IN t walks characters, the same both sides of the UTF
+     switch; a subscript there would be an octet. *)
   FOR ch IN t DO
     v := ORD (ch) ;
     IF ch = '"' THEN
@@ -1114,8 +1136,8 @@ END EscapeBody ;
 
 PROCEDURE HexDigit (v: I64) : CHAR
   RAISES ValueRange =
-  (* the CHR the checker counts; v is DIV/MOD 16 of a control code,
-     so it cannot fire *)
+  (* The declared raise is the CHR the checker counts.  v is DIV/MOD
+     16 of a control code, so it cannot fire. *)
 BEGIN
   IF v < 10 THEN RETURN CHR (ORD ('0') + v) END ;
   RETURN CHR (ORD ('a') + v - 10)
@@ -1163,7 +1185,7 @@ BEGIN
   | Str (t) :
       EmitJStr (d, DecodeStr (t))
   | Num (r, i, isInt) :
-      IF LEN (n.raw) > 0 THEN
+      IF Text.BLen (n.raw) > 0 THEN
         DynStr.Append (d, n.raw)
       ELSIF isInt THEN
         DynStr.AppendI64 (d, i)
@@ -1181,8 +1203,9 @@ BEGIN
   END
 END EmitVal ;
 
-(* a float exactly as json.dumps renders it: Python repr for finite
-   values, the NaN / Infinity / -Infinity tokens otherwise *)
+(* AppendF64 appends a float exactly as json.dumps renders it: Python
+   repr for finite values, the NaN / Infinity / -Infinity tokens
+   otherwise. *)
 PROCEDURE AppendF64 (VAR d: PTR DynStr.DString ;
                      r: F64)
   RAISES ValueRange =
@@ -1310,11 +1333,11 @@ PROCEDURE NameLess (RO a: STR ; RO b: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i < LEN (a) AND i < LEN (b) DO
-    IF a[i] # b[i] THEN RETURN a[i] < b[i] END ;
+  WHILE i < Text.BLen (a) AND i < Text.BLen (b) DO
+    IF Text.BAt (a, i) # Text.BAt (b, i) THEN RETURN Text.BAt (a, i) < Text.BAt (b, i) END ;
     i := i + 1
   END ;
-  RETURN LEN (a) < LEN (b)
+  RETURN Text.BLen (a) < Text.BLen (b)
 END NameLess ;
 
 PROCEDURE CompactSorted (n: PTR Node) : STR
@@ -1467,8 +1490,9 @@ PROCEDURE NewF64 (r: F64) : PTR Node =
 VAR n : PTR Node ;
 BEGIN
   n := NEW (Node) ;
-  (* the integer slot is unread while isInt is FALSE; 0 rather than a
-     conversion that could trap on a huge or non-finite r *)
+  (* The integer slot is unread while isInt is FALSE.  It holds 0
+     rather than a conversion that could trap on a huge or non-finite
+     r. *)
   n.v := Value.Num (r, 0, FALSE) ;
   RETURN n
 END NewF64 ;
@@ -1532,8 +1556,8 @@ BEGIN
   RETURN n
 END NewF64In ;
 
-(* the value of a raw number's text, through the parser itself, so
-   that what it accepts is exactly JSON's number grammar *)
+(* RawValue answers the value of a raw number's text, through the
+   parser itself, so that it accepts exactly JSON's number grammar. *)
 PROCEDURE RawValue (RO text: STR) : Value
   RAISES ParseError, TypeMismatch =
 VAR t : PTR Node ;
@@ -1594,7 +1618,7 @@ BEGIN
   v.name := name ;
   prev := NONE ;
   WHILE cur IS SOME p DO
-    IF DynStr.Eq (p.name, name) THEN
+    IF Text.Eq (p.name, name) THEN
       (* REPLACE IN PLACE: the new node takes the old one's position
          and its tail, so the member order does not move.  The old
          node is left to the pool, which is what a pool is for. *)
@@ -1623,9 +1647,8 @@ VAR
   cur, prev, head : OPT PTR Node ;
   k : I64 ;
 BEGIN
-  (* the head is read out HERE, because rebuilding the variant with
-     the new count is the only way to store it and CASE is the only
-     way back in *)
+  (* The head is read out HERE.  A rebuilt variant with the new count
+     is the only way to store it, and CASE is the only way back in. *)
   CASE arr.v OF
   | Arr (first, count) : head := first ; cur := first ; k := count
   ELSE RAISE TypeMismatch ('Add on a node that is not an array')

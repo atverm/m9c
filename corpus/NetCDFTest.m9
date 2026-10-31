@@ -1,23 +1,29 @@
 MODULE NetCDFTest ;
 
-(* NetCDF.m9's write path against its read path, and its refusals.
+(* NetCDFTest holds NetCDF.m9's write path against its read path,
+   and tests its refusals.
 
    The ROUND TRIP writes a 4 x 5 grid with the M9 write path and reads
    it back with the M9 read path, every value to the bit, a hyperslab,
    ReadGrid2 and its own axis checks.  A round trip through one binding
-   proves only that it is self-consistent -- a binding that swapped two
-   axes would be too -- so the outside witness is
+   proves only that it is self-consistent; a binding that swapped two
+   axes would be too.  So the outside witness is
    runtime/test/columnar.sh: netCDF4-python, and libnetcdf's own
    nc_get_att_text for an attribute's octets, read the files
    columnarout.m9 wrote (columnarcheck.py netcdf).
 
-   TEXT ATTRIBUTES both ways: PutAttText writes UTF-8 (`°C` is C2 B0
-   43, three octets, as GetAttStr shows them one CHAR an octet) and
-   GetAttText reads it back as two characters; PutAttStr keeps its
-   octet contract.  The refusals: a buffer smaller than the slab, a
-   negative offset, a missing variable (the operation and the
-   library's own message carried), a missing file.  Was
-   runtime/test/netcdf_driver.c. *)
+   TEXT both ways, by the rule of 2026-10-31: text goes to libnetcdf
+   as its UTF-8 octets, and octets come back decoded as UTF-8 when
+   valid, else one character per octet.  PutAttText and PutAttStr
+   both write UTF-8, and GetAttStr and GetAttText both read `°C' back
+   as two characters.  A dimension, a variable and an attribute
+   named past ASCII read back by name.  A char variable's raw octets
+   show `°C' as C2 B0 43.  A classic file written octet by octet
+   holds Latin-1 text (B0 43), as an old writer left it, and reads
+   as the same characters.  The refusals tested are a buffer smaller
+   than the slab, a negative offset, a missing variable (the
+   operation and the library's own message carried), and a missing
+   file.  This file was runtime/test/netcdf_driver.c. *)
 
 IMPORT Check ;
 IMPORT Faults ;
@@ -30,13 +36,15 @@ IMPORT Text ;
 CONST
   NLat = 4 ;
   NLon = 5 ;
-  Sections = 4 ;   (* Write, Read, Texts, Chars, each counted at its end *)
+  Sections = 5 ;   (* Write, Read, Texts, Chars, Latin1, each counted at its end *)
+  Deg = [176, 67] ;              (* `°C' in Latin-1 *)
+  Micro = [181, 109, 111, 108] ; (* `µmol' in Latin-1 *)
 
 VAR
   t : Check.T ;
   pool : POOL ;
   data : SLICE OF F64 ;
-  gridPath, textPath, charPath : STR ;   (* per run: two runs at once write two files *)
+  gridPath, textPath, charPath, latinPath : STR ;   (* per run: two runs at once write two files *)
   ran : I64 ;                  (* sections that reached their end *)
 
 PROCEDURE Fill () =
@@ -131,8 +139,8 @@ BEGIN
 END Read ;
 
 PROCEDURE OffGrid () RAISES ValueRange =
-  (* one column past the grid's last, read from the file again: an
-     Action takes no arguments *)
+  (* OffGrid reads one column past the grid's last, from the file
+     again: an Action takes no arguments. *)
 VAR
   f : PTR NetCDF.File IN pool ;
   g : GRID 2 OF F64 ;
@@ -173,7 +181,8 @@ EXCEPT
 END NegativeOffset ;
 
 PROCEDURE MissingVar (f: PTR NetCDF.File) : STR =
-  (* the operation, when the library's own message is carried too *)
+  (* MissingVar answers the operation, when the library's own message
+     is carried too. *)
 VAR
   v : I64 ;
   o, d : STR ;
@@ -212,23 +221,16 @@ EXCEPT
 | ValueRange : RETURN '?'
 END I64Text ;
 
-(* the octets of a text as CHARs 0..255, as GetAttStr answers them --
-   one per CHARACTER, by FOR c IN s, which counts the same before and
-   after the UTF switch (a LEN would count UTF-8 octets there) *)
-PROCEDURE Octets (RO s: STR) : SLICE OF I64 RAISES ValueRange =
+(* Octets answers the first n octets of a buffer as numbers, for
+   EqI64s. *)
+PROCEDURE Octets (RO b: SLICE OF BYTE ; n: I64) : SLICE OF I64
+  RAISES ValueRange, IndexError =
 VAR
   o : SLICE OF I64 ;
-  c : CHAR ;
-  n : I64 ;
+  i : I64 ;
 BEGIN
-  n := 0 ;
-  FOR c IN s DO n := n + 1 END ;
   o := NEW (pool, I64, n) ;
-  n := 0 ;
-  FOR c IN s DO
-    o[n] := ORD (c) ;
-    n := n + 1
-  END ;
+  FOR i := 0 TO n - 1 DO o[i] := I64 (b[i]) END ;
   RETURN o
 END Octets ;
 
@@ -240,11 +242,19 @@ BEGIN
   RETURN s
 END Three ;
 
+PROCEDURE Four (a, b, c, d: I64) : SLICE OF I64 =
+VAR s : SLICE OF I64 ;
+BEGIN
+  s := NEW (pool, I64, 4) ;
+  s[0] := a ; s[1] := b ; s[2] := c ; s[3] := d ;
+  RETURN s
+END Four ;
+
 PROCEDURE Texts () RAISES NetCDF.Error, ValueRange =
 VAR
   f : PTR NetCDF.File IN pool ;
   dims : SLICE OF I64 ;
-  v : I64 ;
+  v, d, w : I64 ;
 BEGIN
   f := NetCDF.Create4 (pool, textPath, TRUE) ;
   dims := NEW (pool, I64, 1) ;
@@ -253,36 +263,50 @@ BEGIN
   NetCDF.PutAttText (f, v, 'units', '°C') ;
   NetCDF.PutAttText (f, NetCDF.Global, 'title', 'µmol m-2 s-1 — CO₂') ;
   NetCDF.PutAttText (f, NetCDF.Global, 'plain', 'ASCII') ;
-  NetCDF.PutAttStr (f, NetCDF.Global, 'latin1', 'µ') ;
+  NetCDF.PutAttStr (f, NetCDF.Global, 'viaStr', 'µmol CO₂') ;
+  dims[0] := NetCDF.DefDim (f, 'höhe', 2) ;
+  w := NetCDF.DefVar (f, 'CO₂', NetCDF.TypeFloat, dims) ;
+  NetCDF.PutAttText (f, w, 'Größe', 'mol mol-1') ;
   NetCDF.EndDef (f) ;
   NetCDF.Close (f) ;
   f := NetCDF.Open (pool, textPath) ;
   v := NetCDF.VarId (f, 'TA') ;
-  Check.EqI64s (t, 'PutAttText: °C is the UTF-8 octets C2 B0 43',
-                Octets (NetCDF.GetAttStr (pool, f, v, 'units')), Three (194, 176, 67)) ;
+  Check.EqStr (t, 'PutAttText: GetAttStr reads °C back as two characters',
+               NetCDF.GetAttStr (pool, f, v, 'units'), '°C') ;
   Check.EqStr (t, 'PutAttText: and GetAttText reads °C back',
                NetCDF.GetAttText (pool, f, v, 'units'), '°C') ;
   Check.EqStr (t, 'PutAttText: two- and three-octet sequences, a global attribute',
                NetCDF.GetAttText (pool, f, NetCDF.Global, 'title'), 'µmol m-2 s-1 — CO₂') ;
-  Check.EqI64 (t, 'PutAttText: the title is 23 octets for 18 characters',
-               LEN (Octets (NetCDF.GetAttStr (pool, f, NetCDF.Global, 'title'))), 23) ;
+  Check.EqI64 (t, 'GetAttStr: the title is 18 characters (23 octets)',
+               Text.CpCount (NetCDF.GetAttStr (pool, f, NetCDF.Global, 'title')), 18) ;
   Check.EqStr (t, 'PutAttText: ASCII is ASCII', NetCDF.GetAttStr (pool, f, NetCDF.Global, 'plain'), 'ASCII') ;
-  Check.EqStr (t, 'PutAttStr: still one octet a CHAR (µ is the single octet B5)',
-               NetCDF.GetAttStr (pool, f, NetCDF.Global, 'latin1'), 'µ') ;
+  Check.EqStr (t, 'PutAttStr: writes UTF-8 too, ₂ past 255 not refused',
+               NetCDF.GetAttStr (pool, f, NetCDF.Global, 'viaStr'), 'µmol CO₂') ;
+  w := NetCDF.VarId (f, 'CO₂') ;
+  Check.EqStr (t, 'names: VarName reads a variable named past ASCII',
+               NetCDF.VarName (pool, f, w), 'CO₂') ;
+  d := NetCDF.DimId (f, 'höhe') ;
+  Check.EqStr (t, 'names: DimName reads a dimension named past ASCII',
+               NetCDF.DimName (pool, f, d), 'höhe') ;
+  Check.EqStr (t, 'names: AttName reads an attribute named past ASCII',
+               NetCDF.AttName (pool, f, w, 0), 'Größe') ;
+  Check.EqStr (t, 'names: and the attribute reads by that name',
+               NetCDF.GetAttText (pool, f, w, 'Größe'), 'mol mol-1') ;
   NetCDF.Close (f) ;
   Check.That (t, 'the text file removed', Io.Remove (textPath)) ;
   ran := ran + 1
 END Texts ;
 
-(* char VARIABLES of rank 1, 2 and 3 read back (2026-10-29): GetChars
-   and GetText built a start and a count two long whatever the rank, so
-   an ObsPack file's rank-1 `qc_flag(time)' read as one row answered its
-   first character, and a rank-3 variable read past the arrays *)
+(* Chars reads back char VARIABLES of rank 1, 2 and 3 (2026-10-29).
+   GetChars and GetText built a start and a count two long whatever
+   the rank, so an ObsPack file's rank-1 `qc_flag(time)' read as one
+   row answered its first character, and a rank-3 variable read past
+   the arrays. *)
 PROCEDURE Chars () RAISES NetCDF.Error, ValueRange, Faults.SizeError, IndexError =
 VAR
   f : PTR NetCDF.File IN pool ;
   d1, d2, d3 : SLICE OF I64 ;
-  dt, dn, ds, vflag, vname, vcode, i, j, want : I64 ;
+  dt, dn, ds, vflag, vname, vcode, vunit, i, j, want : I64 ;
   rows : SLICE OF STR ;
   buf : SLICE OF BYTE ;
   refused : BOOL ;
@@ -300,8 +324,10 @@ BEGIN
   d3 := NEW (pool, I64, 3) ;
   d3[0] := dt ; d3[1] := dn ; d3[2] := ds ;
   vcode := NetCDF.DefVar (f, 'code', NetCDF.TypeChar, d3) ;
+  vunit := NetCDF.DefVar (f, 'unit', NetCDF.TypeChar, One (ds)) ;
   NetCDF.EndDef (f) ;
   NetCDF.PutChars (f, vflag, One (0), One (5), 'UUNUU') ;
+  NetCDF.PutChars (f, vunit, One (0), One (4), '°C') ;
   FOR i := 0 TO 4 DO
     NetCDF.PutChars (f, vname, Two (i, 0), Two (1, 4), 'n' + Fmt.I64Str (i)) ;
     FOR j := 0 TO 1 DO
@@ -327,6 +353,12 @@ BEGIN
   want := ORD ('3') ;
   Check.EqI64 (t, 'GetText: rank 3, a block of rows from row 3 across a site boundary (c30 last)',
                I64 (buf[13]), want) ;
+  buf := NEW (pool, BYTE, 4) ;
+  NetCDF.GetText (f, vunit, 0, 1, 4, buf) ;
+  Check.EqI64s (t, 'PutChars: °C reaches the file as the UTF-8 octets C2 B0 43, NUL-padded',
+                Octets (buf, 4), Four (194, 176, 67, 0)) ;
+  rows := NetCDF.GetChars (pool, f, vunit, 1, 4) ;
+  Check.EqStr (t, 'GetChars: and reads back as °C', rows[0], '°C') ;
   refused := FALSE ;
   BEGIN
     rows := NetCDF.GetChars (pool, f, vname, 5, 3)
@@ -346,15 +378,102 @@ BEGIN
   ran := ran + 1
 END Chars ;
 
+(* Be32 puts v at b[at] as four octets, big-endian, as the classic
+   format stores every count. *)
+PROCEDURE Be32 (b: SLICE OF BYTE ; VAR at: I64 ; v: I64)
+  RAISES ValueRange, IndexError =
+BEGIN
+  b[at] := BYTE (v DIV 16777216 MOD 256) ;
+  b[at + 1] := BYTE (v DIV 65536 MOD 256) ;
+  b[at + 2] := BYTE (v DIV 256 MOD 256) ;
+  b[at + 3] := BYTE (v MOD 256) ;
+  at := at + 4
+END Be32 ;
+
+(* Raw puts the octets o at b[at], then pads to four with NUL.  Pool
+   storage is zero, so padding is a step. *)
+PROCEDURE Raw (b: SLICE OF BYTE ; VAR at: I64 ; RO o: SLICE OF I64)
+  RAISES ValueRange, IndexError =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (o) - 1 DO b[at + i] := BYTE (o[i]) END ;
+  at := at + (LEN (o) + 3) DIV 4 * 4
+END Raw ;
+
+(* Name puts an ASCII name as the classic format spells one: its
+   length, its octets, NUL padding. *)
+PROCEDURE Name (b: SLICE OF BYTE ; VAR at: I64 ; RO s: STR)
+  RAISES ValueRange, IndexError =
+VAR
+  o : SLICE OF I64 ;
+  c : CHAR ;
+  i : I64 ;
+BEGIN
+  o := NEW (pool, I64, Text.BLen (s)) ;
+  i := 0 ;
+  FOR c IN s DO o[i] := ORD (c) ; i := i + 1 END ;
+  Be32 (b, at, LEN (o)) ;
+  Raw (b, at, o)
+END Name ;
+
+(* Latin1 reads text that an old writer left as Latin-1.  libnetcdf
+   writes what it is given, and M9 now gives it UTF-8.  So the test
+   writes a classic (CDF-1) file octet by octet: a dimension strlen
+   of 4, two global NC_CHAR attributes, units B0 43 and title B5 6D
+   6F 6C, and a char variable unit(strlen) holding B0 43.  None of
+   them is valid UTF-8, so each reads one character per octet. *)
+PROCEDURE Latin1 () RAISES NetCDF.Error, ValueRange, Faults.SizeError, IndexError =
+VAR
+  f : PTR NetCDF.File IN pool ;
+  b : SLICE OF BYTE ;
+  rows : SLICE OF STR ;
+  at : I64 ;
+BEGIN
+  b := NEW (pool, BYTE, 256) ;
+  at := 0 ;
+  Raw (b, at, Four (67, 68, 70, 1)) ;       (* CDF, version 1 *)
+  Be32 (b, at, 0) ;                          (* numrecs *)
+  Be32 (b, at, 10) ; Be32 (b, at, 1) ;       (* NC_DIMENSION, one *)
+  Name (b, at, 'strlen') ; Be32 (b, at, 4) ;
+  Be32 (b, at, 12) ; Be32 (b, at, 2) ;       (* NC_ATTRIBUTE, two *)
+  Name (b, at, 'units') ; Be32 (b, at, 2) ; Be32 (b, at, LEN (Deg)) ;
+  Raw (b, at, Deg) ;
+  Name (b, at, 'title') ; Be32 (b, at, 2) ; Be32 (b, at, LEN (Micro)) ;
+  Raw (b, at, Micro) ;
+  Be32 (b, at, 11) ; Be32 (b, at, 1) ;       (* NC_VARIABLE, one *)
+  Name (b, at, 'unit') ;
+  Be32 (b, at, 1) ; Be32 (b, at, 0) ;        (* one dimension, id 0 *)
+  Be32 (b, at, 0) ; Be32 (b, at, 0) ;        (* no attributes *)
+  Be32 (b, at, 2) ; Be32 (b, at, 4) ;        (* NC_CHAR, vsize 4 *)
+  Be32 (b, at, at + 4) ;                     (* begin: right after *)
+  Raw (b, at, Deg) ;
+  Io.WriteFileBytes (latinPath, SLICE (b, 0, at)) ;
+  f := NetCDF.Open (pool, latinPath) ;
+  Check.EqStr (t, 'Latin-1: GetAttStr reads B0 43 as °C',
+               NetCDF.GetAttStr (pool, f, NetCDF.Global, 'units'), '°C') ;
+  Check.EqStr (t, 'Latin-1: GetAttText reads B5 6D 6F 6C as µmol',
+               NetCDF.GetAttText (pool, f, NetCDF.Global, 'title'), 'µmol') ;
+  rows := NetCDF.GetChars (pool, f, NetCDF.VarId (f, 'unit'), 1, 4) ;
+  Check.EqStr (t, 'Latin-1: GetChars reads a row of B0 43 as °C', rows[0], '°C') ;
+  NetCDF.Close (f) ;
+  Check.That (t, 'the Latin-1 file removed', Io.Remove (latinPath)) ;
+  ran := ran + 1
+EXCEPT
+| Io.IOError (path) :
+    Check.That (t, 'Latin-1: the classic file written', FALSE)
+END Latin1 ;
+
 BEGIN
   gridPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-grid.nc') ;
   textPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-text.nc') ;
   charPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-char.nc') ;
+  latinPath := Text.Keep (pool, '/tmp/m9-netcdftest-' + Fmt.I64Str (System.ProcessId ()) + '-latin1.nc') ;
   Fill () ;
   Write () ;
   Read () ;
   Texts () ;
   Chars () ;
+  Latin1 () ;
   (* a section cut short did not count itself: a smaller PASS would
      hide the checks that did not run *)
   Check.EqI64 (t, 'every section ran to its end', ran, Sections) ;

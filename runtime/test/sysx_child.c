@@ -1,6 +1,6 @@
-/* sysx_child: the other end of sysx_driver's Exec checks, and the
+/* sysx_child is the other end of sysx_driver's Exec checks, and the
    reason that driver runs on both platforms.  The POSIX driver
-   reaches for sh, cat, dd and sleep; Windows has none of them, and a
+   reaches for sh, cat, dd and sleep.  Windows has none of them, and a
    cmd.exe line is a different language rather than a translation.  So
    the child is a program of ours, built for whichever platform is
    being tested, and every check drives it the same way on both.
@@ -87,8 +87,8 @@ int main (int argc, char **argv)
   int i;
 
 #ifdef _WIN32
-  /* bytes are bytes: without this the CRT turns every \n into \r\n on
-     the way out and the driver's byte counts are wrong */
+  /* Bytes are bytes.  Without this the CRT turns every \n into \r\n on
+     the way out, and the driver's byte counts are wrong. */
   _setmode (_fileno (stdin), _O_BINARY);
   _setmode (_fileno (stdout), _O_BINARY);
   _setmode (_fileno (stderr), _O_BINARY);

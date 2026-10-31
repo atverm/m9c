@@ -3,7 +3,7 @@ REVIEW NbShow -- 39 procedures with a body, 23 of them functions; 24 headings in
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              23
   assignments                                    80
-  arguments                                     373
+  arguments                                     385
   RETURN values                                  35
   operands of a comparison or an operator        94
   CASE labels                                     0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        3
   NEW in the frame                                0
   NEW in a named pool                             8
-  calls of a STR form with a UTF twin            26   Text.FindChar -> Text.FindCharUtf, Text.Replace -> Text.ReplaceUtf, Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, +20 more
-  STR subscripts, writes and LEN                 11   len s, len s, len p, len s, len p, len s, +5 more
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

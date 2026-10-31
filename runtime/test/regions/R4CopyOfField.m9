@@ -1,7 +1,7 @@
 MODULE R4CopyOfField ;
-(* R4FieldRowsAlias with the record copied out of a FIELD of an RO
-   record parameter, then written through two levels.  Accepted by
-   0.25.1 *)
+(* This is R4FieldRowsAlias with the record copied out of a FIELD of
+   an RO record parameter, then written through two levels.  0.25.1
+   accepted it. *)
 IMPORT Io ;
 TYPE
   Strs = SLICE OF STR ;

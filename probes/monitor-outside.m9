@@ -1,12 +1,12 @@
 (* EXPECT: monitor field n is reached from outside a procedure bound to the monitor (par 6) *)
 MODULE MonitorOutside ;
 
-(* par 6: all access to a monitor's fields is serialised, and the way
-   that is made true is that only a BOUND procedure may reach them.
-   A bound procedure is one whose FIRST parameter is the monitor --
-   M9 has no method syntax, so the parameter IS the binding.
+(* Par 6 says all access to a monitor's fields is serialised.  That
+   holds because only a BOUND procedure may reach them.  A bound
+   procedure is one whose FIRST parameter is the monitor.  M9 has no
+   method syntax, so the parameter IS the binding.
 
-   Bump is bound and legal.  The module body is not bound, so reading
+   Bump is bound and legal.  The module body is not bound, so a read of
    the same field there reaches past the lock. *)
 
 TYPE

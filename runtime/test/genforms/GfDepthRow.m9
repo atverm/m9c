@@ -1,10 +1,14 @@
 MODULE GfDepthRow ;
 
+IMPORT Text ;
+
 (* WANT: 6 *)
 
-(* rows filled with a literal and stored, then an element of a stored row replaced through the outer slice (oneflux 0.25 item 27).  Refused as "a write through ..., which holds read-only
-   storage" until the region judgement kept read-only storage by depth
-   for names whose every store it sees (2026-10-26, the third review). *)
+(* Rows filled with a literal and stored, then an element of a stored
+   row replaced through the outer slice (oneflux 0.25 item 27): it was
+   refused as "a write through ..., which holds read-only storage"
+   until the region judgement kept read-only storage by depth for
+   names whose every store it sees (2026-10-26, the third review). *)
 (* FxQcv's shape: each row filled with a literal and stored, then an
    element of a stored row overwritten through the outer slice *)
 IMPORT Io, Fmt ;
@@ -23,7 +27,7 @@ BEGIN
     rows[r] := row
   END ;
   rows[n - 1][m - 1] := Fmt.I64Str (n) ;
-  RETURN LEN (rows[n - 1][m - 1]) + LEN (rows[0][0])
+  RETURN Text.BLen (rows[n - 1][m - 1]) + Text.BLen (rows[0][0])
 END Fill ;
 VAR
   pool : POOL ;

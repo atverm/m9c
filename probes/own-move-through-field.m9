@@ -1,9 +1,9 @@
 (* EXPECT: argument 1 of Eat: cannot move through a selector of b into an OWN parameter: a move takes a name that owns its pointer, and ownership is not followed into a field or an element (par 4.2) *)
 (* An owned pointer moved into a record field was moved OUT of it into
-   an OWN parameter as often as the program liked (2026-10-28):
-   `Eat (b.p) ; Eat (b.p)' freed one object twice, accepted by 0.25.1,
-   because the OWN argument rule looked at a bare name only, where
-   DISPOSE refused any selector.  A move takes a name.  Legal forms
+   an OWN parameter as often as the program liked (2026-10-28).  `Eat
+   (b.p) ; Eat (b.p)' freed one object twice, and 0.25.1 accepted it.
+   The OWN argument rule looked at a bare name only, where DISPOSE
+   refused any selector.  A move takes a name.  Legal forms come
    first: a move INTO a field, a read through it, a whole owned name
    moved. *)
 MODULE m ;

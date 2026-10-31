@@ -1,10 +1,11 @@
 MODULE XmlTest ;
 
-(* Xml against the W3C XML conformance suite (tools/xmlgold.py,
-   runtime/test/gold/Xml.gold; docs/datalib-plan.md par 4).
+(* XmlTest holds Xml against the W3C XML conformance suite
+   (tools/xmlgold.py, runtime/test/gold/Xml.gold; docs/datalib-plan.md
+   par 4).
 
-   The suite is NOT in this repository -- Sun's, Clark's and IBM's
-   parts may not be redistributed in part -- so it is read where
+   The suite is NOT in this repository: Sun's, Clark's and IBM's parts
+   may not be redistributed in part.  So it is read where
    runtime/test/xml.sh unpacked it (M9_XMLCONF, else
    runtime/test/xmlconf/xmlconf), and without it only the cases by hand
    run, saying so.  With it:
@@ -17,8 +18,9 @@ MODULE XmlTest ;
      tree, and expat's namespace and local name for every element and
      attribute.
 
-   By hand: what is refused by name, a billion laughs first; where a
-   refusal says it stopped; the tree's API; the writer, read back. *)
+   The cases by hand test what is refused by name, a billion laughs
+   first; where a refusal says it stopped; the tree's API; the writer,
+   read back. *)
 
 IMPORT Check ;
 IMPORT DynStr ;
@@ -45,48 +47,47 @@ BEGIN
 END Hex ;
 
 PROCEDURE Dec (VAR p: POOL ; RO w: STR) : STR RAISES ValueRange =
-  (* a golden word: percent-encoded UTF-8, '' the empty string *)
+  (* Dec decodes a golden word: percent-encoded UTF-8, '' the empty
+     string. *)
 VAR
   b : SLICE OF BYTE ;
   i, n : I64 ;
 BEGIN
   IF Text.Eq (w, "''") THEN RETURN '' END ;
-  b := NEW (p, BYTE, LEN (w)) ;
+  b := NEW (p, BYTE, Text.BLen (w)) ;
   n := 0 ;
   i := 0 ;
-  WHILE i < LEN (w) DO
-    IF w[i] = '%' AND i + 2 < LEN (w) THEN
-      b[n] := BYTE (Hex (w[i + 1]) * 16 + Hex (w[i + 2])) ;
+  WHILE i < Text.BLen (w) DO
+    IF Text.BIs (w, i, '%') AND i + 2 < Text.BLen (w) THEN
+      b[n] := BYTE (Hex (Text.BChar (w, i + 1)) * 16 + Hex (Text.BChar (w, i + 2))) ;
       i := i + 3
     ELSE
-      b[n] := BYTE (ORD (w[i])) ;
+      b[n] := BYTE (I64 (Text.BAt (w, i))) ;
       i := i + 1
     END ;
     n := n + 1
   END ;
-  RETURN DynStr.FromUtf8 (p, SLICE (b, 0, n))
+  RETURN UTF (p, SLICE (b, 0, n))
 END Dec ;
 
 PROCEDURE Less (RO a: STR ; RO b: STR) : BOOL =
-  (* by code point, the shorter first *)
+  (* Less compares by code point, the shorter first. *)
 VAR i : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i < LEN (a) AND i < LEN (b) DO
-    IF a[i] # b[i] THEN RETURN a[i] < b[i] END ;
+  WHILE i < Text.BLen (a) AND i < Text.BLen (b) DO
+    IF Text.BAt (a, i) # Text.BAt (b, i) THEN RETURN Text.BAt (a, i) < Text.BAt (b, i) END ;
     i := i + 1
   END ;
-  RETURN LEN (a) < LEN (b)
+  RETURN Text.BLen (a) < Text.BLen (b)
 END Less ;
 
 PROCEDURE Esc (VAR d: PTR DynStr.DString ; RO s: STR) =
-  (* Clark's canonical escapes *)
+  (* Esc writes Clark's canonical escapes. *)
 VAR
-  i : I64 ;
   c : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    c := s[i] ;
+  FOR c IN s DO
     IF c = '&' THEN DynStr.Append (d, '&amp;')
     ELSIF c = '<' THEN DynStr.Append (d, '&lt;')
     ELSIF c = '>' THEN DynStr.Append (d, '&gt;')
@@ -100,7 +101,7 @@ BEGIN
 END Esc ;
 
 PROCEDURE Tag (VAR d: PTR DynStr.DString ; RO name: STR ; RO attrs: SLICE OF Xml.Attr) =
-  (* a start tag, its attributes sorted by name *)
+  (* Tag writes a start tag, its attributes sorted by name. *)
 VAR
   order : SLICE OF I64 ;
   i, j, k : I64 ;
@@ -129,12 +130,13 @@ END Tag ;
 
 PROCEDURE Crc (VAR p: POOL ; RO s: STR) : I64 RAISES ValueRange =
 BEGIN
-  RETURN Zip.Crc32 (DynStr.Utf8 (p, s))
+  RETURN Zip.Crc32 (OCTETS (s))
 END Crc ;
 
 PROCEDURE ReadEvents (VAR p: POOL ; RO doc: SLICE OF BYTE ; VAR canon, names: STR)
   RAISES Xml.SyntaxError, Xml.Unsupported =
-  (* the canonical form of the events, and the names *)
+  (* ReadEvents builds the canonical form of the events, and the
+     names. *)
 VAR
   r : PTR Xml.Reader IN p ;
   ev : Xml.Event ;
@@ -172,7 +174,7 @@ BEGIN
 END ReadEvents ;
 
 PROCEDURE Render (VAR d: PTR DynStr.DString ; e: PTR Xml.Element) =
-  (* the tree in the same canonical form *)
+  (* Render writes the tree in the same canonical form. *)
 VAR i : I64 ;
 BEGIN
   Tag (d, e.name, e.attrs) ;
@@ -252,15 +254,16 @@ BEGIN
         d := DynStr.New (p) ;
         Render (d, root) ;
         ok := TRUE ;
-        IF Crc (p, canon) # ccrc[i] OR LEN (canon) # clen[i] THEN
+        (* The golden's lengths are Python's len: code points. *)
+        IF Crc (p, canon) # ccrc[i] OR Text.CpCount (canon) # clen[i] THEN
           Check.That (t, path + ': the events, canonical, are ' + oracle[i] + "'s", FALSE) ;
           ok := FALSE
         END ;
-        IF Crc (p, DynStr.View (d)) # tcrc[i] OR LEN (DynStr.View (d)) # tlen[i] THEN
+        IF Crc (p, DynStr.View (d)) # tcrc[i] OR Text.CpCount (DynStr.View (d)) # tlen[i] THEN
           Check.That (t, path + ': the tree, canonical, is ' + oracle[i] + "'s", FALSE) ;
           ok := FALSE
         END ;
-        IF Crc (p, names) # ncrc[i] OR LEN (names) # nlen[i] THEN
+        IF Crc (p, names) # ncrc[i] OR Text.CpCount (names) # nlen[i] THEN
           Check.That (t, path + ': every name in the namespace ' + oracle[i] + ' says', FALSE) ;
           ok := FALSE
         END ;
@@ -290,7 +293,8 @@ END Suite ;
 
 PROCEDURE Refused (RO what: STR ; RO doc: STR ; byName: BOOL ; RO wantMsg: STR ;
                    wantLine, wantCol: I64) RAISES ValueRange =
-  (* doc refused as said, saying so, there *)
+  (* Refused checks that doc is refused as said, saying so,
+     there. *)
 VAR
   p : POOL ;
   canon, names, how, em : STR ;
@@ -301,7 +305,7 @@ BEGIN
   el := 0 ;
   ec := 0 ;
   BEGIN
-    ReadEvents (p, DynStr.Utf8 (p, doc), canon, names)
+    ReadEvents (p, OCTETS (doc), canon, names)
   EXCEPT
   | Xml.SyntaxError (m, line, col) :
       (* a handler's binders have no type in the checker yet: copied *)
@@ -342,8 +346,7 @@ BEGIN
   Refused ('an unbound prefix', '<r>' + nl + ' <p:a/></r>', FALSE, 'an unbound prefix', 2, 2) ;
   Refused ('two roots', '<a/><b/>', FALSE, 'a second root element', 1, 5) ;
   BEGIN
-    root := Xml.Parse (p, DynStr.Utf8 (p,
-      '<?xml version="1.0"?><cat xmlns="urn:c" xmlns:x="urn:x" x:id="7">' +
+    root := Xml.Parse (p, OCTETS ('<?xml version="1.0"?><cat xmlns="urn:c" xmlns:x="urn:x" x:id="7">' +
       'one<item>two</item>three<!-- not text --><x:item>four</x:item>five</cat>')) ;
     Check.EqStr (t, 'the root', root.local, 'cat') ;
     Check.EqStr (t, 'in the default namespace', root.ns, 'urn:c') ;
@@ -369,7 +372,7 @@ BEGIN
     Check.EqStr (t, 'the writer escapes',
                  out, '<?xml version="1.0" encoding="UTF-8"?>' + nl +
                       '<r q="a &quot;b&quot; &amp; &lt;c&gt;&#9;">1 &lt; 2 &amp; 3 &gt; 2<e/></r>' + nl) ;
-    root := Xml.Parse (p, DynStr.Utf8 (p, out)) ;
+    root := Xml.Parse (p, OCTETS (out)) ;
     Check.EqStr (t, 'and reads back: the attribute', Xml.AttrValue (root, '', 'q'), 'a "b" & <c>' + 09C) ;
     Check.EqStr (t, 'and reads back: the text', root.text, '1 < 2 & 3 > 2')
   EXCEPT
@@ -406,7 +409,7 @@ BEGIN
   BEGIN
     gold := Check.GoldPath ('Xml.gold') ;
     suite := Io.Env (pool, 'M9_XMLCONF') ;
-    IF LEN (suite) = 0 THEN suite := 'runtime/test/xmlconf/xmlconf' END ;
+    IF Text.BLen (suite) = 0 THEN suite := 'runtime/test/xmlconf/xmlconf' END ;
     Suite () ;
     ByHand ()
   EXCEPT

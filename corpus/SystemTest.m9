@@ -1,9 +1,9 @@
 MODULE SystemTest ;
 
-(* System.Glob against Python's glob.glob, sorted.  (The rest of
-   System -- Exec, the arguments, the pools -- stays with its C
-   drivers.)  Goldens: runtime/test/gold/System.gold from
-   tools/systemgold.py; the tree the patterns are matched in is
+(* SystemTest tests System.Glob against Python's glob.glob, sorted.
+   (The rest of System stays with its C drivers: Exec, the arguments,
+   the pools.)  The goldens are runtime/test/gold/System.gold from
+   tools/systemgold.py.  The tree the patterns are matched in is
    runtime/test/gold/glob/, a dozen empty files, checked in. *)
 
 IMPORT Check ;
@@ -17,19 +17,19 @@ VAR
   gold, tree : STR ;
   pool : POOL ;
 
-(* what Glob found for a pattern in the tree, each path with the
-   tree's own name taken off the front: the golden file is written
-   relative to it *)
+(* Found answers what Glob found for a pattern in the tree, each path
+   with the tree's own name taken off the front: the golden file is
+   written relative to it. *)
 PROCEDURE Found (RO pattern: STR) : SLICE OF STR RAISES ValueRange =
 VAR
   got, rel : SLICE OF STR ;
   i, cut : I64 ;
 BEGIN
   got := System.Glob (tree + '/' + pattern) ;
-  cut := LEN (tree) + 1 ;
+  cut := Text.BLen (tree) + 1 ;
   rel := NEW (pool, STR, LEN (got)) ;
   FOR i := 0 TO LEN (got) - 1 DO
-    rel[i] := SLICE (got[i], cut, LEN (got[i]) - cut) + ''
+    rel[i] := SLICE (got[i], cut, Text.BLen (got[i]) - cut) + ''
   END ;
   RETURN rel
 END Found ;
@@ -56,7 +56,8 @@ BEGIN
   END
 END Globs ;
 
-(* the twins by type: what Exec, Executable and Glob answer, as UTF *)
+(* Twins checks the twins by type: what Exec, Executable and Glob
+   answer, as UTF. *)
 PROCEDURE Twins () RAISES ValueRange, IndexError =
 VAR
   p : POOL ;
@@ -92,11 +93,40 @@ EXCEPT
     Check.That (t, 'ExecUtf ran /bin/echo', FALSE)
 END Twins ;
 
+(* Churn carves 16 MB in a pool of its own, which goes at its END. *)
+PROCEDURE Churn () RAISES IndexError =
+VAR
+  p : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  b := NEW (p, BYTE, 16777216) ;
+  b[LEN (b) - 1] := 1
+END Churn ;
+
+(* Kept checks KeepAtMost, ReleaseKept and KeptBytes through System.
+   blockreuse_driver.c holds the policy itself, threads included.
+   Each check holds with the cache on and under M9_BLOCK_REUSE=0. *)
+PROCEDURE Kept () RAISES IndexError =
+BEGIN
+  System.ReleaseKept () ;
+  Check.EqI64 (t, 'ReleaseKept leaves nothing kept', System.KeptBytes (), 0) ;
+  System.KeepAtMost (0) ;
+  Churn () ;
+  Churn () ;
+  Check.EqI64 (t, 'KeepAtMost (0) keeps nothing', System.KeptBytes (), 0) ;
+  System.KeepAtMost (134217728) ;
+  Churn () ;
+  Check.That (t, 'KeptBytes is never negative', System.KeptBytes () >= 0) ;
+  System.ReleaseKept () ;
+  Check.EqI64 (t, 'and ReleaseKept gives it back', System.KeptBytes (), 0)
+END Kept ;
+
 BEGIN
   gold := Check.GoldPath ('System.gold') ;
   tree := Check.GoldPath ('glob') ;
   Globs () ;
   Twins () ;
+  Kept () ;
   Io.Halt (Check.Done (t, 'System'))
 EXCEPT
 | ValueRange :

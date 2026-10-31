@@ -1,8 +1,10 @@
 MODULE IoPar ;
 
-(* Eight threads writing, reading back, appending and removing
-   DISTINCT files at once -- the test behind Io's [REENTRANT] tag on
-   the whole-file primitives (64ac53f).  Until then m9_read_file,
+IMPORT Text ;
+
+(* Eight threads write, read back, append and remove DISTINCT files
+   at once.  This is the test behind Io's [REENTRANT] tag on the
+   whole-file primitives (64ac53f).  Until then m9_read_file,
    m9_write_file and m9_append_file were [SERIAL], so every thread's
    file I/O queued on one gate; on a slow filesystem (millions of
    small zarr files over virtiofs) that was one file per round trip,
@@ -13,12 +15,12 @@ MODULE IoPar ;
    checks the size, then removes it.  Nothing is shared between
    workers but the directory.
 
-   WHAT THIS CANNOT SHOW is the marking itself: declared [SERIAL] the
-   same program passes, slower.  What it FAILS on is the only way the
-   tag can become a lie -- a shim that grows shared state (a static
-   buffer, an unlocked table, a FILE* kept across calls).  The
-   contract is "distinct paths from any number of threads are
-   correct", and that is what is checked.  Run by threads.sh. *)
+   This test CANNOT SHOW the marking itself: declared [SERIAL], the
+   same program passes, slower.  It FAILS on the only way the tag can
+   become a lie: a shim that grows shared state (a static buffer, an
+   unlocked table, a FILE* kept across calls).  The contract is
+   "distinct paths from any number of threads are correct", and the
+   test checks exactly that.  threads.sh runs it. *)
 
 IMPORT Io ;
 IMPORT Fmt ;
@@ -53,7 +55,7 @@ VAR
   line, s : STR ;
   j : I64 ;
 BEGIN
-  (* ASCII only, so the CHAR count below is the byte count too *)
+  (* ASCII only, the CHAR count below is the byte count too. *)
   line := 'worker ' + Fmt.I64Str (k) + ' file ' + Fmt.I64Str (i)
           + ' -- a line long enough that the file is a few kilobytes'
           + 0AC ;
@@ -66,7 +68,8 @@ BEGIN
   RETURN s
 END Content ;
 
-(* one file's whole life; answers how many of its checks failed *)
+(* OneFile runs one file's whole life; it answers how many of its
+   checks failed. *)
 PROCEDURE OneFile (k, i: I64) : I64 =
 VAR
   pool : POOL ;
@@ -79,12 +82,12 @@ BEGIN
   want := Content (k, i) ;
   BEGIN
     Io.WriteFile (path, want) ;
-    got := Io.ReadFile (pool, path) ;
-    IF NOT DynStr.Eq (got, want) THEN bad := bad + 1 END ;
+    got := Io.ReadFile (path) ;
+    IF NOT Text.Eq (got, want) THEN bad := bad + 1 END ;
     tail := DynStr.Bytes (pool, Tail, FALSE) ;
     Io.AppendFileBytes (path, tail) ;
     size := Io.FileSize (path) ;
-    IF size # LEN (want) + LEN (tail) THEN bad := bad + 1 END ;
+    IF size # Text.BLen (want) + LEN (tail) THEN bad := bad + 1 END ;
     IF NOT Io.Remove (path) THEN bad := bad + 1 END
   EXCEPT
   | Io.IOError : bad := bad + 100
@@ -96,7 +99,7 @@ END OneFile ;
 PROCEDURE Claim (VAR w: Work) : I64 =
 VAR k : I64 ;
 BEGIN
-  (* bound to the monitor: the read and the write are one claim *)
+  (* Bound to the monitor, the read and the write are one claim. *)
   k := w.next ;
   w.next := w.next + 1 ;
   RETURN k

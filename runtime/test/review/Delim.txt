@@ -3,7 +3,7 @@ REVIEW Delim -- 20 procedures with a body, 17 of them functions; 16 headings in 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              17
   assignments                                    89
-  arguments                                      30
+  arguments                                      34
   RETURN values                                  30
   operands of a comparison or an operator        75
   CASE labels                                     0
@@ -39,4 +39,4 @@ COUNTED -- how much there was to check
   NEW in the frame                                0
   NEW in a named pool                             4
   calls of a STR form with a UTF twin             0
-  STR subscripts, writes and LEN                  4   len s, len s, index s[k], index s[k]
+  STR subscripts, writes and LEN                  0

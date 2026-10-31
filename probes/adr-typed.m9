@@ -1,10 +1,10 @@
 (* EXPECT: argument 1 of cfoo.Take: cannot pass C.Ptr where C.Int is expected *)
-(* ADR (x) is a C pointer (C.Ptr) since 2026-10-09, fitting a
-   C.ConstPtr or C.MutPtr parameter and nothing else; it answered no
-   type until then, so every ADR argument of every foreign call was
-   passed over by the checker -- 225 across the library, the last
-   class on the review pages.  The legal forms first; the last hands
-   ADR where a C.Int is wanted. *)
+(* ADR (x) is a C pointer (C.Ptr) since 2026-10-09.  It fits a
+   C.ConstPtr or C.MutPtr parameter and nothing else.  It answered no
+   type until then, so the checker passed over every ADR argument of
+   every foreign call: 225 across the library, the last class on the
+   review pages.  The legal forms come first; the last hands ADR where a
+   C.Int is wanted. *)
 UNSAFE DEFINITION MODULE FOR "C" cfoo ;
 PROCEDURE Fill = "m9_foo_fill" (p: C.MutPtr ; n: C.SizeT) [REENTRANT] ;
 PROCEDURE Peek = "m9_foo_peek" (p: C.ConstPtr) : C.Int [REENTRANT] ;

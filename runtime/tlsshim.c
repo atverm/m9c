@@ -1,66 +1,67 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
-/* tlsshim.c -- the TLS half of csock, over OpenSSL.
+/* tlsshim.c is the TLS half of csock, over OpenSSL.
 
-   A separate file from tcpshim.c on purpose: this is the whole of the
-   OpenSSL surface, and a link line that has it says so.  Anything
-   using Http now links -lssl -lcrypto, because Http declares these
-   symbols whether or not a given program calls them.
+   It is a separate file from tcpshim.c on purpose.  This is the whole
+   of the OpenSSL surface, and a link line that has it says so.
+   Anything using Http now links -lssl -lcrypto, because Http declares
+   these symbols whether or not a given program calls them.
 
    THE HANDLE IS AN INT, not a pointer.  M9 sees the same shape it
-   already has for a socket -- a small non-negative number, -1 for
-   failure -- and no SSL * ever crosses the boundary.
+   already has for a socket: a small non-negative number, -1 for
+   failure.  No SSL * ever crosses the boundary.
 
-   THREAD-SAFE SINCE 2026-08-30, and the M9 declarations say
+   It is THREAD-SAFE SINCE 2026-08-30.  The M9 declarations say
    [REENTRANT] because of what is below rather than as a hope.
-   OpenSSL 3 is thread-safe per SSL object and its library
-   initialisation is thread-safe; what was not safe here was this
-   file's own bookkeeping, and it is now:
+   OpenSSL 3 is thread-safe per SSL object, and its library
+   initialisation is thread-safe.  This file's own bookkeeping was
+   not safe here, and it is now:
 
-     * ONE SHARED SSL_CTX, built once under pthread_once.  Every
+     * ONE SHARED SSL_CTX is built once under pthread_once.  Every
        connection used to make its own, which re-read the system CA
-       bundle per connection -- a few hundred kilobytes of parsing
-       that eight threads did eight times.  A context is designed to
-       be shared and is safe for creating SSL objects concurrently.
+       bundle per connection.  That was a few hundred kilobytes of
+       parsing that eight threads did eight times.  A context is
+       designed to be shared and is safe for creating SSL objects
+       concurrently.
      * THE SLOT TABLE IS UNDER A MUTEX, held only to claim or release
-       a slot -- never across the handshake, and never across a read
-       or a write.  That is the whole point: the waiting must overlap.
+       a slot.  It is never held across the handshake, and never
+       across a read or a write.  That is the whole point: the
+       waiting must overlap.
      * A slot's SSL object belongs to whoever claimed it, so read and
        write touch it without the lock.  Two threads using ONE handle
        is a caller's bug and always was.
 
-   The cost of the lock is a few instructions on connect and close;
-   measured concurrently, eight HTTPS fetches of a slow page overlap
+   The cost of the lock is a few instructions on connect and close.
+   Measured concurrently, eight HTTPS fetches of a slow page overlap
    like the plain ones (runtime/test/threads.sh).
 
    THE CERTIFICATE IS VERIFIED.  A TLS client that skips verification
-   is worse than a plain socket, because it looks encrypted: the
-   default verify paths are loaded, SSL_VERIFY_PEER is on, and
+   is worse than a plain socket, because it looks encrypted.  The
+   default verify paths are loaded, and SSL_VERIFY_PEER is on.
    SSL_set1_host makes the hostname part of the handshake rather than
    something a caller is trusted to check afterwards.  SNI is set from
    the same name, because most hosts worth reaching are virtual.
 
-   WINDOWS (2026-09-06): the same file, three substitutions and one
-   addition.  SRWLOCK and INIT_ONCE stand in for the pthread pair
-   (both are {0} by contract, tcpshim's idiom); the socket is closed
-   through tcp_close, because a Winsock SOCKET is a kernel handle and
-   not a C-runtime descriptor, so libc's close does not apply to it
-   (the step-4 finding, and the POSIX side calls tcp_close too so
-   there is one code path); the results are int64_t, which is what
+   WINDOWS (2026-09-06) uses the same file, with three substitutions
+   and one addition.  SRWLOCK and INIT_ONCE stand in for the pthread
+   pair (both are {0} by contract, tcpshim's idiom).  The socket is
+   closed through tcp_close.  A Winsock SOCKET is a kernel handle and
+   not a C-runtime descriptor, so libc's close does not apply to it.
+   That was the step-4 finding, and the POSIX side calls tcp_close too
+   so there is one code path.  The results are int64_t, which is what
    the generated C declares for C.SSizeT on both platforms.  The
-   addition is where the TRUST comes from: OpenSSL's default verify
-   paths are its BUILD's OPENSSLDIR, and for the MSYS2 packages that
-   is the package prefix's etc/ssl (`openssl.exe version -d` on the
+   addition is where the TRUST comes from.  OpenSSL's default verify
+   paths are its BUILD's OPENSSLDIR.  For the MSYS2 packages that is
+   the package prefix's etc/ssl: `openssl.exe version -d` on the
    mingw64 build answers "/mingw64/etc/ssl", the ucrt64 twin
-   "/ucrt64/etc/ssl") -- a directory that exists on no user's machine
-   -- so on Windows the roots are imported from the system's own ROOT
+   "/ucrt64/etc/ssl".  That directory exists on no user's machine.
+   So on Windows the roots are imported from the system's own ROOT
    store through crypt32.  Measured under wine: with the default paths
    alone a public host fails verification (20, unable to get local
-   issuer certificate); with the import it is trusted and the three
+   issuer certificate).  With the import it is trusted, and the three
    badssl.com negatives (wrong host, expired, self-signed) are still
    refused, line for line as on Linux.  The default paths are still
-   loaded, because they are also how $SSL_CERT_FILE is honoured, and
-   that is how threads.sh trusts its self-signed server on every
-   platform.
+   loaded, because they are also how $SSL_CERT_FILE is honoured.  That
+   is how threads.sh trusts its self-signed server on every platform.
    Link: -lssl -lcrypto -lcrypt32 -lws2_32 there, -lssl -lcrypto here. */
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200112L
@@ -70,9 +71,9 @@
 #endif
 #endif
 #ifdef _WIN32
-/* wincrypt.h BEFORE the OpenSSL headers: it defines X509_NAME and a
-   few more as integer macros, and openssl/types.h undefines them --
-   which only works in this order */
+/* Include wincrypt.h BEFORE the OpenSSL headers.  It defines
+   X509_NAME and a few more as integer macros, and openssl/types.h
+   undefines them.  That only works in this order. */
 #include <windows.h>
 #include <wincrypt.h>
 #endif
@@ -89,9 +90,9 @@
 int tcp_connect (const char *host, int port);   /* tcpshim.c */
 int tcp_close (int fd);                         /* tcpshim.c */
 
-/* eight was the old limit and it was exactly the number of workers a
-   reader is likely to start; a handle table is bytes, so this is the
-   number nobody has to think about */
+/* Eight was the old limit, and it was exactly the number of workers
+   a reader is likely to start.  A handle table is bytes, so this is
+   the number nobody has to think about. */
 #define TLS_MAX 64
 
 static struct {
@@ -115,8 +116,9 @@ static pthread_once_t ctx_once = PTHREAD_ONCE_INIT;
 #endif
 
 #ifdef _WIN32
-/* every certificate in the machine's ROOT store, DER as crypt32 holds
-   it, into the context's own store.  A certificate the parser refuses
+/* add_windows_roots puts every certificate in the machine's ROOT
+   store, DER as crypt32 holds it, into the context's own store.  A
+   certificate the parser refuses
    is skipped, and whatever that left on OpenSSL's per-thread error
    queue is cleared at the end: SSL_get_error reads that queue, and a
    stale entry would turn a later clean shutdown into an error. */
@@ -172,8 +174,9 @@ static void ctx_init (void)
 }
 #endif
 
-/* a free slot, marked used before the lock is dropped so no other
-   thread can take it while this one handshakes */
+/* claim answers a free slot.  It marks the slot used before the lock
+   is dropped, so no other thread can take it while this one
+   handshakes. */
 static int claim (void)
 {
   int h;
@@ -205,8 +208,8 @@ int tls_connect (const char *host, int port)
   h = claim ();
   if (h < 0) return -1;
 
-  /* everything below is OUTSIDE the lock: the handshake is the
-     expensive part and serialising it would defeat the exercise */
+  /* Everything below is OUTSIDE the lock.  The handshake is the
+     expensive part, and serialising it would defeat the exercise. */
   fd = tcp_connect (host, port);
   if (fd < 0) { release (h); return -1; }
 
@@ -229,10 +232,11 @@ int tls_connect (const char *host, int port)
   return h;
 }
 
-/* TLS over a socket the caller already has and has already talked on
-   -- STARTTLS (SMTP's 587, RFC 3207): the handshake alone, the fd then
-   owned by the handle as after tls_connect, and closed by tls_close.
-   -1 leaves the fd the caller's, still open.                        */
+/* tls_wrap runs TLS over a socket the caller already has and has
+   already talked on: STARTTLS (SMTP's 587, RFC 3207).  It does the
+   handshake alone.  The handle then owns the fd as after tls_connect,
+   and tls_close closes it.  -1 leaves the fd the caller's, still
+   open.                                                             */
 int tls_wrap (int fd, const char *host)
 {
   int h;
@@ -287,8 +291,8 @@ int tls_close (int h)
   if (h < 0 || h >= TLS_MAX || !slots[h].used) return -1;
   ssl = slots[h].ssl;
   fd = slots[h].fd;
-  /* the slot is released FIRST so a concurrent connect may take it
-     while this one tears down; the SSL object is this caller's */
+  /* The slot is released FIRST, so a concurrent connect may take it
+     while this one tears down.  The SSL object is this caller's. */
   release (h);
   if (ssl != NULL) { SSL_shutdown (ssl); SSL_free (ssl); }
   if (fd >= 0) tcp_close (fd);
@@ -296,12 +300,13 @@ int tls_close (int h)
 }
 
 /* ---- RSA signature verification (2026-10-07; corpus/Rsa.m9) ----------
-   Here and not in a file of its own because this file IS the OpenSSL
-   surface of the runtime: a link line that has tlsshim has libcrypto.
-   One call, no state: the key's DER is parsed per verification
-   (microseconds against OpenSSL's own ~10 us for the modular
-   exponentiation).  Written after an RSA verifier in M9 measured 70x
-   slower than this (docs/library-plan-2.md, section 13).
+   It is here and not in a file of its own because this file IS the
+   OpenSSL surface of the runtime: a link line that has tlsshim has
+   libcrypto.  m9_rsa_verify is one call with no state.  It parses the
+   key's DER per verification (microseconds against OpenSSL's own
+   ~10 us for the modular exponentiation).  It was written after an
+   RSA verifier in M9 measured 70x slower than this
+   (docs/library-plan-2.md, section 13).
 
    der, dlen     SubjectPublicKeyInfo (pkcs1_key 0) or RSAPublicKey
                  (pkcs1_key 1)

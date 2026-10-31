@@ -47,11 +47,11 @@ int64_t * const ExportDef_version = &version;
 m9_sl_F64 * const ExportDef_limits = &limits;
 m9_pool * const ExportDef_limits_pool = &m9mframe;
 
-static const uint32_t m9s0[21] = { 69u, 120u, 112u, 111u, 114u, 116u, 68u, 101u, 102u, 32u, 115u, 101u, 101u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 32u };
-static const uint32_t m9s1[8] = { 44u, 32u, 120u, 115u, 91u, 49u, 93u, 32u };
-static const uint32_t m9s2[8] = { 44u, 32u, 98u, 111u, 120u, 46u, 110u, 32u };
-static const uint32_t m9s3[10] = { 44u, 32u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 32u };
-static const uint32_t m9s4[30] = { 69u, 120u, 112u, 111u, 114u, 116u, 68u, 101u, 102u, 58u, 32u, 120u, 115u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 49u };
+static const uint8_t m9s0[21] = { 69, 120, 112, 111, 114, 116, 68, 101, 102, 32, 115, 101, 101, 115, 32, 99, 111, 117, 110, 116, 32 };
+static const uint8_t m9s1[8] = { 44, 32, 120, 115, 91, 49, 93, 32 };
+static const uint8_t m9s2[8] = { 44, 32, 98, 111, 120, 46, 110, 32 };
+static const uint8_t m9s3[10] = { 44, 32, 118, 101, 114, 115, 105, 111, 110, 32 };
+static const uint8_t m9s4[30] = { 69, 120, 112, 111, 114, 116, 68, 101, 102, 58, 32, 120, 115, 32, 104, 97, 115, 32, 110, 111, 32, 101, 108, 101, 109, 101, 110, 116, 32, 49 };
 
 
 void ExportDef_Show (m9_state *err)
@@ -60,21 +60,19 @@ void ExportDef_Show (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_mark m9t3 = m9_pool_mark (err->res);
   { __typeof__((*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err))) m9a1 = (*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err));
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed (m9a1, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err)) m9a2 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed (m9a1, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err);
+  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 8 }), err), Fmt_FixedUtf (m9a1, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err)) m9a2 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 8 }), err), Fmt_FixedUtf (m9a1, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 8 }), err), Fmt_I64Str (({ __auto_type m9g = (box); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_hdl_m9t1; } m9g; })->n, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err);
     if (err->exc) goto L_hdl_m9t1;
-  Io_WriteLine (m9a2, err);
+  Io_WriteLineUtf (m9a2, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   }
-  m9_pool_release (err->res, m9t3);
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s4, 30 }), err);
+    Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s4, 30 }), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }

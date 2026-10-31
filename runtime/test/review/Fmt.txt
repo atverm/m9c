@@ -2,10 +2,10 @@ REVIEW Fmt -- 48 procedures with a body, 38 of them functions; 16 headings in a 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              38
-  assignments                                   361
-  arguments                                     356
-  RETURN values                                  77
-  operands of a comparison or an operator       499
+  assignments                                   292
+  arguments                                     308
+  RETURN values                                  66
+  operands of a comparison or an operator       407
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0

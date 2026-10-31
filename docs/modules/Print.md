@@ -1,9 +1,10 @@
 # Print
 
-Canonical form, in M9 -- restated from host/fpc/M9Print.pas,
-append-order-faithful so the emitted bytes are the oracle's bytes.
-One layout, deterministic; the P5 differential compares this
-module's output against the FPC printer over the whole corpus.
+Print prints canonical form, in M9, restated from
+host/fpc/M9Print.pas.  It is append-order-faithful, so the emitted
+bytes are the oracle's bytes.  It has one layout, deterministic;
+the P5 differential compares this module's output against the FPC
+printer over the whole corpus.
 
 ### Tree (VAR pool: POOL ; root: PTR Ast.Node) : STR
 
@@ -13,9 +14,10 @@ _(documented with the group below)_
 
 ### TreeUtf (VAR pool: POOL ; root: PTR Ast.Node) : UTF
 
-the UTF form of Tree (docs/utf8-stage3-plan.md, step 5): the
-printer builds UTF-8 and the STR forms decode it, so a caller
-moves when it moves; named, as none takes a UTF to dispatch on
+TreeUtf is the UTF form of Tree (docs/utf8-stage3-plan.md, step
+5): the printer builds UTF-8 and the STR forms decode it, so a
+caller moves when it moves.  It is named, as none takes a UTF to
+dispatch on.
 
 ### TypeText (VAR pool: POOL ; k: Ast.Kid) : STR
 

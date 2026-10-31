@@ -1,11 +1,11 @@
 (* EXPECT: type Bad refers to itself other than through a pointer to a record: it would have no size or no end -- point to it with PTR from a RECORD field (par 2.2) *)
 (* A type may refer to itself only through a pointer to a record (since
-   2026-10-21, the compiler review's F2): `TYPE H = SHARED PTR H' crashed
-   --check, and a record holding itself by value went to cc as an
-   incomplete type.  The legal forms first: a list, a tree, two records
-   pointing at each other, through an alias, a SHARED and an OPT pointer,
-   a case record, a monitor, a slice of pointers, a procedure type taking
-   a pointer. *)
+   2026-10-21, the compiler review's F2).  `TYPE H = SHARED PTR H'
+   crashed --check, and a record holding itself by value went to cc as
+   an incomplete type.  The legal forms come first: a list, a tree, two
+   records pointing at each other, through an alias, a SHARED and an OPT
+   pointer, a case record, a monitor, a slice of pointers, a procedure
+   type taking a pointer. *)
 MODULE m ;
 TYPE
   List = RECORD n : I64 ; next : PTR List END ;

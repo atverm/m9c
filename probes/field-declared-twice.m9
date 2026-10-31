@@ -1,9 +1,9 @@
 (* EXPECT: a is declared twice in type R (par 2.2) *)
 (* A record's field, a variant arm's field, an enumeration's member is
-   declared once (since 2026-10-22, the compiler review's F4: the checker
-   passed `RECORD a : I64 ; a : I64 END' and cc refused it).  The legal
-   forms first: the same field name in two records, and in two arms of a
-   case record. *)
+   declared once (since 2026-10-22, the compiler review's F4).  The
+   checker passed `RECORD a : I64 ; a : I64 END' and cc refused it.  The
+   legal forms come first: the same field name in two records, and in
+   two arms of a case record. *)
 MODULE m ;
 TYPE
   P = RECORD a : I64 END ;

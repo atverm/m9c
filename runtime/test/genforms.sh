@@ -1,17 +1,19 @@
 #!/bin/sh
-# genforms: what the checker accepts, the build must build.
+# genforms holds one rule: the build must build any form the checker
+# accepts.
 #
 # Each program in genforms/ is a form `m9c --check` accepts and names
 # the line it must print in a `(* WANT: ... *)` comment.  A program
 # NOT named in genforms.owed must build under `m9c --run` and print
 # that line.  A program named there is a form the generator (or the C
-# compiler) still refuses after a clean check -- the class cp-kernel
-# reads as a compiler fault (decision 38's catalogue, 2026-10-09) --
-# and must still be ACCEPTED by the checker and still FAIL to build:
-# a form that builds now, or one the checker has started to refuse,
-# is a stale line and red.  A line naming no fixture is red too.
+# compiler) still refuses after a clean check.  cp-kernel reads that
+# class as a compiler fault (decision 38's catalogue, 2026-10-09).
+# Such a program must still be ACCEPTED by the checker and still FAIL
+# to build.  A form that builds now, or one the checker has started to
+# refuse, is a stale line and red.  A line naming no fixture is red too.
 #
-# Uses an m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
+# The gate uses an m9c built from runtime/gen (lib/freshm9c.sh), or
+# $M9C.
 set -e
 cd "$(dirname "$0")"
 
@@ -38,8 +40,8 @@ for f in "$W"/src/*.m9; do
   n=$((n + 1))
   want=$(sed -n 's/^(\* WANT: \(.*\) \*)$/\1/p' "$f")
   [ -n "$want" ] || { echo "FAIL: $name has no (* WANT: ... *) line"; fail=$((fail + 1)); continue; }
-  # --check runs the generator too: the CHECKER accepted when every
-  # line it printed is the generator's
+  # --check runs the generator too.  The CHECKER accepted when every
+  # line it printed is the generator's.
   ( cd "$W/src" && "$M9C" --check "$name.m9" ) > "$W/$name.check" 2>&1 || true
   if grep -v ': gen: ' "$W/$name.check" | grep -v '^m9c: [0-9]* generator errors* in ' | grep -q .; then
     echo "FAIL: the checker refuses $name -- a probe's business, not this gate's:"

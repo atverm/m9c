@@ -1,32 +1,32 @@
 (* EXPECT: a call of Fill stores what it allocates in pool p into g, which outlives it: p is local to this procedure and its storage dies at its END -- pass a pool that lives as long as g (par 4.3) *)
-(* A callee that stores what it allocates in its POOL parameter into its
-   VAR parameter, handed a pool local to the caller and a variable that
-   outlives the caller's frame: the variable keeps a pointer into a pool
-   that dies at the caller's END -- oneflux's PeriodPool, a
-   heap-use-after-free under ASan, accepted until 2026-10-30
-   (regions/R5PeriodPool).  Legal forms first: a local pool filling a
-   local, a module pool filling a module variable. *)
+(* A callee stores what it allocates in its POOL parameter into its VAR
+   parameter.  It is handed a pool local to the caller and a variable
+   that outlives the caller's frame.  The variable keeps a pointer into
+   a pool that dies at the caller's END.  This was oneflux's PeriodPool,
+   a heap-use-after-free under ASan, accepted until 2026-10-30
+   (regions/R5PeriodPool).  Legal forms come first: a local pool filling
+   a local, a module pool filling a module variable. *)
 MODULE m ;
 VAR
-  g : STR ;
+  g : SLICE OF CHAR ;
   mp : POOL ;
-PROCEDURE Copy (VAR pool: POOL ; RO s: STR) : STR =
+PROCEDURE Copy (VAR pool: POOL ; RO s: SLICE OF CHAR) : SLICE OF CHAR =
 VAR
-  r : STR ;
+  r : SLICE OF CHAR ;
   i : I64 ;
 BEGIN
   r := NEW (pool, CHAR, LEN (s)) ;
   FOR i := 0 TO LEN (s) - 1 DO r[i] := s[i] END ;
   RETURN r
 END Copy ;
-PROCEDURE Fill (VAR pool: POOL ; VAR dst: STR) =
+PROCEDURE Fill (VAR pool: POOL ; VAR dst: SLICE OF CHAR) =
 BEGIN
   dst := Copy (pool, 'x')
 END Fill ;
 PROCEDURE Local () =
 VAR
   p : POOL ;
-  s : STR ;
+  s : SLICE OF CHAR ;
 BEGIN
   Fill (p, s)
 END Local ;

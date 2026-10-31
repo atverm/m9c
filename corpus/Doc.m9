@@ -1,6 +1,6 @@
 DEFINITION MODULE Doc ;
 
-(* The DEFINITION module, as documentation.
+(* Doc reads the DEFINITION module as documentation.
 
    M9 already puts the whole contract of a module in one place, and
    the corpus already writes prose under every declaration there.
@@ -9,15 +9,15 @@ DEFINITION MODULE Doc ;
    print.  Lex.Collect is the side channel that keeps them; this is
    the client that gives them meaning.
 
-   AN ORDINARY CLIENT, on purpose -- the OpenApi precedent.  OpenApi
-   describes HttpServer's routes through the public accessors and has
-   no privileged access, which is what makes "the server cannot
+   Doc is AN ORDINARY CLIENT, on purpose, after the OpenApi precedent.
+   OpenApi describes HttpServer's routes through the public accessors
+   and has no privileged access, which is what makes "the server cannot
    disagree with its documentation" a checkable claim rather than a
-   promise.  The same applies here: this module reads Ast and Lex
-   through their published surfaces, renders signatures through
-   Print (the same procedure Sem uses to decide whether two
-   declarations are the same declaration), and adds no opinion of its
-   own about what M9 syntax looks like.
+   promise.  The same applies here.  This module reads Ast and Lex
+   through their published surfaces.  It renders signatures through
+   Print, the same procedure Sem uses to decide whether two declarations
+   are the same declaration.  It adds no opinion of its own about what
+   M9 syntax looks like.
 
    THE CONVENTION IS THE INDENT, and it was measured rather than
    invented.  In a DEFINITION module:
@@ -30,14 +30,14 @@ DEFINITION MODULE Doc ;
 
    Over the corpus that rule attaches every comment correctly.  The
    seven it declines to attach are all at column 1 and all really are
-   banners -- Print's `*Text` group heading, NetCDF's `---- reading
+   banners: Print's `*Text` group heading, NetCDF's `---- reading
    ----`, Math's single-precision divider.  A rule that ignored the
    indent would have mis-attributed every one of them.
 
    A doc block is PROSE.  It may end with a blank line followed by a
-   run of `name -- what it is` lines, one per parameter; the block is
-   optional, no parameter need appear, and every name in one must be
-   a parameter of that procedure -- which is checked, and is the one
+   run of `name -- what it is` lines, one per parameter.  The block is
+   optional, and no parameter need appear.  Every name in one must be
+   a parameter of that procedure.  Doc checks this, and it is the one
    thing a caller can get wrong that this module reports as an error
    rather than as a gap.  The blank line is required because three
    comments in the corpus contain a mid-paragraph phrase of that
@@ -46,16 +46,16 @@ DEFINITION MODULE Doc ;
 IMPORT Ast ;
 
 TYPE
-  (* Measured, never a gate.  A threshold on documentation makes
-     `(* obvious *)` a rational move, so this is reported like the
-     Fmt-against-printf rate: a number every run, and the tool that
-     prints it does not fail on it.
+  (* Stats is measured, never a gate.  A threshold on documentation
+     makes `(* obvious *)` a rational move, so this is reported like
+     the Fmt-against-printf rate: a number every run, and the tool
+     that prints it does not fail on it.
 
-     unknownParam is the exception and is meant to be: a `name --`
+     unknownParam is the exception and is meant to be.  A `name --`
      line naming something that is not a parameter is DRIFT, not
-     omission -- the doc and the signature have disagreed -- and that
-     is the asymmetry mandiff already enforces between --help and the
-     manual page. *)
+     omission: the doc and the signature have disagreed.  That is the
+     asymmetry mandiff already enforces between --help and the manual
+     page. *)
   Stats = RECORD
     mods, modsDoc : I64 ;          (* definition units, and documented *)
     procs, procsDoc : I64 ;        (* exported procedures, likewise *)
@@ -69,35 +69,37 @@ TYPE
 PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ;
                 VAR st: Stats) : UTF
   RAISES IndexError ;
-  (* The same declarations as DATA.  One object: "module", "doc"
-     (the module's own comment, or null), and "declarations" -- for
-     every exported name its "kind" (procedure, type, const, var,
-     exception), "name", "line" and "doc"; for a procedure also the
-     rendered "signature", the "params" as a list of {names, mode,
-     type} with mode one of "", "VAR", "OWN", "RO", the "result"
-     (null for a proper procedure), the "raises" list, and the
-     "attrib" (null, or the bracketed word).  Every string is the
-     one Text prints, so a tool that reads this and a person who
-     reads the page are reading the same document; the gather is
-     shared and the renderers differ.
+  (* Json answers the same declarations as DATA.  The answer is one
+     object: "module", "doc" (the module's own comment, or null), and
+     "declarations".  For every exported name "declarations" gives
+     its "kind" (procedure, type, const, var, exception), "name",
+     "line" and "doc".  For a procedure it also gives the rendered
+     "signature", the "params" as a list of {names, mode, type} with
+     mode one of "", "VAR", "OWN", "RO", the "result" (null for a
+     proper procedure), the "raises" list, and the "attrib" (null, or
+     the bracketed word).  Every string is the one Text prints, so a
+     tool that reads this and a person who reads the page are reading
+     the same document.  The gather is shared and the renderers
+     differ.
 
      It exists so that "does M.P exist, and what does it take" is a
-     tool call and not a grep: the one class of error a fluent
+     tool call and not a grep.  The one class of error a fluent
      generator makes most is a real name it did not look up, or a
-     guessed one, and a table copied into a prompt drifts in a day
+     guessed one.  A table copied into a prompt drifts in a day
      (docs/skills-plan.md par 1, par 4). *)
 
 PROCEDURE Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ;
                 VAR st: Stats) : UTF
   RAISES IndexError ;
-  (* the Markdown reference for one file, and its measurements.
+  (* Text answers the Markdown reference for one file, and its
+     measurements.
 
        root     -- the NFile node Parse.File answered, for a source
                    that was lexed with Lex.Collect ARMED.  Without
                    that there are no comments to attach and every
-                   declaration reports as undocumented; the emptiness
-                   would be silent, which is why the caller arms it
-                   and this cannot.
+                   declaration reports as undocumented.  The
+                   emptiness would be silent, which is why the caller
+                   arms it and this cannot.
        modName  -- what to call the module in the heading.
        st       -- ACCUMULATED into, not reset, so a caller
                    documenting a whole library sums as it goes.
@@ -111,7 +113,7 @@ END Doc.
 
 IMPLEMENTATION MODULE Doc ;
 
-IMPORT DynUtf ;
+IMPORT DynStr ;
 IMPORT Text ;
 IMPORT Print ;
 IMPORT Lex ;
@@ -120,7 +122,7 @@ CONST
   MaxAnchor = 4096 ;
 
 TYPE
-  (* a declaration a comment can attach to *)
+  (* An Anchor is a declaration a comment can attach to. *)
   Anchor = RECORD
     line : I64 ;
     kind : I64 ;
@@ -130,20 +132,20 @@ TYPE
     doc : UTF ;
     hasDoc : BOOL ;                (* a comment of its own *)
     shared : BOOL ;                (* covered by an adjacent group *)
-    (* the same signature as DATA, rendered once at Collect so the
-       JSON never re-walks the tree: the params array text, the
-       result type ('' for a proper procedure), the raises array
-       text, the attribute word ('' for none) *)
+    (* These fields hold the same signature as DATA, rendered once
+       at Collect so the JSON never re-walks the tree: the params
+       array text, the result type ('' for a proper procedure), the
+       raises array text, the attribute word ('' for none). *)
     paramsJson : UTF ;
     resultText : UTF ;
     raisesJson : UTF ;
     attribText : UTF ;
   END ;
 
-(* NO MODULE STATE, deliberately.  The anchor table was a module
-   array in the first draft, and the FPC checker refused it --
-   `module-level state requires STATEFUL on the definition` -- while
-   the self-hosted one said nothing, which is how the hole in
+(* Doc keeps NO MODULE STATE, deliberately.  The anchor table was a
+   module array in the first draft.  The FPC checker refused it with
+   `module-level state requires STATEFUL on the definition`, while
+   the self-hosted one said nothing.  That is how the hole in
    Sem.m9's CheckConformance was found.  Both reject it now, and the
    right answer was never STATEFUL: this module is a pure function
    from a tree to text, and the table belongs in the caller's pool
@@ -153,70 +155,71 @@ TYPE
 
 PROCEDURE Qual (k: Ast.Kid) : UTF =
 VAR pool : POOL ;
-    d : PTR DynUtf.DString IN pool ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
-  d := DynUtf.New (pool) ;
+  d := DynStr.New (pool) ;
   IF k IS SOME q THEN
-    DynUtf.Append (d, q.au) ;
+    DynStr.Append (d, q.au) ;
     IF Text.BLen (q.bu) > 0 THEN
-      DynUtf.AppendChar (d, '.') ;
-      DynUtf.Append (d, q.bu)
+      DynStr.AppendChar (d, '.') ;
+      DynStr.Append (d, q.bu)
     END
   END ;
-  RETURN DynUtf.View (d)
+  RETURN DynStr.View (d)
 END Qual ;
 
-(* name (params) : ret RAISES ... [ATTR] -- the same shape Sem.SigOf
-   builds for def/impl conformance, and for the same reason: the
-   printer is what decides what a declaration says. *)
+(* SigText renders name (params) : ret RAISES ... [ATTR].  It is the
+   same shape Sem.SigOf builds for def/impl conformance, and for the
+   same reason: the printer is what decides what a declaration says. *)
 PROCEDURE SigText (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, p.au) ;
-  DynUtf.Append (d, ' (') ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, p.au) ;
+  DynStr.Append (d, ' (') ;
   IF p.nkids > 0 THEN
-    DynUtf.Append (d, Print.ParamsTextUtf (p.kids[0]))
+    DynStr.Append (d, Print.ParamsTextUtf (p.kids[0]))
   END ;
-  DynUtf.AppendChar (d, ')') ;
+  DynStr.AppendChar (d, ')') ;
   IF p.nkids > 1 THEN
     IF p.kids[1] IS SOME rt THEN
-      DynUtf.Append (d, ' : ') ;
-      DynUtf.Append (d, Print.TypeTextUtf (pool, p.kids[1]))
+      DynStr.Append (d, ' : ') ;
+      DynStr.Append (d, Print.TypeTextUtf (pool, p.kids[1]))
     END
   END ;
   IF p.nkids > 2 THEN
     IF p.kids[2] IS SOME rs THEN
-      DynUtf.Append (d, ' RAISES ') ;
+      DynStr.Append (d, ' RAISES ') ;
       FOR i := 0 TO rs.nkids - 1 DO
-        IF i > 0 THEN DynUtf.Append (d, ', ') END ;
-        DynUtf.Append (d, Qual (rs.kids[i]))
+        IF i > 0 THEN DynStr.Append (d, ', ') END ;
+        DynStr.Append (d, Qual (rs.kids[i]))
       END
     END
   END ;
   IF p.nkids > 3 THEN
     IF p.kids[3] IS SOME at THEN
-      DynUtf.Append (d, ' [') ;
-      DynUtf.Append (d, at.au) ;
-      DynUtf.AppendChar (d, ']')
+      DynStr.Append (d, ' [') ;
+      DynStr.Append (d, at.au) ;
+      DynStr.AppendChar (d, ']')
     END
   END ;
-  RETURN DynUtf.ViewIn (pool, d)
+  RETURN DynStr.ViewIn (pool, d)
 END SigText ;
 
-(* every parameter NAME, space-separated and space-delimited, so a
-   membership test is a substring search for ' name ' *)
+(* ParamNames answers every parameter NAME, space-separated and
+   space-delimited, so a membership test is a substring search for
+   ' name '. *)
 PROCEDURE ParamNames (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, j : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.AppendChar (d, ' ') ;
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (d, ' ') ;
   IF p.nkids > 0 THEN
     IF p.kids[0] IS SOME pl THEN
       FOR i := 0 TO pl.nkids - 1 DO
@@ -225,8 +228,8 @@ BEGIN
             IF pm.kids[0] IS SOME il THEN
               FOR j := 0 TO il.nkids - 1 DO
                 IF il.kids[j] IS SOME id THEN
-                  DynUtf.Append (d, id.au) ;
-                  DynUtf.AppendChar (d, ' ')
+                  DynStr.Append (d, id.au) ;
+                  DynStr.AppendChar (d, ' ')
                 END
               END
             END
@@ -235,147 +238,151 @@ BEGIN
       END
     END
   END ;
-  RETURN DynUtf.ViewIn (pool, d)
+  RETURN DynStr.ViewIn (pool, d)
 END ParamNames ;
 
 (* ---- the signature as data ---- *)
 
-(* a table, not CHR: CHR raises ValueRange, and that exception would
-   climb through every renderer into Collect, which the page's own
-   path never raises -- the checker said so, which is the point of
-   the checker.  Indexing raises only IndexError, already carried. *)
+(* HexDigit reads a table, not CHR.  CHR raises ValueRange, and that
+   exception would climb through every renderer into Collect, which
+   the page's own path never raises.  The checker said so, which is
+   the point of the checker.  Indexing raises only IndexError, already
+   carried. *)
 PROCEDURE HexDigit (v: I64) : CHAR RAISES IndexError =
 BEGIN
   RETURN Text.CpAt ('0123456789abcdef', v)
 END HexDigit ;
 
-(* the byte at offset i of u, as a number: the scans below read ASCII
-   structure -- the LF, a space, a comma, letters and digits -- where a
-   byte IS the character *)
+(* B answers the byte at offset i of u, as a number.  The scans below
+   read ASCII structure (the LF, a space, a comma, letters and
+   digits), where a byte IS the character. *)
 PROCEDURE B (RO u: UTF ; i: I64) : I64 =
 BEGIN
   RETURN I64 (Text.BAt (u, i))
 END B ;
 
-(* a JSON string literal: the quotes, the two characters that must
-   be escaped, and the three controls a comment can carry.  Anything
-   else below 0x20 cannot come out of the lexer's comment channel,
-   but is escaped rather than assumed away. *)
-PROCEDURE JsonStr (VAR d: PTR DynUtf.DString ; RO s: UTF)
+(* JsonStr appends a JSON string literal: the quotes, the two characters
+   that must be escaped, and the three controls a comment can carry.
+   Anything else below 0x20 cannot come out of the lexer's comment
+   channel, but is escaped rather than assumed away. *)
+PROCEDURE JsonStr (VAR d: PTR DynStr.DString ; RO s: UTF)
   RAISES IndexError =
 VAR i, c, start : I64 ;
 BEGIN
-  DynUtf.AppendChar (d, '"') ;
+  DynStr.AppendChar (d, '"') ;
   start := 0 ;
   FOR i := 0 TO Text.BLen (s) - 1 DO
     c := B (s, i) ;
     IF c = 34 OR c = 92 OR c < 32 THEN
-      (* the run since the last escape, then the escape; a byte past
-         0x7F is part of a character and stays in its run *)
-      DynUtf.Append (d, SLICE (s, start, i - start)) ;
-      IF c = 34 THEN DynUtf.Append (d, '\"')
-      ELSIF c = 92 THEN DynUtf.Append (d, '\\')
-      ELSIF c = 10 THEN DynUtf.Append (d, '\n')
-      ELSIF c = 13 THEN DynUtf.Append (d, '\r')
-      ELSIF c = 9 THEN DynUtf.Append (d, '\t')
+      (* This appends the run since the last escape, then the escape.
+         A byte past 0x7F is part of a character and stays in its
+         run. *)
+      DynStr.Append (d, SLICE (s, start, i - start)) ;
+      IF c = 34 THEN DynStr.Append (d, '\"')
+      ELSIF c = 92 THEN DynStr.Append (d, '\\')
+      ELSIF c = 10 THEN DynStr.Append (d, '\n')
+      ELSIF c = 13 THEN DynStr.Append (d, '\r')
+      ELSIF c = 9 THEN DynStr.Append (d, '\t')
       ELSE
-        DynUtf.Append (d, '\u00') ;
-        DynUtf.AppendChar (d, HexDigit (c DIV 16)) ;
-        DynUtf.AppendChar (d, HexDigit (c MOD 16))
+        DynStr.Append (d, '\u00') ;
+        DynStr.AppendChar (d, HexDigit (c DIV 16)) ;
+        DynStr.AppendChar (d, HexDigit (c MOD 16))
       END ;
       start := i + 1
     END
   END ;
-  DynUtf.Append (d, SLICE (s, start, Text.BLen (s) - start)) ;
-  DynUtf.AppendChar (d, '"')
+  DynStr.Append (d, SLICE (s, start, Text.BLen (s) - start)) ;
+  DynStr.AppendChar (d, '"')
 END JsonStr ;
 
-(* the parameter list as `[{"names":[..],"mode":"VAR","type":".."}]`,
-   reading the same nodes Print.EParams prints: f1 is VAR, f2 OWN,
-   f3 RO, kids[0] the names, kids[1] the type *)
-(* an EXCEPTION's fields -- kids[0] a field sequence of groups, each
-   an identifier list and a type -- in the shape of ParamsJson's
-   entries, the mode "" (a payload is read through a binder) *)
+(* ParamsJson answers the parameter list as
+   `[{"names":[..],"mode":"VAR","type":".."}]`.  It reads the same
+   nodes Print.EParams prints: f1 is VAR, f2 OWN, f3 RO, kids[0] the
+   names, kids[1] the type. *)
+(* FieldsJson answers an EXCEPTION's fields in the shape of
+   ParamsJson's entries, the mode "" (a payload is read through a
+   binder).  kids[0] is a field sequence of groups, each an
+   identifier list and a type. *)
 PROCEDURE FieldsJson (VAR pool: POOL ; x: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, j : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.AppendChar (d, '[') ;
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (d, '[') ;
   IF x.nkids > 0 THEN
     IF x.kids[0] IS SOME fs THEN
       FOR i := 0 TO fs.nkids - 1 DO
         IF fs.kids[i] IS SOME g THEN
-          IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
-          DynUtf.Append (d, '{"names":[') ;
+          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
+          DynStr.Append (d, '{"names":[') ;
           IF g.kids[0] IS SOME il THEN
             FOR j := 0 TO il.nkids - 1 DO
               IF il.kids[j] IS SOME id THEN
-                IF j > 0 THEN DynUtf.AppendChar (d, ',') END ;
+                IF j > 0 THEN DynStr.AppendChar (d, ',') END ;
                 JsonStr (d, id.au)
               END
             END
           END ;
-          DynUtf.Append (d, '],"mode":"","type":') ;
+          DynStr.Append (d, '],"mode":"","type":') ;
           JsonStr (d, Print.TypeTextUtf (pool, g.kids[1])) ;
-          DynUtf.AppendChar (d, '}')
+          DynStr.AppendChar (d, '}')
         END
       END
     END
   END ;
-  DynUtf.AppendChar (d, ']') ;
-  RETURN DynUtf.ViewIn (pool, d)
+  DynStr.AppendChar (d, ']') ;
+  RETURN DynStr.ViewIn (pool, d)
 END FieldsJson ;
 
 PROCEDURE ParamsJson (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, j : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.AppendChar (d, '[') ;
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (d, '[') ;
   IF p.nkids > 0 THEN
     IF p.kids[0] IS SOME pl THEN
       FOR i := 0 TO pl.nkids - 1 DO
         IF pl.kids[i] IS SOME pm THEN
-          IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
-          DynUtf.Append (d, '{"names":[') ;
+          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
+          DynStr.Append (d, '{"names":[') ;
           IF pm.nkids > 0 THEN
             IF pm.kids[0] IS SOME il THEN
               FOR j := 0 TO il.nkids - 1 DO
                 IF il.kids[j] IS SOME id THEN
-                  IF j > 0 THEN DynUtf.AppendChar (d, ',') END ;
+                  IF j > 0 THEN DynStr.AppendChar (d, ',') END ;
                   JsonStr (d, id.au)
                 END
               END
             END
           END ;
-          DynUtf.Append (d, '],"mode":') ;
+          DynStr.Append (d, '],"mode":') ;
           IF pm.f1 THEN
-            DynUtf.Append (d, '"VAR"')
+            DynStr.Append (d, '"VAR"')
           ELSIF pm.f2 THEN
-            DynUtf.Append (d, '"OWN"')
+            DynStr.Append (d, '"OWN"')
           ELSIF pm.f3 THEN
-            DynUtf.Append (d, '"RO"')
+            DynStr.Append (d, '"RO"')
           ELSE
-            DynUtf.Append (d, '""')
+            DynStr.Append (d, '""')
           END ;
-          DynUtf.Append (d, ',"type":') ;
+          DynStr.Append (d, ',"type":') ;
           IF pm.nkids > 1 THEN
             JsonStr (d, Print.TypeTextUtf (pool, pm.kids[1]))
           ELSE
-            DynUtf.Append (d, '""')
+            DynStr.Append (d, '""')
           END ;
-          DynUtf.AppendChar (d, '}')
+          DynStr.AppendChar (d, '}')
         END
       END
     END
   END ;
-  DynUtf.AppendChar (d, ']') ;
-  RETURN DynUtf.ViewIn (pool, d)
+  DynStr.AppendChar (d, ']') ;
+  RETURN DynStr.ViewIn (pool, d)
 END ParamsJson ;
 
 PROCEDURE ResultText (VAR pool: POOL ; p: PTR Ast.Node) : UTF
@@ -392,21 +399,21 @@ END ResultText ;
 PROCEDURE RaisesJson (VAR pool: POOL ; p: PTR Ast.Node) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.AppendChar (d, '[') ;
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (d, '[') ;
   IF p.nkids > 2 THEN
     IF p.kids[2] IS SOME rs THEN
       FOR i := 0 TO rs.nkids - 1 DO
-        IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
+        IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
         JsonStr (d, Qual (rs.kids[i]))
       END
     END
   END ;
-  DynUtf.AppendChar (d, ']') ;
-  RETURN DynUtf.ViewIn (pool, d)
+  DynStr.AppendChar (d, ']') ;
+  RETURN DynStr.ViewIn (pool, d)
 END RaisesJson ;
 
 PROCEDURE AttribText (p: PTR Ast.Node) : UTF RAISES IndexError =
@@ -432,9 +439,10 @@ VAR i : I64 ;
 BEGIN
   IF n.kind = Ast.NVarDecl THEN
     (* `VAR a, b : T` is ONE declaration of several names, kept in
-       its identlist: an anchor for each, its type as resultText.
-       n.au is empty here, and every exported variable read as a
-       nameless entry until decision 28 made one worth completing *)
+       its identlist.  Each name gets an anchor, its type as
+       resultText.  n.au is empty here, and every exported variable
+       read as a nameless entry until decision 28 made one worth
+       completing. *)
     IF n.nkids > 1 THEN
       IF n.kids[0] IS SOME ids THEN
         FOR i := 0 TO ids.nkids - 1 DO
@@ -478,8 +486,9 @@ BEGIN
     anch[nanch].raisesJson := '[]' ;
     anch[nanch].attribText := '' ;
     IF n.kind = Ast.NExcDecl THEN
-      (* the payload, as a procedure's params: a handler arm needs
-         the arity and the types (cp-kernel's issue 11, 2026-10-09) *)
+      (* The payload goes in as a procedure's params: a handler arm
+         needs the arity and the types (cp-kernel's issue 11,
+         2026-10-09). *)
       anch[nanch].paramsJson := FieldsJson (pool, n)
     END ;
     IF n.kind = Ast.NProcDecl THEN
@@ -500,7 +509,7 @@ BEGIN
   END
 END Collect ;
 
-(* the anchor a comment at `line` belongs to, or -1 *)
+(* Owner answers the anchor a comment at `line` belongs to, or -1. *)
 PROCEDURE Owner (RO anch: SLICE OF Anchor ; nanch, line: I64) : I64 =
 VAR i, best : I64 ;
 BEGIN
@@ -513,11 +522,12 @@ END Owner ;
 
 (* ---- the comment body ---- *)
 
-(* strip the delimiters and the common indent, so the prose can be
-   re-flowed into Markdown without carrying M9's column 3 with it *)
+(* Body strips the delimiters and the common indent, so the prose can
+   be re-flowed into Markdown without carrying M9's column 3 with
+   it. *)
 PROCEDURE Body (VAR pool: POOL ; RO t: UTF) : UTF =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, n, ind, run, col, start : I64 ;
   atLineStart, counting : BOOL ;
 BEGIN
@@ -526,12 +536,12 @@ BEGIN
   IF n >= 2 THEN i := 2 END ;                  (* past the opener *)
   IF n >= 4 THEN n := n - 2 END ;              (* before the closer *)
 
-  (* the common indent of the CONTINUATION lines.  The first line
-     begins right after the opener and has none, so it says nothing
-     about the block; a blank line says nothing either.  What is left
-     is the margin the source used, and removing it leaves the
-     RELATIVE indentation -- which is what makes a parameter block
-     still look like one. *)
+  (* This finds the common indent of the CONTINUATION lines.  The
+     first line begins right after the opener and has none, so it
+     says nothing about the block.  A blank line says nothing either.
+     The rest gives the margin the source used.  Removing it leaves
+     the RELATIVE indentation, which makes a parameter block still
+     look like one. *)
   ind := -1 ;
   run := 0 ;
   counting := FALSE ;
@@ -550,7 +560,7 @@ BEGIN
   END ;
   IF ind < 0 THEN ind := 0 END ;
 
-  d := DynUtf.New (pool) ;
+  d := DynStr.New (pool) ;
   i := 0 ;
   IF Text.BLen (t) >= 2 THEN i := 2 END ;
   atLineStart := FALSE ;
@@ -562,7 +572,7 @@ BEGIN
       col := 0
     ELSIF atLineStart AND B (t, i) = 32 AND col < ind THEN
       (* drop the margin: the run before the space, not the space *)
-      DynUtf.Append (d, SLICE (t, start, i - start)) ;
+      DynStr.Append (d, SLICE (t, start, i - start)) ;
       start := i + 1 ;
       col := col + 1
     ELSE
@@ -570,21 +580,21 @@ BEGIN
     END ;
     i := i + 1
   END ;
-  DynUtf.Append (d, SLICE (t, start, n - start)) ;
-  RETURN Text.Trim (DynUtf.ViewIn (pool, d))
+  DynStr.Append (d, SLICE (t, start, n - start)) ;
+  RETURN Text.Trim (DynStr.ViewIn (pool, d))
 END Body ;
 
-(* Is everything before the ' -- ' an identifier, or a comma-list of
-   them?  This is what separates a parameter line from a sentence,
-   and it is not optional: M9 prose uses ' -- ' as an em-dash
-   constantly, so without it
+(* IsIdentList asks: is everything before the ' -- ' an identifier,
+   or a comma-list of them?  This separates a parameter line from a
+   sentence, and it is not optional.  M9 prose uses ' -- ' as an
+   em-dash constantly, so without it
 
        Too wide is never truncated -- it overflows the field
 
    reads as a parameter called `Too wide is never truncated`.  Six
-   comments across the corpus did exactly that, and one of them --
-   Plot's `... IS module\n state, and ...` -- even produced an
-   identifier-shaped `state`, which is why the test runs on the
+   comments across the corpus did exactly that.  One of them, Plot's
+   `... IS module\n state, and ...`, even produced an
+   identifier-shaped `state`.  That is why the test runs on the
    block's FIRST line and rejects the whole block rather than
    skipping lines one at a time. *)
 PROCEDURE IsIdentList (RO s: UTF) : BOOL =
@@ -603,8 +613,8 @@ BEGIN
     ELSIF B (s, i) = ORD (',') THEN
       fresh := TRUE
     ELSIF B (s, i) = ORD (' ') THEN
-      (* only as the separator after a comma: `a, b` is a list and
-         `two words` is a sentence *)
+      (* A space counts only as the separator after a comma: `a, b`
+         is a list and `two words` is a sentence. *)
       IF i + 1 < n THEN
         IF B (s, i - 1) # ORD (',') THEN RETURN FALSE END
       END
@@ -617,10 +627,11 @@ BEGIN
   RETURN NOT fresh
 END IsIdentList ;
 
-(* the parameter block, if there is one: a blank line, then a run of
-   lines whose first word is followed by ' -- '.  The blank line is
-   required, because three comments in the corpus contain that shape
-   MID-PARAGRAPH and are prose, not parameter lists. *)
+(* ParamStart finds the parameter block, if there is one: a blank
+   line, then a run of lines whose first word is followed by ' -- '.
+   The blank line is required, because three comments in the corpus
+   contain that shape MID-PARAGRAPH and are prose, not parameter
+   lists. *)
 PROCEDURE IsParamLine (RO ln: UTF) : BOOL =
 VAR
   t : UTF ;
@@ -645,7 +656,8 @@ BEGIN
       IF Text.BLen (Text.Trim (SLICE (b, lineStart, i - lineStart))) = 0 THEN
         blank := i + 1
       ELSIF blank >= 0 THEN
-        (* first non-blank line after a blank: is it `name -- ...`? *)
+        (* This is the first non-blank line after a blank.  Is it
+           `name -- ...`? *)
         IF IsParamLine (SLICE (b, lineStart, i - lineStart)) THEN
           RETURN blank
         END ;
@@ -663,7 +675,8 @@ BEGIN
   RETURN -1
 END ParamStart ;
 
-(* every `name` at the head of a `name -- ...` line in the block.
+(* CheckParams checks every `name` at the head of a `name -- ...`
+   line in the block.
 
    names is the union over the GROUP, not just the owning
    declaration: a comment placed after a run of declarations
@@ -677,7 +690,7 @@ END ParamStart ;
    legitimately names `s`, which is a parameter of the first two and
    not of the third.  Checking against the owner alone reported eight
    false drifts across the corpus, all of this shape. *)
-PROCEDURE CheckParams (VAR d: PTR DynUtf.DString ;
+PROCEDURE CheckParams (VAR d: PTR DynStr.DString ;
                        RO b: UTF ; start: I64 ; RO names: UTF ;
                        VAR st: Stats) =
 VAR
@@ -701,15 +714,15 @@ BEGIN
           st.paramsDoc := st.paramsDoc + 1 ;
           IF NOT Text.Contains (names, Cat3 (' ', nm, ' ')) THEN
             st.unknownParam := st.unknownParam + 1 ;
-            (* SAID IN THE DOCUMENT, not merely counted.  The
-               document is what a reader sees, and a name that no
-               longer exists in the signature is exactly the drift
-               they would otherwise believe. *)
-            DynUtf.Append (d, '**drift: `') ;
-            DynUtf.Append (d, nm) ;
-            DynUtf.Append (d, '` is documented but is not a ') ;
-            DynUtf.Append (d, 'parameter here**') ;
-            DynUtf.AppendChar (d, 0AC)
+            (* The drift is SAID IN THE DOCUMENT, not merely counted.
+               The document is what a reader sees, and a name that no
+               longer exists in the signature is exactly the drift they
+               would otherwise believe. *)
+            DynStr.Append (d, '**drift: `') ;
+            DynStr.Append (d, nm) ;
+            DynStr.Append (d, '` is documented but is not a ') ;
+            DynStr.Append (d, 'parameter here**') ;
+            DynStr.AppendChar (d, 0AC)
           END
         END
       END ;
@@ -720,13 +733,13 @@ BEGIN
 END CheckParams ;
 
 PROCEDURE Cat3 (RO a: UTF ; RO b: UTF ; RO c: UTF) : UTF =
-VAR d : PTR DynUtf.DString IN HEAP ;
+VAR d : PTR DynStr.DString IN HEAP ;
 BEGIN
-  d := DynUtf.New (HEAP) ;
-  DynUtf.Append (d, a) ;
-  DynUtf.Append (d, b) ;
-  DynUtf.Append (d, c) ;
-  RETURN DynUtf.ViewIn (HEAP, d)
+  d := DynStr.New (HEAP) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  RETURN DynStr.ViewIn (HEAP, d)
 END Cat3 ;
 
 PROCEDURE CountWords (RO s: UTF) : I64 =
@@ -742,7 +755,8 @@ BEGIN
   RETURN n
 END CountWords ;
 
-(* does the module declare name + Utf, a UTF twin? *)
+(* HasUtfTwin asks whether the module declares name + Utf, a UTF
+   twin. *)
 PROCEDURE HasUtfTwin (RO anch: SLICE OF Anchor ; nanch: I64 ; RO name: UTF) : BOOL =
 VAR i, n : I64 ;
 BEGIN
@@ -772,34 +786,35 @@ BEGIN
   RETURN 'EXCEPTION'
 END KindWord ;
 
-(* the parameters of every declaration this comment documents: the
-   owner, plus the run of `shared` declarations immediately above it *)
+(* GroupParams answers the parameters of every declaration this
+   comment documents: the owner, plus the run of `shared`
+   declarations immediately above it. *)
 PROCEDURE GroupParams (RO anch: SLICE OF Anchor ;
                        nanch, owner: I64) : UTF
   RAISES IndexError =
 VAR
   pool : POOL ;
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, anch[owner].params) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, anch[owner].params) ;
   i := owner - 1 ;
   WHILE i >= 0 DO
     IF anch[i].shared THEN
-      DynUtf.Append (d, anch[i].params) ;
+      DynStr.Append (d, anch[i].params) ;
       i := i - 1
     ELSE
       i := -1
     END
   END ;
-  RETURN DynUtf.View (d)
+  RETURN DynStr.View (d)
 END GroupParams ;
 
 (* ---- the gather, shared by both renderers ---- *)
 
-(* the line the next unit starts on, or "forever": a unit owns the
-   comments from its own line down to there *)
+(* UpTo answers the line the next unit starts on, or "forever".  A
+   unit owns the comments from its own line down to there. *)
 PROCEDURE UpTo (root: PTR Ast.Node ; u: I64) : I64 RAISES IndexError =
 VAR i, upTo : I64 ;
 BEGIN
@@ -813,11 +828,11 @@ BEGIN
   RETURN upTo
 END UpTo ;
 
-(* every declaration of one DEFINITION unit with its comment
-   attached, the module's own comment, and the group-sharing marks.
-   Text and Json both start here, so they cannot disagree about
-   which comment belongs to what -- the only thing that differs
-   between them is the rendering. *)
+(* Gather collects every declaration of one DEFINITION unit with its
+   comment attached, the module's own comment, and the group-sharing
+   marks.  Text and Json both start here, so they cannot disagree
+   about which comment belongs to what.  Only the rendering differs
+   between them. *)
 PROCEDURE Gather (VAR pool: POOL ; KEPT unit: PTR Ast.Node ; upTo: I64 ;
                   VAR anch: SLICE OF Anchor ; VAR nanch: I64 ;
                   VAR modDoc: UTF ; VAR haveMod: BOOL ; VAR st: Stats)
@@ -853,8 +868,8 @@ BEGIN
     END
   END ;
 
-  (* a group comment after the last member of an adjacent run
-     documents the whole run -- Text.FindChar/LastChar, Math's
+  (* A group comment after the last member of an adjacent run
+     documents the whole run: Text.FindChar/LastChar, Math's
      trigonometric block.  Adjacent means the declarations sit
      within two lines of each other, which is what a group looks
      like and what a separated declaration does not. *)
@@ -892,17 +907,17 @@ PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ;
                 VAR st: Stats) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, u, nanch : I64 ;
   anch : SLICE OF Anchor ;
   modDoc : UTF ;
   haveMod, first : BOOL ;
 BEGIN
   anch := NEW (pool, Anchor, MaxAnchor) ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, '{"module":') ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '{"module":') ;
   JsonStr (d, modName) ;
-  DynUtf.Append (d, ',"doc":') ;
+  DynStr.Append (d, ',"doc":') ;
 
   (* the first DEFINITION unit is the module; a file holds one *)
   first := TRUE ;
@@ -917,11 +932,11 @@ BEGIN
           st.modsDoc := st.modsDoc + 1 ;
           JsonStr (d, modDoc)
         ELSE
-          DynUtf.Append (d, 'null')
+          DynStr.Append (d, 'null')
         END ;
-        DynUtf.Append (d, ',"declarations":[') ;
+        DynStr.Append (d, ',"declarations":[') ;
         FOR i := 0 TO nanch - 1 DO
-          IF i > 0 THEN DynUtf.AppendChar (d, ',') END ;
+          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
           IF anch[i].kind = Ast.NProcDecl THEN
             st.procs := st.procs + 1 ;
             IF anch[i].hasDoc THEN st.procsDoc := st.procsDoc + 1 END
@@ -929,78 +944,79 @@ BEGIN
             st.others := st.others + 1 ;
             IF anch[i].hasDoc THEN st.othersDoc := st.othersDoc + 1 END
           END ;
-          DynUtf.Append (d, '{"kind":') ;
+          DynStr.Append (d, '{"kind":') ;
           JsonStr (d, KindJson (anch[i].kind)) ;
-          DynUtf.Append (d, ',"name":') ;
+          DynStr.Append (d, ',"name":') ;
           JsonStr (d, anch[i].name) ;
-          DynUtf.Append (d, ',"line":') ;
-          DynUtf.AppendI64 (d, anch[i].line) ;
+          DynStr.Append (d, ',"line":') ;
+          DynStr.AppendI64 (d, anch[i].line) ;
           IF anch[i].kind = Ast.NProcDecl THEN
-            DynUtf.Append (d, ',"signature":') ;
+            DynStr.Append (d, ',"signature":') ;
             JsonStr (d, anch[i].sig) ;
-            DynUtf.Append (d, ',"params":') ;
-            DynUtf.Append (d, anch[i].paramsJson) ;
-            DynUtf.Append (d, ',"result":') ;
+            DynStr.Append (d, ',"params":') ;
+            DynStr.Append (d, anch[i].paramsJson) ;
+            DynStr.Append (d, ',"result":') ;
             IF Text.BLen (anch[i].resultText) > 0 THEN
               JsonStr (d, anch[i].resultText)
             ELSE
-              DynUtf.Append (d, 'null')
+              DynStr.Append (d, 'null')
             END ;
-            DynUtf.Append (d, ',"raises":') ;
-            DynUtf.Append (d, anch[i].raisesJson) ;
-            DynUtf.Append (d, ',"attrib":') ;
+            DynStr.Append (d, ',"raises":') ;
+            DynStr.Append (d, anch[i].raisesJson) ;
+            DynStr.Append (d, ',"attrib":') ;
             IF Text.BLen (anch[i].attribText) > 0 THEN
               JsonStr (d, anch[i].attribText)
             ELSE
-              DynUtf.Append (d, 'null')
+              DynStr.Append (d, 'null')
             END
           END ;
           IF anch[i].kind = Ast.NExcDecl THEN
-            DynUtf.Append (d, ',"params":') ;
-            DynUtf.Append (d, anch[i].paramsJson)
+            DynStr.Append (d, ',"params":') ;
+            DynStr.Append (d, anch[i].paramsJson)
           END ;
           IF anch[i].kind = Ast.NVarDecl THEN
-            DynUtf.Append (d, ',"type":') ;
+            DynStr.Append (d, ',"type":') ;
             JsonStr (d, anch[i].resultText) ;
-            DynUtf.Append (d, ',"ro":') ;
+            DynStr.Append (d, ',"ro":') ;
             IF Text.BLen (anch[i].attribText) > 0 THEN
-              DynUtf.Append (d, 'true')
+              DynStr.Append (d, 'true')
             ELSE
-              DynUtf.Append (d, 'false')
+              DynStr.Append (d, 'false')
             END
           END ;
-          DynUtf.Append (d, ',"doc":') ;
+          DynStr.Append (d, ',"doc":') ;
           IF anch[i].hasDoc THEN
             JsonStr (d, anch[i].doc)
           ELSE
-            DynUtf.Append (d, 'null')
+            DynStr.Append (d, 'null')
           END ;
-          DynUtf.Append (d, ',"shared":') ;
+          DynStr.Append (d, ',"shared":') ;
           IF anch[i].shared THEN
-            DynUtf.Append (d, 'true')
+            DynStr.Append (d, 'true')
           ELSE
-            DynUtf.Append (d, 'false')
+            DynStr.Append (d, 'false')
           END ;
-          DynUtf.AppendChar (d, '}')
+          DynStr.AppendChar (d, '}')
         END ;
-        DynUtf.AppendChar (d, ']')
+        DynStr.AppendChar (d, ']')
       END
     END
   END ;
   IF first THEN
-    (* no definition unit at all: still a document, and an honest one *)
-    DynUtf.Append (d, 'null,"declarations":[]')
+    (* A file with no definition unit at all is still a document,
+       and an honest one. *)
+    DynStr.Append (d, 'null,"declarations":[]')
   END ;
-  DynUtf.AppendChar (d, '}') ;
-  DynUtf.AppendChar (d, 0AC) ;
-  RETURN DynUtf.ViewIn (pool, d)
+  DynStr.AppendChar (d, '}') ;
+  DynStr.AppendChar (d, 0AC) ;
+  RETURN DynStr.ViewIn (pool, d)
 END Json ;
 
 PROCEDURE Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: UTF ;
                 VAR st: Stats) : UTF
   RAISES IndexError =
 VAR
-  d : PTR DynUtf.DString IN pool ;
+  d : PTR DynStr.DString IN pool ;
   i, u, ps, nanch : I64 ;
   anch : SLICE OF Anchor ;
   modDoc : UTF ;
@@ -1008,10 +1024,10 @@ VAR
   b : UTF ;
 BEGIN
   anch := NEW (pool, Anchor, MaxAnchor) ;
-  d := DynUtf.New (pool) ;
-  DynUtf.Append (d, '# ') ;
-  DynUtf.Append (d, modName) ;
-  DynUtf.AppendChar (d, 0AC) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '# ') ;
+  DynStr.Append (d, modName) ;
+  DynStr.AppendChar (d, 0AC) ;
 
   (* a PROGRAM exports nothing: its page said only its name until
      2026-10-08, and a reader took the bare heading for a page that
@@ -1019,11 +1035,11 @@ BEGIN
   FOR u := 0 TO root.nkids - 1 DO
     IF root.kids[u] IS SOME unit THEN
       IF unit.kind = Ast.NProgram THEN
-        DynUtf.AppendChar (d, 0AC) ;
-        DynUtf.Append (d, 'A program (`MODULE ') ;
-        DynUtf.Append (d, modName) ;
-        DynUtf.Append (d, '`): nothing to import, run it.') ;
-        DynUtf.AppendChar (d, 0AC)
+        DynStr.AppendChar (d, 0AC) ;
+        DynStr.Append (d, 'A program (`MODULE ') ;
+        DynStr.Append (d, modName) ;
+        DynStr.Append (d, '`): nothing to import, run it.') ;
+        DynStr.AppendChar (d, 0AC)
       END
     END
   END ;
@@ -1037,9 +1053,9 @@ BEGIN
         st.mods := st.mods + 1 ;
         IF haveMod THEN st.modsDoc := st.modsDoc + 1 END ;
         IF Text.BLen (modDoc) > 0 THEN
-          DynUtf.AppendChar (d, 0AC) ;
-          DynUtf.Append (d, modDoc) ;
-          DynUtf.AppendChar (d, 0AC)
+          DynStr.AppendChar (d, 0AC) ;
+          DynStr.Append (d, modDoc) ;
+          DynStr.AppendChar (d, 0AC)
         END ;
 
         FOR i := 0 TO nanch - 1 DO
@@ -1052,26 +1068,27 @@ BEGIN
             IF anch[i].hasDoc THEN st.othersDoc := st.othersDoc + 1 END
           END ;
 
-          DynUtf.AppendChar (d, 0AC) ;
-          DynUtf.Append (d, '### ') ;
+          DynStr.AppendChar (d, 0AC) ;
+          DynStr.Append (d, '### ') ;
           IF anch[i].kind = Ast.NProcDecl THEN
-            DynUtf.Append (d, anch[i].sig)
+            DynStr.Append (d, anch[i].sig)
           ELSE
-            DynUtf.Append (d, KindWord (anch[i].kind)) ;
-            DynUtf.AppendChar (d, ' ') ;
-            DynUtf.Append (d, anch[i].name)
+            DynStr.Append (d, KindWord (anch[i].kind)) ;
+            DynStr.AppendChar (d, ' ') ;
+            DynStr.Append (d, anch[i].name)
           END ;
-          DynUtf.AppendChar (d, 0AC) ;
-          DynUtf.AppendChar (d, 0AC) ;
-          (* a STR form whose UTF twin the module declares is DEPRECATED
-             for the transition (docs/utf8-plan.md, (C)): said from the
-             declarations, so no comment has to remember it *)
+          DynStr.AppendChar (d, 0AC) ;
+          DynStr.AppendChar (d, 0AC) ;
+          (* A STR form whose UTF twin the module declares is
+             DEPRECATED for the transition (docs/utf8-plan.md, (C)).
+             The page says so from the declarations, so no comment
+             has to remember it. *)
           IF anch[i].kind = Ast.NProcDecl AND HasUtfTwin (anch, nanch, anch[i].name) THEN
-            DynUtf.Append (d, '**Deprecated** (the UTF transition): ') ;
-            DynUtf.Append (d, anch[i].name) ;
-            DynUtf.Append (d, 'Utf is its UTF form.') ;
-            DynUtf.AppendChar (d, 0AC) ;
-            DynUtf.AppendChar (d, 0AC)
+            DynStr.Append (d, '**Deprecated** (the UTF transition): ') ;
+            DynStr.Append (d, anch[i].name) ;
+            DynStr.Append (d, 'Utf is its UTF form.') ;
+            DynStr.AppendChar (d, 0AC) ;
+            DynStr.AppendChar (d, 0AC)
           END ;
 
           IF anch[i].hasDoc THEN
@@ -1081,20 +1098,20 @@ BEGIN
               CheckParams (d, b, ps,
                            GroupParams (anch, nanch, i), st)
             END ;
-            DynUtf.Append (d, b) ;
-            DynUtf.AppendChar (d, 0AC)
+            DynStr.Append (d, b) ;
+            DynStr.AppendChar (d, 0AC)
           ELSIF anch[i].shared THEN
-            DynUtf.Append (d, '_(documented with the group below)_') ;
-            DynUtf.AppendChar (d, 0AC)
+            DynStr.Append (d, '_(documented with the group below)_') ;
+            DynStr.AppendChar (d, 0AC)
           ELSE
-            DynUtf.Append (d, '_(undocumented)_') ;
-            DynUtf.AppendChar (d, 0AC)
+            DynStr.Append (d, '_(undocumented)_') ;
+            DynStr.AppendChar (d, 0AC)
           END
         END
       END
     END
   END ;
-  RETURN DynUtf.ViewIn (pool, d)
+  RETURN DynStr.ViewIn (pool, d)
 END Text ;
 
 END Doc.

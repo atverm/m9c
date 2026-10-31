@@ -2,7 +2,7 @@ MODULE GfCallSelect ;
 
 (* WANT: call answers selected: 7 4 30 3 9 9 handled 3 *)
 
-IMPORT Io, Fmt ;
+IMPORT Io, Fmt, Text ;
 
 TYPE
   Pair = RECORD a, b : I64 END ;
@@ -61,7 +61,7 @@ BEGIN
   out := out + ' ' + Fmt.I64Str (MkBox (2).p.b) ;                  (* a pointer answer, a chain *)
   out := out + ' ' + Fmt.I64Str (Tens (5)[3]) ;                     (* a slice answer *)
   out := out + ' ' + Fmt.I64Str (MkRow ()[2]) ;                     (* an array answer *)
-  out := out + ' ' + Fmt.I64Str (99)[0] ;                           (* a string answer: a CHAR *)
+  out := out + ' ' + Text.Chars (Fmt.I64Str (99))[0] ;              (* a CHAR array answer: a CHAR *)
   out := out + ' ' + Fmt.I64Str (MkBox (3).xs[2]) ;                 (* a pointer answer's slice field *)
   BEGIN
     out := out + ' ' + Fmt.I64Str (Must (0)[1])                     (* raises: nothing is selected *)

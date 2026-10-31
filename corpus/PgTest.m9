@@ -1,21 +1,21 @@
 MODULE PgTest ;
 
-(* Pg, held to psycopg (docs/datalib-plan.md par 1): the same fixture
-   (runtime/test/gold/pg-fixture.sql, a TEMP table) and the same
-   statements, run by tools/pggold.py through psycopg into
-   runtime/test/gold/Pg.gold and here through Pg.
+(* This test holds Pg to psycopg (docs/datalib-plan.md par 1).  The
+   same fixture (runtime/test/gold/pg-fixture.sql, a TEMP table) and
+   the same statements run by tools/pggold.py through psycopg into
+   runtime/test/gold/Pg.gold, and here through Pg.
 
    Text cells are compared with Postgres's own text, each cell's code
    points a vector in the golden.  The typed reads are compared with
    psycopg's conversions: I64Cell with its int, F64Cell with its
    float (to the bit), BoolCell with its bool, TimeCell with its aware
-   datetime's seconds -- in the server's zone and again in
+   datetime's seconds, in the server's zone and again in
    Asia/Kolkata, whose offsets for 1900 carry seconds.
 
-   Needs a server: libpq reads PGHOST, PGPORT, PGUSER, PGPASSWORD and
-   PGDATABASE.  runtime/test/m9test.sh runs this only where PGHOST
+   It needs a server: libpq reads PGHOST, PGPORT, PGUSER, PGPASSWORD
+   and PGDATABASE.  runtime/test/m9test.sh runs this only where PGHOST
    is set, and on CI, where the drivers job has a Postgres service,
-   always.  Linked with runtime/pgshim.c and -l:libpq.so.5.          *)
+   always.  It is linked with runtime/pgshim.c and -l:libpq.so.5.    *)
 
 IMPORT Check ;
 IMPORT Io ;
@@ -40,13 +40,19 @@ VAR
   gold : STR ;
 
 PROCEDURE Cps (RO s: STR) : SLICE OF I64 =
-  (* a string's code points, as the golden carries them *)
+  (* Cps answers a string's code points, as the golden carries
+     them.  It walks characters: a byte past ASCII is never one. *)
 VAR
   v : SLICE OF I64 ;
   i : I64 ;
+  c : CHAR ;
 BEGIN
-  v := NEW (I64, LEN (s)) ;
-  FOR i := 0 TO LEN (s) - 1 DO v[i] := ORD (s[i]) END ;
+  v := NEW (I64, Text.CpCount (s)) ;
+  i := 0 ;
+  FOR c IN s DO
+    v[i] := ORD (c) ;
+    i := i + 1
+  END ;
   RETURN v
 END Cps ;
 
@@ -132,8 +138,8 @@ END TimestampWithoutZone ;
 (* ---- the checks ---- *)
 
 PROCEDURE Cells () RAISES ValueRange =
-  (* the fixture's rows: shape, names, NULLs, every cell's text, and
-     the typed reads of the columns that have one *)
+  (* Cells checks the fixture's rows: shape, names, NULLs, every
+     cell's text, and the typed reads of the columns that have one. *)
 VAR
   names, label : STR ;
   gnames : SLICE OF STR ;
@@ -186,9 +192,9 @@ BEGIN
 END Cells ;
 
 PROCEDURE ArrayParam () RAISES ValueRange =
-  (* Pg.ArrayLiteral, read back by the SERVER element for element:
-     a quote, a backslash, a comma, braces, the empty string and the
-     word NULL, which quoted stays a string *)
+  (* ArrayParam checks Pg.ArrayLiteral, read back by the SERVER element
+     for element: a quote, a backslash, a comma, braces, the empty
+     string and the word NULL, which quoted stays a string. *)
 VAR
   p : POOL ;
   r : PTR Pg.Result IN p ;
@@ -233,15 +239,20 @@ BEGIN
     r := Pg.Query (p, c, Q2, Params1 ('5')) ;
     Check.EqI64s (t, 'a parameter, text past Latin-1 back', Cps (Pg.Cell (r, 0, 0)),
                   Check.GoldI64s (t, gold, 'q2.text')) ;
-    (* e-acute, a 4-octet G clef, a 3-octet check mark: spelled as
-       code points, a string literal past ASCII being one the
-       generator does not take yet *)
+    (* These are e-acute, a 4-octet G clef and a 3-octet check mark,
+       spelled as code points.  The generator does not take a string
+       literal past ASCII yet. *)
     one[0] := '' + CHR (233) + CHR (119070) + CHR (10003) ;
     r := Pg.Query (p, c, Q3, one) ;
     Check.EqI64s (t, 'a parameter out as UTF-8 and back', Cps (Pg.Cell (r, 0, 0)),
                   Check.GoldI64s (t, gold, 'q3.s')) ;
     Check.EqI64 (t, 'its length in code points', Pg.I64Cell (r, 0, 1),
                  Check.GoldI64 (t, gold, 'q3.n')) ;
+    (* A column name comes through CText, as a server message does.
+       It reads as UTF-8 since 2026-10-31; it read as Latin-1 before. *)
+    r := Pg.Query (p, c, 'SELECT 1 AS "größe"', NoParams ()) ;
+    Check.EqStr (t, 'a column name past ASCII reads as its characters',
+                 Pg.Name (r, 0), 'größe') ;
     n := Pg.Exec (c, Q4, Params2 ('1', '4')) ;
     Check.EqI64 (t, 'Exec: rows affected', n, Check.GoldI64 (t, gold, 'q4.affected')) ;
     Pg.Begin (c) ;
@@ -279,6 +290,23 @@ BEGIN
   END ;
   Check.That (t, 'a missing relation raises PgError', raised) ;
   Check.That (t, "and the message is the server's: " + msg, Text.Contains (msg, 'nosuch')) ;
+  (* The server quotes the missing name in its message, in
+     client_encoding.  So a name past ASCII makes a message past
+     ASCII, and CText decodes it as UTF-8. *)
+  raised := FALSE ;
+  msg := '' ;
+  BEGIN
+    r := Pg.Query (p, c, 'SELECT * FROM "größe_nosuch"', NoParams ())
+  EXCEPT
+  | Pg.PgError (m) :
+      raised := TRUE ;
+      msg := m
+  | IndexError :
+      raised := FALSE
+  END ;
+  Check.That (t, 'a missing relation past ASCII raises PgError', raised) ;
+  Check.That (t, 'and its message carries the name as characters: ' + msg,
+              Text.Contains (msg, 'größe_nosuch')) ;
   BEGIN
     r := Pg.Query (p, c, 'SELECT 1', NoParams ()) ;
     Check.EqI64 (t, 'the connection works after the error', Pg.I64Cell (r, 0, 0), 1)
@@ -334,7 +362,7 @@ END Zone ;
 PROCEDURE Zones () RAISES ValueRange =
   (* Kolkata's offsets are positive, 1900's with seconds; St John's
      are NEGATIVE, without which a TimeCell that dropped the sign of
-     an offset passed (runtime/test/pgsabotage.py found it) *)
+     an offset passed (the pg sabotage list found it, runtime/test/pgsabotage.txt) *)
 BEGIN
   Zone (0, 'Asia/Kolkata') ;
   Zone (1, 'America/St_Johns')
@@ -348,7 +376,7 @@ BEGIN
   BEGIN
     (* bytes, decoded as UTF-8: ReadFile reads Latin-1, and the
        fixture's Zurich went in double-encoded the first time *)
-    sql := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, Check.GoldPath ('pg-fixture.sql'))) ;
+    sql := UTF (p, Io.ReadFileBytes (p, Check.GoldPath ('pg-fixture.sql'))) ;
     c := Pg.Connect (pool, '') ;
     Pg.Script (c, sql) ;
     r1 := Pg.Query (pool, c, Q1, NoParams ()) ;

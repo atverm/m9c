@@ -1,6 +1,6 @@
 DEFINITION MODULE GfJv ;
 
-(* A helper for the genforms fixtures: an enumeration and records
+(* GfJv helps the genforms fixtures: an enumeration and records
    declared in ANOTHER module than the program that uses them.       *)
 
 TYPE

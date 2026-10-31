@@ -1,23 +1,23 @@
 MODULE RegexTest ;
 
-(* Regex against Python's re (tools/regexgold.py, runtime/test/gold/
-   Regex.gold; docs/datalib-plan.md par 3).
+(* This test holds Regex against Python's re (tools/regexgold.py,
+   runtime/test/gold/Regex.gold; docs/datalib-plan.md par 3).
 
    Every question the golden holds is asked here and answered the way
-   re answered it: thousands of generated patterns over a small
-   alphabet -- searches from a position, anchored matches and full
-   matches with every group's span, find-alls, substitutions with
-   group references, splits with groups -- and patterns written as
-   people write them.  Each refused pattern in the golden must be
-   refused.
+   re answered it.  The questions are searches from a position,
+   anchored matches and full matches with every group's span,
+   find-alls, substitutions with group references, and splits with
+   groups.  They run over thousands of generated patterns over a small
+   alphabet, and over patterns written as people write them.  Each
+   refused pattern in the golden must be refused.
 
-   By hand: the refusals of what needs backtracking, by name and
-   position; the API around a Found; a named group; and TIME LINEAR
-   IN THE SUBJECT -- patterns that take a backtracking engine
-   exponential time -- a starred group of a starred a before a b
-   that never comes, among them -- over 20,000 characters, each
-   within one second.  Measured on the MacBook: 2 to 3 ms each, and
-   0.7, 2.5 and 3.5 ms at 5,000, 20,000 and 35,000 characters.
+   By hand it checks the refusals of what needs backtracking, by name
+   and position; the API around a Found; a named group; and TIME
+   LINEAR IN THE SUBJECT.  Patterns that take a backtracking engine
+   exponential time, a starred group of a starred a before a b that
+   never comes among them, run over 20,000 characters, each within one
+   second.  The MacBook measured 2 to 3 ms each, and 0.7, 2.5 and
+   3.5 ms at 5,000, 20,000 and 35,000 characters.
    Python's re, a backtracking engine, takes 0.53 s on 25 characters
    of the third, doubling with each one more.  *)
 
@@ -43,26 +43,27 @@ BEGIN
 END Hex ;
 
 PROCEDURE Dec (VAR p: POOL ; RO w: STR) : STR RAISES ValueRange =
-  (* a golden word: percent-encoded UTF-8, '' the empty string *)
+  (* Dec decodes a golden word: percent-encoded UTF-8, '' the empty
+     string. *)
 VAR
   b : SLICE OF BYTE ;
   i, n : I64 ;
 BEGIN
   IF Text.Eq (w, "''") THEN RETURN '' END ;
-  b := NEW (p, BYTE, LEN (w)) ;
+  b := NEW (p, BYTE, Text.BLen (w)) ;
   n := 0 ;
   i := 0 ;
-  WHILE i < LEN (w) DO
-    IF w[i] = '%' AND i + 2 < LEN (w) THEN
-      b[n] := BYTE (Hex (w[i + 1]) * 16 + Hex (w[i + 2])) ;
+  WHILE i < Text.BLen (w) DO
+    IF Text.BIs (w, i, '%') AND i + 2 < Text.BLen (w) THEN
+      b[n] := BYTE (Hex (Text.BChar (w, i + 1)) * 16 + Hex (Text.BChar (w, i + 2))) ;
       i := i + 3
     ELSE
-      b[n] := BYTE (ORD (w[i])) ;
+      b[n] := BYTE (I64 (Text.BAt (w, i))) ;
       i := i + 1
     END ;
     n := n + 1
   END ;
-  RETURN DynStr.FromUtf8 (p, SLICE (b, 0, n))
+  RETURN UTF (p, SLICE (b, 0, n))
 END Dec ;
 
 PROCEDURE Some (r: OPT PTR Regex.Found) : BOOL =
@@ -72,7 +73,7 @@ BEGIN
 END Some ;
 
 PROCEDURE Show (RO pat: STR ; RO flags: STR ; RO s: STR) : STR =
-  (* a case, for a failure's line *)
+  (* Show answers a case, for a failure's line. *)
 BEGIN
   RETURN '/' + pat + '/' + flags + ' on "' + s + '"'
 END Show ;
@@ -91,7 +92,24 @@ BEGIN
   RETURN DynStr.View (d)
 END Spans ;
 
-PROCEDURE Want (RO v: SLICE OF I64 ; at, n: I64) : STR =
+(* the BYTE offset of character k of s: re's spans and `from' count
+   characters, and Regex's, like every position in Text, count bytes
+   under the UTF switch; -1 stays -1 *)
+PROCEDURE Bo (RO s: STR ; k: I64) : I64 =
+VAR
+  at, i : I64 ;
+  c : CHAR ;
+BEGIN
+  IF k < 0 THEN RETURN k END ;
+  at := 0 ;
+  FOR i := 1 TO k DO
+    IF at >= Text.BLen (s) THEN RETURN at END ;
+    c := Text.NextCp (s, at)
+  END ;
+  RETURN at
+END Bo ;
+
+PROCEDURE Want (RO s: STR ; RO v: SLICE OF I64 ; at, n: I64) : STR =
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
@@ -100,7 +118,7 @@ BEGIN
   d := DynStr.New (scratch) ;
   FOR i := 0 TO n - 1 DO
     IF i > 0 THEN DynStr.AppendChar (d, ' ') END ;
-    DynStr.Append (d, Fmt.I64Str (v[at + i]))
+    DynStr.Append (d, Fmt.I64Str (Bo (s, v[at + i])))
   END ;
   RETURN DynStr.View (d)
 END Want ;
@@ -138,8 +156,8 @@ BEGIN
       IF Regex.Groups (re) # groups[i] THEN
         Check.EqI64 (t, what + ': groups', Regex.Groups (re), groups[i])
       ELSE
-        IF how[i] = 0 THEN r := Regex.Search (re, s, from[i])
-        ELSIF how[i] = 1 THEN r := Regex.Match (re, s, from[i])
+        IF how[i] = 0 THEN r := Regex.Search (re, s, Bo (s, from[i]))
+        ELSIF how[i] = 1 THEN r := Regex.Match (re, s, Bo (s, from[i]))
         ELSE r := Regex.FullMatch (re, s)
         END ;
         n := 2 * (groups[i] + 1) ;
@@ -147,7 +165,7 @@ BEGIN
         IF r IS SOME m THEN got := Spans (m) END ;
         want := 'none' ;
         IF found[i] THEN
-          want := Want (spans, at, n) ;
+          want := Want (s, spans, at, n) ;
           at := at + n
         END ;
         IF Text.Eq (got, want) THEN agree := agree + 1
@@ -186,7 +204,7 @@ BEGIN
     fl := Dec (p, flags[i]) ;
     s := Dec (p, text[i]) ;
     what := 'find-all ' + Show (pa, fl, s) ;
-    want := Want (spans, at, 2 * count[i]) ;
+    want := Want (s, spans, at, 2 * count[i]) ;
     at := at + 2 * count[i] ;
     BEGIN
       re := Regex.Compile (p, pa, fl) ;
@@ -318,7 +336,8 @@ BEGIN
 END Refusals ;
 
 PROCEDURE Refused (RO pat: STR ; RO wantMsg: STR ; wantPos: I64) =
-  (* refused, its message beginning so, at that position *)
+  (* Refused checks that the pattern is refused, its message beginning
+     so, at that position. *)
 VAR
   p : POOL ;
   re : PTR Regex.Re IN p ;
@@ -333,7 +352,7 @@ BEGIN
     re := Regex.Compile (p, pat, '')
   EXCEPT
   | Regex.BadPattern (msg, pos) :
-      (* a handler's binders have no type in the checker yet: copied *)
+      (* A handler's binders have no type in the checker yet: copied. *)
       raised := TRUE ;
       em := msg ;
       ep := pos
@@ -399,7 +418,8 @@ BEGIN
     (* u: Python's classes *)
     re := Regex.Compile (p, '\w+', 'u') ;
     r := Regex.Search (re, 'caf' + 0E9C + ' ok', 0) ;
-    IF r IS SOME m4 THEN Check.EqI64 (t, 'u: \w takes the e acute', Regex.End (m4, 0), 4)
+    (* the span's end is a BYTE offset: café is five octets *)
+    IF r IS SOME m4 THEN Check.EqI64 (t, 'u: \w takes the e acute', Regex.End (m4, 0), 5)
     ELSE Check.That (t, 'u: a word', FALSE)
     END ;
     re := Regex.Compile (p, '\w+', '') ;
@@ -417,7 +437,8 @@ END Api ;
 
 PROCEDURE Linear (RO pat: STR ; RO what: STR ; n: I64 ; tail: CHAR ; found: BOOL)
   RAISES ValueRange =
-  (* the pattern over n a's and tail, in well under a second *)
+  (* Linear runs the pattern over n a's and tail, in well under a
+     second. *)
 VAR
   p : POOL ;
   re : PTR Regex.Re IN p ;
@@ -428,7 +449,8 @@ VAR
   t0 : Time.Instant ;
   secs : F64 ;
 BEGIN
-  (* built with DynStr, the same both sides of the UTF switch *)
+  (* The subject is built with DynStr, the same both sides of the UTF
+     switch. *)
   d := DynStr.New (p) ;
   FOR i := 0 TO n - 1 DO DynStr.AppendChar (d, 'a') END ;
   DynStr.AppendChar (d, tail) ;

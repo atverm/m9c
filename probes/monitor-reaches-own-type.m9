@@ -1,12 +1,12 @@
 (* EXPECT: a call of Helper may enter a monitor of the type this procedure is bound to and holds the lock of *)
 MODULE m ;
-(* a bound procedure holds its monitor's lock, which is not recursive:
-   reaching a procedure bound to a monitor of the SAME TYPE -- through
-   an unbound helper, or on another variable of the type -- waits for
-   ever when it is the same monitor and can deadlock two threads when it
-   is another (the reviews' S11: N30, N30b hung).  Legal forms first: a
-   helper that enters no monitor, and a bound procedure of another
-   monitor TYPE. *)
+(* A bound procedure holds its monitor's lock, which is not recursive.
+   It may reach a procedure bound to a monitor of the SAME TYPE, through
+   an unbound helper or on another variable of the type.  It then waits
+   for ever when it is the same monitor, and it can deadlock two threads
+   when it is another (the reviews' S11: N30, N30b hung).  Legal forms
+   come first: a helper that enters no monitor, and a bound procedure of
+   another monitor TYPE. *)
 TYPE
   Gate = MONITOR RECORD n : I64 END ;
   Lamp = MONITOR RECORD on : BOOL END ;

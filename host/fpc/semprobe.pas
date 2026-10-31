@@ -1,12 +1,14 @@
 program semprobe;
-{ Negative probes: each program in probes/ must produce the
-  diagnostic its first line names.  A checker that accepts a clean
+{ semprobe runs the negative probes.  Each program in probes/ must
+  produce the diagnostic its first line names.  A checker that accepts
+  a clean
   corpus proves nothing until its rejections are demonstrated too.
 
   The programs live in FILES rather than in this source, because the
   M9 checker has to be held to the same ones: runtime/test/probediff.sh
   puts every file to both checkers and requires the diagnostics to be
-  identical, line for line.  One source of truth, two consumers.
+  identical, line for line.  The files are one source of truth with
+  two consumers.
 
   The first line of each file is either
 

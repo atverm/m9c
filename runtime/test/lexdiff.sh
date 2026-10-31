@@ -1,9 +1,9 @@
 #!/bin/sh
-# P5 stage-1 differential: the M9-compiled lexer against the FPC
-# oracle, byte-compared over every corpus and museum file.
-# scratch files in a directory of this run's own: fixed /tmp names
+# This is the P5 stage-1 differential.  It byte-compares the M9-compiled
+# lexer against the FPC oracle over every corpus and museum file.
+# Scratch files go in a directory of this run's own.  Fixed /tmp names
 # collided between two checkouts or two gates run at once (the compiler
-# review's tier 3, 2026-10-22)
+# review's tier 3, 2026-10-22).
 TG=$(mktemp -d "${TMPDIR:-/tmp}/m9gate.XXXXXX")
 trap 'rm -rf "$TG"' EXIT
 set -e
@@ -21,10 +21,10 @@ for f in ../../corpus/*.m9 ../../museum/*.m9; do
   n=$((n+1))
 done
 # A #! FIRST LINE IS SKIPPED, by both, and only there (report par 2).
-# The fixture's first token must be MODULE on line 2; a copy with the
-# line moved below the heading must NOT lex clean -- `#` is not-equal
-# and `!` no character M9 has -- so the skip is shown to be a rule
-# about the first line and not a second comment syntax.
+# The fixture's first token must be MODULE on line 2.  A copy with the
+# line moved below the heading must NOT lex clean: `#` is not-equal and
+# `!` is no character M9 has.  So the skip is shown to be a rule about
+# the first line and not a second comment syntax.
 f=runfix/Shebang.m9
 ../../host/fpc/lexdump "$f" > "$TG"/lex_fpc.txt
 ./lexdump_m9 "$f" > "$TG"/lex_m9.txt
@@ -39,9 +39,9 @@ grep -q 'Error' "$TG"/lex_m9.txt ||
   { echo "lexdiff: a #! below line 1 lexed clean"; exit 1; }
 n=$((n+1))
 # A BYTE ORDER MARK IS SKIPPED, first and only first (the review's F6:
-# it was `unexpected character 0xff', its low byte); a CR no LF follows
-# ENDS A LINE (a CR-only file was one line).  Made here, so the tree
-# holds no file of control bytes.
+# it was `unexpected character 0xff', its low byte).  A CR no LF follows
+# ENDS A LINE (a CR-only file was one line).  The gate makes these
+# files here, so the tree holds no file of control bytes.
 printf '\357\273\277MODULE Bom ;\nBEGIN\nEND Bom.\n' > "$TG"/bom.m9
 printf 'MODULE Bom ; \357\273\277\nBEGIN\nEND Bom.\n' > "$TG"/bomlate.m9
 printf 'MODULE Cr ;\rVAR x : I64 ;\rBEGIN\r  x := 1\rEND Cr.\r' > "$TG"/cr.m9

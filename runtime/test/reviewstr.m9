@@ -8,8 +8,8 @@ MODULE reviewstr ;
    s, LEN and a subscript of nm, whose type is a name for STR; the
    slice cs and the UTF u are used the same ways and must not appear;
    nor may Head's subscript, the body of a STR form whose UTF twin
-   this module declares -- the switch deletes it.  Held by
-   reviewdiff.sh, which must find exactly the six. *)
+   this module declares -- the switch deletes it.  reviewdiff.sh
+   holds it and must find exactly the six. *)
 
 IMPORT Text ;
 

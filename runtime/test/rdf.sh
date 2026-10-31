@@ -1,16 +1,18 @@
 #!/bin/sh
-# rdf -- Rdf held to rdflib over the W3C RDF 1.1 Turtle, N-Triples and
-# RDF/XML suites and the JSON-LD API's toRdf tests (runtime/test/rdf-tests, listed in gold/Rdf.gold): every
-# document read by M9 and written back as N-Triples by rdffix/RdfConv,
-# then judged by runtime/test/rdfjudge.py -- the expected graph, up to
-# blank-node renaming, for every evaluation and positive syntax test;
-# a refusal for every negative one (docs/datalib-plan.md par 2).
-# RdfTest in m9test reads the same suites offline; this is the half
-# that needs graphs compared, which is left to code M9 did not write.
+# rdf holds Rdf to rdflib over the W3C RDF 1.1 Turtle, N-Triples and
+# RDF/XML suites and the JSON-LD API's toRdf tests
+# (runtime/test/rdf-tests, listed in gold/Rdf.gold).  M9 reads every
+# document, and rdffix/RdfConv writes it back as N-Triples.  Then
+# runtime/test/rdfjudge.py judges it.  Every evaluation and positive
+# syntax test must give the expected graph, up to blank-node renaming.
+# Every negative one must give a refusal (docs/datalib-plan.md par 2).
+# RdfTest in m9test reads the same suites offline.  This gate is the
+# half that needs graphs compared, which is left to code M9 did not
+# write.
 #
-# Needs rdflib (python3-rdflib; RDF_PY names another Python).  Without
-# it the gate SKIPS out loud on a workstation and FAILS on CI.  Uses an
-# m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
+# The gate needs rdflib (python3-rdflib; RDF_PY names another Python).
+# Without it the gate SKIPS out loud on a workstation and FAILS on CI.
+# It uses an m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
 set -e
 cd "$(dirname "$0")"
 
@@ -24,11 +26,12 @@ if ! "$PY" -c 'import rdflib' 2>/dev/null; then
   echo "rdf: SKIP -- $PY has no rdflib (install python3-rdflib, or set RDF_PY)"
   exit 0
 fi
-# rdflib 7 or later, BY NAME: 6.1.1 (Ubuntu 24.04's python3-rdflib)
-# reads `scheme:...~?#' out of JSON-LD as `...~#' and has no
-# Dataset.default_graph, so under it 141 of the 745 verdicts were the
-# oracle's defects (measured 2026-10-08, when CI's image carried it
-# and the suite's venv carried 7.6); the CI image installs 7.6 with pip.
+# Demand rdflib 7 or later, BY NAME.  6.1.1 (Ubuntu 24.04's
+# python3-rdflib) reads `scheme:...~?#' out of JSON-LD as `...~#' and
+# has no Dataset.default_graph.  So under it 141 of the 745 verdicts
+# were the oracle's defects (measured 2026-10-08, when CI's image
+# carried it and the suite's venv carried 7.6).  The CI image installs
+# 7.6 with pip.
 RV=$("$PY" -c 'import rdflib; print(rdflib.__version__)' 2>/dev/null)
 case "$RV" in
   [0-6].*) if [ -n "$GITHUB_ACTIONS" ]; then
@@ -59,15 +62,17 @@ BASE=$(list ttl.base)
   || { echo "rdf: FAIL -- RdfConv stopped on the N-Triples suite"; exit 1; }
 
 XBASE=$(list xml.base)
-# the RDF/XML tests sit in subdirectories: the output tree mirrors them
+# The RDF/XML tests sit in subdirectories.  The output tree mirrors
+# them.
 for d in $(list xml.eval.action) $(list xml.neg); do mkdir -p "$W/out/xml/$(dirname "$d")"; done
 # shellcheck disable=SC2046
 "$W/rdfconv" xml rdf-tests/rdf-xml "$XBASE" "$W/out/xml" \
   $(list xml.eval.action) $(list xml.neg) \
   || { echo "rdf: FAIL -- RdfConv stopped on the RDF/XML suite"; exit 1; }
 
-# JSON-LD: each test against its own base, one run a document; some
-# inputs are shared with the expand suite and sit in its directory
+# JSON-LD runs each test against its own base, one run a document.
+# Some inputs are shared with the expand suite and sit in its
+# directory.
 for d in $(list jld.pos.action) $(list jld.neg) $(list jld.syntax); do mkdir -p "$W/out/jld/$(dirname "$d")"; done
 i=0
 for f in $(list jld.pos.action); do

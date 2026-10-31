@@ -1,0 +1,162 @@
+# runtime/test/Sabotage.m9 xml reads this list.  Each entry is one
+# small break of a COPY of corpus/Xml.m9 (the default file) that XmlTest
+# must catch against the W3C suite.  docs/datalib-plan.md.
+#
+# The form, one entry:
+#
+#   @name what the edit breaks
+#   @file another file        (optional; the default above without it)
+#   @old
+#   the text to replace: it must occur in the file exactly once
+#   @new
+#   the text put in its place
+#   @end
+#
+# A text is the lines between its two markers, joined by newlines, taken
+# exactly: leading spaces count, and no escapes exist.  A text that ends
+# in a newline has one empty line before the next marker.  An empty text
+# has no lines.  A line beginning with # is a comment only outside an
+# entry.
+
+# The UTF-8 switch (2026-10-31) made CheckChars walk code points: the
+# test reads c := Text.NextCp (r.src, i), and the position is at.
+@name characters no document may hold accepted
+@old
+    IF NOT IsChar (ORD (c)) THEN
+      r.pos := at ;
+@new
+    IF FALSE THEN
+      r.pos := at ;
+@end
+
+@name -- inside a comment accepted
+@old
+      IF NOT Ahead (r, '-->') THEN Fail (r, '-- inside a comment') END ;
+      r.pos := r.pos + 3 ;
+      EXIT
+@new
+      IF Ahead (r, '-->') THEN r.pos := r.pos + 3 ; EXIT END
+@end
+
+@name an attribute given twice accepted
+@old
+      IF Text.Eq (attrs[i].name, an) THEN Fail (r, 'an attribute given twice: ' + an) END
+@new
+      IF FALSE THEN Fail (r, 'an attribute given twice: ' + an) END
+@end
+
+@name an end tag that closes another element
+@old
+  IF NOT Text.Eq (n, r.stack[r.depth - 1]) THEN
+@new
+  IF FALSE THEN
+@end
+
+# The UTF-8 switch (2026-10-31) made AttValue put a space or the octet
+# as it is (PutOctet).  The break puts the octet always.
+@name attribute values not normalised
+@old
+      IF IsSpace (c) THEN Put (r, buf, n, ' ')
+      ELSE PutOctet (r, buf, n, Text.BAt (r.src, r.pos)) END ;
+@new
+      PutOctet (r, buf, n, Text.BAt (r.src, r.pos)) ;
+@end
+
+# The UTF-8 switch (2026-10-31) moved the line-end pass to the octets:
+# s is a SLICE OF BYTE and the CR test is Text.BIs.  The break keeps
+# the CR (13) where an LF (10) belongs, and keeps a CR LF's LF as well.
+@name a lone CR kept
+@old
+        s[n] := BYTE (10) ;
+        IF i + 1 < Text.BLen (raw) AND Text.BIs (raw, i + 1, 0AC) THEN i := i + 1 END
+@new
+        s[n] := BYTE (13)
+@end
+
+# The UTF-8 switch (2026-10-31) refuses LEN of a STR.  The @new below
+# says Text.BLen (n) where it said LEN (n).
+@name an undeclared entity read as text
+@old
+  Fail (r, 'an undeclared entity: ' + n) ;
+  RETURN ' '
+@new
+  r.pos := r.pos + Text.BLen (n) + 2 ;
+  RETURN ' '
+@end
+
+@name an unbound prefix accepted
+@old
+  Split (r, n, p, l) ;
+  IF NOT Lookup (r, p, u) THEN Fail (r, 'an unbound prefix: ' + p) END ;
+@new
+  Split (r, n, p, l) ;
+  IF NOT Lookup (r, p, u) THEN u := '' END ;
+@end
+
+@name a name may begin with a digit
+@old
+  RETURN c = 58 OR (c >= 65 AND c <= 90) OR c = 95 OR (c >= 97 AND c <= 122) OR
+@new
+  RETURN c = 58 OR (c >= 48 AND c <= 57) OR (c >= 65 AND c <= 90) OR c = 95 OR (c >= 97 AND c <= 122) OR
+@end
+
+@name the PI target xml allowed
+@old
+    Fail (r, 'the target xml is reserved: an XML declaration belongs at the very start')
+@new
+    target := target
+@end
+
+@name ]]> in character data accepted
+@old
+      IF c = ']' AND Ahead (r, ']]>') THEN Fail (r, ']]> in character data') END ;
+@new
+@end
+
+@name a character reference to no character accepted
+@old
+  IF NOT IsChar (v) THEN Fail (r, 'a character reference to no XML character') END ;
+@new
+  IF v = 0 THEN v := 32 END ;
+@end
+
+@name the tree's tail given to the parent
+@old
+      IF haveLast THEN last.tail := Text.Keep (pool, last.tail + ev.text)
+@new
+      IF FALSE THEN last.tail := Text.Keep (pool, last.tail + ev.text)
+@end
+
+@name an ENTITY declaration a SyntaxError, not refused by name
+@old
+    Refuse (r, 'an ENTITY declaration: entities are not expanded')
+@new
+    Fail (r, 'an ENTITY declaration: entities are not expanded')
+@end
+
+@name the internal subset's PIs not reported
+@old
+      ev.kind := Kind.Pi ;
+      ev.text := PiBody (r, target) ;
+      ev.name := target ;
+      RETURN ev
+@new
+      ev.kind := Kind.Pi ;
+      ev.text := PiBody (r, target) ;
+      ev.name := target ;
+      IF r.state # SSubset THEN RETURN ev END
+@end
+
+@name the writer leaves & in an attribute
+@old
+    IF c = '&' THEN DynStr.Append (w.d, '&amp;')
+@new
+    IF c = '&' AND NOT attr THEN DynStr.Append (w.d, '&amp;')
+@end
+
+# The UTF-8 switch (2026-10-31) changed LEN (av) to Text.BLen (av) here.
+@name a namespace declared to the empty string accepted
+@old
+      IF Text.BLen (av) = 0 THEN Fail (r, 'a prefix bound to no namespace: ' + l) END ;
+@new
+@end

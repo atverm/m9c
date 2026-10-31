@@ -1,19 +1,22 @@
 MODULE AggUse ;
 
-(* The aggregate constructor, held to its own output (gendiff and the
-   driver suite): a CONST whose value is [ e1, ..., en ] is a constant
-   table -- an array whose element type is read off its elements and
-   whose length is their count.  Indexed (every index checked),
-   measured with LEN, lent to an RO parameter; nothing else.
+IMPORT Text ;
 
-   The fixture for report par 2.2.4, 2026-10-01.  Not installed;
-   gendiff and build.sh run it.
+(* This module holds the aggregate constructor to its own output
+   (gendiff and the driver suite).  A CONST whose value is
+   [ e1, ..., en ] is a constant table: an array whose element type is
+   read off its elements and whose length is their count.  A program
+   indexes it (every index checked), measures it with LEN and lends it
+   to an RO parameter; nothing else.
 
-   Since 2026-10-05 the RECORD half too (Alex: positional, in a CONST
-   and in statements): Status (200, 'OK', FALSE) is a record value,
-   a CONST of literals is read-only data like a table, and a table of
-   them is a table whose array typedef follows the record's struct --
-   an array of records had not compiled before. *)
+   It is the fixture for report par 2.2.4, 2026-10-01.  It is not
+   installed; gendiff and build.sh run it.
+
+   Since 2026-10-05 it covers the RECORD half too (Alex: positional, in
+   a CONST and in statements).  Status (200, 'OK', FALSE) is a record
+   value, and a CONST of literals is read-only data like a table.  A
+   table of them is a table whose array typedef follows the record's
+   struct.  An array of records had not compiled before. *)
 
 IMPORT Io ;
 
@@ -53,7 +56,8 @@ BEGIN
 END Sum ;
 
 PROCEDURE Reason (code: I64) : STR =
-  (* the table the CASE used to be: searched, not switched *)
+  (* Reason searches the table the CASE used to be; it does not
+     switch. *)
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO LEN (Codes) - 1 DO
@@ -63,8 +67,9 @@ BEGIN
 END Reason ;
 
 PROCEDURE Lookup (code: I64) : STR =
-  (* the same mapping as one table of records: the data a document
-     could be derived from -- the routes-as-data trigger *)
+  (* Lookup reads the same mapping as one table of records.  A
+     document could be derived from that data: the routes-as-data
+     trigger. *)
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO LEN (Statuses) - 1 DO
@@ -80,7 +85,8 @@ BEGIN
 END Line ;
 
 PROCEDURE Shadow (RO Primes: SLICE OF F64) : F64 =
-  (* a parameter named like a table is the parameter *)
+  (* Shadow shows that a parameter named like a table is the
+     parameter. *)
 BEGIN
   RETURN Primes[0]
 END Shadow ;
@@ -106,7 +112,7 @@ BEGIN
   IF Halves[1] = -1.5 THEN Io.WriteLine ('halves') END ;
   IF Shadow (Halves) = 0.5 THEN Io.WriteLine ('shadow') END ;
   FOR i := 0 TO LEN (Names) - 1 DO
-    Io.WriteI64 (LEN (Names[i])) ;
+    Io.WriteI64 (Text.BLen (Names[i])) ;
     Io.WriteLine (' [' + Names[i] + ']')
   END ;
   IF Marks[1] = 02BC THEN Io.WriteLine ('marks') END ;

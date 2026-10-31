@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
-/* hashshim: SHA-256 for the zarr proxy's data passports.
+/* hashshim computes SHA-256 for the zarr proxy's data passports.
  *
- * Self-contained (FIPS 180-4), no library dependency -- OpenSSL is
- * not otherwise in zpd's link.  One entry point: m9_sha256_hex
- * writes the 64-character lowercase hex digest.  Reentrant: all
- * state is on the caller's stack.
+ * It is self-contained (FIPS 180-4), with no library dependency.
+ * OpenSSL is not otherwise in zpd's link.  It has one entry point:
+ * m9_sha256_hex writes the 64-character lowercase hex digest.  It is
+ * reentrant: all state is on the caller's stack.
  *
- * Verified against sha256sum in the proxy gate: every chunk digest
+ * The proxy gate verifies it against sha256sum.  Every chunk digest
  * in a replayed passport must equal the Python reference's
  * hashlib.sha256 output, so a wrong constant here cannot pass.
  */
@@ -58,15 +58,15 @@ static void block (uint32_t h[8], const uint8_t *p)
   h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
 }
 
-/* hex must have room for 64 bytes; no terminator is written.
+/* hex must have room for 64 bytes.  No terminator is written.
  *
  * With -DM9_SHA_OPENSSL (and -lcrypto) the digest comes from
- * OpenSSL's EVP instead, which carries the SHA-NI code path:
- * measured on a local host, 2119 MB/s against this portable loop's 301,
- * and the difference was most of the M9 proxy's per-chunk latency
+ * OpenSSL's EVP instead, which carries the SHA-NI code path.  It
+ * measured 2119 MB/s on a local host against this portable loop's
+ * 301.  The difference was most of the M9 proxy's per-chunk latency
  * gap against the Python reference (0.31 of 0.29-0.46 ms).  The
- * portable path stays the default so nothing grows a dependency;
- * the proxy's gate proves both paths against hashlib digests.      */
+ * portable path stays the default so nothing grows a dependency.
+ * The proxy's gate proves both paths against hashlib digests.      */
 #ifdef M9_SHA_OPENSSL
 #include <openssl/evp.h>
 void m9_sha256_hex (const void *src, int64_t n, char *hex)
@@ -120,9 +120,9 @@ void m9_sha256_hex (const void *src, int64_t n, char *hex)
 }
 #endif
 
-/* sixteen bytes of kernel entropy for uuid4 -- /dev/urandom reads
- * ZERO bytes through a size-probing file reader (device files have
- * size 0), which is how the passport's first mint found this.
+/* m9_rand16 gives sixteen bytes of kernel entropy for uuid4.
+ * /dev/urandom reads ZERO bytes through a size-probing file reader
+ * (device files have size 0).  The passport's first mint found this.
  * On Windows the same sixteen bytes come from the system's preferred
  * generator through CNG (link -lbcrypt: not among the libraries the
  * mingw driver adds on its own). */

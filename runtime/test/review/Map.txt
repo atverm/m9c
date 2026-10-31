@@ -2,8 +2,8 @@ REVIEW Map -- 42 procedures with a body, 20 of them functions; 12 headings in a 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              20
-  assignments                                   212
-  arguments                                     487
+  assignments                                   211
+  arguments                                     495
   RETURN values                                  33
   operands of a comparison or an operator       407
   CASE labels                                     0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        1
   NEW in the frame                               11
   NEW in a named pool                             1
-  calls of a STR form with a UTF twin             4   Fmt.Fixed -> Fmt.FixedUtf, Fmt.Fixed -> Fmt.FixedUtf, Fmt.Fixed -> Fmt.FixedUtf, Fmt.Fixed -> Fmt.FixedUtf
-  STR subscripts, writes and LEN                  9   index t[0], len spec.backdrop.href, len markers[i].colour, len markers[i].label, len spec.title, len spec.credit, +3 more
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

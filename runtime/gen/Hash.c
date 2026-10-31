@@ -2,6 +2,7 @@
 #include "Hash.h"
 #include "Bits.h"
 #include "Faults.h"
+#include "Text.h"
 
 extern int64_t m9_bits_and (int64_t, int64_t);
 extern int64_t m9_bits_or (int64_t, int64_t);
@@ -10,15 +11,17 @@ extern int64_t m9_bits_not (int64_t);
 extern int64_t m9_bits_shl (int64_t, int64_t);
 extern int64_t m9_bits_shr (int64_t, int64_t);
 extern int64_t m9_bits_count (int64_t);
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 extern void m9_sha256_init (void *);
 extern void m9_sha256_update (void *, const void *, int64_t);
 extern void m9_sha256_final (void *, void *);
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 97u, 98u, 99u, 100u, 101u, 102u };
-static const uint32_t m9s1[26] = { 80u, 98u, 107u, 100u, 102u, 50u, 58u, 32u, 105u, 116u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 115u, 32u, 98u, 101u, 108u, 111u, 119u, 32u, 49u };
-static const uint32_t m9s2[22] = { 80u, 98u, 107u, 100u, 102u, 50u, 58u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 98u, 101u, 108u, 111u, 119u, 32u, 49u };
+static const uint8_t m9s0[16] = { 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 97, 98, 99, 100, 101, 102 };
+static const uint8_t m9s1[26] = { 80, 98, 107, 100, 102, 50, 58, 32, 105, 116, 101, 114, 97, 116, 105, 111, 110, 115, 32, 98, 101, 108, 111, 119, 32, 49 };
+static const uint8_t m9s2[22] = { 80, 98, 107, 100, 102, 50, 58, 32, 108, 101, 110, 103, 116, 104, 32, 98, 101, 108, 111, 119, 32, 49 };
 
 
 void Hash_Init (Hash_Sha256 *h, m9_state *err)
@@ -95,21 +98,21 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Hash_Hex (m9_sl_BYTE digest, m9_state *err)
+m9_sl_UTF8 Hash_Hex (m9_sl_BYTE digest, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR s = {0}; (void) s;
-  m9_sl_CHAR digits = {0}; (void) digits;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_BYTE o = {0}; (void) o;
+  m9_sl_UTF8 digits = {0}; (void) digits;
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
-  digits = ((m9_sl_CHAR){ (uint32_t *) m9s0, 16 });
-  { __typeof__(s) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, err->res, m9_mul_i64 (INT64_C(2), (digest).len, err), err);
+  digits = ((m9_sl_UTF8){ (uint8_t *) m9s0, 16 });
+  { __typeof__(o) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, err->res, m9_mul_i64 (INT64_C(2), (digest).len, err), err);
     if (err->exc) goto L_ret;
-    s = m9v;
+    o = m9v;
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
@@ -120,25 +123,32 @@ m9_sl_CHAR Hash_Hex (m9_sl_BYTE digest, m9_state *err)
       if (err->exc) goto L_ret;
       v = m9v;
     }
-    { __typeof__((*(uint32_t *) m9_at (s.p, m9_mul_i64 (INT64_C(2), i, err), s.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (digits.p, m9_div_i64 (v, INT64_C(16), err), digits.len, sizeof (uint32_t), err));
+    { __typeof__(m9_div_i64 (v, INT64_C(16), err)) m9a1 = m9_div_i64 (v, INT64_C(16), err);
       if (err->exc) goto L_ret;
-      (*(uint32_t *) m9_at (s.p, m9_mul_i64 (INT64_C(2), i, err), s.len, sizeof (uint32_t), err)) = m9v;
+    { __typeof__((*(uint8_t *) m9_at (o.p, m9_mul_i64 (INT64_C(2), i, err), o.len, sizeof (uint8_t), err))) m9v = Text_BAt (digits, m9a1, err);
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (o.p, m9_mul_i64 (INT64_C(2), i, err), o.len, sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    { __typeof__((*(uint32_t *) m9_at (s.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), i, err), INT64_C(1), err), s.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (digits.p, m9_mod_i64 (v, INT64_C(16), err), digits.len, sizeof (uint32_t), err));
+    }
+    { __typeof__(m9_mod_i64 (v, INT64_C(16), err)) m9a2 = m9_mod_i64 (v, INT64_C(16), err);
       if (err->exc) goto L_ret;
-      (*(uint32_t *) m9_at (s.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), i, err), INT64_C(1), err), s.len, sizeof (uint32_t), err)) = m9v;
+    { __typeof__((*(uint8_t *) m9_at (o.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), i, err), INT64_C(1), err), o.len, sizeof (uint8_t), err))) m9v = Text_BAt (digits, m9a2, err);
       if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (o.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), i, err), INT64_C(1), err), o.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   err->res = m9res;
-  m9ret = s;
+  m9ret = m9_utf_from_bytes (err->res, o, err);
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -205,9 +215,9 @@ void Hash_HmacInit (Hash_Hmac *m, m9_sl_BYTE key, m9_state *err)
   m9t4to = m9_sub_i64 (Hash_BlockLen, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t4to) for (;;) {
-    { __typeof__((int64_t)((*(uint8_t *) m9_at (k.v, i, INT64_C(64), sizeof (uint8_t), err)))) m9a1 = (int64_t)((*(uint8_t *) m9_at (k.v, i, INT64_C(64), sizeof (uint8_t), err)));
+    { __typeof__((int64_t)((*(uint8_t *) m9_at (k.v, i, INT64_C(64), sizeof (uint8_t), err)))) m9a3 = (int64_t)((*(uint8_t *) m9_at (k.v, i, INT64_C(64), sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
-    { __typeof__((*(uint8_t *) m9_at (pad.v, i, INT64_C(64), sizeof (uint8_t), err))) m9v = m9_byte (Bits_Xor (m9a1, INT64_C(0x36), err), err);
+    { __typeof__((*(uint8_t *) m9_at (pad.v, i, INT64_C(64), sizeof (uint8_t), err))) m9v = m9_byte (Bits_Xor (m9a3, INT64_C(0x36), err), err);
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (pad.v, i, INT64_C(64), sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -225,9 +235,9 @@ void Hash_HmacInit (Hash_Hmac *m, m9_sl_BYTE key, m9_state *err)
   m9t5to = m9_sub_i64 (Hash_BlockLen, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t5to) for (;;) {
-    { __typeof__((int64_t)((*(uint8_t *) m9_at (k.v, i, INT64_C(64), sizeof (uint8_t), err)))) m9a2 = (int64_t)((*(uint8_t *) m9_at (k.v, i, INT64_C(64), sizeof (uint8_t), err)));
+    { __typeof__((int64_t)((*(uint8_t *) m9_at (k.v, i, INT64_C(64), sizeof (uint8_t), err)))) m9a4 = (int64_t)((*(uint8_t *) m9_at (k.v, i, INT64_C(64), sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
-    { __typeof__((*(uint8_t *) m9_at (pad.v, i, INT64_C(64), sizeof (uint8_t), err))) m9v = m9_byte (Bits_Xor (m9a2, INT64_C(0x5c), err), err);
+    { __typeof__((*(uint8_t *) m9_at (pad.v, i, INT64_C(64), sizeof (uint8_t), err))) m9v = m9_byte (Bits_Xor (m9a4, INT64_C(0x5c), err), err);
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (pad.v, i, INT64_C(64), sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -325,12 +335,12 @@ m9_sl_BYTE Hash_Pbkdf2 (m9_sl_BYTE password, m9_sl_BYTE salt, int64_t iterations
   int64_t have = 0; (void) have;
   int64_t take = 0; (void) take;
   if ((iterations < INT64_C(1))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 26 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 26 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 26 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 26 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if ((length < INT64_C(1))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 22 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 22 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s2, 22 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s2, 22 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -348,25 +358,25 @@ m9_sl_BYTE Hash_Pbkdf2 (m9_sl_BYTE password, m9_sl_BYTE salt, int64_t iterations
   block = INT64_C(1);
   for (;;) {
     if (!((have < length))) break;
-    { __typeof__(Bits_Shr (block, INT64_C(24), err)) m9a3 = Bits_Shr (block, INT64_C(24), err);
+    { __typeof__(Bits_Shr (block, INT64_C(24), err)) m9a5 = Bits_Shr (block, INT64_C(24), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(uint8_t *) m9_at (ctr.v, INT64_C(0), INT64_C(4), sizeof (uint8_t), err))) m9v = m9_byte (Bits_And (m9a3, INT64_C(0xFF), err), err);
+    { __typeof__((*(uint8_t *) m9_at (ctr.v, INT64_C(0), INT64_C(4), sizeof (uint8_t), err))) m9v = m9_byte (Bits_And (m9a5, INT64_C(0xFF), err), err);
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (ctr.v, INT64_C(0), INT64_C(4), sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(Bits_Shr (block, INT64_C(16), err)) m9a4 = Bits_Shr (block, INT64_C(16), err);
+    { __typeof__(Bits_Shr (block, INT64_C(16), err)) m9a6 = Bits_Shr (block, INT64_C(16), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(uint8_t *) m9_at (ctr.v, INT64_C(1), INT64_C(4), sizeof (uint8_t), err))) m9v = m9_byte (Bits_And (m9a4, INT64_C(0xFF), err), err);
+    { __typeof__((*(uint8_t *) m9_at (ctr.v, INT64_C(1), INT64_C(4), sizeof (uint8_t), err))) m9v = m9_byte (Bits_And (m9a6, INT64_C(0xFF), err), err);
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (ctr.v, INT64_C(1), INT64_C(4), sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(Bits_Shr (block, INT64_C(8), err)) m9a5 = Bits_Shr (block, INT64_C(8), err);
+    { __typeof__(Bits_Shr (block, INT64_C(8), err)) m9a7 = Bits_Shr (block, INT64_C(8), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(uint8_t *) m9_at (ctr.v, INT64_C(2), INT64_C(4), sizeof (uint8_t), err))) m9v = m9_byte (Bits_And (m9a5, INT64_C(0xFF), err), err);
+    { __typeof__((*(uint8_t *) m9_at (ctr.v, INT64_C(2), INT64_C(4), sizeof (uint8_t), err))) m9v = m9_byte (Bits_And (m9a7, INT64_C(0xFF), err), err);
       if (err->exc) goto L_ret;
       (*(uint8_t *) m9_at (ctr.v, INT64_C(2), INT64_C(4), sizeof (uint8_t), err)) = m9v;
       if (err->exc) goto L_ret;
@@ -415,11 +425,11 @@ m9_sl_BYTE Hash_Pbkdf2 (m9_sl_BYTE password, m9_sl_BYTE salt, int64_t iterations
       m9t5to = m9_sub_i64 (Hash_DigestLen, INT64_C(1), err);
       if (err->exc) goto L_ret;
       if (j <= m9t5to) for (;;) {
-        { __typeof__((int64_t)((*(uint8_t *) m9_at (t.p, j, t.len, sizeof (uint8_t), err)))) m9a6 = (int64_t)((*(uint8_t *) m9_at (t.p, j, t.len, sizeof (uint8_t), err)));
+        { __typeof__((int64_t)((*(uint8_t *) m9_at (t.p, j, t.len, sizeof (uint8_t), err)))) m9a8 = (int64_t)((*(uint8_t *) m9_at (t.p, j, t.len, sizeof (uint8_t), err)));
           if (err->exc) goto L_ret;
-        { __typeof__((int64_t)((*(uint8_t *) m9_at (u.p, j, u.len, sizeof (uint8_t), err)))) m9a7 = (int64_t)((*(uint8_t *) m9_at (u.p, j, u.len, sizeof (uint8_t), err)));
+        { __typeof__((int64_t)((*(uint8_t *) m9_at (u.p, j, u.len, sizeof (uint8_t), err)))) m9a9 = (int64_t)((*(uint8_t *) m9_at (u.p, j, u.len, sizeof (uint8_t), err)));
           if (err->exc) goto L_ret;
-        { __typeof__((*(uint8_t *) m9_at (t.p, j, t.len, sizeof (uint8_t), err))) m9v = m9_byte (Bits_Xor (m9a6, m9a7, err), err);
+        { __typeof__((*(uint8_t *) m9_at (t.p, j, t.len, sizeof (uint8_t), err))) m9v = m9_byte (Bits_Xor (m9a8, m9a9, err), err);
           if (err->exc) goto L_ret;
           (*(uint8_t *) m9_at (t.p, j, t.len, sizeof (uint8_t), err)) = m9v;
           if (err->exc) goto L_ret;
@@ -491,13 +501,13 @@ bool Hash_Equal (m9_sl_BYTE a, m9_sl_BYTE b, m9_state *err)
   m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((int64_t)((*(uint8_t *) m9_at (a.p, i, a.len, sizeof (uint8_t), err)))) m9a8 = (int64_t)((*(uint8_t *) m9_at (a.p, i, a.len, sizeof (uint8_t), err)));
+    { __typeof__((int64_t)((*(uint8_t *) m9_at (a.p, i, a.len, sizeof (uint8_t), err)))) m9a10 = (int64_t)((*(uint8_t *) m9_at (a.p, i, a.len, sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
-    { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)))) m9a9 = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
+    { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)))) m9a11 = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Xor (m9a8, m9a9, err)) m9a10 = Bits_Xor (m9a8, m9a9, err);
+    { __typeof__(Bits_Xor (m9a10, m9a11, err)) m9a12 = Bits_Xor (m9a10, m9a11, err);
       if (err->exc) goto L_ret;
-    { __typeof__(diff) m9v = Bits_Or (diff, m9a10, err);
+    { __typeof__(diff) m9v = Bits_Or (diff, m9a12, err);
       if (err->exc) goto L_ret;
       diff = m9v;
     }
@@ -525,6 +535,7 @@ void Hash_m9init (m9_state *err)
   err->res = &m9mframe;
   Bits_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
+  Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9prev;
 }

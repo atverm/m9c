@@ -3,7 +3,7 @@ REVIEW Zip -- 56 procedures with a body, 34 of them functions; 26 headings in a 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              34
   assignments                                   488
-  arguments                                     615
+  arguments                                     612
   RETURN values                                  59
   operands of a comparison or an operator       640
   CASE labels                                     0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        1
   NEW in the frame                                0
   NEW in a named pool                            29
-  calls of a STR form with a UTF twin             4   Io.FileSize -> Io.FileSizeUtf, Io.ReadFileBytes -> Io.ReadFileBytesUtf, Io.ReadFileBytes -> Io.ReadFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf
-  STR subscripts, writes and LEN                  1   len name
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

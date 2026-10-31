@@ -1,6 +1,6 @@
 DEFINITION MODULE SerialB ;
 
-(* the second module calling SerialA's [SERIAL] unit *)
+(* SerialB is the second module calling SerialA's [SERIAL] unit. *)
 
 PROCEDURE Work (n: I64) ;
 

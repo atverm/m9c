@@ -1,10 +1,10 @@
 (* EXPECT: may WAIT on another monitor while this procedure holds its own *)
 MODULE m ;
-(* a procedure bound to monitor A calls one that WAITs on monitor B: the
-   wait releases B and keeps A, and the thread that would SIGNAL B first
-   takes A -- both wait for ever (the fourth review's NestWait, 3 runs of
-   3).  Legal forms first: a bound procedure that only signals another
-   monitor, and an unbound procedure that waits. *)
+(* A procedure bound to monitor A calls one that WAITs on monitor B.
+   The wait releases B and keeps A, and the thread that would SIGNAL B
+   first takes A.  Both wait for ever (the fourth review's NestWait, 3
+   runs of 3).  Legal forms come first: a bound procedure that only
+   signals another monitor, and an unbound procedure that waits. *)
 TYPE
   A = MONITOR RECORD n : I64 END ;
   B = MONITOR RECORD ready : BOOL END ;

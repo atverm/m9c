@@ -1,11 +1,11 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Rsa ;
 
-(* RSA signature VERIFICATION (docs/library-plan-2.md, item 5): a
-   public key read from PEM or DER -- SubjectPublicKeyInfo (BEGIN
-   PUBLIC KEY) or PKCS#1 (BEGIN RSA PUBLIC KEY) -- and a signature
-   over SHA-256 checked under PKCS#1 v1.5 or PSS (MGF1 with SHA-256, a
-   32-octet salt).  What for: a signed data passport or a signed
+(* Rsa does RSA signature VERIFICATION (docs/library-plan-2.md, item
+   5).  It reads a public key from PEM or DER: SubjectPublicKeyInfo
+   (BEGIN PUBLIC KEY) or PKCS#1 (BEGIN RSA PUBLIC KEY).  It checks a
+   signature over SHA-256 under PKCS#1 v1.5 or PSS (MGF1 with SHA-256,
+   a 32-octet salt).  The purpose: a signed data passport or a signed
    release receipt can be checked by a program, not only by a person
    with openssl on the command line.
 
@@ -13,24 +13,24 @@ DEFINITION MODULE Rsa ;
    key in the process; verification handles only what is public.
 
    THE ARITHMETIC IS OPENSSL'S (m9_rsa_verify in runtime/tlsshim.c,
-   the runtime's OpenSSL surface, which every M9 program links): a
+   the runtime's OpenSSL surface, which every M9 program links).  A
    verifier written in M9 first, on 24-bit limbs with Montgomery
-   multiplication, passed the same test and measured 70 times slower
-   -- 0.55 ms against 8 us at 2048 bits -- and bought nothing, since
-   the runtime links libcrypto anyway; Alex: "why not call openssl?"
-   What stays in M9 is the key's reading (PEM, the DER walk to the
-   modulus and exponent, so Bits/ModulusHex/ExponentHex answer from
-   what was read) and the refusals by name.
+   multiplication, passed the same test and measured 70 times slower:
+   0.55 ms against 8 us at 2048 bits.  It bought nothing, since the
+   runtime links libcrypto anyway; Alex: "why not call openssl?"  M9
+   keeps the key's reading (PEM, the DER walk to the modulus and
+   exponent, so Bits/ModulusHex/ExponentHex answer from what was
+   read) and the refusals by name.
 
-   Held by RsaTest against Python's cryptography: three key sizes, 240
+   RsaTest holds it against Python's cryptography: three key sizes, 240
    signatures under both schemes, every signature verifying and every
    tampering refused, nine of Bleichenbacher's 2006 forgeries against
    an e = 3 key refused (tools/rsagold.py).  *)
 
 EXCEPTION
   Error (RO msg: STR) ;
-    (* a key that cannot be read, a digest that is not 32 octets, a
-       scheme that is not one of the two *)
+    (* Error reports a key that cannot be read, a digest that is not
+       32 octets, or a scheme that is not one of the two. *)
 
 CONST
   Pkcs1 = 0 ;                  (* PKCS#1 v1.5, RFC 8017 par 8.2 *)
@@ -41,41 +41,45 @@ TYPE
 
 PROCEDURE PublicKey (VAR pool: POOL ; RO pem: STR) : PTR Key IN pool
   RAISES Error, ValueRange ;
-  (* a PEM text: the first BEGIN ... END block whose label holds
-     PUBLIC KEY, base64 between them (line breaks ignored) *)
+  (* PublicKey reads a PEM text: the first BEGIN ... END block whose
+     label holds PUBLIC KEY, base64 between them (line breaks
+     ignored). *)
 
 PROCEDURE PublicKeyDer (VAR pool: POOL ; RO der: SLICE OF BYTE) : PTR Key IN pool
   RAISES Error, ValueRange ;
-  (* the DER: SubjectPublicKeyInfo with the rsaEncryption OID, or a
-     bare PKCS#1 RSAPublicKey (SEQUENCE of two INTEGERs) *)
+  (* PublicKeyDer reads the DER: SubjectPublicKeyInfo with the
+     rsaEncryption OID, or a bare PKCS#1 RSAPublicKey (SEQUENCE of two
+     INTEGERs). *)
 
 PROCEDURE Bits (k: PTR Key) : I64 ;
-  (* the modulus's length in bits *)
+  (* Bits answers the modulus's length in bits. *)
 
 PROCEDURE ModulusHex (k: PTR Key) : STR RAISES ValueRange ;
 PROCEDURE ExponentHex (k: PTR Key) : STR RAISES ValueRange ;
-  (* lowercase, no leading zeros: Python's %x *)
+  (* ModulusHex and ExponentHex answer lowercase, no leading zeros:
+     Python's %x. *)
 
 PROCEDURE Verify (k: PTR Key ; RO digest: SLICE OF BYTE ;
                   RO signature: SLICE OF BYTE ; scheme: I64) : BOOL
   RAISES Error, ValueRange ;
-  (* digest is the SHA-256 of the message (32 octets); TRUE when the
-     signature is that digest's under the key and scheme.  FALSE,
-     not an Error, for a signature of the wrong length, out of the
-     modulus's range, or wrong *)
+  (* Verify takes digest, the SHA-256 of the message (32 octets).  It
+     answers TRUE when the signature is that digest's under the key
+     and scheme.  It answers FALSE, not an Error, for a signature of
+     the wrong length, out of the modulus's range, or wrong. *)
 
 PROCEDURE VerifyMessage (k: PTR Key ; RO message: SLICE OF BYTE ;
                          RO signature: SLICE OF BYTE ; scheme: I64) : BOOL
   RAISES Error, ValueRange ;
-  (* Verify of the message's SHA-256 *)
+  (* VerifyMessage is Verify of the message's SHA-256. *)
 
 END Rsa.
 
 
 UNSAFE DEFINITION MODULE FOR "C" crsa ;
 
-(* runtime/tlsshim.c: m9_rsa_verify, OpenSSL's EVP_PKEY_verify over
-   a key parsed from DER per call; no state, so reentrant *)
+(* VerifyC binds runtime/tlsshim.c: m9_rsa_verify, OpenSSL's
+   EVP_PKEY_verify over a key parsed from DER per call.  It keeps no
+   state, so it is reentrant. *)
 
 PROCEDURE VerifyC = "m9_rsa_verify" (der: C.ConstPtr ; dlen: C.SizeT ;
                                      pkcs1Key: C.Int ;
@@ -88,7 +92,7 @@ END crsa.
 
 UNSAFE IMPLEMENTATION MODULE Rsa ;
 
-(* UNSAFE for the ADR at the foreign boundary only *)
+(* The module is UNSAFE for the ADR at the foreign boundary only. *)
 
 FROM crsa IMPORT VerifyC ;
 IMPORT Hash ;
@@ -113,7 +117,8 @@ TYPE
 
 PROCEDURE Tlv (RO d: SLICE OF BYTE ; at: I64 ; VAR tag, len, start: I64)
   RAISES Error =
-  (* the tag, length and content start of the element at `at' *)
+  (* Tlv reads the tag, length and content start of the element at
+     `at'. *)
 VAR i, nlen : I64 ;
 BEGIN
   IF at + 2 > LEN (d) THEN RAISE Error ('the DER ends inside an element') END ;
@@ -136,7 +141,8 @@ END Tlv ;
 
 PROCEDURE Integer (RO d: SLICE OF BYTE ; at: I64 ; VAR next: I64) : SLICE OF BYTE
   RAISES Error =
-  (* an INTEGER's magnitude, leading zero octets stripped *)
+  (* Integer answers an INTEGER's magnitude, leading zero octets
+     stripped. *)
 VAR tag, len, start, i : I64 ;
 BEGIN
   Tlv (d, at, tag, len, start) ;
@@ -154,7 +160,8 @@ EXCEPT
 END Integer ;
 
 PROCEDURE RsaOid (RO d: SLICE OF BYTE ; at: I64) : BOOL RAISES Error =
-  (* the AlgorithmIdentifier at `at' names rsaEncryption *)
+  (* RsaOid asks whether the AlgorithmIdentifier at `at' names
+     rsaEncryption. *)
 VAR tag, len, start, i : I64 ;
 BEGIN
   Tlv (d, at, tag, len, start) ;
@@ -230,7 +237,7 @@ BEGIN
   END ;
   n := Integer (der, at, next) ;
   e := Integer (der, next, next) ;
-  (* what OpenSSL gets is the outer element alone, trailing octets off *)
+  (* OpenSSL gets the outer element alone, trailing octets off. *)
   RETURN Build (pool, SLICE (der, 0, outerEnd), pkcs1, n, e)
 EXCEPT
 | IndexError : RAISE Error ('the DER ends inside the key')
@@ -240,11 +247,11 @@ PROCEDURE PublicKey (VAR pool: POOL ; RO pem: STR) : PTR Key IN pool
   RAISES Error, ValueRange =
 VAR
   b, e, i, n : I64 ;
-  body : STR ;
+  body : SLICE OF BYTE ;      (* the base64's octets, the blanks out *)
 BEGIN
   b := Text.Find (pem, '-----BEGIN ') ;
   IF b < 0 THEN RAISE Error ('no PEM BEGIN line') END ;
-  e := Text.Find (SLICE (pem, b, LEN (pem) - b), '-----END ') ;
+  e := Text.Find (SLICE (pem, b, Text.BLen (pem) - b), '-----END ') ;
   IF e < 0 THEN RAISE Error ('no PEM END line') END ;
   e := b + e ;
   i := Text.FindChar (SLICE (pem, b, e - b), 0AC) ;
@@ -253,16 +260,18 @@ BEGIN
     RAISE Error ('the PEM block is not a PUBLIC KEY: ' + SLICE (pem, b + 11, i - b - 11))
   END ;
   (* the base64, line breaks and blanks out *)
-  body := NEW (CHAR, e - b - i) ;
+  body := NEW (BYTE, e - b - i) ;
   n := 0 ;
   FOR i := b + i + 1 TO e - 1 DO
-    IF pem[i] # 0AC AND pem[i] # 0DC AND pem[i] # ' ' AND pem[i] # 09C THEN
-      body[n] := pem[i] ;
+    IF NOT Text.BIs (pem, i, 0AC) AND NOT Text.BIs (pem, i, 0DC) AND NOT Text.BIs (pem, i, ' ') AND NOT Text.BIs (pem, i, 09C) THEN
+      body[n] := Text.BAt (pem, i) ;
       n := n + 1
     END
   END ;
   BEGIN
-    RETURN PublicKeyDer (pool, Text.FromBase64 (SLICE (body, 0, n)))
+    (* UTF (b) validates the octets: base64 is ASCII, anything else
+       is refused as the body not being base64 *)
+    RETURN PublicKeyDer (pool, Text.FromBase64 (UTF (SLICE (body, 0, n))))
   EXCEPT
   | ValueRange : RAISE Error ('the PEM body is not base64')
   END
@@ -274,19 +283,21 @@ BEGIN
 END Bits ;
 
 PROCEDURE HexOf (RO b: SLICE OF BYTE) : STR RAISES ValueRange =
+  (* the ASCII digits into an octet buffer, then the text of it *)
 VAR
-  digits, s : STR ;
+  digits : STR ;
+  o : SLICE OF BYTE ;
   i, n, v : I64 ;
 BEGIN
   digits := '0123456789abcdef' ;
-  s := NEW (CHAR, 2 * LEN (b)) ;
+  o := NEW (BYTE, 2 * LEN (b)) ;
   n := 0 ;
   FOR i := 0 TO LEN (b) - 1 DO
     v := I64 (b[i]) ;
-    IF n > 0 OR v >= 16 THEN s[n] := digits[v DIV 16] ; n := n + 1 END ;
-    IF n > 0 OR v > 0 OR i = LEN (b) - 1 THEN s[n] := digits[v MOD 16] ; n := n + 1 END
+    IF n > 0 OR v >= 16 THEN o[n] := Text.BAt (digits, v DIV 16) ; n := n + 1 END ;
+    IF n > 0 OR v > 0 OR i = LEN (b) - 1 THEN o[n] := Text.BAt (digits, v MOD 16) ; n := n + 1 END
   END ;
-  RETURN SLICE (s, 0, n)
+  RETURN UTF (SLICE (o, 0, n))
 END HexOf ;
 
 PROCEDURE ModulusHex (k: PTR Key) : STR RAISES ValueRange =

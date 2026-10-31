@@ -9,8 +9,8 @@ MODULE R3DisposeModVar ;
    rule follows locals, and a module variable is not tracked there.  The
    read through b after the DISPOSE is a heap-use-after-free under the
    gate's sanitizers; the correct behaviour is a refusal at the DISPOSE,
-   which would make this program owed no longer.  Held by sanitize.owed
-   until then. *)
+   which would make this program owed no longer.  sanitize.owed holds
+   it until then. *)
 
 IMPORT Io, Fmt ;
 

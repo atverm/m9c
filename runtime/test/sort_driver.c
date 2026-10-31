@@ -1,16 +1,17 @@
-/* sort_driver.c -- the runtime's radix sorts (m9rt.h: m9_sort_f64,
-   m9_sort_i64, m9_argsort_f64, m9_argsort_i64) held to a stable
-   reference -- qsort over the value with the index as the tie-break,
-   which is what a stable sort answers -- over 400 arrays of seven
-   shapes: random reals, ten repeated values, sorted, reversed, the two
-   zeros among 1.5s, any finite bit pattern, decimals of three places;
-   lengths 0..99 and up to 5,000, so both the insertion sort below 64
-   and every radix pass with and without a skipped byte are reached.
+/* sort_driver.c holds the runtime's radix sorts (m9rt.h: m9_sort_f64,
+   m9_sort_i64, m9_argsort_f64, m9_argsort_i64) to a stable reference.
+   The reference is qsort over the value with the index as the
+   tie-break, which is what a stable sort answers.  It runs 400 arrays
+   of seven shapes: random reals, ten repeated values, sorted,
+   reversed, the two zeros among 1.5s, any finite bit pattern,
+   decimals of three places.  Lengths run 0..99 and up to 5,000, so
+   both the insertion sort below 64 and every radix pass with and
+   without a skipped byte are reached.
    -0.0 and 0.0 are one key and keep their input order among
    themselves, as the merge sort left them.  Under M9_SORT_PORTABLE the
-   runtime answers 0 (the caller sorts) and this says so.  Shown able
-   to fail: the index not carried through a pass fails the argsorts
-   (2026-10-25).  Speed is printed, never gated. */
+   runtime answers 0 (the caller sorts) and this says so.  The test
+   is shown able to fail: the index not carried through a pass fails
+   the argsorts (2026-10-25).  Speed is printed, never gated. */
 #define _POSIX_C_SOURCE 200809L
 #include <stdint.h>
 #include <stdio.h>
@@ -63,10 +64,11 @@ int main (void)
     double *v = malloc ((size_t) (n + 1) * 8), *d = malloc ((size_t) (n + 1) * 8);
     int64_t *w = malloc ((size_t) (n + 1) * 8), *ix = malloc ((size_t) (n + 1) * 8), *iq = malloc ((size_t) (n + 1) * 8);
     for (int64_t i = 0; i < n; i++) { v[i] = value (shape, i, n); w[i] = (int64_t) (v[i] * 7); }
-    /* the stable order of v, by reference */
+    /* Build the stable order of v, by reference. */
     for (int64_t i = 0; i < n; i++) iq[i] = i;
     keys_d = v; qsort (iq, (size_t) n, 8, cmp_arg_d);
-    /* m9_sort_f64: the values in that order, -0.0 and 0.0 as they came */
+    /* m9_sort_f64 must give the values in that order, -0.0 and 0.0 as
+       they came. */
     memcpy (d, v, (size_t) n * 8);
     int did = m9_sort_f64 (d, n);
     checks++;

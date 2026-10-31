@@ -1,18 +1,18 @@
 MODULE ParquetTest ;
 
-(* Parquet.m9's READER against pyarrow's and polars' files, its writer
-   against its own reader and against itself.  The samples are under
-   runtime/test/gold/parquet/ and the goldens are what pyarrow READS
-   from them (tools/parquetgoldm9.py): sample_plain and big_plain read
-   value-exact; sample_dict and sample_snappy (pyarrow's dictionary,
-   its snappy) the same as sample_plain; the five other big_* files --
-   pyarrow's defaults, four row groups of small gzip pages whose
-   dictionary overflows into PLAIN, data pages version 2 with and
-   without a dictionary, polars' writer with snappy and with its own
-   default (zstd), pyarrow's zstd -- the same as big_plain, value for
-   value; sample_nullbool and sample_brotli refused by name.  The
-   big table written again with each codec reads back the same and is
-   smaller.
+(* This test holds Parquet.m9's READER against pyarrow's and polars'
+   files, and its writer against its own reader and against itself.
+   The samples are under runtime/test/gold/parquet/ and the goldens
+   are what pyarrow READS from them (tools/parquetgoldm9.py).
+   sample_plain and big_plain read value-exact.  sample_dict and
+   sample_snappy (pyarrow's dictionary, its snappy) read the same as
+   sample_plain.  The five other big_* files read the same as
+   big_plain, value for value: pyarrow's defaults, four row groups of
+   small gzip pages whose dictionary overflows into PLAIN, data pages
+   version 2 with and without a dictionary, polars' writer with snappy
+   and with its own default (zstd), pyarrow's zstd.  sample_nullbool
+   and sample_brotli are refused by name.  The big table written again
+   with each codec reads back the same and is smaller.
 
    The writer's outside witness is NOT here: a writer's bytes are not
    unique, so runtime/test/columnar.sh has pyarrow read what
@@ -21,7 +21,7 @@ MODULE ParquetTest ;
    round-trips bitwise; WriteOpt with nothing asked IS WriteX, byte for
    byte; BytesOpt is WriteOpt's file; an OPTIONAL file reads back with
    its nulls as the arm's missing value; and every refusal of Options
-   is BadArg by name.  Was runtime/test/parquet_driver.c. *)
+   is BadArg by name.  It was runtime/test/parquet_driver.c. *)
 
 IMPORT Check ;
 IMPORT Faults ;
@@ -88,8 +88,8 @@ BEGIN
   RETURN w
 END IntsB ;
 
-(* the CHARACTERS of s, counted by FOR c IN s, which counts the same
-   before and after the UTF switch (a LEN there is octets) *)
+(* Chars counts the CHARACTERS of s by FOR c IN s, which counts the
+   same before and after the UTF switch (a LEN there is octets). *)
 PROCEDURE Chars (RO s: STR) : I64 =
 VAR
   c : CHAR ;
@@ -111,7 +111,8 @@ BEGIN
 END Lens ;
 
 PROCEDURE Codes (RO v: SLICE OF STR) : SLICE OF I64 RAISES ValueRange =
-  (* every character of every string, one after another *)
+  (* Codes answers every character of every string, one after
+     another. *)
 VAR
   w : SLICE OF I64 ;
   i, k : I64 ;
@@ -132,8 +133,8 @@ END Codes ;
 
 PROCEDURE Same6 (RO what: STR ; a, b: PTR Frame.Fr)
   RAISES Frame.Unknown, Frame.WrongType =
-  (* the six columns sample_plain and the big table share, value for
-     value: a real to the bit, a NaN a NaN *)
+  (* Same6 checks the six columns sample_plain and the big table
+     share, value for value: a real to the bit, a NaN a NaN. *)
 BEGIN
   Check.EqI64 (t, what + ': the row count', Frame.Rows (a), Frame.Rows (b)) ;
   Check.EqI64s (t, what + ': time', Frame.ColI64 (a, 'time'), Frame.ColI64 (b, 'time')) ;
@@ -172,8 +173,10 @@ VAR
   ts : PTR Frame.Ts IN pool ;
   f : PTR Frame.Fr IN pool ;
   notes : SLICE OF STR ;
+  note : STR ;
   lens, codes, got : SLICE OF I64 ;
-  i, j, k : I64 ;
+  i, k : I64 ;
+  c : CHAR ;
 BEGIN
   ts := Parquet.TsRead (pool, Sample ('sample_plain')) ;
   f := Frame.TsFrame (ts) ;
@@ -192,9 +195,11 @@ BEGIN
   codes := Check.GoldI64s (t, gold, 'note.code') ;
   got := NEW (pool, I64, LEN (codes)) ;
   k := 0 ;
+  (* The golden's codes are Python's ord: code points, not bytes. *)
   FOR i := 0 TO LEN (notes) - 1 DO
-    FOR j := 0 TO LEN (notes[i]) - 1 DO
-      IF k < LEN (got) THEN got[k] := I64 (ORD (notes[i][j])) END ;
+    note := notes[i] ;
+    FOR c IN note DO
+      IF k < LEN (got) THEN got[k] := ORD (c) END ;
       k := k + 1
     END
   END ;
@@ -209,8 +214,8 @@ END Reads ;
 (* ---- the refusals of the reader ---- *)
 
 PROCEDURE ReadRefusal (RO path: STR) : STR =
-  (* 'BadArg: ' and its text when Read refuses the file so, '' when
-     it reads *)
+  (* ReadRefusal answers 'BadArg: ' and its text when Read refuses the
+     file so, '' when it reads. *)
 VAR f : PTR Frame.Fr IN pool ;
 BEGIN
   f := Parquet.Read (pool, path) ;
@@ -378,8 +383,9 @@ END RoundTrip ;
 
 PROCEDURE Frame6 (q: I32) : PTR Frame.Fr IN pool
   RAISES Faults.SizeError, Frame.Duplicate, ValueRange =
-  (* six rows: TA with a NaN, SW with the sentinel and a NaN, QC whose
-     row 2 is q and row 4 the sentinel, a STR, a BOOL, a time *)
+  (* Frame6 builds six rows: TA with a NaN, SW with the sentinel and a
+     NaN, QC whose row 2 is q and row 4 the sentinel, a STR, a BOOL, a
+     time. *)
 VAR
   f : PTR Frame.Fr IN pool ;
   ta : SLICE OF F32 ;
@@ -468,8 +474,9 @@ END Same ;
 PROCEDURE ReadsOwnNulls ()
   RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow,
          Frame.Unknown, Frame.WrongType =
-  (* the OPTIONAL file back through Parquet.Read: a null is the arm's
-     missing value, so SW's sentinel comes back as NaN, the NaN as NaN *)
+  (* ReadsOwnNulls reads the OPTIONAL file back through Parquet.Read.
+     A null is the arm's missing value, so SW's sentinel comes back as
+     NaN, the NaN as NaN. *)
 VAR
   f : PTR Frame.Fr IN pool ;
   ta, sw : SLICE OF F64 ;
@@ -497,7 +504,8 @@ END ReadsOwnNulls ;
 (* ---- the refusals of Options, each BadArg by name ---- *)
 
 PROCEDURE OptRefusal (q: I32 ; RO o: Parquet.Options) : STR =
-  (* BadArg's text when BytesOpt refuses Frame6 (q) so, '' when not *)
+  (* OptRefusal answers BadArg's text when BytesOpt refuses Frame6 (q)
+     so, '' when not. *)
 VAR b : SLICE OF BYTE ;
 BEGIN
   b := Parquet.BytesOpt (pool, Frame6 (q), o) ;

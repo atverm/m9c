@@ -1,8 +1,8 @@
 MODULE UseGrow ;
 
-(* a program using Grow with its own pool: after m9elide the calls
-   into the procedures that lost their parameter lose the argument,
-   the others keep it, and the program prints the same five lines *)
+(* UseGrow uses Grow with its own pool.  After m9elide the calls into
+   the procedures that lost their parameter lose the argument, the
+   others keep it, and the program prints the same five lines. *)
 
 IMPORT Io ;
 IMPORT Grow ;

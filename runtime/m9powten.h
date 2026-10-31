@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 */
-/* m9powten.h -- WRITTEN BY tools/dragonbox.py, do not edit: 10^k for
-   k in -292..326 scaled so its top bit is bit 127 and rounded up to
-   128 bits (two words, high then low) -- Dragonbox's cache for
-   binary64.  Read by the shortest double-to-decimal in m9rt.c. */
+/* m9powten.h is WRITTEN BY tools/dragonbox.py, do not edit.  It holds
+   10^k for k in -292..326, scaled so its top bit is bit 127 and
+   rounded up to 128 bits (two words, high then low).  It is
+   Dragonbox's cache for binary64.  The shortest double-to-decimal in
+   m9rt.c reads it. */
 #define M9_POW10_LOW (-292)
 #define M9_POW10_HIGH (326)
 static const uint64_t m9_pow10_128[619][2] = {

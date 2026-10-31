@@ -1,8 +1,8 @@
 (* EXPECT: argument 1 of Grow: borrowed o is kept by the callee -- declare KEPT o (par 4.1) *)
-(* kept-pool-forward with the pool a field of a VAR parameter: the
-   caller's record may be a local whose pool dies with the caller's
-   frame, so handing o.pool to a KEPT parameter is a retention of o
-   (2026-10-28).  Legal forms first: o declared KEPT. *)
+(* This is kept-pool-forward with the pool a field of a VAR parameter.
+   The caller's record may be a local whose pool dies with the caller's
+   frame.  So o.pool handed to a KEPT parameter is a retention of o
+   (2026-10-28).  Legal forms come first: o declared KEPT. *)
 MODULE m ;
 TYPE
   Cell = RECORD v : I64 END ;

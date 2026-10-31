@@ -3,7 +3,7 @@ REVIEW Sort -- 30 procedures with a body, 11 of them functions; 17 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
   assignments                                   176
-  arguments                                     160
+  arguments                                     172
   RETURN values                                  17
   operands of a comparison or an operator       189
   CASE labels                                     0
@@ -39,4 +39,4 @@ COUNTED -- how much there was to check
   NEW in the frame                                5
   NEW in a named pool                            10
   calls of a STR form with a UTF twin             0
-  STR subscripts, writes and LEN                  8   len a, len b, index a[i], index b[i], index a[i], index b[i], +2 more
+  STR subscripts, writes and LEN                  0

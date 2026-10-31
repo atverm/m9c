@@ -1,20 +1,20 @@
 MODULE ArraysTest ;
 
-(* Arrays against numpy.  The inputs and the answers are in
-   runtime/test/gold/Arrays.gold, written by tools/arraysgold.py and
-   checked in; nothing here computes what it compares with.
+(* This test holds Arrays against numpy.  The inputs and the answers
+   are in runtime/test/gold/Arrays.gold, written by tools/arraysgold.py
+   and checked in; nothing here computes what it compares with.
 
-   EXACT everywhere but one place.  Minimum, maximum, count, index,
-   running sum, arithmetic, masks, where, select and concatenation
-   are held to numpy to the bit.  A SUM is held to math.fsum -- the
-   correctly rounded sum -- to the bit, because Arrays compensates
-   and numpy's pairwise nansum does not: on `cancel` numpy answers
-   0.0 where the sum is 2.0, on `wide` it is right to seven digits,
-   and the test says so rather than widening a tolerance until two
-   different answers agree.  On the other vectors numpy's nansum is
-   held within 1e-12 of the value, which is room for numpy's error,
-   not this module's.  (That Arrays meets fsum to the bit is a fact
-   about THESE vectors: its bound is in Arrays.m9.) *)
+   The test is EXACT everywhere but one place.  Minimum, maximum,
+   count, index, running sum, arithmetic, masks, where, select and
+   concatenation are held to numpy to the bit.  A SUM is held to
+   math.fsum, the correctly rounded sum, to the bit.  Arrays
+   compensates and numpy's pairwise nansum does not.  On `cancel`
+   numpy answers 0.0 where the sum is 2.0, and on `wide` it is right
+   to seven digits.  The test says so rather than widening a
+   tolerance until two different answers agree.  On the other vectors
+   numpy's nansum is held within 1e-12 of the value, which is room
+   for numpy's error, not this module's.  (Arrays meets fsum to the
+   bit on THESE vectors; its bound is in Arrays.m9.) *)
 
 IMPORT Arrays ;
 IMPORT Check ;
@@ -24,8 +24,9 @@ IMPORT Text ;
 
 CONST
   Vectors = ['a', 'b', 'allnan', 'one', 'long', 'wide', 'cancel'] ;
-  (* where numpy's own nansum is not the sum: the generator refuses
-     to write a file in which `wide` is summed exactly by numpy *)
+  (* These are the vectors where numpy's own nansum is not the sum.
+     The generator refuses to write a file in which `wide` is summed
+     exactly by numpy. *)
   NumpyOff = ['wide', 'cancel'] ;
   Short = [1.0, 2.0] ;
   Flags = [TRUE, FALSE] ;
@@ -45,7 +46,7 @@ BEGIN
   RETURN Check.GoldBools (t, gold, name)
 END Bools ;
 
-(* the reductions over one named vector *)
+(* Vector checks the reductions over one named vector. *)
 PROCEDURE Vector (RO name: STR) =
 VAR
   a : SLICE OF F64 ;
@@ -91,8 +92,9 @@ BEGIN
                   F64s ('want.cumsum.' + name), 0.0, 0.0)
 END Vector ;
 
-(* arithmetic, masks, where, select, concatenation: on a and b.  Each
-   raising call on a statement of its own. *)
+(* Elementwise checks arithmetic, masks, where, select and
+   concatenation on a and b.  Each raising call stands on a statement
+   of its own. *)
 PROCEDURE Elementwise () RAISES Faults.SizeError =
 VAR
   a, b, r, none : SLICE OF F64 ;
@@ -152,7 +154,8 @@ BEGIN
   Check.EqI64 (t, 'CountTrue of a constant table', Arrays.CountTrue (Flags), 1)
 END Elementwise ;
 
-(* the grid: row-major in the file, built here to its shape *)
+(* Grid checks the grid.  The file holds it row-major, and this
+   builds it to its shape. *)
 PROCEDURE Grid () RAISES Faults.BadArg =
 VAR
   flat, r : SLICE OF F64 ;
@@ -202,7 +205,8 @@ BEGIN
                Check.GoldI64 (t, gold, 'want.g.count'))
 END Grid ;
 
-(* the refusals, each a function that answers whether it was refused *)
+(* These are the refusals, each a function that answers whether it
+   was refused. *)
 PROCEDURE AddRefusesLengths () : BOOL =
 VAR r : SLICE OF F64 ;
 BEGIN

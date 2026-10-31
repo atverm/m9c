@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        0
   NEW in the frame                                0
   NEW in a named pool                            11
-  calls of a STR form with a UTF twin             7   Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.Keep -> Text.KeepUtf, Text.Eq -> Text.EqUtf, +1 more
+  calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

@@ -1,18 +1,18 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Stats ;
 
-(* Statistics for scientific computing: moments, percentiles, linear
-   regression, t-tests with real p-values, a normal fit, and random
-   draws from the common distributions.
+(* Stats gives statistics for scientific computing: moments,
+   percentiles, linear regression, t-tests with real p-values, a normal
+   fit, and random draws from the common distributions.
 
-   Written because the target of this language is scientific
+   It was written because the target of this language is scientific
    computing and every one of these is otherwise reinvented per
-   program -- usually wrongly at the edges (ddof, the percentile
+   program, usually wrongly at the edges (ddof, the percentile
    interpolation rule, the t-tail).  The contract with the outside
-   world: every number here is differentially tested against numpy
-   and scipy in runtime/test/stats_driver.c, and the two rules a
-   caller must know are numpy's -- sample variance divides by n-1
-   (VarP by n), Percentile interpolates linearly between order
+   world is this.  Every number here is differentially tested against
+   numpy and scipy in runtime/test/stats_driver.c, and the two rules a
+   caller must know are numpy's: sample variance divides by n-1
+   (VarP by n), and Percentile interpolates linearly between order
    statistics, exactly numpy.percentile's default.
 
    A NaN IS A MISSING VALUE, AND THE COUNT SAYS HOW MANY WERE NOT.
@@ -22,7 +22,7 @@ DEFINITION MODULE Stats ;
    of a test, the `got` of TooFew, the `n` in a Fit, a Reg and a
    Test, and Count itself.  For two samples taken together (LinReg,
    Cov, Corr) a PAIR counts when both its values are present.  A
-   sample with too few values left is TooFew, by that count -- so a
+   sample with too few values left is TooFew, by that count.  So a
    statistic of a sample that has values is never NaN, and a sample
    of nothing but NaN is refused rather than answered.
 
@@ -31,8 +31,8 @@ DEFINITION MODULE Stats ;
    owner reversed it that day.  Measured series have gaps, a module
    that refuses every series with a gap is only ever called behind a
    filter the caller writes by hand, and the filter hid what the
-   refusal was meant to keep in view.  What keeps it in view now is
-   the count: read `n`, or call Count, and the gap has a size.)
+   refusal was meant to keep in view.  The count keeps it in view
+   now: read `n`, or call Count, and the gap has a size.)
 
    The random Stream is a RECORD the caller owns, like the Fortran
    port's Random.Stream: no module state, so two streams cannot
@@ -42,7 +42,7 @@ DEFINITION MODULE Stats ;
    splitmix64 so that any I64 seed, zero included, gives a full
    state; a uniform draw is the top 53 bits of one output.  It
    replaced Knuth's MMIX LCG on 2026-09-27, the day corpus/Bits.m9
-   made a rotate and an xor expressible -- the LCG was the strongest
+   made a rotate and an xor expressible.  The LCG was the strongest
    generator wrapping arithmetic alone could spell, and its low bits
    were as weak as every LCG's.  The change moved every seeded
    golden in the repository, deliberately and at once.  The driver
@@ -59,31 +59,34 @@ EXCEPTION
      refusal. *)
 
 PROCEDURE Count (RO xs: SLICE OF F64) : I64 ;
-  (* how many of xs are not NaN: the n every statistic below is
-     taken over.  LEN (xs) - Count (xs) is the size of the gap. *)
+  (* Count answers how many of xs are not NaN: the n every statistic
+     below is taken over.  LEN (xs) - Count (xs) is the size of the
+     gap. *)
 
 PROCEDURE Mean (RO xs: SLICE OF F64) : F64
   RAISES TooFew ;
-  (* numpy.nanmean *)
+  (* Mean is numpy.nanmean. *)
 PROCEDURE Var (RO xs: SLICE OF F64) : F64
   RAISES TooFew ;
-  (* sample variance, ddof = 1: needs two values *)
+  (* Var answers the sample variance, ddof = 1: it needs two values. *)
 PROCEDURE VarP (RO xs: SLICE OF F64) : F64
   RAISES TooFew ;
-  (* population variance, ddof = 0 *)
+  (* VarP answers the population variance, ddof = 0. *)
 PROCEDURE Std (RO xs: SLICE OF F64) : F64
   RAISES TooFew, ValueRange ;
 PROCEDURE StdP (RO xs: SLICE OF F64) : F64
   RAISES TooFew, ValueRange ;
-  (* the square roots of the two; ValueRange is Math.Sqrt's heading
-     speaking, and a variance is never negative *)
+  (* Std and StdP answer the square roots of the two; ValueRange is
+     Math.Sqrt's heading speaking, and a variance is never
+     negative. *)
 
 PROCEDURE Median (RO xs: SLICE OF F64) : F64
   RAISES TooFew ;
 PROCEDURE Percentile (RO xs: SLICE OF F64 ; p: F64) : F64
   RAISES TooFew, Faults.BadArg, ValueRange ;
-  (* numpy.nanpercentile's linear rule: at rank (n-1) * p/100,
-     interpolated between the two order statistics around it *)
+  (* Percentile follows numpy.nanpercentile's linear rule: at rank
+     (n-1) * p/100, interpolated between the two order statistics
+     around it. *)
 
 TYPE
   Fit = RECORD
@@ -93,8 +96,9 @@ TYPE
 
 PROCEDURE NormFit (RO xs: SLICE OF F64) : Fit
   RAISES TooFew, ValueRange ;
-  (* maximum-likelihood normal fit: mu is the mean, sigma the
-     POPULATION std -- scipy.stats.norm.fit's answer exactly *)
+  (* NormFit answers the maximum-likelihood normal fit: mu is the
+     mean, sigma the POPULATION std, scipy.stats.norm.fit's answer
+     exactly. *)
 
 TYPE
   Reg = RECORD
@@ -104,9 +108,9 @@ TYPE
 
 PROCEDURE LinReg (RO xs, ys: SLICE OF F64) : Reg
   RAISES TooFew, ValueRange, Overflow ;
-  (* least squares of y on x: scipy.stats.linregress's five numbers,
-     p two-sided against slope = 0 via the t distribution with n-2
-     degrees of freedom, over the pairs whose both values are
+  (* LinReg answers least squares of y on x: scipy.stats.linregress's
+     five numbers, p two-sided against slope = 0 via the t distribution
+     with n-2 degrees of freedom, over the pairs whose both values are
      present.  ValueRange is a vertical line: all the x equal. *)
 
 TYPE
@@ -118,23 +122,24 @@ TYPE
 
 PROCEDURE TTest1 (RO xs: SLICE OF F64 ; mu: F64) : Test
   RAISES TooFew, ValueRange, Overflow ;
-  (* one-sample t-test against the given mean; p is two-sided.
+  (* TTest1 runs a one-sample t-test against the given mean; p is
+     two-sided.
      ValueRange is a sample that does not vary. *)
 PROCEDURE TTest2 (RO xs, ys: SLICE OF F64) : Test
   RAISES TooFew, ValueRange, Overflow ;
-  (* Welch's two-sample t-test -- unequal variances assumed, the
-     Welch-Satterthwaite degrees of freedom in `dof`.  scipy's
+  (* TTest2 runs Welch's two-sample t-test: unequal variances assumed,
+     the Welch-Satterthwaite degrees of freedom in `dof`.  It is scipy's
      ttest_ind (equal_var = False, nan_policy = 'omit'): the two
      samples are independent, so each loses its own NaN and they
      need not be equally long. *)
 
 PROCEDURE NormalCdf (x: F64) : F64 RAISES ValueRange ;
-  (* the standard normal CDF, through Math.Erfc *)
+  (* NormalCdf answers the standard normal CDF, through Math.Erfc. *)
 PROCEDURE TTail (t: F64 ; dof: F64) : F64
   RAISES ValueRange, Overflow, Faults.BadArg ;
-  (* upper tail P(T > t) of Student's t -- the p-value building
-     block, exposed because sooner or later a caller wants the
-     one-sided answer the tests do not give *)
+  (* TTail answers the upper tail P(T > t) of Student's t, the p-value
+     building block.  It is exposed because sooner or later a caller
+     wants the one-sided answer the tests do not give. *)
 
 TYPE
   Stream = RECORD
@@ -150,15 +155,16 @@ TYPE
 
 PROCEDURE Seed (s: I64) : Stream RAISES ValueRange ;
   (* any seed is legal; equal seeds give equal streams.  ValueRange
-     is Bits speaking through a shift count that is a constant here
-     -- the set is proved, not narrowed by hand *)
+     is Bits speaking through a shift count that is a constant here.
+     The set is proved, not narrowed by hand. *)
 PROCEDURE Uniform (VAR st: Stream) : F64 RAISES ValueRange ;
-  (* [0, 1), 53 random bits *)
+  (* Uniform answers [0, 1), 53 random bits. *)
 PROCEDURE UniformI (VAR st: Stream ; lo, hi: I64) : I64
   RAISES Faults.BadArg, ValueRange ;
-  (* an integer in [lo, hi], inclusive, unbiased by rejection *)
+  (* UniformI answers an integer in [lo, hi], inclusive, unbiased by
+     rejection. *)
 PROCEDURE Normal (VAR st: Stream) : F64 RAISES ValueRange ;
-  (* standard normal, polar method *)
+  (* Normal draws a standard normal, by the polar method. *)
 PROCEDURE Exponential (VAR st: Stream ; lambda: F64) : F64
   RAISES ValueRange, Faults.BadArg ;
 PROCEDURE LogNormal (VAR st: Stream ; mu, sigma: F64) : F64
@@ -166,36 +172,35 @@ PROCEDURE LogNormal (VAR st: Stream ; mu, sigma: F64) : F64
 
 (* ---- histogram and binning: numpy.histogram with a stated range ----
 
-   `bins` equal bins over [lo, hi]: every bin is closed on the left
-   and open on the right, but the last, which holds hi as well.  A
-   value outside [lo, hi] is in no bin, and neither is a NaN.
-   bins < 1, or lo not below hi, or either not finite, is
-   Faults.BadArg. *)
+   These use `bins` equal bins over [lo, hi]: every bin is closed on the
+   left and open on the right, but the last, which holds hi as well.  A
+   value outside [lo, hi] is in no bin, and neither is a NaN.  bins < 1,
+   or lo not below hi, or either not finite, is Faults.BadArg. *)
 
 PROCEDURE BinEdges (bins: I64 ; lo, hi: F64) : SLICE OF F64
   RAISES Faults.BadArg ;
-  (* the bins + 1 edges, lo first and hi last, as numpy.linspace
-     places them *)
+  (* BinEdges answers the bins + 1 edges, lo first and hi last, as
+     numpy.linspace places them. *)
 
 PROCEDURE BinOf (x: F64 ; bins: I64 ; lo, hi: F64) : I64
   RAISES Faults.BadArg ;
-  (* the bin x falls in, 0 .. bins - 1, or -1 when x is outside
-     [lo, hi] or is NaN.  A value on an edge goes where
+  (* BinOf answers the bin x falls in, 0 .. bins - 1, or -1 when x is
+     outside [lo, hi] or is NaN.  A value on an edge goes where
      numpy.histogram puts it: the index is computed, then corrected
-     against the edges, so a rounding in the division cannot put a
-     value in the wrong bin *)
+     against the edges, so a rounding in the division cannot put a value
+     in the wrong bin. *)
 
 PROCEDURE Histogram (RO xs: SLICE OF F64 ; bins: I64 ; lo, hi: F64)
   : SLICE OF I64 RAISES Faults.BadArg ;
-  (* how many of xs fall in each bin; those outside [lo, hi] and the
-     NaN are not counted, so the counts may add up to less than
-     LEN (xs) *)
+  (* Histogram answers how many of xs fall in each bin.  Those outside
+     [lo, hi] and the NaN are not counted, so the counts may add up to
+     less than LEN (xs). *)
 
 (* ---- rolling windows ----
 
    out[i] is the statistic of the `window` POSITIONS xs[i] ..
-   xs[i + window - 1]: LEN (xs) - window + 1 answers and no padding --
-   the window that ENDS at j is out[j - window + 1].  A window of
+   xs[i + window - 1]: LEN (xs) - window + 1 answers and no padding.
+   The window that ENDS at j is out[j - window + 1].  A window of
    less than 1 is Faults.BadArg; a sample shorter than one window is
    TooFew (here by LEN: a window is so many positions, whatever is in
    them).
@@ -203,8 +208,8 @@ PROCEDURE Histogram (RO xs: SLICE OF F64 ; bins: I64 ; lo, hi: F64)
    Within a window the statistic is over the values that are not
    NaN, as everywhere in this module: RollingMean divides by how many
    there are, not by `window`.  A window holding nothing but NaN has
-   sum 0.0 (numpy.nansum's answer) and mean, minimum and maximum NaN
-   -- the one place this module answers NaN, because a series of
+   sum 0.0 (numpy.nansum's answer) and mean, minimum and maximum NaN.
+   That is the one place this module answers NaN, because a series of
    answers has to say "no value here" in its own type.  An infinity
    is a value: a window holding one has it as its sum, and holding
    both has NaN.
@@ -226,19 +231,20 @@ PROCEDURE RollingMax (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
   RAISES TooFew, Faults.BadArg ;
 PROCEDURE RollingCount (RO xs: SLICE OF F64 ; window: I64) : SLICE OF I64
   RAISES TooFew, Faults.BadArg ;
-  (* how many values each window holds that are not NaN: the n of
-     that window's mean *)
+  (* RollingCount answers how many values each window holds that are
+     not NaN: the n of that window's mean. *)
 
 (* ---- linear interpolation: numpy.interp ---- *)
 
 PROCEDURE Interp (RO xs: SLICE OF F64 ; RO xp, fp: SLICE OF F64)
   : SLICE OF F64 RAISES TooFew, Faults.SizeError, Faults.BadArg ;
-  (* the piecewise-linear function through the points (xp[k], fp[k]),
-     read at each of xs.  Left of xp[0] the answer is fp[0] and right
-     of the last point it is the last fp: held, not extrapolated.  A
-     NaN in xs is answered NaN -- where there is no abscissa there is
-     no value -- and a NaN in fp makes NaN of what is read between
-     its neighbours, as numpy's does: this does not fill gaps.
+  (* Interp reads the piecewise-linear function through the points
+     (xp[k], fp[k]) at each of xs.  Left of xp[0] the answer is fp[0]
+     and right of the last point it is the last fp: held, not
+     extrapolated.  A NaN in xs is answered NaN: where there is no
+     abscissa there is no value.  A NaN in fp makes NaN of what is
+     read between its neighbours, as numpy's does: this does not fill
+     gaps.
 
        xp -- the abscissae, STRICTLY ascending and none of them NaN
              (Faults.BadArg otherwise; numpy does not check and
@@ -248,9 +254,9 @@ PROCEDURE Interp (RO xs: SLICE OF F64 ; RO xp, fp: SLICE OF F64)
 
 PROCEDURE Interp1 (x: F64 ; RO xp, fp: SLICE OF F64) : F64
   RAISES TooFew, Faults.SizeError ;
-  (* one point, and the order of xp NOT checked: a binary search
-     reads log2 (LEN (xp)) of them, as Sort's do.  Use Interp for
-     data whose order has not been established. *)
+  (* Interp1 reads one point and does NOT check the order of xp: a
+     binary search reads log2 (LEN (xp)) of them, as Sort's do.  Use
+     Interp for data whose order has not been established. *)
 
 (* ---- covariance and correlation ----
 
@@ -267,25 +273,26 @@ PROCEDURE Corr (RO xs, ys: SLICE OF F64) : F64
   RAISES TooFew, Faults.SizeError, Faults.BadArg, ValueRange ;
 PROCEDURE Pairs (RO xs, ys: SLICE OF F64) : I64
   RAISES Faults.SizeError ;
-  (* how many pairs have both values: the n of Cov, Corr and LinReg *)
+  (* Pairs answers how many pairs have both values: the n of Cov, Corr
+     and LinReg. *)
 
 PROCEDURE CovMatrix (RO g: GRID 2 OF F64) : GRID 2 OF F64
   RAISES TooFew ;
 PROCEDURE CorrMatrix (RO g: GRID 2 OF F64) : GRID 2 OF F64
   RAISES TooFew, Faults.BadArg, ValueRange ;
-  (* every pair of COLUMNS: a row of g is one observation and a
-     column one variable, as a table has them.  Each entry is taken
-     over the rows in which BOTH its columns are present -- pairwise,
-     as pandas' DataFrame.cov and corr do -- so two entries may rest
-     on different rows, and a pair of columns with fewer than two
-     such rows is TooFew.  The answer is LEN (g, 1) square and
-     symmetric, the variances -- or 1.0 -- on its diagonal. *)
+  (* CovMatrix and CorrMatrix take every pair of COLUMNS: a row of g
+     is one observation and a column one variable, as a table has
+     them.  Each entry is taken over the rows in which BOTH its columns
+     are present (pairwise, as pandas' DataFrame.cov and corr do), so
+     two entries may rest on different rows.  A pair of columns with
+     fewer than two such rows is TooFew.  The answer is LEN (g, 1)
+     square and symmetric, the variances (or 1.0) on its diagonal. *)
 
 PROCEDURE Taylor (RO model, ref: SLICE OF F64 ;
                   VAR ratio, corr, rms: F64)
   RAISES TooFew, Faults.SizeError, Faults.BadArg, ValueRange ;
-  (* a field against its reference, as a Taylor diagram shows it
-     (Plot.RenderTaylor draws the first two):
+  (* Taylor holds a field against its reference, as a Taylor diagram
+     shows it (Plot.RenderTaylor draws the first two):
 
        ratio -- the model's standard deviation over the reference's
        corr  -- their correlation, Pearson's r
@@ -295,8 +302,8 @@ PROCEDURE Taylor (RO model, ref: SLICE OF F64 ;
                 diagram, and rms * rms = ratio * ratio + 1 - 2 *
                 ratio * corr
 
-     Over the PAIRS whose both values are present, two at least
-     (TooFew); the two fields count the same positions
+     It works over the PAIRS whose both values are present, two at
+     least (TooFew); the two fields count the same positions
      (Faults.SizeError).  A field that does not vary has no
      correlation and a reference that does not vary no unit:
      Faults.BadArg for either, as in Corr. *)
@@ -306,8 +313,8 @@ PROCEDURE Taylor (RO model, ref: SLICE OF F64 ;
    The standard normal, Student's t and chi-square, each three ways
    and named as scipy.stats names them: Pdf the density, Cdf the
    probability of at most x, Ppf the x with a given probability
-   below it -- Cdf's inverse, the "percent point function", which is
-   what a confidence interval is read off.  (NormalCdf and TTail are
+   below it.  Ppf is Cdf's inverse, the "percent point function", which
+   is what a confidence interval is read off.  (NormalCdf and TTail are
    above; TCdf is 1 - TTail.)
 
    Each is a function of numbers, not of a sample, so the sample's
@@ -316,9 +323,9 @@ PROCEDURE Taylor (RO model, ref: SLICE OF F64 ;
    Faults.BadArg; Ppf (0) and Ppf (1) are the ends of the
    distribution's range, an infinity where it has none.
 
-   Held to scipy.stats over a grid by StatsTest, which states how
+   StatsTest holds them to scipy.stats over a grid and states how
    closely: densities and cumulatives to 1e-12 of the value and the
-   inverses to 1e-10 -- these are series and continued fractions
+   inverses to 1e-10.  These are series and continued fractions
    stopped at double precision, a log-gamma good to fifteen digits,
    and a root found by Newton steps inside a bracket. *)
 
@@ -342,27 +349,29 @@ PROCEDURE Chi2Ppf (p: F64 ; dof: F64) : F64
 
 (* ---- shuffling and choosing, from a Stream ----
 
-   Indices, not values: shuffle or choose the row numbers and read
-   the data through them, whatever its type.  Each is unbiased (the
-   stream's own rejection rule, as in UniformI) and reproducible from
-   the seed; tools/statsgoldm9.py holds the first results to an
+   These work on indices, not values: shuffle or choose the row numbers
+   and read the data through them, whatever its type.  Each is unbiased
+   (the stream's own rejection rule, as in UniformI) and reproducible
+   from the seed; tools/statsgoldm9.py holds the first results to an
    independent transcription of the same algorithm, to the element. *)
 
 PROCEDURE Shuffle (VAR st: Stream ; VAR a: SLICE OF I64)
   RAISES ValueRange ;
-  (* a in a uniformly random order, in place (Fisher and Yates, from
-     the last element down) *)
+  (* Shuffle puts a in a uniformly random order, in place (Fisher and
+     Yates, from the last element down). *)
 
 PROCEDURE Permutation (VAR st: Stream ; n: I64) : SLICE OF I64
   RAISES Faults.BadArg, ValueRange ;
-  (* 0 .. n - 1 in a uniformly random order; n < 0 is Faults.BadArg *)
+  (* Permutation answers 0 .. n - 1 in a uniformly random order; n < 0
+     is Faults.BadArg. *)
 
 PROCEDURE Choice (VAR st: Stream ; n, k: I64) : SLICE OF I64
   RAISES Faults.BadArg, ValueRange ;
-  (* k DIFFERENT indices out of 0 .. n - 1, every such choice and
-     every order of it equally likely: a sample without replacement.
-     k outside 0 .. n is Faults.BadArg.  WITH replacement is k calls
-     of UniformI (st, 0, n - 1), which is why it has no procedure. *)
+  (* Choice answers k DIFFERENT indices out of 0 .. n - 1, every such
+     choice and every order of it equally likely: a sample without
+     replacement.  k outside 0 .. n is Faults.BadArg.  WITH replacement
+     is k calls of UniformI (st, 0, n - 1), which is why it has no
+     procedure. *)
 
 END Stats.
 
@@ -387,8 +396,9 @@ BEGIN
   RETURN n
 END Count ;
 
-(* how many values there are to work with, TooFew by THAT count when
-   it is under `need`: the count every statistic divides by *)
+(* Need answers how many values there are to work with, and raises
+   TooFew by THAT count when it is under `need`: the count every
+   statistic divides by. *)
 PROCEDURE Need (RO xs: SLICE OF F64 ; need: I64) : I64 RAISES TooFew =
 VAR n : I64 ;
 BEGIN
@@ -400,7 +410,8 @@ END Need ;
 
 (* ---- moments ---- *)
 
-(* the sum of the values that are not NaN, added in order *)
+(* Total answers the sum of the values that are not NaN, added in
+   order. *)
 PROCEDURE Total (RO xs: SLICE OF F64) : F64 =
 VAR
   acc : F64 ;
@@ -422,9 +433,10 @@ BEGIN
 END Mean ;
 
 PROCEDURE SumSq (RO xs: SLICE OF F64 ; m: F64) : F64 =
-  (* sum of squared deviations from m, the two-pass formula: the
-     textbook one-pass E[x^2] - E[x]^2 loses digits exactly where a
-     tight sample meets a large mean, which is a tower time series *)
+  (* SumSq answers the sum of squared deviations from m, by the
+     two-pass formula.  The textbook one-pass E[x^2] - E[x]^2 loses
+     digits exactly where a tight sample meets a large mean, which is
+     a tower time series. *)
 VAR
   acc, d : F64 ;
   i : I64 ;
@@ -470,8 +482,8 @@ END StdP ;
 (* ---- order statistics ---- *)
 
 PROCEDURE Sort (VAR a: SLICE OF F64) =
-  (* heapsort: in place, O(n log n) always, no recursion -- a
-     library sort must not have a quadratic corner *)
+  (* Sort is a heapsort: in place, O(n log n) always, no recursion.  A
+     library sort must not have a quadratic corner. *)
 VAR
   n, i, j, c : I64 ;
   t : F64 ;
@@ -510,8 +522,8 @@ BEGIN
   END
 END Sort ;
 
-(* the values of xs that are not NaN, sorted: LEN of the answer is
-   the count the order statistics work with *)
+(* Sorted answers the values of xs that are not NaN, sorted: LEN of
+   the answer is the count the order statistics work with. *)
 PROCEDURE Sorted (RO xs: SLICE OF F64)
   : SLICE OF F64 =
 VAR
@@ -579,10 +591,10 @@ END NormFit ;
 
 (* ---- special functions for the p-values ----
 
-   Log-gamma by the Lanczos approximation (g = 7, nine terms), the
-   regularised incomplete beta by the Lentz continued fraction.
+   Log-gamma comes by the Lanczos approximation (g = 7, nine terms),
+   the regularised incomplete beta by the Lentz continued fraction.
    Both are written from the formulas and held to scipy digit for
-   digit in the driver -- fifteen significant digits over the tested
+   digit in the driver: fifteen significant digits over the tested
    range, which is the double-precision ceiling. *)
 
 PROCEDURE LnGamma (x: F64) : F64 RAISES ValueRange =
@@ -606,9 +618,9 @@ BEGIN
 END LnGamma ;
 
 PROCEDURE BetaCf (a, b, x: F64) : F64 RAISES ValueRange =
-  (* the continued fraction for the incomplete beta, modified Lentz;
-     converges in a few dozen iterations for the x the caller
-     guarantees (x < (a+1)/(a+b+2)) *)
+  (* BetaCf computes the continued fraction for the incomplete beta,
+     modified Lentz.  It converges in a few dozen iterations for the x
+     the caller guarantees (x < (a+1)/(a+b+2)). *)
 VAR
   qab, qap, qam, c, d, h, m2, aa, del : F64 ;
   m : I64 ;
@@ -647,8 +659,8 @@ BEGIN
   RETURN h
 END BetaCf ;
 
-(* ln (1 - y), right for a small y where forming 1 - y first would
-   have thrown its digits away (Kahan's correction) *)
+(* Ln1m answers ln (1 - y), right for a small y where forming 1 - y
+   first would have thrown its digits away (Kahan's correction). *)
 PROCEDURE Ln1m (y: F64) : F64 RAISES ValueRange =
 VAR u : F64 ;
 BEGIN
@@ -657,22 +669,23 @@ BEGIN
   RETURN Math.Log (u) * (-y) / (u - 1.0)
 END Ln1m ;
 
-(* the logarithm of one of two numbers that add up to 1, the other
-   handed in: taken from whichever is the small one *)
+(* LnOf answers the logarithm of one of two numbers that add up to 1,
+   the other handed in.  It takes it from whichever is the small
+   one. *)
 PROCEDURE LnOf (v, other: F64) : F64 RAISES ValueRange =
 BEGIN
   IF v < 0.5 THEN RETURN Math.Log (v) END ;
   RETURN Ln1m (other)
 END LnOf ;
 
-(* the regularised incomplete beta I_x (a, b), with y = 1 - x HANDED
-   IN.  A t statistic gives both exactly -- dof / (dof + t*t) and
-   t*t / (dof + t*t) -- and until 2026-10-02 this took x alone and
-   subtracted it from 1 itself: near the centre of the distribution
-   that is 1 - 1, so the tail came out as exactly one half for every
-   |t| under about 1e-8, and with many degrees of freedom the far
-   tail lost digits the same way (found holding TCdf and TPpf to
-   scipy).  What carries the fix is the two logarithms, each taken
+(* BetaXY answers the regularised incomplete beta I_x (a, b), with
+   y = 1 - x HANDED IN.  A t statistic gives both exactly:
+   dof / (dof + t*t) and t*t / (dof + t*t).  Until 2026-10-02 this
+   took x alone and subtracted it from 1 itself.  Near the centre of
+   the distribution that is 1 - 1, so the tail came out as exactly one
+   half for every |t| under about 1e-8, and with many degrees of
+   freedom the far tail lost digits the same way (found holding TCdf
+   and TPpf to scipy).  The two logarithms carry the fix, each taken
    from the small one of the pair. *)
 PROCEDURE BetaXY (a, b, x, y: F64) : F64 RAISES ValueRange, Overflow =
 VAR bt, lg : F64 ;
@@ -724,13 +737,14 @@ END TwoSided ;
 
 (* ---- regression and tests ---- *)
 
-(* a pair counts when both its values are present *)
+(* Both answers whether a pair counts: it counts when both its values
+   are present. *)
 PROCEDURE Both (x, y: F64) : BOOL =
 BEGIN
   RETURN (x = x) AND (y = y)
 END Both ;
 
-(* the pairs of two samples, by count; the lengths agree *)
+(* NPairs counts the pairs of two samples; the lengths agree. *)
 PROCEDURE NPairs (RO xs, ys: SLICE OF F64) : I64 =
 VAR i, n : I64 ;
 BEGIN
@@ -741,7 +755,8 @@ BEGIN
   RETURN n
 END NPairs ;
 
-(* the mean of xs over the pairs it makes with ys, n of them *)
+(* PairMean answers the mean of xs over the pairs it makes with ys, n
+   of them. *)
 PROCEDURE PairMean (RO xs, ys: SLICE OF F64 ; n: I64) : F64 =
 VAR
   acc : F64 ;
@@ -841,24 +856,26 @@ CONST
   TwoP53 = 9007199254740992.0 ;
   TwoP53i = 9007199254740992 ;
   TwoP62 = 4611686018427387904 ;
-  (* splitmix64's three constants, 0x9E3779B97F4A7C15, 0xBF58476D1CE4E5B9
-     and 0x94D049BB133111EB, as I64 PATTERNS: each is above 2^63, which
-     no I64 literal can spell, so the value minus 2^64 stands in -- the
-     same 64 bits, and the wrapping ops do not care about the sign *)
+  (* These are splitmix64's three constants, 0x9E3779B97F4A7C15,
+     0xBF58476D1CE4E5B9 and 0x94D049BB133111EB, as I64 PATTERNS.  Each
+     is above 2^63, which no I64 literal can spell, so the value minus
+     2^64 stands in: the same 64 bits, and the wrapping ops do not
+     care about the sign. *)
   SmGamma = -7046029254386353131 ;
   SmMul1 = -4658895280553007687 ;
   SmMul2 = -7723592293110705685 ;
 
-(* rotate left by k in 1..63; the ValueRange in every RAISES below is
-   Bits refusing a shift count, which these constants never are *)
+(* Rotl rotates left by k in 1..63.  The ValueRange in every RAISES
+   below is Bits refusing a shift count, which these constants never
+   are. *)
 PROCEDURE Rotl (x: I64 ; k: I64) : I64 RAISES ValueRange =
 BEGIN
   RETURN Bits.Or (Bits.Shl (x, k), Bits.Shr (x, 64 - k))
 END Rotl ;
 
-(* one splitmix64 output, advancing x: the seeding generator the
-   xoshiro authors prescribe, so that no seed yields the all-zero
-   state xoshiro cannot leave *)
+(* SplitMix answers one splitmix64 output, advancing x: the seeding
+   generator the xoshiro authors prescribe, so that no seed yields the
+   all-zero state xoshiro cannot leave. *)
 PROCEDURE SplitMix (VAR x: I64) : I64 RAISES ValueRange =
 VAR z : I64 ;
 BEGIN
@@ -869,8 +886,8 @@ BEGIN
   RETURN Bits.Xor (z, Bits.Shr (z, 31))
 END SplitMix ;
 
-(* xoshiro256**: the reference algorithm line for line, with *% for
-   the two multiplies the reference does in uint64_t *)
+(* Next is xoshiro256**: the reference algorithm line for line, with
+   *% for the two multiplies the reference does in uint64_t. *)
 PROCEDURE Next (VAR st: Stream) : I64 RAISES ValueRange =
 VAR r, t : I64 ;
 BEGIN
@@ -885,9 +902,9 @@ BEGIN
   RETURN r
 END Next ;
 
-(* the top 53 bits of a 64-bit pattern, as the authors recommend for
-   a double: a logical shift, zeros entering above, so the answer is
-   in [0, 2^53) whatever the sign of x *)
+(* Top53 answers the top 53 bits of a 64-bit pattern, as the authors
+   recommend for a double: a logical shift, zeros entering above, so
+   the answer is in [0, 2^53) whatever the sign of x. *)
 PROCEDURE Top53 (x: I64) : I64 RAISES ValueRange =
 BEGIN
   RETURN Bits.Shr (x, 11)
@@ -919,8 +936,8 @@ VAR
 BEGIN
   IF hi < lo THEN RAISE Faults.BadArg ('empty range') END ;
   IF lo < -TwoP62 OR hi > TwoP62 - 1 THEN
-    (* keeps hi - lo + 1 from overflowing; nobody rolls a die with
-       2^62 faces *)
+    (* This keeps hi - lo + 1 from overflowing; nobody rolls a die
+       with 2^62 faces. *)
     RAISE Faults.BadArg ('range wider than the generator draws')
   END ;
   m := hi - lo + 1 ;
@@ -986,9 +1003,9 @@ BEGIN
   END
 END BinsOk ;
 
-(* edge k of the bins + 1, as numpy.linspace computes it: lo + k *
-   step, and the last one hi itself rather than what the arithmetic
-   gives *)
+(* Edge answers edge k of the bins + 1, as numpy.linspace computes it:
+   lo + k * step, and the last one hi itself rather than what the
+   arithmetic gives. *)
 PROCEDURE Edge (k: I64 ; bins: I64 ; lo, hi: F64) : F64 =
 BEGIN
   IF k >= bins THEN RETURN hi END ;
@@ -1007,13 +1024,13 @@ BEGIN
   RETURN out
 END BinEdges ;
 
-(* numpy.histogram's own steps, in its order: the index from the
-   division, the top edge folded into the last bin, then the two
-   corrections against the edges -- down if x is below its bin's left
-   edge, up if it has reached the right one.  The arguments are
-   valid.  A NaN is in no bin: it fails both halves of the first
-   test.  (The handler answers a conversion that cannot fail for an
-   x inside a finite range; the checker cannot know that.) *)
+(* Bin follows numpy.histogram's own steps, in its order: the index
+   from the division, the top edge folded into the last bin, then the
+   two corrections against the edges.  It corrects down if x is below
+   its bin's left edge, and up if it has reached the right one.  The
+   arguments are valid.  A NaN is in no bin: it fails both halves of the
+   first test.  (The handler answers a conversion that cannot fail for
+   an x inside a finite range; the checker cannot know that.) *)
 PROCEDURE Bin (x: F64 ; bins: I64 ; lo, hi: F64) : I64 =
 VAR k : I64 ;
 BEGIN
@@ -1086,10 +1103,10 @@ BEGIN
   s.sum := t
 END Plus ;
 
-(* a value enters the window (by = 1) or leaves it (by = -1); a NaN
-   does neither.  When the last finite value has left, the sum is
-   put back to exactly zero: numpy.nansum of nothing is 0.0, not what
-   the corrections happen to have left. *)
+(* Shift moves a value into the window (by = 1) or out of it
+   (by = -1); a NaN does neither.  When the last finite value has left,
+   the sum is put back to exactly zero: numpy.nansum of nothing is 0.0,
+   not what the corrections happen to have left. *)
 PROCEDURE Shift (VAR w: Win ; v: F64 ; by: I64) =
 BEGIN
   IF v = v THEN
@@ -1188,11 +1205,12 @@ BEGIN
   RETURN out
 END RollingCount ;
 
-(* the extreme of every window in one pass: a queue of indices whose
-   values are in order, so its head is the window's extreme; an index
-   leaves at the tail when a better value arrives and at the head
-   when the window has moved past it.  A NaN never joins the queue,
-   and a window with an empty queue has no extreme. *)
+(* Extreme finds the extreme of every window in one pass.  It keeps a
+   queue of indices whose values are in order, so its head is the
+   window's extreme.  An index leaves at the tail when a better value
+   arrives and at the head when the window has moved past it.  A NaN
+   never joins the queue, and a window with an empty queue has no
+   extreme. *)
 PROCEDURE Extreme (RO xs: SLICE OF F64 ; window: I64 ; wantMax: BOOL)
   : SLICE OF F64 RAISES TooFew, Faults.BadArg =
 VAR
@@ -1247,10 +1265,10 @@ END RollingMax ;
 
 (* ---- linear interpolation ---- *)
 
-(* numpy.interp's arithmetic for one point: xp is ascending and holds
-   one value at least, x is a number.  The two retries are numpy's:
-   an infinite fp can make the first form NaN where the second, or
-   the constant, is the answer. *)
+(* Lerp does numpy.interp's arithmetic for one point: xp is ascending
+   and holds one value at least, x is a number.  The two retries are
+   numpy's: an infinite fp can make the first form NaN where the second,
+   or the constant, is the answer. *)
 PROCEDURE Lerp (x: F64 ; RO xp, fp: SLICE OF F64) : F64 =
 VAR
   j, n : I64 ;
@@ -1325,8 +1343,8 @@ BEGIN
   RETURN NPairs (xs, ys)
 END Pairs ;
 
-(* the three sums of products of deviations, over the n pairs: the
-   two-pass form SumSq uses, for two samples *)
+(* PairSums answers the three sums of products of deviations, over the
+   n pairs: the two-pass form SumSq uses, for two samples. *)
 PROCEDURE PairSums (RO xs, ys: SLICE OF F64 ; n: I64 ;
                     VAR sxx, syy, sxy: F64) =
 VAR
@@ -1398,8 +1416,8 @@ BEGIN
   IF smm = 0.0 OR srr = 0.0 THEN
     RAISE Faults.BadArg ('a field that does not vary has no place on a Taylor diagram')
   END ;
-  (* the difference summed as a difference, not as smm + srr - 2 smr:
-     a model close to its reference would lose its digits there *)
+  (* Sum the difference as a difference, not as smm + srr - 2 smr: a
+     model close to its reference would lose its digits there. *)
   mm := PairMean (model, ref, n) ;
   mr := PairMean (ref, model, n) ;
   dd := 0.0 ;
@@ -1417,8 +1435,8 @@ BEGIN
   rms := Math.Sqrt (dd) / rr
 END Taylor ;
 
-(* PairSums for two columns of a grid: over the rows in which both
-   are present, n of them *)
+(* ColSums is PairSums for two columns of a grid: over the rows in
+   which both are present, n of them. *)
 PROCEDURE ColSums (RO g: GRID 2 OF F64 ; a, b: I64 ; VAR n: I64 ;
                    VAR sxx, syy, sxy: F64) =
 VAR
@@ -1506,10 +1524,11 @@ CONST
   Sqrt2Pi = 2.5066282746310002 ;
   Ln2 = 0.6931471805599453 ;
   Tiny = 1.0E-300 ;
-  (* Acklam's rational approximation to the inverse normal: A over B
-     in the middle, C over D in each tail, good to 1.15e-9 before the
-     refinement below takes it to double precision.  Highest power
-     first.  Constant tables (report par 2.2.4), read by Horner. *)
+  (* These tables hold Acklam's rational approximation to the inverse
+     normal: A over B in the middle, C over D in each tail, good to
+     1.15e-9 before the refinement below takes it to double precision.
+     The highest power comes first.  They are constant tables (report
+     par 2.2.4), read by Horner. *)
   PA = [-39.69683028665376, 220.9460984245205, -275.9285104469687,
         138.3577518672690, -30.66479806614716, 2.506628277459239] ;
   PB = [-54.47609879822406, 161.5858368580409, -155.6989798598866,
@@ -1545,8 +1564,9 @@ BEGIN
   END
 END ProbOk ;
 
-(* e to the x for an x that may be far below anything representable:
-   Math.Exp refuses an infinite argument, and a density there is 0 *)
+(* ExpDown answers e to the x for an x that may be far below anything
+   representable.  Math.Exp refuses an infinite argument, and a
+   density there is 0. *)
 PROCEDURE ExpDown (x: F64) : F64 RAISES ValueRange, Overflow =
 BEGIN
   IF x < -745.0 THEN RETURN 0.0 END ;
@@ -1580,8 +1600,8 @@ BEGIN
     q := Math.Sqrt (-2.0 * Math.Log (1.0 - p)) ;
     x := -Horner (PC, q) / Horner (PD, q)
   END ;
-  (* two Halley steps against the distribution itself.  The error is
-     taken in the SMALLER tail, where the difference of two
+  (* Take two Halley steps against the distribution itself.  The error
+     is taken in the SMALLER tail, where the difference of two
      probabilities is not a difference of two numbers near one. *)
   FOR i := 1 TO 2 DO
     IF p <= 0.5 THEN
@@ -1619,9 +1639,10 @@ END TCdf ;
 
 (* ---- the incomplete gamma function, for chi-square ----
 
-   P (a, x) by its series where x < a + 1 and Q (a, x) = 1 - P by its
-   continued fraction elsewhere: each where it converges fast, and
-   each answering the SMALL one of the two directly. *)
+   This computes P (a, x) by its series where x < a + 1, and
+   Q (a, x) = 1 - P by its continued fraction elsewhere: each where it
+   converges fast, and each answering the SMALL one of the two
+   directly. *)
 
 PROCEDURE GammaSeries (a, x: F64) : F64 RAISES ValueRange, Overflow =
 VAR
@@ -1668,7 +1689,8 @@ BEGIN
   RETURN h * ExpDown (a * Math.Log (x) - x - LnGamma (a))
 END GammaFraction ;
 
-(* the lower and the upper regularised incomplete gamma, x > 0 *)
+(* GammaPQ answers the lower and the upper regularised incomplete
+   gamma, x > 0. *)
 PROCEDURE GammaPQ (a, x: F64 ; VAR p, q: F64) RAISES ValueRange, Overflow =
 BEGIN
   IF x < a + 1.0 THEN
@@ -1709,9 +1731,9 @@ END Chi2Cdf ;
 
 (* ---- the two inverses that have no formula: a root, bracketed ----
 
-   Newton's step where it stays inside the bracket and a bisection
-   where it does not, so the root is found whatever the start.  What
-   is solved is always the SMALLER tail against its target:
+   Root takes Newton's step where it stays inside the bracket and a
+   bisection where it does not, so the root is found whatever the
+   start.  It always solves the SMALLER tail against its target:
 
      kind 0 -- Student's upper tail at x >= 0 equals `target`
      kind 1 -- chi-square's lower tail at x equals `target`
@@ -1773,7 +1795,7 @@ BEGIN
   IF p = 0.0 THEN RETURN -Inf () END ;
   IF p = 1.0 THEN RETURN Inf () END ;
   IF p = 0.5 THEN RETURN 0.0 END ;
-  (* the smaller tail, taken exactly; its quantile is not negative *)
+  (* Take the smaller tail exactly; its quantile is not negative. *)
   q := p ;
   IF p > 0.5 THEN q := 1.0 - p END ;
   z := -NormalPpf (q) ;
@@ -1796,7 +1818,7 @@ BEGIN
   DofOk (dof) ;
   IF p = 0.0 THEN RETURN 0.0 END ;
   IF p = 1.0 THEN RETURN Inf () END ;
-  (* Wilson and Hilferty's cube for a start *)
+  (* Start from Wilson and Hilferty's cube. *)
   z := NormalPpf (p) ;
   w := 2.0 / (9.0 * dof) ;
   x := 1.0 - w + z * Math.Sqrt (w) ;
@@ -1811,9 +1833,9 @@ END Chi2Ppf ;
 
 (* ---- shuffling and choosing ---- *)
 
-(* a uniform integer in [0, m), m at least 1 and at most 2^53:
-   UniformI's draw without its argument checks, which are for a
-   caller *)
+(* Below answers a uniform integer in [0, m), m at least 1 and at most
+   2^53: UniformI's draw without its argument checks, which are for a
+   caller. *)
 PROCEDURE Below (VAR st: Stream ; m: I64) : I64 RAISES ValueRange =
 VAR limit, k : I64 ;
 BEGIN
@@ -1865,8 +1887,8 @@ BEGIN
   idx := NEW (scratch, I64, n) ;
   FOR i := 0 TO n - 1 DO idx[i] := i END ;
   out := NEW (I64, k) ;
-  (* the first k steps of a shuffle from the front: position i takes
-     one of the n - i not yet taken *)
+  (* Take the first k steps of a shuffle from the front: position i
+     takes one of the n - i not yet taken. *)
   FOR i := 0 TO k - 1 DO
     j := i + Below (st, n - i) ;
     t := idx[i] ;

@@ -2,33 +2,36 @@
 #include "Time.h"
 #include "DynStr.h"
 #include "Fmt.h"
+#include "Text.h"
 
 extern int64_t m9_fmt_fixed (double, int64_t, void *, int64_t);
 extern int64_t m9_fmt_sci (double, int64_t, void *, int64_t);
 extern int64_t m9_fmt_short (double, void *, int64_t);
+extern int64_t m9_utf_cpcount_p (const void *, int64_t);
+extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 extern double m9_now (void);
 extern void m9_sleep_ms (int64_t);
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[1] = { 45u };
-static const uint32_t m9s1[1] = { 45u };
-static const uint32_t m9s2[1] = { 84u };
-static const uint32_t m9s3[1] = { 58u };
-static const uint32_t m9s4[1] = { 58u };
-static const uint32_t m9s5[1] = { 46u };
-static const uint32_t m9s6[1] = { 46u };
-static const uint32_t m9s7[1] = { 46u };
-static const uint32_t m9s8[1] = { 90u };
-static const uint32_t m9s9[1] = { 48u };
+static const uint8_t m9s0[1] = { 45 };
+static const uint8_t m9s1[1] = { 45 };
+static const uint8_t m9s2[1] = { 84 };
+static const uint8_t m9s3[1] = { 58 };
+static const uint8_t m9s4[1] = { 58 };
+static const uint8_t m9s5[1] = { 46 };
+static const uint8_t m9s6[1] = { 46 };
+static const uint8_t m9s7[1] = { 46 };
+static const uint8_t m9s8[1] = { 90 };
+static const uint8_t m9s9[1] = { 48 };
 
 static double Time_FloorDiv (double x, double by, m9_state *err);
 static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_state *err);
 static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_state *err);
-static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_state *err);
-static int64_t Time_DigitsAt (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err);
-static bool Time_CharAt (m9_sl_CHAR s, int64_t at, uint32_t c, m9_state *err);
-static m9_sl_CHAR Time_Pad (int64_t v, int64_t width, m9_state *err);
+static int64_t Time_Digits2 (m9_sl_UTF8 s, int64_t at, m9_state *err);
+static int64_t Time_DigitsAt (m9_sl_UTF8 s, int64_t at, int64_t n, m9_state *err);
+static bool Time_CharAt (m9_sl_UTF8 s, int64_t at, uint32_t c, m9_state *err);
+static m9_sl_UTF8 Time_Pad (int64_t v, int64_t width, m9_state *err);
 
 
 double Time_Elapsed (Time_Instant a, Time_Instant b, m9_state *err)
@@ -300,17 +303,47 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
+m9_sl_UTF8 Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool pool = {0}; (void) pool;
   Time_Civil c = {0}; (void) c;
   DynStr_DString * d = NULL; (void) d;
-  { __typeof__(c) m9v = Time_ToCivil (t, err);
+  Time_Instant u = {0}; (void) u;
+  double scale = 0; (void) scale;
+  double k = 0; (void) k;
+  double w = 0; (void) w;
+  int64_t i = 0; (void) i;
+  scale = 1.0;
+  { __typeof__(i) m9t1to;
+  i = INT64_C(1);
+  m9t1to = decimals;
+  if (i <= m9t1to) for (;;) {
+    scale = (scale * 10.0);
+    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
+    i += 1;
+  } }
+  if ((decimals == INT64_C(0))) {
+    { __typeof__(k) m9v = Time_FloorDiv (t.t, 1.0, err);
+      if (err->exc) goto L_ret;
+      k = m9v;
+    }
+  } else {
+    { __typeof__(k) m9v = Time_FloorDiv (((t.t * scale) + 0.5), 1.0, err);
+      if (err->exc) goto L_ret;
+      k = m9v;
+    }
+  }
+  { __typeof__(w) m9v = Time_FloorDiv (k, scale, err);
+    if (err->exc) goto L_ret;
+    w = m9v;
+  }
+  u.t = w;
+  { __typeof__(c) m9v = Time_ToCivil (u, err);
     if (err->exc) goto L_ret;
     c = m9v;
   }
@@ -318,35 +351,35 @@ m9_sl_CHAR Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  { __typeof__(Fmt_I64Pad (c.year, INT64_C(4), true, err)) m9a3 = Fmt_I64Pad (c.year, INT64_C(4), true, err);
+  { __typeof__(Fmt_I64PadUtf (c.year, INT64_C(4), true, err)) m9a3 = Fmt_I64PadUtf (c.year, INT64_C(4), true, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), m9a3, err);
   if (err->exc) goto L_ret;
   }
   DynStr_AppendChar (&(d), &(pool), 45u, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Fmt_I64Pad (c.month, INT64_C(2), true, err)) m9a4 = Fmt_I64Pad (c.month, INT64_C(2), true, err);
+  { __typeof__(Fmt_I64PadUtf (c.month, INT64_C(2), true, err)) m9a4 = Fmt_I64PadUtf (c.month, INT64_C(2), true, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), m9a4, err);
   if (err->exc) goto L_ret;
   }
   DynStr_AppendChar (&(d), &(pool), 45u, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Fmt_I64Pad (c.day, INT64_C(2), true, err)) m9a5 = Fmt_I64Pad (c.day, INT64_C(2), true, err);
+  { __typeof__(Fmt_I64PadUtf (c.day, INT64_C(2), true, err)) m9a5 = Fmt_I64PadUtf (c.day, INT64_C(2), true, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), m9a5, err);
   if (err->exc) goto L_ret;
   }
   DynStr_AppendChar (&(d), &(pool), 84u, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Fmt_I64Pad (c.hour, INT64_C(2), true, err)) m9a6 = Fmt_I64Pad (c.hour, INT64_C(2), true, err);
+  { __typeof__(Fmt_I64PadUtf (c.hour, INT64_C(2), true, err)) m9a6 = Fmt_I64PadUtf (c.hour, INT64_C(2), true, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), m9a6, err);
   if (err->exc) goto L_ret;
   }
   DynStr_AppendChar (&(d), &(pool), 58u, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Fmt_I64Pad (c.minute, INT64_C(2), true, err)) m9a7 = Fmt_I64Pad (c.minute, INT64_C(2), true, err);
+  { __typeof__(Fmt_I64PadUtf (c.minute, INT64_C(2), true, err)) m9a7 = Fmt_I64PadUtf (c.minute, INT64_C(2), true, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), m9a7, err);
   if (err->exc) goto L_ret;
@@ -356,21 +389,30 @@ m9_sl_CHAR Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
   if ((decimals == INT64_C(0))) {
     { __typeof__(m9_i64_f64 ((double)(c.second), err)) m9a8 = m9_i64_f64 ((double)(c.second), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Fmt_I64Pad (m9a8, INT64_C(2), true, err)) m9a9 = Fmt_I64Pad (m9a8, INT64_C(2), true, err);
+    { __typeof__(Fmt_I64PadUtf (m9a8, INT64_C(2), true, err)) m9a9 = Fmt_I64PadUtf (m9a8, INT64_C(2), true, err);
       if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), m9a9, err);
     if (err->exc) goto L_ret;
     }
     }
   } else {
-    if ((c.second < 10.0)) {
-      DynStr_AppendChar (&(d), &(pool), 48u, err);
+    { __typeof__(m9_i64_f64 ((double)(c.second), err)) m9a10 = m9_i64_f64 ((double)(c.second), err);
       if (err->exc) goto L_ret;
-    }
-    { __typeof__(Fmt_Fixed (c.second, decimals, err)) m9a10 = Fmt_Fixed (c.second, decimals, err);
+    { __typeof__(Fmt_I64PadUtf (m9a10, INT64_C(2), true, err)) m9a11 = Fmt_I64PadUtf (m9a10, INT64_C(2), true, err);
       if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), m9a10, err);
+    DynStr_Append (&(d), &(pool), m9a11, err);
     if (err->exc) goto L_ret;
+    }
+    }
+    DynStr_AppendChar (&(d), &(pool), 46u, err);
+    if (err->exc) goto L_ret;
+    { __typeof__(m9_i64_f64 ((double)((k - (w * scale))), err)) m9a12 = m9_i64_f64 ((double)((k - (w * scale))), err);
+      if (err->exc) goto L_ret;
+    { __typeof__(Fmt_I64PadUtf (m9a12, decimals, true, err)) m9a13 = Fmt_I64PadUtf (m9a12, decimals, true, err);
+      if (err->exc) goto L_ret;
+    DynStr_Append (&(d), &(pool), m9a13, err);
+    if (err->exc) goto L_ret;
+    }
     }
   }
   DynStr_AppendChar (&(d), &(pool), 90u, err);
@@ -381,14 +423,14 @@ m9_sl_CHAR Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&pool, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&pool);
   return m9ret;
 }
 
-Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
+Time_Instant Time_ParseIso (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -398,44 +440,48 @@ Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
   Time_Civil c = {0}; (void) c;
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
-  if (((s).len < INT64_C(20))) {
-    m9_raise (err, &m9_exc_ValueRange);
-    goto L_ret;
-  }
-  bool m9t1 = ((((*(uint32_t *) m9_at (s.p, INT64_C(4), s.len, sizeof (uint32_t), err)) != 45u) || ((*(uint32_t *) m9_at (s.p, INT64_C(7), s.len, sizeof (uint32_t), err)) != 45u)) || ((*(uint32_t *) m9_at (s.p, INT64_C(10), s.len, sizeof (uint32_t), err)) != 84u));
+  bool m9t1 = (Text_BLen (s, err) < INT64_C(20));
   if (err->exc) goto L_ret;
   if (m9t1) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  bool m9t2 = (((*(uint32_t *) m9_at (s.p, INT64_C(13), s.len, sizeof (uint32_t), err)) != 58u) || ((*(uint32_t *) m9_at (s.p, INT64_C(16), s.len, sizeof (uint32_t), err)) != 58u));
+  bool m9t2 = (((!Text_BIs (s, INT64_C(4), 45u, err)) || (!Text_BIs (s, INT64_C(7), 45u, err))) || (!Text_BIs (s, INT64_C(10), 84u, err)));
   if (err->exc) goto L_ret;
   if (m9t2) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  bool m9t3 = ((*(uint32_t *) m9_at (s.p, m9_sub_i64 ((s).len, INT64_C(1), err), s.len, sizeof (uint32_t), err)) != 90u);
+  bool m9t3 = ((!Text_BIs (s, INT64_C(13), 58u, err)) || (!Text_BIs (s, INT64_C(16), 58u, err)));
   if (err->exc) goto L_ret;
   if (m9t3) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  v = INT64_C(0);
-  { __typeof__(i) m9t4to;
-  i = INT64_C(0);
-  m9t4to = INT64_C(3);
-  if (i <= m9t4to) for (;;) {
-    bool m9t5 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
+  { __typeof__(m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err)) m9a14 = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    if (m9t5) {
+  bool m9t4 = (!Text_BIs (s, m9a14, 90u, err));
+  if (err->exc) goto L_ret;
+  if (m9t4) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  } }
+  v = INT64_C(0);
+  { __typeof__(i) m9t5to;
+  i = INT64_C(0);
+  m9t5to = INT64_C(3);
+  if (i <= m9t5to) for (;;) {
+    bool m9t6 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
+    if (err->exc) goto L_ret;
+    if (m9t6) {
       m9_raise (err, &m9_exc_ValueRange);
       goto L_ret;
     }
-    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Text_BAt (s, i, err)), INT64_C(48), err)), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
-    if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   c.year = v;
@@ -455,9 +501,9 @@ Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     c.minute = m9v;
   }
-  { __typeof__(({ __auto_type m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; })) m9a11 = ({ __auto_type m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+  { __typeof__(m9_utf_slice (s, INT64_C(17), m9_sub_i64 (Text_BLen (s, err), INT64_C(18), err), err)) m9a15 = m9_utf_slice (s, INT64_C(17), m9_sub_i64 (Text_BLen (s, err), INT64_C(18), err), err);
     if (err->exc) goto L_ret;
-  { __typeof__(c.second) m9v = Fmt_ParseF64 (m9a11, err);
+  { __typeof__(c.second) m9v = Fmt_ParseF64Utf (m9a15, err);
     if (err->exc) goto L_ret;
     c.second = m9v;
   }
@@ -472,7 +518,7 @@ L_ret: ;
   return m9ret;
 }
 
-Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err)
+Time_Nanos Time_ParseNanos (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -532,9 +578,9 @@ Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err)
   bool m9t3 = Time_CharAt (s, p, 58u, err);
   if (err->exc) goto L_ret;
   if (m9t3) {
-    { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a12 = m9_add_i64 (p, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a16 = m9_add_i64 (p, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    { __typeof__(se) m9v = Time_DigitsAt (s, m9a12, INT64_C(2), err);
+    { __typeof__(se) m9v = Time_DigitsAt (s, m9a16, INT64_C(2), err);
       if (err->exc) goto L_ret;
       se = m9v;
     }
@@ -556,14 +602,14 @@ Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err)
       }
       fd = INT64_C(0);
       for (;;) {
-        bool m9t5 = (((p < (s).len) && ((*(uint32_t *) m9_at (s.p, p, s.len, sizeof (uint32_t), err)) >= 48u)) && ((*(uint32_t *) m9_at (s.p, p, s.len, sizeof (uint32_t), err)) <= 57u));
+        bool m9t5 = (((p < Text_BLen (s, err)) && ((int64_t)(Text_BAt (s, p, err)) >= (int64_t)(48u))) && ((int64_t)(Text_BAt (s, p, err)) <= (int64_t)(57u)));
         if (err->exc) goto L_ret;
         if (!(m9t5)) break;
         if ((fd == INT64_C(9))) {
           m9_raise (err, &m9_exc_ValueRange);
           goto L_ret;
         }
-        { __typeof__(frac) m9v = m9_add_i64 (m9_mul_i64 (frac, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, p, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+        { __typeof__(frac) m9v = m9_add_i64 (m9_mul_i64 (frac, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Text_BAt (s, p, err)), INT64_C(48), err)), err);
           if (err->exc) goto L_ret;
           frac = m9v;
         }
@@ -602,7 +648,7 @@ Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t7) {
       sign = INT64_C(1);
-      bool m9t8 = ((*(uint32_t *) m9_at (s.p, p, s.len, sizeof (uint32_t), err)) == 45u);
+      bool m9t8 = Text_BIs (s, p, 45u, err);
       if (err->exc) goto L_ret;
       if (m9t8) {
         { __typeof__(sign) m9v = m9_neg_i64 (INT64_C(1), err);
@@ -610,9 +656,9 @@ Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err)
           sign = m9v;
         }
       }
-      { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a13 = m9_add_i64 (p, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a17 = m9_add_i64 (p, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(oh) m9v = Time_DigitsAt (s, m9a13, INT64_C(2), err);
+      { __typeof__(oh) m9v = Time_DigitsAt (s, m9a17, INT64_C(2), err);
         if (err->exc) goto L_ret;
         oh = m9v;
       }
@@ -630,9 +676,9 @@ Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err)
       bool m9t9 = Time_CharAt (s, p, 58u, err);
       if (err->exc) goto L_ret;
       if (m9t9) {
-        { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a14 = m9_add_i64 (p, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a18 = m9_add_i64 (p, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(om) m9v = Time_DigitsAt (s, m9a14, INT64_C(2), err);
+        { __typeof__(om) m9v = Time_DigitsAt (s, m9a18, INT64_C(2), err);
           if (err->exc) goto L_ret;
           om = m9v;
         }
@@ -648,9 +694,9 @@ Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err)
         bool m9t10 = Time_CharAt (s, p, 58u, err);
         if (err->exc) goto L_ret;
         if (m9t10) {
-          { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a15 = m9_add_i64 (p, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (p, INT64_C(1), err)) m9a19 = m9_add_i64 (p, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(os) m9v = Time_DigitsAt (s, m9a15, INT64_C(2), err);
+          { __typeof__(os) m9v = Time_DigitsAt (s, m9a19, INT64_C(2), err);
             if (err->exc) goto L_ret;
             os = m9v;
           }
@@ -683,7 +729,9 @@ Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   } }
-  if ((p != (s).len)) {
+  bool m9t12 = (p != Text_BLen (s, err));
+  if (err->exc) goto L_ret;
+  if (m9t12) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
@@ -701,19 +749,19 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Time_IsoNanos (Time_Nanos t, m9_state *err)
+m9_sl_UTF8 Time_IsoNanos (Time_Nanos t, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t days = 0; (void) days;
   int64_t rem = 0; (void) rem;
   int64_t y = 0; (void) y;
   int64_t m = 0; (void) m;
   int64_t d = 0; (void) d;
-  m9_sl_CHAR out = {0}; (void) out;
+  m9_sl_UTF8 out = {0}; (void) out;
   if (((t.nanos < INT64_C(0)) || (t.nanos > INT64_C(999999999)))) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
@@ -742,13 +790,13 @@ m9_sl_CHAR Time_IsoNanos (Time_Nanos t, m9_state *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  { __typeof__(m9_div_i64 (rem, INT64_C(3600), err)) m9a16 = m9_div_i64 (rem, INT64_C(3600), err);
+  { __typeof__(m9_div_i64 (rem, INT64_C(3600), err)) m9a20 = m9_div_i64 (rem, INT64_C(3600), err);
     if (err->exc) goto L_ret;
-  { __typeof__(m9_div_i64 ((m9_mod_i64 (rem, INT64_C(3600), err)), INT64_C(60), err)) m9a17 = m9_div_i64 ((m9_mod_i64 (rem, INT64_C(3600), err)), INT64_C(60), err);
+  { __typeof__(m9_div_i64 ((m9_mod_i64 (rem, INT64_C(3600), err)), INT64_C(60), err)) m9a21 = m9_div_i64 ((m9_mod_i64 (rem, INT64_C(3600), err)), INT64_C(60), err);
     if (err->exc) goto L_ret;
-  { __typeof__(m9_mod_i64 (rem, INT64_C(60), err)) m9a18 = m9_mod_i64 (rem, INT64_C(60), err);
+  { __typeof__(m9_mod_i64 (rem, INT64_C(60), err)) m9a22 = m9_mod_i64 (rem, INT64_C(60), err);
     if (err->exc) goto L_ret;
-  { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, Time_Pad (y, INT64_C(4), err), ((m9_sl_CHAR){ (uint32_t *) m9s0, 1 }), err), Time_Pad (m, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 1 }), err), Time_Pad (d, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 1 }), err), Time_Pad (m9a16, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 1 }), err), Time_Pad (m9a17, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s4, 1 }), err), Time_Pad (m9a18, INT64_C(2), err), err);
+  { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Time_Pad (y, INT64_C(4), err), ((m9_sl_UTF8){ (uint8_t *) m9s0, 1 }), err), Time_Pad (m, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s1, 1 }), err), Time_Pad (d, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s2, 1 }), err), Time_Pad (m9a20, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s3, 1 }), err), Time_Pad (m9a21, INT64_C(2), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s4, 1 }), err), Time_Pad (m9a22, INT64_C(2), err), err);
     if (err->exc) goto L_ret;
     out = m9v;
   }
@@ -759,9 +807,9 @@ m9_sl_CHAR Time_IsoNanos (Time_Nanos t, m9_state *err)
     bool m9t1 = (m9_mod_i64 (t.nanos, INT64_C(1000000), err) == INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t1) {
-      { __typeof__(m9_div_i64 (t.nanos, INT64_C(1000000), err)) m9a19 = m9_div_i64 (t.nanos, INT64_C(1000000), err);
+      { __typeof__(m9_div_i64 (t.nanos, INT64_C(1000000), err)) m9a23 = m9_div_i64 (t.nanos, INT64_C(1000000), err);
         if (err->exc) goto L_ret;
-      { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 }), err), Time_Pad (m9a19, INT64_C(3), err), err);
+      { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s5, 1 }), err), Time_Pad (m9a23, INT64_C(3), err), err);
         if (err->exc) goto L_ret;
         out = m9v;
       }
@@ -770,27 +818,27 @@ m9_sl_CHAR Time_IsoNanos (Time_Nanos t, m9_state *err)
       bool m9t2 = (m9_mod_i64 (t.nanos, INT64_C(1000), err) == INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__(m9_div_i64 (t.nanos, INT64_C(1000), err)) m9a20 = m9_div_i64 (t.nanos, INT64_C(1000), err);
+        { __typeof__(m9_div_i64 (t.nanos, INT64_C(1000), err)) m9a24 = m9_div_i64 (t.nanos, INT64_C(1000), err);
           if (err->exc) goto L_ret;
-        { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), err), Time_Pad (m9a20, INT64_C(6), err), err);
+        { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s6, 1 }), err), Time_Pad (m9a24, INT64_C(6), err), err);
           if (err->exc) goto L_ret;
           out = m9v;
         }
         }
     } else {
-      { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 }), err), Time_Pad (t.nanos, INT64_C(9), err), err);
+      { __typeof__(out) m9v = m9_utf_cat (err->res, m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s7, 1 }), err), Time_Pad (t.nanos, INT64_C(9), err), err);
         if (err->exc) goto L_ret;
         out = m9v;
       }
     } }
   }
   err->res = m9res;
-  m9ret = m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s8, 1 }), err);
+  m9ret = m9_utf_cat (err->res, out, ((m9_sl_UTF8){ (uint8_t *) m9s8, 1 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1146,7 +1194,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_state *err)
+static int64_t Time_Digits2 (m9_sl_UTF8 s, int64_t at, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1161,13 +1209,13 @@ static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_state *err)
   m9t1to = m9_add_i64 (at, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
+    bool m9t2 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
     if (err->exc) goto L_ret;
     if (m9t2) {
       m9_raise (err, &m9_exc_ValueRange);
       goto L_ret;
     }
-    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Text_BAt (s, i, err)), INT64_C(48), err)), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
@@ -1183,7 +1231,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Time_DigitsAt (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err)
+static int64_t Time_DigitsAt (m9_sl_UTF8 s, int64_t at, int64_t n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1192,7 +1240,7 @@ static int64_t Time_DigitsAt (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
-  bool m9t1 = ((at < INT64_C(0)) || (m9_add_i64 (at, n, err) > (s).len));
+  bool m9t1 = ((at < INT64_C(0)) || (m9_add_i64 (at, n, err) > Text_BLen (s, err)));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -1206,7 +1254,7 @@ static int64_t Time_DigitsAt (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err
   m9t2to = m9_sub_i64 (m9_add_i64 (at, n, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t2to) for (;;) {
-    bool m9t3 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
+    bool m9t3 = (((int64_t)(Text_BAt (s, i, err)) < (int64_t)(48u)) || ((int64_t)(Text_BAt (s, i, err)) > (int64_t)(57u)));
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
@@ -1214,7 +1262,7 @@ static int64_t Time_DigitsAt (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)(Text_BAt (s, i, err)), INT64_C(48), err)), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
@@ -1230,7 +1278,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Time_CharAt (m9_sl_CHAR s, int64_t at, uint32_t c, m9_state *err)
+static bool Time_CharAt (m9_sl_UTF8 s, int64_t at, uint32_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1238,7 +1286,7 @@ static bool Time_CharAt (m9_sl_CHAR s, int64_t at, uint32_t c, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((at < (s).len) && ((*(uint32_t *) m9_at (s.p, at, s.len, sizeof (uint32_t), err)) == c));
+  m9ret = ((at < Text_BLen (s, err)) && Text_BIs (s, at, c, err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -1247,21 +1295,23 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Time_Pad (int64_t v, int64_t width, m9_state *err)
+static m9_sl_UTF8 Time_Pad (int64_t v, int64_t width, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR t = {0}; (void) t;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_UTF8 t = {0}; (void) t;
   { __typeof__(t) m9v = Fmt_I64Str (v, err);
     if (err->exc) goto L_ret;
     t = m9v;
   }
   for (;;) {
-    if (!(((t).len < width))) break;
-    { __typeof__(t) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s9, 1 }), t, err);
+    bool m9t1 = (Text_BLen (t, err) < width);
+    if (err->exc) goto L_ret;
+    if (!(m9t1)) break;
+    { __typeof__(t) m9v = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s9, 1 }), t, err);
       if (err->exc) goto L_ret;
       t = m9v;
     }
@@ -1271,7 +1321,7 @@ static m9_sl_CHAR Time_Pad (int64_t v, int64_t width, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1285,6 +1335,7 @@ void Time_m9init (m9_state *err)
   err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
+  Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9prev;
 }

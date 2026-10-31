@@ -2,10 +2,10 @@ REVIEW Zarr -- 63 procedures with a body, 24 of them functions; 31 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              24
-  assignments                                   230
-  arguments                                    1020
+  assignments                                   229
+  arguments                                    1057
   RETURN values                                  38
-  operands of a comparison or an operator       305
+  operands of a comparison or an operator       287
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                       37
   NEW in the frame                                0
   NEW in a named pool                            25
-  calls of a STR form with a UTF twin            16   Io.WriteFileBytes -> Io.WriteFileBytesUtf, Io.ReadFileBytes -> Io.ReadFileBytesUtf, Io.MkDir -> Io.MkDirUtf, Io.MkDir -> Io.MkDirUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf, Io.WriteFileBytes -> Io.WriteFileBytesUtf, +10 more
-  STR subscripts, writes and LEN                 27   index path[0], index Alphabet[v DIV 262144], index Alphabet[(v DIV 4096) MOD 64], index Alphabet[(v DIV 64) MOD 64], index Alphabet[v MOD 64], index Alphabet[v DIV 262144], +21 more
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

@@ -1,32 +1,32 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE NbCells ;
 
-(* Values handed from one program to the next BY NAME, through files:
-   what the cells of an M9 notebook share -- each cell is a whole
-   program (tools/jupyter) and nothing it computed outlives it -- and
-   what the steps of any pipeline share.  NbCells.PutF64s ('temps',
-   xs) in one cell, xs := NbCells.GetF64s (pool, 'temps') in a later
-   one.
+(* NbCells hands values from one program to the next BY NAME, through
+   files.  The cells of an M9 notebook share values this way: each
+   cell is a whole program (tools/jupyter), and nothing it computed
+   outlives it.  The steps of any pipeline share them the same way.
+   One cell calls NbCells.PutF64s ('temps', xs), and a later one
+   calls xs := NbCells.GetF64s (pool, 'temps').
 
-   WHERE: the directory $M9CELLS names -- the Jupyter kernel sets it
-   to NOTEBOOK.m9data beside the notebook -- else m9data in the
-   working directory.
+   WHERE: the values live in the directory $M9CELLS names, else in
+   m9data in the working directory.  The Jupyter kernel sets $M9CELLS
+   to NOTEBOOK.m9data beside the notebook.
 
-   HOW: one Parquet file per name, its kind in the file's name --
-   NAME.frame.parquet (a Frame), NAME.f64s.parquet and
-   NAME.i64s.parquet (one column, `value`), NAME.grid.parquet (a GRID
-   2 OF F64, one column per grid column, c0, c1, ..., a row of the
-   grid a row of the file).  Values are stored as their bits, NaN
-   included.  pandas reads every one of them -- read_parquet -- and a
-   grid's DataFrame .to_numpy () is the matrix.
+   HOW: each name has one Parquet file, with its kind in the file's
+   name.  NAME.frame.parquet holds a Frame.  NAME.f64s.parquet and
+   NAME.i64s.parquet hold one column, `value`.  NAME.grid.parquet
+   holds a GRID 2 OF F64, one column per grid column (c0, c1, ...),
+   and a row of the grid is a row of the file.  Values are stored as
+   their bits, NaN included.  pandas reads every one of them with
+   read_parquet, and a grid's DataFrame .to_numpy () is the matrix.
 
    THE KIND IS CHECKED WHEN A VALUE IS READ BACK, because the
    compiler checking one cell cannot see what an earlier cell
-   stored: a Get of another kind raises WrongType naming both, a name
-   nothing stored raises Missing.  A name is letters and digits,
-   beginning with a letter, as an M9 identifier is -- it becomes a
+   stored.  A Get of another kind raises WrongType naming both, and a
+   name nothing stored raises Missing.  A name is letters and digits,
+   beginning with a letter, as an M9 identifier is.  It becomes a
    file name, and nothing else may.  A Put replaces whatever the name
-   held, of any kind; the file is written beside and renamed, so a
+   held, of any kind.  The file is written beside and renamed, so a
    reader never sees half of one. *)
 
 IMPORT Faults ;
@@ -38,14 +38,16 @@ EXCEPTION
   (* nothing is stored under that name *)
   WrongType (RO name, stored, wanted: STR) ;
   (* the name holds another kind: `stored` is what it is, `wanted`
-     what the Get asked for -- 'frame', 'f64s', 'i64s' or 'grid' *)
+     what the Get asked for.  Each is 'frame', 'f64s', 'i64s' or
+     'grid'. *)
 
 PROCEDURE Dir (VAR pool: POOL) : STR RAISES ValueRange ;
-  (* the directory the values live in: $M9CELLS, else m9data *)
+  (* Dir answers the directory the values live in: $M9CELLS, else
+     m9data. *)
 
 PROCEDURE Kind (RO name: STR) : STR RAISES ValueRange, Faults.BadArg ;
-  (* what the name holds -- 'frame', 'f64s', 'i64s' or 'grid' -- or
-     the empty string when it holds nothing *)
+  (* Kind answers what the name holds ('frame', 'f64s', 'i64s' or
+     'grid'), or the empty string when it holds nothing. *)
 
 PROCEDURE PutFrame (f: PTR Frame.Fr ; RO name: STR)
   RAISES Faults.BadArg, Io.IOError, ValueRange, Overflow, IndexError ;
@@ -80,6 +82,8 @@ END NbCells.
 
 IMPLEMENTATION MODULE NbCells ;
 
+IMPORT Text ;
+
 IMPORT Faults ;
 IMPORT Frame ;
 IMPORT Io ;
@@ -93,20 +97,21 @@ PROCEDURE Dir (VAR pool: POOL) : STR RAISES ValueRange =
 VAR v : STR ;
 BEGIN
   v := Io.Env (pool, 'M9CELLS') ;
-  IF LEN (v) > 0 THEN RETURN v END ;
+  IF Text.BLen (v) > 0 THEN RETURN v END ;
   RETURN 'm9data'
 END Dir ;
 
-(* letters and digits, a letter first: it becomes a file name, and a
-   slash or a dot in it would put the file somewhere else *)
+(* CheckName allows letters and digits, a letter first.  The name
+   becomes a file name, and a slash or a dot in it would put the file
+   somewhere else. *)
 PROCEDURE CheckName (RO name: STR) RAISES Faults.BadArg =
 VAR
   i : I64 ;
   c : CHAR ;
 BEGIN
-  IF LEN (name) = 0 THEN RAISE Faults.BadArg ('an empty name') END ;
-  FOR i := 0 TO LEN (name) - 1 DO
-    c := name[i] ;
+  IF Text.BLen (name) = 0 THEN RAISE Faults.BadArg ('an empty name') END ;
+  FOR i := 0 TO Text.BLen (name) - 1 DO
+    c := Text.BChar (name, i) ;
     IF NOT ((c >= 'A' AND c <= 'Z') OR (c >= 'a' AND c <= 'z') OR
             (i > 0 AND c >= '0' AND c <= '9')) THEN
       RAISE Faults.BadArg (name)
@@ -114,7 +119,8 @@ BEGIN
   END
 END CheckName ;
 
-(* DIR/NAME.KIND.parquet, and the same with .tmp for writing beside *)
+(* File answers DIR/NAME.KIND.parquet, and the same with .tmp for
+   writing beside. *)
 PROCEDURE File (VAR pool: POOL ; RO name: STR ; RO kind: STR ; tmp: BOOL)
   : STR RAISES ValueRange =
 VAR d : PTR DynStr.DString IN pool ;
@@ -127,7 +133,7 @@ BEGIN
   DynStr.Append (d, kind) ;
   DynStr.Append (d, '.parquet') ;
   IF tmp THEN DynStr.Append (d, '.tmp') END ;
-  RETURN DynStr.View (d)
+  RETURN DynStr.ViewIn (pool, d)
 END File ;
 
 PROCEDURE KindAt (RO name: STR) : I64 RAISES ValueRange =
@@ -150,8 +156,9 @@ BEGIN
   RETURN KindName (k)
 END Kind ;
 
-(* the frame under the name, as kind k: written beside, every other
-   kind of the name removed, then renamed into place *)
+(* Store writes the frame under the name, as kind k.  It writes
+   beside, removes every other kind of the name, then renames into
+   place. *)
 PROCEDURE Store (VAR scratch: POOL ; f: PTR Frame.Fr ; RO name: STR ; k: I64)
   RAISES Faults.BadArg, Io.IOError, ValueRange, Overflow, IndexError =
 VAR
@@ -173,7 +180,8 @@ BEGIN
              File (scratch, name, Kinds[k], FALSE))
 END Store ;
 
-(* the file under the name, read as kind k, or why not *)
+(* Fetch answers the file under the name, read as kind k, or why
+   not. *)
 PROCEDURE Fetch (VAR pool: POOL ; RO name: STR ; k: I64) : PTR Frame.Fr
   RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
          Overflow, IndexError =
@@ -272,14 +280,15 @@ EXCEPT
     RAISE Faults.BadArg (name)
 END GetI64s ;
 
-(* c0, c1, ...: the name of grid column j in the file *)
+(* ColName answers c0, c1, ...: the name of grid column j in the
+   file. *)
 PROCEDURE ColName (VAR pool: POOL ; j: I64) : STR =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
   DynStr.AppendChar (d, 'c') ;
   DynStr.AppendI64 (d, j) ;
-  RETURN DynStr.View (d)
+  RETURN DynStr.ViewIn (pool, d)
 END ColName ;
 
 PROCEDURE PutGrid (RO name: STR ; RO g: GRID 2 OF F64)
@@ -296,10 +305,10 @@ BEGIN
   IF nc = 0 THEN RAISE Faults.BadArg ('a grid with no columns') END ;
   f := Frame.New (scratch, nr) ;
   FOR j := 0 TO nc - 1 DO
-    (* a slice of its own per column: Frame.AddF64 KEEPS the slice it
-       is handed (a view, not a copy) though its heading says only RO
-       -- one buffer reused for every column wrote the last column
-       everywhere, found by NbCellsTest, 2026-10-04 *)
+    (* Each column gets a slice of its own.  Frame.AddF64 KEEPS the
+       slice it is handed (a view, not a copy), though its heading
+       says only RO.  One buffer reused for every column wrote the
+       last column everywhere.  NbCellsTest found that, 2026-10-04. *)
     col := NEW (scratch, F64, nr) ;
     FOR i := 0 TO nr - 1 DO col[i] := g[i, j] END ;
     Frame.AddF64 (scratch, f, ColName (scratch, j), col, NaN)

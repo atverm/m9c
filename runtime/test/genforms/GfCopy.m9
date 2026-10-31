@@ -2,19 +2,20 @@ MODULE GfCopy ;
 
 (* WANT: copy 3 4 5 | 7 8 9 | 1 0 1 2 | 0 1 2 | IndexError 3 2 | abc | 0 *)
 
-(* COPY (to, from), the block copy (docs/blockcopy-plan.md, 2026-10-22):
-   a slice from a slice, an array from a slice and back, sub-slices
-   through SLICE, overlap both ways (as if through a temporary), unequal
-   lengths refused with IndexError and nothing copied, a string, and an
-   empty copy. *)
+(* This program runs COPY (to, from), the block copy
+   (docs/blockcopy-plan.md, 2026-10-22): a slice from a slice, an array
+   from a slice and back, sub-slices through SLICE, overlap both ways
+   (as if through a temporary), unequal lengths refused with IndexError
+   and nothing copied, a string, and an empty copy. *)
 
 IMPORT Io ;
 IMPORT Fmt ;
+IMPORT Text ;
 
 VAR
   a, b : SLICE OF I64 ;
   arr : ARRAY 3 OF I64 ;
-  t : STR ;
+  t : SLICE OF CHAR ;        (* a string's characters, copied into *)
   i : I64 ;
   out : STR ;
 
@@ -59,8 +60,8 @@ BEGIN
   END ;
   (* a string *)
   t := NEW (CHAR, 3) ;
-  COPY (t, 'abc') ;
-  out := out + ' | ' + t ;
+  COPY (t, Text.Chars ('abc')) ;   (* a literal is UTF-8 since the switch: its characters *)
+  out := out + ' | ' + UTF (t) ;
   (* nothing into nothing *)
   COPY (SLICE (a, 0, 0), SLICE (b, 2, 0)) ;
   out := out + ' | ' + Fmt.I64Str (LEN (SLICE (a, 0, 0))) ;

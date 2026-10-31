@@ -1,6 +1,6 @@
 (* EXPECT: COPY copies into a slice or an array, not I64 *)
-(* COPY (to, from), the block copy (2026-10-22): two slices or arrays of
-   one scalar element type, `to' writable. *)
+(* COPY (to, from) is the block copy (2026-10-22).  It takes two slices
+   or arrays of one scalar element type, `to' writable. *)
 MODULE m ;
 VAR
   a, b : SLICE OF I64 ;

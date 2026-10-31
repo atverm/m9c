@@ -1,4 +1,4 @@
-(* EXPECT: cannot assign SLICE OF CHAR to I64 *)
+(* EXPECT: cannot assign UTF to I64 *)
 DEFINITION MODULE m ;
 CONST
   Name = 'abc' ;

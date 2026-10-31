@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        2
   NEW in the frame                                3
   NEW in a named pool                            41
-  calls of a STR form with a UTF twin            23   Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Text.OneOf -> Text.OneOfUtf, Text.OneOf -> Text.OneOfUtf, Text.OneOf -> Text.OneOfUtf, +17 more
+  calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

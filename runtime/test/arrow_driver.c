@@ -1,11 +1,12 @@
-/* Arrow.m9 against pyarrow.
+/* This holds Arrow.m9 to pyarrow.
  *
- * A columnar stream nobody can read is worse than no stream at all,
- * so the oracle here is the library the clients actually use: this
- * driver writes an Arrow IPC stream from M9, checks the framing and
- * the size accounting itself, then -- when python3 + pyarrow are on
- * the machine -- hands the file to pyarrow and has it report every
- * cell back.  Parquet.m9's arrangement, for the same reason.
+ * A columnar stream nobody can read is worse than no stream at all.
+ * So the oracle here is the library the clients actually use.  This
+ * driver writes an Arrow IPC stream from M9 and checks the framing
+ * and the size accounting itself.  Then, when python3 + pyarrow are
+ * on the machine, it hands the file to pyarrow and has it report
+ * every cell back.  Parquet.m9 has the same arrangement, for the same
+ * reason.
  *
  * The expected values below are written here by hand; nothing is read
  * back from the code under test.
@@ -16,11 +17,13 @@
 #include <stdlib.h>
 #include "Arrow.h"
 
-static m9_sl_CHAR sl (const char *s, uint32_t *buf)
+/* A STR is UTF-8 octets.  The C literal is already UTF-8, so sl copies
+   its bytes. */
+static m9_sl_UTF8 sl (const char *s, uint8_t *buf)
 {
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
+  int64_t n = (int64_t) strlen (s);
+  memcpy (buf, s, (size_t) n);
+  return (m9_sl_UTF8){ buf, n };
 }
 
 static int checks = 0, fails = 0;
@@ -41,13 +44,13 @@ int main (int argc, char **argv)
 {
   m9_state errv = {0}, *err = &errv;
   m9_pool pool = {0};
-  uint32_t nb[40][64];
+  uint8_t nb[40][64];
   Arrow_Table *t;
   int64_t ts[3] = { 1, 2, 3 }, qc[3] = { 1, 2, 3 }, ci[3] = { 7, 8, 9 };
   int64_t wide[3] = { 1, 2, 300 };
   float lat[3] = { 1.5f, 2.5f, 3.5f };
-  uint32_t s0[8], s1[8], s2[8];
-  m9_sl_CHAR deps[3];
+  uint8_t s0[8], s1[8], s2[8];
+  m9_sl_UTF8 deps[3];
   m9_sl_BYTE out;
   const unsigned char *b;
   FILE *fp;
@@ -69,15 +72,15 @@ int main (int argc, char **argv)
   Arrow_AddInt (&pool, &t, &pool,sl ("qc", nb[6]), 0 /* TyI8 */,
                 (m9_sl_I64){ qc, 3 }, err);
   Arrow_AddStr (&pool, &t, &pool,sl ("dep", nb[7]),
-                (m9_sl_m9_sl_CHAR){ deps, 3 }, err);
+                (m9_sl_m9_sl_UTF8){ deps, 3 }, err);
   Arrow_AddInt (&pool, &t, &pool,sl ("ci", nb[8]), 2 /* TyI32 */,
                 (m9_sl_I64){ ci, 3 }, err);
   ck (err->exc == NULL, "a five-column table builds");
 
   /* nbytes is Arrow's in-memory accounting, NOT the wire length:
      8*3 + 4*3 + 1*3 + (4*3 + 6) + 4*3 = 24+12+3+18+12 = 69.  The
-     string column is 4n + data, not 4(n+1) -- pyarrow agrees, and
-     the difference is what a passport gets wrong if it is guessed. */
+     string column is 4n + data, not 4(n+1).  pyarrow agrees, and the
+     difference is what a passport gets wrong if it is guessed. */
   ck (Arrow_NBytes (t, err) == 69, "NBytes is pyarrow's accounting, 4n for a string");
 
   out = Arrow_Stream (&pool, t, err);
@@ -160,18 +163,19 @@ int main (int argc, char **argv)
   }
 
   /* ---- ZSTD bodies (StreamCodec) ----
-     CodecNone must be Stream's bytes exactly; the five-column table's
-     buffers are a few bytes each, which zstd cannot shrink, so every
-     one of them takes the -1 (stored raw) path; a 20,000-row table
-     with a repeating pattern takes the compressed path in every
-     buffer.  pyarrow reads all three and must see the same cells. */
+     CodecNone must be Stream's bytes exactly.  The five-column
+     table's buffers are a few bytes each, which zstd cannot shrink.
+     So every one of them takes the -1 (stored raw) path.  A
+     20,000-row table with a repeating pattern takes the compressed
+     path in every buffer.  pyarrow reads all three and must see the
+     same cells. */
   {
     enum { N = 20000 };
     static int64_t bt[N], bq[N], bc[N];
     static float bf[N];
-    static m9_sl_CHAR bs[N];
-    static uint32_t w0[8], w1[8], w2[8];
-    m9_sl_CHAR words[3];
+    static m9_sl_UTF8 bs[N];
+    static uint8_t w0[8], w1[8], w2[8];
+    m9_sl_UTF8 words[3];
     m9_sl_BYTE same, small, big, plain;
     Arrow_Table *g;
     m9_state e2 = {0};
@@ -201,7 +205,7 @@ int main (int argc, char **argv)
     Arrow_AddInt (&pool, &g, &pool, sl ("time", nb[14]), 7, (m9_sl_I64){ bt, N }, err);
     Arrow_AddF32 (&pool, &g, &pool, sl ("v", nb[15]), (m9_sl_F32){ bf, N }, err);
     Arrow_AddInt (&pool, &g, &pool, sl ("qc", nb[16]), 0, (m9_sl_I64){ bq, N }, err);
-    Arrow_AddStr (&pool, &g, &pool, sl ("dep", nb[17]), (m9_sl_m9_sl_CHAR){ bs, N }, err);
+    Arrow_AddStr (&pool, &g, &pool, sl ("dep", nb[17]), (m9_sl_m9_sl_UTF8){ bs, N }, err);
     Arrow_AddInt (&pool, &g, &pool, sl ("ci", nb[18]), 2, (m9_sl_I64){ bc, N }, err);
     plain = Arrow_Stream (&pool, g, err);
     big = Arrow_StreamCodec (&pool, g, 1, 1, err);

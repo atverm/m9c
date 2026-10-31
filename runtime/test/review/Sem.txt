@@ -1,11 +1,11 @@
-REVIEW Sem -- 658 procedures with a body, 457 of them functions; 91 headings in a DEFINITION
+REVIEW Sem -- 662 procedures with a body, 461 of them functions; 93 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             457
-  assignments                                  2710
-  arguments                                   11460
-  RETURN values                                1654
-  operands of a comparison or an operator      3495
+  functions answering on every path             461
+  assignments                                  2722
+  arguments                                   11549
+  RETURN values                                1670
+  operands of a comparison or an operator      3510
   CASE labels                                   188
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        3
   NEW in the frame                               22
   NEW in a named pool                           160
-  calls of a STR form with a UTF twin            25   Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, Ast.SetA -> Ast.SetAUtf, +19 more
+  calls of a STR form with a UTF twin             0
   STR subscripts, writes and LEN                  0

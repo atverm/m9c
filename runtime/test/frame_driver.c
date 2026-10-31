@@ -1,10 +1,10 @@
-/* Frame.m9 against polars.
+/* This holds Frame.m9 to polars.
  *
  * frame_sample.csv and frame.golden come from tools/framegold.py
- * (checked in).  The sample's values are exact in F32, so polars'
- * f64 parse and Frame's f32 parse have no digits to disagree on and
- * the resampled means compare EXACTLY -- a tolerance would only
- * hide a real difference in the windowing.
+ * (checked in).  The sample's values are exact in F32.  So polars'
+ * f64 parse and Frame's f32 parse have no digits to disagree on, and
+ * the resampled means compare EXACTLY.  A tolerance would only hide a
+ * real difference in the windowing.
  */
 #include "m9rt.h"
 #include "DynStr.h"
@@ -30,11 +30,13 @@ static double gold (const char *n)
   fprintf (stderr, "no golden %s\n", n); exit (1);
 }
 
-static m9_sl_CHAR S (const char *p)
-{ static uint32_t b[8][256]; static int r; uint32_t *q = b[r++ % 8];
-  size_t i, n = strlen (p);
-  for (i = 0; i < n; i++) q[i] = (uint32_t) p[i];
-  return (m9_sl_CHAR){ q, (int64_t) n }; }
+/* S copies a C string's octets into one of eight rotating buffers.  A
+   C literal is UTF-8 already, so no octet is widened. */
+static m9_sl_UTF8 S (const char *p)
+{ static uint8_t b[8][256]; static int r; uint8_t *q = b[r++ % 8];
+  size_t n = strlen (p);
+  memcpy (q, p, n);
+  return (m9_sl_UTF8){ q, (int64_t) n }; }
 
 int main (void)
 {
@@ -51,7 +53,7 @@ int main (void)
   (void) w; (void) v;
   printf ("\n=== Frame against polars (%d goldens) ===\n", ng);
 
-  /* read the sample the declared way: no inference anywhere */
+  /* Read the sample the declared way: no inference anywhere. */
   Csv_Options o = Csv_Defaults (&e);
   o.missing = -9999.0f; o.hasMissing = true; o.quoted = true;
   Csv_Table *t = Csv_Open (&pool, S ("frame_sample.csv"), &o, &e);
@@ -72,7 +74,7 @@ int main (void)
   ok ("rows match polars", Frame_Rows (fr, &e) == (int64_t) gold ("rows"));
   ok ("five columns arrive", Frame_Cols (fr, &e) == 5);
 
-  /* parsed values, bit for bit where live */
+  /* Parsed values hold bit for bit where live. */
   m9_sl_F32 ta = Frame_ColF32 (fr, S ("TA"), &e);
   m9_sl_I64 qc = Frame_ColI64 (fr, S ("QC"), &e);
   ok ("accessors raise nothing", e.exc == NULL);
@@ -100,7 +102,8 @@ int main (void)
                               S ("frame sample"), &e);
   ok ("NewTs accepts the gapped axis", e.exc == NULL && ts);
 
-  /* hourly average, polars group_by_dynamic as the oracle */
+  /* Take the hourly average, with polars group_by_dynamic as the
+     oracle. */
   Frame_How hows[5] = { Frame_HowFirst (&e), Frame_HowMean (&e),
                         Frame_HowMean (&e), Frame_HowLo (&e),
                         Frame_HowFirst (&e) };
@@ -149,7 +152,7 @@ int main (void)
     if (ctm.p[i] - ctm.p[i - 1] != 1800) mono = 0;
   ok ("the contiguous axis has no seams", mono);
 
-  /* csv round trip: export, re-read, bit-identical */
+  /* The csv round trip must export, re-read, and be bit-identical. */
   Frame_WriteCsv ( fr, S ("/tmp/frame_rt.csv"), &e);
   ok ("WriteCsv writes", e.exc == NULL);
   {
@@ -171,8 +174,8 @@ int main (void)
       if (memcmp (&a, &b, 4) != 0 && !(isnan (a) && isnan (b))) rt = 0;
     }
     ok ("floats round-trip bit for bit", rt);
-    m9_sl_m9_sl_CHAR n1 = Frame_ColStrs (fr, S ("NOTE"), &e);
-    m9_sl_m9_sl_CHAR n2 = Frame_ColStrs (fr2, S ("NOTE"), &e);
+    m9_sl_m9_sl_UTF8 n1 = Frame_ColStrs (fr, S ("NOTE"), &e);
+    m9_sl_m9_sl_UTF8 n2 = Frame_ColStrs (fr2, S ("NOTE"), &e);
     rt = 1;
     for (int i = 0; i < Frame_Rows (fr, &e); i++) {
       if (n1.p[i].len != n2.p[i].len) { rt = 0; continue; }
@@ -321,8 +324,8 @@ int main (void)
     Frame_Col c2 = Frame_GetCol (f2, S ("TA"), &e);
     ok ("unit round-trips through nc",
         c2.unit.len == 4 && c2.unit.p[0] == 'd');
-    m9_sl_m9_sl_CHAR nn1 = Frame_ColStrs (fr, S ("NOTE"), &e);
-    m9_sl_m9_sl_CHAR nn2 = Frame_ColStrs (f2, S ("NOTE"), &e);
+    m9_sl_m9_sl_UTF8 nn1 = Frame_ColStrs (fr, S ("NOTE"), &e);
+    m9_sl_m9_sl_UTF8 nn2 = Frame_ColStrs (f2, S ("NOTE"), &e);
     rsame = 1;
     for (int i = 0; i < Frame_Rows (fr, &e); i++) {
       if (nn1.p[i].len != nn2.p[i].len) { rsame = 0; continue; }
@@ -362,9 +365,9 @@ int main (void)
     }
   }
 
-  /* cfchecks, when this machine has it: ZERO errors required;
-     warnings are data-dependent (columns without metadata) and
-     reported, not gated */
+  /* Run cfchecks when this machine has it.  ZERO errors are required.
+     Warnings are data-dependent (columns without metadata) and
+     reported, not gated. */
   {
     if (system ("command -v cfchecks >/dev/null 2>&1") == 0) {
       int rc = system ("cfchecks /tmp/frame_ts.nc 2>&1 "

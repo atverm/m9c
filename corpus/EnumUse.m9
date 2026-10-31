@@ -1,10 +1,11 @@
 MODULE EnumUse ;
 
-(* gendiff-only fixture: an ENUMERATION, exercised the way KindUse
-   exercises a case record.  An enumeration is a payload-less case
-   record with a Pascal face -- TYPE Colour = (Red, Green, Blue) --
-   so the same machinery constructs Palette.Hue.Warm, CASEs it, and
-   crosses the module boundary.  docs/enum-plan.md, the type family. *)
+(* This is a gendiff-only fixture.  It exercises an ENUMERATION the
+   way KindUse exercises a case record.  An enumeration is a
+   payload-less case record with a Pascal face: TYPE Colour = (Red,
+   Green, Blue).  So the same machinery constructs Palette.Hue.Warm,
+   CASEs it, and crosses the module boundary.  See docs/enum-plan.md,
+   the type family. *)
 
 IMPORT Io ;
 IMPORT Palette ;
@@ -23,14 +24,16 @@ BEGIN
 END Nm ;
 
 PROCEDURE Round (i: I64) RAISES ValueRange =
-  (* the conversion and ORD together: Hue (i) then ORD back *)
+  (* Round exercises the conversion and ORD together: Hue (i) then ORD
+     back. *)
 BEGIN
   Io.WriteI64 (ORD (Palette.Hue (i)))
 END Round ;
 
 PROCEDURE AllHues () =
-  (* FOR over an enumeration: the loop variable walks the members in
-     declaration order, Warm through Neutral, no ordinals in sight *)
+  (* AllHues runs FOR over an enumeration.  The loop variable walks
+     the members in declaration order, Warm through Neutral, no
+     ordinals in sight. *)
 VAR c : Palette.Hue ;
 BEGIN
   FOR c := Palette.Hue.Warm TO Palette.Hue.Neutral DO
@@ -39,10 +42,11 @@ BEGIN
 END AllHues ;
 
 PROCEDURE Tables () =
-  (* enumeration-indexed arrays: the index IS the type, so the length
-     is the member count and a[Band.Lo] needs no ordinal.  A local
-     enumeration (Band) and an imported one (Palette.Hue) exercise
-     both bound lookups (docs/enum-plan.md, part 2). *)
+  (* Tables exercises enumeration-indexed arrays.  The index IS the
+     type, so the length is the member count and a[Band.Lo] needs no
+     ordinal.  A local enumeration (Band) and an imported one
+     (Palette.Hue) exercise both bound lookups (docs/enum-plan.md,
+     part 2). *)
 VAR
   bw : ARRAY Band OF I64 ;
   hw : ARRAY Palette.Hue OF I64 ;
@@ -93,8 +97,9 @@ BEGIN
   (* enumeration values compare by = / # (docs/enum-plan.md) *)
   IF h = Palette.Hue.Cool THEN Io.WriteLine ('h is cool') END ;
   IF h # Palette.Hue.Warm THEN Io.WriteLine ('h is not warm') END ;
-  (* index an imported record's ARRAY Hue OF I64 field, by an imported
-     enum value -- the cross-module case (docs/enum-plan.md, part 2) *)
+  (* Index an imported record's ARRAY Hue OF I64 field by an imported
+     enum value.  That is the cross-module case (docs/enum-plan.md,
+     part 2). *)
   CrossField ()
 EXCEPT
 | ValueRange : Io.WriteLine ('out of range')

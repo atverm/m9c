@@ -1,7 +1,7 @@
 (* EXPECT: integer literal 300 does not fit I8 *)
 (* A FOR bound that is a literal is held to the variable's width as an
-   assignment's literal is (since 2026-10-21, the compiler review's
-   G5): 300 cannot be an I8, and C truncated it to 44.  The legal forms
+   assignment's literal is (since 2026-10-21, the compiler review's G5).
+   300 cannot be an I8, and C truncated it to 44.  The legal forms come
    first: the type's own first and last values, a negative bound for a
    signed variable. *)
 MODULE m ;

@@ -1,7 +1,7 @@
 (* EXPECT: unknown type: Nosuch -- no module declares it *)
 (* A bare type name no module declares was left soft as a possible
-   missing import (decision 32) and reached the generator; refused
-   since 2026-10-22 (Alex's decision on the review's F4). *)
+   missing import (decision 32) and reached the generator.  It is
+   refused since 2026-10-22 (Alex's decision on the review's F4). *)
 MODULE m ;
 TYPE
   Pt = RECORD x : I64 END ;

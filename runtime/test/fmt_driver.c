@@ -1,22 +1,22 @@
-/* fmt_driver.c -- Fmt.m9 against printf and strtod.
-   Run twice by build.sh's fmt battery since 2026-10-25: plain, where
-   Fixed and Sci take their digits from the C library through the
-   runtime (m9_fmt_fixed/m9_fmt_sci, so this holds the LAYOUT: the
-   short exponent, the sign of zero, the specials), and under
-   M9_FMT_PORTABLE=1, where Fmt's own big-integer code answers and the
+/* fmt_driver.c holds Fmt.m9 to printf and strtod.
+   build.sh's fmt battery runs it twice since 2026-10-25.  The plain
+   run has Fixed and Sci take their digits from the C library through
+   the runtime (m9_fmt_fixed/m9_fmt_sci).  So this holds the LAYOUT:
+   the short exponent, the sign of zero, the specials.  The run under
+   M9_FMT_PORTABLE=1 has Fmt's own big-integer code answer, and the
    200,000-value sweep is the comparison it was written as.
    Two different promises get two different tests:
 
      Bits is claimed EXACT, so it is tested as a property:
-     ParseBits (Bits (x)) == x bit for bit, over a spread of doubles
-     including the awkward ones -- zero, negative zero, subnormals,
-     the infinities, NaN.
+     ParseBits (Bits (x)) == x bit for bit, over a spread of doubles.
+     The spread includes the awkward ones: zero, negative zero,
+     subnormals, the infinities, NaN.
 
-     Fixed and Sci are claimed EXACT since 2026-10-10 -- printf's
-     digits, from the double's own decimal expansion -- so they are
-     COMPARED against printf over many values and every disagreement
-     is a failure.  Until then they scaled in F64 and this driver
-     printed and gated a disagreement RATE (0.71%, 1% allowed); the
+     Fixed and Sci are claimed EXACT since 2026-10-10: printf's
+     digits, from the double's own decimal expansion.  So they are
+     COMPARED against printf over many values, and every disagreement
+     is a failure.  Until then they scaled in F64, and this driver
+     printed and gated a disagreement RATE (0.71%, 1% allowed).  The
      rate is still printed.  FmtTest holds them to Python's
      %-formatting on the hard cases.  */
 #include <stdio.h>
@@ -33,29 +33,29 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-static uint32_t sbuf[4096];
+static uint8_t sbuf[16384];
 static size_t sused = 0;
 
-/* WRAPS rather than growing.  The sweeps below call this tens of
-   thousands of times and every result is consumed before the next
-   call, so reusing the front of the buffer is safe -- and running off
-   the end of it is a segfault, which is how this was found. */
-static m9_sl_CHAR S (const char *s)
+/* S WRAPS rather than growing.  The sweeps below call this tens of
+   thousands of times, and every result is consumed before the next
+   call.  So reusing the front of the buffer is safe.  Running off the
+   end of it is a segfault, which is how this was found.  S copies the
+   octets: a C literal is UTF-8 already. */
+static m9_sl_UTF8 S (const char *s)
 {
-  size_t i, n = strlen (s);
-  uint32_t *p;
-  if (sused + n > sizeof sbuf / sizeof *sbuf) sused = 0;
+  size_t n = strlen (s);
+  uint8_t *p;
+  if (sused + n > sizeof sbuf) sused = 0;
   p = sbuf + sused;
   sused += n;
-  for (i = 0; i < n; i++) p[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ p, (int64_t) n };
+  memcpy (p, s, n);
+  return (m9_sl_UTF8){ p, (int64_t) n };
 }
 
-static void to_c (m9_sl_CHAR s, char *out, size_t cap)
+static void to_c (m9_sl_UTF8 s, char *out, size_t cap)
 {
-  int64_t i;
   size_t n = (size_t) s.len < cap - 1 ? (size_t) s.len : cap - 1;
-  for (i = 0; i < (int64_t) n; i++) out[i] = (char) (s.p[i] & 0xff);
+  if (n > 0) memcpy (out, s.p, n);
   out[n] = 0;
 }
 
@@ -65,9 +65,9 @@ static int same_bits (double a, double b)
 }
 
 /* printf writes the exponent padded to at least two digits and always
-   signed -- 3.140000e-05 -- and Fmt writes it short: 3.14e-5.  To
-   compare the two as NUMBERS rather than as typography, rewrite
-   printf's tail into the short form.  Only the exponent moves; every
+   signed: 3.140000e-05.  Fmt writes it short: 3.14e-5.  To compare
+   the two as NUMBERS rather than as typography, short_exp rewrites
+   printf's tail into the short form.  Only the exponent moves.  Every
    mantissa digit is left exactly as printf produced it, so a
    disagreement counted below is a disagreement about the value. */
 static void short_exp (char *t)
@@ -91,9 +91,9 @@ int main (void)
   char buf[512], ref[512];
   int64_t i;
 
-  /* Fmt takes no pool since 2026-09-03: a formatter's answer lands in
+  /* Fmt takes no pool since 2026-09-03.  A formatter's answer lands in
      the CALLER's frame arena (report par 2.3), and a C caller names
-     that arena in err.res -- NULL would mean HEAP, which the 100,000
+     that arena in err.res.  NULL would mean HEAP, which the 100,000
      value sweeps below would grow without bound. */
   err.res = &pool;
 
@@ -105,13 +105,13 @@ int main (void)
   to_c (Fmt_I64Str (INT64_MAX, &err), buf, sizeof buf);
   ok ("I64Str max", strcmp (buf, "9223372036854775807") == 0);
 
-  to_c (Fmt_I64Pad (7, 4, false, &err), buf, sizeof buf);
+  to_c (Fmt_I64PadUtf (7, 4, false, &err), buf, sizeof buf);
   ok ("pad spaces", strcmp (buf, "   7") == 0);
-  to_c (Fmt_I64Pad (7, 4, true, &err), buf, sizeof buf);
+  to_c (Fmt_I64PadUtf (7, 4, true, &err), buf, sizeof buf);
   ok ("pad zeros", strcmp (buf, "0007") == 0);
-  to_c (Fmt_I64Pad (-7, 4, true, &err), buf, sizeof buf);
+  to_c (Fmt_I64PadUtf (-7, 4, true, &err), buf, sizeof buf);
   ok ("pad zeros negative", strcmp (buf, "-007") == 0);
-  to_c (Fmt_I64Pad (12345, 3, true, &err), buf, sizeof buf);
+  to_c (Fmt_I64PadUtf (12345, 3, true, &err), buf, sizeof buf);
   ok ("pad never truncates", strcmp (buf, "12345") == 0);
   ok ("integers raised nothing", err.exc == NULL);
 
@@ -126,8 +126,8 @@ int main (void)
     int all = 1;
     for (k = 0; k < sizeof awkward / sizeof awkward[0]; k++)
       {
-        m9_sl_CHAR t = Fmt_Bits (awkward[k], &err);
-        double back = Fmt_ParseBits (t, &err);
+        m9_sl_UTF8 t = Fmt_Bits (awkward[k], &err);
+        double back = Fmt_ParseBitsUtf (t, &err);
         if (err.exc || !same_bits (back, awkward[k])) { all = 0; break; }
       }
     ok ("Bits round-trips the awkward doubles", all);
@@ -136,11 +136,11 @@ int main (void)
     {
       double inf = HUGE_VAL, nan = NAN;
       ok ("Bits round-trips +inf",
-          same_bits (Fmt_ParseBits (Fmt_Bits (inf, &err), &err), inf));
+          same_bits (Fmt_ParseBitsUtf (Fmt_Bits (inf, &err), &err), inf));
       ok ("Bits round-trips -inf",
-          same_bits (Fmt_ParseBits (Fmt_Bits (-inf, &err), &err), -inf));
+          same_bits (Fmt_ParseBitsUtf (Fmt_Bits (-inf, &err), &err), -inf));
       ok ("Bits round-trips NaN (bit pattern)",
-          isnan (Fmt_ParseBits (Fmt_Bits (nan, &err), &err)));
+          isnan (Fmt_ParseBitsUtf (Fmt_Bits (nan, &err), &err)));
     }
     ok ("negative zero is not zero",
         strcmp ("0000000000000000",
@@ -148,8 +148,8 @@ int main (void)
     ok ("Bits raised nothing", err.exc == NULL);
   }
 
-  /* a million pseudo-random doubles, drawn from the bit pattern so
-     subnormals and huge exponents are included, not just tidy ones */
+  /* Draw a million pseudo-random doubles from the bit pattern, so
+     subnormals and huge exponents are included, not just tidy ones. */
   {
     uint64_t st = 88172645463325252u;
     int bad = 0;
@@ -159,43 +159,45 @@ int main (void)
         st ^= st << 13; st ^= st >> 7; st ^= st << 17;
         memcpy (&x, &st, sizeof x);
         if (isnan (x)) continue;
-        if (!same_bits (Fmt_ParseBits (Fmt_Bits (x, &err), &err), x))
+        if (!same_bits (Fmt_ParseBitsUtf (Fmt_Bits (x, &err), &err), x))
           { bad++; break; }
       }
     ok ("Bits round-trips 200k arbitrary bit patterns", bad == 0);
   }
 
   /* ---- Fixed: measured against printf ---- */
-  to_c (Fmt_Fixed (0.0, 2, &err), buf, sizeof buf);
+  to_c (Fmt_FixedUtf (0.0, 2, &err), buf, sizeof buf);
   ok ("Fixed 0.00", strcmp (buf, "0.00") == 0);
-  to_c (Fmt_Fixed (3.14159, 2, &err), buf, sizeof buf);
+  to_c (Fmt_FixedUtf (3.14159, 2, &err), buf, sizeof buf);
   ok ("Fixed 3.14", strcmp (buf, "3.14") == 0);
-  /* half to EVEN, which is what printf does: -2.5 -> -2, not -3 */
-  to_c (Fmt_Fixed (-2.5, 0, &err), buf, sizeof buf);
+  /* Round half to EVEN, which is what printf does: -2.5 -> -2, not
+     -3. */
+  to_c (Fmt_FixedUtf (-2.5, 0, &err), buf, sizeof buf);
   ok ("Fixed -2 (half to even, as printf)", strcmp (buf, "-2") == 0);
-  to_c (Fmt_Fixed (2.5, 0, &err), buf, sizeof buf);
+  to_c (Fmt_FixedUtf (2.5, 0, &err), buf, sizeof buf);
   ok ("Fixed 2 (half to even)", strcmp (buf, "2") == 0);
-  to_c (Fmt_Fixed (3.5, 0, &err), buf, sizeof buf);
+  to_c (Fmt_FixedUtf (3.5, 0, &err), buf, sizeof buf);
   ok ("Fixed 4 (half to even)", strcmp (buf, "4") == 0);
-  to_c (Fmt_Fixed (394.9816047538945, 6, &err), buf, sizeof buf);
+  to_c (Fmt_FixedUtf (394.9816047538945, 6, &err), buf, sizeof buf);
   ok ("Fixed zarr corner", strcmp (buf, "394.981605") == 0);
-  ok ("Fixed nan", (to_c (Fmt_Fixed (NAN, 3, &err), buf, sizeof buf),
+  ok ("Fixed nan", (to_c (Fmt_FixedUtf (NAN, 3, &err), buf, sizeof buf),
                     strcmp (buf, "nan") == 0));
-  ok ("Fixed inf", (to_c (Fmt_Fixed (HUGE_VAL, 3, &err), buf, sizeof buf),
+  ok ("Fixed inf", (to_c (Fmt_FixedUtf (HUGE_VAL, 3, &err), buf, sizeof buf),
                     strcmp (buf, "inf") == 0));
   ok ("Fixed so far raised nothing", err.exc == NULL);
 
-  Fmt_Fixed (1.0, 99, &err);
+  Fmt_FixedUtf (1.0, 99, &err);
   ok ("Fixed refuses 99 decimals", err.exc == &m9_exc_ValueRange);
   err.exc = NULL;
-  to_c (Fmt_Fixed (1e300, 2, &err), buf, sizeof buf);
+  to_c (Fmt_FixedUtf (1e300, 2, &err), buf, sizeof buf);
   snprintf (ref, sizeof ref, "%.2f", 1e300);
   ok ("Fixed prints 1e300 whole, as printf", err.exc == NULL && strcmp (buf, ref) == 0);
   err.exc = NULL;
 
   {
-    /* the honest measurement: how often does Fixed disagree with
-       printf, over values in the range it claims to be exact for? */
+    /* This is the honest measurement.  It counts how often Fixed
+       disagrees with printf, over values in the range it claims to
+       be exact for. */
     uint64_t st = 1234567890123u;
     long total = 0, differ = 0;
     for (i = 0; i < 100000; i++)
@@ -203,11 +205,11 @@ int main (void)
         double x;
         int d;
         st ^= st << 13; st ^= st >> 7; st ^= st << 17;
-        /* magnitudes from 1e-30 to 1e36, 0 to 17 decimals */
+        /* Magnitudes run from 1e-30 to 1e36, 0 to 17 decimals. */
         x = ((double) (int64_t) (st % 2000000000u) - 1000000000.0)
             * pow (10.0, (double) ((int) (st % 61) - 36));
         d = (int) (st % 18);
-        to_c (Fmt_Fixed (x, d, &err), buf, sizeof buf);
+        to_c (Fmt_FixedUtf (x, d, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
         snprintf (ref, sizeof ref, "%.*f", d, x);
         total++;
@@ -215,21 +217,21 @@ int main (void)
       }
     printf ("Fixed vs printf: %ld values, %ld disagreements (%.4f%%)\n",
             total, differ, 100.0 * (double) differ / (double) total);
-    /* 0.71% when it scaled in F64 (over magnitudes to 1e6 and 6
-       decimals); exact since 2026-10-10 */
+    /* The rate was 0.71% when it scaled in F64 (over magnitudes to 1e6
+       and 6 decimals).  It is exact since 2026-10-10. */
     ok ("Fixed agrees with printf on every value", differ == 0 && total > 90000);
   }
 
   /* ---- the :x:y forms ---- */
-  to_c (Fmt_FixedPad (3.14159, 10, 3, &err), buf, sizeof buf);
+  to_c (Fmt_FixedPadUtf (3.14159, 10, 3, &err), buf, sizeof buf);
   ok ("FixedPad 10:3 pads with blanks", strcmp (buf, "     3.142") == 0);
-  to_c (Fmt_FixedPad (-3.14159, 10, 3, &err), buf, sizeof buf);
+  to_c (Fmt_FixedPadUtf (-3.14159, 10, 3, &err), buf, sizeof buf);
   ok ("FixedPad counts the sign in the width",
       strcmp (buf, "    -3.142") == 0);
-  to_c (Fmt_FixedPad (123456789.0, 4, 2, &err), buf, sizeof buf);
+  to_c (Fmt_FixedPadUtf (123456789.0, 4, 2, &err), buf, sizeof buf);
   ok ("FixedPad overflows rather than truncating",
       strcmp (buf, "123456789.00") == 0);
-  to_c (Fmt_FixedPad (1.0, 0, 0, &err), buf, sizeof buf);
+  to_c (Fmt_FixedPadUtf (1.0, 0, 0, &err), buf, sizeof buf);
   ok ("FixedPad width 0 is just Fixed", strcmp (buf, "1") == 0);
   ok ("FixedPad raised nothing", err.exc == NULL);
 
@@ -244,14 +246,14 @@ int main (void)
   ok ("Sci no decimals drops the point", strcmp (buf, "1e0") == 0);
   to_c (Fmt_Sci (-0.001234, 3, &err), buf, sizeof buf);
   ok ("Sci negative value", strcmp (buf, "-1.234e-3") == 0);
-  /* 9.999 at two decimals rounds to 10.00, which is not normalised:
-     the carry has to move into the exponent */
+  /* 9.999 at two decimals rounds to 10.00, which is not normalised.
+     The carry has to move into the exponent. */
   to_c (Fmt_Sci (9.999, 2, &err), buf, sizeof buf);
   ok ("Sci carries 9.999 into the exponent", strcmp (buf, "1.00e1") == 0);
   to_c (Fmt_Sci (9.999e307, 2, &err), buf, sizeof buf);
   ok ("Sci carries at the top of the range", strcmp (buf, "1.00e308") == 0);
-  /* the two ends of the F64 range, where a divide-by-ten loop would
-     have accumulated three hundred roundings */
+  /* Try the two ends of the F64 range, where a divide-by-ten loop
+     would have accumulated three hundred roundings. */
   to_c (Fmt_Sci (1.7976931348623157e308, 6, &err), buf, sizeof buf);
   ok ("Sci at DBL_MAX", strcmp (buf, "1.797693e308") == 0);
   to_c (Fmt_Sci (5e-324, 6, &err), buf, sizeof buf);
@@ -282,7 +284,7 @@ int main (void)
             * pow (10.0, (double) ((int) (st % 41) - 20));
         to_c (Fmt_Sci (x, 16, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
-        back = Fmt_ParseF64 (S (buf), &err);
+        back = Fmt_ParseF64Utf (S (buf), &err);
         if (err.exc) { err.exc = NULL; bad++; continue; }
         if (x != 0.0 && fabs (back - x) > 1e-12 * fabs (x)) bad++;
       }
@@ -290,10 +292,11 @@ int main (void)
   }
 
   {
-    /* the same honest measurement Fixed gets: how often does Sci
-       disagree with printf's %.*e, once the exponent typography is
-       normalised away?  Magnitudes span the whole F64 range here,
-       because normalising the mantissa is where the error lives. */
+    /* Sci gets the same honest measurement as Fixed.  It counts how
+       often Sci disagrees with printf's %.*e, once the exponent
+       typography is normalised away.  Magnitudes span the whole F64
+       range here, because normalising the mantissa is where the
+       error lives. */
     uint64_t st = 987654321987654u;
     long total = 0, differ = 0;
     for (i = 0; i < 100000; i++)
@@ -313,8 +316,8 @@ int main (void)
       }
     printf ("Sci vs printf:   %ld values, %ld disagreements (%.4f%%)\n",
             total, differ, 100.0 * (double) differ / (double) total);
-    /* under 1% when the mantissa was normalised in F64; exact since
-       2026-10-10 */
+    /* The rate was under 1% when the mantissa was normalised in F64.
+       It is exact since 2026-10-10. */
     ok ("Sci agrees with printf on every value", differ == 0 && total > 90000);
   }
 
@@ -329,7 +332,7 @@ int main (void)
       {
         double got, want;
         char *end;
-        got = Fmt_ParseF64 (S (texts[k]), &err);
+        got = Fmt_ParseF64Utf (S (texts[k]), &err);
         want = strtod (texts[k], &end);
         if (strcmp (texts[k], "  ") == 0)
           { ok ("ParseF64 rejects blanks", err.exc == &m9_exc_ValueRange);
@@ -344,7 +347,7 @@ int main (void)
     int all = 1;
     for (k = 0; k < sizeof bad / sizeof bad[0]; k++)
       {
-        Fmt_ParseF64 (S (bad[k]), &err);
+        Fmt_ParseF64Utf (S (bad[k]), &err);
         if (err.exc != &m9_exc_ValueRange) all = 0;
         err.exc = NULL;
       }
@@ -353,10 +356,10 @@ int main (void)
 
   /* ---- Short: two properties, and a hash both runs must share ----
      Short's digits come from the runtime (Dragonbox) on the plain run
-     and from Fmt's Burger-Dybvig under M9_FMT_PORTABLE; neither side
-     can be asked for the other's answer in one process, so each run
-     prints an FNV hash of its 200,000 strings and build.sh compares
-     the two lines.  The properties hold on either path: the string
+     and from Fmt's Burger-Dybvig under M9_FMT_PORTABLE.  Neither side
+     can be asked for the other's answer in one process.  So each run
+     prints an FNV hash of its 200,000 strings, and build.sh compares
+     the two lines.  The properties hold on either path.  The string
      reads back as the same bits, and its digit count is the least
      %.Ng that does. */
   {
@@ -384,8 +387,8 @@ int main (void)
         h = (h ^ 10u) * 1099511628211ull;
         back = strtod (buf, NULL);
         if (same_bits (back, x)) trip++;
-        /* the significant digits: the digit string without its
-           point, leading zeros and trailing zeros */
+        /* Take the significant digits: the digit string without its
+           point, leading zeros and trailing zeros. */
         nd = 0; lead = 1;
         for (q = buf; *q && *q != 'e'; q++)
           {
@@ -395,11 +398,12 @@ int main (void)
             digs[nd++] = *q;
           }
         while (nd > 0 && digs[nd - 1] == '0') nd--;
-        /* the least N whose nearest N-digit decimal (%.Ng) reads back:
-           Short never needs more, and needs exactly that many unless
-           the double is a power of two -- there the interval below it
-           is half as wide, and the nearest N-digit decimal can fall
-           outside it while a farther one above lies inside */
+        /* Find the least N whose nearest N-digit decimal (%.Ng) reads
+           back.  Short never needs more.  It needs exactly that many
+           unless the double is a power of two.  There the interval
+           below it is half as wide, and the nearest N-digit decimal
+           can fall outside it while a farther one above lies
+           inside. */
         for (nn = 1; nn <= 17; nn++)
           {
             snprintf (ref, sizeof ref, "%.*g", nn, x);

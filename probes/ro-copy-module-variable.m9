@@ -1,24 +1,24 @@
-(* EXPECT: cannot write through u, which holds the CONST K (line 18) (par 2.4) *)
-(* Decision 33 across procedures: a MODULE VARIABLE given read-only
-   storage in one place -- a literal in Init, a CONST, a SLICE of a
-   marked one in the module body -- holds it everywhere, so a write
+(* EXPECT: cannot write through t, which holds a string literal (line 18) (par 2.4) *)
+(* This is decision 33 across procedures.  A MODULE VARIABLE given
+   read-only storage in one place (a literal in Init, a SLICE of a
+   marked one in the module body) holds it everywhere, so a write
    through it in another procedure is refused.  RoSeed read one
-   procedure; this is a prepass over the unit before the bodies,
-   with the mark riding on the scope entry every procedure gets.  The
-   legal forms first: a local shadowing the module variable, a module
-   variable given fresh storage, reading through a marked one. *)
+   procedure.  This is a prepass over the unit before the bodies, with
+   the mark riding on the scope entry every procedure gets.  Legal forms
+   come first: a local shadowing the module variable, a module variable
+   given fresh storage, reading through a marked one.  A string CONST
+   is a UTF since the switch, and a UTF has no subscript, so the CONST
+   form is gone. *)
 MODULE m ;
-CONST K = 'const' ;
 VAR
-  t, u, w, fresh : STR ;
+  t, w, fresh : SLICE OF CHAR ;
   n : I64 ;
 PROCEDURE Init () =
 BEGIN
-  t := 'abc' ;
-  u := K
+  t := 'abc'
 END Init ;
 PROCEDURE Fine () RAISES IndexError =
-VAR t : STR ;
+VAR t : SLICE OF CHAR ;
 BEGIN
   t := NEW (CHAR, 3) ;
   t[0] := 'X' ;
@@ -28,7 +28,7 @@ BEGIN
 END Fine ;
 PROCEDURE Up () RAISES IndexError =
 BEGIN
-  u[0] := 'Y'
+  t[0] := 'Y'
 END Up ;
 BEGIN
   w := SLICE (t, 1, 2)

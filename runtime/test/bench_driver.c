@@ -1,5 +1,5 @@
-/* bench_driver.c -- the bench store (4000x4000 f8, 64 chunks) read
-   by compiled M9, closing the P4 measurement item.
+/* bench_driver.c reads the bench store (4000x4000 f8, 64 chunks) with
+   compiled M9.  It closes the P4 measurement item.
    - n must be EXACT (order-free);
    - the recorded nansum 6324247734.661942 is numpy's pairwise sum;
      the chunk-sequential sum differs in the tail and is asserted
@@ -10,6 +10,11 @@
    - the store handle is closed BEFORE the array: handle-copy
      refcounts make the order irrelevant, and this proves it.        */
 #define _POSIX_C_SOURCE 200112L
+/* macOS hides _SC_NPROCESSORS_ONLN under plain POSIX.  The Darwin
+   source level shows it. */
+#ifdef __APPLE__
+#define _DARWIN_C_SOURCE
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -17,11 +22,13 @@
 #include <unistd.h>
 #include "ZarrStore.h"
 
-static m9_sl_CHAR sl (const char *s, uint32_t *buf)
+/* A STR is UTF-8 octets.  The C literal is already UTF-8, so sl copies
+   its bytes. */
+static m9_sl_UTF8 sl (const char *s, uint8_t *buf)
 {
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
+  int64_t n = (int64_t) strlen (s);
+  memcpy (buf, s, (size_t) n);
+  return (m9_sl_UTF8){ buf, n };
 }
 
 static int checks = 0, fails = 0;
@@ -65,7 +72,7 @@ static void scan (ZarrStore_Array *a, m9_state *err,
 int main (void)
 {
   m9_state err = {0};
-  uint32_t ub[64];
+  uint8_t ub[64];
   double sum, t0, t1, t2;
   int64_t n;
 
@@ -75,7 +82,7 @@ int main (void)
     ZarrStore_OpenArray (s, sl ("bench.zarr", ub), &err);
   ck (err.exc == NULL && a != NULL, "OpenArray bench.zarr");
 
-  /* refcounts under test: the store handle goes first */
+  /* This tests the refcounts: the store handle goes first. */
   ZarrStore_Close (&s, &err);
   ck (err.exc == NULL, "Close before CloseArray (rc keeps the store)");
 
@@ -87,7 +94,7 @@ int main (void)
     printf ("scan exc: %s  i0=%lld d0=%g  msg: ", err.exc->name,
             (long long) err.i[0], err.d[0]);
     for (i = 0; i < err.s[0].len && i < 60; i++)
-      putchar ((int) (((const uint32_t *) err.s[0].p)[i] & 0xff));
+      putchar ((int) ((const uint8_t *) err.s[0].p)[i]);
     printf ("\n");
   }
   ck (err.exc == NULL, "cold scan raises nothing");

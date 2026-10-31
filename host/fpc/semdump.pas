@@ -1,10 +1,11 @@
 program semdump;
-{ P5 stage-2 oracle side for the CHECKER: the diagnostics for one
-  file, verbatim, one per line, in the order the checker produced
-  them.  The M9-compiled checker must emit identical bytes.
+{ semdump is the P5 stage-2 oracle side for the CHECKER.  It prints
+  the diagnostics for one file, verbatim, one per line, in the order
+  the checker produced them.  The M9-compiled checker must emit
+  identical bytes.
 
-  A checker's output IS its diagnostics -- their text, their line and
-  column, and their order -- so that is the whole comparison, the way
+  A checker's output IS its diagnostics: their text, their line and
+  column, and their order.  So that is the whole comparison, the way
   byte-identical C was the whole comparison for the generator.
 
   Usage: semdump FILE.m9 [DEP.m9 ...]
@@ -52,8 +53,8 @@ begin
   sem.CheckFile (ast);
   for i := 0 to sem.Errors.Count - 1 do
     WriteLn (sem.Errors[i]);
-  { the ledger is part of what the checker says, so it is compared
-    too -- it is measured output, not a debug aside }
+  { The ledger is part of what the checker says, so it is compared
+    too.  It is measured output, not a debug aside. }
   for i := 0 to sem.Ledger.Count - 1 do
     WriteLn ('ledger: ', sem.Ledger[i]);
   sem.Free;

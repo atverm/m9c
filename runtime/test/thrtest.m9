@@ -36,9 +36,9 @@ BEGIN
   END
 END Await ;
 
-(* the monitor's read side, bound: reading a field from the module
-   body would reach past the lock, and after a join it is only SAFE,
-   not PROVABLY safe.  One bound procedure is the whole fix. *)
+(* Count is the monitor's read side, bound: a read of a field from the
+   module body would reach past the lock, and after a join it is only
+   SAFE, not PROVABLY safe.  One bound procedure is the whole fix. *)
 PROCEDURE Count (VAR g: Gate) : I64 =
 BEGIN
   RETURN g.n

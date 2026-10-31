@@ -28,43 +28,43 @@ extern int m9_append_file (const void *, const void *, size_t);
 
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[8] = { 58u, 32u, 114u, 97u, 105u, 115u, 101u, 100u };
-static const uint32_t m9s1[2] = { 58u, 32u };
-static const uint32_t m9s2[11] = { 73u, 51u, 50u, 32u, 109u, 97u, 120u, 32u, 43u, 32u, 49u };
-static const uint32_t m9s3[11] = { 73u, 51u, 50u, 32u, 109u, 97u, 120u, 32u, 43u, 32u, 49u };
-static const uint32_t m9s4[11] = { 73u, 51u, 50u, 32u, 109u, 105u, 110u, 32u, 45u, 32u, 49u };
-static const uint32_t m9s5[11] = { 73u, 51u, 50u, 32u, 109u, 105u, 110u, 32u, 45u, 32u, 49u };
-static const uint32_t m9s6[13] = { 73u, 49u, 54u, 32u, 51u, 48u, 48u, 48u, 48u, 32u, 42u, 32u, 50u };
-static const uint32_t m9s7[13] = { 73u, 49u, 54u, 32u, 51u, 48u, 48u, 48u, 48u, 32u, 42u, 32u, 50u };
-static const uint32_t m9s8[10] = { 73u, 56u, 32u, 49u, 50u, 55u, 32u, 43u, 32u, 49u };
-static const uint32_t m9s9[10] = { 73u, 56u, 32u, 49u, 50u, 55u, 32u, 43u, 32u, 49u };
-static const uint32_t m9s10[10] = { 73u, 56u, 32u, 45u, 40u, 45u, 49u, 50u, 56u, 41u };
-static const uint32_t m9s11[10] = { 73u, 56u, 32u, 45u, 40u, 45u, 49u, 50u, 56u, 41u };
-static const uint32_t m9s12[14] = { 73u, 51u, 50u, 32u, 109u, 105u, 110u, 32u, 68u, 73u, 86u, 32u, 45u, 49u };
-static const uint32_t m9s13[14] = { 73u, 51u, 50u, 32u, 109u, 105u, 110u, 32u, 68u, 73u, 86u, 32u, 45u, 49u };
-static const uint32_t m9s14[8] = { 85u, 56u, 32u, 48u, 32u, 45u, 32u, 49u };
-static const uint32_t m9s15[8] = { 85u, 56u, 32u, 48u, 32u, 45u, 32u, 49u };
-static const uint32_t m9s16[13] = { 85u, 49u, 54u, 32u, 54u, 53u, 53u, 51u, 53u, 32u, 43u, 32u, 49u };
-static const uint32_t m9s17[13] = { 85u, 49u, 54u, 32u, 54u, 53u, 53u, 51u, 53u, 32u, 43u, 32u, 49u };
-static const uint32_t m9s18[9] = { 85u, 51u, 50u, 32u, 51u, 32u, 45u, 32u, 53u };
-static const uint32_t m9s19[9] = { 85u, 51u, 50u, 32u, 51u, 32u, 45u, 32u, 53u };
-static const uint32_t m9s20[17] = { 85u, 51u, 50u, 32u, 54u, 53u, 53u, 51u, 54u, 32u, 42u, 32u, 54u, 53u, 53u, 51u, 54u };
-static const uint32_t m9s21[17] = { 85u, 51u, 50u, 32u, 54u, 53u, 53u, 51u, 54u, 32u, 42u, 32u, 54u, 53u, 53u, 51u, 54u };
-static const uint32_t m9s22[9] = { 85u, 54u, 52u, 32u, 48u, 32u, 45u, 32u, 49u };
-static const uint32_t m9s23[9] = { 85u, 54u, 52u, 32u, 48u, 32u, 45u, 32u, 49u };
-static const uint32_t m9s24[9] = { 85u, 54u, 52u, 32u, 48u, 32u, 45u, 32u, 49u };
-static const uint32_t m9s25[12] = { 85u, 54u, 52u, 32u, 50u, 94u, 54u, 50u, 32u, 42u, 32u, 52u };
-static const uint32_t m9s26[12] = { 85u, 54u, 52u, 32u, 50u, 94u, 54u, 50u, 32u, 42u, 32u, 52u };
-static const uint32_t m9s27[12] = { 85u, 54u, 52u, 32u, 50u, 94u, 54u, 50u, 32u, 42u, 32u, 52u };
-static const uint32_t m9s28[13] = { 73u, 51u, 50u, 32u, 49u, 48u, 48u, 32u, 43u, 32u, 50u, 48u, 48u };
-static const uint32_t m9s29[10] = { 73u, 49u, 54u, 32u, 45u, 53u, 32u, 42u, 32u, 54u };
-static const uint32_t m9s30[9] = { 85u, 51u, 50u, 32u, 53u, 32u, 45u, 32u, 51u };
-static const uint32_t m9s31[25] = { 85u, 54u, 52u, 32u, 50u, 94u, 54u, 50u, 32u, 42u, 32u, 51u, 32u, 68u, 73u, 86u, 32u, 51u, 32u, 61u, 32u, 50u, 94u, 54u, 50u };
-static const uint32_t m9s32[11] = { 73u, 51u, 50u, 32u, 55u, 32u, 77u, 79u, 68u, 32u, 51u };
-static const uint32_t m9s33[8] = { 105u, 110u, 32u, 114u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s34[8] = { 105u, 110u, 32u, 114u, 97u, 110u, 103u, 101u };
+static const uint8_t m9s0[8] = { 58, 32, 114, 97, 105, 115, 101, 100 };
+static const uint8_t m9s1[2] = { 58, 32 };
+static const uint8_t m9s2[11] = { 73, 51, 50, 32, 109, 97, 120, 32, 43, 32, 49 };
+static const uint8_t m9s3[11] = { 73, 51, 50, 32, 109, 97, 120, 32, 43, 32, 49 };
+static const uint8_t m9s4[11] = { 73, 51, 50, 32, 109, 105, 110, 32, 45, 32, 49 };
+static const uint8_t m9s5[11] = { 73, 51, 50, 32, 109, 105, 110, 32, 45, 32, 49 };
+static const uint8_t m9s6[13] = { 73, 49, 54, 32, 51, 48, 48, 48, 48, 32, 42, 32, 50 };
+static const uint8_t m9s7[13] = { 73, 49, 54, 32, 51, 48, 48, 48, 48, 32, 42, 32, 50 };
+static const uint8_t m9s8[10] = { 73, 56, 32, 49, 50, 55, 32, 43, 32, 49 };
+static const uint8_t m9s9[10] = { 73, 56, 32, 49, 50, 55, 32, 43, 32, 49 };
+static const uint8_t m9s10[10] = { 73, 56, 32, 45, 40, 45, 49, 50, 56, 41 };
+static const uint8_t m9s11[10] = { 73, 56, 32, 45, 40, 45, 49, 50, 56, 41 };
+static const uint8_t m9s12[14] = { 73, 51, 50, 32, 109, 105, 110, 32, 68, 73, 86, 32, 45, 49 };
+static const uint8_t m9s13[14] = { 73, 51, 50, 32, 109, 105, 110, 32, 68, 73, 86, 32, 45, 49 };
+static const uint8_t m9s14[8] = { 85, 56, 32, 48, 32, 45, 32, 49 };
+static const uint8_t m9s15[8] = { 85, 56, 32, 48, 32, 45, 32, 49 };
+static const uint8_t m9s16[13] = { 85, 49, 54, 32, 54, 53, 53, 51, 53, 32, 43, 32, 49 };
+static const uint8_t m9s17[13] = { 85, 49, 54, 32, 54, 53, 53, 51, 53, 32, 43, 32, 49 };
+static const uint8_t m9s18[9] = { 85, 51, 50, 32, 51, 32, 45, 32, 53 };
+static const uint8_t m9s19[9] = { 85, 51, 50, 32, 51, 32, 45, 32, 53 };
+static const uint8_t m9s20[17] = { 85, 51, 50, 32, 54, 53, 53, 51, 54, 32, 42, 32, 54, 53, 53, 51, 54 };
+static const uint8_t m9s21[17] = { 85, 51, 50, 32, 54, 53, 53, 51, 54, 32, 42, 32, 54, 53, 53, 51, 54 };
+static const uint8_t m9s22[9] = { 85, 54, 52, 32, 48, 32, 45, 32, 49 };
+static const uint8_t m9s23[9] = { 85, 54, 52, 32, 48, 32, 45, 32, 49 };
+static const uint8_t m9s24[9] = { 85, 54, 52, 32, 48, 32, 45, 32, 49 };
+static const uint8_t m9s25[12] = { 85, 54, 52, 32, 50, 94, 54, 50, 32, 42, 32, 52 };
+static const uint8_t m9s26[12] = { 85, 54, 52, 32, 50, 94, 54, 50, 32, 42, 32, 52 };
+static const uint8_t m9s27[12] = { 85, 54, 52, 32, 50, 94, 54, 50, 32, 42, 32, 52 };
+static const uint8_t m9s28[13] = { 73, 51, 50, 32, 49, 48, 48, 32, 43, 32, 50, 48, 48 };
+static const uint8_t m9s29[10] = { 73, 49, 54, 32, 45, 53, 32, 42, 32, 54 };
+static const uint8_t m9s30[9] = { 85, 51, 50, 32, 53, 32, 45, 32, 51 };
+static const uint8_t m9s31[25] = { 85, 54, 52, 32, 50, 94, 54, 50, 32, 42, 32, 51, 32, 68, 73, 86, 32, 51, 32, 61, 32, 50, 94, 54, 50 };
+static const uint8_t m9s32[11] = { 73, 51, 50, 32, 55, 32, 77, 79, 68, 32, 51 };
+static const uint8_t m9s33[8] = { 105, 110, 32, 114, 97, 110, 103, 101 };
+static const uint8_t m9s34[8] = { 105, 110, 32, 114, 97, 110, 103, 101 };
 
-static void Narrow_Say (m9_sl_CHAR what, bool raised, int64_t v, m9_state *err);
+static void Narrow_Say (m9_sl_UTF8 what, bool raised, int64_t v, m9_state *err);
 static void Narrow_AddI32 (m9_state *err);
 static void Narrow_SubI32 (m9_state *err);
 static void Narrow_MulI16 (m9_state *err);
@@ -80,23 +80,23 @@ static void Narrow_MulU64 (m9_state *err);
 static void Narrow_InRange (m9_state *err);
 
 
-static void Narrow_Say (m9_sl_CHAR what, bool raised, int64_t v, m9_state *err)
+static void Narrow_Say (m9_sl_UTF8 what, bool raised, int64_t v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Io_Write (what, err);
+  Io_WriteUtf (what, err);
   if (err->exc) goto L_ret;
   if (raised) {
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s0, 8 }), err);
+    Io_WriteLineUtf (((m9_sl_UTF8){ (uint8_t *) m9s0, 8 }), err);
     if (err->exc) goto L_ret;
   } else {
-    Io_Write (((m9_sl_CHAR){ (uint32_t *) m9s1, 2 }), err);
+    Io_WriteUtf (((m9_sl_UTF8){ (uint8_t *) m9s1, 2 }), err);
     if (err->exc) goto L_ret;
     Io_WriteI64 (v, err);
     if (err->exc) goto L_ret;
-    Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
+    Io_WriteLineUtf (((m9_sl_UTF8){ NULL, 0 }), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -118,13 +118,13 @@ static void Narrow_AddI32 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s2, 11 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s2, 11 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s3, 11 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s3, 11 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -152,13 +152,13 @@ static void Narrow_SubI32 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s4, 11 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s4, 11 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s5, 11 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s5, 11 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -183,13 +183,13 @@ static void Narrow_MulI16 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s6, 13 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s6, 13 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s7, 13 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s7, 13 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -214,13 +214,13 @@ static void Narrow_AddI8 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s8, 10 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s8, 10 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s9, 10 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s9, 10 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -248,13 +248,13 @@ static void Narrow_NegI8 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s10, 10 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s10, 10 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s11, 10 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s11, 10 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -282,13 +282,13 @@ static void Narrow_DivI32 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s12, 14 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s12, 14 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s13, 14 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s13, 14 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -313,13 +313,13 @@ static void Narrow_SubU8 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s14, 8 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s14, 8 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s15, 8 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s15, 8 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -344,13 +344,13 @@ static void Narrow_AddU16 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s16, 13 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s16, 13 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s17, 13 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s17, 13 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -375,13 +375,13 @@ static void Narrow_SubU32 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s18, 9 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s18, 9 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s19, 9 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s19, 9 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -406,13 +406,13 @@ static void Narrow_MulU32 (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s20, 17 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s20, 17 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s21, 17 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s21, 17 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -439,20 +439,20 @@ static void Narrow_SubU64 (m9_state *err)
   }
   { __typeof__(m9_i64_u64 (b, err)) m9a1 = m9_i64_u64 (b, err);
     if (err->exc) goto L_hdl_m9t1;
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s22, 9 }), false, m9a1, err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s22, 9 }), false, m9a1, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s23, 9 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s23, 9 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s24, 9 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s24, 9 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -479,20 +479,20 @@ static void Narrow_MulU64 (m9_state *err)
   }
   { __typeof__(m9_i64_u64 (b, err)) m9a2 = m9_i64_u64 (b, err);
     if (err->exc) goto L_hdl_m9t1;
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s25, 12 }), false, m9a2, err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s25, 12 }), false, m9a2, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s26, 12 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s26, 12 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s27, 12 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s27, 12 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
@@ -523,7 +523,7 @@ static void Narrow_InRange (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s28, 13 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s28, 13 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   { __typeof__(s) m9v = m9_neg_i64 (INT64_C(5), err);
     if (err->exc) goto L_hdl_m9t1;
@@ -533,14 +533,14 @@ static void Narrow_InRange (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     t = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s29, 10 }), false, (int64_t)(t), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s29, 10 }), false, (int64_t)(t), err);
   if (err->exc) goto L_hdl_m9t1;
   u = INT64_C(5);
   { __typeof__(v) m9v = m9_sub_u32 (u, INT64_C(3), err);
     if (err->exc) goto L_hdl_m9t1;
     v = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s30, 9 }), false, (int64_t)(v), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s30, 9 }), false, (int64_t)(v), err);
   if (err->exc) goto L_hdl_m9t1;
   w = UINT64_C(4611686018427387904);
   { __typeof__(x) m9v = m9_mul_u64 (w, UINT64_C(3), err);
@@ -553,7 +553,7 @@ static void Narrow_InRange (m9_state *err)
   }
   { __typeof__(m9_i64_u64 (x, err)) m9a3 = m9_i64_u64 (x, err);
     if (err->exc) goto L_hdl_m9t1;
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s31, 25 }), false, m9a3, err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s31, 25 }), false, m9a3, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   a = INT64_C(7);
@@ -561,19 +561,19 @@ static void Narrow_InRange (m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s32, 11 }), false, (int64_t)(b), err);
+  Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s32, 11 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_Overflow) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s33, 8 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s33, 8 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s34, 8 }), true, INT64_C(0), err);
+    Narrow_Say (((m9_sl_UTF8){ (uint8_t *) m9s34, 8 }), true, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }

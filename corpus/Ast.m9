@@ -1,11 +1,12 @@
 STATEFUL DEFINITION MODULE Ast ;
 
-(* M9 abstract syntax, in M9 -- restated from host/fpc/M9AST.pas for
-   the P5 self-hosted parser.  One homogeneous node: kind codes
-   mirror the FPC TNodeKind order (0 File .. 80 ArgList); fixed child
-   slots may be NONE and print as absence; a and b carry ident and
-   literal text verbatim.  Nodes and their kid vectors live in the
-   caller's pool: free the pool, free the tree -- the Json story.    *)
+(* Ast states the M9 abstract syntax in M9, restated from
+   host/fpc/M9AST.pas for the P5 self-hosted parser.  It has one
+   homogeneous node.  Its kind codes mirror the FPC TNodeKind order
+   (0 File .. 80 ArgList).  Fixed child slots may be NONE and print
+   as absence.  Fields a and b carry ident and literal text verbatim.
+   Nodes and their kid vectors live in the caller's pool: free the
+   pool, free the tree -- the Json story.                            *)
 
 CONST
   (* kind codes, mirroring the FPC TNodeKind order *)
@@ -31,77 +32,85 @@ CONST
   NNoneLit = 71 ; NSomeExpr = 72 ; NSharedExpr = 73 ; NNewExpr = 74 ;
   NSliceOf3 = 75 ; NCallExpr = 76 ; NDesignator = 77 ; NSelField = 78 ;
   NSelIndex = 79 ; NArgList = 80 ;
-  (* Appended, not inserted.  The FPC enum grew nkGridType next to
-     nkArrayType, but a code that MOVES is a code no one can rely on
-     -- the rule Lex already states for keywords -- and nothing
-     compares these numbers across the two implementations:
+  (* These codes are appended, not inserted.  The FPC enum grew
+     nkGridType next to nkArrayType.  But no one can rely on a code
+     that MOVES; Lex already states that rule for keywords.  And
+     nothing compares these numbers across the two implementations:
      parsediff compares printed text and gendiff compares emitted C. *)
   NGridType = 81 ; NEnumType = 82 ;
-  NProcType = 83 ;   (* PROCEDURE (params) [: T] [RAISES ...] as a TYPE;
-                        kids as a ProcDecl's head: [0] NParamList,
-                        [1] result type or NONE, [2] NRaises or NONE.
-                        docs/proctype-plan.md, 2026-09-27 *)
-  NAggregate = 84 ;  (* [ e1, ..., en ] as the value of a CONST: the
-                        kids are the elements, in order.  Only a
-                        ConstDecl's kid is ever one -- the parser
-                        reads `[' as an aggregate nowhere else -- so
+  NProcType = 83 ;   (* NProcType is PROCEDURE (params) [: T]
+                        [RAISES ...] as a TYPE.  Its kids are a
+                        ProcDecl's head: [0] NParamList, [1] result
+                        type or NONE, [2] NRaises or NONE.
+                        docs/proctype-plan.md, 2026-09-27. *)
+  NAggregate = 84 ;  (* NAggregate is [ e1, ..., en ] as the value of
+                        a CONST.  Its kids are the elements, in order.
+                        Only a ConstDecl's kid is ever one: the parser
+                        reads `[' as an aggregate nowhere else.  So
                         `[' stays what it was in an expression, a
                         subscript.  docs/plan-0.14.md stage 2a,
-                        2026-10-01 *)
-  NGridOf = 85 ;     (* GRID (s, n0, ..., nR): a grid of rank R laid
-                        over a slice's storage (par 2.2.1); kids[0]
-                        the slice, the rest the extents, so the rank
-                        is nkids - 1.  2026-10-08 *)
-  NLinkList = 86 ;   (* LINK "w1", "w2": what a FOR "C" unit links --
-                        a library name, a linker word, a shim source
-                        beside the runtime (par 7).  The LAST kid of
+                        2026-10-01. *)
+  NGridOf = 85 ;     (* NGridOf is GRID (s, n0, ..., nR): a grid of
+                        rank R laid over a slice's storage (par
+                        2.2.1).  kids[0] is the slice and the rest are
+                        the extents, so the rank is nkids - 1.
+                        2026-10-08. *)
+  NLinkList = 86 ;   (* NLinkList is LINK "w1", "w2": the words a
+                        FOR "C" unit links.  A word is a library name,
+                        a linker word, or a shim source beside the
+                        runtime (par 7).  The list is the LAST kid of
                         the Definition node, after the declarations,
                         so that nothing that walks a unit by position
-                        moves; kids are NString nodes, a the word.
-                        2026-10-09 *)
-  NCallSel = 87 ;    (* F (x).f, F (x)[i]: a call's answer selected
-                        from (par 10, Factor); kids[0] the NCallExpr,
-                        the rest NSelField / NSelIndex as a designator
-                        has them.  An expression, never a target.
-                        2026-10-09, cp-kernel's stages 4b and 6a *)
-  NForIn = 88 ;      (* FOR x IN s DO ... END: a the variable, kids[0]
-                        the designator iterated, kids[1] the body.
-                        2026-10-11, cp-kernel's proposal *)
+                        moves.  Its kids are NString nodes, with the
+                        word in a.  2026-10-09. *)
+  NCallSel = 87 ;    (* NCallSel is F (x).f, F (x)[i]: a call's answer
+                        selected from (par 10, Factor).  kids[0] is
+                        the NCallExpr; the rest are NSelField /
+                        NSelIndex as a designator has them.  It is an
+                        expression, never a target.  2026-10-09,
+                        cp-kernel's stages 4b and 6a. *)
+  NForIn = 88 ;      (* NForIn is FOR x IN s DO ... END.  a holds the
+                        variable, kids[0] the designator iterated,
+                        kids[1] the body.  2026-10-11, cp-kernel's
+                        proposal. *)
 
 TYPE
-  Kid = OPT PTR Node ;               (* named so NEW can say it;
-                                        Node resolves lazily below *)
+  Kid = OPT PTR Node ;               (* Kid is named so NEW can
+                                        say it.  Node resolves
+                                        lazily below. *)
 
   Node = RECORD
     kind, line, col : I64 ;
-    au, bu : UTF ;              (* the node's names, UTF-8 since
+    au, bu : UTF ;              (* au and bu hold the node's names,
+                                   UTF-8 since
                                    docs/utf8-stage3-plan.md step 7
-                                   (2026-10-23): written by SetA/SetB
-                                   below, which copy *)
-    f1, f2, f3, f4 : BOOL ;     (* f3: the RO mode on a binding;
-                                   f4: KEPT, which composes with any
-                                   of the modes rather than replacing
-                                   one -- a kept parameter is usually
-                                   also RO *)
+                                   (2026-10-23).  SetA/SetB below
+                                   write them, and they copy. *)
+    f1, f2, f3, f4 : BOOL ;     (* f3 marks the RO mode on a binding.
+                                   f4 marks KEPT, which composes with
+                                   any of the modes rather than
+                                   replacing one.  A kept parameter
+                                   is usually also RO. *)
     kids : SLICE OF Kid ;
     nkids : I64 ;
-    id : I64 ;                  (* the node's number, given by
-                                   NewNode: the key of the typed tree *)
+    id : I64 ;                  (* id is the node's number, given by
+                                   NewNode.  It keys the typed tree. *)
   END ;
 
 PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
   : PTR Node IN pool ;
-  (* a node with no children and empty au/bu, ready for Add.
+  (* NewNode answers a node with no children and empty au/bu, ready
+     for Add.
 
        kind      -- one of the N* constants above.  They are
                     EXPORTED CONSTS with fixed values, not an
-                    enumeration, because both generators and both
-                    checkers agree on them by number: a code that
-                    moves is a code nobody can rely on, which is why
-                    NGridType was appended at 81 rather than
-                    inserted where it belonged alphabetically.
-       line, col -- where the construct STARTS.  There is no end
-                    position on a node, which is worth knowing
+                    enumeration.  Both generators and both checkers
+                    agree on them by number.  Nobody can rely on a
+                    code that moves.  That is why NGridType was
+                    appended at 81 rather than inserted where it
+                    belonged alphabetically.
+       line, col -- the place where the construct STARTS.  A node
+                    has no end position.  This is worth knowing
                     before writing anything that wants to know how
                     far a declaration reached.                     *)
 
@@ -111,84 +120,96 @@ PROCEDURE SetA (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR) ;
 PROCEDURE SetB (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR) ;
 PROCEDURE SetAUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF) ;
 PROCEDURE SetBUtf (VAR pool: POOL ; VAR n: PTR Node ; RO u: UTF) ;
-  (* a node's name, given as either text and COPIED into pool: a node
-     owns its names.  Ast.SetA (pool, n, t) reaches the UTF form by t's
-     type.  The one way to write au or bu since 2026-10-23.
-       pool -- the node's, as Add takes it: NOT the object-pool form
-               NEW (n, ...), which for a local declared without IN
-               lends the caller's FRAME as the node's pool (decision
-               18's known gap) -- the first cut did, the checker
-               accepted it, and every name in the tree read as freed
-               storage *)
+  (* These four set a node's name, given as either text and COPIED
+     into pool: a node owns its names.  Ast.SetA (pool, n, t) reaches
+     the UTF form by t's type.  They are the one way to write au or bu
+     since 2026-10-23.
+       pool -- the node's, as Add takes it.  It is NOT the object-pool
+               form NEW (n, ...).  For a local declared without IN,
+               that form lends the caller's FRAME as the node's pool
+               (decision 18's known gap).  The first cut used it, the
+               checker accepted it, and every name in the tree read
+               as freed storage. *)
 
 (* THE TYPED TREE (2026-10-09, the review's decision): the checker
-   records the type it resolved at a node -- on a designator's
-   selector, the component the selector reaches, as a type node
-   qualified in its declaring module -- and the generator reads it
-   instead of working the type out a second time.  A table beside the
-   tree, keyed by the node's id, and not a field in it: the checker
-   walks the tree through borrowed pointers, which par 4.1 makes
-   read-only.  NONE where no checker has run or it did not know; the
-   generator then works the type out itself.  One table per process:
-   m9lsp runs a fresh m9c for every check.                           *)
-(* A constant's VALUE, one evaluator for every place C needs one --
-   a CASE label, an array bound (the typed tree's stage 2, 2026-10-09):
-   an integer literal or an expression of them (FoldInt), a CHAR
-   literal, a one-character string.  ch says the value is a character
-   (C spells it with u).  FALSE for anything else. *)
+   records the type it resolved at a node.  On a designator's
+   selector, that type is the component the selector reaches, as a
+   type node qualified in its declaring module.  The generator reads
+   it instead of working the type out a second time.  The types live
+   in a table beside the tree, keyed by the node's id, and not in a
+   field of it: the checker walks the tree through borrowed pointers,
+   which par 4.1 makes read-only.  The table holds NONE where no
+   checker has run or it did not know; the generator then works the
+   type out itself.  There is one table per process: m9lsp runs a
+   fresh m9c for every check.                                        *)
+(* ScalarConst evaluates a constant's VALUE.  It is the one evaluator
+   for every place C needs one, such as a CASE label or an array bound
+   (the typed tree's stage 2, 2026-10-09).  It takes an integer
+   literal or an expression of them (FoldInt), a CHAR literal, a
+   one-character string.  ch says the value is a character (C spells
+   it with u).  It answers FALSE for anything else. *)
 PROCEDURE ScalarConst (k: Kid ; VAR v: I64 ; VAR ch: BOOL) : BOOL ;
 PROCEDURE CharCode (RO lit: STR) : I64 ;
-  (* a CHAR literal's code: its hex digits, the C suffix dropped *)
+  (* CharCode answers a CHAR literal's code: its hex digits, the C
+     suffix dropped. *)
 
 PROCEDURE SetType (id: I64 ; KEPT t: Kid) ;
 PROCEDURE TypeAt (id: I64) : Kid ;
 
-(* stage 3: an EXPRESSION's type, as the checker's canonical string
-   ('I64', 'PTR Mod.T', '<str1>', ...), copied into this module's pool;
-   '' where none was recorded *)
+(* Stage 3: SetTyStr and TyStrAt keep an EXPRESSION's type, as the
+   checker's canonical string ('I64', 'PTR Mod.T', '<str1>', ...),
+   copied into this module's pool.  TyStrAt answers '' where none was
+   recorded. *)
 PROCEDURE SetTyStr (id: I64 ; RO t: UTF) ;
 PROCEDURE TyStrAt (id: I64) : UTF ;
 
-(* an argument list whose callee, and all it calls, is proved to write no
-   module state (Sem.NoStateWrite): the generator may pass an RO
-   aggregate held in a module variable by its address there
-   (decision 81).  FALSE where none was recorded *)
+(* SetNoWrites and NoWritesAt mark an argument list whose callee, and
+   all it calls, is proved to write no module state
+   (Sem.NoStateWrite).  The generator may then pass an RO aggregate
+   held in a module variable by its address there (decision 81).
+   NoWritesAt answers FALSE where none was recorded. *)
 PROCEDURE SetNoWrites (id: I64) ;
 PROCEDURE NoWritesAt (id: I64) : BOOL ;
 
-(* an argument list whose callee, and all it calls, is proved to write
-   nothing but its own by-value bindings, and whose arguments run no
-   call that writes (Sem.NothingWritten): the generator may pass any RO
-   aggregate argument by its address there, behind a pointer or in a
-   slice included (decision 82).  FALSE where none was recorded *)
+(* SetReadsOnly and ReadsOnlyAt mark an argument list whose callee,
+   and all it calls, is proved to write nothing but its own by-value
+   bindings, and whose arguments run no call that writes
+   (Sem.NothingWritten).  The generator may then pass any RO aggregate
+   argument by its address there, behind a pointer or in a slice
+   included (decision 82).  ReadsOnlyAt answers FALSE where none was
+   recorded. *)
 PROCEDURE SetReadsOnly (id: I64) ;
 PROCEDURE ReadsOnlyAt (id: I64) : BOOL ;
   (* NONE is a legal child: absence with a position *)
 
 PROCEDURE FoldInt (k: Kid ; VAR v: I64) : BOOL ;
-  (* the value of an integer CONSTANT EXPRESSION -- literals (decimal
-     or 0x hex), parentheses, unary minus and + - * DIV MOD -- with
-     the runtime's arithmetic: checked, DIV and MOD truncating.  FALSE
-     for any other form, an overflow, a division by zero.  Shared by
-     both checkers' refusal and both generators' folding (a CONST over
-     an expression was accepted by the checker and refused by the
-     generator until 2026-10-09) *)
+  (* FoldInt answers the value of an integer CONSTANT EXPRESSION:
+     literals (decimal or 0x hex), parentheses, unary minus and
+     + - * DIV MOD.  It uses the runtime's arithmetic: checked, DIV
+     and MOD truncating.  It answers FALSE for any other form, an
+     overflow, a division by zero.  Both checkers' refusal and both
+     generators' folding share it.  Until 2026-10-09 the checker
+     accepted a CONST over an expression and the generator refused
+     it. *)
 
 PROCEDURE IntText (v: I64 ; VAR buf: ARRAY 24 OF CHAR) : I64 ;
-  (* v's decimal digits WITHOUT the sign into buf, answering how many;
-     the smallest I64 has no positive twin and answers 0 *)
+  (* IntText writes v's decimal digits WITHOUT the sign into buf and
+     answers how many.  The smallest I64 has no positive twin and
+     answers 0. *)
 
 END Ast.
 
 
 IMPLEMENTATION MODULE Ast ;
 
+IMPORT Text ;
+
 VAR
   nextId : I64 ;                (* the next node's number *)
   tys    : SLICE OF Kid ;       (* the typed tree, by node id *)
-  tstr   : SLICE OF UTF ;       (* stage 3: expression types, by id;
-                                   UTF since 2026-10-23, Sem and Gen
-                                   both reading them so *)
+  tstr   : SLICE OF UTF ;       (* stage 3: expression types, by id.
+                                   They are UTF since 2026-10-23;
+                                   Sem and Gen both read them so. *)
   nows   : SLICE OF BOOL ;      (* SetNoWrites, by the argument list's id *)
   rdos   : SLICE OF BOOL ;      (* SetReadsOnly, likewise *)
   typool : POOL ;
@@ -208,7 +229,7 @@ BEGIN
   RETURN n
 END NewNode ;
 
-(* the name copied into pool, encoded where it arrives as a STR *)
+(* SetA copies the name into pool, encoded where it arrives as a STR. *)
 PROCEDURE SetA (VAR pool: POOL ; VAR n: PTR Node ; RO s: STR) =
 BEGIN
   n.au := UTF (pool, s)
@@ -340,7 +361,8 @@ BEGIN
   n.nkids := n.nkids + 1
 END Add ;
 
-(* the two texts equal, octet by octet (Ast imports no Text) *)
+(* Is answers whether the two texts are equal, octet by octet.  Ast
+   imports no Text. *)
 PROCEDURE Is (RO a: UTF ; RO b: UTF) : BOOL =
 VAR
   x, y : SLICE OF BYTE ;
@@ -413,8 +435,8 @@ VAR
   c : CHAR ;
 BEGIN
   v := 0 ;
-  FOR i := 0 TO LEN (lit) - 2 DO
-    c := lit[i] ;
+  FOR i := 0 TO Text.BLen (lit) - 2 DO
+    c := Text.BChar (lit, i) ;
     IF c >= '0' AND c <= '9' THEN dg := ORD (c) - 48
     ELSE dg := ORD (c) - 55 END ;
     v := v * 16 + dg
@@ -437,8 +459,8 @@ BEGIN
     END ;
     IF e.kind = NString THEN
       t := STR (e.au) ;
-      IF LEN (t) # 1 THEN RETURN FALSE END ;
-      v := ORD (t[0]) ;
+      IF Text.BLen (t) # 1 THEN RETURN FALSE END ;
+      v := I64 (Text.BAt (t, 0)) ;
       ch := TRUE ;
       RETURN TRUE
     END ;

@@ -326,7 +326,7 @@ CASE RECORD ... END    (* tagged union; CASE over it must be total *)
 PTR T                  (* non-nil pointer *)
 OPT T                  (* T or NONE; must be guarded before use;
                           T a pointer or a procedure type *)
-STR                    (* predeclared alias for SLICE OF CHAR *)
+STR                    (* predeclared: names UTF, since 0.26.0 *)
 UTF                    (* predeclared: UTF-8 text, since 2026-10-23 *)
 ```
 
@@ -361,12 +361,16 @@ where it was declared.
 UTF-8 text, `docs/utf8-plan.md`) is a predeclared identifier for a
 slice of octets of valid UTF-8 -- `SLICE OF <u8>`, an element type no
 program can write, so a UTF is held to every rule a slice is held to
-(ownership, frames, read-only storage) while it is neither a `SLICE OF
-BYTE` nor a `STR`: nothing converts into it silently.  A string literal
-adapts to it where a UTF is wanted, as a numeric literal adapts to a
-width, and is stored as its UTF-8 octets; so does a `CONST` naming a
-string literal (`CONST Mode = 'v'`, this module's or an imported
-`Mod.C`), being that literal under a name.  A UTF has **no subscript and
+(ownership, frames, read-only storage) while it is not a `SLICE OF
+BYTE`: nothing converts into it silently.  **Since 0.26.0 `STR` names
+the UTF type** (the switch, `docs/utf8-stage4-plan.md` 4d): every
+string in a program is UTF-8 text.  A string literal is a UTF and is
+stored as its UTF-8 octets; so is a `CONST` naming a string literal
+(`CONST Mode = 'v'`, this module's or an imported `Mod.C`), being that
+literal under a name.  A literal also adapts to a `SLICE OF CHAR`
+where one is wanted -- an argument, an assignment, a RETURN -- as a
+numeric literal adapts to a width, and is then stored as its code
+points (Alex, 2026-10-31); a `CONST` does not, being held as octets.  A UTF has **no subscript and
 no `LEN`**: UTF-8 has no O(1) i-th character, so each operation names
 its unit and its cost -- `Text.BLen`/`BAt` for bytes, `CpCount`/`CpAt`
 and `FOR c IN u` for characters -- and the checker refuses `u[i]` and
@@ -374,11 +378,12 @@ and `FOR c IN u` for characters -- and the checker refuses `u[i]` and
 storage may be lent to any UTF parameter (§2.4's rule protects a write
 that cannot happen).  `=` and the orderings are refused as for strings.
 Four builtins convert and view, each a conversion under its type's name
-(decision 13): `UTF (s)` encodes a STR; `UTF (b)` validates a `SLICE OF
+(decision 13): `UTF (s)` encodes a `SLICE OF CHAR`; `UTF (b)` validates a `SLICE OF
 BYTE` and COPIES it -- a view would let the slice's owner write invalid
 octets under it -- raising ValueRange when it is not UTF-8 (strictly, as
 RFC 3629: no overlong form, no surrogate, nothing past U+10FFFF); `STR
-(u)` decodes; `OCTETS (u)` is a read-only `SLICE OF BYTE` view of the
+(u)` is u itself since 0.26.0, and `Text.Chars (u)` decodes to a
+`SLICE OF CHAR`; `OCTETS (u)` is a read-only `SLICE OF BYTE` view of the
 octets, O(1), read-only so that the UTF stays valid.  `UTF (pool, x)`
 places the answer in a pool, as `NEW (pool, T)` does, and is held to the
 rules a NEW in that pool is held to; its first argument is what NEW's
@@ -386,31 +391,35 @@ may be -- a POOL, or a VAR pointer parameter `f`, which names the pool
 of the object it leads to (§4, rule 2), so `UTF (f, s)` keeps a copy of
 s in the object's own storage without a pool in scope.  `u + v`
 concatenates two UTF, a UTF and a CHAR (its encoding) or a UTF and a
-literal; a STR does not join a UTF.  The `Text` procedures over them --
+literal; a `SLICE OF CHAR` does not join a UTF.  The `Text` procedures over them --
 `BLen`, `BAt`, `CpCount`, `CpAt`, `NextCp`, `ToUtf`, `FromUtf`,
 `FromUtf8`, `EqUtf`, `CompareUtf` -- are ordinary M9.  `SLICE (u, at,
 n)` takes BYTE offsets and raises IndexError when either end falls
 inside a character, so a slice of a UTF is a UTF.  `FOR c IN u` decodes:
 c is a CHAR, one code point a pass, O(n) for the whole -- the walk, where
-`CpAt` in a loop would be quadratic.  **Twins by type**: a call with a
-UTF argument is the procedure of the same name with the suffix `Utf`
-when its module declares one -- a UTF argument or a slice of them; `Text.Eq (u, v)` is `Text.EqUtf (u, v)`
--- decision 13's width rule (`Math.Sqrt` on an F32 is `SqrtF32`) with
-another suffix, so a module moves from STR to UTF by its declarations
-and not by its calls.
+`CpAt` in a loop would be quadratic.  **Twins collapse**: a procedure
+X whose module also declares XUtf is neither checked nor emitted
+since 0.26.0, and every call of X is a call of XUtf; `Text.Eq (u, v)`
+is `Text.EqUtf (u, v)`.  So a module moved from STR to UTF by its
+declarations and not by its calls, and the STR forms may now be
+deleted.  Before the switch this was a twin by type: a call with a
+UTF argument went to XUtf, decision 13's width rule (`Math.Sqrt` on an
+F32 is `SqrtF32`) with another suffix.
 
 `STR` is a predeclared *identifier*, not a keyword: it adds nothing to
-the lexer's keyword table and nothing to the grammar's productions, and a program may still write `SLICE OF CHAR` wherever it
-prefers. Aliases chase to structure, so the two are the same type for
-conformance, assignment and argument passing — there is no `STR` in
-the type system, only in the source.
+the lexer's keyword table and nothing to the grammar's productions.
+It names the UTF type, so the two are the same type for conformance,
+assignment and argument passing -- there is no `STR` in the type
+system, only in the source.  A `SLICE OF CHAR` stays a type of its
+own: code points, one per element, with a subscript and a `LEN`, for
+a program that edits characters in place.
 
-It prevents no bug, and no museum piece calls for it. It earns its
-place on a count: 198 occurrences of `SLICE OF CHAR` across 12 of the
-13 corpus modules, and the thirteenth grew a private alias rather than
-repeat it 62 times. That is the same evidence rule the rest of this
-report runs on, applied to ergonomics instead of safety, and it is
-stated plainly rather than dressed up as a correctness argument.
+Up to 0.25 `STR` was an alias for `SLICE OF CHAR`.  It prevented no
+bug, and no museum piece called for it.  It earned its place on a
+count: 198 occurrences of `SLICE OF CHAR` across 12 of the 13 corpus
+modules, and the thirteenth grew a private alias rather than repeat
+it 62 times.  The switch kept the name and changed what it names, so
+a program's declarations moved to UTF-8 without an edit.
 
 **A type refers to itself only through a pointer to a record.** A
 `RECORD`, `CASE RECORD` or `MONITOR` may hold a `PTR`, `SHARED PTR` or

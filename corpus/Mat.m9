@@ -1,7 +1,8 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Mat ;
 
-(* Dense 2-D matrices of F64 with NaN-aware, loop-free operations.
+(* Mat holds dense 2-D matrices of F64 with NaN-aware, loop-free
+   operations.
    The FOR loops have not gone anywhere: they moved in here, were
    written once, and are auto-vectorised by the compiler.  This is
    also all numpy ever promised.                                     *)
@@ -14,10 +15,10 @@ TYPE
   ReduceOp = CASE RECORD
   | Mean | Min | Max | Sum | Count
   END ;
-  (* the M2 enumeration: an empty-variant CASE RECORD is M9's
-     enumeration, and CASE over it must be total.  The first layout
-     of this declaration put the variants in a margin comment's
-     interior -- the lexer shrugged, the parser refused; P1 caught a
+  (* ReduceOp is the M2 enumeration.  An empty-variant CASE RECORD is
+     M9's enumeration, and CASE over it must be total.  The first
+     layout of this declaration put the variants in a margin comment's
+     interior: the lexer shrugged, the parser refused.  P1 caught a
      corpus bug on its first run.                                    *)
 
 PROCEDURE New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool
@@ -28,12 +29,13 @@ PROCEDURE New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool
 
 PROCEDURE Rows (m: PTR Matrix) : I64 ;
 PROCEDURE Cols (m: PTR Matrix) : I64 ;
-  (* the two extents.  They are asked of the MATRIX and not carried
-     beside it by the caller, which is the whole reason this type
-     became a GRID 2 OF F64: when the shape lived in the caller's
-     head, Get (m, 0, 3) on a 2x3 matrix answered element (1,0) and
-     raised nothing, because index 3 is inside a 6-element flat
-     slice.  Now every axis is checked against its own extent.    *)
+  (* Rows and Cols answer the two extents.  They are asked of the
+     MATRIX and not carried beside it by the caller.  That is the
+     whole reason this type became a GRID 2 OF F64.  When the shape
+     lived in the caller's head, Get (m, 0, 3) on a 2x3 matrix
+     answered element (1,0) and raised nothing, because index 3 is
+     inside a 6-element flat slice.  Now every axis is checked
+     against its own extent.                                       *)
 
 PROCEDURE Get (m: PTR Matrix ; r, c: I64) : F64 ;
 PROCEDURE Set (VAR m: PTR Matrix ; r, c: I64 ; v: F64) ;
@@ -50,15 +52,17 @@ PROCEDURE SubRowVector (VAR pool: POOL ; m: PTR Matrix ;
                         RO v: SLICE OF F64)
   : PTR Matrix IN pool
   RAISES Faults.SizeError ;
-  (* result[r,c] := m[r,c] - v[c], broadcast over rows *)
+  (* SubRowVector computes result[r,c] := m[r,c] - v[c], broadcast
+     over rows. *)
 
 PROCEDURE MinMax (m: PTR Matrix ; VAR mn, mx: F64) ;
-  (* NaN-aware global range.  All-NaN input answers NaN twice --
-     the M2 version answered 0.0, which is a lie with digits.        *)
+  (* MinMax answers the NaN-aware global range.  All-NaN input answers
+     NaN twice; the M2 version answered 0.0, which is a lie with
+     digits.                                                         *)
 
 (* ---- linear algebra, added for Bayesian inversions ----
 
-   The cited need: the ICOS inversion x = xb + B H^T K^-1 (y - H xb)
+   The cited need is the ICOS inversion x = xb + B H^T K^-1 (y - H xb)
    with K = H B H^T + R, which composes from multiply, transpose and
    an SPD solve.  Everything answers a NEW matrix from the pool; the
    inputs are never written.  Shape mismatches are Faults.SizeError with the
@@ -74,13 +78,14 @@ EXCEPTION
 
 PROCEDURE MulM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
   RAISES Faults.SizeError ;
-  (* a (r x k) times b (k x c); Cols (a) # Rows (b) is Faults.SizeError *)
+  (* MulM answers a (r x k) times b (k x c); Cols (a) # Rows (b) is
+     Faults.SizeError. *)
 
 PROCEDURE MulV (VAR pool: POOL ; a: PTR Matrix ; RO x: SLICE OF F64)
   : PTR Matrix IN pool
   RAISES Faults.SizeError ;
-  (* a times a column vector, answered as an n x 1 matrix so it can
-     feed straight back into MulM/CholSolve *)
+  (* MulV answers a times a column vector, as an n x 1 matrix so it
+     can feed straight back into MulM/CholSolve. *)
 
 PROCEDURE Transpose (VAR pool: POOL ; m: PTR Matrix)
   : PTR Matrix IN pool RAISES Faults.SizeError ;
@@ -90,7 +95,8 @@ PROCEDURE AddM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
 PROCEDURE SubM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
   RAISES Faults.SizeError ;
 PROCEDURE Scale (VAR m: PTR Matrix ; s: F64) ;
-  (* in place, the one mutator: scaling allocates nothing *)
+  (* Scale works in place, the one mutator: scaling allocates
+     nothing. *)
 
 PROCEDURE Identity (VAR pool: POOL ; n: I64) : PTR Matrix IN pool
   RAISES Faults.SizeError ;
@@ -100,31 +106,33 @@ PROCEDURE CopyM (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool
 PROCEDURE Cholesky (VAR pool: POOL ; a: PTR Matrix)
   : PTR Matrix IN pool
   RAISES Faults.SizeError, NotSPD, ValueRange ;
-  (* the lower-triangular L with L L^T = a.  Only the lower triangle
-     of a is read, which is the usual contract and means a matrix
-     that is SPD in its lower half is never betrayed by garbage in
-     its upper. *)
+  (* Cholesky answers the lower-triangular L with L L^T = a.  Only the
+     lower triangle of a is read.  That is the usual contract, and it
+     means a matrix that is SPD in its lower half is never betrayed by
+     garbage in its upper. *)
 
 PROCEDURE CholSolve (VAR pool: POOL ; l, b: PTR Matrix)
   : PTR Matrix IN pool
   RAISES Faults.SizeError ;
-  (* solve A X = B given L = Cholesky (A); B may carry many columns,
-     which is how the Kalman-style gain is built in one call *)
+  (* CholSolve solves A X = B given L = Cholesky (A).  B may carry
+     many columns, which is how the Kalman-style gain is built in one
+     call. *)
 
 PROCEDURE SpdInverse (VAR pool: POOL ; a: PTR Matrix)
   : PTR Matrix IN pool
   RAISES Faults.SizeError, NotSPD, ValueRange ;
-  (* CholSolve against the identity: the posterior covariance step *)
+  (* SpdInverse is CholSolve against the identity: the posterior
+     covariance step. *)
 
 PROCEDURE CholeskyT (VAR pool: POOL ; a: PTR Matrix ; threads: I64)
   : PTR Matrix IN pool
   RAISES Faults.SizeError, NotSPD, ValueRange ;
-  (* Cholesky's factor, computed BLOCKED and on threads (2026-09-15):
-     the lower triangle of a is copied and factored in place, panel
-     by panel -- the diagonal block serially, the rows below it as
-     independent forward substitutions, the trailing lower triangle
-     updated a row at a time -- with the rows of the last two steps
-     claimed in bands by `threads` workers.  Every cell sees the
+  (* CholeskyT computes Cholesky's factor BLOCKED and on threads
+     (2026-09-15).  It copies the lower triangle of a and factors it
+     in place, panel by panel: the diagonal block serially, the rows
+     below it as independent forward substitutions, the trailing
+     lower triangle updated a row at a time.  `threads` workers claim
+     the rows of the last two steps in bands.  Every cell sees the
      same subtractions in the same order the serial Cholesky applies
      (k ascending, one running value, never a panel dot product
      subtracted whole), so the factor is BIT-IDENTICAL to Cholesky's
@@ -135,9 +143,9 @@ PROCEDURE CholeskyT (VAR pool: POOL ; a: PTR Matrix ; threads: I64)
 PROCEDURE CholInverse (VAR pool: POOL ; l: PTR Matrix ; threads: I64)
   : PTR Matrix IN pool
   RAISES Faults.SizeError ;
-  (* (L L^T)^-1 from the factor Cholesky answered, in two contiguous
-     passes on `threads` threads (2026-09-15, the year inversion's
-     8-hour inverse):
+  (* CholInverse answers (L L^T)^-1 from the factor Cholesky answered,
+     in two contiguous passes on `threads` threads (2026-09-15, the
+     year inversion's 8-hour inverse):
 
        T = (L^-1)^T   row j of T is column j of L^-1: a forward
                       substitution against the identity's column j,
@@ -148,31 +156,31 @@ PROCEDURE CholInverse (VAR pool: POOL ; l: PTR Matrix ; threads: I64)
 
      SpdInverse's back substitution read the factor DOWN a column for
      each of n identity columns, a cache miss per multiply: n = 16 629
-     took 8 hours; this takes n^3/3 flops instead of n^3 and reads
+     took 8 hours.  This takes n^3/3 flops instead of n^3 and reads
      memory the way it lies.  Columns of T and rows of P are
-     independent, so the work is claimed in bands by `threads`
-     workers, each writing only its own rows; the arithmetic of every
-     cell is the same in the same order whatever the thread count, so
-     the answer is bit-identical for 1 and for 32.  threads <= 1 runs
+     independent, so `threads` workers claim the work in bands, each
+     writing only its own rows.  The arithmetic of every cell is the
+     same in the same order whatever the thread count, so the answer
+     is bit-identical for 1 and for 32.  threads <= 1 runs
      in the caller's thread.                                        *)
 
 PROCEDURE AddNormal (h: PTR Matrix ; RO w: SLICE OF F64 ;
                      VAR k: PTR Matrix ; threads: I64)
   RAISES Faults.SizeError ;
-  (* k := k + H^T diag (w) H, the normal matrix of a weighted least
-     squares, accumulated where it lies: one pass over the rows of H
-     per band of columns, zeros of H skipped, the upper triangle
-     computed and the lower mirrored at the end.  A worker owns a band
-     of rows of k and reads every row of H, so nothing is written
-     twice; the per-cell sums run over the rows of H ascending in
-     every band, as the serial loop did, so the result does not depend
-     on the thread count.                                           *)
+  (* AddNormal computes k := k + H^T diag (w) H, the normal matrix of
+     a weighted least squares, accumulated where it lies.  It makes
+     one pass over the rows of H per band of columns and skips zeros
+     of H.  It computes the upper triangle and mirrors the lower at
+     the end.  A worker owns a band of rows of k and reads every row
+     of H, so nothing is written twice.  The per-cell sums run over
+     the rows of H ascending in every band, as the serial loop did, so
+     the result does not depend on the thread count.                *)
 
 (* ---- general linear algebra (2026-10-02) ----
 
-   What the paragraph above left out "until something needs it": the
-   data science backlog does.  Here, and not in a module of its own,
-   by decision: one matrix type, one module.  The oracle is
+   The paragraph above left this out "until something needs it", and
+   the data science backlog does.  It lives here, and not in a module
+   of its own, by decision: one matrix type, one module.  The oracle is
    numpy.linalg, in corpus/MatTest.m9.
 
    As above, everything answers NEW storage in the pool and writes
@@ -188,39 +196,39 @@ PROCEDURE AddNormal (h: PTR Matrix ; RO w: SLICE OF F64 ;
 
 EXCEPTION
   Singular (col: I64) ;
-  (* no pivot at this column.  In Solve, Inverse and Det that is a
-     pivot EXACTLY zero, LAPACK's own test: the matrix has no
-     inverse.  A matrix that is merely close to singular raises
+  (* Singular means no pivot at this column.  In Solve, Inverse and
+     Det that is a pivot EXACTLY zero, LAPACK's own test: the matrix
+     has no inverse.  A matrix that is merely close to singular raises
      nothing there and answers with few digits, as it does
-     everywhere -- its condition number is the caller's to know.  In
+     everywhere; its condition number is the caller's to know.  In
      LstSq it is a column that adds nothing to the columns before it
      beyond rounding: the problem has no unique answer. *)
   NoConverge (sweeps: I64) ;
   (* the Jacobi iteration of Svd or EigSym did not settle in this
-     many sweeps.  Not seen on a finite matrix; an infinity inside
-     one does it. *)
+     many sweeps.  It is not seen on a finite matrix; an infinity
+     inside one does it. *)
 
 PROCEDURE Solve (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
   RAISES Faults.SizeError, Singular ;
-  (* the X with A X = B, A square, by LU with partial pivoting
-     (numpy.linalg.solve); B may carry many columns *)
+  (* Solve answers the X with A X = B, A square, by LU with partial
+     pivoting (numpy.linalg.solve).  B may carry many columns. *)
 
 PROCEDURE Det (a: PTR Matrix) : F64 RAISES Faults.SizeError ;
-  (* the determinant, from the same factorisation: the product of the
-     pivots, negated once for every row exchange.  0.0 for a matrix
-     whose elimination meets a zero pivot. *)
+  (* Det answers the determinant, from the same factorisation: the
+     product of the pivots, negated once for every row exchange.  It
+     answers 0.0 for a matrix whose elimination meets a zero pivot. *)
 
 PROCEDURE Inverse (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool
   RAISES Faults.SizeError, Singular ;
-  (* Solve against the identity (numpy.linalg.inv).  To solve a
-     system, Solve it: an inverse multiplied in costs three times
-     the work and loses digits. *)
+  (* Inverse is Solve against the identity (numpy.linalg.inv).  To
+     solve a system, Solve it: an inverse multiplied in costs three
+     times the work and loses digits. *)
 
 PROCEDURE Qr (VAR pool: POOL ; a: PTR Matrix ; VAR q, r: PTR Matrix)
   RAISES Faults.SizeError, ValueRange ;
-  (* a = q r by Householder reflections, in the reduced form: for a
-     of m x n and k the smaller of the two, q is m x k with
-     orthonormal columns and r is k x n, zero below its diagonal
+  (* Qr computes a = q r by Householder reflections, in the reduced
+     form.  For a of m x n and k the smaller of the two, q is m x k
+     with orthonormal columns and r is k x n, zero below its diagonal
      (numpy.linalg.qr, mode 'reduced').  THE DIAGONAL OF r IS NEVER
      NEGATIVE: a factorisation is unique only up to the sign of each
      column of q, and this is the one that is said.  ValueRange is a
@@ -228,11 +236,11 @@ PROCEDURE Qr (VAR pool: POOL ; a: PTR Matrix ; VAR q, r: PTR Matrix)
 
 PROCEDURE LstSq (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
   RAISES Faults.SizeError, Singular, ValueRange ;
-  (* the X that makes A X - B smallest, column by column, in the
-     least-squares sense: A of m x n with m >= n and full column
-     rank, B of m rows, X of n rows (numpy.linalg.lstsq).  Through
-     QR, never through the normal equations, which square the
-     condition number.  Fewer equations than unknowns is
+  (* LstSq answers the X that makes A X - B smallest, column by
+     column, in the least-squares sense: A of m x n with m >= n and
+     full column rank, B of m rows, X of n rows (numpy.linalg.lstsq).
+     It works through QR, never through the normal equations, which
+     square the condition number.  Fewer equations than unknowns is
      Faults.SizeError, and a column that is a combination of earlier
      ones is Singular: neither has ONE answer, and the smallest of
      the many is Svd's to find. *)
@@ -240,28 +248,29 @@ PROCEDURE LstSq (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
 PROCEDURE Svd (VAR pool: POOL ; a: PTR Matrix ; VAR u: PTR Matrix ;
                VAR s: SLICE OF F64 ; VAR vt: PTR Matrix)
   RAISES Faults.SizeError, NoConverge, ValueRange ;
-  (* a = u diag (s) vt, the singular value decomposition without the
-     full matrices: for a of m x n and k the smaller, u is m x k, s
-     has k values, vt is k x n (numpy.linalg.svd, full_matrices
-     False).  LEN (s) must be k.  The values DESCEND and are never
-     negative.  A pair of singular vectors is unique only up to one
-     sign, and this is the one that is said: the component of
+  (* Svd computes a = u diag (s) vt, the singular value decomposition
+     without the full matrices.  For a of m x n and k the smaller, u
+     is m x k, s has k values, vt is k x n (numpy.linalg.svd,
+     full_matrices False).  LEN (s) must be k.  The values DESCEND and
+     are never negative.  A pair of singular vectors is unique only up
+     to one sign, and this is the one that is said: the component of
      largest magnitude of each row of vt is positive.
 
-     By one-sided Jacobi rotations, which find small singular values
-     to their own precision.  Where a value is exactly zero the
+     It works by one-sided Jacobi rotations, which find small singular
+     values to their own precision.  Where a value is exactly zero the
      matrix does not determine its vector on the side that was
      iterated, and that vector is answered as zeros. *)
 
 PROCEDURE EigSym (VAR pool: POOL ; a: PTR Matrix ; VAR w: SLICE OF F64 ;
                   VAR v: PTR Matrix)
   RAISES Faults.SizeError, NoConverge, ValueRange ;
-  (* the eigenvalues w, ASCENDING, and the eigenvectors, the COLUMNS
-     of v, of a symmetric matrix: a v = v diag (w) (numpy.linalg.eigh).
-     Only the lower triangle of a is read, as Cholesky reads it.
-     LEN (w) must be the matrix's order.  Each vector's component of
-     largest magnitude is positive.  By Jacobi rotations.  A general
-     matrix has complex eigenvalues and is not this procedure's. *)
+  (* EigSym answers the eigenvalues w, ASCENDING, and the eigenvectors,
+     the COLUMNS of v, of a symmetric matrix: a v = v diag (w)
+     (numpy.linalg.eigh).  Only the lower triangle of a is read, as
+     Cholesky reads it.  LEN (w) must be the matrix's order.  Each
+     vector's component of largest magnitude is positive.  It works by
+     Jacobi rotations.  A general matrix has complex eigenvalues and
+     is not this procedure's. *)
 
 END Mat.
 
@@ -283,9 +292,9 @@ TYPE
      This module used to say `d[r * cols + c]` over a flat slice, and
      that arithmetic is exactly the hole GRID closes: Get (m, 0, 3) on
      a three-column matrix returned element (1,0) and raised NOTHING,
-     because index 3 is inside a six-element slice.  Measured, in
-     docs/nd-arrays.md, before the feature was designed.  The check is
-     now per axis and the driver asserts the raise.                  *)
+     because index 3 is inside a six-element slice.  This was
+     measured, in docs/nd-arrays.md, before the feature was designed.
+     The check is now per axis and the driver asserts the raise.     *)
 
 PROCEDURE New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool
   RAISES Faults.SizeError =
@@ -667,7 +676,8 @@ BEGIN
 END ResetWork ;
 
 PROCEDURE InvBand (VAR j: InvJob ; b: I64) =
-  (* pass 1: rows [c0, c1) of T; pass 2: rows [c0, c1) of P and their mirror *)
+  (* InvBand fills rows [c0, c1) of T in pass 1, and rows [c0, c1) of
+     P and their mirror in pass 2. *)
 VAR
   wpool : POOL ;
   x : SLICE OF F64 ;
@@ -748,9 +758,9 @@ BEGIN
   r1 := r0 + j.band ;
   IF r1 > j.n THEN r1 := j.n END ;
   IF j.pass = 1 THEN
-    (* the panel below the diagonal block: row i's entries in columns
-       k0..k1-1, each the serial recurrence continued from the value
-       the earlier panels' updates left in l[i, jj] *)
+    (* This fills the panel below the diagonal block: row i's entries
+       in columns k0..k1-1.  Each is the serial recurrence continued
+       from the value the earlier panels' updates left in l[i, jj]. *)
     FOR i := r0 TO r1 - 1 DO
       FOR jj := j.k0 TO j.k1 - 1 DO
         acc := j.l.d[i, jj] ;
@@ -761,8 +771,9 @@ BEGIN
       END
     END
   ELSE
-    (* the trailing update: the lower triangle of rows k1.., the
-       panel's products subtracted k ascending from the running value *)
+    (* This is the trailing update: the lower triangle of rows k1..,
+       the panel's products subtracted k ascending from the running
+       value. *)
     FOR i := r0 TO r1 - 1 DO
       FOR jj := j.k1 TO i DO
         acc := j.l.d[i, jj] ;
@@ -820,8 +831,8 @@ BEGIN
   WHILE k0 < n DO
     k1 := k0 + nb ;
     IF k1 > n THEN k1 := n END ;
-    (* the diagonal block, serially: the serial recurrence on rows
-       k0..k1-1 within their own columns *)
+    (* This fills the diagonal block, serially: the serial recurrence
+       on rows k0..k1-1 within their own columns. *)
     FOR i := k0 TO k1 - 1 DO
       FOR jj := k0 TO i DO
         acc := l.d[i, jj] ;
@@ -866,9 +877,9 @@ BEGIN
   j.l := l ;
   j.t := New (scratch, n, n) ;
   j.p := New (pool, n, n) ;
-  (* small bands, claimed as workers free up: the work per row of T
+  (* Workers claim small bands as they free up.  The work per row of T
      falls with its index and the work per row of P likewise, so a
-     static split would leave most threads waiting on the first *)
+     static split would leave most threads waiting on the first. *)
   j.band := 32 ;
   IF n < 128 THEN j.band := 8 END ;
   j.nbands := (n + j.band - 1) DIV j.band ;
@@ -949,11 +960,11 @@ CONST
   Eps = 2.220446049250313e-16 ;      (* the spacing of F64 at 1.0 *)
   MaxSweeps = 60 ;
 
-(* Doolittle with partial pivoting, in place: the multipliers of L
-   below the diagonal (its unit diagonal implied), U on and above.
-   perm[i] is the row of the original now at i; sign is +1 or -1 by
-   the parity of the exchanges.  Answers -1, or the column whose
-   pivot is exactly zero. *)
+(* Factor runs Doolittle with partial pivoting, in place: the
+   multipliers of L below the diagonal (its unit diagonal implied), U
+   on and above.  perm[i] is the row of the original now at i; sign is
+   +1 or -1 by the parity of the exchanges.  Factor answers -1, or the
+   column whose pivot is exactly zero. *)
 PROCEDURE Factor (VAR lu: PTR Matrix ; VAR perm: SLICE OF I64 ;
                   VAR sign: F64) : I64 =
 VAR
@@ -1063,10 +1074,10 @@ BEGIN
   RETURN Solve (pool, a, eye)
 END Inverse ;
 
-(* the reflector that turns column j of w, from row j down, into a
-   multiple of the first unit vector, left in column j of h from row
-   j down; answers v.v, or 0.0 when the column is already zero there
-   and nothing is to be done *)
+(* Reflector builds the reflector that turns column j of w, from row j
+   down, into a multiple of the first unit vector.  It leaves it in
+   column j of h from row j down.  It answers v.v, or 0.0 when the
+   column is already zero there and nothing is to be done. *)
 PROCEDURE Reflector (VAR w, h: PTR Matrix ; j: I64) : F64
   RAISES ValueRange =
 VAR
@@ -1079,7 +1090,7 @@ BEGIN
   IF acc = 0.0 THEN RETURN 0.0 END ;
   norm := Math.Sqrt (acc) ;
   FOR i := j TO m - 1 DO h.d[i, j] := w.d[i, j] END ;
-  (* away from the entry's own sign, so nothing cancels *)
+  (* Go away from the entry's own sign, so nothing cancels. *)
   IF w.d[j, j] < 0.0 THEN
     h.d[j, j] := h.d[j, j] - norm
   ELSE
@@ -1090,8 +1101,8 @@ BEGIN
   RETURN acc
 END Reflector ;
 
-(* t := (I - 2 v v^T / v.v) t over the columns of t from `from' on,
-   v being column j of h from row j down *)
+(* Reflect computes t := (I - 2 v v^T / v.v) t over the columns of t
+   from `from' on.  v is column j of h from row j down. *)
 PROCEDURE Reflect (VAR t: PTR Matrix ; h: PTR Matrix ; j: I64 ; vv: F64 ;
                    from: I64) =
 VAR
@@ -1139,7 +1150,7 @@ BEGIN
   FOR j := k - 1 TO 0 BY -1 DO
     Reflect (q, h, j, vv[j], 0)
   END ;
-  (* the sign that is said: no negative on r's diagonal *)
+  (* This says the sign: no negative on r's diagonal. *)
   FOR i := 0 TO k - 1 DO
     IF r.d[i, i] < 0.0 THEN
       FOR j := i TO n - 1 DO r.d[i, j] := -r.d[i, j] END ;
@@ -1162,10 +1173,11 @@ BEGIN
   IF m < n THEN RAISE Faults.SizeError (m, n) END ;
   IF Rows (b) # m THEN RAISE Faults.SizeError (Rows (b), m) END ;
   Qr (scratch, a, q, r) ;
-  (* a column that adds nothing to those before it leaves a diagonal
-     entry that is rounding and no more: never exactly zero, so held
-     to the largest entry instead, as numpy's rcond holds a singular
-     value (machine epsilon times the larger dimension) *)
+  (* A column that adds nothing to those before it leaves a diagonal
+     entry that is rounding and no more.  That entry is never exactly
+     zero, so it is held to the largest entry instead, as numpy's
+     rcond holds a singular value (machine epsilon times the larger
+     dimension). *)
   big := 0.0 ;
   FOR i := 0 TO n - 1 DO
     IF r.d[i, i] > big THEN big := r.d[i, i] END
@@ -1192,9 +1204,10 @@ BEGIN
   RETURN x
 END LstSq ;
 
-(* the Jacobi rotation that annihilates an off-diagonal g between two
-   diagonals whose difference is `gap' (second minus first): its
-   cosine and sine, the smaller of the two angles *)
+(* Rotation answers the Jacobi rotation that annihilates an
+   off-diagonal g between two diagonals whose difference is `gap'
+   (second minus first).  It answers its cosine and sine, the smaller
+   of the two angles. *)
 PROCEDURE Rotation (gap, g: F64 ; VAR c, s: F64) RAISES ValueRange =
 VAR zeta, t, root : F64 ;
 BEGIN
@@ -1210,7 +1223,7 @@ BEGIN
   s := c * t
 END Rotation ;
 
-(* columns p and q of m turned by the rotation *)
+(* Turn turns columns p and q of m by the rotation. *)
 PROCEDURE Turn (VAR m: PTR Matrix ; p, q: I64 ; c, s: F64) =
 VAR
   i : I64 ;
@@ -1224,10 +1237,11 @@ BEGIN
   END
 END Turn ;
 
-(* one-sided Jacobi on a matrix with no more columns than rows: w's
-   columns are turned until they are orthogonal to one another, the
-   same turns gathered in v, which starts as the identity.  What is
-   left is w = U diag (s), and a = w v^T throughout. *)
+(* Orthogonalise runs one-sided Jacobi on a matrix with no more
+   columns than rows.  w's columns are turned until they are
+   orthogonal to one another, the same turns gathered in v, which
+   starts as the identity.  w is left as U diag (s), and a = w v^T
+   throughout. *)
 PROCEDURE Orthogonalise (VAR w, v: PTR Matrix)
   RAISES NoConverge, ValueRange =
 VAR
@@ -1261,8 +1275,8 @@ BEGIN
   RAISE NoConverge (MaxSweeps)
 END Orthogonalise ;
 
-(* +1.0 or -1.0: what makes the component of largest magnitude of
-   row r of m positive (the first such, among equals) *)
+(* RowSign answers +1.0 or -1.0: what makes the component of largest
+   magnitude of row r of m positive (the first such, among equals). *)
 PROCEDURE RowSign (m: PTR Matrix ; r: I64) : F64 =
 VAR
   j : I64 ;
@@ -1279,8 +1293,8 @@ BEGIN
   RETURN pick
 END RowSign ;
 
-(* the svd of a matrix with no more columns than rows: u is m x n,
-   vt is n x n *)
+(* SvdTall answers the svd of a matrix with no more columns than rows:
+   u is m x n, vt is n x n. *)
 PROCEDURE SvdTall (VAR pool: POOL ; a: PTR Matrix ; VAR u: PTR Matrix ;
                    VAR s: SLICE OF F64 ; VAR vt: PTR Matrix)
   RAISES Faults.SizeError, NoConverge, ValueRange =
@@ -1305,7 +1319,7 @@ BEGIN
     norm[j] := Math.Sqrt (acc) ;
     order[j] := j
   END ;
-  (* the largest first; equal values keep the order they had *)
+  (* Sort the largest first; equal values keep the order they had. *)
   FOR k := 0 TO n - 2 DO
     best := k ;
     FOR j := k + 1 TO n - 1 DO
@@ -1375,7 +1389,8 @@ BEGIN
   IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
   n := Rows (a) ;
   IF LEN (w) # n THEN RAISE Faults.SizeError (LEN (w), n) END ;
-  (* the lower triangle, mirrored: symmetric whatever was above *)
+  (* Copy the lower triangle, mirrored: symmetric whatever was
+     above. *)
   d := New (scratch, n, n) ;
   FOR i := 0 TO n - 1 DO
     FOR j := 0 TO i DO
@@ -1415,7 +1430,7 @@ BEGIN
   END ;
   order := NEW (scratch, I64, n) ;
   FOR j := 0 TO n - 1 DO order[j] := j END ;
-  (* the smallest first; equal values keep the order they had *)
+  (* Sort the smallest first; equal values keep the order they had. *)
   FOR k := 0 TO n - 2 DO
     best := k ;
     FOR j := k + 1 TO n - 1 DO

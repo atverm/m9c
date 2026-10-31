@@ -2,20 +2,20 @@
 # THE SOURCE TREE MUST BUILD WITH NOTHING BUT A C COMPILER.
 #
 # M9 is self-hosted, and `runtime/gen/` holds the generated C for the
-# whole toolchain -- checked in ON PURPOSE (see .gitignore, which says
-# so) so that a source package needs no M9 compiler to build one, and
-# no Free Pascal either.  `debian/control` already declares
+# whole toolchain.  It is checked in ON PURPOSE (see .gitignore, which
+# says so), so that a source package needs no M9 compiler to build
+# one, and no Free Pascal either.  `debian/control` already declares
 # `Build-Depends: gcc, libc6-dev, groff-base` and nothing else.
 #
 # THAT CLAIM ROTS SILENTLY IF NOBODY CHECKS IT.  Every machine this is
-# developed on has FPC installed and every CI runner installs it for
-# the differential gates, so a build.sh that started calling `fpc`, or
+# developed on has FPC installed, and every CI runner installs it for
+# the differential gates.  So a build.sh that started calling `fpc`, or
 # a runtime/gen left stale, would keep working here and fail on a user
 # who has only gcc.  This gate is the difference between a claim and a
 # fact.
 #
-# It copies the TRACKED files -- the working tree's version, which is
-# what a commit would contain -- into a scratch directory, puts a
+# It copies the TRACKED files (the working tree's version, which is
+# what a commit would contain) into a scratch directory.  It puts a
 # sabotaged `fpc` first on PATH, and requires build.sh to succeed
 # without ever reaching it.  Then it uses the m9c it just built to
 # compile a program, because a compiler that builds and cannot compile
@@ -28,14 +28,15 @@ trap 'rc=$?; rm -rf "$work" || :; exit $rc' EXIT
 mkdir -p "$work/src" "$work/bin"
 
 cd "$repo"
-# ONE tar reading the names: through xargs a long list became several
+# ONE tar reads the names.  Through xargs a long list became several
 # tar runs, concatenated, and the extracting tar stops at the first
-# archive's end -- files past it went missing (CI, 2026-10-26, when the
-# list grew: `runtime/tlsshim.c: No such file')
+# archive's end.  Files past it went missing (CI, 2026-10-26, when the
+# list grew: `runtime/tlsshim.c: No such file').
 git ls-files -z | tar --null -T - -cf - | (cd "$work/src" && tar -xf -)
 
-# a compiler that announces itself rather than one that is merely absent:
-# "command not found" could be mistaken for a build that skipped a step
+# Install a compiler that announces itself rather than one that is
+# merely absent.  "command not found" could be mistaken for a build
+# that skipped a step.
 for tool in fpc ppcx64 gfortran python3; do
   cat > "$work/bin/$tool" <<EOF
 #!/bin/sh
@@ -61,8 +62,8 @@ fi
 test -x out/m9c || { echo "gcconly: no out/m9c"; exit 1; }
 test -f out/libm9rt.a || { echo "gcconly: no out/libm9rt.a"; exit 1; }
 
-# and the artifact works: compile a program with it, still without the
-# tools above on PATH
+# The artifact must work: compile a program with it, still without the
+# tools above on PATH.
 cat > "$work/Hello.m9" <<'EOF'
 DEFINITION MODULE Hello ;
 PROCEDURE Greet () ;

@@ -1,0 +1,51 @@
+(* EXPECT: THREAD (Name): the target allocates through its parameter, in the pool of the record both threads hold, and the pool takes no lock *)
+MODULE m ;
+(* UTF (pool, s) carves its pool as NEW (pool, T) does, so the THREAD
+   rule judges it the same way.  Legal forms come first.  A procedure
+   bound to a MONITOR builds a UTF in the monitor's POOL field, and
+   hands that field to a POOL parameter that carves it.  Both run under
+   the monitor's lock.  The checker refused both in cp-kernel until
+   2026-10-31: it read the UTF builtin as a call through a procedure
+   value, and it exempted a POOL parameter only for a worker's own pool.
+   The refused form builds a UTF in the pool field of one record handed
+   to four threads in a loop, with no lock. *)
+TYPE
+  Log = MONITOR RECORD p : POOL ; last : UTF ; n : I64 END ;
+  Hold = RECORD b : Log END [SHARABLE] ;
+  HoldP = PTR Hold ;
+  Job = RECORD wp : POOL ; last : UTF END [SHARABLE] ;
+  JobP = PTR Job ;
+VAR
+  h : HoldP ;
+  mp : POOL ;
+  d : JobP ;
+  i : I64 ;
+PROCEDURE Grow (VAR p: POOL) : SLICE OF I64 =
+BEGIN
+  RETURN NEW (p, I64, 4)
+END Grow ;
+PROCEDURE Note (VAR b: Log ; RO s: UTF) =
+VAR g : SLICE OF I64 ;
+BEGIN
+  b.last := UTF (b.p, s) ;
+  g := Grow (b.p) ;
+  b.n := b.n + LEN (g)
+END Note ;
+PROCEDURE Notes (VAR k: Hold) =
+BEGIN
+  Note (k.b, 'done')
+END Notes ;
+PROCEDURE Name (VAR j: Job) =
+BEGIN
+  j.last := UTF (j.wp, 'done')
+END Name ;
+BEGIN
+  h := NEW (mp, Hold) ;
+  FOR i := 0 TO 3 DO
+    THREAD (Notes, h)
+  END ;
+  d := NEW (mp, Job) ;
+  FOR i := 0 TO 3 DO
+    THREAD (Name, d)
+  END
+END m.

@@ -1,26 +1,27 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Arrow ;
 
-(* An Apache Arrow IPC STREAM, written.
+(* Arrow writes an Apache Arrow IPC STREAM.
 
-   One schema message, one record batch, one end-of-stream marker --
-   the shape `pyarrow.ipc.open_stream` reads and the shape a service
-   answers `format=arrow` with.  Deliberately a SUBSET, and the parts
-   outside it are refused BY NAME rather than half-written, because a
-   columnar file that decodes into the wrong cells is a numbers-shaped
-   lie: Parquet.m9's rule, and the reason pyarrow is the oracle in
+   The stream is one schema message, one record batch and one
+   end-of-stream marker: the shape `pyarrow.ipc.open_stream` reads and
+   the shape a service answers `format=arrow` with.  Arrow writes a
+   SUBSET deliberately.  The parts outside it are refused BY NAME
+   rather than half-written, because a columnar file that decodes into
+   the wrong cells is a numbers-shaped lie.  That is Parquet.m9's
+   rule, and the reason pyarrow is the oracle in
    runtime/test/arrow_driver.c.
 
    IN THE SUBSET: flat schemas; int8/16/32/64, float32/64, UTF-8
    strings, and timestamps in nanoseconds; one record batch; schema
-   custom_metadata.  Uncompressed (Stream), or every body buffer
-   compressed with ZSTD (StreamCodec): the record batch's
-   BodyCompression says so, and each buffer is its uncompressed
-   length as 8 little-endian bytes and then one zstd frame -- or the
-   length -1 and the bytes as they were, for a buffer zstd would not
-   make smaller, which the format allows for exactly that.  An empty
-   buffer stays empty.  libzstd is the system's (LINK below), as
-   Parquet's ZSTD pages are; lz4, the format's other codec, is not
+   custom_metadata.  The body is uncompressed (Stream), or every body
+   buffer is compressed with ZSTD (StreamCodec).  Then the record
+   batch's BodyCompression says so, and each buffer is its
+   uncompressed length as 8 little-endian bytes and then one zstd
+   frame.  A buffer zstd would not make smaller is the length -1 and
+   the bytes as they were, which the format allows for exactly that.
+   An empty buffer stays empty.  libzstd is the system's (LINK below),
+   as Parquet's ZSTD pages are; lz4, the format's other codec, is not
    written.
 
    OUT OF THE SUBSET, and refused: nulls.  Every column here is
@@ -28,7 +29,7 @@ DEFINITION MODULE Arrow ;
    which is what a numpy array with no mask becomes, and it is what
    these callers have.  A column that needs nulls must say so, and
    this module would have to grow a bitmap rather than guess.  The
-   missing-value convention in the data -- NaN, a sentinel -- is the
+   missing-value convention in the data (NaN, a sentinel) is the
    caller's, unchanged, exactly as Parquet.m9 leaves it.
 
    THE FORMAT, so a reader of this file need not have the spec open.
@@ -52,9 +53,10 @@ TYPE
   Table ;                                (* opaque; lives in a POOL *)
 
 CONST
-  (* the column types this subset writes.  Names, not widths, because
-     a wire format fixes the width and the host must not have a say --
-     par 2.1's rule, and SizeOf is deliberately not used here. *)
+  (* These are the column types this subset writes.  They are names,
+     not widths, because a wire format fixes the width and the host
+     must not have a say.  That is par 2.1's rule, and SizeOf is
+     deliberately not used here. *)
   TyI8   = 0 ;
   TyI16  = 1 ;
   TyI32  = 2 ;
@@ -74,20 +76,20 @@ CONST
                                             must mean "nothing asked" *)
 
 PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Table IN pool ;
-  (* an empty table of `rows` rows.  Columns are added in order and
-     that is the order the schema and the batch carry.               *)
+  (* New answers an empty table of `rows` rows.  Columns are added in
+     order, and that is the order the schema and the batch carry.    *)
 
 PROCEDURE Meta (VAR t: PTR Table ;
                 RO KEPT key: STR ; RO KEPT value: STR) ;
-  (* a schema custom_metadata entry -- where a data passport rides.
-     KEPT: the table holds VIEWS of the caller's strings, as
+  (* Meta adds a schema custom_metadata entry, where a data passport
+     rides.  KEPT: the table holds VIEWS of the caller's strings, as
      HttpServer.AddRoute holds its own, so they must outlive it.     *)
 
 PROCEDURE AddInt (VAR pool: POOL ; VAR t: PTR Table ;
                   RO KEPT name: STR ; ty: I64 ; RO KEPT v: SLICE OF I64)
   RAISES Faults.BadArg ;
-  (* an integer or timestamp column, values carried as I64 and
-     narrowed to the declared width.  A value that will not fit
+  (* AddInt adds an integer or timestamp column, values carried as I64
+     and narrowed to the declared width.  A value that will not fit
      RAISES rather than wrapping: the width is the wire's, and a
      silent truncation here is a wrong number in someone's dataframe. *)
 
@@ -102,28 +104,30 @@ PROCEDURE AddF64 (VAR pool: POOL ; VAR t: PTR Table ;
 PROCEDURE AddStr (VAR pool: POOL ; VAR t: PTR Table ;
                   RO KEPT name: STR ; RO KEPT v: SLICE OF STR)
   RAISES Faults.BadArg, ValueRange ;
-  (* UTF-8 on the wire, encoded here from the caller's CHARs. *)
+  (* AddStr puts UTF-8 on the wire, encoded here from the caller's
+     CHARs. *)
 
 PROCEDURE Stream (VAR pool: POOL ; t: PTR Table) : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange ;
-  (* the whole stream, in pool. *)
+  (* Stream answers the whole stream, in pool. *)
 
 PROCEDURE StreamCodec (VAR pool: POOL ; t: PTR Table ; codec, level: I64)
   : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange ;
-  (* the same stream with its body buffers compressed: CodecNone is
-     Stream's bytes exactly, CodecZstd is libzstd at `level' (1 is
-     pyarrow's own default for ZSTD, 3 is libzstd's).  Another codec
-     is BadArg by name.  The schema and every cell read back the same
-     either way; only the wire shrinks.                              *)
+  (* StreamCodec answers the same stream with its body buffers
+     compressed.  CodecNone is Stream's bytes exactly, and CodecZstd
+     is libzstd at `level' (1 is pyarrow's own default for ZSTD, 3 is
+     libzstd's).  Another codec is BadArg by name.  The schema and
+     every cell read back the same either way; only the wire
+     shrinks.                                                        *)
 
 PROCEDURE NBytes (t: PTR Table) : I64 ;
-  (* what pyarrow's `table.nbytes` answers for this table, which is
-     NOT the stream length: it is Arrow's in-memory buffer
-     accounting, and a caller reporting a size in a passport must use
-     this rather than measuring the wire.  A string column counts
-     4n + data, NOT 4(n+1) -- the offsets buffer is one longer on the
-     wire than nbytes admits -- and a column with no nulls carries no
+  (* NBytes answers what pyarrow's `table.nbytes` answers for this
+     table, which is NOT the stream length.  It is Arrow's in-memory
+     buffer accounting, and a caller reporting a size in a passport
+     must use this rather than measuring the wire.  A string column
+     counts 4n + data, NOT 4(n+1): the offsets buffer is one longer on
+     the wire than nbytes admits.  A column with no nulls carries no
      validity bytes at all.  Both were measured against pyarrow, and
      the first cost an 8-byte passport error on two string columns
      the last time this was written.                                 *)
@@ -131,22 +135,24 @@ PROCEDURE NBytes (t: PTR Table) : I64 ;
 (* ---- READING a stream (2026-10-30; zarrm9's mcpd reads zpd's
    `format=arrow' answers, Alex: "pyarrow readers as well") ----
 
-   Any number of record batches after the schema, each read when Next
-   is asked, uncompressed or ZSTD (the BodyCompression above, the -1
-   length included).  The columns read are the subset written: int8 to
-   int64, float32 and float64, UTF-8 strings and timestamps in
-   nanoseconds -- WITH a time zone too, which FieldTz answers ('' for
-   a naive one).  NULLS ARE READ: a column's validity bitmap answers
-   IsNull, a null float reads as NaN, a null integer as 0 and a null
-   string as ''.  Refused by name, never half-read: a big-endian
-   stream, a dictionary batch or a dictionary-encoded column, a nested
-   column, an unsigned integer, a half float, a timestamp in another
-   unit, large strings, and LZ4.  pyarrow is the oracle
-   (runtime/test/arrowread.py), as it is for the writer.
+   A stream may hold any number of record batches after the schema,
+   each read when Next is asked, uncompressed or ZSTD (the
+   BodyCompression above, the -1 length included).  The columns read
+   are the subset written: int8 to int64, float32 and float64, UTF-8
+   strings and timestamps in nanoseconds, WITH a time zone too, which
+   FieldTz answers ('' for a naive one).  NULLS ARE READ: a column's
+   validity bitmap answers IsNull, a null float reads as NaN, a null
+   integer as 0 and a null string as ''.  These are refused by name,
+   never half-read: a big-endian stream, a dictionary batch or a
+   dictionary-encoded column, a nested column, an unsigned integer, a
+   half float, a timestamp in another unit, large strings, and LZ4.
+   pyarrow is the oracle (runtime/test/arrowread.py), as it is for the
+   writer.
 
    Each batch's buffers are copied, or decompressed, into the reader's
    own pool and stay there: a reader of a long stream holds every batch
-   it has read.  What the getters answer is the caller's, in its pool. *)
+   it has read.  The getters' answers are the caller's, in its
+   pool. *)
 
 TYPE
   Reader ;                               (* opaque; lives in a POOL *)
@@ -154,56 +160,62 @@ TYPE
 PROCEDURE Open (VAR pool: POOL ; RO KEPT src: SLICE OF BYTE)
   : PTR Reader IN pool
   RAISES Faults.BadArg, ValueRange ;
-  (* the schema: the stream's first message.  `src' is the whole
-     stream, read where it lies until the last batch is read. *)
+  (* Open reads the schema: the stream's first message.  `src' is the
+     whole stream, read where it lies until the last batch is read. *)
 
 PROCEDURE NFields (r: PTR Reader) : I64 ;
 PROCEDURE FieldName (r: PTR Reader ; i: I64) : STR RAISES IndexError ;
 PROCEDURE FieldType (r: PTR Reader ; i: I64) : I64 RAISES IndexError ;
-  (* one of the Ty constants above *)
+  (* FieldType answers one of the Ty constants above. *)
 PROCEDURE FieldTz (r: PTR Reader ; i: I64) : STR RAISES IndexError ;
-  (* a timestamp column's time zone as the schema spells it, 'UTC' or
-     '+01:00'; '' for a naive timestamp and for any other column *)
+  (* FieldTz answers a timestamp column's time zone as the schema
+     spells it, 'UTC' or '+01:00', or '' for a naive timestamp and for
+     any other column. *)
 PROCEDURE MetaOf (r: PTR Reader ; RO key: STR) : STR ;
-  (* the schema's custom_metadata value for key, '' when absent *)
+  (* MetaOf answers the schema's custom_metadata value for key, ''
+     when absent. *)
 
 PROCEDURE Next (VAR r: PTR Reader) : BOOL
   RAISES Faults.BadArg, ValueRange ;
-  (* the next record batch, FALSE at the end of the stream (its
-     zero-length marker, or the bytes running out where a message
-     would start) *)
+  (* Next reads the next record batch, and answers FALSE at the end of
+     the stream (its zero-length marker, or the bytes running out
+     where a message would start). *)
 
 PROCEDURE Rows (r: PTR Reader) : I64 ;
-  (* the current batch's row count; 0 before the first Next *)
+  (* Rows answers the current batch's row count; 0 before the first
+     Next. *)
 PROCEDURE Nulls (r: PTR Reader ; i: I64) : I64 RAISES IndexError ;
-  (* column i's null count in the current batch *)
+  (* Nulls answers column i's null count in the current batch. *)
 PROCEDURE IsNull (r: PTR Reader ; i, row: I64) : BOOL RAISES IndexError ;
 
 PROCEDURE GetF64 (VAR pool: POOL ; r: PTR Reader ; i: I64) : SLICE OF F64
   RAISES Faults.BadArg, IndexError ;
-  (* a float32 or float64 column of the current batch, float32 widened
-     exactly; a null is NaN.  Any other column is BadArg. *)
+  (* GetF64 answers a float32 or float64 column of the current batch,
+     float32 widened exactly; a null is NaN.  Any other column is
+     BadArg. *)
 PROCEDURE GetI64 (VAR pool: POOL ; r: PTR Reader ; i: I64) : SLICE OF I64
   RAISES Faults.BadArg, IndexError ;
-  (* an integer or timestamp column (nanoseconds since the epoch); a
-     null is 0 -- ask IsNull.  Any other column is BadArg. *)
+  (* GetI64 answers an integer or timestamp column (nanoseconds since
+     the epoch); a null is 0, so ask IsNull.  Any other column is
+     BadArg. *)
 PROCEDURE GetStr (VAR pool: POOL ; r: PTR Reader ; i, row: I64) : STR
   RAISES Faults.BadArg, IndexError, ValueRange ;
-  (* one cell of a string column, decoded from UTF-8 (ValueRange for
-     bytes that are not UTF-8); a null is ''.  Any other column is
-     BadArg. *)
+  (* GetStr answers one cell of a string column, decoded from UTF-8
+     (ValueRange for bytes that are not UTF-8); a null is ''.  Any
+     other column is BadArg. *)
 
 END Arrow.
 
 
 UNSAFE DEFINITION MODULE FOR "C" carrowz LINK "-l:libzstd.so.1" ;
 
-(* libzstd's one-shot compressor, as Parquet's czstd binds it: each
-   call makes and frees its own context, so any number of threads may
-   call it at once.  An error is a size_t near 2 ** 64, which I64 ()
-   refuses with ValueRange.  Its own unit, not Parquet's, so that
-   Arrow does not import Parquet and a program linking both has two
-   units of distinct names over the same two symbols. *)
+(* carrowz binds libzstd's one-shot compressor, as Parquet's czstd
+   binds it: each call makes and frees its own context, so any number
+   of threads may call it at once.  An error is a size_t near 2 ** 64,
+   which I64 () refuses with ValueRange.  carrowz is its own unit, not
+   Parquet's, so that Arrow does not import Parquet and a program
+   linking both has two units of distinct names over the same two
+   symbols. *)
 
 PROCEDURE ZstdCompress = "ZSTD_compress"
   (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT ;
@@ -221,7 +233,10 @@ END carrowz.
 
 UNSAFE IMPLEMENTATION MODULE Arrow ;
 
-(* UNSAFE for one reason: ADR at the libzstd boundary.  Grep ADR. *)
+IMPORT Text ;
+
+(* Arrow is UNSAFE for one reason: ADR at the libzstd boundary.  Grep
+   ADR. *)
 
 FROM carrowz IMPORT ZstdCompress, ZstdBound, ZstdDecompress ;
 
@@ -230,8 +245,8 @@ IMPORT Faults ;
 IMPORT DynStr ;
 
 CONST
-  (* flatbuffer builder room for the two metadata messages.  The body
-     never passes through it. *)
+  (* FbFixed is the flatbuffer builder room for the two metadata
+     messages.  The body never passes through it. *)
   FbFixed = 8192 ;
   FbPerCol = 512 ;
 
@@ -244,7 +259,7 @@ TYPE
     RO f8 : SLICE OF F64 ;
     (* a string column is encoded ONCE, at Add: the offsets and the
        concatenated UTF-8, which is what the wire wants anyway.  The
-       alternative -- encoding per row at Stream -- would walk every
+       alternative, encoding per row at Stream, would walk every
        string twice and leave a pool full of throwaway copies. *)
     sdata : SLICE OF BYTE ;
     soff : SLICE OF I64 ;
@@ -263,13 +278,13 @@ TYPE
     firstM, lastM : OPT PTR Kv ;
   END ;
 
-  (* THE FLATBUFFER BUILDER, WHICH FILLS ITS BUFFER FROM THE END.
-     That is not a flourish: an offset in this format points forward
-     from where it is written, so an object must be complete before
-     anything can refer to it, and building backwards is what makes
-     that possible in one pass.  Every offset below is measured from
-     the END of the buffer, the only frame in which they stay put
-     while the front keeps moving. *)
+  (* THE FLATBUFFER BUILDER FILLS ITS BUFFER FROM THE END.  That is
+     not a flourish: an offset in this format points forward from
+     where it is written, so an object must be complete before
+     anything can refer to it.  A backwards build makes that possible in
+     one pass.  Every offset below is measured from the END of the
+     buffer, the only frame in which they stay put while the front keeps
+     moving. *)
   Fb = RECORD
     b : SLICE OF BYTE ;
     head : I64 ;
@@ -289,8 +304,8 @@ END Pow256 ;
 
 PROCEDURE PutLE (VAR u: SLICE OF BYTE ; at, v, k: I64)
   RAISES ValueRange, IndexError =
-  (* k little-endian bytes of v's TWO'S COMPLEMENT pattern.  The
-     shift stays inside checked I64: m is the non-negative low byte
+  (* PutLE writes k little-endian bytes of v's TWO'S COMPLEMENT pattern.
+     The shift stays inside checked I64: m is the non-negative low byte
      and (v - m) is an exact multiple of 256, so DIV truncating or
      flooring makes no difference. *)
 VAR i, x, m : I64 ;
@@ -387,7 +402,8 @@ BEGIN
 END Put64 ;
 
 PROCEDURE Ref (VAR f: Fb ; off: I64) RAISES Faults.BadArg, ValueRange =
-  (* an offset to an object already written: forward from here *)
+  (* Ref writes an offset to an object already written: forward from
+     here. *)
 BEGIN
   Prep (f, 4, 0) ;
   Raw (f, Used (f) - off + 4, 4)
@@ -395,10 +411,10 @@ END Ref ;
 
 PROCEDURE Str (VAR pool: POOL ; VAR f: Fb ; RO s: STR) : I64
   RAISES Faults.BadArg, ValueRange =
-  (* length, bytes, NUL -- written backwards, terminator first *)
+  (* Str writes length, bytes, NUL, backwards: terminator first. *)
 VAR i, n : I64 ; u : SLICE OF BYTE ;
 BEGIN
-  u := DynStr.Utf8 (pool, s) ;
+  u := OCTETS (s) ;
   n := LEN (u) ;
   Prep (f, 4, n + 1) ;
   Pad (f, 1) ;
@@ -420,18 +436,18 @@ BEGIN
 END Start ;
 
 PROCEDURE Slot (VAR f: Fb ; i: I64) RAISES IndexError =
-  (* CALLED AFTER THE VALUE, never before.  Building backwards, the
-     field's offset is where the buffer stands once the value is
-     down; recording it first points the vtable at the PREVIOUS
-     field and every scalar comes out misaligned -- which is what
-     "Invalid flatbuffers message" meant the first time. *)
+  (* Slot is CALLED AFTER THE VALUE, never before.  Building
+     backwards, the field's offset is where the buffer stands once the
+     value is down.  A Slot recorded first points the vtable at the
+     PREVIOUS field, and every scalar comes out misaligned.  That is
+     what "Invalid flatbuffers message" meant the first time. *)
 BEGIN
   f.vt[i] := Used (f)
 END Slot ;
 
 PROCEDURE End (VAR f: Fb) : I64 RAISES Faults.BadArg, ValueRange, IndexError =
-  (* close the table: a placeholder, the vtable behind it, then the
-     placeholder patched to point at it.  The reader computes
+  (* End closes the table: a placeholder, the vtable behind it, then
+     the placeholder patched to point at it.  The reader computes
      table_position - soffset = vtable, which is why the patched
      value is vloc - tloc and not the other way round. *)
 VAR i, tloc, vloc, d : I64 ;
@@ -462,8 +478,8 @@ END Finish ;
    pyarrow produced, not remembered. ---- *)
 
 PROCEDURE TypeTag (ty: I64) : I64 =
-  (* Type union tags from Schema.fbs: Int 2, FloatingPoint 3,
-     Utf8 5, Timestamp 10 *)
+  (* TypeTag answers the Type union tags from Schema.fbs: Int 2,
+     FloatingPoint 3, Utf8 5, Timestamp 10. *)
 BEGIN
   IF ty = TyF32 OR ty = TyF64 THEN RETURN 3 END ;
   IF ty = TyStr THEN RETURN 5 END ;
@@ -537,7 +553,7 @@ END KvTable ;
 
 PROCEDURE Vector (VAR f: Fb ; RO offs: SLICE OF I64 ; n: I64) : I64
   RAISES Faults.BadArg, ValueRange, IndexError =
-  (* a vector of offsets, last element first *)
+  (* Vector writes a vector of offsets, last element first. *)
 VAR i : I64 ;
 BEGIN
   Prep (f, 4, 4 * n) ;
@@ -590,9 +606,9 @@ PROCEDURE BatchMsg (VAR f: Fb ; t: PTR Table ;
                     nbuf, bodyLen, codec: I64) : I64
   RAISES Faults.BadArg, ValueRange, IndexError =
   (* RecordBatch: 0 length, 1 nodes, 2 buffers, 3 compression.
-     FieldNode and Buffer are STRUCTS -- inline, no vtable, sixteen
-     bytes each -- so their fields go down in reverse to come out in
-     order.  BodyCompression: 0 codec (LZ4_FRAME 0, ZSTD 1 -- LZ4 is
+     FieldNode and Buffer are STRUCTS (inline, no vtable, sixteen
+     bytes each), so their fields go down in reverse to come out in
+     order.  BodyCompression: 0 codec (LZ4_FRAME 0, ZSTD 1; LZ4 is
      the DEFAULT, so ZSTD must be written), 1 method (BUFFER 0, the
      default and the only one, so omitted).  With no codec the batch
      has three fields, exactly the table Stream always wrote. *)
@@ -736,14 +752,14 @@ BEGIN
   n := 0 ;
   FOR i := 0 TO LEN (v) - 1 DO
     c.soff[i] := n ;
-    n := n + LEN (DynStr.Utf8 (pool, v[i]))
+    n := n + LEN (OCTETS (v[i]))
   END ;
   c.soff[LEN (v)] := n ;
   c.dlen := n ;
   c.sdata := NEW (pool, BYTE, n) ;
   j := 0 ;
   FOR i := 0 TO LEN (v) - 1 DO
-    parts := DynStr.Utf8 (pool, v[i]) ;
+    parts := OCTETS (v[i]) ;
     FOR m := 0 TO LEN (parts) - 1 DO
       c.sdata[j] := parts[m] ; j := j + 1
     END
@@ -757,10 +773,11 @@ BEGIN
   c := t.firstC ;
   WHILE c IS SOME cc DO
     IF cc.ty = TyStr THEN
-      (* 4n, NOT 4(n+1): pyarrow's own accounting, measured.  The
-         offsets buffer is one entry longer on the wire than nbytes
-         admits, and that difference is an 8-byte passport error on
-         two string columns if it is assumed instead. *)
+      (* A string column counts 4n, NOT 4(n+1): pyarrow's own
+         accounting, measured.  The offsets buffer is one entry longer
+         on the wire than nbytes admits, and that difference is an
+         8-byte passport error on two string columns if it is assumed
+         instead. *)
       n := n + 4 * t.rows + cc.dlen
     ELSE
       n := n + Width (cc.ty) * t.rows
@@ -775,7 +792,7 @@ VAR m : OPT PTR Kv ; n : I64 ;
 BEGIN
   n := 0 ; m := t.firstM ;
   WHILE m IS SOME mm DO
-    n := n + 4 * LEN (mm.k) + 4 * LEN (mm.v) + 64 ;
+    n := n + 4 * Text.BLen (mm.k) + 4 * Text.BLen (mm.v) + 64 ;
     m := mm.next
   END ;
   RETURN n
@@ -786,7 +803,7 @@ VAR c : OPT PTR Col ; n : I64 ;
 BEGIN
   n := 0 ; c := t.firstC ;
   WHILE c IS SOME cc DO
-    n := n + 4 * LEN (cc.name) + 32 ;
+    n := n + 4 * Text.BLen (cc.name) + 32 ;
     c := cc.next
   END ;
   RETURN n
@@ -800,8 +817,8 @@ BEGIN
 END PutMark ;
 
 PROCEDURE NBuf (t: PTR Table) : I64 =
-  (* every column's validity buffer, then its values -- or a string's
-     offsets and data *)
+  (* NBuf counts every column's validity buffer, then its values, or
+     a string's offsets and data. *)
 VAR c : OPT PTR Col ; n : I64 ;
 BEGIN
   n := 0 ;
@@ -818,9 +835,9 @@ PROCEDURE Framed (VAR pool: POOL ; t: PTR Table ;
                   nbuf, bodyLen, codec: I64 ; VAR pos: I64)
   : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange =
-  (* the whole stream but its body: the schema message, the record
-     batch's metadata naming the buffers as laid out, and the end
-     marker.  The body is left zero for the caller to fill, starting
+  (* Framed answers the whole stream but its body: the schema message,
+     the record batch's metadata naming the buffers as laid out, and the
+     end marker.  The body is left zero for the caller to fill, starting
      at `pos'. *)
 VAR
   f : Fb ;
@@ -875,7 +892,7 @@ BEGIN
   at := 0 ; k := 0 ;
   c := t.firstC ;
   WHILE c IS SOME cc DO
-    (* the validity buffer: present, EMPTY, null_count zero *)
+    (* The validity buffer is present, EMPTY, null_count zero. *)
     bufOff[k] := at ; bufLen[k] := 0 ; k := k + 1 ;
     IF cc.ty = TyStr THEN
       bufOff[k] := at ; bufLen[k] := 4 * (t.rows + 1) ; k := k + 1 ;
@@ -940,9 +957,9 @@ TYPE
 PROCEDURE RawOf (VAR pool: POOL ; cc: PTR Col ; rows, part: I64)
   : SLICE OF BYTE
   RAISES ValueRange, IndexError =
-  (* a column's buffer as Stream writes it into the body: part 1 is
-     the values (or a string's offsets), part 2 a string's data.  The
-     data is the column's own bytes, answered as they are. *)
+  (* RawOf answers a column's buffer as Stream writes it into the body:
+     part 1 is the values (or a string's offsets), part 2 a string's
+     data.  The data is the column's own bytes, answered as they are. *)
 VAR u : SLICE OF BYTE ; i, w : I64 ;
 BEGIN
   IF cc.ty = TyStr THEN
@@ -966,11 +983,11 @@ END RawOf ;
 PROCEDURE Pack (VAR pool: POOL ; cc: PTR Col ; rows, part, level: I64)
   : SLICE OF BYTE
   RAISES Faults.BadArg, ValueRange, IndexError =
-  (* one buffer compressed: its uncompressed length as 8 little-endian
-     bytes, then the zstd frame -- or -1 and the raw bytes, for a
-     buffer zstd does not make smaller.  The raw bytes and zstd's room
-     live in this procedure's own pool, so a column costs the caller
-     only what goes on the wire. *)
+  (* Pack answers one buffer compressed: its uncompressed length as 8
+     little-endian bytes, then the zstd frame.  A buffer zstd does not
+     make smaller is -1 and the raw bytes.  The raw bytes and zstd's
+     room live in this procedure's own pool, so a column costs the
+     caller only what goes on the wire. *)
 VAR
   sp : POOL ;
   raw, z, out : SLICE OF BYTE ;
@@ -1003,8 +1020,9 @@ END ZBound ;
 PROCEDURE ZCompress (VAR z: SLICE OF BYTE ; RO raw: SLICE OF BYTE ;
                      level: I64) : I64
   RAISES Faults.BadArg =
-  (* libzstd's answer, or BadArg by name: an error is a size_t near
-     2 ** 64, which I64 () refuses -- and so is a size past the room *)
+  (* ZCompress answers libzstd's answer, or BadArg by name.  An error
+     is a size_t near 2 ** 64, which I64 () refuses, and so is a size
+     past the room. *)
 VAR got : I64 ;
 BEGIN
   got := I64 (ZstdCompress (ADR (z), C.SizeT (LEN (z)), ADR (raw),
@@ -1032,8 +1050,9 @@ BEGIN
   IF level < 1 OR level > 22 THEN
     RAISE Faults.BadArg ('arrow: a zstd level outside 1 .. 22')
   END ;
-  (* ---- every buffer packed FIRST: the layout is the packed lengths,
-     and the batch must name every buffer by (offset, length) ---- *)
+  (* ---- every buffer is packed FIRST: the layout is the packed
+     lengths, and the batch must name every buffer by (offset, length)
+     ---- *)
   nbuf := NBuf (t) ;
   bufOff := NEW (pool, I64, nbuf + 1) ;
   bufLen := NEW (pool, I64, nbuf + 1) ;
@@ -1041,8 +1060,8 @@ BEGIN
   at := 0 ; k := 0 ;
   c := t.firstC ;
   WHILE c IS SOME cc DO
-    (* the validity buffer: present, EMPTY, and an empty buffer is
-       not compressed -- there is nothing to say its length with *)
+    (* The validity buffer is present and EMPTY.  An empty buffer is
+       not compressed: there is nothing to say its length with. *)
     bufOff[k] := at ; bufLen[k] := 0 ; k := k + 1 ;
     pk[k].b := Pack (pool, cc, t.rows, 1, level) ;
     bufOff[k] := at ; bufLen[k] := LEN (pk[k].b) ;
@@ -1068,7 +1087,7 @@ END StreamCodec ;
 (* ---- READING (2026-10-30) ----
 
    THE FLATBUFFER, READ.  A table starts with a signed 32-bit offset
-   BACK to its vtable (table - offset); the vtable is u16 its own size,
+   BACK to its vtable (table - offset).  The vtable is u16 its own size,
    u16 the table's, then one u16 per field: the field's offset in the
    table, 0 when absent.  A string, vector or sub-table field holds a
    u32 offset FORWARD from where it is written.  A vector is u32 its
@@ -1094,10 +1113,10 @@ CONST
   MsgDict = 2 ;
   MsgBatch = 3 ;
 
-(* k little-endian bytes at `at' as an unsigned number (k <= 7), or as
-   a two's complement one when signed -- an 8-byte value is always
-   read signed, the negative ones through their complement so the sum
-   stays inside I64 *)
+(* GetLE reads k little-endian bytes at `at' as an unsigned number
+   (k <= 7), or as a two's complement one when signed.  An 8-byte
+   value is always read signed, the negative ones through their
+   complement, so the sum stays inside I64. *)
 PROCEDURE GetLE (RO b: SLICE OF BYTE ; at, k: I64 ; signed: BOOL) : I64
   RAISES IndexError =
 VAR i, v : I64 ;
@@ -1115,7 +1134,8 @@ EXCEPT
 | Overflow : RAISE IndexError
 END GetLE ;
 
-(* field `id' of the table at `tbl': its position, or -1 when absent *)
+(* FbField answers the position of field `id' of the table at `tbl',
+   or -1 when absent. *)
 PROCEDURE FbField (RO m: SLICE OF BYTE ; tbl, id: I64) : I64 RAISES IndexError =
 VAR vt, vsize, o : I64 ;
 BEGIN
@@ -1127,13 +1147,13 @@ BEGIN
   RETURN tbl + o
 END FbField ;
 
-(* where the offset at `at' points *)
+(* FbRef answers where the offset at `at' points. *)
 PROCEDURE FbRef (RO m: SLICE OF BYTE ; at: I64) : I64 RAISES IndexError =
 BEGIN
   RETURN at + GetLE (m, at, 4, FALSE)
 END FbRef ;
 
-(* a scalar field, or dflt when absent *)
+(* FbInt answers a scalar field, or dflt when absent. *)
 PROCEDURE FbInt (RO m: SLICE OF BYTE ; tbl, id, k: I64 ; signed: BOOL ; dflt: I64) : I64
   RAISES IndexError =
 VAR at : I64 ;
@@ -1143,7 +1163,7 @@ BEGIN
   RETURN GetLE (m, at, k, signed)
 END FbInt ;
 
-(* a string field, decoded; '' when absent *)
+(* FbStr answers a string field, decoded; '' when absent. *)
 PROCEDURE FbStr (VAR pool: POOL ; RO m: SLICE OF BYTE ; tbl, id: I64) : STR
   RAISES IndexError, ValueRange =
 VAR at, n : I64 ;
@@ -1152,11 +1172,11 @@ BEGIN
   IF at < 0 THEN RETURN '' END ;
   at := FbRef (m, at) ;
   n := GetLE (m, at, 4, FALSE) ;
-  RETURN DynStr.FromUtf8 (pool, SLICE (m, at + 4, n))
+  RETURN UTF (pool, SLICE (m, at + 4, n))
 END FbStr ;
 
-(* a vector field: its first element's position, its length in n;
-   -1 and 0 when absent *)
+(* FbVec answers a vector field's first element's position, with its
+   length in n; -1 and 0 when absent. *)
 PROCEDURE FbVec (RO m: SLICE OF BYTE ; tbl, id: I64 ; VAR n: I64) : I64
   RAISES IndexError =
 VAR at : I64 ;
@@ -1169,8 +1189,9 @@ BEGIN
   RETURN at + 4
 END FbVec ;
 
-(* the next message: its metadata in meta, its body in body; FALSE at
-   the end-of-stream marker or where the bytes run out *)
+(* NextMsg reads the next message: its metadata in meta, its body in
+   body.  It answers FALSE at the end-of-stream marker or where the
+   bytes run out. *)
 PROCEDURE NextMsg (VAR r: PTR Reader ; VAR meta: SLICE OF BYTE ;
                    VAR body: SLICE OF BYTE ; VAR kind: I64) : BOOL
   RAISES Faults.BadArg =
@@ -1205,14 +1226,14 @@ EXCEPT
 | IndexError : RAISE Faults.BadArg ('arrow: a message is cut short')
 END NextMsg ;
 
-(* the message header table: Message.header *)
+(* Header answers the message header table: Message.header. *)
 PROCEDURE Header (RO meta: SLICE OF BYTE) : I64 RAISES IndexError =
 BEGIN
   RETURN FbRef (meta, FbField (meta, GetLE (meta, 0, 4, FALSE), 2))
 END Header ;
 
-(* one Field of the schema into slot i, or BadArg naming what this
-   reader does not read *)
+(* SchemaField reads one Field of the schema into slot i, or raises
+   BadArg naming what this reader does not read. *)
 PROCEDURE SchemaField (VAR pool: POOL ; VAR r: PTR Reader ; RO m: SLICE OF BYTE ;
                        f, i: I64)
   RAISES Faults.BadArg, IndexError, ValueRange =
@@ -1332,15 +1353,15 @@ PROCEDURE MetaOf (r: PTR Reader ; RO key: STR) : STR =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO r.nm - 1 DO
-    IF DynStr.Eq (r.mk[i], key) THEN RETURN r.mv[i] END
+    IF Text.Eq (r.mk[i], key) THEN RETURN r.mv[i] END
   END ;
   RETURN ''
 END MetaOf ;
 
-(* buffer (off, len) of a batch's body, as its own bytes in the
-   reader's pool: copied, or -- under ZSTD -- its 8-byte uncompressed
-   length and one frame decompressed, or the bytes after a length of
-   -1 as they were *)
+(* Buf answers buffer (off, len) of a batch's body, as its own bytes
+   in the reader's pool.  The buffer is copied.  Under ZSTD, Buf reads
+   its 8-byte uncompressed length and decompresses one frame, or
+   takes the bytes after a length of -1 as they were. *)
 PROCEDURE Buf (VAR r: PTR Reader ; RO body: SLICE OF BYTE ; off, len: I64 ; zstd: BOOL)
   : SLICE OF BYTE
   RAISES Faults.BadArg, IndexError =
@@ -1474,7 +1495,8 @@ EXCEPT
 | ValueRange : RAISE Faults.BadArg ('arrow: column ' + r.fname[i] + ' holds a value F64 cannot')
 END GetF64 ;
 
-(* the width of an integer or timestamp column's cells *)
+(* IntWidth answers the width of an integer or timestamp column's
+   cells. *)
 PROCEDURE IntWidth (ty: I64) : I64 =
 BEGIN
   IF ty = TyI8 THEN RETURN 1 END ;
@@ -1512,7 +1534,7 @@ BEGIN
   IF a < 0 OR b < a OR b > LEN (r.data[i]) THEN
     RAISE Faults.BadArg ('arrow: column ' + r.fname[i] + ' has offsets past its data')
   END ;
-  RETURN DynStr.FromUtf8 (pool, SLICE (r.data[i], a, b - a))
+  RETURN UTF (pool, SLICE (r.data[i], a, b - a))
 END GetStr ;
 
 END Arrow.

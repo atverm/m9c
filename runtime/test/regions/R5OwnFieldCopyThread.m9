@@ -1,10 +1,10 @@
 MODULE R5OwnFieldCopyThread ;
 (* R5OwnFieldCopy with a THREAD for the move: the target takes its
    argument OWN and frees it, and `r', copied from the field before, is
-   read after the thread starts (2026-10-28).  Accepted by develop
-   a5d415af; a use after free only when the worker runs first -- a race,
-   and it ran clean under ASan the one time it was run, so this holds
-   the refusal, not a measured fault. *)
+   read after the thread starts (2026-10-28).  develop a5d415af
+   accepted it.  It is a use after free only when the worker runs
+   first, a race, and it ran clean under ASan the one time it was run,
+   so this holds the refusal, not a measured fault. *)
 IMPORT Io, Fmt ;
 TYPE
   T = RECORD v : I64 END [SHARABLE] ;

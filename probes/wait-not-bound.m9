@@ -1,10 +1,10 @@
 (* EXPECT: WAIT and SIGNAL take the monitor this procedure is bound to -- its first parameter -- and no other: on another monitor there is no lock held to release (par 6) *)
 MODULE m ;
-(* WAIT releases the lock its procedure holds and waits for a SIGNAL: on
-   a monitor the procedure is not bound to there is no lock held, and
-   the wait returned at once on macOS, undefined elsewhere (the fourth
-   review's WaitOther, 2026-10-26).  Legal forms first: WAIT and SIGNAL
-   on the bound parameter. *)
+(* WAIT releases the lock its procedure holds and waits for a SIGNAL.
+   On a monitor the procedure is not bound to there is no lock held.
+   The wait returned at once on macOS, undefined elsewhere (the fourth
+   review's WaitOther, 2026-10-26).  Legal forms come first: WAIT and
+   SIGNAL on the bound parameter. *)
 TYPE
   Box = MONITOR RECORD
     n : I64 ;

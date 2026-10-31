@@ -16,7 +16,7 @@ MODULE RaisePayload ;
               overwritten by then, so only the handler's own copy
               (m9_pay_take) can still say the first message.
 
-   Prints `NAME wrong K of N` per way (N is 2000 for nested, which
+   It prints `NAME wrong K of N` per way (N is 2000 for nested, which
    checks the inner message too) and exits 1 if any K is not 0.
    The compiler of 0.16.0 gets every way wrong; a runtime whose
    m9_pay_take hands back the in-flight copy instead of its own gets
@@ -67,7 +67,7 @@ BEGIN
 END Rethrow ;
 
 PROCEDURE Churn () RAISES ValueRange =
-  (* allocate and fill as a handler doing real work would *)
+  (* Churn allocates and fills as a handler doing real work would. *)
 VAR
   p : POOL ;
   d : PTR DynStr.DString IN p ;
@@ -85,7 +85,7 @@ BEGIN
 END Want ;
 
 PROCEDURE Way (k: I64) : I64 RAISES ValueRange =
-  (* how many of a thousand raises of way k were read back wrong *)
+  (* Way counts the raises of way k, of a thousand, read back wrong. *)
 VAR
   i, bad : I64 ;
   got, inner : STR ;

@@ -1,14 +1,14 @@
 (* EXPECT: cannot assign SLICE OF CHAR to UTF *)
 MODULE m ;
-(* a CONST naming a string literal adapts to a UTF as the literal does
+(* A CONST naming a string literal adapts to a UTF as the literal does
    (decision 66): assigned, passed, answered, joined by + on either
-   side; a STR variable still does not *)
+   side.  A SLICE OF CHAR variable still does not. *)
 CONST
   Greeting = 'hello' ;
   Dot = '.' ;
 VAR
   u : UTF ;
-  s : STR ;
+  s : SLICE OF CHAR ;
 
 PROCEDURE Id (x: UTF) : UTF =
 BEGIN

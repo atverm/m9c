@@ -2,15 +2,16 @@ MODULE GfOwnerLife ;
 
 (* WANT: 41 42 43 44 45 *)
 
-(* the legal forms of "what is derived from an owned object lives as
-   long as its owner" (par 4.2; 2026-10-26, the third review's ownership
-   advice): a view read BEFORE the owner is disposed (ZarrStoreTest's
-   Co2Store order: view, use, close); storage of the object stored into
-   the object itself (ZarrStore.OpenArray's `a.path'); a view kept in
-   module state of an owner that is never killed (it leaks, which par 4.2
-   allows); a view taken through a SHARED handle that outlives the one
-   disposed; an owner moved, and the view read through the new name's
-   life.  The refusals are regions/R3Own*. *)
+(* This program holds the legal forms of "what is derived from an
+   owned object lives as long as its owner" (par 4.2; 2026-10-26, the
+   third review's ownership advice): a view read BEFORE the owner is
+   disposed (ZarrStoreTest's Co2Store order: view, use, close); storage
+   of the object stored into the object itself (ZarrStore.OpenArray's
+   `a.path'); a view kept in module state of an owner that is never
+   killed (it leaks, which par 4.2 allows); a view taken through a
+   SHARED handle that outlives the one disposed; an owner moved, and
+   the view read through the new name's life.  The refusals are
+   regions/R3Own*. *)
 IMPORT Io, Fmt ;
 TYPE
   Store = RECORD n : I64 ; pool : POOL ; data : SLICE OF I64 ; copy : SLICE OF I64 END ;

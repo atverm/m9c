@@ -1,14 +1,15 @@
 MODULE SortTest ;
 
-(* Sort against numpy: the index sorts, unique and the binary
-   searches, from runtime/test/gold/Sort.gold (tools/sortgold.py);
-   and the sorts themselves against the order the index sort gives,
-   which numpy has just vouched for.  Everything here is exact.
+(* SortTest holds Sort against numpy: the index sorts, unique and the
+   binary searches, from runtime/test/gold/Sort.gold
+   (tools/sortgold.py).  It holds the sorts themselves against the
+   order the index sort gives, which numpy has just vouched for.
+   Everything here is exact.
 
-   One thing numpy and Sort answer differently and both rightly:
-   unique of a vector holding 0.0 and -0.0 keeps one zero, numpy the
-   negative and Sort the first it met; they are equal as values, and
-   that is what is compared. *)
+   numpy and Sort answer one thing differently, and both rightly.
+   Unique of a vector holding 0.0 and -0.0 keeps one zero: numpy keeps
+   the negative, and Sort the first it met.  The two zeros are equal
+   as values, and the test compares them as values. *)
 
 IMPORT Check ;
 IMPORT Io ;
@@ -125,8 +126,8 @@ BEGIN
                 I64s ('want.argsort.s')) ;
   u := Sort.UniqueStrs (v) ;
   Check.EqStrs (t, 'UniqueStrs', u, Strs ('want.unique.s')) ;
-  (* Strs itself: the sorted strings, with their repeats, are v taken
-     in the order ArgStr gave *)
+  (* This checks Strs itself.  The sorted strings, with their repeats,
+     are v taken in the order ArgStr gave. *)
   w := Strs ('in.s') ;
   Sort.Strs (w) ;
   FOR i := 0 TO LEN (v) - 1 DO

@@ -1,17 +1,19 @@
 MODULE SparqlTest ;
 
-(* Sparql, held to rdflib (docs/datalib-plan.md par 2).  tools/
-   sparqlgold.py ran each query of runtime/test/gold/Sparql.gold
+IMPORT Text ;
+
+(* SparqlTest holds Sparql to rdflib (docs/datalib-plan.md par 2).
+   tools/sparqlgold.py ran each query of runtime/test/gold/Sparql.gold
    against runtime/test/gold/sparql-fixture.ttl and wrote the answer
    twice: as the JSON results document rdflib serializes
    (runtime/test/gold/sparql/*.json) and as rdflib's own terms, row by
-   row.  OFFLINE, here and in m9test: every document read by
-   Sparql.Parse and ParseAsk and compared, term by term, with rdflib's
+   row.  OFFLINE, here and in m9test, Sparql.Parse and ParseAsk read
+   every document, and the test compares it, term by term, with rdflib's
    answer.
 
    LIVE, when SPARQL_ENDPOINT names an endpoint (runtime/test/sparql.sh
-   starts runtime/test/sparqlfix.py, rdflib serving the same graph):
-   the same queries through Select and Ask, and one padded past
+   starts runtime/test/sparqlfix.py, rdflib serving the same graph),
+   the same queries go through Select and Ask, and one is padded past
    GetMax so that it goes by POST.  Blank-node labels are rdflib's
    choice per parse, so live they are compared by kind only.        *)
 
@@ -39,13 +41,14 @@ BEGIN
 END FromCps ;
 
 PROCEDURE G (RO name: STR) : STR RAISES ValueRange =
-  (* a golden string, carried as code points *)
+  (* G answers a golden string, carried as code points. *)
 BEGIN
   RETURN FromCps (Check.GoldI64s (t, gold, name))
 END G ;
 
 PROCEDURE GoldBool (RO name: STR) : BOOL =
-  (* a golden boolean; FALSE, and a failed check, when there is none *)
+  (* GoldBool answers a golden boolean; FALSE, and a failed check,
+     when there is none. *)
 VAR v : SLICE OF BOOL ;
 BEGIN
   v := Check.GoldBools (t, gold, name) ;
@@ -57,9 +60,9 @@ BEGIN
 END GoldBool ;
 
 PROCEDURE Doc (VAR p: POOL ; RO file: STR) : STR RAISES ValueRange =
-  (* a results document as rdflib wrote it: UTF-8 *)
+  (* Doc reads a results document as rdflib wrote it: UTF-8. *)
 BEGIN
-  RETURN DynStr.FromUtf8 (p, Io.ReadFileBytes (p, Check.GoldPath ('sparql/' + file)))
+  RETURN UTF (p, Io.ReadFileBytes (p, Check.GoldPath ('sparql/' + file)))
 EXCEPT
 | Io.IOError (e) :
     Check.That (t, 'the document ' + file + ' can be read', FALSE) ;
@@ -78,8 +81,9 @@ END KindOf ;
 
 PROCEDURE Compare (RO what: STR ; r: PTR Sparql.Results ; k: I64 ;
                    labels: BOOL) RAISES ValueRange =
-  (* the results of SELECT k against rdflib's terms; blank-node labels
-     only when labels says the document is rdflib's own *)
+  (* Compare checks the results of SELECT k against rdflib's terms.
+     It compares blank-node labels only when labels says the document
+     is rdflib's own. *)
 VAR
   vars : SLICE OF STR ;
   pre, label : STR ;
@@ -160,7 +164,8 @@ BEGIN
 END Offline ;
 
 PROCEDURE Refuses (RO what: STR ; RO doc: STR) RAISES ValueRange =
-  (* a document that is not the format: FormatError, nothing else *)
+  (* Refuses checks that a document that is not the format raises
+     FormatError, nothing else. *)
 VAR
   p : POOL ;
   r : PTR Sparql.Results IN p ;
@@ -203,7 +208,7 @@ BEGIN
     pad := '#' ;
     FOR k := 1 TO 2100 DO pad := pad + 'x' END ;
     q := pad + 0AC + G ('sel1.query') ;
-    Check.That (t, 'the padded query is longer than GetMax', LEN (q) > Sparql.GetMax) ;
+    Check.That (t, 'the padded query is longer than GetMax', Text.BLen (q) > Sparql.GetMax) ;
     r := Sparql.Select (p, endpoint, q) ;
     Compare ('Select by POST', r, 1, FALSE) ;
     n := Check.GoldI64 (t, gold, 'ask.count') ;
@@ -216,9 +221,9 @@ BEGIN
             'PREFIX foaf: <http://xmlns.com/foaf/0.1/> CONSTRUCT { ?x foaf:name ?n } WHERE { ?x foaf:name ?n }') ;
     (* sel1 selects exactly the foaf:name statements: rdflib's count of
        them, not a hand count (which said six, and there are five).  The
-       answer READ by Rdf, not its line feeds counted: the rdflib of
-       Ubuntu 24.04 ends N-Triples with an empty line, and CI counted
-       six where zoefii's 7.6.0 gives five *)
+       test READS the answer with Rdf rather than counting its line
+       feeds: the rdflib of Ubuntu 24.04 ends N-Triples with an empty
+       line, and CI counted six where zoefii's 7.6.0 gives five. *)
     Check.EqI64 (t, 'Construct: one triple a name, read by Rdf',
                  Rdf.Count (Rdf.ParseNTriples (p, nt)),
                  Check.GoldI64 (t, gold, 'sel1.rows'))
@@ -236,7 +241,7 @@ BEGIN
   | IndexError :
       Check.That (t, 'a golden boolean', FALSE)
   END ;
-  (* a query the endpoint refuses: QueryError with its status *)
+  (* A query the endpoint refuses raises QueryError with its status. *)
   BEGIN
     r := Sparql.Select (p, endpoint, 'SELECT WHERE nonsense') ;
     Check.That (t, 'a malformed query raises QueryError', FALSE)
@@ -257,7 +262,7 @@ BEGIN
     Offline () ;
     Refusals () ;
     endpoint := Io.Env (pool, 'SPARQL_ENDPOINT') ;
-    IF LEN (endpoint) > 0 THEN
+    IF Text.BLen (endpoint) > 0 THEN
       Live ()
     ELSE
       Io.WriteLine ('SparqlTest: offline only (SPARQL_ENDPOINT unset)')

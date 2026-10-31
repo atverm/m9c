@@ -1,7 +1,8 @@
 DEFINITION MODULE Palette ;
 
-(* a small enumeration in its own module, so EnumUse can import it --
-   the cross-module half of the type family (docs/enum-plan.md) *)
+(* Palette holds a small enumeration in its own module, so EnumUse
+   can import it.  It is the cross-module half of the type family
+   (docs/enum-plan.md). *)
 
 TYPE Hue = (Warm, Cool, Neutral) ;
 

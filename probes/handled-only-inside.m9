@@ -1,8 +1,8 @@
 (* EXPECT: unhandled RAISES Bad from call to Boom -- add it to this procedure's RAISES, or handle it: EXCEPT | Bad : ... *)
 (* A block's handlers catch for its guarded sequence ONLY (since
-   2026-10-21, the compiler review's C6): the checker's handled set was
+   2026-10-21, the compiler review's C6).  The checker's handled set was
    flat over the procedure, so a call after the block was counted as
-   caught by it, in both checkers.  The legal forms first: the call
+   caught by it, in both checkers.  The legal forms come first: the call
    inside the block, a raise inside a nested block handled by the outer
    one, the same exception declared where it can escape. *)
 MODULE m ;

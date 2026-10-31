@@ -1,21 +1,23 @@
 # JsonUtf
 
-Json over UTF text (docs/utf8-plan.md, stage 2; Alex, 2026-10-23:
-"create the modules and test them, add UTF to the module name, swap
-the names when STR becomes UTF").  The same tree, the same API and
-the same contracts as Json -- read Json's comments for each procedure
--- with every piece of text a UTF: the document parsed, the payloads
-and member names it keeps (views of the document, as Json's are), the
-texts answered and the renderings produced.  A document is held at
-its UTF-8 size, where Json's STR tree holds four octets a character.
+JsonUtf is Json over UTF text (docs/utf8-plan.md, stage 2; Alex,
+2026-10-23: "create the modules and test them, add UTF to the
+module name, swap the names when STR becomes UTF").  It has the
+same tree, the same API and the same contracts as Json.  Read
+Json's comments for each procedure.  Every piece of text is a UTF:
+the document parsed, the payloads and member names it keeps (views
+of the document, as Json's are), the texts answered and the
+renderings produced.  A document is held at its UTF-8 size, where
+Json's STR tree holds four octets a character.
 
-What differs, and why:
+JsonUtf differs from Json here, for these reasons:
   - positions in a ParseError are lines and columns of CHARACTERS, as
     Json's are; the scanner steps one code point at a time over byte
     offsets (Text.NextCp);
   - escape decoding and the renderings are built through STR and
-    converted once at the end: transient text, where the tree is what
-    lives on, and the switch at stage 3 makes the detour go away;
+    converted once at the end.  They are transient text, where the
+    tree is what lives on, and the switch at stage 3 makes the
+    detour go away;
   - AppendJString and AppendF64 append to a DynStr, which is STR, so
     their text argument is converted;
   - the exceptions' messages stay STR: they are ASCII, and a RAISE's
@@ -216,8 +218,8 @@ _(undocumented)_
 
 _(undocumented)_
 
-the float printer and reader Json binds (cjrepr), bound again here so
-that JsonUtf stands alone
+cjurepr binds again the float printer and reader Json binds
+(cjrepr), so that JsonUtf stands alone.
 
 ### ReprF64 (v: C.Double ; buf: C.MutPtr) : C.SSizeT [REENTRANT]
 

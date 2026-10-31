@@ -1,11 +1,11 @@
-REVIEW Regex -- 56 procedures with a body, 41 of them functions; 13 headings in a DEFINITION
+REVIEW Regex -- 59 procedures with a body, 43 of them functions; 13 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              41
-  assignments                                   463
-  arguments                                     706
-  RETURN values                                  96
-  operands of a comparison or an operator       544
+  functions answering on every path              43
+  assignments                                   444
+  arguments                                     838
+  RETURN values                                 101
+  operands of a comparison or an operator       509
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -35,8 +35,8 @@ TRUSTED -- outside what the checker can see
 COUNTED -- how much there was to check
   CASE statements                                 0
   RAISE statements                               14
-  handlers                                        0
+  handlers                                        1
   NEW in the frame                               11
-  NEW in a named pool                            37
-  calls of a STR form with a UTF twin             2   Text.Eq -> Text.EqUtf, Text.Eq -> Text.EqUtf
-  STR subscripts, writes and LEN                 54   len name, len name, index re[i], write re.names[re.nnames][i], index name[i], len ps.p, +48 more
+  NEW in a named pool                            36
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

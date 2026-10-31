@@ -1,13 +1,15 @@
 #!/bin/sh
-# sparql -- Sparql against a live endpoint: rdflib serving the test graph
-# (runtime/test/sparqlfix.py), the same queries SparqlTest reads offline
-# in m9test, now through Select, Ask and Construct over HTTP, one of them
-# long enough to go by POST -- and the endpoint's own count must say a
-# POST arrived (docs/datalib-plan.md par 2).
+# sparql runs Sparql against a live endpoint.  rdflib serves the test
+# graph (runtime/test/sparqlfix.py).  The gate sends the same queries
+# SparqlTest reads offline in m9test, now through Select, Ask and
+# Construct over HTTP.  One of them is long enough to go by POST, and
+# the endpoint's own count must say a POST arrived (docs/datalib-plan.md
+# par 2).
 #
-# Needs rdflib (python3-rdflib; SPARQL_PY names another Python).  Without
-# it the gate SKIPS out loud on a workstation and FAILS on CI.  Uses an
-# m9c built from runtime/gen (lib/freshm9c.sh), or $M9C.
+# The gate needs rdflib (python3-rdflib; SPARQL_PY names another
+# Python).  Without it the gate SKIPS out loud on a workstation and
+# FAILS on CI.  It uses an m9c built from runtime/gen (lib/freshm9c.sh),
+# or $M9C.
 set -e
 cd "$(dirname "$0")"
 

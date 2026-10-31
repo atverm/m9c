@@ -1,8 +1,8 @@
 MODULE NbShowTest ;
 
-(* NbShow, tested in M9 (runtime/test/m9test.sh).  A display has no
-   outside oracle -- its format is this module's own -- so the test
-   holds every form to its text, byte for byte: the lists at 20 and
+(* NbShowTest tests NbShow in M9 (runtime/test/m9test.sh).  A display
+   has no outside oracle: its format is this module's own.  So the
+   test holds every form to its text, byte for byte: the lists at 20 and
    21 values (the cut), a quote inside a string, the grid, a frame's
    table with each kind and a missing value of each, the HTML escaped,
    a frame of 61 rows (5 + 5), and a series' time column. *)
@@ -56,7 +56,7 @@ BEGIN
   long := '' ;
   FOR i := 1 TO 1001 DO long := long + 'x' END ;
   Check.EqI64 (t, 'a long string: 1000 characters, then its length',
-               LEN (NbShow.StrText (long)), 1002 + LEN (' ... (1001 characters)'))
+               Text.BLen (NbShow.StrText (long)), 1002 + Text.BLen (' ... (1001 characters)'))
 END Lists ;
 
 PROCEDURE Grids () =

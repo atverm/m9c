@@ -1,6 +1,6 @@
 DEFINITION MODULE GfHpA ;
 
-(* helper of GfHiddenPool: a record named V that carries pointers *)
+(* GfHpA helps GfHiddenPool: a record named V that carries pointers. *)
 
 TYPE
   V = RECORD

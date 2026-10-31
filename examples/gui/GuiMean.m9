@@ -20,7 +20,6 @@ MODULE GuiMean ;
 
 IMPORT Io ;
 IMPORT Text ;
-IMPORT DynStr ;
 IMPORT Fmt ;
 IMPORT Stats ;
 
@@ -32,11 +31,10 @@ CONST
 (* s, handed to the next widget call that takes text *)
 PROCEDURE Say (RO s: STR) RAISES ValueRange =
 VAR
-  scratch : POOL ;
   b : SLICE OF BYTE ;
   i : I64 ;
 BEGIN
-  b := DynStr.Utf8 (scratch, s) ;
+  b := OCTETS (s) ;
   FOR i := 0 TO LEN (b) - 1 DO Put (C.Int (ORD (b[i]))) END
 END Say ;
 
@@ -50,7 +48,7 @@ BEGIN
   IF n < 0 THEN RETURN '' END ;
   b := NEW (pool, BYTE, n) ;
   FOR i := 0 TO n - 1 DO b[i] := BYTE (Byte (C.Int (i))) END ;
-  RETURN DynStr.FromUtf8 (pool, b)
+  RETURN UTF (pool, b)
 END TextOf ;
 
 PROCEDURE SetLabel (w: I64 ; RO s: STR) RAISES ValueRange =

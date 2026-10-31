@@ -1,9 +1,9 @@
 MODULE BndUse ;
 
-(* every exported array of BndDef and BndMid declared, filled and
-   measured here, beside a CONST N of this module's own that must not
-   be confused with BndDef.N; a field of BndDef.Rec assigned to and
-   from a BndDef.Vec and an array of this module's spelled BndDef.N *)
+(* BndUse declares, fills and measures every exported array of BndDef
+   and BndMid, beside a CONST N of this module's own that must not be
+   confused with BndDef.N.  A field of BndDef.Rec is assigned to and
+   from a BndDef.Vec and an array of this module's spelled BndDef.N. *)
 
 IMPORT Io, Fmt, BndDef, BndMid ;
 

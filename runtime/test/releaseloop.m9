@@ -1,12 +1,13 @@
 MODULE ReleaseLoop ;
 
-(* The incident's loop, written the way it was first written (cp-kernel's
-   sync loop, killed at 50 GB and deleted the same day): rows times ids,
-   each turn comparing a stored id with a concatenation built on the
-   spot.  Since 2026-10-18 the generator releases a statement's
-   temporaries with the statement when nothing can see them afterwards
-   (docs/statement-release-plan.md, stage 2), so the `+` in the IF's
-   condition costs the arena one line's worth however many turns run.
+(* This is the incident's loop, written the way it was first written
+   (cp-kernel's sync loop, killed at 50 GB and deleted the same day):
+   rows times ids, each turn comparing a stored id with a concatenation
+   built on the spot.  Since 2026-10-18 the generator releases a
+   statement's temporaries with the statement when nothing can see
+   them afterwards (docs/statement-release-plan.md, stage 2), so the
+   `+` in the IF's condition costs the arena one line's worth however
+   many turns run.
 
    Two shapes, chosen by the second argument:
      release  the comparison in the condition -- released each turn

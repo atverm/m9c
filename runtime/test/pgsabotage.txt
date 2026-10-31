@@ -1,0 +1,55 @@
+# runtime/test/Sabotage.m9 pg reads this list.  Each entry is one small
+# break of a COPY of corpus/Pg.m9 (the default file) that PgTest must
+# catch against the server libpq's PG* variables name.
+# docs/datalib-plan.md.
+#
+# The form, one entry:
+#
+#   @name what the edit breaks
+#   @file another file        (optional; the default above without it)
+#   @old
+#   the text to replace: it must occur in the file exactly once
+#   @new
+#   the text put in its place
+#   @end
+#
+# A text is the lines between its two markers, joined by newlines, taken
+# exactly: leading spaces count, and no escapes exist.  A text that ends
+# in a newline has one empty line before the next marker.  An empty text
+# has no lines.  A line beginning with # is a comment only outside an
+# entry.
+
+@name Cell without the column check (the lifted module's bug)
+@old
+  IF col < 0 OR col >= r.cols THEN RAISE IndexError (col, r.cols) END ;
+  RETURN row * r.cols + col
+@new
+  RETURN row * r.cols + col
+@end
+
+@name NULL not flagged
+@old
+          r.isNull[k] := TRUE
+@new
+          r.isNull[k] := FALSE
+@end
+
+# "F64Cell by Fmt.ParseF64 alone" is gone (2026-10-31): it stayed green on
+# ct121 because ParseF64 rounds as strtod does, so F64Cell now uses
+# ParseF64 alone.  FmtTest holds the rounding.
+
+@name the offset's sign ignored
+@old
+  RETURN Time.AddSeconds (t, F64 (-sign * off))
+@new
+  RETURN Time.AddSeconds (t, F64 (-off))
+@end
+
+# The UTF-8 switch (2026-10-31) decodes a cell with DynStr.Decoded, not
+# DynStr.FromUtf8.  The break still reads it one character per octet.
+@name cells decoded as Latin-1
+@old
+            r.cell[k] := DynStr.Decoded (pool, b)
+@new
+            r.cell[k] := DynStr.Chars (pool, b)
+@end

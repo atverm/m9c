@@ -1,15 +1,16 @@
 MODULE FrameTest ;
 
-(* Frame's verbs against polars: Take, Filter, OrderBy, SortBy,
-   GroupBy, Join, JoinLeft, Describe.  (The reader, the netCDF round
-   trip and Average stay with runtime/test/frame_driver.c.)  Goldens:
+(* FrameTest tests Frame's verbs against polars: Take, Filter,
+   OrderBy, SortBy, GroupBy, Join, JoinLeft, Describe.  (The reader,
+   the netCDF round trip and Average stay with
+   runtime/test/frame_driver.c.)  The goldens are
    runtime/test/gold/Frame.gold from tools/framegoldm9.py.
 
-   The frame has a column `t` that numbers its rows, so what a verb
-   did to the rows is read off as a list of row numbers and compared
-   with polars' list.  A missing value is a null to polars and the
-   column's sentinel here -- and the one NaN in `x` is missing too,
-   which is Frame's rule, so polars was given a null for it.
+   The frame has a column `t` that numbers its rows.  So a verb's
+   effect on the rows is read off as a list of row numbers and
+   compared with polars' list.  A missing value is a null to polars
+   and the column's sentinel here.  The one NaN in `x` is missing
+   too, which is Frame's rule, so polars was given a null for it.
    Everything but Describe is exact. *)
 
 IMPORT Check ;
@@ -111,8 +112,9 @@ BEGIN
   RETURN a
 END Numbered ;
 
-(* the frame of the golden file: one column of each key the sort
-   knows, and the missing values as the columns' own sentinels *)
+(* Build answers the frame of the golden file: one column of each key
+   the sort knows, and the missing values as the columns' own
+   sentinels. *)
 PROCEDURE Build () : PTR Frame.Fr
   RAISES Faults.SizeError, Frame.Duplicate, Frame.Unknown =
 VAR
@@ -139,8 +141,8 @@ BEGIN
   RETURN f
 END Build ;
 
-(* the right side of the join on k: a key twice, a key on neither
-   side, a missing key; `rt` numbers its rows *)
+(* BuildRight answers the right side of the join on k: a key twice, a
+   key on neither side, a missing key.  `rt` numbers its rows. *)
 PROCEDURE BuildRight () : PTR Frame.Fr
   RAISES Faults.SizeError, Frame.Duplicate =
 VAR
@@ -366,7 +368,8 @@ BEGIN
                     F64s ('want.describe.' + Numeric[i]), 0.0, 1.0e-13)
   END ;
 
-  (* a column of nothing but gaps: counted, and no statistic exists *)
+  (* A column of nothing but gaps is counted, and no statistic
+     exists. *)
   gaps := NEW (pool, F64, 2) ;
   gaps[0] := Check.GoldF64 (t, gold, 'in.miss') ;
   gaps[1] := NaN ;
@@ -380,8 +383,8 @@ BEGIN
                   Frame.ColF64 (d, 'gaps'), want, 0.0, 0.0)
 END Describes ;
 
-(* ---- the verbs that take a procedure: what polars is asked for as
-   an expression is written here as a procedure ---- *)
+(* ---- the verbs that take a procedure: polars is asked for an
+   expression, and this file writes it as a procedure ---- *)
 
 PROCEDURE Median (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
 BEGIN
@@ -405,7 +408,8 @@ BEGIN
   RETURN hi - lo
 END Range ;
 
-(* how many are above p[0]: the caller's own number, through p *)
+(* Above counts how many are above p[0]: the caller's own number,
+   through p. *)
 PROCEDURE Above (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
 VAR i, n : I64 ;
 BEGIN
@@ -421,8 +425,8 @@ BEGIN
   RETURN F64 (LEN (v))
 END HowMany ;
 
-(* the last value less the first: the one here that depends on the
-   ORDER the values are handed over in *)
+(* Drift answers the last value less the first.  It is the one here
+   that depends on the ORDER the values are handed over in. *)
 PROCEDURE Drift (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
 BEGIN
   IF LEN (v) = 0 THEN RETURN NaN END ;
@@ -495,7 +499,8 @@ BEGIN
                 Frame.ColI64 (g, 't'), I64s ('want.filterby.t'))
 END Callbacks ;
 
-(* what a verb with a procedure is refused as: '' when it is not *)
+(* AggRefusal answers what a verb with a procedure is refused as, or
+   '' when it is not refused. *)
 PROCEDURE AggRefusal (KEPT f: PTR Frame.Fr ; RO key, name: STR ; agg: Frame.Agg)
   : STR =
 VAR g : PTR Frame.Fr IN pool ;
@@ -564,7 +569,8 @@ EXCEPT
 | IndexError : RETURN FALSE
 END ColumnRefused ;
 
-(* what a join of a with b on key is refused as: '' when it is not *)
+(* JoinRefusal answers what a join of a with b on key is refused as,
+   or '' when it is not refused. *)
 PROCEDURE JoinRefusal (KEPT a, b: PTR Frame.Fr ; RO key: STR ; left: BOOL) : STR =
 VAR j : PTR Frame.Fr IN pool ;
 BEGIN
@@ -623,13 +629,13 @@ BEGIN
                JoinRefusal (f, f, 'x', FALSE), 'WrongType') ;
   Check.EqStr (t, 'Join refuses a column both sides have',
                JoinRefusal (f, f, 'k', FALSE), 'Duplicate') ;
-  (* k as strings on the right: another family *)
+  (* k as strings on the right is another family. *)
   q := Frame.New (pool, LEN (Statistics)) ;
   Frame.AddStrs (pool, q, 'k', KeptStrs (Statistics)) ;
   Check.EqStr (t, 'Join refuses an integer key against a string key',
                JoinRefusal (f, q, 'k', FALSE), 'WrongType') ;
-  (* a Bools column on the right: the inner join takes it, the left
-     join has no missing value to give the rows that match nothing *)
+  (* The inner join takes a Bools column on the right.  The left join
+     has no missing value to give the rows that match nothing. *)
   one := NEW (pool, I64, 1) ;
   one[0] := 5 ;
   yes := NEW (pool, BOOL, 1) ;
@@ -663,9 +669,9 @@ BEGIN
 END Fail ;
 
 (* FromCsv carries every kind the caller declared: Text, Int, Real
-   (F32) and Real64 (F64).  The Real64 arm was EMPTY until 2026-10-08
-   -- the column parsed and dropped without a word, found by an
-   example notebook whose frame had two columns of three. *)
+   (F32) and Real64 (F64).  The Real64 arm was EMPTY until 2026-10-08:
+   the column parsed and dropped without a word.  An example notebook
+   whose frame had two columns of three found it. *)
 PROCEDURE CsvKinds () =
 CONST Nl = 0AC ;
 VAR
@@ -675,8 +681,7 @@ VAR
   v : SLICE OF F64 ;
 BEGIN
   opt := Csv.Defaults () ;
-  tb := Csv.OpenBytes (pool, DynStr.Utf8 (pool,
-          's,n,x,y' + Nl + 'a,1,1.5,2.25' + Nl + 'b,2,2.5,4.5' + Nl), opt) ;
+  tb := Csv.OpenBytes (pool, OCTETS ('s,n,x,y' + Nl + 'a,1,1.5,2.25' + Nl + 'b,2,2.5,4.5' + Nl), opt) ;
   Csv.SetText (tb, 0) ;
   Csv.SetInt (tb, 1) ;
   Csv.SetReal (tb, 2) ;

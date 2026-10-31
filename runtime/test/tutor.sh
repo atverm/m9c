@@ -1,28 +1,29 @@
 #!/bin/sh
-# tutor: the tutorial SERVICE, gated.  Builds tutorm9 (the M9 web
+# tutor gates the tutorial SERVICE.  It builds tutorm9 (the M9 web
 # service), points it at a fresh hermetic workdir, and replays every
-# tutorial cell through POST /run, requiring the SAME bytes tutdiff
-# recorded -- one source of truth from the markdown to the wire.
-# Then the three walls, each by name: the language (--no-unsafe),
+# tutorial cell through POST /run.  It requires the SAME bytes tutdiff
+# recorded: one source of truth from the markdown to the wire.  Then
+# it tests the three walls, each by name: the language (--no-unsafe),
 # the clock (timeout), and memory (a checked OutOfMemory).
 set -e
 cd "$(dirname "$0")"
 
-# before any skip, a check every machine can make: the deployed
+# Before any skip, run a check every machine can make: the deployed
 # container must run under an init.  tutorm9 as PID 1 collects one
 # zombie bwrap PER CELL RUN (bwrap's outer process never waits for the
-# inner helper it clones -- measured 2026-09-11, README-deploy.md) and
-# ignores docker stop's SIGTERM.  This gate runs under systemd, which
-# reaps, so it cannot see the leak itself; what it can see is the
-# line that prevents it.
+# inner helper it clones; measured 2026-09-11, README-deploy.md).  It
+# also ignores docker stop's SIGTERM.  This gate runs under systemd,
+# which reaps, so it cannot see the leak itself.  It can see the line
+# that prevents it.
 awk '/^  tutor:/{t=1} /^  [a-z]/&&!/^  tutor:/{t=0} t&&/^    init: true/{f=1} END{exit !f}' \
     ../../tools/tutor/deploy/docker-compose.yml || \
   { echo "FAIL: tools/tutor/deploy/docker-compose.yml: the tutor service has no 'init: true'"; exit 1; }
 
-# also before any skip: tutorial.modula9.net/llms.txt lists the
-# chapters, and it ships with the site at release (README-deploy.md),
-# so a chapter added or removed without it is red here, not stale on
-# the web.  Numbers both ways; the titles are prose and are read.
+# Also before any skip: tutorial.modula9.net/llms.txt lists the
+# chapters, and it ships with the site at release (README-deploy.md).
+# So a chapter added or removed without it is red here, not stale on
+# the web.  The check compares numbers both ways; the titles are prose
+# and are read.
 llms=../../tools/tutor/deploy/tutorial-static/llms.txt
 have=$(ls ../../docs/tutorial | sed -n 's/^\([0-9][0-9]\)-.*\.md$/\1/p' | sort)
 said=$(grep -o 'tutorial\.modula9\.net/ch/[0-9][0-9])' "$llms" | sed 's|.*/ch/||; s|)||' | sort)
@@ -32,8 +33,8 @@ said=$(grep -o 'tutorial\.modula9\.net/ch/[0-9][0-9])' "$llms" | sed 's|.*/ch/||
   echo "  llms.txt:      $(echo $said)"
   exit 1; }
 
-# the skips come BEFORE gen.sh: a machine that cannot run the gate
-# should say so without first regenerating the toolchain
+# The skips come BEFORE gen.sh.  A machine that cannot run the gate
+# should say so without first regenerating the toolchain.
 command -v bwrap >/dev/null 2>&1 || \
   { echo "SKIP: tutor (no bubblewrap on this machine)"; exit 0; }
 ldconfig -p 2>/dev/null | grep -q 'libblosc\.so\.1' || \
@@ -74,11 +75,12 @@ ck () { n=$((n + 1)); }
 curl -s "http://127.0.0.1:$PORT/" | grep -q 'Scientific programming' \
   || { echo "FAIL: index page"; exit 1; }
 ck
-# the markdown beside every page (llmstxt.org; 2026-10-20): /ch/N.md
-# is the chapter's source with only its relative link targets made
-# absolute -- held by blanking every target on both sides -- and
-# llms-full.txt carries the report to the byte and one Source line per
-# part, the report and each chapter
+# The tutor serves the markdown beside every page (llmstxt.org;
+# 2026-10-20).  /ch/N.md is the chapter's source with only its
+# relative link targets made absolute.  The check holds that by
+# blanking every target on both sides.  llms-full.txt carries the
+# report to the byte and one Source line per part, the report and each
+# chapter.
 blank () { sed -E 's/\]\([^)]*\)/](@)/g'; }
 curl -s "http://127.0.0.1:$PORT/ch/02.md" | blank > "$B/ch2.md"
 blank < ../../docs/tutorial/02-strong-typing.md | cmp -s - "$B/ch2.md" \
@@ -101,33 +103,34 @@ nch=$(ls ../../docs/tutorial | grep -c '^[0-9][0-9]-.*\.md$')
 [ "$(grep -c '^Source: ' "$B/full.txt")" = $((nch + 1)) ] \
   || { echo "FAIL: llms-full.txt has not the report and $nch chapters"; exit 1; }
 ck
-# HEAD is a GET whose body stays home -- link checkers judge the
-# public URL by it, and it once answered 404
+# HEAD is a GET whose body stays home.  Link checkers judge the public
+# URL by it, and it once answered 404.
 [ "$(curl -s -o /dev/null -w '%{http_code}' -I "http://127.0.0.1:$PORT/")" = 200 ] \
   || { echo "FAIL: HEAD of the index is not 200"; exit 1; }
 ck
-# nothing the tutor answers is cacheable: with no cache header the
+# Nothing the tutor answers is cacheable.  With no cache header the
 # browser caches heuristically, and a stale chapter page cost two
-# confusions in one day (m9edit had sent no-store from the start --
-# the first firing of the plan's one-server divergence trigger)
+# confusions in one day.  (m9edit had sent no-store from the start;
+# this was the first firing of the plan's one-server divergence
+# trigger.)
 curl -sI "http://127.0.0.1:$PORT/ch/1" | grep -qi '^Cache-Control: no-store' \
   || { echo "FAIL: chapter pages are cacheable"; exit 1; }
 curl -sI "http://127.0.0.1:$PORT/examples/expect/damped.svg" | grep -qi '^Cache-Control: no-store' \
   || { echo "FAIL: served figures are cacheable"; exit 1; }
 ck
 
-# the chapters' embedded figures are served and equal the goldens
+# The chapters' embedded figures are served and equal the goldens.
 curl -s "http://127.0.0.1:$PORT/examples/expect/damped.svg" -o "$B/fig.svg"
 cmp -s "$B/fig.svg" "$EXA/expect/damped.svg" \
   || { echo "FAIL: the served figure differs from the golden"; exit 1; }
 ck
 
-# every page carries the site header and the chapters chain both ways
+# Every page carries the site header, and the chapters chain both ways.
 curl -s "http://127.0.0.1:$PORT/ch/5" > "$B/ch5.html"
 grep -q 'class="site"' "$B/ch5.html" \
   || { echo "FAIL: chapter page lost the site header"; exit 1; }
-# its dash is U+2014 once, not its octets encoded a second time (every
-# page said "â€" there from the UTF-8 flip, 2026-10-09, to 2026-10-20)
+# Its dash is U+2014 once, not its octets encoded a second time (every
+# page said "â€" there from the UTF-8 flip, 2026-10-09, to 2026-10-20).
 grep -q 'Modula-9 — first steps' "$B/ch5.html" \
   || { echo "FAIL: the site header's dash is not U+2014 in UTF-8"; exit 1; }
 grep -q 'Previous: memory, pools and strings' "$B/ch5.html" \
@@ -139,13 +142,13 @@ curl -s "http://127.0.0.1:$PORT/ch/1" | grep -q 'MODULE C1Hello' \
   || { echo "FAIL: chapter 1 lost its cell"; exit 1; }
 ck
 
-# the cells paint (tutor-cells plan, phase 3): every cell carries
-# m9edit's stack -- the backdrop pre the colours land in, a diags
-# list and a status span -- the backdrop's initial text EQUALS the
+# The cells paint (tutor-cells plan, phase 3).  Every cell carries
+# m9edit's stack: the backdrop pre the colours land in, a diags list
+# and a status span.  The backdrop's initial text EQUALS the
 # textarea's (the textarea is transparent: a drifted backdrop shows
-# the wrong bytes with no other symptom), and cell.js is inlined
+# the wrong bytes with no other symptom).  And cell.js is inlined
 # (node --check passing on a page WITHOUT M9Cell would prove the
-# wrong script)
+# wrong script).
 curl -s "http://127.0.0.1:$PORT/ch/2" | python3 -c '
 import sys, re
 h = sys.stdin.read ()
@@ -164,11 +167,11 @@ assert "var M9Hover" in h and "M9Hover.attach" in h, "hover.js not inlined"
 ' || { echo "FAIL: the cells lost their painting stack"; exit 1; }
 ck
 
-# the PAGE'S OWN copy of a cell must compile through /run: the Run
+# The PAGE'S OWN copy of a cell must compile through /run.  The Run
 # and Reset buttons both use the textarea's parsed value, and this
-# decodes it exactly as the browser does.  Guards the class of bug
+# decodes it exactly as the browser does.  It guards the class of bug
 # where a second, differently-escaped copy of the source reaches the
-# compiler -- a <script type="text/plain"> pristine copy did (script
+# compiler.  A <script type="text/plain"> pristine copy did (script
 # content is NOT entity-decoded, textarea content is), and Reset
 # handed m9c 29 parse errors' worth of &#x27;.
 curl -s "http://127.0.0.1:$PORT/ch/1" | python3 -c '
@@ -180,12 +183,19 @@ curl -s -X POST --data-binary @"$B/pagecell.m9" \
      "http://127.0.0.1:$PORT/run" | grep -q '^exit 0' \
   || { echo "FAIL: the page's own cell text does not compile"; exit 1; }
 ck
+# A header with an octet past 127 must not stall the read: the server
+# once found the header end in decoded text, where such an octet is
+# two, and waited for a body that had come (2026-10-31).
+curl -s --max-time 10 -X POST -H 'X-Probe: café' --data-binary @"$B/pagecell.m9" \
+     "http://127.0.0.1:$PORT/run" | grep -q '^exit 0' \
+  || { echo "FAIL: a request with a non-ASCII header stalls or fails"; exit 1; }
+ck
 
-# and the page's SCRIPT must at least parse: one SyntaxError kills
-# every button on the page with no visible failure anywhere -- Run
-# simply does nothing.  Shipped exactly once: a cooked Python string
-# turned the JS's '\n' literal into a real newline inside a quoted
-# string.  node --check is the cheapest wall against the whole class.
+# The page's SCRIPT must at least parse.  One SyntaxError kills every
+# button on the page with no visible failure anywhere: Run simply does
+# nothing.  That shipped exactly once: a cooked Python string turned
+# the JS's '\n' literal into a real newline inside a quoted string.
+# node --check is the cheapest wall against the whole class.
 if command -v node >/dev/null 2>&1; then
   curl -s "http://127.0.0.1:$PORT/ch/1" | python3 -c '
 import sys, re
@@ -203,8 +213,8 @@ for f in "$EXA"/C*.m9; do
   curl -s -X POST --data-binary @"$f" \
        "http://127.0.0.1:$PORT/run" > "$B/$m.got"
   if [ "$m" = C9Plot ]; then
-    # the one cell that WRITES: its reply also names the file the
-    # sandbox kept, served at /out/
+    # This is the one cell that WRITES.  Its reply also names the file
+    # the sandbox kept, served at /out/.
     printf 'exit 0\n' > "$B/$m.want"
     cat "$EXA/expect/$m.out" >> "$B/$m.want"
     printf 'files: /out/damped.svg\n' >> "$B/$m.want"
@@ -213,8 +223,8 @@ for f in "$EXA"/C*.m9; do
     cat "$EXA/expect/$m.out" >> "$B/$m.want"
     printf 'files: /out/htm.svg\n' >> "$B/$m.want"
   elif [ "$m" = C14Flux ]; then
-    # writes its NetCDF to /tmp, which is the run's /out: the reader
-    # gets the file as a link, and the gate expects the line
+    # It writes its NetCDF to /tmp, which is the run's /out.  The reader
+    # gets the file as a link, and the gate expects the line.
     printf 'exit 0\n' > "$B/$m.want"
     cat "$EXA/expect/$m.out" >> "$B/$m.want"
     printf 'files: /out/sehtm.nc\n' >> "$B/$m.want"
@@ -231,11 +241,11 @@ for f in "$EXA"/C*.m9; do
   ck
 done
 
-# the produced file itself: byte-identical to the gated golden, a
+# The produced file itself is byte-identical to the gated golden.  A
 # missing name answers 404 WITHOUT unwinding the server, and a
-# traversal is a name that does not exist
-# /out holds the LAST run's files; the cells run alphabetically
-# (C10 sorts first), so the survivor is C9Plot's figure
+# traversal is a name that does not exist.
+# /out holds the LAST run's files.  The cells run alphabetically
+# (C10 sorts first), so the survivor is C9Plot's figure.
 curl -s "http://127.0.0.1:$PORT/out/damped.svg" -o "$B/served.svg"
 cmp -s "$B/served.svg" "$EXA/expect/damped.svg" \
   || { echo "FAIL: /out/damped.svg differs from the golden"; exit 1; }
@@ -253,11 +263,11 @@ curl -s "http://127.0.0.1:$PORT/" | grep -q 'Scientific programming' \
 ck
 
 # setup.sh must be re-runnable over a workdir that has ALREADY
-# served cells: its manifest comes from the known library list, and
+# served cells.  Its manifest comes from the known library list, and
 # a regenerated one must not adopt a dead cell's object.  The first
-# version recorded `ls *.o` -- over a used workdir that kept
-# C8Zarr.o, and one run later chapter 4 linked two main()s.  Found
-# live; this re-setup-then-run is that sequence.
+# version recorded `ls *.o`.  Over a used workdir that kept C8Zarr.o,
+# and one run later chapter 4 linked two main()s.  It was found live;
+# this re-setup-then-run is that sequence.
 sh "$REPO/tools/tutor/setup.sh" "$REPO" "$W" "$M9C" >/dev/null
 curl -s -X POST --data-binary @"$EXA/C1Hello.m9" \
      "http://127.0.0.1:$PORT/run" | grep -q '^exit 0' \
@@ -273,7 +283,7 @@ curl -s -X POST --data-binary @"$EXA/X2Assign.m9" "http://127.0.0.1:$PORT/run" \
   || { echo "FAIL: the page should show the checker's refusal"; exit 1; }
 ck
 
-# the three walls, each reported by name
+# Test the three walls, each reported by name.
 cat > "$B/spin.m9" <<'M9'
 MODULE Spin ;
 IMPORT Io ;
@@ -304,8 +314,8 @@ curl -s -X POST --data-binary @"$B/bomb.m9" "http://127.0.0.1:$PORT/run" \
   || { echo "FAIL: the memory wall did not fire"; exit 1; }
 ck
 # NO EGRESS, proven positively: from inside the sandbox the HOST'S
-# loopback does not exist -- this probe dials the very server that
-# is running it (the gate's own port, 18941) and must fail.  The
+# loopback does not exist.  This probe dials the very server that is
+# running it (the gate's own port, 18941) and must fail.  The
 # store chapter works because ITS server runs inside the namespace;
 # nothing outside is reachable.
 cat > "$B/netprobe.m9" <<'M9'
@@ -351,11 +361,11 @@ curl -s -X POST --data-binary @"$B/sneaky.m9" "http://127.0.0.1:$PORT/run" \
 ck
 
 # ---- the editor's two services, answered for the cells ----------
-# /lex: the same bytes m9edit answers for the same text.  Both call
-# Diag.LexJson, so this holds the two servers to ONE painter: a cell
-# in the tutorial and a buffer in the editor cannot colour the same
-# source two ways.  m9edit is built here from the same m9c and asked
-# exactly one request (its maxRequests), so it exits on its own.
+# /lex answers the same bytes m9edit answers for the same text.  Both
+# call Diag.LexJson, so this holds the two servers to ONE painter.  A
+# cell in the tutorial and a buffer in the editor cannot colour the
+# same source two ways.  m9edit is built here from the same m9c and
+# asked exactly one request (its maxRequests), so it exits on its own.
 ED="$REPO/tools/edit"
 EPORT=18942
 ( cd "$B" && M9RUNTIME="$RT" M9LIBRARY="$REPO/corpus" \
@@ -376,37 +386,37 @@ cmp -s "$B/lex.tutor" "$B/lex.edit" \
   || { echo "FAIL: /lex of C1Hello differs between tutor and m9edit"; exit 1; }
 ck
 
-# /check: the checker's findings WITH positions.  X2Assign's refusal
-# is the chapter's own EXPECT-ERROR line, tutdiff's substring rule;
-# 19:8 is the right-hand side the checker names.
+# /check answers the checker's findings WITH positions.  X2Assign's
+# refusal is the chapter's own EXPECT-ERROR line, tutdiff's substring
+# rule.  19:8 is the right-hand side the checker names.
 curl -s -X POST --data-binary @"$EXA/X2Assign.m9" "http://127.0.0.1:$PORT/check" > "$B/check.x2"
 grep -q '^{"ok":false,"diags":\[{"line":19,"col":8,"msg":"[^"]*cannot assign F64 to I64' "$B/check.x2" \
   || { echo "FAIL: /check of X2Assign:"; head -c 300 "$B/check.x2"; exit 1; }
 ck
-# the language wall through /check, WITH a position (the refusal
-# used to be a bare count, which no page could paint)
+# The language wall answers through /check, WITH a position (the
+# refusal used to be a bare count, which no page could paint).
 curl -s -X POST --data-binary @"$B/sneaky.m9" "http://127.0.0.1:$PORT/check" > "$B/check.sneaky"
 grep -q '"line":8,"col":8,"msg":"no-unsafe: foreign unit cevil"' "$B/check.sneaky" \
   || { echo "FAIL: /check of the sneaky cell:"; head -c 300 "$B/check.sneaky"; exit 1; }
 ck
-# a DEFINITION pair checks as one file, and the checker's one
-# multi-line message arrives WHOLE: the two signatures under
+# A DEFINITION pair checks as one file, and the checker's one
+# multi-line message arrives WHOLE.  The two signatures under
 # "signature differs" are indented continuation lines, folded into
-# the finding (Diag), newline-escaped (Json) -- the first version
-# dropped them and painted a colon with nothing after it
+# the finding (Diag) and newline-escaped (Json).  The first version
+# dropped them and painted a colon with nothing after it.
 curl -s -X POST --data-binary @"$EXA/X3Sig.m9" "http://127.0.0.1:$PORT/check" > "$B/check.x3"
 grep -q '"line":16,"col":1,"msg":"X3Sig.ToKelvin: signature differs from definition:\\u000a    definition     (celsius: F64) : F64\\u000a    implementation (celsius: F32) : F64"' "$B/check.x3" \
   || { echo "FAIL: /check of X3Sig lost the signatures:"; head -c 400 "$B/check.x3"; exit 1; }
 ck
-# a clean cell is exactly ok
+# A clean cell is exactly ok.
 [ "$(curl -s -X POST --data-binary @"$EXA/C1Hello.m9" "http://127.0.0.1:$PORT/check")" = '{"ok":true,"diags":[]}' ] \
   || { echo "FAIL: /check of C1Hello is not ok"; exit 1; }
 ck
 
-# the hovers' food (phase 4): /kw is the gated keyword reference,
-# /doc/NAME the m9c --json gather through Diag's shared runner and
-# name gate -- the library the hover documents is the hermetic one
-# the cells compile against
+# These feed the hovers (phase 4).  /kw is the gated keyword
+# reference.  /doc/NAME is the m9c --json gather through Diag's shared
+# runner and name gate.  The library the hover documents is the
+# hermetic one the cells compile against.
 curl -s "http://127.0.0.1:$PORT/kw" > "$B/kw.json"
 grep -q '"KEPT":' "$B/kw.json" && grep -q '"GRID":' "$B/kw.json" \
   || { echo "FAIL: /kw is not the keyword reference"; exit 1; }
@@ -416,7 +426,8 @@ grep -q '"module":"DynStr"' "$B/doc.dynstr" \
   || { echo "FAIL: /doc/DynStr is not the gather:"; head -c 120 "$B/doc.dynstr"; exit 1; }
 grep -q '"name":"Append"' "$B/doc.dynstr" \
   || { echo "FAIL: /doc/DynStr lacks Append"; exit 1; }
-# cached: the second fetch answers the same bytes from docs/
+# The answer is cached: the second fetch answers the same bytes from
+# docs/.
 curl -s "http://127.0.0.1:$PORT/doc/DynStr" | cmp -s - "$B/doc.dynstr" \
   || { echo "FAIL: /doc/DynStr is not stable across fetches"; exit 1; }
 [ -f "$W/docs/DynStr.json" ] \
@@ -427,18 +438,18 @@ ck
 [ "$(curl -s --path-as-is -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/doc/..")" = 404 ] \
   || { echo "FAIL: /doc traversal escaped"; exit 1; }
 ck
-# and /check wrote ONE file, in check/, never beside the cells:
-# a checked module at the top level would be importable by the next
-# cell.  X2Assign was checked and never run, so its absence up there
-# is the proof (Sneaky's presence is /run's: the last cell run stays
-# until the next run sweeps it)
+# /check wrote ONE file, in check/, never beside the cells.  A checked
+# module at the top level would be importable by the next cell.
+# X2Assign was checked and never run, so its absence up there is the
+# proof.  (Sneaky's presence is /run's: the last cell run stays until
+# the next run sweeps it.)
 [ "$(ls "$W/check")" = "$(printf 'cell.m9\nck.txt')" ] \
   || { echo "FAIL: check/ holds more than the one cell:"; ls "$W/check"; exit 1; }
 [ ! -e "$W/X2Assign.m9" ] \
   || { echo "FAIL: /check left a module beside the cells"; exit 1; }
 ck
-# after the checks, a run still links: the check file is out of
-# --make's sight and left no object anywhere
+# After the checks, a run still links.  The check file is out of
+# --make's sight and left no object anywhere.
 curl -s -X POST --data-binary @"$EXA/C1Hello.m9" "http://127.0.0.1:$PORT/run" > "$B/rerun.got"
 cmp -s "$B/rerun.got" "$B/C1Hello.want" \
   || { echo "FAIL: /run after /check differs:"; diff "$B/C1Hello.want" "$B/rerun.got" | head -6; exit 1; }

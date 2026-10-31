@@ -1,23 +1,25 @@
-/* parsef64_driver.c -- m9_strtod (Eisel-Lemire where it decides, libc's
-   strtod where it does not; m9rt.h) held to strtod bit for bit:
-     a million random doubles printed by %.17g (every bit back), %.15g,
-     %.6f, %.3e and %g;
-     a million random significands of 1 to 19 digits with a point placed
-     anywhere and an exponent in -330..310, the shape that reaches the
-     128-bit product and its halfway rule;
-     the halfway strings themselves: random doubles' exact midpoints to
-     their neighbours, printed with every digit (these have more than
-     19 digits and go to strtod; they hold the fallback);
-     the known hard cases -- 2^53 + 1, the smallest normal, 1e23, the
-     largest finite, the subnormal edge, "0.1" and its kin -- and the
+/* parsef64_driver.c holds m9_strtod (m9rt.h) to strtod bit for bit.
+   m9_strtod is Eisel-Lemire where it decides, libc's strtod where it
+   does not.  The cases are these:
+     A million random doubles, printed by %.17g (every bit back),
+     %.15g, %.6f, %.3e and %g.
+     A million random significands of 1 to 19 digits with a point
+     placed anywhere and an exponent in -330..310.  That shape reaches
+     the 128-bit product and its halfway rule.
+     The halfway strings themselves: random doubles' exact midpoints
+     to their neighbours, printed with every digit.  These have more
+     than 19 digits and go to strtod.  They hold the fallback.
+     The known hard cases: 2^53 + 1, the smallest normal, 1e23, the
+     largest finite, the subnormal edge, "0.1" and its kin.  Also the
      shapes strtod stops at: a lone sign, a lone point, "1e", "inf",
-     "nan", "0x10", text;
-     and under M9_PARSE_PORTABLE every answer is strtod's with no fast
-     answer counted (the battery runs both; the second is the control).
-   Shown able to fail: one bit flipped in a table entry's high word
-   fails 1,813 of the two million (2026-10-25); the low word cleared
-   fails none -- it decides only where the first product is ambiguous,
-   which these strings reach rarely.
+     "nan", "0x10", text.
+     Under M9_PARSE_PORTABLE every answer is strtod's, with no fast
+     answer counted.  The battery runs both; the second is the
+     control.
+   The test is shown able to fail: one bit flipped in a table entry's
+   high word fails 1,813 of the two million (2026-10-25).  The low
+   word cleared fails none.  It decides only where the first product
+   is ambiguous, which these strings reach rarely.
    Speed is printed, never gated. */
 #define _POSIX_C_SOURCE 200809L
 #include <stdint.h>
@@ -39,7 +41,8 @@ static double now (void)
   return t.tv_sec + t.tv_nsec * 1e-9;
 }
 
-/* the same bits, NaN against NaN counted equal */
+/* same demands the same bits from m9_strtod and strtod, NaN against
+   NaN counted equal. */
 static void same (const char *s, const char *what)
 {
   double a = m9_strtod (s), b = strtod (s, NULL);
@@ -60,7 +63,7 @@ int main (void)
   char buf[1200];
   int64_t h0 = m9_parse_f64_hits ();
 
-  /* random doubles in five layouts */
+  /* Print random doubles in five layouts. */
   for (int i = 0; i < 200000; i++) {
     uint64_t b = rnd ();
     double d;
@@ -73,7 +76,8 @@ int main (void)
     snprintf (buf, sizeof buf, "%.6f", m); same (buf, "%.6f");
     snprintf (buf, sizeof buf, "%.3e", m); same (buf, "%.3e");
   }
-  /* 1 to 19 digits, a point anywhere, an exponent in -330..310 */
+  /* Write 1 to 19 digits, a point anywhere, an exponent in
+     -330..310. */
   for (int i = 0; i < 1000000; i++) {
     int nd = 1 + (int) (rnd () % 19), pt = (int) (rnd () % (nd + 1)), ex = (int) (rnd () % 641) - 330, k = 0;
     if (rnd () % 4 == 0) buf[k++] = '-';
@@ -85,7 +89,8 @@ int main (void)
     buf[k] = 0;
     same (buf, "19-digit");
   }
-  /* exact midpoints between neighbouring doubles, every digit printed */
+  /* Print exact midpoints between neighbouring doubles, every
+     digit. */
   for (int i = 0; i < 20000; i++) {
     uint64_t b = rnd () >> 2;
     double d, n2;
@@ -93,16 +98,15 @@ int main (void)
     if (!isfinite (d) || d == 0) continue;
     n2 = nextafter (d, INFINITY);
     if (!isfinite (n2)) continue;
-    /* the midpoint as the exact sum printed at half: %.1000g of (d + n2) is
-       exact for a double, and the midpoint is that divided by two, which
-       the string cannot carry -- so print d and n2 each exactly and form
-       the midpoint's digits by averaging is not a string operation; use
-       long double, exact for the sum of two doubles of equal exponent */
+    /* The test needs the exact midpoint of d and n2.  %.1000g prints
+       d + n2 exactly as a double, but halving it is not a string
+       operation.  So compute it in long double, which is exact for the
+       sum of two doubles of equal exponent. */
     long double mid = ((long double) d + (long double) n2) / 2.0L;
     snprintf (buf, sizeof buf, "%.1100Lg", mid);
     same (buf, "midpoint");
   }
-  /* the known hard ones and the shapes strtod stops at */
+  /* Try the known hard ones and the shapes strtod stops at. */
   {
     static const char *hard[] = {
       "9007199254740993", "9007199254740992.5", "2.2250738585072011e-308", "2.2250738585072014e-308",
@@ -126,7 +130,8 @@ int main (void)
     printf ("%s\n", what);
   }
 
-  /* speed, printed: a million %.17g strings, strtod against m9_strtod */
+  /* Print the speed: a million %.17g strings, strtod against
+     m9_strtod. */
   {
     int N = 1000000;
     char *strs = malloc ((size_t) N * 32);

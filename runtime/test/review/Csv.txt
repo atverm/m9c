@@ -2,10 +2,10 @@ REVIEW Csv -- 39 procedures with a body, 30 of them functions; 26 headings in a 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              30
-  assignments                                   196
-  arguments                                     104
-  RETURN values                                  66
-  operands of a comparison or an operator       246
+  assignments                                   181
+  arguments                                     100
+  RETURN values                                  60
+  operands of a comparison or an operator       216
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                4
@@ -38,5 +38,5 @@ COUNTED -- how much there was to check
   handlers                                        1
   NEW in the frame                                0
   NEW in a named pool                            20
-  calls of a STR form with a UTF twin             1   Io.ReadFileBytes -> Io.ReadFileBytesUtf
-  STR subscripts, writes and LEN                  3   len w, len w, index w[k]
+  calls of a STR form with a UTF twin             0
+  STR subscripts, writes and LEN                  0

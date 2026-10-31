@@ -1,4 +1,4 @@
-/* grib_driver.c -- Grib.m9 against libeccodes, on a real GRIB 2
+/* grib_driver.c holds Grib.m9 to libeccodes, on a real GRIB 2
    message.
 
    The file is ecCodes' own sample, regular_ll_sfc_grib2.tmpl, which
@@ -6,12 +6,12 @@
    numbers are asserted here so that a binding which quietly read the
    wrong key would be caught by something outside itself.
 
-   Then the differential: the same file, the same keys, through the
-   raw C API in this driver, compared value for value.  A wrapper
-   that agrees with itself proves nothing -- one that swapped Ni and
-   Nj would round-trip perfectly.
+   Then comes the differential.  The same file and the same keys go
+   through the raw C API in this driver, compared value for value.  A
+   wrapper that agrees with itself proves nothing.  One that swapped
+   Ni and Nj would round-trip perfectly.
 
-   And the refusals, which are the reason the wrapper exists: a
+   Then come the refusals, which are the reason the wrapper exists: a
    missing key, a wrong-sized buffer, and a message used after it was
    released.  The C API's answer to the third is a read of freed
    memory. */
@@ -37,28 +37,30 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-static uint32_t sbuf[4096];
+static uint8_t sbuf[16384];
 static size_t sused = 0;
 
-static m9_sl_CHAR S (const char *s)
+/* S copies a C string's octets into sbuf.  A C literal is UTF-8
+   already, so no octet is widened. */
+static m9_sl_UTF8 S (const char *s)
 {
-  size_t i, n = strlen (s);
-  uint32_t *p;
+  size_t n = strlen (s);
+  uint8_t *p;
   /* wrap: the arena is scratch for one call, and a walk over 497
      messages asks for a few thousand of them.  The first version
      only ever grew, and segfaulted in the test rather than in the
      thing being tested. */
-  if (sused + n > sizeof sbuf / sizeof sbuf[0]) sused = 0;
+  if (sused + n > sizeof sbuf) sused = 0;
   p = sbuf + sused;
   sused += n;
-  for (i = 0; i < n; i++) p[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ p, (int64_t) n };
+  memcpy (p, s, n);
+  return (m9_sl_UTF8){ p, (int64_t) n };
 }
 
-static char *C (m9_sl_CHAR s, char *out, size_t cap)
+static char *C (m9_sl_UTF8 s, char *out, size_t cap)
 {
-  size_t i, n = (size_t) s.len < cap - 1 ? (size_t) s.len : cap - 1;
-  for (i = 0; i < n; i++) out[i] = (char) s.p[i];
+  size_t n = (size_t) s.len < cap - 1 ? (size_t) s.len : cap - 1;
+  if (n > 0) memcpy (out, s.p, n);
   out[n] = 0;
   return out;
 }
@@ -103,7 +105,7 @@ int main (void)
     Grib_GetI64 (m, S ("noSuchKeyAtAll"), &e);
     ok ("a missing key raises Error", e.exc == &Grib_Error);
     ok ("...naming the key",
-        e.exc && strcmp (C ((m9_sl_CHAR){ (uint32_t *) e.s[1].p,
+        e.exc && strcmp (C ((m9_sl_UTF8){ (uint8_t *) e.s[1].p,
                                           e.s[1].len },
                             buf, sizeof buf), "noSuchKeyAtAll") == 0);
     ok ("...and carrying the library's own message",
@@ -133,7 +135,8 @@ int main (void)
     }
   }
 
-  /* release, and then use it: the C API would read freed memory */
+  /* Release it, and then use it.  The C API would read freed
+     memory. */
   Grib_Release (&m, &pool, &e);
   ok ("Release", !e.exc);
   {
@@ -186,10 +189,10 @@ int main (void)
 
      $M9GRIB names a model input file: ERA5, 497 messages of
      360x181 on hybrid levels, 97 MB.  The sample above proves the
-     binding decodes A message; this proves it decodes the ones the
+     binding decodes A message.  This proves it decodes the ones the
      model actually gets, every one of them, and agrees with the C
-     API on all 32 million values.  Skipped out loud when the file is
-     not on this machine. */
+     API on all 32 million values.  This is skipped out loud when the
+     file is not on this machine. */
   {
     const char *real = getenv ("M9GRIB");
     if (real == NULL) real = "/mnt/d/data/grib/EA25120100";

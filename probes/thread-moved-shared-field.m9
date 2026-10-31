@@ -1,10 +1,10 @@
 (* EXPECT: the value moved in holds a SHARED handle to *)
 MODULE m ;
-(* a value moved into a THREAD is the worker's, but a SHARED handle it
-   holds reaches an object the starting thread may still name: both
+(* A value moved into a THREAD is the worker's.  A SHARED handle it
+   holds still reaches an object the starting thread may name, and both
    write it (the fourth review's SharedInMoved, a race TSan reports).
-   Legal forms first: a moved value holding a SHARED handle to a MONITOR,
-   and one holding a handle to a record marked [SHARABLE]. *)
+   Legal forms come first: a moved value holding a SHARED handle to a
+   MONITOR, and one holding a handle to a record marked [SHARABLE]. *)
 TYPE
   Store = RECORD n : I64 END ;
   Shared = RECORD n : I64 END [SHARABLE] ;

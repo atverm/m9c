@@ -1,10 +1,10 @@
 (* EXPECT: THREAD (Work): both threads hold the m.Job handed over, and it is neither a MONITOR nor a RECORD marked [SHARABLE] *)
-(* What a THREAD is handed and not moved -- here a pool pointer -- both
-   threads hold (par 6).  A MONITOR serialises what they do with it; a
+(* Both threads hold what a THREAD is handed and not moved, here a pool
+   pointer (par 6).  A MONITOR serialises what they do with it.  A
    RECORD marked [SHARABLE] is its author's claim that the threads'
-   writes to it are disjoint, a band each; an owned value moved in is
+   writes to it are disjoint, a band each.  An owned value moved in is
    the thread's alone.  Any other record so handed is refused.  The
-   legal forms first. *)
+   legal forms come first. *)
 MODULE m ;
 TYPE
   Gate = MONITOR RECORD n : I64 END ;

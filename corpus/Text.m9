@@ -1,9 +1,10 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Text ;
 
-(* Slice-of-CHAR utilities: search, trim, split, join, case.
+(* Text holds slice-of-CHAR utilities: search, trim, split, join,
+   case.
 
-   Written because the reinventions had started again.  DynStr.Eq
+   It was written because the reinventions had started again.  DynStr.Eq
    exists at all because Json, ZarrStore and Http had each grown a
    private slice-equality; since then Gen grew StartsW and FindCh,
    M9c grew BaseName, and Http grew its own header scan.  That is the
@@ -13,9 +14,9 @@ DEFINITION MODULE Text ;
    Everything that can return a VIEW returns a view.  Trim and the
    pieces from Split are sub-slices of the caller's own storage: no
    copy, no allocation, no pool argument.  Only the procedures that
-   must build something new -- Join, Lower, Upper, and since
-   2026-09-27 Cat, Keep and Fields -- take a pool, and their names say
-   they are making rather than looking.  (This paragraph named a
+   must build something new take a pool: Join, Lower, Upper, and
+   since 2026-09-27 Cat, Keep and Fields.  Their names say they are
+   making rather than looking.  (This paragraph named a
    `Slice` procedure and an RO result annotation until 2026-09-27;
    neither exists: `SLICE (s, start, len)` is the language's, and a
    view is written through or not by the mode of the parameter it
@@ -26,50 +27,53 @@ DEFINITION MODULE Text ;
    none and the corpus has no caller that needs Turkish dotless i. *)
 
 PROCEDURE Eq (RO a: STR ; RO b: STR) : BOOL ;
-  (* character-by-character equality, length first.  The same
+  (* Eq compares character by character, length first.  It is the same
      function as DynStr.Eq and deliberately so: this module is the
      inventory, and a caller who has Text imported should not have to
      import DynStr as well to compare two slices.                   *)
 
 PROCEDURE Compare (RO a: STR ; RO b: STR) : I64 ;
-  (* -1, 0 or 1: the order Sort.Strs sorts by -- code point by code
-     point from the first, and the shorter first where one is a
-     prefix of the other.  `<' on two strings is refused by design
-     (par 2.3); this is the ordered comparison, for timestamps and
-     names (an ISO 8601 timestamp orders as text).  2026-10-09.      *)
+  (* Compare answers -1, 0 or 1: the order Sort.Strs sorts by, code
+     point by code point from the first, and the shorter first where
+     one is a prefix of the other.  `<' on two strings is refused by
+     design (par 2.3); this is the ordered comparison, for timestamps
+     and names (an ISO 8601 timestamp orders as text).  2026-10-09. *)
 
 PROCEDURE Find (RO hay: STR ; RO needle: STR) : I64 ;
-  (* first index, or -1.  An empty needle is found at 0, which is the
-     convention every other language settled on and the one that
-     makes Find/Slice compose without a special case.               *)
+  (* Find answers the first index, or -1.  An empty needle is found at
+     0, which is the convention every other language settled on and the
+     one that makes Find/Slice compose without a special case. *)
 
 PROCEDURE FindChar (RO s: STR ; c: CHAR) : I64 ;
 PROCEDURE LastChar (RO s: STR ; c: CHAR) : I64 ;
-  (* first and last index of c, or -1 when it does not occur.  -1
-     rather than LEN (s) because -1 cannot be mistaken for a position
-     and will not silently index anything: the M2 habit of answering
-     a past-the-end index is how a not-found becomes a read.
+  (* FindChar and LastChar answer the first and last index of c, or -1
+     when it does not occur.  They answer -1 rather than LEN (s)
+     because -1 cannot be mistaken for a position and will not
+     silently index anything.  The M2 habit of answering a
+     past-the-end index is how a not-found becomes a read.
 
        c -- one scalar, not a set of them.  A search for any of
             several characters is a loop the caller writes, because
-            M9 has no set type (report par 9.4) and inventing one
+            M9 has no set type (report par 9.4) and an invented one
             here would hide that.                                   *)
 
 PROCEDURE Contains (RO hay: STR ; RO needle: STR) : BOOL ;
 PROCEDURE StartsWith (RO s: STR ; RO prefix: STR) : BOOL ;
 PROCEDURE EndsWith (RO s: STR ; RO suffix: STR) : BOOL ;
-  (* the three yes/no forms.  An EMPTY needle, prefix or suffix is
-     always present, which follows from Find's empty-needle rule
-     above and is the answer that makes a loop over a possibly-empty
-     separator terminate.  Contains is Find (...) >= 0 and says so
-     rather than making every caller write it; Gen and M9c had both
-     grown a private StartsW before this module existed.            *)
+  (* Contains, StartsWith and EndsWith are the three yes/no forms.  An
+     EMPTY needle, prefix or suffix is always present, which follows
+     from Find's empty-needle rule above and is the answer that makes a
+     loop over a possibly-empty separator terminate.  Contains is
+     Find (...) >= 0 and says so rather than making every caller write
+     it; Gen and M9c had both grown a private StartsW before this
+     module existed. *)
 
 PROCEDURE IndexOf (RO among: SLICE OF STR ; RO s: STR) : I64 ;
 PROCEDURE OneOf (RO s: STR ; RO among: SLICE OF STR) : BOOL ;
-  (* membership in a list of strings: the index of the first element
-     equal to s, or -1; and the yes/no form.  A linear search, which
-     is what the chain of comparisons it replaces was.
+  (* IndexOf and OneOf test membership in a list of strings.  IndexOf
+     answers the index of the first element equal to s, or -1; OneOf
+     is the yes/no form.  Both do a linear search, which is what the
+     chain of comparisons they replace was.
 
        among -- usually a constant table (report par 2.2.4):
                   CONST Units = ['ppm', 'ppb', 'ppt'] ;
@@ -80,42 +84,41 @@ PROCEDURE OneOf (RO s: STR ; RO among: SLICE OF STR) : BOOL ;
                 (n, 'b') OR ...`, one of them 96 names long, when
                 these two were written (2026-10-01).                *)
 
-PROCEDURE Trim (RO s: STR) : STR ;
-PROCEDURE TrimLeft (RO s: STR) : STR ;
-PROCEDURE TrimRight (RO s: STR) : STR ;
-  (* blanks, tabs, CR and LF.  A VIEW of s, not a copy.            *)
-
 PROCEDURE CountChar (RO s: STR ; c: CHAR) : I64 ;
-  (* how many times c occurs.  Split allocates CountChar + 1 pieces,
-     which is what this is for: sizing the vector before filling it,
-     in one pass each, with no growable array in between.           *)
+  (* CountChar answers how many times c occurs.  Split allocates
+     CountChar + 1 pieces, which is what this is for: sizing the vector
+     before filling it, in one pass each, with no growable array in
+     between. *)
 
 PROCEDURE Split (RO s: STR ; sep: CHAR) : SLICE OF STR ;
   (* n separators give n+1 pieces, empties included: 'a,,b' splits
-     into three, and ',' into two empty ones.  Dropping empties is a
-     different function, and callers that want it can say so; a split
-     that silently loses fields is how CSV readers corrupt data.
-     The PIECES are views into s -- only the vector is allocated.   *)
+     into three, and ',' into two empty ones.  A split that drops
+     empties is a different function, and callers that want it can say
+     so; a split that silently loses fields is how CSV readers corrupt
+     data.  The PIECES are views into s: only the vector is
+     allocated. *)
 
 PROCEDURE Fields (RO s: STR ; sep: CHAR) : SLICE OF STR ;
-  (* Split without the empty pieces: `a,,b,` gives [a, b], which is
-     C's strtok and awk's default, where Split gives [a, '', b, ''].
-     The ONEFlux port carried this beside Split (Common.Tokens) *)
+  (* Fields is Split without the empty pieces: `a,,b,` gives [a, b],
+     which is C's strtok and awk's default, where Split gives
+     [a, '', b, ''].  The ONEFlux port carried this beside Split
+     (Common.Tokens). *)
 
 PROCEDURE Keep (VAR pool: POOL ; RO s: STR) : STR ;
-  (* a COPY of s in pool.  The one thing to do with a string that
-     dies with its frame -- a `+` result, a view of a scratch buffer
-     -- before storing it in a record that outlives the frame.  The
-     ONEFlux port carried these six lines in six modules and the bugs
-     were the forgotten ones (par 2.3). *)
+  (* Keep answers a COPY of s in pool.  It is the one thing to do with
+     a string that dies with its frame (a `+` result, a view of a
+     scratch buffer) before storing it in a record that outlives the
+     frame.  The ONEFlux port carried these six lines in six modules
+     and the bugs were the forgotten ones (par 2.3). *)
 
 PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR ;
-  (* a + b, in pool rather than in the frame: for the result that is
-     stored, where `+` is for the result that is used *)
+  (* Cat answers a + b, in pool rather than in the frame.  It is for
+     the result that is stored, where `+` is for the result that is
+     used. *)
 
 PROCEDURE Join (RO parts: SLICE OF STR ; RO sep: STR) : STR ;
-  (* the inverse of Split, and exact: Join (Split (s, c), c) is s
-     again, because Split keeps its empties.
+  (* Join is the inverse of Split, and exact: Join (Split (s, c), c) is
+     s again, because Split keeps its empties.
 
        parts -- BORROWED and copied out of; the result is new
                 storage in the caller's frame (par 4.3) and shares
@@ -128,41 +131,46 @@ PROCEDURE Join (RO parts: SLICE OF STR ; RO sep: STR) : STR ;
 
 PROCEDURE Lower (RO s: STR) : STR ;
 PROCEDURE Upper (RO s: STR) : STR ;
-  (* every scalar as Python's str.lower and str.upper map it ON ITS
-     OWN -- the full mappings, so 'straße' is 'STRASSE' and 'İ' lowers
-     to 'i' and a combining dot: the answer may be longer than s.  No
-     context: Python lowers a Σ that ends a word to ς, this to σ.
-     Tables from Python 3.14's Unicode 16.0 (tools/textucd.py); held
-     by TextTest at every code point.  ASCII-only until 2026-10-10. *)
+  (* Lower and Upper map every scalar as Python's str.lower and
+     str.upper map it ON ITS OWN.  They use the full mappings, so
+     'straße' is 'STRASSE' and 'İ' lowers to 'i' and a combining dot:
+     the answer may be longer than s.  They use no context: Python
+     lowers a Σ that ends a word to ς, this to σ.  The tables come
+     from Python 3.14's Unicode 16.0 (tools/textucd.py); TextTest
+     holds them at every code point.  They were ASCII-only until
+     2026-10-10. *)
 
 PROCEDURE Replace (RO s: STR ; RO old: STR ; RO by: STR) : STR ;
-  (* s with every occurrence of `old' replaced by `by': found left to
-     right, and never overlapping, so 'aaaa' with 'aa' replaced is
-     two replacements and not three.  Python's str.replace.  An
+  (* Replace answers s with every occurrence of `old' replaced by
+     `by': found left to right, and never overlapping, so 'aaaa' with
+     'aa' replaced is two replacements and not three.  It is Python's
+     str.replace.  An
      EMPTY old occurs nowhere here and s comes back as it was;
      Python finds it between every two characters, which is nobody's
      meaning.  A copy either way: the answer shares nothing with s. *)
 
 PROCEDURE AllIn (RO s: STR ; RO set: STR) : BOOL ;
-  (* is s non-empty and every character of it in `set'?  `set' is the
-     inside of a Match bracket -- characters and ranges, `a-z0-9_-',
-     a leading `!' negating -- so AllIn (s, 'a-z-') is what a regular
-     expression writes `[a-z-]+'.  Empty s answers FALSE, as Python's
-     ''.isdigit () does.  Held to fnmatch, character by character
-     (2026-10-10, cp-kernel's proposal: it wrote these by hand). *)
+  (* AllIn asks whether s is non-empty and every character of it is
+     in `set'.  `set' is the inside of a Match bracket (characters and
+     ranges, `a-z0-9_-', a leading `!' negating), so AllIn (s, 'a-z-')
+     is what a regular expression writes `[a-z-]+'.  Empty s answers
+     FALSE, as Python's ''.isdigit () does.  It is held to fnmatch,
+     character by character (2026-10-10, cp-kernel's proposal: it
+     wrote these by hand). *)
 
 PROCEDURE AllDigits (RO s: STR) : BOOL ;
 PROCEDURE AllLower (RO s: STR) : BOOL ;
 PROCEDURE AllUpper (RO s: STR) : BOOL ;
 PROCEDURE AllAlnum (RO s: STR) : BOOL ;
-  (* AllIn over the ASCII sets 0-9, a-z, A-Z and all three: what an
-     identifier or a file name's field is checked against.  Unicode
+  (* AllDigits, AllLower, AllUpper and AllAlnum are AllIn over the
+     ASCII sets 0-9, a-z, A-Z and all three: what an identifier or a
+     file name's field is checked against.  Unicode
      letters are not letters here; Upper and Lower are where Text
      knows them. *)
 
 PROCEDURE Match (RO pattern: STR ; RO s: STR) : BOOL ;
-  (* does the WHOLE of s fit the shell pattern?  Python's
-     fnmatch.fnmatchcase, case-sensitive:
+  (* Match asks whether the WHOLE of s fits the shell pattern.  It is
+     Python's fnmatch.fnmatchcase, case-sensitive:
 
        *        any run of characters, none included
        ?        any one character
@@ -177,119 +185,135 @@ PROCEDURE Match (RO pattern: STR ; RO s: STR) : BOOL ;
      directories. *)
 
 PROCEDURE ToBase64 (RO b: SLICE OF BYTE) : STR ;
-  (* RFC 4648 base64 of the octets, padded with =, no line breaks:
-     Python's base64.b64encode.  Octets to TEXT: a key in a header, a
-     token in a URL (not URL-safe; that alphabet is not here), a mail
-     body line *)
+  (* ToBase64 answers RFC 4648 base64 of the octets, padded with =, no
+     line breaks: Python's base64.b64encode.  It turns octets to TEXT:
+     a key in a header, a token in a URL (not URL-safe; that alphabet
+     is not here), a mail body line. *)
 
 PROCEDURE ToBase64Url (RO b: SLICE OF BYTE) : STR ;
-  (* RFC 4648 section 5, base64url WITHOUT padding: `-' and `_' for
-     `+' and `/', no `=' -- what ICOS object ids, JWTs and URL tokens
-     use; Python's base64.urlsafe_b64encode (b).rstrip (b'=')
-     (cp-kernel's issue 19, 2026-10-09). *)
+  (* ToBase64Url answers RFC 4648 section 5, base64url WITHOUT
+     padding: `-' and `_' for `+' and `/', no `='.  ICOS object ids,
+     JWTs and URL tokens use it.  It is Python's
+     base64.urlsafe_b64encode (b).rstrip (b'=') (cp-kernel's issue 19,
+     2026-10-09). *)
 
 PROCEDURE FromBase64Url (RO s: STR) : SLICE OF BYTE RAISES ValueRange ;
-  (* the octets back from base64url, padding optional: a length of 1
-     mod 4 cannot be, and any character outside the url alphabet (a
+  (* FromBase64Url answers the octets back from base64url, padding
+     optional.  A length of 1 mod 4 cannot be, and any character
+     outside the url alphabet (a
      `+' or `/' included) RAISES ValueRange, as does `=' anywhere but
      at the end of a padded group. *)
 
 PROCEDURE FromBase64 (RO s: STR) : SLICE OF BYTE RAISES ValueRange ;
-  (* the octets back, STRICTLY -- Python's base64.b64decode (s,
-     validate=True): a character outside the alphabet, a blank, a line
-     break, a length that is not a multiple of four, padding that is
-     not one or two = at the very end, each RAISES ValueRange.  What
-     Python takes is taken: the unused low bits before a = are not
-     held to zero *)
+  (* FromBase64 answers the octets back, STRICTLY: Python's
+     base64.b64decode (s, validate=True).  A character outside the
+     alphabet, a blank, a line break, a length that is not a multiple
+     of four, padding that is not one or two = at the very end: each
+     RAISES ValueRange.  FromBase64 takes what Python takes: the
+     unused low bits before a = are not held to zero. *)
 
 (* ---- UTF, UTF-8 text (docs/utf8-plan.md, stage 1).  A UTF has no
    subscript and no LEN: each operation below says its unit and its
    cost.  STR is unchanged. ---- *)
 
 PROCEDURE BLen (RO u: UTF) : I64 ;
-  (* the octets of u, O(1) *)
+  (* BLen answers the octets of u, O(1). *)
 
 PROCEDURE BAt (RO u: UTF ; i: I64) : BYTE ;
 PROCEDURE BChar (RO u: UTF ; i: I64) : CHAR ;
-  (* octet i of u as a CHARACTER 0..255: what `s[i]' read as a CHAR
-     was before the switch for a text whose structure is ASCII -- a
-     digit, a sign, a bracket -- where an octet past 127 is part of a
-     character the parser is not looking at and matches none of its
-     literals.  No RAISES: an octet is always a scalar (BAt with CHR
-     would make every caller declare a ValueRange that cannot fire).
-     m9utf writes it for a subscript read as a CHAR and says so *)
+  (* BChar answers octet i of u as a CHARACTER 0..255: what `s[i]'
+     read as a CHAR was before the switch, for a text whose structure
+     is ASCII (a digit, a sign, a bracket).  There an octet past 127
+     is part of a character the parser is not looking at and matches
+     none of its literals.  BChar has no RAISES: an octet is always a
+     scalar (BAt with CHR would make every caller declare a ValueRange
+     that cannot fire).  m9utf writes it for a subscript read as a
+     CHAR and says so. *)
 PROCEDURE BIs (RO u: UTF ; i: I64 ; c: CHAR) : BOOL ;
-  (* is octet i of u the ASCII character c?  FALSE for a c past 127,
-     which no single octet is -- the test a parser over ASCII structure
-     makes at every step, `s[i] = '/'' before the switch (m9utf writes
-     it, 2026-10-24) *)
-  (* the octet at byte offset i, O(1); IndexError outside 0 ..
-     BLen (u) - 1 *)
+  (* BIs asks whether octet i of u is the ASCII character c.  It
+     answers FALSE for a c past 127, which no single octet is.  This
+     is the test a parser over ASCII structure makes at every step,
+     `s[i] = '/'' before the switch (m9utf writes it, 2026-10-24). *)
+  (* BAt answers the octet at byte offset i, O(1); IndexError outside
+     0 .. BLen (u) - 1. *)
 
 PROCEDURE CpCount (RO u: UTF) : I64 ;
-  (* the code points of u, O(n): the bytes that are not continuation
-     bytes, counted eight at a time by the runtime (2026-10-25) *)
+  (* CpCount answers the code points of u, O(n): the bytes that are
+     not continuation bytes, counted eight at a time by the runtime
+     (2026-10-25). *)
+
+PROCEDURE Chars (RO u: UTF) : SLICE OF CHAR ;
+  (* Chars answers the code points of u as an array of characters, for
+     code that wants random access by character: `Text.Chars (s)[i]'
+     is what `s[i]' meant before STR became the UTF-8 type (decision
+     5 of docs/utf8-stage4-plan.md, 2026-10-24).  It is a copy, O(n),
+     built in the caller's frame.  A walk is FOR c IN u, not Chars. *)
 
 PROCEDURE CpAt (RO u: UTF ; x: I64) : CHAR ;
-  (* the x-th code point, counted from 0, O(x); IndexError outside 0 ..
-     CpCount (u) - 1.  A walk is FOR c IN u or NextCp, not CpAt in a
-     loop, which is quadratic *)
+  (* CpAt answers the x-th code point, counted from 0, O(x);
+     IndexError outside 0 .. CpCount (u) - 1.  A walk is FOR c IN u or
+     NextCp, not CpAt in a loop, which is quadratic. *)
 
 PROCEDURE NextCp (RO u: UTF ; VAR at: I64) : CHAR ;
-  (* the code point that starts at byte offset at, and at moved past
-     it: a scanner's step, O(1).  IndexError when at is outside the
-     octets or inside a character *)
+  (* NextCp answers the code point that starts at byte offset at, and
+     moves at past it: a scanner's step, O(1).  It raises IndexError
+     when at is outside the octets or inside a character. *)
 
 PROCEDURE ToUtf (RO s: STR) : UTF ;
-  (* s encoded, O(n): UTF (s) *)
+  (* ToUtf answers s encoded, O(n): UTF (s). *)
 
 PROCEDURE FromUtf (RO u: UTF) : STR ;
-  (* u decoded into code points, O(n): STR (u) *)
+  (* FromUtf answers u decoded into code points, O(n): STR (u). *)
 
 PROCEDURE FromUtf8 (RO b: SLICE OF BYTE) : UTF RAISES ValueRange ;
-  (* the octets as text, validated and copied, O(n): UTF (b).
-     ValueRange when b is not UTF-8 -- an overlong form, a surrogate,
-     a scalar past U+10FFFF, a sequence cut short -- with its offset *)
+  (* FromUtf8 answers the octets as text, validated and copied, O(n):
+     UTF (b).  It raises ValueRange, with its offset, when b is not
+     UTF-8: an overlong form, a surrogate, a scalar past U+10FFFF, a
+     sequence cut short. *)
 
 PROCEDURE EqUtf (RO a: UTF ; RO b: UTF) : BOOL ;
-  (* equality, octet by octet: two UTF are equal exactly when their
-     code points are (UTF-8 is a function of them) *)
+  (* EqUtf compares octet by octet: two UTF are equal exactly when
+     their code points are (UTF-8 is a function of them). *)
 
 PROCEDURE CompareUtf (RO a: UTF ; RO b: UTF) : I64 ;
-  (* -1, 0 or 1 in Compare's order: by code point from the first, the
-     shorter first where one is a prefix -- which for UTF-8 is the
-     order of the octets *)
+  (* CompareUtf answers -1, 0 or 1 in Compare's order: by code point
+     from the first, the shorter first where one is a prefix.  For
+     UTF-8 that is the order of the octets. *)
 
 (* ---- grapheme clusters (UAX #29, Unicode 16.0.0: the extended
    clusters, rules GB1 to GB999 with GB9c's conjuncts).  A cluster is
-   what a reader takes for one character -- 'e' and a combining accent,
-   a flag of two regional indicators, a family joined by ZWJs.  Held to
-   the 1,093 cases of Unicode's GraphemeBreakTest.txt ---- *)
+   what a reader takes for one character: 'e' and a combining accent,
+   a flag of two regional indicators, a family joined by ZWJs.  These
+   are held to the 1,093 cases of Unicode's GraphemeBreakTest.txt
+   ---- *)
 
 PROCEDURE NextGr (RO u: UTF ; VAR at: I64) : UTF ;
-  (* the cluster that starts at byte offset at, a view of u, and at
-     moved past it: a scanner's step, O(the cluster).  IndexError when
-     at is outside the octets or inside a character; at must be where
-     a cluster starts (0, or where NextGr left it) *)
+  (* NextGr answers the cluster that starts at byte offset at, a view
+     of u, and moves at past it: a scanner's step, O(the cluster).  It
+     raises IndexError when at is outside the octets or inside a
+     character.  at must be where a cluster starts (0, or where NextGr
+     left it). *)
 
 PROCEDURE GrCount (RO u: UTF) : I64 ;
-  (* the grapheme clusters of u, O(n) *)
+  (* GrCount counts the grapheme clusters of u, O(n). *)
 
 PROCEDURE GrAt (RO u: UTF ; x: I64) : UTF ;
-  (* the x-th cluster, counted from 0, a view of u, O(x); IndexError
-     outside 0 .. GrCount (u) - 1.  A walk is NextGr, not GrAt in a
-     loop *)
+  (* GrAt answers the x-th cluster, counted from 0, a view of u, O(x);
+     IndexError outside 0 .. GrCount (u) - 1.  A walk is NextGr, not
+     GrAt in a loop. *)
 
-(* ---- the UTF twins of the procedures above (docs/utf8-plan.md, stage
-   2): reached by the same call with UTF arguments -- Text.Find (u, v)
-   is FindUtf (u, v).  Positions are BYTE offsets, each at the start of
-   a character: UTF-8 is built so that a search over octets finds only
-   whole characters.  Same rules as the STR forms otherwise. ---- *)
+(* ---- the UTF twins of the procedures above (docs/utf8-plan.md,
+   stage 2).  The same call with UTF arguments reaches them, so
+   Text.Find (u, v) is FindUtf (u, v).  Positions are BYTE offsets,
+   each at the start of a character: UTF-8 is built so that a search
+   over octets finds only whole characters.  The rules are otherwise
+   the same as the STR forms'. ---- *)
 
 PROCEDURE FindUtf (RO hay: UTF ; RO needle: UTF) : I64 ;
-  (* the BYTE offset of the first occurrence, or -1; an empty needle is
-     at 0.  The C library's memchr and memcmp through the runtime since
-     2026-10-25, as every byte search in this module. *)
+  (* FindUtf answers the BYTE offset of the first occurrence, or -1;
+     an empty needle is at 0.  It uses the C library's memchr and
+     memcmp through the runtime since 2026-10-25, as every byte search
+     in this module does. *)
 PROCEDURE FindCharUtf (RO s: UTF ; c: CHAR) : I64 ;
 PROCEDURE LastCharUtf (RO s: UTF ; c: CHAR) : I64 ;
 PROCEDURE ContainsUtf (RO hay: UTF ; RO needle: UTF) : BOOL ;
@@ -299,10 +323,15 @@ PROCEDURE CountCharUtf (RO s: UTF ; c: CHAR) : I64 ;
 PROCEDURE TrimUtf (RO s: UTF) : UTF ;
 PROCEDURE TrimLeftUtf (RO s: UTF) : UTF ;
 PROCEDURE TrimRightUtf (RO s: UTF) : UTF ;
-  (* views of s, as Trim's are *)
+  (* TrimUtf, TrimLeftUtf and TrimRightUtf remove blanks, tabs, CR and
+     LF.  They answer a VIEW of s, not a copy.  A call of Trim, TrimLeft
+     or TrimRight is a call of these. *)
+  (* TrimUtf, TrimLeftUtf and TrimRightUtf answer views of s, as
+     Trim's are. *)
 PROCEDURE SplitUtf (RO s: UTF ; sep: CHAR) : SLICE OF UTF ;
 PROCEDURE FieldsUtf (RO s: UTF ; sep: CHAR) : SLICE OF UTF ;
-  (* the pieces are views of s; only the vector is allocated *)
+  (* In SplitUtf and FieldsUtf the pieces are views of s; only the
+     vector is allocated. *)
 PROCEDURE JoinUtf (RO parts: SLICE OF UTF ; RO sep: UTF) : UTF ;
 PROCEDURE ReplaceUtf (RO s: UTF ; RO old: UTF ; RO by: UTF) : UTF ;
 PROCEDURE LowerUtf (RO s: UTF) : UTF ;
@@ -312,43 +341,46 @@ PROCEDURE OneOfUtf (RO s: UTF ; RO among: SLICE OF UTF) : BOOL ;
 PROCEDURE KeepUtf (VAR pool: POOL ; RO s: UTF) : UTF ;
 PROCEDURE CatUtf (VAR pool: POOL ; RO a: UTF ; RO b: UTF) : UTF ;
 PROCEDURE MatchUtf (RO pattern: UTF ; RO s: UTF) : BOOL ;
-  (* Match over CHARACTERS: `?' takes one code point, a bracket's
-     members and the ends of a range are code points, so `Gr?ße' fits
-     `Grüße' and `[ä-ü]' holds ö -- fnmatch.fnmatchcase on str. *)
+  (* MatchUtf is Match over CHARACTERS: `?' takes one code point, a
+     bracket's members and the ends of a range are code points, so
+     `Gr?ße' fits `Grüße' and `[ä-ü]' holds ö.  It is
+     fnmatch.fnmatchcase on str. *)
 PROCEDURE AllInUtf (RO s: UTF ; RO set: UTF) : BOOL ;
 PROCEDURE AllDigitsUtf (RO s: UTF) : BOOL ;
 PROCEDURE AllLowerUtf (RO s: UTF) : BOOL ;
 PROCEDURE AllUpperUtf (RO s: UTF) : BOOL ;
 PROCEDURE AllAlnumUtf (RO s: UTF) : BOOL ;
-  (* AllIn over code points; the four sets stay ASCII, as AllAlnum's
-     comment says *)
+  (* AllInUtf, AllDigitsUtf, AllLowerUtf, AllUpperUtf and AllAlnumUtf
+     are AllIn over code points; the four sets stay ASCII, as
+     AllAlnum's comment says. *)
 PROCEDURE ToBase64Utf (RO b: SLICE OF BYTE) : UTF ;
 PROCEDURE ToBase64UrlUtf (RO b: SLICE OF BYTE) : UTF ;
 PROCEDURE FromBase64Utf (RO s: UTF) : SLICE OF BYTE RAISES ValueRange ;
 PROCEDURE FromBase64UrlUtf (RO s: UTF) : SLICE OF BYTE RAISES ValueRange ;
-  (* the base64 forms with the TEXT side a UTF; the octets are octets
-     either way.  ToBase64 and ToBase64Utf take the same argument, so
-     the UTF answer is asked for by name. *)
-  (* a COPY of s in pool: UTF (pool, s) *)
+  (* ToBase64Utf, ToBase64UrlUtf, FromBase64Utf and FromBase64UrlUtf
+     are the base64 forms with the TEXT side a UTF; the octets are
+     octets either way.  ToBase64 and ToBase64Utf take the same
+     argument, so the UTF answer is asked for by name. *)
+  (* KeepUtf answers a COPY of s in pool: UTF (pool, s). *)
 
 END Text.
 
 
 UNSAFE IMPLEMENTATION MODULE Text ;
 
-(* UNSAFE for ADR: the code point count and the byte search hand a
-   UTF's bytes to the runtime (ctext, at the end of this file; m9rt.h's
-   eight-bytes-at-a-time paths, 2026-10-25). *)
+(* The module is UNSAFE for ADR: the code point count and the byte
+   search hand a UTF's bytes to the runtime (ctext, at the end of this
+   file; m9rt.h's eight-bytes-at-a-time paths, 2026-10-25). *)
 
 FROM ctext IMPORT CCpCount, CFind ;
 
 IMPORT DynStr ;
 
 CONST
-  (* a table, not CHR (ORD (c) +- 32): CHR is a checked conversion
-     and would put a RAISES ValueRange on two total functions.
-     Indexing is checked too, but IndexError is predeclared and needs
-     no declaration, and 0..25 cannot reach it. *)
+  (* LowerAlpha is a table, not CHR (ORD (c) +- 32): CHR is a checked
+     conversion and would put a RAISES ValueRange on two total
+     functions.  Indexing is checked too, but IndexError is predeclared
+     and needs no declaration, and 0..25 cannot reach it. *)
   LowerAlpha = 'abcdefghijklmnopqrstuvwxyz' ;
   UpperAlpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ;
 
@@ -1518,37 +1550,9 @@ BEGIN
   RETURN n
 END CountChar ;
 
-PROCEDURE Blank (c: CHAR) : BOOL =
-BEGIN
-  RETURN c = ' ' OR c = 09C OR c = 0DC OR c = 0AC
-END Blank ;
 
-PROCEDURE TrimLeft (RO s: STR) : STR =
-VAR i : I64 ;
-BEGIN
-  i := 0 ;
-  WHILE i < LEN (s) DO
-    IF NOT Blank (s[i]) THEN EXIT END ;
-    i := i + 1
-  END ;
-  RETURN SLICE (s, i, LEN (s) - i)
-END TrimLeft ;
 
-PROCEDURE TrimRight (RO s: STR) : STR =
-VAR n : I64 ;
-BEGIN
-  n := LEN (s) ;
-  WHILE n > 0 DO
-    IF NOT Blank (s[n - 1]) THEN EXIT END ;
-    n := n - 1
-  END ;
-  RETURN SLICE (s, 0, n)
-END TrimRight ;
 
-PROCEDURE Trim (RO s: STR) : STR =
-BEGIN
-  RETURN TrimLeft (TrimRight (s))
-END Trim ;
 
 PROCEDURE Split (RO s: STR ; sep: CHAR) : SLICE OF STR =
 VAR
@@ -1645,7 +1649,8 @@ BEGIN
   RETURN s
 END Join ;
 
-(* where c is in an ascending table, or -1: a bisection *)
+(* CaseFind answers where c is in an ascending table, or -1, by
+   bisection. *)
 PROCEDURE CaseFind (RO from: SLICE OF I64 ; c: I64) : I64 =
 VAR lo, hi, mid : I64 ;
 BEGIN
@@ -1733,9 +1738,9 @@ END Replace ;
 
 (* ---- Match ---- *)
 
-(* the ] that closes the set opened by the [ at i, or -1 when none
-   does and the [ is a character like any other.  A ] met straight
-   after the [ or the [! is a member and closes nothing. *)
+(* SetEnd answers the ] that closes the set opened by the [ at i, or
+   -1 when none does and the [ is a character like any other.  A ] met
+   straight after the [ or the [! is a member and closes nothing. *)
 PROCEDURE SetEnd (RO pat: STR ; i: I64) : I64 =
 VAR j, n : I64 ;
 BEGIN
@@ -1748,10 +1753,10 @@ BEGIN
   RETURN j
 END SetEnd ;
 
-(* is c among the members pat[a .. b - 1]?  Read left to right: a
-   character with a - and another after it is a range, anything else
-   is itself -- so a - at either end is a hyphen, and so is one that
-   follows a range. *)
+(* InSet asks whether c is among the members pat[a .. b - 1].  It
+   reads left to right: a character with a - and another after it is
+   a range, and anything else is itself.  So a - at either end is a
+   hyphen, and so is one that follows a range. *)
 PROCEDURE InSet (RO pat: STR ; a, b: I64 ; c: CHAR) : BOOL =
 VAR q : I64 ;
 BEGIN
@@ -1803,8 +1808,8 @@ BEGIN
   RETURN AllIn (s, 'a-zA-Z0-9')
 END AllAlnum ;
 
-(* how much of the pattern from p on takes the one character c: 0
-   when it does not.  pat[p] is not a star. *)
+(* Takes answers how much of the pattern from p on takes the one
+   character c: 0 when it does not.  pat[p] is not a star. *)
 PROCEDURE Takes (RO pat: STR ; p: I64 ; c: CHAR) : I64 =
 VAR
   e, a : I64 ;
@@ -1869,7 +1874,8 @@ VAR
   s, B64 : STR ;
   i, o, v, n : I64 ;
 BEGIN
-  (* a string, indexed: a table of 'A' .. '/' would be one of STRs *)
+  (* B64 is a string, indexed: a table of 'A' .. '/' would be one of
+     STRs. *)
   B64 := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/' ;
   n := (LEN (b) + 2) DIV 3 ;
   s := NEW (CHAR, 4 * n) ;
@@ -1919,75 +1925,16 @@ BEGIN
 END ToBase64Url ;
 
 PROCEDURE FromBase64Url (RO s: STR) : SLICE OF BYTE RAISES ValueRange =
-VAR
-  t : STR ;
-  i, n, pad : I64 ;
+  (* FromBase64Url is FromBase64UrlUtf since STR is the UTF-8 type (2026-10-31). *)
 BEGIN
-  (* into the standard alphabet with its padding, then strictly *)
-  n := LEN (s) ;
-  IF n > 0 AND s[n - 1] = '=' THEN
-    IF n MOD 4 # 0 THEN RAISE ValueRange END ;
-    pad := 0
-  ELSE
-    IF n MOD 4 = 1 THEN RAISE ValueRange END ;
-    pad := (4 - n MOD 4) MOD 4
-  END ;
-  t := NEW (CHAR, n + pad) ;
-  FOR i := 0 TO n - 1 DO
-    IF s[i] = '+' OR s[i] = '/' THEN RAISE ValueRange END ;
-    IF s[i] = '-' THEN t[i] := '+'
-    ELSIF s[i] = '_' THEN t[i] := '/'
-    ELSE t[i] := s[i]
-    END
-  END ;
-  FOR i := n TO n + pad - 1 DO t[i] := '=' END ;
-  RETURN FromBase64 (t)
+  RETURN FromBase64UrlUtf (s)
 END FromBase64Url ;
 
-PROCEDURE B64Val (c: CHAR) : I64 =
-  (* the alphabet's value of c, -1 for a character outside it *)
-BEGIN
-  IF c >= 'A' AND c <= 'Z' THEN RETURN ORD (c) - 65 END ;
-  IF c >= 'a' AND c <= 'z' THEN RETURN ORD (c) - 97 + 26 END ;
-  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 + 52 END ;
-  IF c = '+' THEN RETURN 62 END ;
-  IF c = '/' THEN RETURN 63 END ;
-  RETURN -1
-END B64Val ;
 
 PROCEDURE FromBase64 (RO s: STR) : SLICE OF BYTE RAISES ValueRange =
-VAR
-  out : SLICE OF BYTE ;
-  i, o, n, pad, v, k, a : I64 ;
+  (* FromBase64 is FromBase64Utf since STR is the UTF-8 type (2026-10-31). *)
 BEGIN
-  IF LEN (s) MOD 4 # 0 THEN RAISE ValueRange END ;
-  pad := 0 ;
-  IF LEN (s) >= 1 AND s[LEN (s) - 1] = '=' THEN pad := 1 END ;
-  IF LEN (s) >= 2 AND s[LEN (s) - 2] = '=' AND pad = 1 THEN pad := 2 END ;
-  n := LEN (s) DIV 4 * 3 - pad ;
-  out := NEW (BYTE, n) ;
-  o := 0 ;
-  i := 0 ;
-  WHILE i < LEN (s) DO
-    v := 0 ;
-    FOR k := 0 TO 3 DO
-      IF s[i + k] = '=' THEN
-        (* only in the last group, and only as its last one or two *)
-        IF i + 4 < LEN (s) OR k < 4 - pad THEN RAISE ValueRange END ;
-        a := 0
-      ELSE
-        a := B64Val (s[i + k]) ;
-        IF a < 0 THEN RAISE ValueRange END
-      END ;
-      v := v * 64 + a
-    END ;
-    IF o < n THEN out[o] := BYTE (v DIV 65536) END ;
-    IF o + 1 < n THEN out[o + 1] := BYTE ((v DIV 256) MOD 256) END ;
-    IF o + 2 < n THEN out[o + 2] := BYTE (v MOD 256) END ;
-    o := o + 3 ;
-    i := i + 4
-  END ;
-  RETURN out
+  RETURN FromBase64Utf (s)
 END FromBase64 ;
 
 (* ---- UTF (docs/utf8-plan.md, U2): ordinary M9 over the builtins
@@ -2020,25 +1967,43 @@ EXCEPT
 | ValueRange : RAISE IndexError (i, 256)   (* an octet is a scalar: unreachable *)
 END BChar ;
 
-(* a continuation octet, 10xxxxxx *)
+(* IsCont tests for a continuation octet, 10xxxxxx. *)
 PROCEDURE IsCont (b: BYTE) : BOOL =
 BEGIN
   RETURN I64 (b) >= 128 AND I64 (b) < 192
 END IsCont ;
 
+PROCEDURE Chars (RO u: UTF) : SLICE OF CHAR =
+VAR
+  r : SLICE OF CHAR ;
+  c : CHAR ;
+  n : I64 ;
+BEGIN
+  r := NEW (CHAR, CpCount (u)) ;
+  n := 0 ;
+  FOR c IN u DO
+    r[n] := c ;
+    n := n + 1
+  END ;
+  RETURN r
+EXCEPT
+| IndexError : RETURN r   (* n stays under CpCount (u), the length of r *)
+END Chars ;
+
 PROCEDURE CpCount (RO u: UTF) : I64 =
 VAR o : SLICE OF BYTE ;
 BEGIN
-  (* bytes minus continuation bytes, counted eight at a time in the
-     runtime (m9_utf_cpcount): the byte loop here ran at 650 MB/s on
-     text where every fifth character is two bytes *)
+  (* The count is bytes minus continuation bytes, counted eight at a
+     time in the runtime (m9_utf_cpcount).  The byte loop here ran at
+     650 MB/s on text where every fifth character is two bytes. *)
   o := OCTETS (u) ;
   IF LEN (o) = 0 THEN RETURN 0 END ;
   RETURN I64 (CCpCount (ADR (o), C.SSizeT (LEN (o))))
 END CpCount ;
 
-(* a scalar a UTF holds: every decoded value is one, so CHR cannot fail
-   here; the handler is the checker's due, not a path *)
+(* Scalar answers a scalar a UTF holds: every decoded value is one, so
+   CHR cannot fail here.  The handler is the checker's due, not a
+   path. *)
 PROCEDURE Scalar (v: I64) : CHAR =
 BEGIN
   RETURN CHR (v)
@@ -2133,9 +2098,9 @@ BEGIN
   RETURN 0
 END CompareUtf ;
 
-(* the class of c in the grapheme tables: Grapheme_Cluster_Break (the
-   Gcb* codes) + 16 Indic_Conjunct_Break (the InCb* codes), 0 where the
-   tables hold nothing *)
+(* The class of c in the grapheme tables is Grapheme_Cluster_Break
+   (the Gcb* codes) + 16 Indic_Conjunct_Break (the InCb* codes), 0
+   where the tables hold nothing. *)
 CONST
   GcbOther = 0 ; GcbCR = 1 ; GcbLF = 2 ; GcbControl = 3 ; GcbExtend = 4 ;
   GcbZWJ = 5 ; GcbRI = 6 ; GcbPrepend = 7 ; GcbSpacingMark = 8 ;
@@ -2164,10 +2129,10 @@ BEGIN
   RETURN g = GcbControl OR g = GcbCR OR g = GcbLF
 END IsCtl ;
 
-(* GB3 to GB13 between a cluster's last code point (class p) and the
-   next (class q); conj says GB9c's consonant-linker run is open, zwj
-   that the cluster ends GB11's pictograph Extend* ZWJ, ri how many
-   regional indicators end it *)
+(* Joins applies GB3 to GB13 between a cluster's last code point
+   (class p) and the next (class q).  conj says GB9c's consonant-linker
+   run is open, zwj that the cluster ends GB11's pictograph Extend*
+   ZWJ, ri how many regional indicators end it. *)
 PROCEDURE Joins (p: I64 ; q: I64 ; conj: BOOL ; zwj: BOOL ; ri: I64) : BOOL =
 VAR pg, qg : I64 ;
 BEGIN
@@ -2253,19 +2218,19 @@ END GrAt ;
 
 (* ---- the UTF twins: octet work over OCTETS (u) ---- *)
 
-(* the first offset >= from where n occurs in h, or -1; an empty n at
-   from (Find's convention) *)
+(* OctFind answers the first offset >= from where n occurs in h, or
+   -1.  An empty n is at from (Find's convention). *)
 PROCEDURE OctFind (RO h: SLICE OF BYTE ; RO n: SLICE OF BYTE ; from: I64) : I64 =
 BEGIN
-  (* the C library's memmem through the runtime (m9_utf_find), a
-     portable loop where there is none; the double loop that stood here
-     ran at 1,500 MB/s on the M4 *)
+  (* This calls the C library's memmem through the runtime
+     (m9_utf_find), with a portable loop where there is none.  The
+     double loop that stood here ran at 1,500 MB/s on the M4. *)
   IF LEN (n) = 0 THEN RETURN from END ;
   IF from < 0 OR from + LEN (n) > LEN (h) THEN RETURN -1 END ;
   RETURN I64 (CFind (ADR (h), C.SSizeT (LEN (h)), ADR (n), C.SSizeT (LEN (n)), C.SSizeT (from)))
 END OctFind ;
 
-(* c as a UTF *)
+(* CharUtf answers c as a UTF. *)
 PROCEDURE CharUtf (c: CHAR) : UTF =
 VAR one : STR ;
 BEGIN
@@ -2330,8 +2295,8 @@ BEGIN
   RETURN n
 END CountCharUtf ;
 
-(* blanks, tabs, CR and LF, as Trim's -- all ASCII, so a trimmed end is
-   a character boundary *)
+(* OctBlank tests for blanks, tabs, CR and LF, as Trim's.  All are
+   ASCII, so a trimmed end is a character boundary. *)
 PROCEDURE OctBlank (b: BYTE) : BOOL =
 BEGIN
   RETURN I64 (b) = 32 OR I64 (b) = 9 OR I64 (b) = 13 OR I64 (b) = 10
@@ -2406,8 +2371,8 @@ BEGIN
   RETURN parts
 END FieldsUtf ;
 
-(* the octets of parts and seps, sized once and COPYed: a UTF + copies
-   every time, so a join by + would be quadratic *)
+(* JoinUtf sizes the octets of parts and seps once and COPYs them: a
+   UTF + copies every time, so a join by + would be quadratic. *)
 PROCEDURE JoinUtf (RO parts: SLICE OF UTF ; RO sep: UTF) : UTF =
 VAR
   b : SLICE OF BYTE ;
@@ -2464,9 +2429,9 @@ EXCEPT
 END ReplaceUtf ;
 
 PROCEDURE LowerUtf (RO s: UTF) : UTF =
-  (* Lower over the characters of a UTF, built by + (which grows in
-     place); it had decoded and called Lower, which under the rehearsed
-     switch is itself (2026-10-24) *)
+  (* LowerUtf runs Lower over the characters of a UTF, built by +
+     (which grows in place).  It had decoded and called Lower, which
+     under the rehearsed switch is itself (2026-10-24). *)
 VAR
   r : UTF ;
   k, j : I64 ;
@@ -2538,19 +2503,20 @@ BEGIN
   RETURN UTF (pool, a + b)
 END CatUtf ;
 
-(* ---- the UTF twins of Match and AllIn (stage 4a, 2026-10-24): the
-   same automaton over byte offsets, every character read by NextCp so
-   that `?' and a bracket take a whole code point *)
+(* ---- the UTF twins of Match and AllIn (stage 4a, 2026-10-24).  They
+   run the same automaton over byte offsets, and NextCp reads every
+   character so that `?' and a bracket take a whole code point. *)
 
 PROCEDURE Oc (RO u: UTF ; i: I64) : I64 =
-  (* octet i of u as a number *)
+  (* Oc answers octet i of u as a number. *)
 BEGIN
   RETURN I64 (BAt (u, i))
 END Oc ;
 
 PROCEDURE SetEndUtf (RO pat: UTF ; i: I64) : I64 =
-  (* the offset of the ] closing the [ at i, or -1; the three ASCII
-     octets read never occur inside a multi-byte sequence *)
+  (* SetEndUtf answers the offset of the ] closing the [ at i, or -1.
+     The three ASCII octets read never occur inside a multi-byte
+     sequence. *)
 VAR j, n : I64 ;
 BEGIN
   n := BLen (pat) ;
@@ -2563,8 +2529,9 @@ BEGIN
 END SetEndUtf ;
 
 PROCEDURE InSetUtf (RO pat: UTF ; a, b: I64 ; c: CHAR) : BOOL =
-  (* is c in the bracket's members between offsets a and b: a range
-     x-y compares code points; a - at the end is a member *)
+  (* InSetUtf asks whether c is in the bracket's members between
+     offsets a and b.  A range x-y compares code points; a - at the
+     end is a member. *)
 VAR
   q, q2, q3 : I64 ;
   x, y : CHAR ;
@@ -2587,8 +2554,8 @@ BEGIN
 END InSetUtf ;
 
 PROCEDURE TakesUtf (RO pat: UTF ; p: I64 ; c: CHAR) : I64 =
-  (* how many OCTETS of the pattern at p the character c satisfies:
-     0 when it does not *)
+  (* TakesUtf answers how many OCTETS of the pattern at p the
+     character c satisfies: 0 when it does not. *)
 VAR
   e, a, q : I64 ;
   negated : BOOL ;
@@ -2688,11 +2655,12 @@ BEGIN
   RETURN AllInUtf (s, 'a-zA-Z0-9')
 END AllAlnumUtf ;
 
-(* ---- the base64 twins: the text side built as octets and validated
-   once by UTF (o) -- it is ASCII by construction *)
+(* ---- the base64 twins: the text side is built as octets and
+   validated once by UTF (o); it is ASCII by construction. *)
 
 PROCEDURE B64ValB (b: I64) : I64 =
-  (* the value of a base64 alphabet octet, -1 outside it *)
+  (* B64ValB answers the value of a base64 alphabet octet, -1 outside
+     it. *)
 BEGIN
   IF b >= 65 AND b <= 90 THEN RETURN b - 65 END ;          (* A-Z *)
   IF b >= 97 AND b <= 122 THEN RETURN b - 71 END ;         (* a-z *)
@@ -2743,7 +2711,7 @@ EXCEPT
 | ValueRange :
     (* o is ASCII by construction; the validation cannot refuse it,
        and if it ever did the fault is this procedure's, not the
-       caller's -- a trap, as DynUtf.View's is *)
+       caller's: a trap, as DynUtf.View's is. *)
     RAISE IndexError
 END ToBase64Utf ;
 
@@ -2773,7 +2741,7 @@ EXCEPT
 END ToBase64UrlUtf ;
 
 PROCEDURE FromBase64Oct (RO s: SLICE OF BYTE) : SLICE OF BYTE RAISES ValueRange =
-  (* FromBase64 over the text's octets *)
+  (* FromBase64Oct is FromBase64 over the text's octets. *)
 VAR
   out : SLICE OF BYTE ;
   i, o, n, pad, v, k, a : I64 ;
@@ -2790,7 +2758,8 @@ BEGIN
     v := 0 ;
     FOR k := 0 TO 3 DO
       IF I64 (s[i + k]) = 61 THEN
-        (* only in the last group, and only as its last one or two *)
+        (* A = stands only in the last group, and only as its last
+           one or two. *)
         IF i + 4 < LEN (s) OR k < 4 - pad THEN RAISE ValueRange END ;
         a := 0
       ELSE
@@ -2819,7 +2788,8 @@ VAR
   so, m, t : SLICE OF BYTE ;
   i, n, pad : I64 ;
 BEGIN
-  (* into the standard alphabet with its padding, then strictly *)
+  (* Map into the standard alphabet with its padding, then decode
+     strictly. *)
   marks := '+/=' ;
   m := OCTETS (marks) ;
   so := OCTETS (s) ;
@@ -2848,9 +2818,10 @@ END Text.
 
 UNSAFE DEFINITION MODULE FOR "C" ctext ;
 
-(* runtime/m9rt.c (m9rt.h): a UTF's code points counted eight bytes at
-   a time, and memmem over its bytes.  No LINK: the runtime's.
-   REENTRANT: pure functions of their arguments. *)
+(* These bind runtime/m9rt.c (m9rt.h): a UTF's code points counted
+   eight bytes at a time, and memmem over its bytes.  There is no
+   LINK: they are the runtime's.  They are REENTRANT: pure functions
+   of their arguments. *)
 
 PROCEDURE CCpCount = "m9_utf_cpcount_p" (p: C.ConstPtr ; n: C.SSizeT) : C.SSizeT
   [REENTRANT] ;

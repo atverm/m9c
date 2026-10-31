@@ -1,7 +1,7 @@
 (* EXPECT: unhandled RAISES ValueRange from UTF conversion *)
 MODULE m ;
-(* legal forms first: octets validated where ValueRange is handled or
-   declared; a STR's encoding cannot fail *)
+(* Legal forms come first: octets validated where ValueRange is handled
+   or declared.  A STR's encoding cannot fail. *)
 VAR u : UTF ;
 PROCEDURE Ok (RO b: SLICE OF BYTE) : UTF RAISES ValueRange =
 BEGIN

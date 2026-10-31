@@ -1,4 +1,4 @@
-/* zarr_driver.c -- THE P4 DIFFERENTIAL EXIT.
+/* zarr_driver.c is THE P4 DIFFERENTIAL EXIT.
    M9-compiled ZarrStore reads the genstore co2 store over HTTP and
    must reproduce the recorded goldens below to the last digit.
    Aggregates are summed sequentially in row-major order, the same
@@ -8,11 +8,13 @@
 #include <math.h>
 #include "ZarrStore.h"
 
-static m9_sl_CHAR sl (const char *s, uint32_t *buf)
+/* A STR is UTF-8 octets.  The C literal is already UTF-8, so sl copies
+   its bytes. */
+static m9_sl_UTF8 sl (const char *s, uint8_t *buf)
 {
-  int64_t i, n = (int64_t) strlen (s);
-  for (i = 0; i < n; i++) buf[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ buf, n };
+  int64_t n = (int64_t) strlen (s);
+  memcpy (buf, s, (size_t) n);
+  return (m9_sl_UTF8){ buf, n };
 }
 
 static int checks = 0, fails = 0;
@@ -42,7 +44,7 @@ int main (void)
 {
   m9_state err = {0};
   m9_pool pool = {0};     /* what a VAR array parameter carries (rule 2) */
-  uint32_t ub[64];
+  uint8_t ub[64];
   int64_t r, c, n;
   double v, sum, mean;
 
@@ -54,7 +56,7 @@ int main (void)
   ck (err.exc == NULL && a != NULL, "OpenArray co2.zarr");
   if (err.exc) { printf ("exc: %s\n", err.exc->name); return 1; }
 
-  /* corner goldens, exact to the last digit */
+  /* Corner goldens must be exact to the last digit. */
   ckd (ZarrStore_GetF64 (&a, &pool, at (0, 0), &err), 394.9816047538945,
        "co2[0,0]");
   ckd (ZarrStore_GetF64 (&a, &pool, at (99, 49), &err), 403.89249513322846,
@@ -68,7 +70,7 @@ int main (void)
   ck (isnan (ZarrStore_GetF64 (&a, &pool, at (60, 20), &err)), "missing chunk fills NaN");
   ck (isnan (ZarrStore_GetF64 (&a, &pool, at (89, 39), &err)), "fill at chunk corner");
 
-  /* nanmean, sequential row-major -- the oracle's order */
+  /* nanmean runs sequential row-major, the oracle's order. */
   sum = 0; n = 0;
   for (r = 0; r < 100; r++)
     for (c = 0; c < 50; c++) {
@@ -78,9 +80,10 @@ int main (void)
   ck (err.exc == NULL, "full scan raises nothing");
   ck (n == 4399, "n = 4399");
   mean = sum / (double) n;
-  /* the recorded golden 399.8690542037652 is the FPC oracle's
+  /* The recorded golden 399.8690542037652 is the FPC oracle's
      13-decimal PRINT (testzarr.pas uses :0:13) of this exact
-     sequential row-major sum; pinned here at full precision */
+     sequential row-major sum.  It is pinned here at full
+     precision. */
   ckd (mean, 399.86905420376524, "nanmean (sequential, full precision)");
   {
     char pr[64];
@@ -89,7 +92,7 @@ int main (void)
         "nanmean prints to the recorded 13-decimal golden");
   }
 
-  /* column statistics, sequential per column */
+  /* Column statistics run sequential per column. */
   {
     double cs; int64_t cn; double cmax;
     cs = 0; cn = 0;
@@ -103,9 +106,9 @@ int main (void)
       v = ZarrStore_GetF64 (&a, &pool, at (r, 25), &err);
       if (!isnan (v)) { cs += v; cn++; }
     }
-    /* the recorded colMean[25] came from np.nanmean's pairwise
-       summation (400.85670562409206); the sequential order differs
-       in the final ulp -- both round to 400.856705624092 */
+    /* The recorded colMean[25] came from np.nanmean's pairwise
+       summation (400.85670562409206).  The sequential order differs
+       in the final ulp.  Both round to 400.856705624092. */
     ckd (cs / (double) cn, 400.856705624092, "colMean[25] (sequential)");
     ck (fabs (cs / (double) cn - 400.85670562409206) < 1e-12,
         "colMean[25] agrees with numpy to the recorded digits");
@@ -136,10 +139,10 @@ int main (void)
 
   ZarrStore_CloseArray (&a, &err);
 
-  /* xarray's datetime64: dtype "<M8[ns]" is an <i8 of epoch
-     nanoseconds wearing a unit, and reads as one.  genstore's
-     time.zarr holds four stamps; the integers are numpy's own
-     (t.astype ('int64')), the third is 2025-07-15T12:00:00Z and the
+  /* This reads xarray's datetime64.  Dtype "<M8[ns]" is an <i8 of
+     epoch nanoseconds wearing a unit, and reads as one.  genstore's
+     time.zarr holds four stamps.  The integers are numpy's own
+     (t.astype ('int64')).  The third is 2025-07-15T12:00:00Z, and the
      fourth is a second BEFORE the epoch, so the sign survives too.
      A store whose time axis is this (ICOS obspack, 2026) used to be
      refused at OpenArray with "dtype not supported".                */

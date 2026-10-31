@@ -1,14 +1,15 @@
-/* catbench -- does a bump arena make `s := s + x` linear?
+/* catbench asks: does a bump arena make `s := s + x` linear?
  *
- * The report says `s := s + x` in a loop is O(n^2).  True of M9's `+`
- * because STR is a non-owning {p,len} slice with no capacity, so every
- * step allocates fresh and copies the prefix.  NOT a law about
- * concatenation: Rust, Swift and C++ `+=` are linear because the left
- * operand is uniquely owned and grown in place.
+ * The report says `s := s + x` in a loop is O(n^2).  That holds for
+ * M9's `+`, because STR is a non-owning {p,len} slice with no
+ * capacity, so every step allocates fresh and copies the prefix.  It
+ * is NOT a law about concatenation.  Rust, Swift and C++ `+=` are
+ * linear because the left operand is uniquely owned and grown in
+ * place.
  *
  * m9_pool_alloc is a bump allocator, so M9 has a third option: when the
  * left operand is the TOP allocation, extend it in place.  Older holders
- * keep their {p,len} and see what they saw; the new bytes are fresh
+ * keep their {p,len} and see what they saw.  The new bytes are fresh
  * arena nobody can hold.  This measures it.
  *
  *   copy    what `+` does today: fresh alloc, copy both operands
@@ -17,10 +18,11 @@
  *           which defeats it -- the honest degradation case
  *
  * MEMORY IS THE SHARP END and the reason the size ladders differ.  An
- * arena never reuses, so `copy` allocates sum(i) * 32 bytes: at N=64000
- * that is 65 GB, which is how the first version of this file killed the
- * machine.  `copy` and `inter` are capped; `extend` is not, because it
- * is linear in memory as well as time -- which is itself the result.
+ * arena never reuses, so `copy` allocates sum(i) * 32 bytes.  At
+ * N=64000 that is 65 GB, which is how the first version of this file
+ * killed the machine.  `copy` and `inter` are capped.  `extend` is
+ * not, because it is linear in memory as well as time.  That is
+ * itself the result.
  */
 #define _POSIX_C_SOURCE 200809L
 #include "m9rt.h"
@@ -48,7 +50,8 @@ static S cat_copy (m9_pool *pool, S a, S b, m9_state *err)
   return (S){ q, a.len + b.len };
 }
 
-/* extend in place when `a` ends exactly at the arena's frontier */
+/* This extends in place when `a` ends exactly at the arena's
+   frontier. */
 static S cat_extend (m9_pool *pool, S a, S b, m9_state *err)
 {
   m9_pool_block *blk = pool->head;
@@ -70,11 +73,12 @@ static S cat_extend (m9_pool *pool, S a, S b, m9_state *err)
   return cat_copy (pool, a, b, err);
 }
 
-/* extend, but when the block has no room, move to one with SLACK --
-   geometric growth, which is what Rust's String and C++'s string have
-   and what m9_pool_alloc deliberately does not: `cap = need > MIN ?
-   need : MIN` is an exact fit above 64 KB, so a string that outgrows a
-   block gets zero slack and every later concat copies again. */
+/* This extends, but when the block has no room it moves to one with
+   SLACK.  That is geometric growth.  Rust's String and C++'s string
+   have it, and m9_pool_alloc deliberately does not.  `cap = need >
+   MIN ? need : MIN` is an exact fit above 64 KB.  So a string that
+   outgrows a block gets zero slack, and every later concat copies
+   again. */
 static S cat_grow (m9_pool *pool, S a, S b, m9_state *err)
 {
   m9_pool_block *blk = pool->head;
@@ -96,8 +100,9 @@ static S cat_grow (m9_pool *pool, S a, S b, m9_state *err)
       }
     }
   }
-  /* carve double, keep half as capacity: the frontier stays just past
-     the string, so the next concat extends instead of copying */
+  /* Carve double and keep half as capacity.  The frontier stays just
+     past the string, so the next concat extends instead of
+     copying. */
   q = m9_pool_alloc (pool, 4, need * 2, err);
   if (q == NULL) return (S){ NULL, 0 };
   memcpy (q, a.p, (size_t) a.len * 4);
@@ -150,7 +155,8 @@ static void run (const char *name, int variant, const int64_t *Ns, int nn)
 
 int main (void)
 {
-  /* capped: copy allocates ~16*N^2 bytes, so 32000 is already 16 GB */
+  /* This is capped: copy allocates ~16*N^2 bytes, so 32000 is already
+     16 GB. */
   static const int64_t small[] = { 1000, 2000, 4000, 8000 };
   static const int64_t big[]   = { 1000, 2000, 4000, 8000, 100000, 1000000 };
 

@@ -1,9 +1,9 @@
 (* EXPECT: an allocation in pool p, the caller's, may die before module variable last is read (par 4.3) *)
-(* A POOL parameter is the CALLER's pool, and the caller's pool may be
-   a local that dies when it returns: an allocation in it kept in a
-   module variable is read after (the tutor's prevName).  Measured
-   before the rule: 0 sites in 616 files.  The legal forms first: the
-   module's own pool, HEAP, the caller's pool for an answer. *)
+(* A POOL parameter is the CALLER's pool, and the caller's pool may be a
+   local that dies when it returns.  An allocation in it kept in a
+   module variable is read after (the tutor's prevName).  A measure
+   before the rule found 0 sites in 616 files.  Legal forms come first:
+   the module's own pool, HEAP, the caller's pool for an answer. *)
 STATEFUL DEFINITION MODULE m ;
 TYPE Cell = RECORD v : I64 END ;
 PROCEDURE Keep () ;

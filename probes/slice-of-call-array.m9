@@ -1,10 +1,10 @@
 (* EXPECT: a SLICE of an array no variable holds: the array is gone at the end of the statement -- name it first: a := F (...) ; SLICE (a, ...) *)
-(* An ARRAY is a value: what a call answers lives in a temporary of the
+(* An ARRAY is a value.  What a call answers lives in a temporary of the
    statement, and a slice of it would point into that temporary after
    the statement (par 2.2.1; genforms GfSliceOfCall, 2026-10-10).  The
-   legal forms first: a slice of an array variable holding the answer,
-   of a slice a function answers, of a constant table lent to an RO
-   parameter.  Then a slice of the call's array itself. *)
+   legal forms come first: a slice of an array variable holding the
+   answer, of a slice a function answers, of a constant table lent to an
+   RO parameter.  Then comes a slice of the call's array itself. *)
 MODULE m ;
 PROCEDURE Mk () : ARRAY 4 OF I64 =
 VAR a : ARRAY 4 OF I64 ;

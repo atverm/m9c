@@ -1,16 +1,19 @@
 MODULE ZarrStoreTest ;
 
-(* ZarrStore on the LOCAL DISK against zarr-python: the two stores
-   checked in under docs/tutorial/examples/data, read by path, every
-   number held to what zarr 2 reads from the same files
-   (runtime/test/gold/ZarrStore.gold, tools/zarrstoregold.py).
+IMPORT Text ;
 
-   co2.zarr: 100 x 50 f8 with a chunk deleted, which reads as NaN;
-   icos-obspack.zarr: a station's time (i4), values (f4) and quality
-   flags (|S1) -- three dtypes, two kinds of fill.  The HTTP store is
-   held by the drivers (runtime/test/zarr_driver.c against a server);
-   this is the same reader with the transport swapped, so what it
-   checks is the transport: the path, the missing key, the sizes. *)
+(* ZarrStoreTest holds ZarrStore on the LOCAL DISK against
+   zarr-python.  It reads the two stores checked in under
+   docs/tutorial/examples/data by path.  It holds every number to what
+   zarr 2 reads from the same files (runtime/test/gold/ZarrStore.gold,
+   tools/zarrstoregold.py).
+
+   co2.zarr is 100 x 50 f8 with a chunk deleted, which reads as NaN.
+   icos-obspack.zarr holds a station's time (i4), values (f4) and
+   quality flags (|S1): three dtypes, two kinds of fill.  The drivers
+   hold the HTTP store (runtime/test/zarr_driver.c against a server).
+   This is the same reader with the transport swapped, so this test
+   checks the transport: the path, the missing key, the sizes. *)
 
 IMPORT Arrays ;
 IMPORT Check ;
@@ -58,7 +61,8 @@ BEGIN
   END ;
   Check.NearF64s (t, 'co2.zarr: ten values by index, corners, chunk edges and the missing chunk, as zarr reads them',
                   got, want, 0.0, 0.0) ;
-  (* every value: the count, the sum to the bit, the column means *)
+  (* These check every value: the count, the sum to the bit, the
+     column means. *)
   all := NEW (pool, F64, shape[0] * shape[1]) ;
   n := 0 ;
   missing := 0 ;
@@ -78,11 +82,11 @@ BEGIN
                Check.GoldI64 (t, gold, 'co2.count')) ;
   Check.EqI64 (t, 'co2.zarr: the deleted chunk is 600 NaN', missing,
                Check.GoldI64 (t, gold, 'co2.missing')) ;
-  (* the array holds ONE chunk buffer and reuses it: twenty thousand
-     reads alternating between the deleted chunk and a present one --
-     every one a cache miss, a fill or a fetch -- grow the live pools
-     by less than a chunk; until 2026-10-24 each read allocated a
-     fresh 4,800-byte buffer in the cache pool, 96 MB here *)
+  (* The array holds ONE chunk buffer and reuses it.  Twenty thousand
+     reads alternate between the deleted chunk and a present one, and
+     every one is a cache miss, a fill or a fetch.  They grow the live
+     pools by less than a chunk.  Until 2026-10-24 each read allocated
+     a fresh 4,800-byte buffer in the cache pool, 96 MB here. *)
   held := System.PoolBytes () ;
   FOR k := 0 TO 9999 DO
     idx[0] := 70 ; idx[1] := 30 ;
@@ -108,7 +112,8 @@ BEGIN
   END ;
   Check.NearF64s (t, 'co2.zarr: the fifty column means are numpy nanmean (pairwise there, sequential here)',
                   got, Check.GoldF64s (t, gold, 'co2.colmean'), 0.0, 1.0e-14) ;
-  (* a raw chunk: 30 x 20 of 8 bytes once blosc has let go of it *)
+  (* Read a raw chunk: 30 x 20 of 8 bytes once blosc has let go of
+     it. *)
   idx[0] := 0 ;
   idx[1] := 0 ;
   chunk := ZarrStore.ReadChunk (a, idx) ;
@@ -177,7 +182,8 @@ BEGIN
   ZarrStore.Close (st)
 END ObsStore ;
 
-(* what opening an array is refused as, in a store at `path` *)
+(* Refusal answers what opening an array is refused as, in a store at
+   `path`. *)
 PROCEDURE Refusal (RO path: STR ; RO array: STR) : STR =
 VAR
   st : SHARED PTR ZarrStore.Store ;
@@ -202,9 +208,9 @@ END Refusal ;
 PROCEDURE Refusals () =
 BEGIN
   Check.That (t, 'a directory that is no store is refused as a store error',
-              LEN (Refusal ('docs/tutorial/examples/data', '')) > 0) ;
+              Text.BLen (Refusal ('docs/tutorial/examples/data', '')) > 0) ;
   Check.That (t, 'an array that is not in the store is refused',
-              LEN (Refusal (Co2, 'nowhere')) > 0) ;
+              Text.BLen (Refusal (Co2, 'nowhere')) > 0) ;
   Check.EqStr (t, 'a path of nothing is refused', Refusal ('', ''),
                'FormatError: a store needs a path') ;
   Check.EqStr (t, 'file:// alone is refused', Refusal ('file://', ''),
@@ -213,11 +219,68 @@ BEGIN
                Refusal (Co2 + '/', ''), '')
 END Refusals ;
 
+(* StrStore reads a STRING array, dtype |O with the vlen-utf8 filter
+   (bigask's icos-fluxnet station axis, 2026-10-30).  zarr-python 2
+   wrote five names past ASCII in chunks of two, once with blosc and
+   once with no compressor (runtime/test/zarrvlen/).  The middle chunk
+   is deleted.  zarr reads back ['SE-Htm Hyltemossa', 'FI-Hyy Hyytiälä',
+   '', '', 'IS-CO₂ µé — test'].  The deleted chunk reads as the fill ''.
+   The edge chunk holds two items, and its second is the fill. *)
+PROCEDURE StrStore (RO path: STR) RAISES ZarrStore.StoreError, ZarrStore.FormatError =
+VAR
+  st : SHARED PTR ZarrStore.Store ;
+  a, nums : PTR ZarrStore.Array ;
+  c0, c1, c2 : SLICE OF STR ;
+  at : SLICE OF I64 ;
+  v : F64 ;
+BEGIN
+  st := ZarrStore.Open (path) ;
+  a := ZarrStore.OpenArray (st, 'names') ;
+  Check.That (t, path + ': names is a string array', ZarrStore.IsStr (a)) ;
+  Check.EqI64 (t, path + ': five names', ZarrStore.Extent (a, 0), 5) ;
+  at := NEW (pool, I64, 1) ;
+  at[0] := 0 ;
+  c0 := ZarrStore.ReadStrs (pool, a, at) ;
+  at[0] := 1 ;
+  c1 := ZarrStore.ReadStrs (pool, a, at) ;
+  at[0] := 2 ;
+  c2 := ZarrStore.ReadStrs (pool, a, at) ;
+  Check.EqI64 (t, path + ': a chunk holds two', LEN (c0), 2) ;
+  Check.EqStr (t, path + ': names[0]', c0[0], 'SE-Htm Hyltemossa') ;
+  Check.EqStr (t, path + ': names[1], past ASCII', c0[1], 'FI-Hyy Hyytiälä') ;
+  Check.That (t, path + ': the deleted chunk is the fill', LEN (c1) = 2 AND Text.BLen (c1[0]) = 0 AND Text.BLen (c1[1]) = 0) ;
+  Check.EqStr (t, path + ': names[4], three scripts', c2[0], 'IS-CO₂ µé — test') ;
+  Check.EqI64 (t, path + ': the edge chunk pads with the fill', Text.BLen (c2[1]), 0) ;
+  (* Neither reader takes the other's array. *)
+  BEGIN
+    at[0] := 0 ;
+    v := ZarrStore.GetF64 (a, at) ;
+    Check.That (t, path + ': GetF64 refuses a string array', FALSE)
+  EXCEPT
+  | ZarrStore.StoreError (msg) : Check.That (t, path + ': GetF64 refuses a string array', TRUE)
+  END ;
+  nums := ZarrStore.OpenArray (st, 'n') ;
+  Check.That (t, path + ': n is no string array', NOT ZarrStore.IsStr (nums)) ;
+  BEGIN
+    c0 := ZarrStore.ReadStrs (pool, nums, at) ;
+    Check.That (t, path + ': ReadStrs refuses a numeric array', FALSE)
+  EXCEPT
+  | ZarrStore.StoreError (msg) : Check.That (t, path + ': ReadStrs refuses a numeric array', TRUE)
+  END ;
+  ZarrStore.CloseArray (nums) ;
+  ZarrStore.CloseArray (a) ;
+  ZarrStore.Close (st)
+EXCEPT
+| IndexError : Check.That (t, path + ': no IndexError', FALSE)
+END StrStore ;
+
 BEGIN
   gold := Check.GoldPath ('ZarrStore.gold') ;
   Co2Store () ;
   ObsStore () ;
   Refusals () ;
+  StrStore ('runtime/test/zarrvlen/names.zarr') ;
+  StrStore ('runtime/test/zarrvlen/names-raw.zarr') ;
   Io.Halt (Check.Done (t, 'ZarrStore'))
 EXCEPT
 | ZarrStore.StoreError (msg) :

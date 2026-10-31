@@ -15,24 +15,24 @@ extern int64_t m9_utf_cpcount_p (const void *, int64_t);
 extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_t);
 
 struct Xml_Reader {
-  m9_sl_CHAR src;
+  m9_sl_UTF8 src;
   int64_t pos;
   int64_t atPos;
   int64_t atLine;
   int64_t atCol;
   int64_t state;
-  m9_sl_m9_sl_CHAR stack;
-  m9_sl_m9_sl_CHAR stackNs;
-  m9_sl_m9_sl_CHAR stackLocal;
+  m9_sl_m9_sl_UTF8 stack;
+  m9_sl_m9_sl_UTF8 stackNs;
+  m9_sl_m9_sl_UTF8 stackLocal;
   int64_t depth;
-  m9_sl_m9_sl_CHAR pfx;
-  m9_sl_m9_sl_CHAR uri;
+  m9_sl_m9_sl_UTF8 pfx;
+  m9_sl_m9_sl_UTF8 uri;
   int64_t nns;
   m9_sl_I64 mark;
   bool pending;
-  m9_sl_CHAR pendName;
-  m9_sl_CHAR pendNs;
-  m9_sl_CHAR pendLocal;
+  m9_sl_UTF8 pendName;
+  m9_sl_UTF8 pendNs;
+  m9_sl_UTF8 pendLocal;
   int64_t pendLine;
   int64_t pendCol;
   bool doctype;
@@ -42,293 +42,305 @@ struct Xml_Reader {
 
 struct Xml_Writer {
   DynStr_DString * d;
-  m9_sl_m9_sl_CHAR stack;
+  m9_sl_m9_sl_UTF8 stack;
   int64_t depth;
   bool open;
   int64_t roots;
 };
 
-static const uint32_t PubidMarks_s0[1] = { 45u };
-static const uint32_t PubidMarks_s1[1] = { 39u };
-static const uint32_t PubidMarks_s2[1] = { 40u };
-static const uint32_t PubidMarks_s3[1] = { 41u };
-static const uint32_t PubidMarks_s4[1] = { 43u };
-static const uint32_t PubidMarks_s5[1] = { 44u };
-static const uint32_t PubidMarks_s6[1] = { 46u };
-static const uint32_t PubidMarks_s7[1] = { 47u };
-static const uint32_t PubidMarks_s8[1] = { 58u };
-static const uint32_t PubidMarks_s9[1] = { 61u };
-static const uint32_t PubidMarks_s10[1] = { 63u };
-static const uint32_t PubidMarks_s11[1] = { 59u };
-static const uint32_t PubidMarks_s12[1] = { 33u };
-static const uint32_t PubidMarks_s13[1] = { 42u };
-static const uint32_t PubidMarks_s14[1] = { 35u };
-static const uint32_t PubidMarks_s15[1] = { 64u };
-static const uint32_t PubidMarks_s16[1] = { 36u };
-static const uint32_t PubidMarks_s17[1] = { 95u };
-static const uint32_t PubidMarks_s18[1] = { 37u };
-static const m9_arr_19_m9_sl_CHAR PubidMarks_k = { {
-  { (uint32_t *) PubidMarks_s0, 1 },
-  { (uint32_t *) PubidMarks_s1, 1 },
-  { (uint32_t *) PubidMarks_s2, 1 },
-  { (uint32_t *) PubidMarks_s3, 1 },
-  { (uint32_t *) PubidMarks_s4, 1 },
-  { (uint32_t *) PubidMarks_s5, 1 },
-  { (uint32_t *) PubidMarks_s6, 1 },
-  { (uint32_t *) PubidMarks_s7, 1 },
-  { (uint32_t *) PubidMarks_s8, 1 },
-  { (uint32_t *) PubidMarks_s9, 1 },
-  { (uint32_t *) PubidMarks_s10, 1 },
-  { (uint32_t *) PubidMarks_s11, 1 },
-  { (uint32_t *) PubidMarks_s12, 1 },
-  { (uint32_t *) PubidMarks_s13, 1 },
-  { (uint32_t *) PubidMarks_s14, 1 },
-  { (uint32_t *) PubidMarks_s15, 1 },
-  { (uint32_t *) PubidMarks_s16, 1 },
-  { (uint32_t *) PubidMarks_s17, 1 },
-  { (uint32_t *) PubidMarks_s18, 1 }
+static const uint8_t PubidMarks_s0[1] = { 45 };
+static const uint8_t PubidMarks_s1[1] = { 39 };
+static const uint8_t PubidMarks_s2[1] = { 40 };
+static const uint8_t PubidMarks_s3[1] = { 41 };
+static const uint8_t PubidMarks_s4[1] = { 43 };
+static const uint8_t PubidMarks_s5[1] = { 44 };
+static const uint8_t PubidMarks_s6[1] = { 46 };
+static const uint8_t PubidMarks_s7[1] = { 47 };
+static const uint8_t PubidMarks_s8[1] = { 58 };
+static const uint8_t PubidMarks_s9[1] = { 61 };
+static const uint8_t PubidMarks_s10[1] = { 63 };
+static const uint8_t PubidMarks_s11[1] = { 59 };
+static const uint8_t PubidMarks_s12[1] = { 33 };
+static const uint8_t PubidMarks_s13[1] = { 42 };
+static const uint8_t PubidMarks_s14[1] = { 35 };
+static const uint8_t PubidMarks_s15[1] = { 64 };
+static const uint8_t PubidMarks_s16[1] = { 36 };
+static const uint8_t PubidMarks_s17[1] = { 95 };
+static const uint8_t PubidMarks_s18[1] = { 37 };
+static const m9_arr_19_m9_sl_UTF8 PubidMarks_k = { {
+  { (uint8_t *) PubidMarks_s0, 1 },
+  { (uint8_t *) PubidMarks_s1, 1 },
+  { (uint8_t *) PubidMarks_s2, 1 },
+  { (uint8_t *) PubidMarks_s3, 1 },
+  { (uint8_t *) PubidMarks_s4, 1 },
+  { (uint8_t *) PubidMarks_s5, 1 },
+  { (uint8_t *) PubidMarks_s6, 1 },
+  { (uint8_t *) PubidMarks_s7, 1 },
+  { (uint8_t *) PubidMarks_s8, 1 },
+  { (uint8_t *) PubidMarks_s9, 1 },
+  { (uint8_t *) PubidMarks_s10, 1 },
+  { (uint8_t *) PubidMarks_s11, 1 },
+  { (uint8_t *) PubidMarks_s12, 1 },
+  { (uint8_t *) PubidMarks_s13, 1 },
+  { (uint8_t *) PubidMarks_s14, 1 },
+  { (uint8_t *) PubidMarks_s15, 1 },
+  { (uint8_t *) PubidMarks_s16, 1 },
+  { (uint8_t *) PubidMarks_s17, 1 },
+  { (uint8_t *) PubidMarks_s18, 1 }
 } };
-static m9_arr_19_m9_sl_CHAR * const PubidMarks = (m9_arr_19_m9_sl_CHAR *) &PubidMarks_k;
+static m9_arr_19_m9_sl_UTF8 * const PubidMarks = (m9_arr_19_m9_sl_UTF8 *) &PubidMarks_k;
 static m9_pool m9mframe = {0};
 
-static const uint32_t m9s0[26] = { 85u, 84u, 70u, 45u, 49u, 54u, 58u, 32u, 111u, 110u, 108u, 121u, 32u, 85u, 84u, 70u, 45u, 56u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 100u };
-static const uint32_t m9s1[32] = { 110u, 111u, 116u, 32u, 85u, 84u, 70u, 45u, 56u, 44u, 32u, 116u, 104u, 101u, 32u, 111u, 110u, 101u, 32u, 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 32u, 114u, 101u, 97u, 100u };
-static const uint32_t m9s2[5] = { 60u, 63u, 120u, 109u, 108u };
-static const uint32_t m9s3[30] = { 116u, 104u, 101u, 32u, 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 32u, 115u, 117u, 98u, 115u, 101u, 116u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s4[15] = { 110u, 111u, 32u, 114u, 111u, 111u, 116u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s5[25] = { 116u, 104u, 101u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 32u, 101u, 110u, 100u, 115u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u };
-static const uint32_t m9s6[4] = { 60u, 33u, 45u, 45u };
-static const uint32_t m9s7[2] = { 60u, 63u };
-static const uint32_t m9s8[2] = { 60u, 47u };
-static const uint32_t m9s9[9] = { 60u, 33u, 91u, 67u, 68u, 65u, 84u, 65u, 91u };
-static const uint32_t m9s10[2] = { 60u, 33u };
-static const uint32_t m9s11[31] = { 97u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s12[9] = { 60u, 33u, 68u, 79u, 67u, 84u, 89u, 80u, 69u };
-static const uint32_t m9s13[14] = { 97u, 32u, 68u, 79u, 67u, 84u, 89u, 80u, 69u, 32u, 104u, 101u, 114u, 101u };
-static const uint32_t m9s14[21] = { 97u, 32u, 115u, 101u, 99u, 111u, 110u, 100u, 32u, 114u, 111u, 111u, 116u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s15[35] = { 109u, 97u, 114u, 107u, 117u, 112u, 32u, 111u, 114u, 32u, 116u, 104u, 101u, 32u, 114u, 111u, 111u, 116u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s16[36] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 54u, 52u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 115u, 32u, 100u, 101u, 101u, 112u, 32u, 105u, 110u, 32u, 97u, 32u, 116u, 114u, 101u, 101u };
-static const uint32_t m9s17[21] = { 110u, 111u, 116u, 32u, 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s18[23] = { 97u, 32u, 115u, 101u, 99u, 111u, 110u, 100u, 32u, 114u, 111u, 111u, 116u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 58u, 32u };
-static const uint32_t m9s19[45] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 115u, 116u, 97u, 114u, 116u, 32u, 116u, 97u, 103u, 32u, 119u, 97u, 115u, 32u, 99u, 108u, 111u, 115u, 101u, 100u, 58u, 32u };
-static const uint32_t m9s20[23] = { 110u, 111u, 116u, 32u, 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s21[2] = { 61u, 34u };
-static const uint32_t m9s22[39] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 116u, 104u, 101u, 32u, 114u, 111u, 111u, 116u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s23[31] = { 97u, 110u, 32u, 101u, 110u, 100u, 32u, 116u, 97u, 103u, 32u, 119u, 105u, 116u, 104u, 32u, 110u, 111u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 111u, 112u, 101u, 110u };
-static const uint32_t m9s24[2] = { 47u, 62u };
-static const uint32_t m9s25[2] = { 60u, 47u };
-static const uint32_t m9s26[15] = { 110u, 111u, 32u, 114u, 111u, 111u, 116u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s27[22] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 108u, 101u, 102u, 116u, 32u, 111u, 112u, 101u, 110u, 58u, 32u };
-static const uint32_t m9s28[38] = { 60u, 63u, 120u, 109u, 108u, 32u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 61u, 34u, 49u, 46u, 48u, 34u, 32u, 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 61u, 34u, 85u, 84u, 70u, 45u, 56u, 34u, 63u, 62u };
-static const uint32_t m9s29[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s30[21] = { 119u, 104u, 105u, 116u, 101u, 32u, 115u, 112u, 97u, 99u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u };
-static const uint32_t m9s31[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s32[32] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s33[41] = { 97u, 32u, 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u };
-static const uint32_t m9s34[41] = { 97u, 32u, 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u };
-static const uint32_t m9s35[41] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u, 32u, 116u, 111u, 32u, 110u, 111u, 32u, 88u, 77u, 76u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u };
-static const uint32_t m9s36[14] = { 97u, 110u, 32u, 101u, 110u, 116u, 105u, 116u, 121u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s37[31] = { 59u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 116u, 105u, 116u, 121u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s38[2] = { 108u, 116u };
-static const uint32_t m9s39[2] = { 103u, 116u };
-static const uint32_t m9s40[3] = { 97u, 109u, 112u };
-static const uint32_t m9s41[4] = { 97u, 112u, 111u, 115u };
-static const uint32_t m9s42[4] = { 113u, 117u, 111u, 116u };
-static const uint32_t m9s43[75] = { 97u, 110u, 32u, 101u, 110u, 116u, 105u, 116u, 121u, 32u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u, 32u, 116u, 104u, 101u, 32u, 101u, 120u, 116u, 101u, 114u, 110u, 97u, 108u, 32u, 68u, 84u, 68u, 32u, 109u, 97u, 121u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 58u, 32u, 101u, 110u, 116u, 105u, 116u, 105u, 101u, 115u, 32u, 97u, 114u, 101u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 112u, 97u, 110u, 100u, 101u, 100u };
-static const uint32_t m9s44[22] = { 97u, 110u, 32u, 117u, 110u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 101u, 110u, 116u, 105u, 116u, 121u, 58u, 32u };
-static const uint32_t m9s45[9] = { 60u, 33u, 91u, 67u, 68u, 65u, 84u, 65u, 91u };
-static const uint32_t m9s46[26] = { 97u, 32u, 67u, 68u, 65u, 84u, 65u, 32u, 115u, 101u, 99u, 116u, 105u, 111u, 110u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s47[3] = { 93u, 93u, 62u };
-static const uint32_t m9s48[2] = { 38u, 35u };
-static const uint32_t m9s49[37] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u, 32u, 116u, 111u, 32u, 110u, 111u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u };
-static const uint32_t m9s50[3] = { 93u, 93u, 62u };
-static const uint32_t m9s51[21] = { 93u, 93u, 62u, 32u, 105u, 110u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u };
-static const uint32_t m9s52[33] = { 97u, 32u, 113u, 117u, 111u, 116u, 101u, 100u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s53[29] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s54[23] = { 60u, 32u, 105u, 110u, 32u, 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s55[2] = { 38u, 35u };
-static const uint32_t m9s56[37] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u, 32u, 116u, 111u, 32u, 110u, 111u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u };
-static const uint32_t m9s57[20] = { 97u, 32u, 99u, 111u, 109u, 109u, 101u, 110u, 116u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s58[2] = { 45u, 45u };
-static const uint32_t m9s59[3] = { 45u, 45u, 62u };
-static const uint32_t m9s60[19] = { 45u, 45u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 99u, 111u, 109u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s61[31] = { 97u, 32u, 112u, 114u, 111u, 99u, 101u, 115u, 115u, 105u, 110u, 103u, 32u, 105u, 110u, 115u, 116u, 114u, 117u, 99u, 116u, 105u, 111u, 110u, 32u, 116u, 97u, 114u, 103u, 101u, 116u };
-static const uint32_t m9s62[72] = { 116u, 104u, 101u, 32u, 116u, 97u, 114u, 103u, 101u, 116u, 32u, 120u, 109u, 108u, 32u, 105u, 115u, 32u, 114u, 101u, 115u, 101u, 114u, 118u, 101u, 100u, 58u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 98u, 101u, 108u, 111u, 110u, 103u, 115u, 32u, 97u, 116u, 32u, 116u, 104u, 101u, 32u, 118u, 101u, 114u, 121u, 32u, 115u, 116u, 97u, 114u, 116u };
-static const uint32_t m9s63[67] = { 97u, 32u, 99u, 111u, 108u, 111u, 110u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 115u, 115u, 105u, 110u, 103u, 32u, 105u, 110u, 115u, 116u, 114u, 117u, 99u, 116u, 105u, 111u, 110u, 32u, 116u, 97u, 114u, 103u, 101u, 116u, 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 115u, 32u, 102u, 111u, 114u, 98u, 105u, 100u };
-static const uint32_t m9s64[2] = { 63u, 62u };
-static const uint32_t m9s65[37] = { 97u, 102u, 116u, 101u, 114u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 115u, 115u, 105u, 110u, 103u, 32u, 105u, 110u, 115u, 116u, 114u, 117u, 99u, 116u, 105u, 111u, 110u, 32u, 116u, 97u, 114u, 103u, 101u, 116u };
-static const uint32_t m9s66[35] = { 97u, 32u, 112u, 114u, 111u, 99u, 101u, 115u, 115u, 105u, 110u, 103u, 32u, 105u, 110u, 115u, 116u, 114u, 117u, 99u, 116u, 105u, 111u, 110u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s67[2] = { 63u, 62u };
-static const uint32_t m9s68[19] = { 32u, 105u, 110u, 32u, 113u, 117u, 111u, 116u, 101u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s69[11] = { 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s70[17] = { 61u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 102u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s71[7] = { 118u, 101u, 114u, 115u, 105u, 111u, 110u };
-static const uint32_t m9s72[39] = { 118u, 101u, 114u, 115u, 105u, 111u, 110u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 88u, 77u, 76u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s73[11] = { 116u, 104u, 101u, 32u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
-static const uint32_t m9s74[26] = { 97u, 32u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 32u, 105u, 115u, 32u, 49u, 46u, 32u, 97u, 110u, 100u, 32u, 100u, 105u, 103u, 105u, 116u, 115u };
-static const uint32_t m9s75[3] = { 49u, 46u, 49u };
-static const uint32_t m9s76[25] = { 88u, 77u, 76u, 32u, 49u, 46u, 49u, 58u, 32u, 111u, 110u, 108u, 121u, 32u, 49u, 46u, 48u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 100u };
-static const uint32_t m9s77[8] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u };
-static const uint32_t m9s78[12] = { 116u, 104u, 101u, 32u, 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u };
-static const uint32_t m9s79[20] = { 110u, 111u, 116u, 32u, 97u, 110u, 32u, 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s80[5] = { 85u, 84u, 70u, 45u, 56u };
-static const uint32_t m9s81[4] = { 85u, 84u, 70u, 56u };
-static const uint32_t m9s82[30] = { 97u, 110u, 32u, 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 32u, 111u, 116u, 104u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 85u, 84u, 70u, 45u, 56u, 58u, 32u };
-static const uint32_t m9s83[10] = { 115u, 116u, 97u, 110u, 100u, 97u, 108u, 111u, 110u, 101u };
-static const uint32_t m9s84[10] = { 115u, 116u, 97u, 110u, 100u, 97u, 108u, 111u, 110u, 101u };
-static const uint32_t m9s85[3] = { 121u, 101u, 115u };
-static const uint32_t m9s86[2] = { 110u, 111u };
-static const uint32_t m9s87[23] = { 115u, 116u, 97u, 110u, 100u, 97u, 108u, 111u, 110u, 101u, 32u, 105u, 115u, 32u, 121u, 101u, 115u, 32u, 111u, 114u, 32u, 110u, 111u };
-static const uint32_t m9s88[2] = { 63u, 62u };
-static const uint32_t m9s89[30] = { 63u, 62u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 88u, 77u, 76u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s90[6] = { 83u, 89u, 83u, 84u, 69u, 77u };
-static const uint32_t m9s91[12] = { 97u, 102u, 116u, 101u, 114u, 32u, 83u, 89u, 83u, 84u, 69u, 77u };
-static const uint32_t m9s92[16] = { 97u, 32u, 115u, 121u, 115u, 116u, 101u, 109u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s93[6] = { 80u, 85u, 66u, 76u, 73u, 67u };
-static const uint32_t m9s94[12] = { 97u, 102u, 116u, 101u, 114u, 32u, 80u, 85u, 66u, 76u, 73u, 67u };
-static const uint32_t m9s95[19] = { 97u, 32u, 112u, 117u, 98u, 108u, 105u, 99u, 32u, 105u, 100u, 101u, 110u, 116u, 105u, 102u, 105u, 101u, 114u };
-static const uint32_t m9s96[44] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 97u, 32u, 112u, 117u, 98u, 108u, 105u, 99u, 32u, 105u, 100u, 101u, 110u, 116u, 105u, 102u, 105u, 101u, 114u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
-static const uint32_t m9s97[16] = { 97u, 32u, 115u, 121u, 115u, 116u, 101u, 109u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s98[27] = { 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 117u, 98u, 108u, 105u, 99u, 32u, 105u, 100u, 101u, 110u, 116u, 105u, 102u, 105u, 101u, 114u };
-static const uint32_t m9s99[16] = { 97u, 32u, 115u, 121u, 115u, 116u, 101u, 109u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s100[1] = { 41u };
-static const uint32_t m9s101[28] = { 41u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 97u, 32u, 99u, 111u, 110u, 116u, 101u, 110u, 116u, 32u, 112u, 97u, 114u, 116u, 105u, 99u, 108u, 101u };
-static const uint32_t m9s102[34] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 110u, 97u, 109u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 99u, 111u, 110u, 116u, 101u, 110u, 116u, 32u, 109u, 111u, 100u, 101u, 108u };
-static const uint32_t m9s103[15] = { 97u, 102u, 116u, 101u, 114u, 32u, 60u, 33u, 69u, 76u, 69u, 77u, 69u, 78u, 84u };
-static const uint32_t m9s104[15] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s105[22] = { 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s106[5] = { 69u, 77u, 80u, 84u, 89u };
-static const uint32_t m9s107[3] = { 65u, 78u, 89u };
-static const uint32_t m9s108[7] = { 35u, 80u, 67u, 68u, 65u, 84u, 65u };
-static const uint32_t m9s109[40] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 110u, 97u, 109u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 109u, 105u, 120u, 101u, 100u, 32u, 99u, 111u, 110u, 116u, 101u, 110u, 116u, 32u, 109u, 111u, 100u, 101u, 108u };
-static const uint32_t m9s110[1] = { 41u };
-static const uint32_t m9s111[31] = { 41u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 97u, 32u, 109u, 105u, 120u, 101u, 100u, 32u, 99u, 111u, 110u, 116u, 101u, 110u, 116u, 32u, 109u, 111u, 100u, 101u, 108u };
-static const uint32_t m9s112[1] = { 42u };
-static const uint32_t m9s113[40] = { 42u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 97u, 32u, 109u, 105u, 120u, 101u, 100u, 32u, 99u, 111u, 110u, 116u, 101u, 110u, 116u, 32u, 109u, 111u, 100u, 101u, 108u, 32u, 119u, 105u, 116u, 104u, 32u, 110u, 97u, 109u, 101u, 115u };
-static const uint32_t m9s114[32] = { 97u, 32u, 99u, 111u, 110u, 116u, 101u, 110u, 116u, 32u, 115u, 112u, 101u, 99u, 105u, 102u, 105u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s115[1] = { 62u };
-static const uint32_t m9s116[19] = { 62u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 60u, 33u, 69u, 76u, 69u, 77u, 69u, 78u, 84u };
-static const uint32_t m9s117[15] = { 97u, 102u, 116u, 101u, 114u, 32u, 60u, 33u, 68u, 79u, 67u, 84u, 89u, 80u, 69u };
-static const uint32_t m9s118[25] = { 116u, 104u, 101u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s119[1] = { 62u };
-static const uint32_t m9s120[21] = { 62u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 68u, 79u, 67u, 84u, 89u, 80u, 69u };
-static const uint32_t m9s121[1] = { 62u };
-static const uint32_t m9s122[21] = { 62u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 68u, 79u, 67u, 84u, 89u, 80u, 69u };
-static const uint32_t m9s123[9] = { 60u, 33u, 69u, 76u, 69u, 77u, 69u, 78u, 84u };
-static const uint32_t m9s124[9] = { 60u, 33u, 65u, 84u, 84u, 76u, 73u, 83u, 84u };
-static const uint32_t m9s125[100] = { 97u, 110u, 32u, 65u, 84u, 84u, 76u, 73u, 83u, 84u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u, 58u, 32u, 105u, 116u, 115u, 32u, 100u, 101u, 102u, 97u, 117u, 108u, 116u, 115u, 32u, 97u, 110u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 116u, 121u, 112u, 101u, 115u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 99u, 104u, 97u, 110u, 103u, 101u, 32u, 116u, 104u, 101u, 32u, 100u, 97u, 116u, 97u, 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 121u, 32u, 97u, 114u, 101u, 32u, 110u, 111u, 116u, 32u, 97u, 112u, 112u, 108u, 105u, 101u, 100u };
-static const uint32_t m9s126[8] = { 60u, 33u, 69u, 78u, 84u, 73u, 84u, 89u };
-static const uint32_t m9s127[48] = { 97u, 110u, 32u, 69u, 78u, 84u, 73u, 84u, 89u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u, 58u, 32u, 101u, 110u, 116u, 105u, 116u, 105u, 101u, 115u, 32u, 97u, 114u, 101u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 112u, 97u, 110u, 100u, 101u, 100u };
-static const uint32_t m9s128[10] = { 60u, 33u, 78u, 79u, 84u, 65u, 84u, 73u, 79u, 78u };
-static const uint32_t m9s129[16] = { 97u, 102u, 116u, 101u, 114u, 32u, 60u, 33u, 78u, 79u, 84u, 65u, 84u, 73u, 79u, 78u };
-static const uint32_t m9s130[15] = { 97u, 32u, 110u, 111u, 116u, 97u, 116u, 105u, 111u, 110u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s131[51] = { 97u, 32u, 99u, 111u, 108u, 111u, 110u, 32u, 105u, 110u, 32u, 97u, 32u, 110u, 111u, 116u, 97u, 116u, 105u, 111u, 110u, 32u, 110u, 97u, 109u, 101u, 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 115u, 32u, 102u, 111u, 114u, 98u, 105u, 100u };
-static const uint32_t m9s132[23] = { 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 110u, 111u, 116u, 97u, 116u, 105u, 111u, 110u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s133[25] = { 83u, 89u, 83u, 84u, 69u, 77u, 32u, 111u, 114u, 32u, 80u, 85u, 66u, 76u, 73u, 67u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s134[1] = { 62u };
-static const uint32_t m9s135[20] = { 62u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 60u, 33u, 78u, 79u, 84u, 65u, 84u, 73u, 79u, 78u };
-static const uint32_t m9s136[55] = { 97u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 101u, 110u, 116u, 105u, 116u, 121u, 32u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u, 58u, 32u, 101u, 110u, 116u, 105u, 116u, 105u, 101u, 115u, 32u, 97u, 114u, 101u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 112u, 97u, 110u, 100u, 101u, 100u };
-static const uint32_t m9s137[52] = { 97u, 32u, 109u, 97u, 114u, 107u, 117u, 112u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 32u, 115u, 117u, 98u, 115u, 101u, 116u };
-static const uint32_t m9s138[3] = { 120u, 109u, 108u };
-static const uint32_t m9s139[24] = { 97u, 32u, 110u, 97u, 109u, 101u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 119u, 111u, 32u, 99u, 111u, 108u, 111u, 110u, 115u, 58u, 32u };
-static const uint32_t m9s140[46] = { 97u, 32u, 110u, 97u, 109u, 101u, 32u, 119u, 105u, 116u, 104u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u, 32u, 111u, 110u, 32u, 111u, 110u, 101u, 32u, 115u, 105u, 100u, 101u, 32u, 111u, 102u, 32u, 105u, 116u, 115u, 32u, 99u, 111u, 108u, 111u, 110u, 58u, 32u };
-static const uint32_t m9s141[39] = { 97u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 110u, 97u, 109u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 103u, 105u, 110u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s142[15] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s143[1] = { 62u };
-static const uint32_t m9s144[2] = { 47u, 62u };
-static const uint32_t m9s145[19] = { 98u, 101u, 102u, 111u, 114u, 101u, 32u, 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u };
-static const uint32_t m9s146[1] = { 62u };
-static const uint32_t m9s147[2] = { 47u, 62u };
-static const uint32_t m9s148[22] = { 97u, 32u, 115u, 116u, 97u, 114u, 116u, 32u, 116u, 97u, 103u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s149[17] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s150[1] = { 61u };
-static const uint32_t m9s151[25] = { 61u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s152[26] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 103u, 105u, 118u, 101u, 110u, 32u, 116u, 119u, 105u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s153[5] = { 120u, 109u, 108u, 110u, 115u };
-static const uint32_t m9s154[37] = { 97u, 32u, 114u, 101u, 115u, 101u, 114u, 118u, 101u, 100u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 32u, 97u, 115u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 97u, 117u, 108u, 116u, 58u, 32u };
-static const uint32_t m9s155[5] = { 120u, 109u, 108u, 110u, 115u };
-static const uint32_t m9s156[6] = { 120u, 109u, 108u, 110u, 115u, 58u };
-static const uint32_t m9s157[32] = { 97u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 116u, 111u, 32u, 110u, 111u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s158[5] = { 120u, 109u, 108u, 110u, 115u };
-static const uint32_t m9s159[25] = { 116u, 104u, 101u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 120u, 109u, 108u, 110u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
-static const uint32_t m9s160[3] = { 120u, 109u, 108u };
-static const uint32_t m9s161[50] = { 116u, 104u, 101u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 120u, 109u, 108u, 32u, 97u, 110u, 100u, 32u, 105u, 116u, 115u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 32u, 98u, 101u, 108u, 111u, 110u, 103u, 32u, 116u, 111u, 103u, 101u, 116u, 104u, 101u, 114u, 58u, 32u };
-static const uint32_t m9s162[37] = { 116u, 104u, 101u, 32u, 120u, 109u, 108u, 110u, 115u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 116u, 111u, 32u, 97u, 32u, 112u, 114u, 101u, 102u, 105u, 120u };
-static const uint32_t m9s163[19] = { 97u, 110u, 32u, 117u, 110u, 98u, 111u, 117u, 110u, 100u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 58u, 32u };
-static const uint32_t m9s164[43] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 103u, 105u, 118u, 101u, 110u, 32u, 116u, 119u, 105u, 99u, 101u, 32u, 105u, 110u, 32u, 111u, 110u, 101u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s165[19] = { 97u, 110u, 32u, 117u, 110u, 98u, 111u, 117u, 110u, 100u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 58u, 32u };
-static const uint32_t m9s166[5] = { 120u, 109u, 108u, 110u, 115u };
-static const uint32_t m9s167[32] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 120u, 109u, 108u, 110u, 115u };
-static const uint32_t m9s168[2] = { 47u, 62u };
-static const uint32_t m9s169[15] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s170[1] = { 62u };
-static const uint32_t m9s171[20] = { 62u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 97u, 110u, 32u, 101u, 110u, 100u, 32u, 116u, 97u, 103u };
-static const uint32_t m9s172[31] = { 97u, 110u, 32u, 101u, 110u, 100u, 32u, 116u, 97u, 103u, 32u, 119u, 105u, 116u, 104u, 32u, 110u, 111u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 111u, 112u, 101u, 110u };
-static const uint32_t m9s173[12] = { 116u, 104u, 101u, 32u, 101u, 110u, 100u, 32u, 116u, 97u, 103u, 32u };
-static const uint32_t m9s174[8] = { 32u, 99u, 108u, 111u, 115u, 101u, 115u, 32u };
-static const uint32_t m9s175[36] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 110u, 111u, 32u, 88u, 77u, 76u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 32u, 109u, 97u, 121u, 32u, 104u, 111u, 108u, 100u };
-static const uint32_t m9s176[7] = { 118u, 101u, 114u, 115u, 105u, 111u, 110u };
-static const uint32_t m9s177[3] = { 49u, 46u, 49u };
-static const uint32_t m9s178[25] = { 88u, 77u, 76u, 32u, 49u, 46u, 49u, 58u, 32u, 111u, 110u, 108u, 121u, 32u, 49u, 46u, 48u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 100u };
-static const uint32_t m9s179[8] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u };
-static const uint32_t m9s180[5] = { 85u, 84u, 70u, 45u, 56u };
-static const uint32_t m9s181[4] = { 85u, 84u, 70u, 56u };
-static const uint32_t m9s182[30] = { 97u, 110u, 32u, 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 32u, 111u, 116u, 104u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 85u, 84u, 70u, 45u, 56u, 58u, 32u };
-static const uint32_t m9s183[8] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u };
-static const uint32_t m9s184[41] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 110u, 111u, 32u, 88u, 77u, 76u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 32u, 109u, 97u, 121u, 32u, 104u, 111u, 108u, 100u, 44u, 32u, 97u, 116u, 32u };
-static const uint32_t m9s185[5] = { 38u, 97u, 109u, 112u, 59u };
-static const uint32_t m9s186[4] = { 38u, 108u, 116u, 59u };
-static const uint32_t m9s187[4] = { 38u, 103u, 116u, 59u };
-static const uint32_t m9s188[5] = { 38u, 35u, 49u, 51u, 59u };
-static const uint32_t m9s189[6] = { 38u, 113u, 117u, 111u, 116u, 59u };
-static const uint32_t m9s190[4] = { 38u, 35u, 57u, 59u };
-static const uint32_t m9s191[5] = { 38u, 35u, 49u, 48u, 59u };
+static const uint8_t m9s0[26] = { 85, 84, 70, 45, 49, 54, 58, 32, 111, 110, 108, 121, 32, 85, 84, 70, 45, 56, 32, 105, 115, 32, 114, 101, 97, 100 };
+static const uint8_t m9s1[32] = { 110, 111, 116, 32, 85, 84, 70, 45, 56, 44, 32, 116, 104, 101, 32, 111, 110, 101, 32, 101, 110, 99, 111, 100, 105, 110, 103, 32, 114, 101, 97, 100 };
+static const uint8_t m9s2[5] = { 60, 63, 120, 109, 108 };
+static const uint8_t m9s3[30] = { 116, 104, 101, 32, 105, 110, 116, 101, 114, 110, 97, 108, 32, 115, 117, 98, 115, 101, 116, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s4[15] = { 110, 111, 32, 114, 111, 111, 116, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s5[25] = { 116, 104, 101, 32, 100, 111, 99, 117, 109, 101, 110, 116, 32, 101, 110, 100, 115, 32, 105, 110, 115, 105, 100, 101, 32 };
+static const uint8_t m9s6[4] = { 60, 33, 45, 45 };
+static const uint8_t m9s7[2] = { 60, 63 };
+static const uint8_t m9s8[2] = { 60, 47 };
+static const uint8_t m9s9[9] = { 60, 33, 91, 67, 68, 65, 84, 65, 91 };
+static const uint8_t m9s10[2] = { 60, 33 };
+static const uint8_t m9s11[31] = { 97, 32, 100, 101, 99, 108, 97, 114, 97, 116, 105, 111, 110, 32, 105, 110, 115, 105, 100, 101, 32, 97, 110, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s12[9] = { 60, 33, 68, 79, 67, 84, 89, 80, 69 };
+static const uint8_t m9s13[14] = { 97, 32, 68, 79, 67, 84, 89, 80, 69, 32, 104, 101, 114, 101 };
+static const uint8_t m9s14[21] = { 97, 32, 115, 101, 99, 111, 110, 100, 32, 114, 111, 111, 116, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s15[35] = { 109, 97, 114, 107, 117, 112, 32, 111, 114, 32, 116, 104, 101, 32, 114, 111, 111, 116, 32, 101, 108, 101, 109, 101, 110, 116, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s16[36] = { 109, 111, 114, 101, 32, 116, 104, 97, 110, 32, 54, 52, 32, 101, 108, 101, 109, 101, 110, 116, 115, 32, 100, 101, 101, 112, 32, 105, 110, 32, 97, 32, 116, 114, 101, 101 };
+static const uint8_t m9s17[21] = { 110, 111, 116, 32, 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 110, 97, 109, 101, 58, 32 };
+static const uint8_t m9s18[23] = { 97, 32, 115, 101, 99, 111, 110, 100, 32, 114, 111, 111, 116, 32, 101, 108, 101, 109, 101, 110, 116, 58, 32 };
+static const uint8_t m9s19[45] = { 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 97, 102, 116, 101, 114, 32, 116, 104, 101, 32, 115, 116, 97, 114, 116, 32, 116, 97, 103, 32, 119, 97, 115, 32, 99, 108, 111, 115, 101, 100, 58, 32 };
+static const uint8_t m9s20[23] = { 110, 111, 116, 32, 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 110, 97, 109, 101, 58, 32 };
+static const uint8_t m9s21[2] = { 61, 34 };
+static const uint8_t m9s22[39] = { 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 100, 97, 116, 97, 32, 111, 117, 116, 115, 105, 100, 101, 32, 116, 104, 101, 32, 114, 111, 111, 116, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s23[31] = { 97, 110, 32, 101, 110, 100, 32, 116, 97, 103, 32, 119, 105, 116, 104, 32, 110, 111, 32, 101, 108, 101, 109, 101, 110, 116, 32, 111, 112, 101, 110 };
+static const uint8_t m9s24[2] = { 47, 62 };
+static const uint8_t m9s25[2] = { 60, 47 };
+static const uint8_t m9s26[15] = { 110, 111, 32, 114, 111, 111, 116, 32, 101, 108, 101, 109, 101, 110, 116 };
+static const uint8_t m9s27[22] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 108, 101, 102, 116, 32, 111, 112, 101, 110, 58, 32 };
+static const uint8_t m9s28[38] = { 60, 63, 120, 109, 108, 32, 118, 101, 114, 115, 105, 111, 110, 61, 34, 49, 46, 48, 34, 32, 101, 110, 99, 111, 100, 105, 110, 103, 61, 34, 85, 84, 70, 45, 56, 34, 63, 62 };
+static const uint8_t m9s29[9] = { 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s30[21] = { 119, 104, 105, 116, 101, 32, 115, 112, 97, 99, 101, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32 };
+static const uint8_t m9s31[9] = { 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s32[32] = { 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 114, 101, 102, 101, 114, 101, 110, 99, 101, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s33[41] = { 97, 32, 100, 105, 103, 105, 116, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32, 105, 110, 32, 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 114, 101, 102, 101, 114, 101, 110, 99, 101 };
+static const uint8_t m9s34[41] = { 97, 32, 100, 105, 103, 105, 116, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32, 105, 110, 32, 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 114, 101, 102, 101, 114, 101, 110, 99, 101 };
+static const uint8_t m9s35[41] = { 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 114, 101, 102, 101, 114, 101, 110, 99, 101, 32, 116, 111, 32, 110, 111, 32, 88, 77, 76, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114 };
+static const uint8_t m9s36[14] = { 97, 110, 32, 101, 110, 116, 105, 116, 121, 32, 110, 97, 109, 101 };
+static const uint8_t m9s37[31] = { 59, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32, 97, 102, 116, 101, 114, 32, 97, 110, 32, 101, 110, 116, 105, 116, 121, 32, 110, 97, 109, 101 };
+static const uint8_t m9s38[2] = { 108, 116 };
+static const uint8_t m9s39[2] = { 103, 116 };
+static const uint8_t m9s40[3] = { 97, 109, 112 };
+static const uint8_t m9s41[4] = { 97, 112, 111, 115 };
+static const uint8_t m9s42[4] = { 113, 117, 111, 116 };
+static const uint8_t m9s43[75] = { 97, 110, 32, 101, 110, 116, 105, 116, 121, 32, 114, 101, 102, 101, 114, 101, 110, 99, 101, 32, 116, 104, 101, 32, 101, 120, 116, 101, 114, 110, 97, 108, 32, 68, 84, 68, 32, 109, 97, 121, 32, 100, 101, 99, 108, 97, 114, 101, 58, 32, 101, 110, 116, 105, 116, 105, 101, 115, 32, 97, 114, 101, 32, 110, 111, 116, 32, 101, 120, 112, 97, 110, 100, 101, 100 };
+static const uint8_t m9s44[22] = { 97, 110, 32, 117, 110, 100, 101, 99, 108, 97, 114, 101, 100, 32, 101, 110, 116, 105, 116, 121, 58, 32 };
+static const uint8_t m9s45[27] = { 116, 101, 120, 116, 32, 97, 115, 115, 101, 109, 98, 108, 101, 100, 32, 105, 115, 32, 110, 111, 116, 32, 85, 84, 70, 45, 56 };
+static const uint8_t m9s46[9] = { 60, 33, 91, 67, 68, 65, 84, 65, 91 };
+static const uint8_t m9s47[26] = { 97, 32, 67, 68, 65, 84, 65, 32, 115, 101, 99, 116, 105, 111, 110, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s48[3] = { 93, 93, 62 };
+static const uint8_t m9s49[2] = { 38, 35 };
+static const uint8_t m9s50[37] = { 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 114, 101, 102, 101, 114, 101, 110, 99, 101, 32, 116, 111, 32, 110, 111, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114 };
+static const uint8_t m9s51[3] = { 93, 93, 62 };
+static const uint8_t m9s52[21] = { 93, 93, 62, 32, 105, 110, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 100, 97, 116, 97 };
+static const uint8_t m9s53[33] = { 97, 32, 113, 117, 111, 116, 101, 100, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 118, 97, 108, 117, 101, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s54[29] = { 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 118, 97, 108, 117, 101, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s55[23] = { 60, 32, 105, 110, 32, 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 118, 97, 108, 117, 101 };
+static const uint8_t m9s56[2] = { 38, 35 };
+static const uint8_t m9s57[37] = { 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 114, 101, 102, 101, 114, 101, 110, 99, 101, 32, 116, 111, 32, 110, 111, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114 };
+static const uint8_t m9s58[20] = { 97, 32, 99, 111, 109, 109, 101, 110, 116, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s59[2] = { 45, 45 };
+static const uint8_t m9s60[3] = { 45, 45, 62 };
+static const uint8_t m9s61[19] = { 45, 45, 32, 105, 110, 115, 105, 100, 101, 32, 97, 32, 99, 111, 109, 109, 101, 110, 116 };
+static const uint8_t m9s62[31] = { 97, 32, 112, 114, 111, 99, 101, 115, 115, 105, 110, 103, 32, 105, 110, 115, 116, 114, 117, 99, 116, 105, 111, 110, 32, 116, 97, 114, 103, 101, 116 };
+static const uint8_t m9s63[72] = { 116, 104, 101, 32, 116, 97, 114, 103, 101, 116, 32, 120, 109, 108, 32, 105, 115, 32, 114, 101, 115, 101, 114, 118, 101, 100, 58, 32, 97, 110, 32, 88, 77, 76, 32, 100, 101, 99, 108, 97, 114, 97, 116, 105, 111, 110, 32, 98, 101, 108, 111, 110, 103, 115, 32, 97, 116, 32, 116, 104, 101, 32, 118, 101, 114, 121, 32, 115, 116, 97, 114, 116 };
+static const uint8_t m9s64[67] = { 97, 32, 99, 111, 108, 111, 110, 32, 105, 110, 32, 97, 32, 112, 114, 111, 99, 101, 115, 115, 105, 110, 103, 32, 105, 110, 115, 116, 114, 117, 99, 116, 105, 111, 110, 32, 116, 97, 114, 103, 101, 116, 44, 32, 119, 104, 105, 99, 104, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 115, 32, 102, 111, 114, 98, 105, 100 };
+static const uint8_t m9s65[2] = { 63, 62 };
+static const uint8_t m9s66[37] = { 97, 102, 116, 101, 114, 32, 97, 32, 112, 114, 111, 99, 101, 115, 115, 105, 110, 103, 32, 105, 110, 115, 116, 114, 117, 99, 116, 105, 111, 110, 32, 116, 97, 114, 103, 101, 116 };
+static const uint8_t m9s67[35] = { 97, 32, 112, 114, 111, 99, 101, 115, 115, 105, 110, 103, 32, 105, 110, 115, 116, 114, 117, 99, 116, 105, 111, 110, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s68[2] = { 63, 62 };
+static const uint8_t m9s69[19] = { 32, 105, 110, 32, 113, 117, 111, 116, 101, 115, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s70[11] = { 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s71[17] = { 61, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32, 97, 102, 116, 101, 114, 32 };
+static const uint8_t m9s72[7] = { 118, 101, 114, 115, 105, 111, 110 };
+static const uint8_t m9s73[39] = { 118, 101, 114, 115, 105, 111, 110, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32, 105, 110, 32, 116, 104, 101, 32, 88, 77, 76, 32, 100, 101, 99, 108, 97, 114, 97, 116, 105, 111, 110 };
+static const uint8_t m9s74[11] = { 116, 104, 101, 32, 118, 101, 114, 115, 105, 111, 110 };
+static const uint8_t m9s75[26] = { 97, 32, 118, 101, 114, 115, 105, 111, 110, 32, 105, 115, 32, 49, 46, 32, 97, 110, 100, 32, 100, 105, 103, 105, 116, 115 };
+static const uint8_t m9s76[3] = { 49, 46, 49 };
+static const uint8_t m9s77[25] = { 88, 77, 76, 32, 49, 46, 49, 58, 32, 111, 110, 108, 121, 32, 49, 46, 48, 32, 105, 115, 32, 114, 101, 97, 100 };
+static const uint8_t m9s78[8] = { 101, 110, 99, 111, 100, 105, 110, 103 };
+static const uint8_t m9s79[12] = { 116, 104, 101, 32, 101, 110, 99, 111, 100, 105, 110, 103 };
+static const uint8_t m9s80[20] = { 110, 111, 116, 32, 97, 110, 32, 101, 110, 99, 111, 100, 105, 110, 103, 32, 110, 97, 109, 101 };
+static const uint8_t m9s81[5] = { 85, 84, 70, 45, 56 };
+static const uint8_t m9s82[4] = { 85, 84, 70, 56 };
+static const uint8_t m9s83[30] = { 97, 110, 32, 101, 110, 99, 111, 100, 105, 110, 103, 32, 111, 116, 104, 101, 114, 32, 116, 104, 97, 110, 32, 85, 84, 70, 45, 56, 58, 32 };
+static const uint8_t m9s84[10] = { 115, 116, 97, 110, 100, 97, 108, 111, 110, 101 };
+static const uint8_t m9s85[10] = { 115, 116, 97, 110, 100, 97, 108, 111, 110, 101 };
+static const uint8_t m9s86[3] = { 121, 101, 115 };
+static const uint8_t m9s87[2] = { 110, 111 };
+static const uint8_t m9s88[23] = { 115, 116, 97, 110, 100, 97, 108, 111, 110, 101, 32, 105, 115, 32, 121, 101, 115, 32, 111, 114, 32, 110, 111 };
+static const uint8_t m9s89[2] = { 63, 62 };
+static const uint8_t m9s90[30] = { 63, 62, 32, 99, 108, 111, 115, 105, 110, 103, 32, 116, 104, 101, 32, 88, 77, 76, 32, 100, 101, 99, 108, 97, 114, 97, 116, 105, 111, 110 };
+static const uint8_t m9s91[6] = { 83, 89, 83, 84, 69, 77 };
+static const uint8_t m9s92[12] = { 97, 102, 116, 101, 114, 32, 83, 89, 83, 84, 69, 77 };
+static const uint8_t m9s93[16] = { 97, 32, 115, 121, 115, 116, 101, 109, 32, 108, 105, 116, 101, 114, 97, 108 };
+static const uint8_t m9s94[6] = { 80, 85, 66, 76, 73, 67 };
+static const uint8_t m9s95[12] = { 97, 102, 116, 101, 114, 32, 80, 85, 66, 76, 73, 67 };
+static const uint8_t m9s96[19] = { 97, 32, 112, 117, 98, 108, 105, 99, 32, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114 };
+static const uint8_t m9s97[44] = { 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 97, 32, 112, 117, 98, 108, 105, 99, 32, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114, 32, 109, 97, 121, 32, 110, 111, 116, 32, 104, 111, 108, 100 };
+static const uint8_t m9s98[16] = { 97, 32, 115, 121, 115, 116, 101, 109, 32, 108, 105, 116, 101, 114, 97, 108 };
+static const uint8_t m9s99[27] = { 97, 102, 116, 101, 114, 32, 116, 104, 101, 32, 112, 117, 98, 108, 105, 99, 32, 105, 100, 101, 110, 116, 105, 102, 105, 101, 114 };
+static const uint8_t m9s100[16] = { 97, 32, 115, 121, 115, 116, 101, 109, 32, 108, 105, 116, 101, 114, 97, 108 };
+static const uint8_t m9s101[1] = { 41 };
+static const uint8_t m9s102[28] = { 41, 32, 99, 108, 111, 115, 105, 110, 103, 32, 97, 32, 99, 111, 110, 116, 101, 110, 116, 32, 112, 97, 114, 116, 105, 99, 108, 101 };
+static const uint8_t m9s103[34] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 110, 97, 109, 101, 32, 105, 110, 32, 97, 32, 99, 111, 110, 116, 101, 110, 116, 32, 109, 111, 100, 101, 108 };
+static const uint8_t m9s104[15] = { 97, 102, 116, 101, 114, 32, 60, 33, 69, 76, 69, 77, 69, 78, 84 };
+static const uint8_t m9s105[15] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 110, 97, 109, 101 };
+static const uint8_t m9s106[22] = { 97, 102, 116, 101, 114, 32, 116, 104, 101, 32, 101, 108, 101, 109, 101, 110, 116, 32, 110, 97, 109, 101 };
+static const uint8_t m9s107[5] = { 69, 77, 80, 84, 89 };
+static const uint8_t m9s108[3] = { 65, 78, 89 };
+static const uint8_t m9s109[7] = { 35, 80, 67, 68, 65, 84, 65 };
+static const uint8_t m9s110[40] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 110, 97, 109, 101, 32, 105, 110, 32, 97, 32, 109, 105, 120, 101, 100, 32, 99, 111, 110, 116, 101, 110, 116, 32, 109, 111, 100, 101, 108 };
+static const uint8_t m9s111[1] = { 41 };
+static const uint8_t m9s112[31] = { 41, 32, 99, 108, 111, 115, 105, 110, 103, 32, 97, 32, 109, 105, 120, 101, 100, 32, 99, 111, 110, 116, 101, 110, 116, 32, 109, 111, 100, 101, 108 };
+static const uint8_t m9s113[1] = { 42 };
+static const uint8_t m9s114[40] = { 42, 32, 97, 102, 116, 101, 114, 32, 97, 32, 109, 105, 120, 101, 100, 32, 99, 111, 110, 116, 101, 110, 116, 32, 109, 111, 100, 101, 108, 32, 119, 105, 116, 104, 32, 110, 97, 109, 101, 115 };
+static const uint8_t m9s115[32] = { 97, 32, 99, 111, 110, 116, 101, 110, 116, 32, 115, 112, 101, 99, 105, 102, 105, 99, 97, 116, 105, 111, 110, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s116[1] = { 62 };
+static const uint8_t m9s117[19] = { 62, 32, 99, 108, 111, 115, 105, 110, 103, 32, 60, 33, 69, 76, 69, 77, 69, 78, 84 };
+static const uint8_t m9s118[15] = { 97, 102, 116, 101, 114, 32, 60, 33, 68, 79, 67, 84, 89, 80, 69 };
+static const uint8_t m9s119[25] = { 116, 104, 101, 32, 100, 111, 99, 117, 109, 101, 110, 116, 32, 101, 108, 101, 109, 101, 110, 116, 32, 110, 97, 109, 101 };
+static const uint8_t m9s120[1] = { 62 };
+static const uint8_t m9s121[21] = { 62, 32, 99, 108, 111, 115, 105, 110, 103, 32, 116, 104, 101, 32, 68, 79, 67, 84, 89, 80, 69 };
+static const uint8_t m9s122[1] = { 62 };
+static const uint8_t m9s123[21] = { 62, 32, 99, 108, 111, 115, 105, 110, 103, 32, 116, 104, 101, 32, 68, 79, 67, 84, 89, 80, 69 };
+static const uint8_t m9s124[9] = { 60, 33, 69, 76, 69, 77, 69, 78, 84 };
+static const uint8_t m9s125[9] = { 60, 33, 65, 84, 84, 76, 73, 83, 84 };
+static const uint8_t m9s126[100] = { 97, 110, 32, 65, 84, 84, 76, 73, 83, 84, 32, 100, 101, 99, 108, 97, 114, 97, 116, 105, 111, 110, 58, 32, 105, 116, 115, 32, 100, 101, 102, 97, 117, 108, 116, 115, 32, 97, 110, 100, 32, 118, 97, 108, 117, 101, 32, 116, 121, 112, 101, 115, 32, 119, 111, 117, 108, 100, 32, 99, 104, 97, 110, 103, 101, 32, 116, 104, 101, 32, 100, 97, 116, 97, 44, 32, 97, 110, 100, 32, 116, 104, 101, 121, 32, 97, 114, 101, 32, 110, 111, 116, 32, 97, 112, 112, 108, 105, 101, 100 };
+static const uint8_t m9s127[8] = { 60, 33, 69, 78, 84, 73, 84, 89 };
+static const uint8_t m9s128[48] = { 97, 110, 32, 69, 78, 84, 73, 84, 89, 32, 100, 101, 99, 108, 97, 114, 97, 116, 105, 111, 110, 58, 32, 101, 110, 116, 105, 116, 105, 101, 115, 32, 97, 114, 101, 32, 110, 111, 116, 32, 101, 120, 112, 97, 110, 100, 101, 100 };
+static const uint8_t m9s129[10] = { 60, 33, 78, 79, 84, 65, 84, 73, 79, 78 };
+static const uint8_t m9s130[16] = { 97, 102, 116, 101, 114, 32, 60, 33, 78, 79, 84, 65, 84, 73, 79, 78 };
+static const uint8_t m9s131[15] = { 97, 32, 110, 111, 116, 97, 116, 105, 111, 110, 32, 110, 97, 109, 101 };
+static const uint8_t m9s132[51] = { 97, 32, 99, 111, 108, 111, 110, 32, 105, 110, 32, 97, 32, 110, 111, 116, 97, 116, 105, 111, 110, 32, 110, 97, 109, 101, 44, 32, 119, 104, 105, 99, 104, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 115, 32, 102, 111, 114, 98, 105, 100 };
+static const uint8_t m9s133[23] = { 97, 102, 116, 101, 114, 32, 116, 104, 101, 32, 110, 111, 116, 97, 116, 105, 111, 110, 32, 110, 97, 109, 101 };
+static const uint8_t m9s134[25] = { 83, 89, 83, 84, 69, 77, 32, 111, 114, 32, 80, 85, 66, 76, 73, 67, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
+static const uint8_t m9s135[1] = { 62 };
+static const uint8_t m9s136[20] = { 62, 32, 99, 108, 111, 115, 105, 110, 103, 32, 60, 33, 78, 79, 84, 65, 84, 73, 79, 78 };
+static const uint8_t m9s137[55] = { 97, 32, 112, 97, 114, 97, 109, 101, 116, 101, 114, 32, 101, 110, 116, 105, 116, 121, 32, 114, 101, 102, 101, 114, 101, 110, 99, 101, 58, 32, 101, 110, 116, 105, 116, 105, 101, 115, 32, 97, 114, 101, 32, 110, 111, 116, 32, 101, 120, 112, 97, 110, 100, 101, 100 };
+static const uint8_t m9s138[52] = { 97, 32, 109, 97, 114, 107, 117, 112, 32, 100, 101, 99, 108, 97, 114, 97, 116, 105, 111, 110, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32, 105, 110, 32, 116, 104, 101, 32, 105, 110, 116, 101, 114, 110, 97, 108, 32, 115, 117, 98, 115, 101, 116 };
+static const uint8_t m9s139[3] = { 120, 109, 108 };
+static const uint8_t m9s140[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s141[24] = { 97, 32, 110, 97, 109, 101, 32, 119, 105, 116, 104, 32, 116, 119, 111, 32, 99, 111, 108, 111, 110, 115, 58, 32 };
+static const uint8_t m9s142[46] = { 97, 32, 110, 97, 109, 101, 32, 119, 105, 116, 104, 32, 110, 111, 116, 104, 105, 110, 103, 32, 111, 110, 32, 111, 110, 101, 32, 115, 105, 100, 101, 32, 111, 102, 32, 105, 116, 115, 32, 99, 111, 108, 111, 110, 58, 32 };
+static const uint8_t m9s143[39] = { 97, 32, 108, 111, 99, 97, 108, 32, 110, 97, 109, 101, 32, 116, 104, 97, 116, 32, 99, 97, 110, 110, 111, 116, 32, 98, 101, 103, 105, 110, 32, 97, 32, 110, 97, 109, 101, 58, 32 };
+static const uint8_t m9s144[15] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 110, 97, 109, 101 };
+static const uint8_t m9s145[1] = { 62 };
+static const uint8_t m9s146[2] = { 47, 62 };
+static const uint8_t m9s147[19] = { 98, 101, 102, 111, 114, 101, 32, 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101 };
+static const uint8_t m9s148[1] = { 62 };
+static const uint8_t m9s149[2] = { 47, 62 };
+static const uint8_t m9s150[22] = { 97, 32, 115, 116, 97, 114, 116, 32, 116, 97, 103, 32, 110, 111, 116, 32, 99, 108, 111, 115, 101, 100 };
+static const uint8_t m9s151[17] = { 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 110, 97, 109, 101 };
+static const uint8_t m9s152[1] = { 61 };
+static const uint8_t m9s153[25] = { 61, 32, 97, 102, 116, 101, 114, 32, 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 110, 97, 109, 101 };
+static const uint8_t m9s154[26] = { 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 103, 105, 118, 101, 110, 32, 116, 119, 105, 99, 101, 58, 32 };
+static const uint8_t m9s155[5] = { 120, 109, 108, 110, 115 };
+static const uint8_t m9s156[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s157[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s158[37] = { 97, 32, 114, 101, 115, 101, 114, 118, 101, 100, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 32, 97, 115, 32, 116, 104, 101, 32, 100, 101, 102, 97, 117, 108, 116, 58, 32 };
+static const uint8_t m9s159[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s160[5] = { 120, 109, 108, 110, 115 };
+static const uint8_t m9s161[6] = { 120, 109, 108, 110, 115, 58 };
+static const uint8_t m9s162[32] = { 97, 32, 112, 114, 101, 102, 105, 120, 32, 98, 111, 117, 110, 100, 32, 116, 111, 32, 110, 111, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 58, 32 };
+static const uint8_t m9s163[5] = { 120, 109, 108, 110, 115 };
+static const uint8_t m9s164[25] = { 116, 104, 101, 32, 112, 114, 101, 102, 105, 120, 32, 120, 109, 108, 110, 115, 32, 100, 101, 99, 108, 97, 114, 101, 100 };
+static const uint8_t m9s165[3] = { 120, 109, 108 };
+static const uint8_t m9s166[36] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 88, 77, 76, 47, 49, 57, 57, 56, 47, 110, 97, 109, 101, 115, 112, 97, 99, 101 };
+static const uint8_t m9s167[50] = { 116, 104, 101, 32, 112, 114, 101, 102, 105, 120, 32, 120, 109, 108, 32, 97, 110, 100, 32, 105, 116, 115, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 32, 98, 101, 108, 111, 110, 103, 32, 116, 111, 103, 101, 116, 104, 101, 114, 58, 32 };
+static const uint8_t m9s168[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s169[37] = { 116, 104, 101, 32, 120, 109, 108, 110, 115, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 32, 98, 111, 117, 110, 100, 32, 116, 111, 32, 97, 32, 112, 114, 101, 102, 105, 120 };
+static const uint8_t m9s170[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s171[29] = { 104, 116, 116, 112, 58, 47, 47, 119, 119, 119, 46, 119, 51, 46, 111, 114, 103, 47, 50, 48, 48, 48, 47, 120, 109, 108, 110, 115, 47 };
+static const uint8_t m9s172[19] = { 97, 110, 32, 117, 110, 98, 111, 117, 110, 100, 32, 112, 114, 101, 102, 105, 120, 58, 32 };
+static const uint8_t m9s173[43] = { 97, 110, 32, 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 103, 105, 118, 101, 110, 32, 116, 119, 105, 99, 101, 32, 105, 110, 32, 111, 110, 101, 32, 110, 97, 109, 101, 115, 112, 97, 99, 101, 58, 32 };
+static const uint8_t m9s174[19] = { 97, 110, 32, 117, 110, 98, 111, 117, 110, 100, 32, 112, 114, 101, 102, 105, 120, 58, 32 };
+static const uint8_t m9s175[5] = { 120, 109, 108, 110, 115 };
+static const uint8_t m9s176[32] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 119, 105, 116, 104, 32, 116, 104, 101, 32, 112, 114, 101, 102, 105, 120, 32, 120, 109, 108, 110, 115 };
+static const uint8_t m9s177[2] = { 47, 62 };
+static const uint8_t m9s178[15] = { 97, 110, 32, 101, 108, 101, 109, 101, 110, 116, 32, 110, 97, 109, 101 };
+static const uint8_t m9s179[1] = { 62 };
+static const uint8_t m9s180[20] = { 62, 32, 99, 108, 111, 115, 105, 110, 103, 32, 97, 110, 32, 101, 110, 100, 32, 116, 97, 103 };
+static const uint8_t m9s181[31] = { 97, 110, 32, 101, 110, 100, 32, 116, 97, 103, 32, 119, 105, 116, 104, 32, 110, 111, 32, 101, 108, 101, 109, 101, 110, 116, 32, 111, 112, 101, 110 };
+static const uint8_t m9s182[12] = { 116, 104, 101, 32, 101, 110, 100, 32, 116, 97, 103, 32 };
+static const uint8_t m9s183[8] = { 32, 99, 108, 111, 115, 101, 115, 32 };
+static const uint8_t m9s184[36] = { 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 110, 111, 32, 88, 77, 76, 32, 100, 111, 99, 117, 109, 101, 110, 116, 32, 109, 97, 121, 32, 104, 111, 108, 100 };
+static const uint8_t m9s185[7] = { 118, 101, 114, 115, 105, 111, 110 };
+static const uint8_t m9s186[3] = { 49, 46, 49 };
+static const uint8_t m9s187[25] = { 88, 77, 76, 32, 49, 46, 49, 58, 32, 111, 110, 108, 121, 32, 49, 46, 48, 32, 105, 115, 32, 114, 101, 97, 100 };
+static const uint8_t m9s188[8] = { 101, 110, 99, 111, 100, 105, 110, 103 };
+static const uint8_t m9s189[5] = { 85, 84, 70, 45, 56 };
+static const uint8_t m9s190[4] = { 85, 84, 70, 56 };
+static const uint8_t m9s191[30] = { 97, 110, 32, 101, 110, 99, 111, 100, 105, 110, 103, 32, 111, 116, 104, 101, 114, 32, 116, 104, 97, 110, 32, 85, 84, 70, 45, 56, 58, 32 };
+static const uint8_t m9s192[8] = { 101, 110, 99, 111, 100, 105, 110, 103 };
+static const uint8_t m9s193[41] = { 97, 32, 99, 104, 97, 114, 97, 99, 116, 101, 114, 32, 110, 111, 32, 88, 77, 76, 32, 100, 111, 99, 117, 109, 101, 110, 116, 32, 109, 97, 121, 32, 104, 111, 108, 100, 44, 32, 97, 116, 32 };
+static const uint8_t m9s194[5] = { 38, 97, 109, 112, 59 };
+static const uint8_t m9s195[4] = { 38, 108, 116, 59 };
+static const uint8_t m9s196[4] = { 38, 103, 116, 59 };
+static const uint8_t m9s197[5] = { 38, 35, 49, 51, 59 };
+static const uint8_t m9s198[6] = { 38, 113, 117, 111, 116, 59 };
+static const uint8_t m9s199[4] = { 38, 35, 57, 59 };
+static const uint8_t m9s200[5] = { 38, 35, 49, 48, 59 };
 
 static bool Xml_IsChar (int64_t c, m9_state *err);
 static bool Xml_IsSpace (uint32_t c, m9_state *err);
 static bool Xml_IsNameStart (int64_t c, m9_state *err);
 static bool Xml_IsNameChar (int64_t c, m9_state *err);
-static bool Xml_IsName (m9_sl_CHAR s, m9_state *err);
+static bool Xml_IsName (m9_sl_UTF8 s, m9_state *err);
 static void Xml_Where (Xml_Reader * *r, m9_pool *r_pool, int64_t at, int64_t *line, int64_t *col, m9_state *err);
-static void Xml_Fail (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR msg, m9_state *err);
-static void Xml_Refuse (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR msg, m9_state *err);
+static void Xml_Fail (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 msg, m9_state *err);
+static void Xml_Refuse (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 msg, m9_state *err);
 static bool Xml_AtEnd (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
 static uint32_t Xml_Cur (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static bool Xml_Ahead (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *err);
-static void Xml_Skip (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR w, m9_sl_CHAR what, m9_state *err);
+static int64_t Xml_CpAtPos (Xml_Reader * *r, m9_pool *r_pool, int64_t p, m9_state *err);
+static void Xml_Step (Xml_Reader * *r, m9_pool *r_pool, int64_t *p, m9_state *err);
+static bool Xml_Ahead (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_state *err);
+static void Xml_Skip (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_sl_UTF8 what, m9_state *err);
 static bool Xml_SkipSpace (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static void Xml_NeedSpace (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m9_state *err);
-static m9_sl_CHAR Xml_Name (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m9_state *err);
-static m9_sl_CHAR Xml_Keep (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR s, m9_state *err);
+static void Xml_NeedSpace (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 what, m9_state *err);
+static m9_sl_UTF8 Xml_Name (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 what, m9_state *err);
 static int64_t Xml_CharRef (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
 static uint32_t Xml_EntityRef (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static void Xml_Grow (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *buf, int64_t n, m9_state *err);
-static void Xml_Put (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *buf, int64_t *n, uint32_t c, m9_state *err);
-static m9_sl_CHAR Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Xml_CommentBody (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Xml_PiBody (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *target, m9_state *err);
-static m9_sl_CHAR Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m9_state *err);
-static bool Xml_DeclAttr (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR name, m9_state *err);
+static void Xml_Grow (Xml_Reader * *r, m9_pool *r_pool, m9_sl_BYTE *buf, int64_t n, m9_state *err);
+static void Xml_PutOctet (Xml_Reader * *r, m9_pool *r_pool, m9_sl_BYTE *buf, int64_t *n, uint8_t b, m9_state *err);
+static void Xml_Put (Xml_Reader * *r, m9_pool *r_pool, m9_sl_BYTE *buf, int64_t *n, uint32_t c, m9_state *err);
+static m9_sl_UTF8 Xml_Built (Xml_Reader * *r, m9_pool *r_pool, m9_sl_BYTE buf, int64_t n, m9_state *err);
+static m9_sl_UTF8 Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Xml_CommentBody (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
+static m9_sl_UTF8 Xml_PiBody (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 *target, m9_state *err);
+static m9_sl_UTF8 Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 what, m9_state *err);
+static bool Xml_DeclAttr (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 name, m9_state *err);
 static void Xml_XmlDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static bool Xml_PubidOk (m9_sl_CHAR s, m9_state *err);
+static bool Xml_PubidOk (m9_sl_UTF8 s, m9_state *err);
 static bool Xml_ExternalId (Xml_Reader * *r, m9_pool *r_pool, bool publicOnly, m9_state *err);
 static void Xml_ContentParticle (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
 static void Xml_ElementDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
 static void Xml_Doctype (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
 static void Xml_SubsetDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static void Xml_Bind (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CHAR u, m9_state *err);
-static bool Xml_Lookup (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CHAR *u, m9_state *err);
-static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR q, m9_sl_CHAR *p, m9_sl_CHAR *l, m9_state *err);
-static void Xml_Push (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR n, m9_sl_CHAR ns, m9_sl_CHAR l, m9_state *err);
+static void Xml_Bind (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 p, m9_sl_UTF8 u, m9_state *err);
+static bool Xml_Lookup (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 p, m9_sl_UTF8 *u, m9_state *err);
+static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 q, m9_sl_UTF8 *p, m9_sl_UTF8 *l, m9_state *err);
+static void Xml_Push (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 n, m9_sl_UTF8 ns, m9_sl_UTF8 l, m9_state *err);
 static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_pool *ev_pool, m9_state *err);
 static void Xml_EndTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_pool *ev_pool, m9_state *err);
 static void Xml_CheckChars (Xml_Reader * *r, m9_pool *r_pool, m9_state *err);
-static m9_sl_CHAR Xml_RawValue (m9_sl_CHAR head, m9_sl_CHAR name, m9_state *err);
+static m9_sl_UTF8 Xml_RawValue (m9_sl_UTF8 head, m9_sl_UTF8 name, m9_state *err);
 static void Xml_RawDecl (m9_pool *pool, m9_sl_BYTE b, m9_state *err);
 static void Xml_AddText (Xml_Element * e, DynStr_DString * *d, m9_pool *d_pool, m9_state *err);
 static void Xml_CloseOpen (Xml_Writer * *w, m9_pool *w_pool, m9_state *err);
-static void Xml_Escaped (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR s, bool attr, m9_state *err);
+static void Xml_Escaped (Xml_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 s, bool attr, m9_state *err);
 
 
 Xml_Reader * Xml_Open (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
@@ -339,8 +351,8 @@ Xml_Reader * Xml_Open (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
   err->res = m9res;
   Xml_Reader * m9ret = NULL;
   Xml_Reader * r = NULL; (void) r;
-  m9_sl_CHAR raw = {0}; (void) raw;
-  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_UTF8 raw = {0}; (void) raw;
+  m9_sl_BYTE s = {0}; (void) s;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   int64_t start = 0; (void) start;
@@ -348,21 +360,21 @@ Xml_Reader * Xml_Open (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
     if (err->exc) goto L_ret;
     r = m9v;
   }
-  r->src = (m9_sl_CHAR){ NULL, 0 };
+  r->src = ((m9_sl_UTF8){ NULL, 0 });
   r->pos = INT64_C(0);
   r->atPos = INT64_C(0);
   r->atLine = INT64_C(1);
   r->atCol = INT64_C(1);
   r->state = Xml_SProlog;
-  { __typeof__(r->stack) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__(r->stack) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     r->stack = m9v;
   }
-  { __typeof__(r->stackNs) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__(r->stackNs) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     r->stackNs = m9v;
   }
-  { __typeof__(r->stackLocal) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__(r->stackLocal) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     r->stackLocal = m9v;
   }
@@ -371,11 +383,11 @@ Xml_Reader * Xml_Open (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
     r->mark = m9v;
   }
   r->depth = INT64_C(0);
-  { __typeof__(r->pfx) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__(r->pfx) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     r->pfx = m9v;
   }
-  { __typeof__(r->uri) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__(r->uri) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     r->uri = m9v;
   }
@@ -388,7 +400,7 @@ Xml_Reader * Xml_Open (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
   bool m9t1 = (((doc).len >= INT64_C(2)) && ((((((*(uint8_t *) m9_at (doc.p, INT64_C(0), doc.len, sizeof (uint8_t), err)) == INT64_C(0xFE)) && ((*(uint8_t *) m9_at (doc.p, INT64_C(1), doc.len, sizeof (uint8_t), err)) == INT64_C(0xFF)))) || ((((*(uint8_t *) m9_at (doc.p, INT64_C(0), doc.len, sizeof (uint8_t), err)) == INT64_C(0xFF)) && ((*(uint8_t *) m9_at (doc.p, INT64_C(1), doc.len, sizeof (uint8_t), err)) == INT64_C(0xFE)))))));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 26 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 26 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s0, 26 })) m9t2 = ((m9_sl_UTF8){ (uint8_t *) m9s0, 26 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     err->i[0] = INT64_C(1);
     err->i[1] = INT64_C(1);
     m9_raise (err, &Xml_Unsupported);
@@ -404,18 +416,61 @@ Xml_Reader * Xml_Open (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
   Xml_RawDecl (pool, m9a1, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(({ __auto_type m9t7 = doc; int64_t m9t7a = start, m9t7n = m9_sub_i64 ((doc).len, start, err); int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; })) m9a2 = ({ __auto_type m9t7 = doc; int64_t m9t7a = start, m9t7n = m9_sub_i64 ((doc).len, start, err); int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; });
-    if (err->exc) goto L_hdl_m9t5;
-  { __typeof__(raw) m9v = DynStr_FromUtf8 (pool, m9a2, err);
+  { __typeof__(raw) m9v = m9_utf_from_bytes (&((*pool)), ({ __auto_type m9t7 = doc; int64_t m9t7a = start, m9t7n = m9_sub_i64 ((doc).len, start, err); int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; }), err);
     if (err->exc) goto L_hdl_m9t5;
     raw = m9v;
   }
+  { __typeof__(s) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), Text_BLen (raw, err), err);
+    if (err->exc) goto L_hdl_m9t5;
+    s = m9v;
+  }
+  n = INT64_C(0);
+  i = INT64_C(0);
+  for (;;) {
+    bool m9t8 = (i < Text_BLen (raw, err));
+    if (err->exc) goto L_hdl_m9t5;
+    if (!(m9t8)) break;
+    bool m9t9 = Text_BIs (raw, i, 13u, err);
+    if (err->exc) goto L_hdl_m9t5;
+    if (m9t9) {
+      { __typeof__((*(uint8_t *) m9_at (s.p, n, s.len, sizeof (uint8_t), err))) m9v = m9_byte (INT64_C(10), err);
+        if (err->exc) goto L_hdl_m9t5;
+        (*(uint8_t *) m9_at (s.p, n, s.len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_hdl_m9t5;
+      }
+      bool m9t11 = ({ bool m9t10 = (m9_add_i64 (i, INT64_C(1), err) < Text_BLen (raw, err)); if (m9t10) { { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a2 = m9_add_i64 (i, INT64_C(1), err);   if (err->exc) goto L_hdl_m9t5; m9t10 = (Text_BIs (raw, m9a2, 10u, err)); } } m9t10; });
+      if (err->exc) goto L_hdl_m9t5;
+      if (m9t11) {
+        { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+          if (err->exc) goto L_hdl_m9t5;
+          i = m9v;
+        }
+      }
+    } else {
+      { __typeof__((*(uint8_t *) m9_at (s.p, n, s.len, sizeof (uint8_t), err))) m9v = Text_BAt (raw, i, err);
+        if (err->exc) goto L_hdl_m9t5;
+        (*(uint8_t *) m9_at (s.p, n, s.len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_hdl_m9t5;
+      }
+    }
+    { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_hdl_m9t5;
+      n = m9v;
+    }
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_hdl_m9t5;
+      i = m9v;
+    }
+  }
+  { __typeof__(r->src) m9v = m9_utf_from_bytes (&((*pool)), ({ __auto_type m9t12 = s; int64_t m9t12a = INT64_C(0), m9t12n = n; int64_t m9t12o = m9_chk_slice (m9t12a, m9t12n, m9t12.len, err); (__typeof__(m9t12)){ m9t12.p + m9t12o, err->exc ? 0 : m9t12n }; }), err);
+    if (err->exc) goto L_hdl_m9t5;
+    r->src = m9v;
   }
   goto L_dn_m9t6;
 L_hdl_m9t5: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 32 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 32 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s1, 32 })) m9t13 = ((m9_sl_UTF8){ (uint8_t *) m9s1, 32 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
     err->i[0] = INT64_C(1);
     err->i[1] = INT64_C(1);
     m9_raise (err, &Xml_SyntaxError);
@@ -424,52 +479,11 @@ L_hdl_m9t5: ;
   }
   goto L_ret;
 L_dn_m9t6: ;
-  { __typeof__(s) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), (raw).len, err);
-    if (err->exc) goto L_ret;
-    s = m9v;
-  }
-  n = INT64_C(0);
-  i = INT64_C(0);
-  for (;;) {
-    if (!((i < (raw).len))) break;
-    bool m9t9 = ((*(uint32_t *) m9_at (raw.p, i, raw.len, sizeof (uint32_t), err)) == 13u);
-    if (err->exc) goto L_ret;
-    if (m9t9) {
-      (*(uint32_t *) m9_at (s.p, n, s.len, sizeof (uint32_t), err)) = 10u;
-      if (err->exc) goto L_ret;
-      bool m9t10 = ((m9_add_i64 (i, INT64_C(1), err) < (raw).len) && ((*(uint32_t *) m9_at (raw.p, m9_add_i64 (i, INT64_C(1), err), raw.len, sizeof (uint32_t), err)) == 10u));
-      if (err->exc) goto L_ret;
-      if (m9t10) {
-        { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
-          i = m9v;
-        }
-      }
-    } else {
-      { __typeof__((*(uint32_t *) m9_at (s.p, n, s.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (raw.p, i, raw.len, sizeof (uint32_t), err));
-        if (err->exc) goto L_ret;
-        (*(uint32_t *) m9_at (s.p, n, s.len, sizeof (uint32_t), err)) = m9v;
-        if (err->exc) goto L_ret;
-      }
-    }
-    { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      n = m9v;
-    }
-    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      i = m9v;
-    }
-  }
-  { __typeof__(r->src) m9v = ({ __auto_type m9t11 = s; int64_t m9t11a = INT64_C(0), m9t11n = n; int64_t m9t11o = m9_chk_slice (m9t11a, m9t11n, m9t11.len, err); (__typeof__(m9t11)){ m9t11.p + m9t11o, err->exc ? 0 : m9t11n }; });
-    if (err->exc) goto L_ret;
-    r->src = m9v;
-  }
   Xml_CheckChars (&(r), &((*pool)), err);
   if (err->exc) goto L_ret;
-  bool m9t13 = ({ bool m9t12 = (Xml_Ahead (&(r), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s2, 5 }), err) && ((r->src).len > INT64_C(5))); if (m9t12) { { __typeof__((*(uint32_t *) m9_at (r->src.p, INT64_C(5), r->src.len, sizeof (uint32_t), err))) m9a3 = (*(uint32_t *) m9_at (r->src.p, INT64_C(5), r->src.len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t12 = (Xml_IsSpace (m9a3, err)); } } m9t12; });
+  bool m9t15 = ({ bool m9t14 = (Xml_Ahead (&(r), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s2, 5 }), err) && (Text_BLen (r->src, err) > INT64_C(5))); if (m9t14) { { __typeof__(Text_BChar (r->src, INT64_C(5), err)) m9a3 = Text_BChar (r->src, INT64_C(5), err);   if (err->exc) goto L_ret; m9t14 = (Xml_IsSpace (m9a3, err)); } } m9t14; });
   if (err->exc) goto L_ret;
-  if (m9t13) {
+  if (m9t15) {
     Xml_XmlDecl (&(r), &((*pool)), err);
     if (err->exc) goto L_ret;
   }
@@ -493,16 +507,16 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   Xml_Event ev = {0}; (void) ev;
   int64_t line = 0; (void) line;
   int64_t col = 0; (void) col;
-  m9_sl_CHAR target = {0}; (void) target;
+  m9_sl_UTF8 target = {0}; (void) target;
   ev.kind = ((Xml_Kind){ .tag = Xml_Kind_Eof });
-  ev.name = (m9_sl_CHAR){ NULL, 0 };
-  ev.ns = (m9_sl_CHAR){ NULL, 0 };
-  ev.local = (m9_sl_CHAR){ NULL, 0 };
+  ev.name = ((m9_sl_UTF8){ NULL, 0 });
+  ev.ns = ((m9_sl_UTF8){ NULL, 0 });
+  ev.local = ((m9_sl_UTF8){ NULL, 0 });
   { __typeof__(ev.attrs) m9v = M9_POOL_SL (m9_sl_Xml_Attr, Xml_Attr, r_pool, INT64_C(0), err);
     if (err->exc) goto L_ret;
     ev.attrs = m9v;
   }
-  ev.text = (m9_sl_CHAR){ NULL, 0 };
+  ev.text = ((m9_sl_UTF8){ NULL, 0 });
   if (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pending) {
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pending = false;
     ev.kind = ((Xml_Kind){ .tag = Xml_Kind_End });
@@ -544,15 +558,15 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t2) {
       if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state == Xml_SSubset)) {
-        Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s3, 30 }), err);
+        Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s3, 30 }), err);
         if (err->exc) goto L_ret;
       }
       if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state == Xml_SProlog)) {
-        Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s4, 15 }), err);
+        Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s4, 15 }), err);
         if (err->exc) goto L_ret;
       }
       if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state == Xml_SContent)) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 25 }), (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err)), err)) m9a4 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 25 }), (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err)), err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 25 }), (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err)), err)) m9a4 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s5, 25 }), (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err)), err);
           if (err->exc) goto L_ret;
         Xml_Fail (r, r_pool, m9a4, err);
         if (err->exc) goto L_ret;
@@ -560,7 +574,7 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
       }
       ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state = Xml_SDone;
     } else {
-      bool m9t3 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s6, 4 }), err);
+      bool m9t3 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s6, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
         ev.kind = ((Xml_Kind){ .tag = Xml_Kind_Comment });
@@ -572,7 +586,7 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         m9ret = ev;
         goto L_ret;
     } else {
-      bool m9t4 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s7, 2 }), err);
+      bool m9t4 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s7, 2 }), err);
       if (err->exc) goto L_ret;
       if (m9t4) {
         ev.kind = ((Xml_Kind){ .tag = Xml_Kind_Pi });
@@ -590,7 +604,7 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         if (err->exc) goto L_ret;
     } else {
       if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state == Xml_SContent)) {
-        bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s8, 2 }), err);
+        bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s8, 2 }), err);
         if (err->exc) goto L_ret;
         if (m9t5) {
           Xml_EndTagEv (r, r_pool, &(ev), err->res, err);
@@ -602,7 +616,7 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
           m9ret = ev;
           goto L_ret;
         } else {
-          bool m9t6 = (Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s9, 9 }), err) || (Xml_Cur (r, r_pool, err) != 60u));
+          bool m9t6 = (Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s9, 9 }), err) || (Xml_Cur (r, r_pool, err) != 60u));
           if (err->exc) goto L_ret;
           if (m9t6) {
             ev.kind = ((Xml_Kind){ .tag = Xml_Kind_Text });
@@ -614,10 +628,10 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
             m9ret = ev;
             goto L_ret;
         } else {
-          bool m9t7 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s10, 2 }), err);
+          bool m9t7 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s10, 2 }), err);
           if (err->exc) goto L_ret;
           if (m9t7) {
-            Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s11, 31 }), err);
+            Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s11, 31 }), err);
             if (err->exc) goto L_ret;
         } else {
           Xml_StartTagEv (r, r_pool, &(ev), err->res, err);
@@ -627,22 +641,22 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
           goto L_ret;
         } } }
     } else {
-      bool m9t8 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s12, 9 }), err);
+      bool m9t8 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s12, 9 }), err);
       if (err->exc) goto L_ret;
       if (m9t8) {
         if (((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state != Xml_SProlog) || ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->doctype)) {
-          Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s13, 14 }), err);
+          Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s13, 14 }), err);
           if (err->exc) goto L_ret;
         }
         ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->doctype = true;
         Xml_Doctype (r, r_pool, err);
         if (err->exc) goto L_ret;
     } else {
-      bool m9t10 = ({ bool m9t9 = ((Xml_Cur (r, r_pool, err) == 60u) && (m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err) < (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src).len)); if (m9t9) { { __typeof__((int64_t)((*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err)))) m9a5 = (int64_t)((*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err)));   if (err->exc) goto L_ret; m9t9 = (Xml_IsNameStart (m9a5, err)); } } m9t9; });
+      bool m9t10 = ({ bool m9t9 = ((Xml_Cur (r, r_pool, err) == 60u) && (m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err) < Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err))); if (m9t9) { { __typeof__(m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err)) m9a5 = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);   if (err->exc) goto L_ret; { __typeof__(Xml_CpAtPos (r, r_pool, m9a5, err)) m9a6 = Xml_CpAtPos (r, r_pool, m9a5, err);   if (err->exc) goto L_ret; m9t9 = (Xml_IsNameStart (m9a6, err)); } } } m9t9; });
       if (err->exc) goto L_ret;
       if (m9t10) {
         if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state == Xml_SEpilog)) {
-          Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s14, 21 }), err);
+          Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s14, 21 }), err);
           if (err->exc) goto L_ret;
         }
         ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state = Xml_SContent;
@@ -652,7 +666,7 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         m9ret = ev;
         goto L_ret;
     } else {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s15, 35 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s15, 35 }), err);
       if (err->exc) goto L_ret;
     } } } } } } }
   }
@@ -729,8 +743,8 @@ Xml_Element * Xml_Parse (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
       e->ns = ev.ns;
       e->local = ev.local;
       e->attrs = ev.attrs;
-      e->text = (m9_sl_CHAR){ NULL, 0 };
-      e->tail = (m9_sl_CHAR){ NULL, 0 };
+      e->text = ((m9_sl_UTF8){ NULL, 0 });
+      e->tail = ((m9_sl_UTF8){ NULL, 0 });
       { __typeof__(e->kids) m9v = M9_POOL_SL (m9_sl_Xml_Elementp, Xml_Element *, &((*pool)), INT64_C(0), err);
         if (err->exc) goto L_ret;
         e->kids = m9v;
@@ -771,7 +785,7 @@ Xml_Element * Xml_Parse (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
         }
       }
       if ((depth == (stack).len)) {
-        Xml_Fail (&(r), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s16, 36 }), err);
+        Xml_Fail (&(r), &((*pool)), ((m9_sl_UTF8){ (uint8_t *) m9s16, 36 }), err);
         if (err->exc) goto L_ret;
       }
       (*(Xml_Element * *) m9_at (stack.p, depth, stack.len, sizeof (Xml_Element *), err)) = e;
@@ -807,17 +821,17 @@ Xml_Element * Xml_Parse (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
     } else {
       if ((((ev.kind).tag == (((Xml_Kind){ .tag = Xml_Kind_Text })).tag) && (depth > INT64_C(0)))) {
         if (haveLast) {
-          { __typeof__(m9_cat (err->res, last->tail, ev.text, err)) m9a6 = m9_cat (err->res, last->tail, ev.text, err);
+          { __typeof__(m9_utf_cat (err->res, last->tail, ev.text, err)) m9a7 = m9_utf_cat (err->res, last->tail, ev.text, err);
             if (err->exc) goto L_ret;
-          { __typeof__(last->tail) m9v = Text_Keep (pool, m9a6, err);
+          { __typeof__(last->tail) m9v = Text_KeepUtf (pool, m9a7, err);
             if (err->exc) goto L_ret;
             last->tail = m9v;
           }
           }
         } else {
-          { __typeof__(m9_cat (err->res, ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->text, ev.text, err)) m9a7 = m9_cat (err->res, ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->text, ev.text, err);
+          { __typeof__(m9_utf_cat (err->res, ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->text, ev.text, err)) m9a8 = m9_utf_cat (err->res, ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->text, ev.text, err);
             if (err->exc) goto L_ret;
-          { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->text) m9v = Text_Keep (pool, m9a7, err);
+          { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->text) m9v = Text_KeepUtf (pool, m9a8, err);
             if (err->exc) goto L_ret;
             ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->text = m9v;
             if (err->exc) goto L_ret;
@@ -836,7 +850,7 @@ L_ret: ;
   return m9ret;
 }
 
-Xml_Element * Xml_Child (Xml_Element * e, m9_sl_CHAR ns, m9_sl_CHAR local, m9_state *err)
+Xml_Element * Xml_Child (Xml_Element * e, m9_sl_UTF8 ns, m9_sl_UTF8 local, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -849,9 +863,9 @@ Xml_Element * Xml_Child (Xml_Element * e, m9_sl_CHAR ns, m9_sl_CHAR local, m9_st
   m9t1to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ns) m9a8 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ns;
+    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ns) m9a9 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->ns;
       if (err->exc) goto L_ret;
-    bool m9t3 = ({ bool m9t2 = Text_Eq (m9a8, ns, err); if (m9t2) { { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->local) m9a9 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->local;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a9, local, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a9, ns, err); if (m9t2) { { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->local) m9a10 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->local;   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a10, local, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
@@ -872,7 +886,7 @@ L_ret: ;
   return m9ret;
 }
 
-bool Xml_HasAttr (Xml_Element * e, m9_sl_CHAR ns, m9_sl_CHAR local, m9_state *err)
+bool Xml_HasAttr (Xml_Element * e, m9_sl_UTF8 ns, m9_sl_UTF8 local, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -885,9 +899,9 @@ bool Xml_HasAttr (Xml_Element * e, m9_sl_CHAR ns, m9_sl_CHAR local, m9_state *er
   m9t1to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a10 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a11 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) goto L_ret;
-    bool m9t3 = ({ bool m9t2 = Text_Eq (m9a10, ns, err); if (m9t2) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a11 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a11, local, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a11, ns, err); if (m9t2) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a12 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a12, local, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
@@ -906,22 +920,22 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Xml_AttrValue (Xml_Element * e, m9_sl_CHAR ns, m9_sl_CHAR local, m9_state *err)
+m9_sl_UTF8 Xml_AttrValue (Xml_Element * e, m9_sl_UTF8 ns, m9_sl_UTF8 local, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((e->attrs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a12 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a13 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) goto L_ret;
-    bool m9t3 = ({ bool m9t2 = Text_Eq (m9a12, ns, err); if (m9t2) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a13 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t2 = (Text_Eq (m9a13, local, err)); } } m9t2; });
+    bool m9t3 = ({ bool m9t2 = Text_EqUtf (m9a13, ns, err); if (m9t2) { { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a14 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t2 = (Text_EqUtf (m9a14, local, err)); } } m9t2; });
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
@@ -933,22 +947,22 @@ m9_sl_CHAR Xml_AttrValue (Xml_Element * e, m9_sl_CHAR ns, m9_sl_CHAR local, m9_s
     i += 1;
   } }
   err->res = m9res;
-  m9ret = (m9_sl_CHAR){ NULL, 0 };
+  m9ret = ((m9_sl_UTF8){ NULL, 0 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Xml_AllText (Xml_Element * e, m9_state *err)
+m9_sl_UTF8 Xml_AllText (Xml_Element * e, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(d) m9v = DynStr_New (&(scratch), err);
@@ -963,8 +977,8 @@ m9_sl_CHAR Xml_AllText (Xml_Element * e, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -986,7 +1000,7 @@ Xml_Writer * Xml_NewWriter (m9_pool *pool, m9_state *err)
     if (err->exc) goto L_ret;
     w->d = m9v;
   }
-  { __typeof__(w->stack) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(8), err);
+  { __typeof__(w->stack) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, &((*pool)), INT64_C(8), err);
     if (err->exc) goto L_ret;
     w->stack = m9v;
   }
@@ -1003,24 +1017,24 @@ L_ret: ;
   return m9ret;
 }
 
-void Xml_StartTag (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_state *err)
+void Xml_StartTag (Xml_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_m9_sl_CHAR ns = {0}; (void) ns;
+  m9_sl_m9_sl_UTF8 ns = {0}; (void) ns;
   int64_t i = 0; (void) i;
   bool m9t1 = (!Xml_IsName (name, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s17, 21 }), name, err)) m9t2 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s17, 21 }), name, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s17, 21 }), name, err)) m9t2 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s17, 21 }), name, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Xml_WriteError);
     goto L_ret;
   }
   if ((({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth == INT64_C(0))) {
     if ((({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->roots > INT64_C(0))) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s18, 23 }), name, err)) m9t3 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s18, 23 }), name, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s18, 23 }), name, err)) m9t3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s18, 23 }), name, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       m9_raise (err, &Xml_WriteError);
       goto L_ret;
     }
@@ -1033,7 +1047,7 @@ void Xml_StartTag (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_state *
   DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, name, err);
   if (err->exc) goto L_ret;
   if ((({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth == (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack).len)) {
-    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, w_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, err), err);
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, w_pool, m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, err), err);
       if (err->exc) goto L_ret;
       ns = m9v;
     }
@@ -1042,9 +1056,9 @@ void Xml_StartTag (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_state *
     m9t4to = m9_sub_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t4to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, i, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       if ((uint64_t) m9t4to - (uint64_t) i < (uint64_t) 1) break;
@@ -1052,24 +1066,11 @@ void Xml_StartTag (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_state *
     } }
     ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack = ns;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err))) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, w_pool, (name).len, err);
+  { __typeof__((*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err))) m9v = m9_utf_from_bytes (w_pool, m9_utf_octets (name), err);
     if (err->exc) goto L_ret;
-    (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err)) = m9v;
+    (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err)) = m9v;
     if (err->exc) goto L_ret;
   }
-  { __typeof__(i) m9t5to;
-  i = INT64_C(0);
-  m9t5to = m9_sub_i64 ((name).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (i <= m9t5to) for (;;) {
-    { __typeof__((*(uint32_t *) m9_at (({ m9_sl_CHAR m9g = ((*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err))); if (err->exc) goto L_ret; m9g; }).p, i, ({ m9_sl_CHAR m9g = ((*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err))); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (name.p, i, name.len, sizeof (uint32_t), err));
-      if (err->exc) goto L_ret;
-      (*(uint32_t *) m9_at (({ m9_sl_CHAR m9g = ((*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err))); if (err->exc) goto L_ret; m9g; }).p, i, ({ m9_sl_CHAR m9g = ((*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err))); if (err->exc) goto L_ret; m9g; }).len, sizeof (uint32_t), err)) = m9v;
-      if (err->exc) goto L_ret;
-    }
-    if ((uint64_t) m9t5to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
-  } }
   { __typeof__(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth) m9v = m9_add_i64 (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth = m9v;
@@ -1082,21 +1083,21 @@ L_ret: ;
   return;
 }
 
-void Xml_Attribute (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err)
+void Xml_Attribute (Xml_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 name, m9_sl_UTF8 value, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   if ((!({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open)) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s19, 45 }), name, err)) m9t1 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s19, 45 }), name, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s19, 45 }), name, err)) m9t1 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s19, 45 }), name, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Xml_WriteError);
     goto L_ret;
   }
   bool m9t2 = (!Xml_IsName (name, err));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s20, 23 }), name, err)) m9t3 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s20, 23 }), name, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s20, 23 }), name, err)) m9t3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s20, 23 }), name, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Xml_WriteError);
     goto L_ret;
   }
@@ -1104,7 +1105,7 @@ void Xml_Attribute (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_sl_CHA
   if (err->exc) goto L_ret;
   DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, name, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s21, 2 }), err);
+  DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s21, 2 }), err);
   if (err->exc) goto L_ret;
   Xml_Escaped (w, w_pool, value, true, err);
   if (err->exc) goto L_ret;
@@ -1117,14 +1118,14 @@ L_ret: ;
   return;
 }
 
-void Xml_Chars (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR s, m9_state *err)
+void Xml_Chars (Xml_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   if ((({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s22, 39 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s22, 39 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s22, 39 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s22, 39 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Xml_WriteError);
     goto L_ret;
   }
@@ -1146,7 +1147,7 @@ void Xml_EndTag (Xml_Writer * *w, m9_pool *w_pool, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   if ((({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s23, 31 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s23, 31 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s23, 31 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s23, 31 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Xml_WriteError);
     goto L_ret;
   }
@@ -1155,15 +1156,15 @@ void Xml_EndTag (Xml_Writer * *w, m9_pool *w_pool, m9_state *err)
     ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth = m9v;
   }
   if (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open) {
-    DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s24, 2 }), err);
+    DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s24, 2 }), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->open = false;
   } else {
-    DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s25, 2 }), err);
+    DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s25, 2 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err))) m9a14 = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err))) m9a15 = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, m9a14, err);
+    DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, m9a15, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, 62u, err);
@@ -1176,33 +1177,33 @@ L_ret: ;
   return;
 }
 
-m9_sl_CHAR Xml_Document (Xml_Writer * w, m9_state *err)
+m9_sl_UTF8 Xml_Document (Xml_Writer * w, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   if ((w->roots == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s26, 15 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s26, 15 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s26, 15 })) m9t1 = ((m9_sl_UTF8){ (uint8_t *) m9s26, 15 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Xml_WriteError);
     goto L_ret;
   }
   if ((w->depth > INT64_C(0))) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s27, 22 }), (*(m9_sl_CHAR *) m9_at (w->stack.p, m9_sub_i64 (w->depth, INT64_C(1), err), w->stack.len, sizeof (m9_sl_CHAR), err)), err)) m9t2 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s27, 22 }), (*(m9_sl_CHAR *) m9_at (w->stack.p, m9_sub_i64 (w->depth, INT64_C(1), err), w->stack.len, sizeof (m9_sl_CHAR), err)), err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s27, 22 }), (*(m9_sl_UTF8 *) m9_at (w->stack.p, m9_sub_i64 (w->depth, INT64_C(1), err), w->stack.len, sizeof (m9_sl_UTF8), err)), err)) m9t2 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s27, 22 }), (*(m9_sl_UTF8 *) m9_at (w->stack.p, m9_sub_i64 (w->depth, INT64_C(1), err), w->stack.len, sizeof (m9_sl_UTF8), err)), err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Xml_WriteError);
     goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(({ __auto_type m9n = (w->d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a15 = ({ __auto_type m9n = (w->d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+  { __typeof__(({ __auto_type m9n = (w->d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a16 = ({ __auto_type m9n = (w->d); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
     if (err->exc) goto L_ret;
-  m9ret = m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s28, 38 }), 10u, err), DynStr_View (m9a15, err), err), 10u, err);
+  m9ret = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s28, 38 }), m9_utf_of_char (err->res, 10u, err), err), DynStr_View (m9a16, err), err), m9_utf_of_char (err->res, 10u, err), err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1272,7 +1273,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Xml_IsName (m9_sl_CHAR s, m9_state *err)
+static bool Xml_IsName (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1283,7 +1284,7 @@ static bool Xml_IsName (m9_sl_CHAR s, m9_state *err)
   bool first = false; (void) first;
   first = true;
   { __typeof__(s) m9t1s = s;
-  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; m9t1i++) { c = m9t1s.p[m9t1i];
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     if (first) {
       bool m9t2 = (!Xml_IsNameStart ((int64_t)(c), err));
       if (err->exc) goto L_ret;
@@ -1325,10 +1326,12 @@ static void Xml_Where (Xml_Reader * *r, m9_pool *r_pool, int64_t at, int64_t *li
   }
   i = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->atPos;
   for (;;) {
-    if (!(((i < at) && (i < (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src).len)))) break;
-    bool m9t1 = ((*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err)) == 10u);
+    bool m9t1 = ((i < at) && (i < Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err)));
     if (err->exc) goto L_ret;
-    if (m9t1) {
+    if (!(m9t1)) break;
+    bool m9t2 = Text_BIs (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, i, 10u, err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
       { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->atLine) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->atLine, INT64_C(1), err);
         if (err->exc) goto L_ret;
         ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->atLine = m9v;
@@ -1355,7 +1358,7 @@ L_ret: ;
   return;
 }
 
-static void Xml_Fail (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR msg, m9_state *err)
+static void Xml_Fail (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 msg, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1377,7 +1380,7 @@ L_ret: ;
   return;
 }
 
-static void Xml_Refuse (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR msg, m9_state *err)
+static void Xml_Refuse (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 msg, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1407,7 +1410,8 @@ static bool Xml_AtEnd (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos >= (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src).len);
+  m9ret = (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos >= Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err));
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1423,13 +1427,15 @@ static uint32_t Xml_Cur (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   uint32_t m9ret = 0;
-  if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos >= (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src).len)) {
+  bool m9t1 = (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos >= Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
     err->res = m9res;
     m9ret = 0u;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err));
+  m9ret = Text_BChar (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -1439,7 +1445,53 @@ L_ret: ;
   return m9ret;
 }
 
-static bool Xml_Ahead (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *err)
+static int64_t Xml_CpAtPos (Xml_Reader * *r, m9_pool *r_pool, int64_t p, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t at = 0; (void) at;
+  bool m9t1 = (p >= Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  at = p;
+  err->res = m9res;
+  m9ret = (int64_t)(Text_NextCp (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, &(at), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Xml_Step (Xml_Reader * *r, m9_pool *r_pool, int64_t *p, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  uint32_t c = 0; (void) c;
+  { __typeof__(c) m9v = Text_NextCp (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, p, err);
+    if (err->exc) goto L_ret;
+    c = m9v;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static bool Xml_Ahead (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1447,7 +1499,7 @@ static bool Xml_Ahead (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state 
   err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
-  bool m9t1 = (m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, (w).len, err) > (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src).len);
+  bool m9t1 = (m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, Text_BLen (w, err), err) > Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -1456,16 +1508,18 @@ static bool Xml_Ahead (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state 
   }
   { __typeof__(i) m9t2to;
   i = INT64_C(0);
-  m9t2to = m9_sub_i64 ((w).len, INT64_C(1), err);
+  m9t2to = m9_sub_i64 (Text_BLen (w, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t2to) for (;;) {
-    bool m9t3 = ((*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, i, err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err)) != (*(uint32_t *) m9_at (w.p, i, w.len, sizeof (uint32_t), err)));
+    { __typeof__(m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, i, err)) m9a17 = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, i, err);
+      if (err->exc) goto L_ret;
+    bool m9t3 = (Text_BAt (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, m9a17, err) != Text_BAt (w, i, err));
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
       m9ret = false;
       goto L_ret;
-    }
+    } }
     if ((uint64_t) m9t2to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
@@ -1479,7 +1533,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Xml_Skip (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR w, m9_sl_CHAR what, m9_state *err)
+static void Xml_Skip (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 w, m9_sl_UTF8 what, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1488,13 +1542,13 @@ static void Xml_Skip (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR w, m9_sl_CHAR
   bool m9t1 = (!Xml_Ahead (r, r_pool, w, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s29, 9 }), err)) m9a16 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s29, 9 }), err);
+    { __typeof__(m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s29, 9 }), err)) m9a18 = m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s29, 9 }), err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a16, err);
+    Xml_Fail (r, r_pool, m9a18, err);
     if (err->exc) goto L_ret;
     }
   }
-  { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, (w).len, err);
+  { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, Text_BLen (w, err), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
@@ -1515,7 +1569,7 @@ static bool Xml_SkipSpace (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   bool any = false; (void) any;
   any = false;
   for (;;) {
-    bool m9t2 = ({ bool m9t1 = (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos < (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src).len); if (m9t1) { { __typeof__((*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err))) m9a17 = (*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t1 = (Xml_IsSpace (m9a17, err)); } } m9t1; });
+    bool m9t2 = ({ bool m9t1 = (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos < Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err)); if (m9t1) { { __typeof__(Text_BChar (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err)) m9a19 = Text_BChar (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err);   if (err->exc) goto L_ret; m9t1 = (Xml_IsSpace (m9a19, err)); } } m9t1; });
     if (err->exc) goto L_ret;
     if (!(m9t2)) break;
     { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
@@ -1534,7 +1588,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Xml_NeedSpace (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m9_state *err)
+static void Xml_NeedSpace (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 what, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1543,9 +1597,9 @@ static void Xml_NeedSpace (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m9
   bool m9t1 = (!Xml_SkipSpace (r, r_pool, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), what, err)) m9a18 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), what, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s30, 21 }), what, err)) m9a20 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s30, 21 }), what, err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a18, err);
+    Xml_Fail (r, r_pool, m9a20, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -1556,81 +1610,44 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Xml_Name (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m9_state *err)
+static m9_sl_UTF8 Xml_Name (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 what, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t at = 0; (void) at;
+  int64_t nx = 0; (void) nx;
   at = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos;
-  bool m9t2 = ({ bool m9t1 = Xml_AtEnd (r, r_pool, err); if (!m9t1) { { __typeof__((int64_t)(Xml_Cur (r, r_pool, err))) m9a19 = (int64_t)(Xml_Cur (r, r_pool, err));   if (err->exc) goto L_ret; m9t1 = ((!Xml_IsNameStart (m9a19, err))); } } m9t1; });
+  bool m9t2 = ({ bool m9t1 = Xml_AtEnd (r, r_pool, err); if (!m9t1) { { __typeof__(Xml_CpAtPos (r, r_pool, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err)) m9a21 = Xml_CpAtPos (r, r_pool, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err);   if (err->exc) goto L_ret; m9t1 = ((!Xml_IsNameStart (m9a21, err))); } } m9t1; });
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s31, 9 }), err)) m9a20 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s31, 9 }), err);
+    { __typeof__(m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s31, 9 }), err)) m9a22 = m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s31, 9 }), err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a20, err);
+    Xml_Fail (r, r_pool, m9a22, err);
     if (err->exc) goto L_ret;
     }
   }
-  { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
-    if (err->exc) goto L_ret;
-    ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
-  }
+  nx = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos;
+  Xml_Step (r, r_pool, &(nx), err);
+  if (err->exc) goto L_ret;
+  ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = nx;
   for (;;) {
-    bool m9t4 = ({ bool m9t3 = (!Xml_AtEnd (r, r_pool, err)); if (m9t3) { { __typeof__((int64_t)(Xml_Cur (r, r_pool, err))) m9a21 = (int64_t)(Xml_Cur (r, r_pool, err));   if (err->exc) goto L_ret; m9t3 = (Xml_IsNameChar (m9a21, err)); } } m9t3; });
+    bool m9t4 = ({ bool m9t3 = (!Xml_AtEnd (r, r_pool, err)); if (m9t3) { { __typeof__(Xml_CpAtPos (r, r_pool, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err)) m9a23 = Xml_CpAtPos (r, r_pool, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err);   if (err->exc) goto L_ret; m9t3 = (Xml_IsNameChar (m9a23, err)); } } m9t3; });
     if (err->exc) goto L_ret;
     if (!(m9t4)) break;
-    { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
-    }
-  }
-  err->res = m9res;
-  m9ret = ({ __auto_type m9t5 = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src; int64_t m9t5a = at, m9t5n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, at, err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
-  if (err->exc) goto L_ret;
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9_adopt_if (&m9frame, r_pool, (*r));
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
-static m9_sl_CHAR Xml_Keep (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR s, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR c = {0}; (void) c;
-  int64_t i = 0; (void) i;
-  { __typeof__(c) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, r_pool, (s).len, err);
+    Xml_Step (r, r_pool, &(nx), err);
     if (err->exc) goto L_ret;
-    c = m9v;
+    ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = nx;
   }
-  { __typeof__(i) m9t1to;
-  i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (i <= m9t1to) for (;;) {
-    { __typeof__((*(uint32_t *) m9_at (c.p, i, c.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
-      if (err->exc) goto L_ret;
-      (*(uint32_t *) m9_at (c.p, i, c.len, sizeof (uint32_t), err)) = m9v;
-      if (err->exc) goto L_ret;
-    }
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
-  } }
   err->res = m9res;
-  m9ret = c;
+  m9ret = m9_utf_slice (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, at, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, at, err), err);
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1668,7 +1685,7 @@ static int64_t Xml_CharRef (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     bool m9t2 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 32 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s32, 32 }), err);
       if (err->exc) goto L_ret;
     }
     { __typeof__(c) m9v = Xml_Cur (r, r_pool, err);
@@ -1701,7 +1718,7 @@ static int64_t Xml_CharRef (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         }
     } } }
     if ((d < INT64_C(0))) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s33, 41 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s33, 41 }), err);
       if (err->exc) goto L_ret;
     }
     if ((v <= INT64_C(0x10FFFF))) {
@@ -1724,13 +1741,13 @@ static int64_t Xml_CharRef (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     }
   }
   if ((!any)) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s34, 41 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s34, 41 }), err);
     if (err->exc) goto L_ret;
   }
   bool m9t3 = (!Xml_IsChar (v, err));
   if (err->exc) goto L_ret;
   if (m9t3) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s35, 41 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s35, 41 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
@@ -1754,71 +1771,71 @@ static uint32_t Xml_EntityRef (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   uint32_t m9ret = 0;
-  m9_sl_CHAR n = {0}; (void) n;
+  m9_sl_UTF8 n = {0}; (void) n;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s36, 14 }), err);
+  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s36, 14 }), err);
     if (err->exc) goto L_ret;
     n = m9v;
   }
   bool m9t1 = (Xml_Cur (r, r_pool, err) != 59u);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s37, 31 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s37, 31 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  bool m9t2 = Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s38, 2 }), err);
+  bool m9t2 = Text_EqUtf (n, ((m9_sl_UTF8){ (uint8_t *) m9s38, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
     m9ret = 60u;
     goto L_ret;
   }
-  bool m9t3 = Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), err);
+  bool m9t3 = Text_EqUtf (n, ((m9_sl_UTF8){ (uint8_t *) m9s39, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
     m9ret = 62u;
     goto L_ret;
   }
-  bool m9t4 = Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s40, 3 }), err);
+  bool m9t4 = Text_EqUtf (n, ((m9_sl_UTF8){ (uint8_t *) m9s40, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
     m9ret = 38u;
     goto L_ret;
   }
-  bool m9t5 = Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s41, 4 }), err);
+  bool m9t5 = Text_EqUtf (n, ((m9_sl_UTF8){ (uint8_t *) m9s41, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     err->res = m9res;
     m9ret = 39u;
     goto L_ret;
   }
-  bool m9t6 = Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s42, 4 }), err);
+  bool m9t6 = Text_EqUtf (n, ((m9_sl_UTF8){ (uint8_t *) m9s42, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
     err->res = m9res;
     m9ret = 34u;
     goto L_ret;
   }
-  { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_sub_i64 (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, (n).len, err), INT64_C(2), err);
+  { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_sub_i64 (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, Text_BLen (n, err), err), INT64_C(2), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
   if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->external && (!({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->standalone))) {
-    Xml_Refuse (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s43, 75 }), err);
+    Xml_Refuse (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s43, 75 }), err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s44, 22 }), n, err)) m9a22 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s44, 22 }), n, err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s44, 22 }), n, err)) m9a24 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s44, 22 }), n, err);
     if (err->exc) goto L_ret;
-  Xml_Fail (r, r_pool, m9a22, err);
+  Xml_Fail (r, r_pool, m9a24, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -1831,44 +1848,34 @@ L_ret: ;
   return m9ret;
 }
 
-static void Xml_Grow (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *buf, int64_t n, m9_state *err)
+static void Xml_Grow (Xml_Reader * *r, m9_pool *r_pool, m9_sl_BYTE *buf, int64_t n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR nb = {0}; (void) nb;
-  int64_t i = 0; (void) i;
-  if ((n < ((*buf)).len)) {
+  m9_sl_BYTE nb = {0}; (void) nb;
+  bool m9t1 = (m9_add_i64 (n, INT64_C(4), err) <= ((*buf)).len);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
     goto L_ret;
   }
-  { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*buf)).len, err), INT64_C(16), err), err);
+  { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*buf)).len, err), INT64_C(16), err), err);
     if (err->exc) goto L_ret;
     nb = m9v;
   }
-  { __typeof__(i) m9t1to;
-  i = INT64_C(0);
-  m9t1to = m9_sub_i64 (n, INT64_C(1), err);
+  ({ __typeof__ (({ __auto_type m9t2 = nb; int64_t m9t2a = INT64_C(0), m9t2n = n; int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })) m9cdq = (({ __auto_type m9t2 = nb; int64_t m9t2a = INT64_C(0), m9t2n = n; int64_t m9t2o = m9_chk_slice (m9t2a, m9t2n, m9t2.len, err); (__typeof__(m9t2)){ m9t2.p + m9t2o, err->exc ? 0 : m9t2n }; })); __typeof__ (m9cdq.p) m9cdp = m9cdq.p; int64_t m9cdn = m9cdq.len; __typeof__ (({ __auto_type m9t3 = (*buf); int64_t m9t3a = INT64_C(0), m9t3n = n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9csq = (({ __auto_type m9t3 = (*buf); int64_t m9t3a = INT64_C(0), m9t3n = n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })); __typeof__ (m9csq.p) m9csp = m9csq.p; int64_t m9csn = m9csq.len; m9_copy ((void *) m9cdp, m9cdn, (const void *) m9csp, m9csn, sizeof (*m9cdp), err); });
   if (err->exc) goto L_ret;
-  if (i <= m9t1to) for (;;) {
-    { __typeof__((*(uint32_t *) m9_at (nb.p, i, nb.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at ((*buf).p, i, (*buf).len, sizeof (uint32_t), err));
-      if (err->exc) goto L_ret;
-      (*(uint32_t *) m9_at (nb.p, i, nb.len, sizeof (uint32_t), err)) = m9v;
-      if (err->exc) goto L_ret;
-    }
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
-  } }
   (*buf) = nb;
 L_ret: ;
   err->res = m9res;
-  *buf = m9_rehome (&m9frame, m9res, *buf, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
+  m9_adopt_if (&m9frame, m9res, (*buf).p);
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Xml_Put (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *buf, int64_t *n, uint32_t c, m9_state *err)
+static void Xml_PutOctet (Xml_Reader * *r, m9_pool *r_pool, m9_sl_BYTE *buf, int64_t *n, uint8_t b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1876,7 +1883,7 @@ static void Xml_Put (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *buf, int64_t 
   err->res = &m9frame;
   Xml_Grow (r, r_pool, buf, (*n), err);
   if (err->exc) goto L_ret;
-  (*(uint32_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint32_t), err)) = c;
+  (*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err)) = b;
   if (err->exc) goto L_ret;
   { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -1884,20 +1891,155 @@ static void Xml_Put (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *buf, int64_t 
   }
 L_ret: ;
   err->res = m9res;
-  *buf = m9_rehome (&m9frame, m9res, *buf, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
+  m9_adopt_if (&m9frame, m9res, (*buf).p);
   m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
+static void Xml_Put (Xml_Reader * *r, m9_pool *r_pool, m9_sl_BYTE *buf, int64_t *n, uint32_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR buf = {0}; (void) buf;
+  int64_t v = 0; (void) v;
+  Xml_Grow (r, r_pool, buf, (*n), err);
+  if (err->exc) goto L_hdl_m9t1;
+  v = (int64_t)(c);
+  if ((v < INT64_C(128))) {
+    { __typeof__((*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (v, err);
+      if (err->exc) goto L_hdl_m9t1;
+      (*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_hdl_m9t1;
+    }
+    { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(1), err);
+      if (err->exc) goto L_hdl_m9t1;
+      (*n) = m9v;
+    }
+  } else {
+    if ((v < INT64_C(2048))) {
+      { __typeof__((*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(192), m9_div_i64 (v, INT64_C(64), err), err), err);
+        if (err->exc) goto L_hdl_m9t1;
+        (*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_hdl_m9t1;
+      }
+      { __typeof__((*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(1), err), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
+        if (err->exc) goto L_hdl_m9t1;
+        (*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(1), err), (*buf).len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_hdl_m9t1;
+      }
+      { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(2), err);
+        if (err->exc) goto L_hdl_m9t1;
+        (*n) = m9v;
+      }
+  } else {
+    if ((v < INT64_C(65536))) {
+      { __typeof__((*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(224), m9_div_i64 (v, INT64_C(4096), err), err), err);
+        if (err->exc) goto L_hdl_m9t1;
+        (*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_hdl_m9t1;
+      }
+      { __typeof__((*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(1), err), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err), err);
+        if (err->exc) goto L_hdl_m9t1;
+        (*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(1), err), (*buf).len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_hdl_m9t1;
+      }
+      { __typeof__((*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(2), err), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
+        if (err->exc) goto L_hdl_m9t1;
+        (*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(2), err), (*buf).len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_hdl_m9t1;
+      }
+      { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(3), err);
+        if (err->exc) goto L_hdl_m9t1;
+        (*n) = m9v;
+      }
+  } else {
+    { __typeof__((*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(240), m9_div_i64 (v, INT64_C(262144), err), err), err);
+      if (err->exc) goto L_hdl_m9t1;
+      (*(uint8_t *) m9_at ((*buf).p, (*n), (*buf).len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_hdl_m9t1;
+    }
+    { __typeof__((*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(1), err), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), err), err);
+      if (err->exc) goto L_hdl_m9t1;
+      (*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(1), err), (*buf).len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_hdl_m9t1;
+    }
+    { __typeof__((*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(2), err), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err), err);
+      if (err->exc) goto L_hdl_m9t1;
+      (*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(2), err), (*buf).len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_hdl_m9t1;
+    }
+    { __typeof__((*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(3), err), (*buf).len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
+      if (err->exc) goto L_hdl_m9t1;
+      (*(uint8_t *) m9_at ((*buf).p, m9_add_i64 ((*n), INT64_C(3), err), (*buf).len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_hdl_m9t1;
+    }
+    { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(4), err);
+      if (err->exc) goto L_hdl_m9t1;
+      (*n) = m9v;
+    }
+  } } }
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &m9_exc_ValueRange) {
+    err->exc = NULL;
+    err->i[0] = v;
+    err->i[1] = INT64_C(256);
+    m9_raise (err, &m9_exc_IndexError);
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  goto L_ret;
+L_dn_m9t2: ;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
+  m9_adopt_if (&m9frame, m9res, (*buf).p);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static m9_sl_UTF8 Xml_Built (Xml_Reader * *r, m9_pool *r_pool, m9_sl_BYTE buf, int64_t n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_UTF8 m9ret = {0};
+  err->res = m9res;
+  m9ret = m9_utf_from_bytes (r_pool, ({ __auto_type m9t3 = buf; int64_t m9t3a = INT64_C(0), m9t3n = n; int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; }), err);
+  if (err->exc) goto L_hdl_m9t1;
+  goto L_ret;
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &m9_exc_ValueRange) {
+    err->exc = NULL;
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s45, 27 }), err);
+    if (err->exc) goto L_ret;
+    err->res = m9res;
+    m9ret = ((m9_sl_UTF8){ NULL, 0 });
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  goto L_ret;
+L_dn_m9t2: ;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  m9_adopt_if (&m9frame, r_pool, (*r));
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_UTF8 Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_BYTE buf = {0}; (void) buf;
   int64_t n = 0; (void) n;
   int64_t start = 0; (void) start;
   int64_t v = 0; (void) v;
@@ -1905,7 +2047,10 @@ static m9_sl_CHAR Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   bool plain = false; (void) plain;
   start = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos;
   plain = true;
-  buf = (m9_sl_CHAR){ NULL, 0 };
+  { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, err->res, INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    buf = m9v;
+  }
   n = INT64_C(0);
   for (;;) {
     bool m9t1 = Xml_AtEnd (r, r_pool, err);
@@ -1918,29 +2063,18 @@ static m9_sl_CHAR Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
       c = m9v;
     }
     if ((c == 60u)) {
-      bool m9t2 = (!Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s45, 9 }), err));
+      bool m9t2 = (!Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s46, 9 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         break;
       }
       if (plain) {
-        { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err)), err), INT64_C(16), err), err);
+        { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err)), err), INT64_C(16), err), err);
           if (err->exc) goto L_ret;
           buf = m9v;
         }
-        { __typeof__(v) m9t3to;
-        v = start;
-        m9t3to = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
+        ({ __typeof__ (({ __auto_type m9t3 = buf; int64_t m9t3a = INT64_C(0), m9t3n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })) m9cdq = (({ __auto_type m9t3 = buf; int64_t m9t3a = INT64_C(0), m9t3n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; })); __typeof__ (m9cdq.p) m9cdp = m9cdq.p; int64_t m9cdn = m9cdq.len; __typeof__ (({ __auto_type m9t4 = m9_utf_octets (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src); int64_t m9t4a = start, m9t4n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })) m9csq = (({ __auto_type m9t4 = m9_utf_octets (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src); int64_t m9t4a = start, m9t4n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; })); __typeof__ (m9csq.p) m9csp = m9csq.p; int64_t m9csn = m9csq.len; m9_copy ((void *) m9cdp, m9cdn, (const void *) m9csp, m9csn, sizeof (*m9cdp), err); });
         if (err->exc) goto L_ret;
-        if (v <= m9t3to) for (;;) {
-          { __typeof__((*(uint32_t *) m9_at (buf.p, m9_sub_i64 (v, start, err), buf.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, v, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err));
-            if (err->exc) goto L_ret;
-            (*(uint32_t *) m9_at (buf.p, m9_sub_i64 (v, start, err), buf.len, sizeof (uint32_t), err)) = m9v;
-            if (err->exc) goto L_ret;
-          }
-          if ((uint64_t) m9t3to - (uint64_t) v < (uint64_t) 1) break;
-          v += 1;
-        } }
         { __typeof__(n) m9v = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err);
           if (err->exc) goto L_ret;
           n = m9v;
@@ -1952,24 +2086,24 @@ static m9_sl_CHAR Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
       }
       for (;;) {
-        bool m9t4 = Xml_AtEnd (r, r_pool, err);
-        if (err->exc) goto L_ret;
-        if (m9t4) {
-          Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 26 }), err);
-          if (err->exc) goto L_ret;
-        }
-        bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s47, 3 }), err);
+        bool m9t5 = Xml_AtEnd (r, r_pool, err);
         if (err->exc) goto L_ret;
         if (m9t5) {
+          Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s47, 26 }), err);
+          if (err->exc) goto L_ret;
+        }
+        bool m9t6 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s48, 3 }), err);
+        if (err->exc) goto L_ret;
+        if (m9t6) {
           { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(3), err);
             if (err->exc) goto L_ret;
             ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
           }
           break;
         }
-        { __typeof__(Xml_Cur (r, r_pool, err)) m9a23 = Xml_Cur (r, r_pool, err);
+        { __typeof__(Text_BAt (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err)) m9a25 = Text_BAt (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err);
           if (err->exc) goto L_ret;
-        Xml_Put (r, r_pool, &(buf), &(n), m9a23, err);
+        Xml_PutOctet (r, r_pool, &(buf), &(n), m9a25, err);
         if (err->exc) goto L_ret;
         }
         { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
@@ -1980,68 +2114,60 @@ static m9_sl_CHAR Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     } else {
       if ((c == 38u)) {
         if (plain) {
-          { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err)), err), INT64_C(16), err), err);
+          { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err)), err), INT64_C(16), err), err);
             if (err->exc) goto L_ret;
             buf = m9v;
           }
-          { __typeof__(v) m9t6to;
-          v = start;
-          m9t6to = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
+          ({ __typeof__ (({ __auto_type m9t7 = buf; int64_t m9t7a = INT64_C(0), m9t7n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; })) m9cdq = (({ __auto_type m9t7 = buf; int64_t m9t7a = INT64_C(0), m9t7n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t7o = m9_chk_slice (m9t7a, m9t7n, m9t7.len, err); (__typeof__(m9t7)){ m9t7.p + m9t7o, err->exc ? 0 : m9t7n }; })); __typeof__ (m9cdq.p) m9cdp = m9cdq.p; int64_t m9cdn = m9cdq.len; __typeof__ (({ __auto_type m9t8 = m9_utf_octets (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src); int64_t m9t8a = start, m9t8n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })) m9csq = (({ __auto_type m9t8 = m9_utf_octets (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src); int64_t m9t8a = start, m9t8n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t8o = m9_chk_slice (m9t8a, m9t8n, m9t8.len, err); (__typeof__(m9t8)){ m9t8.p + m9t8o, err->exc ? 0 : m9t8n }; })); __typeof__ (m9csq.p) m9csp = m9csq.p; int64_t m9csn = m9csq.len; m9_copy ((void *) m9cdp, m9cdn, (const void *) m9csp, m9csn, sizeof (*m9cdp), err); });
           if (err->exc) goto L_ret;
-          if (v <= m9t6to) for (;;) {
-            { __typeof__((*(uint32_t *) m9_at (buf.p, m9_sub_i64 (v, start, err), buf.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, v, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err));
-              if (err->exc) goto L_ret;
-              (*(uint32_t *) m9_at (buf.p, m9_sub_i64 (v, start, err), buf.len, sizeof (uint32_t), err)) = m9v;
-              if (err->exc) goto L_ret;
-            }
-            if ((uint64_t) m9t6to - (uint64_t) v < (uint64_t) 1) break;
-            v += 1;
-          } }
           { __typeof__(n) m9v = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err);
             if (err->exc) goto L_ret;
             n = m9v;
           }
           plain = false;
         }
-        bool m9t7 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s48, 2 }), err);
+        bool m9t9 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s49, 2 }), err);
         if (err->exc) goto L_ret;
-        if (m9t7) {
+        if (m9t9) {
           { __typeof__(v) m9v = Xml_CharRef (r, r_pool, err);
             if (err->exc) goto L_ret;
             v = m9v;
           }
-          { __typeof__(m9_chr (v, err)) m9a24 = m9_chr (v, err);
-            if (err->exc) goto L_hdl_m9t8;
-          Xml_Put (r, r_pool, &(buf), &(n), m9a24, err);
-          if (err->exc) goto L_hdl_m9t8;
+          { __typeof__(m9_chr (v, err)) m9a26 = m9_chr (v, err);
+            if (err->exc) goto L_hdl_m9t10;
+          Xml_Put (r, r_pool, &(buf), &(n), m9a26, err);
+          if (err->exc) goto L_hdl_m9t10;
           }
-          goto L_dn_m9t9;
-L_hdl_m9t8: ;
+          goto L_dn_m9t11;
+L_hdl_m9t10: ;
           if (err->exc == &m9_exc_ValueRange) {
             err->exc = NULL;
-            Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s49, 37 }), err);
+            Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s50, 37 }), err);
             if (err->exc) goto L_ret;
-            goto L_dn_m9t9;
+            goto L_dn_m9t11;
           }
           goto L_ret;
-L_dn_m9t9: ;
+L_dn_m9t11: ;
         } else {
-          { __typeof__(Xml_EntityRef (r, r_pool, err)) m9a25 = Xml_EntityRef (r, r_pool, err);
+          { __typeof__(Xml_EntityRef (r, r_pool, err)) m9a27 = Xml_EntityRef (r, r_pool, err);
             if (err->exc) goto L_ret;
-          Xml_Put (r, r_pool, &(buf), &(n), m9a25, err);
+          Xml_Put (r, r_pool, &(buf), &(n), m9a27, err);
           if (err->exc) goto L_ret;
           }
         }
     } else {
-      bool m9t10 = ((c == 93u) && Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 3 }), err));
+      bool m9t12 = ((c == 93u) && Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s51, 3 }), err));
       if (err->exc) goto L_ret;
-      if (m9t10) {
-        Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s51, 21 }), err);
+      if (m9t12) {
+        Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s52, 21 }), err);
         if (err->exc) goto L_ret;
       }
       if ((!plain)) {
-        Xml_Put (r, r_pool, &(buf), &(n), c, err);
+        { __typeof__(Text_BAt (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err)) m9a28 = Text_BAt (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err);
+          if (err->exc) goto L_ret;
+        Xml_PutOctet (r, r_pool, &(buf), &(n), m9a28, err);
         if (err->exc) goto L_ret;
+        }
       }
       { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
         if (err->exc) goto L_ret;
@@ -2051,30 +2177,30 @@ L_dn_m9t9: ;
   }
   if (plain) {
     err->res = m9res;
-    m9ret = ({ __auto_type m9t11 = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src; int64_t m9t11a = start, m9t11n = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err); int64_t m9t11o = m9_chk_slice (m9t11a, m9t11n, m9t11.len, err); (__typeof__(m9t11)){ m9t11.p + m9t11o, err->exc ? 0 : m9t11n }; });
+    m9ret = m9_utf_slice (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, start, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, start, err), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t12 = buf; int64_t m9t12a = INT64_C(0), m9t12n = n; int64_t m9t12o = m9_chk_slice (m9t12a, m9t12n, m9t12.len, err); (__typeof__(m9t12)){ m9t12.p + m9t12o, err->exc ? 0 : m9t12n }; });
+  m9ret = Xml_Built (r, r_pool, buf, n, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
-  m9_sl_CHAR buf = {0}; (void) buf;
+  m9_sl_UTF8 m9ret = {0};
+  m9_sl_BYTE buf = {0}; (void) buf;
   int64_t n = 0; (void) n;
   int64_t v = 0; (void) v;
   uint32_t q = 0; (void) q;
@@ -2084,14 +2210,14 @@ static m9_sl_CHAR Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     q = m9v;
   }
   if (((q != 34u) && (q != 39u))) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s52, 33 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s53, 33 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, r_pool, INT64_C(16), err);
+  { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, r_pool, INT64_C(16), err);
     if (err->exc) goto L_ret;
     buf = m9v;
   }
@@ -2100,7 +2226,7 @@ static m9_sl_CHAR Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     bool m9t1 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s53, 29 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s54, 29 }), err);
       if (err->exc) goto L_ret;
     }
     { __typeof__(c) m9v = Xml_Cur (r, r_pool, err);
@@ -2115,36 +2241,36 @@ static m9_sl_CHAR Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
       break;
     }
     if ((c == 60u)) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s54, 23 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s55, 23 }), err);
       if (err->exc) goto L_ret;
     }
     if ((c == 38u)) {
-      bool m9t2 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s55, 2 }), err);
+      bool m9t2 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s56, 2 }), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
         { __typeof__(v) m9v = Xml_CharRef (r, r_pool, err);
           if (err->exc) goto L_ret;
           v = m9v;
         }
-        { __typeof__(m9_chr (v, err)) m9a26 = m9_chr (v, err);
+        { __typeof__(m9_chr (v, err)) m9a29 = m9_chr (v, err);
           if (err->exc) goto L_hdl_m9t3;
-        Xml_Put (r, r_pool, &(buf), &(n), m9a26, err);
+        Xml_Put (r, r_pool, &(buf), &(n), m9a29, err);
         if (err->exc) goto L_hdl_m9t3;
         }
         goto L_dn_m9t4;
 L_hdl_m9t3: ;
         if (err->exc == &m9_exc_ValueRange) {
           err->exc = NULL;
-          Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s56, 37 }), err);
+          Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s57, 37 }), err);
           if (err->exc) goto L_ret;
           goto L_dn_m9t4;
         }
         goto L_ret;
 L_dn_m9t4: ;
       } else {
-        { __typeof__(Xml_EntityRef (r, r_pool, err)) m9a27 = Xml_EntityRef (r, r_pool, err);
+        { __typeof__(Xml_EntityRef (r, r_pool, err)) m9a30 = Xml_EntityRef (r, r_pool, err);
           if (err->exc) goto L_ret;
-        Xml_Put (r, r_pool, &(buf), &(n), m9a27, err);
+        Xml_Put (r, r_pool, &(buf), &(n), m9a30, err);
         if (err->exc) goto L_ret;
         }
       }
@@ -2152,10 +2278,15 @@ L_dn_m9t4: ;
       bool m9t5 = Xml_IsSpace (c, err);
       if (err->exc) goto L_ret;
       if (m9t5) {
-        c = 32u;
+        Xml_Put (r, r_pool, &(buf), &(n), 32u, err);
+        if (err->exc) goto L_ret;
+      } else {
+        { __typeof__(Text_BAt (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err)) m9a31 = Text_BAt (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, err);
+          if (err->exc) goto L_ret;
+        Xml_PutOctet (r, r_pool, &(buf), &(n), m9a31, err);
+        if (err->exc) goto L_ret;
+        }
       }
-      Xml_Put (r, r_pool, &(buf), &(n), c, err);
-      if (err->exc) goto L_ret;
       { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err);
         if (err->exc) goto L_ret;
         ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
@@ -2163,24 +2294,24 @@ L_dn_m9t4: ;
     }
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t6 = buf; int64_t m9t6a = INT64_C(0), m9t6n = n; int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+  m9ret = Xml_Built (r, r_pool, buf, n, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Xml_CommentBody (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
+static m9_sl_UTF8 Xml_CommentBody (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t start = 0; (void) start;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(4), err);
     if (err->exc) goto L_ret;
@@ -2191,16 +2322,16 @@ static m9_sl_CHAR Xml_CommentBody (Xml_Reader * *r, m9_pool *r_pool, m9_state *e
     bool m9t1 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s57, 20 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s58, 20 }), err);
       if (err->exc) goto L_ret;
     }
-    bool m9t2 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s58, 2 }), err);
+    bool m9t2 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s59, 2 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      bool m9t3 = (!Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s59, 3 }), err));
+      bool m9t3 = (!Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s60, 3 }), err));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s60, 19 }), err);
+        Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s61, 19 }), err);
         if (err->exc) goto L_ret;
       }
       { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(3), err);
@@ -2215,46 +2346,46 @@ static m9_sl_CHAR Xml_CommentBody (Xml_Reader * *r, m9_pool *r_pool, m9_state *e
     }
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t4 = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src; int64_t m9t4a = start, m9t4n = m9_sub_i64 (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(3), err), start, err); int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+  m9ret = m9_utf_slice (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, start, m9_sub_i64 (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(3), err), start, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Xml_PiBody (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *target, m9_state *err)
+static m9_sl_UTF8 Xml_PiBody (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 *target, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t start = 0; (void) start;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(2), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  { __typeof__((*target)) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s61, 31 }), err);
+  { __typeof__((*target)) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s62, 31 }), err);
     if (err->exc) goto L_ret;
     (*target) = m9v;
   }
-  bool m9t1 = ((((((*target)).len == INT64_C(3)) && ((((*(uint32_t *) m9_at ((*target).p, INT64_C(0), (*target).len, sizeof (uint32_t), err)) == 120u) || ((*(uint32_t *) m9_at ((*target).p, INT64_C(0), (*target).len, sizeof (uint32_t), err)) == 88u)))) && ((((*(uint32_t *) m9_at ((*target).p, INT64_C(1), (*target).len, sizeof (uint32_t), err)) == 109u) || ((*(uint32_t *) m9_at ((*target).p, INT64_C(1), (*target).len, sizeof (uint32_t), err)) == 77u)))) && ((((*(uint32_t *) m9_at ((*target).p, INT64_C(2), (*target).len, sizeof (uint32_t), err)) == 108u) || ((*(uint32_t *) m9_at ((*target).p, INT64_C(2), (*target).len, sizeof (uint32_t), err)) == 76u))));
+  bool m9t1 = ((((Text_BLen ((*target), err) == INT64_C(3)) && ((Text_BIs ((*target), INT64_C(0), 120u, err) || Text_BIs ((*target), INT64_C(0), 88u, err)))) && ((Text_BIs ((*target), INT64_C(1), 109u, err) || Text_BIs ((*target), INT64_C(1), 77u, err)))) && ((Text_BIs ((*target), INT64_C(2), 108u, err) || Text_BIs ((*target), INT64_C(2), 76u, err))));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s62, 72 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s63, 72 }), err);
     if (err->exc) goto L_ret;
   }
-  bool m9t2 = (Text_FindChar ((*target), 58u, err) >= INT64_C(0));
+  bool m9t2 = (Text_FindCharUtf ((*target), 58u, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s63, 67 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s64, 67 }), err);
     if (err->exc) goto L_ret;
   }
-  bool m9t3 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s64, 2 }), err);
+  bool m9t3 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s65, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(2), err);
@@ -2262,20 +2393,20 @@ static m9_sl_CHAR Xml_PiBody (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *targ
       ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
     }
     err->res = m9res;
-    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    m9ret = ((m9_sl_UTF8){ NULL, 0 });
     goto L_ret;
   }
-  Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s65, 37 }), err);
+  Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s66, 37 }), err);
   if (err->exc) goto L_ret;
   start = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos;
   for (;;) {
     bool m9t4 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t4) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s66, 35 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s67, 35 }), err);
       if (err->exc) goto L_ret;
     }
-    bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s67, 2 }), err);
+    bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s68, 2 }), err);
     if (err->exc) goto L_ret;
     if (m9t5) {
       break;
@@ -2290,25 +2421,25 @@ static m9_sl_CHAR Xml_PiBody (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR *targ
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t6 = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src; int64_t m9t6a = start, m9t6n = m9_sub_i64 (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(2), err), start, err); int64_t m9t6o = m9_chk_slice (m9t6a, m9t6n, m9t6.len, err); (__typeof__(m9t6)){ m9t6.p + m9t6o, err->exc ? 0 : m9t6n }; });
+  m9ret = m9_utf_slice (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, start, m9_sub_i64 (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(2), err), start, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  *target = m9_rehome (&m9frame, m9res, *target, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
+  *target = m9_rehome_utf (&m9frame, m9res, *target, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m9_state *err)
+static m9_sl_UTF8 Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 what, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   uint32_t q = 0; (void) q;
   int64_t start = 0; (void) start;
   { __typeof__(q) m9v = Xml_Cur (r, r_pool, err);
@@ -2316,9 +2447,9 @@ static m9_sl_CHAR Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what,
     q = m9v;
   }
   if (((q != 34u) && (q != 39u))) {
-    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s68, 19 }), err)) m9a28 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s68, 19 }), err);
+    { __typeof__(m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s69, 19 }), err)) m9a32 = m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s69, 19 }), err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a28, err);
+    Xml_Fail (r, r_pool, m9a32, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -2339,9 +2470,9 @@ static m9_sl_CHAR Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what,
   bool m9t2 = Xml_AtEnd (r, r_pool, err);
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s69, 11 }), err)) m9a29 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s69, 11 }), err);
+    { __typeof__(m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s70, 11 }), err)) m9a33 = m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s70, 11 }), err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a29, err);
+    Xml_Fail (r, r_pool, m9a33, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -2350,18 +2481,18 @@ static m9_sl_CHAR Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what,
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t3 = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src; int64_t m9t3a = start, m9t3n = m9_sub_i64 (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err), start, err); int64_t m9t3o = m9_chk_slice (m9t3a, m9t3n, m9t3.len, err); (__typeof__(m9t3)){ m9t3.p + m9t3o, err->exc ? 0 : m9t3n }; });
+  m9ret = m9_utf_slice (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, start, m9_sub_i64 (m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(1), err), start, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool Xml_DeclAttr (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR name, m9_state *err)
+static bool Xml_DeclAttr (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2378,7 +2509,7 @@ static bool Xml_DeclAttr (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR name, m9_
     m9ret = false;
     goto L_ret;
   }
-  { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, (name).len, err);
+  { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, Text_BLen (name, err), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
@@ -2389,9 +2520,9 @@ static bool Xml_DeclAttr (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR name, m9_
   bool m9t3 = (Xml_Cur (r, r_pool, err) != 61u);
   if (err->exc) goto L_ret;
   if (m9t3) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s70, 17 }), name, err)) m9a30 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s70, 17 }), name, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 17 }), name, err)) m9a34 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s71, 17 }), name, err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a30, err);
+    Xml_Fail (r, r_pool, m9a34, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -2419,34 +2550,34 @@ static void Xml_XmlDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR v = {0}; (void) v;
-  m9_sl_CHAR e = {0}; (void) e;
+  m9_sl_UTF8 v = {0}; (void) v;
+  m9_sl_UTF8 e = {0}; (void) e;
   int64_t i = 0; (void) i;
   bool ok = false; (void) ok;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(5), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  bool m9t1 = (!Xml_DeclAttr (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s71, 7 }), err));
+  bool m9t1 = (!Xml_DeclAttr (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s72, 7 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s72, 39 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s73, 39 }), err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(v) m9v = Xml_Quoted (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s73, 11 }), err);
+  { __typeof__(v) m9v = Xml_Quoted (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s74, 11 }), err);
     if (err->exc) goto L_ret;
     v = m9v;
   }
-  { __typeof__(ok) m9v = ((((v).len >= INT64_C(3)) && ((*(uint32_t *) m9_at (v.p, INT64_C(0), v.len, sizeof (uint32_t), err)) == 49u)) && ((*(uint32_t *) m9_at (v.p, INT64_C(1), v.len, sizeof (uint32_t), err)) == 46u));
+  { __typeof__(ok) m9v = (((Text_BLen (v, err) >= INT64_C(3)) && Text_BIs (v, INT64_C(0), 49u, err)) && Text_BIs (v, INT64_C(1), 46u, err));
     if (err->exc) goto L_ret;
     ok = m9v;
   }
   { __typeof__(i) m9t2to;
   i = INT64_C(2);
-  m9t2to = m9_sub_i64 ((v).len, INT64_C(1), err);
+  m9t2to = m9_sub_i64 (Text_BLen (v, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t2to) for (;;) {
-    bool m9t3 = (!((((*(uint32_t *) m9_at (v.p, i, v.len, sizeof (uint32_t), err)) >= 48u) && ((*(uint32_t *) m9_at (v.p, i, v.len, sizeof (uint32_t), err)) <= 57u))));
+    bool m9t3 = (!((((int64_t)(Text_BAt (v, i, err)) >= (int64_t)(48u)) && ((int64_t)(Text_BAt (v, i, err)) <= (int64_t)(57u)))));
     if (err->exc) goto L_ret;
     if (m9t3) {
       ok = false;
@@ -2455,32 +2586,32 @@ static void Xml_XmlDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     i += 1;
   } }
   if ((!ok)) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s74, 26 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s75, 26 }), err);
     if (err->exc) goto L_ret;
   }
-  bool m9t4 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s75, 3 }), err);
+  bool m9t4 = Text_EqUtf (v, ((m9_sl_UTF8){ (uint8_t *) m9s76, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
-    Xml_Refuse (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s76, 25 }), err);
+    Xml_Refuse (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s77, 25 }), err);
     if (err->exc) goto L_ret;
   }
-  bool m9t5 = Xml_DeclAttr (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s77, 8 }), err);
+  bool m9t5 = Xml_DeclAttr (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s78, 8 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
-    { __typeof__(e) m9v = Xml_Quoted (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s78, 12 }), err);
+    { __typeof__(e) m9v = Xml_Quoted (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s79, 12 }), err);
       if (err->exc) goto L_ret;
       e = m9v;
     }
-    { __typeof__(ok) m9v = (((e).len > INT64_C(0)) && ((((((*(uint32_t *) m9_at (e.p, INT64_C(0), e.len, sizeof (uint32_t), err)) >= 97u) && ((*(uint32_t *) m9_at (e.p, INT64_C(0), e.len, sizeof (uint32_t), err)) <= 122u))) || ((((*(uint32_t *) m9_at (e.p, INT64_C(0), e.len, sizeof (uint32_t), err)) >= 65u) && ((*(uint32_t *) m9_at (e.p, INT64_C(0), e.len, sizeof (uint32_t), err)) <= 90u))))));
+    { __typeof__(ok) m9v = ((Text_BLen (e, err) > INT64_C(0)) && ((((((int64_t)(Text_BAt (e, INT64_C(0), err)) >= (int64_t)(97u)) && ((int64_t)(Text_BAt (e, INT64_C(0), err)) <= (int64_t)(122u)))) || ((((int64_t)(Text_BAt (e, INT64_C(0), err)) >= (int64_t)(65u)) && ((int64_t)(Text_BAt (e, INT64_C(0), err)) <= (int64_t)(90u)))))));
       if (err->exc) goto L_ret;
       ok = m9v;
     }
     { __typeof__(i) m9t6to;
     i = INT64_C(1);
-    m9t6to = m9_sub_i64 ((e).len, INT64_C(1), err);
+    m9t6to = m9_sub_i64 (Text_BLen (e, err), INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t6to) for (;;) {
-      bool m9t7 = (!((((((((((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) >= 97u) && ((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) <= 122u))) || ((((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) >= 65u) && ((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) <= 90u)))) || ((((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) >= 48u) && ((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) <= 57u)))) || ((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) == 46u)) || ((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) == 95u)) || ((*(uint32_t *) m9_at (e.p, i, e.len, sizeof (uint32_t), err)) == 45u))));
+      bool m9t7 = (!((((((((((int64_t)(Text_BAt (e, i, err)) >= (int64_t)(97u)) && ((int64_t)(Text_BAt (e, i, err)) <= (int64_t)(122u)))) || ((((int64_t)(Text_BAt (e, i, err)) >= (int64_t)(65u)) && ((int64_t)(Text_BAt (e, i, err)) <= (int64_t)(90u))))) || ((((int64_t)(Text_BAt (e, i, err)) >= (int64_t)(48u)) && ((int64_t)(Text_BAt (e, i, err)) <= (int64_t)(57u))))) || Text_BIs (e, i, 46u, err)) || Text_BIs (e, i, 95u, err)) || Text_BIs (e, i, 45u, err))));
       if (err->exc) goto L_ret;
       if (m9t7) {
         ok = false;
@@ -2489,37 +2620,37 @@ static void Xml_XmlDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
       i += 1;
     } }
     if ((!ok)) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s79, 20 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s80, 20 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(Text_Upper (e, err)) m9a31 = Text_Upper (e, err);
+    { __typeof__(Text_UpperUtf (e, err)) m9a35 = Text_UpperUtf (e, err);
       if (err->exc) goto L_ret;
-    bool m9t9 = (!(({ bool m9t8 = Text_Eq (m9a31, ((m9_sl_CHAR){ (uint32_t *) m9s80, 5 }), err); if (!m9t8) { { __typeof__(Text_Upper (e, err)) m9a32 = Text_Upper (e, err);   if (err->exc) goto L_ret; m9t8 = (Text_Eq (m9a32, ((m9_sl_CHAR){ (uint32_t *) m9s81, 4 }), err)); } } m9t8; })));
+    bool m9t9 = (!(({ bool m9t8 = Text_EqUtf (m9a35, ((m9_sl_UTF8){ (uint8_t *) m9s81, 5 }), err); if (!m9t8) { { __typeof__(Text_UpperUtf (e, err)) m9a36 = Text_UpperUtf (e, err);   if (err->exc) goto L_ret; m9t8 = (Text_EqUtf (m9a36, ((m9_sl_UTF8){ (uint8_t *) m9s82, 4 }), err)); } } m9t8; })));
     if (err->exc) goto L_ret;
     if (m9t9) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 30 }), e, err)) m9a33 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 30 }), e, err);
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s83, 30 }), e, err)) m9a37 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s83, 30 }), e, err);
         if (err->exc) goto L_ret;
-      Xml_Refuse (r, r_pool, m9a33, err);
+      Xml_Refuse (r, r_pool, m9a37, err);
       if (err->exc) goto L_ret;
       }
     } }
   }
-  bool m9t10 = Xml_DeclAttr (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s83, 10 }), err);
+  bool m9t10 = Xml_DeclAttr (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s84, 10 }), err);
   if (err->exc) goto L_ret;
   if (m9t10) {
-    { __typeof__(e) m9v = Xml_Quoted (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s84, 10 }), err);
+    { __typeof__(e) m9v = Xml_Quoted (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s85, 10 }), err);
       if (err->exc) goto L_ret;
       e = m9v;
     }
-    bool m9t11 = Text_Eq (e, ((m9_sl_CHAR){ (uint32_t *) m9s85, 3 }), err);
+    bool m9t11 = Text_EqUtf (e, ((m9_sl_UTF8){ (uint8_t *) m9s86, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t11) {
       ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->standalone = true;
     } else {
-      bool m9t12 = (!Text_Eq (e, ((m9_sl_CHAR){ (uint32_t *) m9s86, 2 }), err));
+      bool m9t12 = (!Text_EqUtf (e, ((m9_sl_UTF8){ (uint8_t *) m9s87, 2 }), err));
       if (err->exc) goto L_ret;
       if (m9t12) {
-        Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s87, 23 }), err);
+        Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s88, 23 }), err);
         if (err->exc) goto L_ret;
     } }
   }
@@ -2527,7 +2658,7 @@ static void Xml_XmlDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t13) {
   }
-  Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s88, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s89, 30 }), err);
+  Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s89, 2 }), ((m9_sl_UTF8){ (uint8_t *) m9s90, 30 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -2536,7 +2667,7 @@ L_ret: ;
   return;
 }
 
-static bool Xml_PubidOk (m9_sl_CHAR s, m9_state *err)
+static bool Xml_PubidOk (m9_sl_UTF8 s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2547,18 +2678,16 @@ static bool Xml_PubidOk (m9_sl_CHAR s, m9_state *err)
   uint32_t c = 0; (void) c;
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (Text_BLen (s, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__(c) m9v = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
+    { __typeof__(c) m9v = Text_BChar (s, i, err);
       if (err->exc) goto L_ret;
       c = m9v;
     }
-    m9_mark m9t2 = m9_pool_mark (err->res);
-    bool m9t4 = (!(({ bool m9t3 = ((((((((c >= 97u) && (c <= 122u))) || (((c >= 65u) && (c <= 90u)))) || (((c >= 48u) && (c <= 57u)))) || (c == 32u)) || (c == 13u)) || (c == 10u)); if (!m9t3) { { __typeof__(m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, c, err)) m9a34 = m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, c, err);   if (err->exc) goto L_ret; m9t3 = (Text_OneOf (m9a34, ((m9_sl_m9_sl_CHAR){ ((*PubidMarks)).v, INT64_C(19) }), err)); } } m9t3; })));
+    bool m9t3 = (!(({ bool m9t2 = ((((((((c >= 97u) && (c <= 122u))) || (((c >= 65u) && (c <= 90u)))) || (((c >= 48u) && (c <= 57u)))) || (c == 32u)) || (c == 13u)) || (c == 10u)); if (!m9t2) { { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, c, err), err)) m9a38 = m9_utf_cat (err->res, ((m9_sl_UTF8){ NULL, 0 }), m9_utf_of_char (err->res, c, err), err);   if (err->exc) goto L_ret; m9t2 = (Text_OneOfUtf (m9a38, ((m9_sl_m9_sl_UTF8){ ((*PubidMarks)).v, INT64_C(19) }), err)); } } m9t2; })));
     if (err->exc) goto L_ret;
-    m9_pool_release (err->res, m9t2);
-    if (m9t4) {
+    if (m9t3) {
       err->res = m9res;
       m9ret = false;
       goto L_ret;
@@ -2582,17 +2711,17 @@ static bool Xml_ExternalId (Xml_Reader * *r, m9_pool *r_pool, bool publicOnly, m
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  m9_sl_CHAR p = {0}; (void) p;
-  bool m9t1 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s90, 6 }), err);
+  m9_sl_UTF8 p = {0}; (void) p;
+  bool m9t1 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s91, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(6), err);
       if (err->exc) goto L_ret;
       ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
     }
-    Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s91, 12 }), err);
+    Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s92, 12 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__(p) m9v = Xml_Quoted (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s92, 16 }), err);
+    { __typeof__(p) m9v = Xml_Quoted (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s93, 16 }), err);
       if (err->exc) goto L_ret;
       p = m9v;
     }
@@ -2600,38 +2729,38 @@ static bool Xml_ExternalId (Xml_Reader * *r, m9_pool *r_pool, bool publicOnly, m
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s93, 6 }), err);
+  bool m9t2 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s94, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(6), err);
       if (err->exc) goto L_ret;
       ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
     }
-    Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s94, 12 }), err);
+    Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s95, 12 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__(p) m9v = Xml_Quoted (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s95, 19 }), err);
+    { __typeof__(p) m9v = Xml_Quoted (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s96, 19 }), err);
       if (err->exc) goto L_ret;
       p = m9v;
     }
     bool m9t3 = (!Xml_PubidOk (p, err));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s96, 44 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s97, 44 }), err);
       if (err->exc) goto L_ret;
     }
     if (publicOnly) {
       bool m9t4 = (Xml_SkipSpace (r, r_pool, err) && (((Xml_Cur (r, r_pool, err) == 34u) || (Xml_Cur (r, r_pool, err) == 39u))));
       if (err->exc) goto L_ret;
       if (m9t4) {
-        { __typeof__(p) m9v = Xml_Quoted (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s97, 16 }), err);
+        { __typeof__(p) m9v = Xml_Quoted (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s98, 16 }), err);
           if (err->exc) goto L_ret;
           p = m9v;
         }
       }
     } else {
-      Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s98, 27 }), err);
+      Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s99, 27 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__(p) m9v = Xml_Quoted (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s99, 16 }), err);
+      { __typeof__(p) m9v = Xml_Quoted (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s100, 16 }), err);
         if (err->exc) goto L_ret;
         p = m9v;
       }
@@ -2656,7 +2785,7 @@ static void Xml_ContentParticle (Xml_Reader * *r, m9_pool *r_pool, m9_state *err
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR n = {0}; (void) n;
+  m9_sl_UTF8 n = {0}; (void) n;
   uint32_t sep = 0; (void) sep;
   bool m9t1 = (Xml_Cur (r, r_pool, err) == 40u);
   if (err->exc) goto L_ret;
@@ -2700,10 +2829,10 @@ static void Xml_ContentParticle (Xml_Reader * *r, m9_pool *r_pool, m9_state *err
         }
       }
     }
-    Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s100, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s101, 28 }), err);
+    Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s101, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s102, 28 }), err);
     if (err->exc) goto L_ret;
   } else {
-    { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s102, 34 }), err);
+    { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s103, 34 }), err);
       if (err->exc) goto L_ret;
       n = m9v;
     }
@@ -2729,22 +2858,22 @@ static void Xml_ElementDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR n = {0}; (void) n;
+  m9_sl_UTF8 n = {0}; (void) n;
   int64_t open = 0; (void) open;
   bool more = false; (void) more;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(9), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s103, 15 }), err);
+  Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s104, 15 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s104, 15 }), err);
+  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s105, 15 }), err);
     if (err->exc) goto L_ret;
     n = m9v;
   }
-  Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s105, 22 }), err);
+  Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s106, 22 }), err);
   if (err->exc) goto L_ret;
-  bool m9t1 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s106, 5 }), err);
+  bool m9t1 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s107, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(5), err);
@@ -2752,7 +2881,7 @@ static void Xml_ElementDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
       ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
     }
   } else {
-    bool m9t2 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s107, 3 }), err);
+    bool m9t2 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s108, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(3), err);
@@ -2772,7 +2901,7 @@ static void Xml_ElementDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
       if (err->exc) goto L_ret;
       if (m9t4) {
       }
-      bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s108, 7 }), err);
+      bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s109, 7 }), err);
       if (err->exc) goto L_ret;
       if (m9t5) {
         { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(7), err);
@@ -2798,16 +2927,16 @@ static void Xml_ElementDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
           if (err->exc) goto L_ret;
           if (m9t8) {
           }
-          { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s109, 40 }), err);
+          { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s110, 40 }), err);
             if (err->exc) goto L_ret;
             n = m9v;
           }
           more = true;
         }
-        Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s110, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s111, 31 }), err);
+        Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s111, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s112, 31 }), err);
         if (err->exc) goto L_ret;
         if (more) {
-          Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s112, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s113, 40 }), err);
+          Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s113, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s114, 40 }), err);
           if (err->exc) goto L_ret;
         } else {
           bool m9t9 = (Xml_Cur (r, r_pool, err) == 42u);
@@ -2824,14 +2953,14 @@ static void Xml_ElementDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         if (err->exc) goto L_ret;
       }
   } else {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s114, 32 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s115, 32 }), err);
     if (err->exc) goto L_ret;
   } } }
   bool m9t10 = Xml_SkipSpace (r, r_pool, err);
   if (err->exc) goto L_ret;
   if (m9t10) {
   }
-  Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s115, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s116, 19 }), err);
+  Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s116, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s117, 19 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -2846,14 +2975,14 @@ static void Xml_Doctype (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR n = {0}; (void) n;
+  m9_sl_UTF8 n = {0}; (void) n;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(9), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s117, 15 }), err);
+  Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s118, 15 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s118, 25 }), err);
+  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s119, 25 }), err);
     if (err->exc) goto L_ret;
     n = m9v;
   }
@@ -2879,7 +3008,7 @@ static void Xml_Doctype (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     }
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state = Xml_SSubset;
   } else {
-    Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s119, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s120, 21 }), err);
+    Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s120, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s121, 21 }), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -2895,7 +3024,7 @@ static void Xml_SubsetDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR n = {0}; (void) n;
+  m9_sl_UTF8 n = {0}; (void) n;
   bool m9t1 = (Xml_Cur (r, r_pool, err) == 93u);
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -2907,69 +3036,69 @@ static void Xml_SubsetDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t2) {
     }
-    Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s121, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s122, 21 }), err);
+    Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s122, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s123, 21 }), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->state = Xml_SProlog;
   } else {
-    bool m9t3 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s123, 9 }), err);
+    bool m9t3 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s124, 9 }), err);
     if (err->exc) goto L_ret;
     if (m9t3) {
       Xml_ElementDecl (r, r_pool, err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t4 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 9 }), err);
+    bool m9t4 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s125, 9 }), err);
     if (err->exc) goto L_ret;
     if (m9t4) {
-      Xml_Refuse (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s125, 100 }), err);
+      Xml_Refuse (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s126, 100 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s126, 8 }), err);
+    bool m9t5 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s127, 8 }), err);
     if (err->exc) goto L_ret;
     if (m9t5) {
-      Xml_Refuse (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s127, 48 }), err);
+      Xml_Refuse (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s128, 48 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t6 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s128, 10 }), err);
+    bool m9t6 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s129, 10 }), err);
     if (err->exc) goto L_ret;
     if (m9t6) {
       { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(10), err);
         if (err->exc) goto L_ret;
         ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
       }
-      Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s129, 16 }), err);
+      Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s130, 16 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s130, 15 }), err);
+      { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s131, 15 }), err);
         if (err->exc) goto L_ret;
         n = m9v;
       }
-      bool m9t7 = (Text_FindChar (n, 58u, err) >= INT64_C(0));
+      bool m9t7 = (Text_FindCharUtf (n, 58u, err) >= INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t7) {
-        Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s131, 51 }), err);
+        Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s132, 51 }), err);
         if (err->exc) goto L_ret;
       }
-      Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s132, 23 }), err);
+      Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s133, 23 }), err);
       if (err->exc) goto L_ret;
       bool m9t8 = (!Xml_ExternalId (r, r_pool, true, err));
       if (err->exc) goto L_ret;
       if (m9t8) {
-        Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s133, 25 }), err);
+        Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s134, 25 }), err);
         if (err->exc) goto L_ret;
       }
       bool m9t9 = Xml_SkipSpace (r, r_pool, err);
       if (err->exc) goto L_ret;
       if (m9t9) {
       }
-      Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s134, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s135, 20 }), err);
+      Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s135, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s136, 20 }), err);
       if (err->exc) goto L_ret;
   } else {
     bool m9t10 = (Xml_Cur (r, r_pool, err) == 37u);
     if (err->exc) goto L_ret;
     if (m9t10) {
-      Xml_Refuse (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s136, 55 }), err);
+      Xml_Refuse (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s137, 55 }), err);
       if (err->exc) goto L_ret;
   } else {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s137, 52 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s138, 52 }), err);
     if (err->exc) goto L_ret;
   } } } } } }
 L_ret: ;
@@ -2979,21 +3108,21 @@ L_ret: ;
   return;
 }
 
-static void Xml_Bind (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CHAR u, m9_state *err)
+static void Xml_Bind (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 p, m9_sl_UTF8 u, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_m9_sl_CHAR np = {0}; (void) np;
-  m9_sl_m9_sl_CHAR nu = {0}; (void) nu;
+  m9_sl_m9_sl_UTF8 np = {0}; (void) np;
+  m9_sl_m9_sl_UTF8 nu = {0}; (void) nu;
   int64_t i = 0; (void) i;
   if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns == (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx).len)) {
-    { __typeof__(np) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, err), INT64_C(8), err), err);
+    { __typeof__(np) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, err), INT64_C(8), err), err);
       if (err->exc) goto L_ret;
       np = m9v;
     }
-    { __typeof__(nu) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, err), INT64_C(8), err), err);
+    { __typeof__(nu) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, err), INT64_C(8), err), err);
       if (err->exc) goto L_ret;
       nu = m9v;
     }
@@ -3002,14 +3131,14 @@ static void Xml_Bind (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CHAR
     m9t1to = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t1to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (np.p, i, np.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (np.p, i, np.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (np.p, i, np.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (np.p, i, np.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (nu.p, i, nu.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (nu.p, i, nu.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (nu.p, i, nu.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (nu.p, i, nu.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -3018,9 +3147,9 @@ static void Xml_Bind (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CHAR
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx = np;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri = nu;
   }
-  (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_CHAR), err)) = p;
+  (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_UTF8), err)) = p;
   if (err->exc) goto L_ret;
-  (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.len, sizeof (m9_sl_CHAR), err)) = u;
+  (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.len, sizeof (m9_sl_UTF8), err)) = u;
   if (err->exc) goto L_ret;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -3033,7 +3162,7 @@ L_ret: ;
   return;
 }
 
-static bool Xml_Lookup (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CHAR *u, m9_state *err)
+static bool Xml_Lookup (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 p, m9_sl_UTF8 *u, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3041,10 +3170,10 @@ static bool Xml_Lookup (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CH
   err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
-  bool m9t1 = Text_Eq (p, ((m9_sl_CHAR){ (uint32_t *) m9s138, 3 }), err);
+  bool m9t1 = Text_EqUtf (p, ((m9_sl_UTF8){ (uint8_t *) m9s139, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    (*u) = Xml_XmlNs;
+    (*u) = ((m9_sl_UTF8){ (uint8_t *) m9s140, 36 });
     err->res = m9res;
     m9ret = true;
     goto L_ret;
@@ -3055,12 +3184,12 @@ static bool Xml_Lookup (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CH
   }
   for (;;) {
     if (!((i >= INT64_C(0)))) break;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_CHAR), err))) m9a35 = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_UTF8), err))) m9a39 = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pfx.len, sizeof (m9_sl_UTF8), err));
       if (err->exc) goto L_ret;
-    bool m9t2 = Text_Eq (m9a35, p, err);
+    bool m9t2 = Text_EqUtf (m9a39, p, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__((*u)) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*u)) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->uri.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
         (*u) = m9v;
       }
@@ -3073,19 +3202,20 @@ static bool Xml_Lookup (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR p, m9_sl_CH
       i = m9v;
     }
   }
-  (*u) = (m9_sl_CHAR){ NULL, 0 };
+  (*u) = ((m9_sl_UTF8){ NULL, 0 });
   err->res = m9res;
-  m9ret = ((p).len == INT64_C(0));
+  m9ret = (Text_BLen (p, err) == INT64_C(0));
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  *u = m9_rehome (&m9frame, m9res, *u, err);
+  *u = m9_rehome_utf (&m9frame, m9res, *u, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR q, m9_sl_CHAR *p, m9_sl_CHAR *l, m9_state *err)
+static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 q, m9_sl_UTF8 *p, m9_sl_UTF8 *l, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3099,16 +3229,16 @@ static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR q, m9_sl_CHA
   }
   { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((q).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 (Text_BLen (q, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    bool m9t2 = ((*(uint32_t *) m9_at (q.p, i, q.len, sizeof (uint32_t), err)) == 58u);
+    bool m9t2 = Text_BIs (q, i, 58u, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       if ((at >= INT64_C(0))) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s139, 24 }), q, err)) m9a36 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s139, 24 }), q, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s141, 24 }), q, err)) m9a40 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s141, 24 }), q, err);
           if (err->exc) goto L_ret;
-        Xml_Fail (r, r_pool, m9a36, err);
+        Xml_Fail (r, r_pool, m9a40, err);
         if (err->exc) goto L_ret;
         }
       }
@@ -3118,68 +3248,68 @@ static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR q, m9_sl_CHA
     i += 1;
   } }
   if ((at < INT64_C(0))) {
-    (*p) = (m9_sl_CHAR){ NULL, 0 };
+    (*p) = ((m9_sl_UTF8){ NULL, 0 });
     (*l) = q;
     goto L_ret;
   }
-  bool m9t3 = ((at == INT64_C(0)) || (at == m9_sub_i64 ((q).len, INT64_C(1), err)));
+  bool m9t3 = ((at == INT64_C(0)) || (at == m9_sub_i64 (Text_BLen (q, err), INT64_C(1), err)));
   if (err->exc) goto L_ret;
   if (m9t3) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s140, 46 }), q, err)) m9a37 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s140, 46 }), q, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s142, 46 }), q, err)) m9a41 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s142, 46 }), q, err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a37, err);
+    Xml_Fail (r, r_pool, m9a41, err);
     if (err->exc) goto L_ret;
     }
   }
-  { __typeof__((*p)) m9v = ({ __auto_type m9t4 = q; int64_t m9t4a = INT64_C(0), m9t4n = at; int64_t m9t4o = m9_chk_slice (m9t4a, m9t4n, m9t4.len, err); (__typeof__(m9t4)){ m9t4.p + m9t4o, err->exc ? 0 : m9t4n }; });
+  { __typeof__((*p)) m9v = m9_utf_slice (q, INT64_C(0), at, err);
     if (err->exc) goto L_ret;
     (*p) = m9v;
   }
-  { __typeof__((*l)) m9v = ({ __auto_type m9t5 = q; int64_t m9t5a = m9_add_i64 (at, INT64_C(1), err), m9t5n = m9_sub_i64 (m9_sub_i64 ((q).len, at, err), INT64_C(1), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+  { __typeof__((*l)) m9v = m9_utf_slice (q, m9_add_i64 (at, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (Text_BLen (q, err), at, err), INT64_C(1), err), err);
     if (err->exc) goto L_ret;
     (*l) = m9v;
   }
-  { __typeof__((int64_t)((*(uint32_t *) m9_at ((*l).p, INT64_C(0), (*l).len, sizeof (uint32_t), err)))) m9a38 = (int64_t)((*(uint32_t *) m9_at ((*l).p, INT64_C(0), (*l).len, sizeof (uint32_t), err)));
+  { __typeof__((int64_t)(Text_CpAt ((*l), INT64_C(0), err))) m9a42 = (int64_t)(Text_CpAt ((*l), INT64_C(0), err));
     if (err->exc) goto L_ret;
-  bool m9t6 = (!Xml_IsNameStart (m9a38, err));
+  bool m9t6 = (!Xml_IsNameStart (m9a42, err));
   if (err->exc) goto L_ret;
   if (m9t6) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s141, 39 }), q, err)) m9a39 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s141, 39 }), q, err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s143, 39 }), q, err)) m9a43 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s143, 39 }), q, err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a39, err);
+    Xml_Fail (r, r_pool, m9a43, err);
     if (err->exc) goto L_ret;
     }
   } }
 L_ret: ;
   err->res = m9res;
-  *p = m9_rehome (&m9frame, m9res, *p, err);
-  *l = m9_rehome (&m9frame, m9res, *l, err);
+  *p = m9_rehome_utf (&m9frame, m9res, *p, err);
+  *l = m9_rehome_utf (&m9frame, m9res, *l, err);
   m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Xml_Push (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR n, m9_sl_CHAR ns, m9_sl_CHAR l, m9_state *err)
+static void Xml_Push (Xml_Reader * *r, m9_pool *r_pool, m9_sl_UTF8 n, m9_sl_UTF8 ns, m9_sl_UTF8 l, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_m9_sl_CHAR a = {0}; (void) a;
-  m9_sl_m9_sl_CHAR b = {0}; (void) b;
-  m9_sl_m9_sl_CHAR c = {0}; (void) c;
+  m9_sl_m9_sl_UTF8 a = {0}; (void) a;
+  m9_sl_m9_sl_UTF8 b = {0}; (void) b;
+  m9_sl_m9_sl_UTF8 c = {0}; (void) c;
   m9_sl_I64 m = {0}; (void) m;
   int64_t i = 0; (void) i;
   if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth == (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack).len)) {
-    { __typeof__(a) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, err), INT64_C(8), err), err);
+    { __typeof__(a) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, err), INT64_C(8), err), err);
       if (err->exc) goto L_ret;
       a = m9v;
     }
-    { __typeof__(b) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, err), INT64_C(8), err), err);
+    { __typeof__(b) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, err), INT64_C(8), err), err);
       if (err->exc) goto L_ret;
       b = m9v;
     }
-    { __typeof__(c) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, err), INT64_C(8), err), err);
+    { __typeof__(c) m9v = M9_POOL_SL (m9_sl_m9_sl_UTF8, m9_sl_UTF8, r_pool, m9_add_i64 (m9_mul_i64 (INT64_C(2), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, err), INT64_C(8), err), err);
       if (err->exc) goto L_ret;
       c = m9v;
     }
@@ -3192,19 +3322,19 @@ static void Xml_Push (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR n, m9_sl_CHAR
     m9t1to = m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t1to) for (;;) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (a.p, i, a.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err)) = m9v;
-        if (err->exc) goto L_ret;
-      }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (b.p, i, b.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.len, sizeof (m9_sl_CHAR), err));
-        if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (b.p, i, b.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (a.p, i, a.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (c.p, i, c.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (b.p, i, b.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.len, sizeof (m9_sl_UTF8), err));
         if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (c.p, i, c.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        (*(m9_sl_UTF8 *) m9_at (b.p, i, b.len, sizeof (m9_sl_UTF8), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(m9_sl_UTF8 *) m9_at (c.p, i, c.len, sizeof (m9_sl_UTF8), err))) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.len, sizeof (m9_sl_UTF8), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_UTF8 *) m9_at (c.p, i, c.len, sizeof (m9_sl_UTF8), err)) = m9v;
         if (err->exc) goto L_ret;
       }
       { __typeof__((*(int64_t *) m9_at (m.p, i, m.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->mark.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->mark.len, sizeof (int64_t), err));
@@ -3220,11 +3350,11 @@ static void Xml_Push (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR n, m9_sl_CHAR
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal = c;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->mark = m;
   }
-  (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err)) = n;
+  (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err)) = n;
   if (err->exc) goto L_ret;
-  (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.len, sizeof (m9_sl_CHAR), err)) = ns;
+  (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.len, sizeof (m9_sl_UTF8), err)) = ns;
   if (err->exc) goto L_ret;
-  (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.len, sizeof (m9_sl_CHAR), err)) = l;
+  (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.len, sizeof (m9_sl_UTF8), err)) = l;
   if (err->exc) goto L_ret;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -3243,12 +3373,12 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR n = {0}; (void) n;
-  m9_sl_CHAR an = {0}; (void) an;
-  m9_sl_CHAR av = {0}; (void) av;
-  m9_sl_CHAR p = {0}; (void) p;
-  m9_sl_CHAR l = {0}; (void) l;
-  m9_sl_CHAR u = {0}; (void) u;
+  m9_sl_UTF8 n = {0}; (void) n;
+  m9_sl_UTF8 an = {0}; (void) an;
+  m9_sl_UTF8 av = {0}; (void) av;
+  m9_sl_UTF8 p = {0}; (void) p;
+  m9_sl_UTF8 l = {0}; (void) l;
+  m9_sl_UTF8 u = {0}; (void) u;
   m9_sl_Xml_Attr attrs = {0}; (void) attrs;
   m9_sl_Xml_Attr more = {0}; (void) more;
   int64_t na = 0; (void) na;
@@ -3262,7 +3392,7 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s142, 15 }), err);
+  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s144, 15 }), err);
     if (err->exc) goto L_ret;
     n = m9v;
   }
@@ -3273,14 +3403,14 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
   na = INT64_C(0);
   nsMark = ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->nns;
   for (;;) {
-    bool m9t1 = (Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s143, 1 }), err) || Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s144, 2 }), err));
+    bool m9t1 = (Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s145, 1 }), err) || Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s146, 2 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       break;
     }
-    Xml_NeedSpace (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s145, 19 }), err);
+    Xml_NeedSpace (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s147, 19 }), err);
     if (err->exc) goto L_ret;
-    bool m9t2 = (Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s146, 1 }), err) || Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s147, 2 }), err));
+    bool m9t2 = (Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s148, 1 }), err) || Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s149, 2 }), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
       break;
@@ -3288,10 +3418,10 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
     bool m9t3 = Xml_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s148, 22 }), err);
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s150, 22 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(an) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s149, 17 }), err);
+    { __typeof__(an) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s151, 17 }), err);
       if (err->exc) goto L_ret;
       an = m9v;
     }
@@ -3299,7 +3429,7 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
     if (err->exc) goto L_ret;
     if (m9t4) {
     }
-    Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s150, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s151, 25 }), err);
+    Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s152, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s153, 25 }), err);
     if (err->exc) goto L_ret;
     bool m9t5 = Xml_SkipSpace (r, r_pool, err);
     if (err->exc) goto L_ret;
@@ -3314,14 +3444,14 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
     m9t6to = m9_sub_i64 (na, INT64_C(1), err);
     if (err->exc) goto L_ret;
     if (i <= m9t6to) for (;;) {
-      { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name) m9a40 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name;
+      { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name) m9a44 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name;
         if (err->exc) goto L_ret;
-      bool m9t7 = Text_Eq (m9a40, an, err);
+      bool m9t7 = Text_EqUtf (m9a44, an, err);
       if (err->exc) goto L_ret;
       if (m9t7) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s152, 26 }), an, err)) m9a41 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s152, 26 }), an, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s154, 26 }), an, err)) m9a45 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s154, 26 }), an, err);
           if (err->exc) goto L_ret;
-        Xml_Fail (r, r_pool, m9a41, err);
+        Xml_Fail (r, r_pool, m9a45, err);
         if (err->exc) goto L_ret;
         }
       } }
@@ -3352,7 +3482,7 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
     if (err->exc) goto L_ret;
     (*(Xml_Attr *) m9_at (attrs.p, na, attrs.len, sizeof (Xml_Attr), err)).value = av;
     if (err->exc) goto L_ret;
-    (*(Xml_Attr *) m9_at (attrs.p, na, attrs.len, sizeof (Xml_Attr), err)).ns = (m9_sl_CHAR){ NULL, 0 };
+    (*(Xml_Attr *) m9_at (attrs.p, na, attrs.len, sizeof (Xml_Attr), err)).ns = ((m9_sl_UTF8){ NULL, 0 });
     if (err->exc) goto L_ret;
     (*(Xml_Attr *) m9_at (attrs.p, na, attrs.len, sizeof (Xml_Attr), err)).local = an;
     if (err->exc) goto L_ret;
@@ -3372,30 +3502,30 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
       if (err->exc) goto L_ret;
       an = m9v;
     }
-    bool m9t10 = Text_Eq (an, ((m9_sl_CHAR){ (uint32_t *) m9s153, 5 }), err);
+    bool m9t10 = Text_EqUtf (an, ((m9_sl_UTF8){ (uint8_t *) m9s155, 5 }), err);
     if (err->exc) goto L_ret;
     if (m9t10) {
       { __typeof__(av) m9v = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).value;
         if (err->exc) goto L_ret;
         av = m9v;
       }
-      bool m9t11 = (Text_Eq (av, Xml_XmlNs, err) || Text_Eq (av, Xml_XmlnsNs, err));
+      bool m9t11 = (Text_EqUtf (av, ((m9_sl_UTF8){ (uint8_t *) m9s156, 36 }), err) || Text_EqUtf (av, ((m9_sl_UTF8){ (uint8_t *) m9s157, 29 }), err));
       if (err->exc) goto L_ret;
       if (m9t11) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s154, 37 }), av, err)) m9a42 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s154, 37 }), av, err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s158, 37 }), av, err)) m9a46 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s158, 37 }), av, err);
           if (err->exc) goto L_ret;
-        Xml_Fail (r, r_pool, m9a42, err);
+        Xml_Fail (r, r_pool, m9a46, err);
         if (err->exc) goto L_ret;
         }
       }
-      Xml_Bind (r, r_pool, (m9_sl_CHAR){ NULL, 0 }, av, err);
+      Xml_Bind (r, r_pool, ((m9_sl_UTF8){ NULL, 0 }), av, err);
       if (err->exc) goto L_ret;
-      (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns = Xml_XmlnsNs;
+      (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns = ((m9_sl_UTF8){ (uint8_t *) m9s159, 29 });
       if (err->exc) goto L_ret;
-      (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local = ((m9_sl_CHAR){ (uint32_t *) m9s155, 5 });
+      (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local = ((m9_sl_UTF8){ (uint8_t *) m9s160, 5 });
       if (err->exc) goto L_ret;
     } else {
-      bool m9t12 = Text_StartsWith (an, ((m9_sl_CHAR){ (uint32_t *) m9s156, 6 }), err);
+      bool m9t12 = Text_StartsWithUtf (an, ((m9_sl_UTF8){ (uint8_t *) m9s161, 6 }), err);
       if (err->exc) goto L_ret;
       if (m9t12) {
         Xml_Split (r, r_pool, an, &(p), &(l), err);
@@ -3404,37 +3534,39 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
           if (err->exc) goto L_ret;
           av = m9v;
         }
-        if (((av).len == INT64_C(0))) {
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s157, 32 }), l, err)) m9a43 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s157, 32 }), l, err);
-            if (err->exc) goto L_ret;
-          Xml_Fail (r, r_pool, m9a43, err);
-          if (err->exc) goto L_ret;
-          }
-        }
-        bool m9t13 = Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s158, 5 }), err);
+        bool m9t13 = (Text_BLen (av, err) == INT64_C(0));
         if (err->exc) goto L_ret;
         if (m9t13) {
-          Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s159, 25 }), err);
-          if (err->exc) goto L_ret;
-        }
-        bool m9t14 = (Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s160, 3 }), err) != Text_Eq (av, Xml_XmlNs, err));
-        if (err->exc) goto L_ret;
-        if (m9t14) {
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s161, 50 }), l, err)) m9a44 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s161, 50 }), l, err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s162, 32 }), l, err)) m9a47 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s162, 32 }), l, err);
             if (err->exc) goto L_ret;
-          Xml_Fail (r, r_pool, m9a44, err);
+          Xml_Fail (r, r_pool, m9a47, err);
           if (err->exc) goto L_ret;
           }
         }
-        bool m9t15 = Text_Eq (av, Xml_XmlnsNs, err);
+        bool m9t14 = Text_EqUtf (l, ((m9_sl_UTF8){ (uint8_t *) m9s163, 5 }), err);
+        if (err->exc) goto L_ret;
+        if (m9t14) {
+          Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s164, 25 }), err);
+          if (err->exc) goto L_ret;
+        }
+        bool m9t15 = (Text_EqUtf (l, ((m9_sl_UTF8){ (uint8_t *) m9s165, 3 }), err) != Text_EqUtf (av, ((m9_sl_UTF8){ (uint8_t *) m9s166, 36 }), err));
         if (err->exc) goto L_ret;
         if (m9t15) {
-          Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s162, 37 }), err);
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s167, 50 }), l, err)) m9a48 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s167, 50 }), l, err);
+            if (err->exc) goto L_ret;
+          Xml_Fail (r, r_pool, m9a48, err);
+          if (err->exc) goto L_ret;
+          }
+        }
+        bool m9t16 = Text_EqUtf (av, ((m9_sl_UTF8){ (uint8_t *) m9s168, 29 }), err);
+        if (err->exc) goto L_ret;
+        if (m9t16) {
+          Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s169, 37 }), err);
           if (err->exc) goto L_ret;
         }
         Xml_Bind (r, r_pool, l, av, err);
         if (err->exc) goto L_ret;
-        (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns = Xml_XmlnsNs;
+        (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns = ((m9_sl_UTF8){ (uint8_t *) m9s170, 29 });
         if (err->exc) goto L_ret;
         (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local = l;
         if (err->exc) goto L_ret;
@@ -3442,72 +3574,76 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
     if ((uint64_t) m9t9to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
-  { __typeof__(i) m9t16to;
+  { __typeof__(i) m9t17to;
   i = INT64_C(0);
-  m9t16to = m9_sub_i64 (na, INT64_C(1), err);
+  m9t17to = m9_sub_i64 (na, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  if (i <= m9t16to) for (;;) {
-    { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns) m9a45 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns;
+  if (i <= m9t17to) for (;;) {
+    { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns) m9a49 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns;
       if (err->exc) goto L_ret;
-    bool m9t17 = (!Text_Eq (m9a45, Xml_XmlnsNs, err));
+    bool m9t18 = (!Text_EqUtf (m9a49, ((m9_sl_UTF8){ (uint8_t *) m9s171, 29 }), err));
     if (err->exc) goto L_ret;
-    if (m9t17) {
-      { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name) m9a46 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name;
+    if (m9t18) {
+      { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name) m9a50 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name;
         if (err->exc) goto L_ret;
-      Xml_Split (r, r_pool, m9a46, &(p), &(l), err);
+      Xml_Split (r, r_pool, m9a50, &(p), &(l), err);
       if (err->exc) goto L_ret;
       }
       (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local = l;
       if (err->exc) goto L_ret;
-      if (((p).len > INT64_C(0))) {
-        bool m9t18 = (!Xml_Lookup (r, r_pool, p, &(u), err));
+      bool m9t19 = (Text_BLen (p, err) > INT64_C(0));
+      if (err->exc) goto L_ret;
+      if (m9t19) {
+        bool m9t20 = (!Xml_Lookup (r, r_pool, p, &(u), err));
         if (err->exc) goto L_ret;
-        if (m9t18) {
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s163, 19 }), p, err)) m9a47 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s163, 19 }), p, err);
+        if (m9t20) {
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s172, 19 }), p, err)) m9a51 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s172, 19 }), p, err);
             if (err->exc) goto L_ret;
-          Xml_Fail (r, r_pool, m9a47, err);
+          Xml_Fail (r, r_pool, m9a51, err);
           if (err->exc) goto L_ret;
           }
         }
         (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns = u;
         if (err->exc) goto L_ret;
       }
-      { __typeof__(j) m9t19to;
+      { __typeof__(j) m9t21to;
       j = INT64_C(0);
-      m9t19to = m9_sub_i64 (i, INT64_C(1), err);
+      m9t21to = m9_sub_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
-      if (j <= m9t19to) for (;;) {
-        bool m9t22 = ({ bool m9t21 = ({ bool m9t20 = (((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns).len > INT64_C(0)); if (m9t20) { { __typeof__((*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).ns) m9a48 = (*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns) m9a49 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t20 = (Text_Eq (m9a48, m9a49, err)); } } } m9t20; }); if (m9t21) { { __typeof__((*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).local) m9a50 = (*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local) m9a51 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t21 = (Text_Eq (m9a50, m9a51, err)); } } } m9t21; });
+      if (j <= m9t21to) for (;;) {
+        { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns) m9a52 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns;
+          if (err->exc) goto L_ret;
+        bool m9t24 = ({ bool m9t23 = ({ bool m9t22 = (Text_BLen (m9a52, err) > INT64_C(0)); if (m9t22) { { __typeof__((*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).ns) m9a53 = (*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns) m9a54 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns;   if (err->exc) goto L_ret; m9t22 = (Text_EqUtf (m9a53, m9a54, err)); } } } m9t22; }); if (m9t23) { { __typeof__((*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).local) m9a55 = (*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local) m9a56 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local;   if (err->exc) goto L_ret; m9t23 = (Text_EqUtf (m9a55, m9a56, err)); } } } m9t23; });
         if (err->exc) goto L_ret;
-        if (m9t22) {
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s164, 43 }), (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a52 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s164, 43 }), (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, err);
+        if (m9t24) {
+          { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s173, 43 }), (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a57 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s173, 43 }), (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, err);
             if (err->exc) goto L_ret;
-          Xml_Fail (r, r_pool, m9a52, err);
+          Xml_Fail (r, r_pool, m9a57, err);
           if (err->exc) goto L_ret;
           }
-        }
-        if ((uint64_t) m9t19to - (uint64_t) j < (uint64_t) 1) break;
+        } }
+        if ((uint64_t) m9t21to - (uint64_t) j < (uint64_t) 1) break;
         j += 1;
       } }
     } }
-    if ((uint64_t) m9t16to - (uint64_t) i < (uint64_t) 1) break;
+    if ((uint64_t) m9t17to - (uint64_t) i < (uint64_t) 1) break;
     i += 1;
   } }
   Xml_Split (r, r_pool, n, &(p), &(l), err);
   if (err->exc) goto L_ret;
-  bool m9t23 = (!Xml_Lookup (r, r_pool, p, &(u), err));
+  bool m9t25 = (!Xml_Lookup (r, r_pool, p, &(u), err));
   if (err->exc) goto L_ret;
-  if (m9t23) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s165, 19 }), p, err)) m9a53 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s165, 19 }), p, err);
+  if (m9t25) {
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s174, 19 }), p, err)) m9a58 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s174, 19 }), p, err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a53, err);
+    Xml_Fail (r, r_pool, m9a58, err);
     if (err->exc) goto L_ret;
     }
   }
-  bool m9t24 = Text_Eq (p, ((m9_sl_CHAR){ (uint32_t *) m9s166, 5 }), err);
+  bool m9t26 = Text_EqUtf (p, ((m9_sl_UTF8){ (uint8_t *) m9s175, 5 }), err);
   if (err->exc) goto L_ret;
-  if (m9t24) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s167, 32 }), err);
+  if (m9t26) {
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s176, 32 }), err);
     if (err->exc) goto L_ret;
   }
   ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = endAt;
@@ -3515,14 +3651,14 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
   (*ev).name = n;
   (*ev).ns = u;
   (*ev).local = l;
-  { __typeof__((*ev).attrs) m9v = ({ __auto_type m9t25 = attrs; int64_t m9t25a = INT64_C(0), m9t25n = na; int64_t m9t25o = m9_chk_slice (m9t25a, m9t25n, m9t25.len, err); (__typeof__(m9t25)){ m9t25.p + m9t25o, err->exc ? 0 : m9t25n }; });
+  { __typeof__((*ev).attrs) m9v = ({ __auto_type m9t27 = attrs; int64_t m9t27a = INT64_C(0), m9t27n = na; int64_t m9t27o = m9_chk_slice (m9t27a, m9t27n, m9t27.len, err); (__typeof__(m9t27)){ m9t27.p + m9t27o, err->exc ? 0 : m9t27n }; });
     if (err->exc) goto L_ret;
     (*ev).attrs = m9v;
   }
-  (*ev).text = (m9_sl_CHAR){ NULL, 0 };
-  bool m9t26 = Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s168, 2 }), err);
+  (*ev).text = ((m9_sl_UTF8){ NULL, 0 });
+  bool m9t28 = Xml_Ahead (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s177, 2 }), err);
   if (err->exc) goto L_ret;
-  if (m9t26) {
+  if (m9t28) {
     { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(2), err);
       if (err->exc) goto L_ret;
       ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
@@ -3560,12 +3696,12 @@ static void Xml_EndTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_po
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR n = {0}; (void) n;
+  m9_sl_UTF8 n = {0}; (void) n;
   { __typeof__(({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos) m9v = m9_add_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos, INT64_C(2), err);
     if (err->exc) goto L_ret;
     ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = m9v;
   }
-  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s169, 15 }), err);
+  { __typeof__(n) m9v = Xml_Name (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s178, 15 }), err);
     if (err->exc) goto L_ret;
     n = m9v;
   }
@@ -3573,20 +3709,20 @@ static void Xml_EndTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_po
   if (err->exc) goto L_ret;
   if (m9t1) {
   }
-  Xml_Skip (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s170, 1 }), ((m9_sl_CHAR){ (uint32_t *) m9s171, 20 }), err);
+  Xml_Skip (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s179, 1 }), ((m9_sl_UTF8){ (uint8_t *) m9s180, 20 }), err);
   if (err->exc) goto L_ret;
   if ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth == INT64_C(0))) {
-    Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s172, 31 }), err);
+    Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s181, 31 }), err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__((*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err))) m9a54 = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err));
+  { __typeof__((*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err))) m9a59 = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err));
     if (err->exc) goto L_ret;
-  bool m9t2 = (!Text_Eq (n, m9a54, err));
+  bool m9t2 = (!Text_EqUtf (n, m9a59, err));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s173, 12 }), n, err), ((m9_sl_CHAR){ (uint32_t *) m9s174, 8 }), err), (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err)), err)) m9a55 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s173, 12 }), n, err), ((m9_sl_CHAR){ (uint32_t *) m9s174, 8 }), err), (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_CHAR), err)), err);
+    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s182, 12 }), n, err), ((m9_sl_UTF8){ (uint8_t *) m9s183, 8 }), err), (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err)), err)) m9a60 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s182, 12 }), n, err), ((m9_sl_UTF8){ (uint8_t *) m9s183, 8 }), err), (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.p, m9_sub_i64 (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, INT64_C(1), err), ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stack.len, sizeof (m9_sl_UTF8), err)), err);
       if (err->exc) goto L_ret;
-    Xml_Fail (r, r_pool, m9a55, err);
+    Xml_Fail (r, r_pool, m9a60, err);
     if (err->exc) goto L_ret;
     }
   } }
@@ -3596,11 +3732,11 @@ static void Xml_EndTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_po
   }
   (*ev).kind = ((Xml_Kind){ .tag = Xml_Kind_End });
   (*ev).name = n;
-  { __typeof__((*ev).ns) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.len, sizeof (m9_sl_CHAR), err));
+  { __typeof__((*ev).ns) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackNs.len, sizeof (m9_sl_UTF8), err));
     if (err->exc) goto L_ret;
     (*ev).ns = m9v;
   }
-  { __typeof__((*ev).local) m9v = (*(m9_sl_CHAR *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.len, sizeof (m9_sl_CHAR), err));
+  { __typeof__((*ev).local) m9v = (*(m9_sl_UTF8 *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.p, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->depth, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->stackLocal.len, sizeof (m9_sl_UTF8), err));
     if (err->exc) goto L_ret;
     (*ev).local = m9v;
   }
@@ -3627,23 +3763,26 @@ static void Xml_CheckChars (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   int64_t i = 0; (void) i;
-  { __typeof__(i) m9t1to;
+  int64_t at = 0; (void) at;
+  uint32_t c = 0; (void) c;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (i <= m9t1to) for (;;) {
-    { __typeof__((int64_t)((*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err)))) m9a56 = (int64_t)((*(uint32_t *) m9_at (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.p, i, ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src.len, sizeof (uint32_t), err)));
+  for (;;) {
+    bool m9t1 = (i < Text_BLen (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, err));
+    if (err->exc) goto L_ret;
+    if (!(m9t1)) break;
+    at = i;
+    { __typeof__(c) m9v = Text_NextCp (({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->src, &(i), err);
       if (err->exc) goto L_ret;
-    bool m9t2 = (!Xml_IsChar (m9a56, err));
+      c = m9v;
+    }
+    bool m9t2 = (!Xml_IsChar ((int64_t)(c), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = i;
-      Xml_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s175, 36 }), err);
+      ({ __auto_type m9g = ((*r)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->pos = at;
+      Xml_Fail (r, r_pool, ((m9_sl_UTF8){ (uint8_t *) m9s184, 36 }), err);
       if (err->exc) goto L_ret;
-    } }
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
-  } }
+    }
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
@@ -3651,31 +3790,31 @@ L_ret: ;
   return;
 }
 
-static m9_sl_CHAR Xml_RawValue (m9_sl_CHAR head, m9_sl_CHAR name, m9_state *err)
+static m9_sl_UTF8 Xml_RawValue (m9_sl_UTF8 head, m9_sl_UTF8 name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   uint32_t q = 0; (void) q;
-  { __typeof__(i) m9v = Text_Find (head, name, err);
+  { __typeof__(i) m9v = Text_FindUtf (head, name, err);
     if (err->exc) goto L_ret;
     i = m9v;
   }
   if ((i < INT64_C(0))) {
     err->res = m9res;
-    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    m9ret = ((m9_sl_UTF8){ NULL, 0 });
     goto L_ret;
   }
-  { __typeof__(i) m9v = m9_add_i64 (i, (name).len, err);
+  { __typeof__(i) m9v = m9_add_i64 (i, Text_BLen (name, err), err);
     if (err->exc) goto L_ret;
     i = m9v;
   }
   for (;;) {
-    bool m9t2 = ({ bool m9t1 = (i < (head).len); if (m9t1) { { __typeof__((*(uint32_t *) m9_at (head.p, i, head.len, sizeof (uint32_t), err))) m9a57 = (*(uint32_t *) m9_at (head.p, i, head.len, sizeof (uint32_t), err));   if (err->exc) goto L_ret; m9t1 = (((Xml_IsSpace (m9a57, err) || ((*(uint32_t *) m9_at (head.p, i, head.len, sizeof (uint32_t), err)) == 61u)))); } } m9t1; });
+    bool m9t2 = ({ bool m9t1 = (i < Text_BLen (head, err)); if (m9t1) { { __typeof__(Text_BChar (head, i, err)) m9a61 = Text_BChar (head, i, err);   if (err->exc) goto L_ret; m9t1 = (((Xml_IsSpace (m9a61, err) || Text_BIs (head, i, 61u, err)))); } } m9t1; });
     if (err->exc) goto L_ret;
     if (!(m9t2)) break;
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
@@ -3683,14 +3822,14 @@ static m9_sl_CHAR Xml_RawValue (m9_sl_CHAR head, m9_sl_CHAR name, m9_state *err)
       i = m9v;
     }
   }
-  bool m9t3 = ((i >= (head).len) || ((((*(uint32_t *) m9_at (head.p, i, head.len, sizeof (uint32_t), err)) != 34u) && ((*(uint32_t *) m9_at (head.p, i, head.len, sizeof (uint32_t), err)) != 39u))));
+  bool m9t3 = ((i >= Text_BLen (head, err)) || (((!Text_BIs (head, i, 34u, err)) && (!Text_BIs (head, i, 39u, err)))));
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    m9ret = ((m9_sl_UTF8){ NULL, 0 });
     goto L_ret;
   }
-  { __typeof__(q) m9v = (*(uint32_t *) m9_at (head.p, i, head.len, sizeof (uint32_t), err));
+  { __typeof__(q) m9v = Text_BChar (head, i, err);
     if (err->exc) goto L_ret;
     q = m9v;
   }
@@ -3699,7 +3838,7 @@ static m9_sl_CHAR Xml_RawValue (m9_sl_CHAR head, m9_sl_CHAR name, m9_state *err)
     j = m9v;
   }
   for (;;) {
-    bool m9t4 = ((j < (head).len) && ((*(uint32_t *) m9_at (head.p, j, head.len, sizeof (uint32_t), err)) != q));
+    bool m9t4 = ((j < Text_BLen (head, err)) && (!Text_BIs (head, j, q, err)));
     if (err->exc) goto L_ret;
     if (!(m9t4)) break;
     { __typeof__(j) m9v = m9_add_i64 (j, INT64_C(1), err);
@@ -3708,12 +3847,12 @@ static m9_sl_CHAR Xml_RawValue (m9_sl_CHAR head, m9_sl_CHAR name, m9_state *err)
     }
   }
   err->res = m9res;
-  m9ret = ({ __auto_type m9t5 = head; int64_t m9t5a = m9_add_i64 (i, INT64_C(1), err), m9t5n = m9_sub_i64 (m9_sub_i64 (j, i, err), INT64_C(1), err); int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+  m9ret = m9_utf_slice (head, m9_add_i64 (i, INT64_C(1), err), m9_sub_i64 (m9_sub_i64 (j, i, err), INT64_C(1), err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -3724,8 +3863,8 @@ static void Xml_RawDecl (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR head = {0}; (void) head;
-  m9_sl_CHAR e = {0}; (void) e;
+  m9_sl_UTF8 head = {0}; (void) head;
+  m9_sl_UTF8 e = {0}; (void) e;
   int64_t n = 0; (void) n;
   bool m9t1 = (((((((b).len < INT64_C(6)) || ((*(uint8_t *) m9_at (b.p, INT64_C(0), b.len, sizeof (uint8_t), err)) != INT64_C(60))) || ((*(uint8_t *) m9_at (b.p, INT64_C(1), b.len, sizeof (uint8_t), err)) != INT64_C(63))) || ((*(uint8_t *) m9_at (b.p, INT64_C(2), b.len, sizeof (uint8_t), err)) != INT64_C(120))) || ((*(uint8_t *) m9_at (b.p, INT64_C(3), b.len, sizeof (uint8_t), err)) != INT64_C(109))) || ((*(uint8_t *) m9_at (b.p, INT64_C(4), b.len, sizeof (uint8_t), err)) != INT64_C(108)));
   if (err->exc) goto L_ret;
@@ -3742,9 +3881,9 @@ static void Xml_RawDecl (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
       n = m9v;
     }
   }
-  { __typeof__(({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a58 = ({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
+  { __typeof__(({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; })) m9a62 = ({ __auto_type m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; int64_t m9t5o = m9_chk_slice (m9t5a, m9t5n, m9t5.len, err); (__typeof__(m9t5)){ m9t5.p + m9t5o, err->exc ? 0 : m9t5n }; });
     if (err->exc) goto L_hdl_m9t3;
-  { __typeof__(head) m9v = DynStr_Chars (pool, m9a58, err);
+  { __typeof__(head) m9v = DynStr_Chars (pool, m9a62, err);
     if (err->exc) goto L_hdl_m9t3;
     head = m9v;
   }
@@ -3758,28 +3897,28 @@ L_hdl_m9t3: ;
   }
   goto L_ret;
 L_dn_m9t4: ;
-  { __typeof__(Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s176, 7 }), err)) m9a59 = Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s176, 7 }), err);
+  { __typeof__(Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s185, 7 }), err)) m9a63 = Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s185, 7 }), err);
     if (err->exc) goto L_ret;
-  bool m9t6 = Text_Eq (m9a59, ((m9_sl_CHAR){ (uint32_t *) m9s177, 3 }), err);
+  bool m9t6 = Text_EqUtf (m9a63, ((m9_sl_UTF8){ (uint8_t *) m9s186, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s178, 25 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s178, 25 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
+    { __typeof__(((m9_sl_UTF8){ (uint8_t *) m9s187, 25 })) m9t7 = ((m9_sl_UTF8){ (uint8_t *) m9s187, 25 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     err->i[0] = INT64_C(1);
     err->i[1] = INT64_C(1);
     m9_raise (err, &Xml_Unsupported);
     goto L_ret;
   } }
-  { __typeof__(Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s179, 8 }), err)) m9a60 = Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s179, 8 }), err);
+  { __typeof__(Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s188, 8 }), err)) m9a64 = Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s188, 8 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(e) m9v = Text_Upper (m9a60, err);
+  { __typeof__(e) m9v = Text_UpperUtf (m9a64, err);
     if (err->exc) goto L_ret;
     e = m9v;
   }
   }
-  bool m9t8 = ((((e).len > INT64_C(0)) && (!Text_Eq (e, ((m9_sl_CHAR){ (uint32_t *) m9s180, 5 }), err))) && (!Text_Eq (e, ((m9_sl_CHAR){ (uint32_t *) m9s181, 4 }), err)));
+  bool m9t8 = (((Text_BLen (e, err) > INT64_C(0)) && (!Text_EqUtf (e, ((m9_sl_UTF8){ (uint8_t *) m9s189, 5 }), err))) && (!Text_EqUtf (e, ((m9_sl_UTF8){ (uint8_t *) m9s190, 4 }), err)));
   if (err->exc) goto L_ret;
   if (m9t8) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s182, 30 }), Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s183, 8 }), err), err)) m9t9 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s182, 30 }), Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s183, 8 }), err), err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 30 }), Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s192, 8 }), err), err)) m9t9 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s191, 30 }), Xml_RawValue (head, ((m9_sl_UTF8){ (uint8_t *) m9s192, 8 }), err), err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; m9_pay_keep (err, 0, sizeof (*m9t9.p)); }
     err->i[0] = INT64_C(1);
     err->i[1] = INT64_C(1);
     m9_raise (err, &Xml_Unsupported);
@@ -3805,14 +3944,14 @@ static void Xml_AddText (Xml_Element * e, DynStr_DString * *d, m9_pool *d_pool, 
   m9t1to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   if (i <= m9t1to) for (;;) {
-    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a61 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
+    { __typeof__(({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); })) m9a65 = ({ __auto_type m9n = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); (__typeof__ (m9n)) m9_nn ((void *) m9n, err); });
       if (err->exc) goto L_ret;
-    Xml_AddText (m9a61, d, d_pool, err);
+    Xml_AddText (m9a65, d, d_pool, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a62 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
+    { __typeof__(({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail) m9a66 = ({ __auto_type m9g = ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))); if (err->exc) goto L_ret; if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->tail;
       if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, m9a62, err);
+    DynStr_Append (d, d_pool, m9a66, err);
     if (err->exc) goto L_ret;
     }
     if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
@@ -3843,7 +3982,7 @@ L_ret: ;
   return;
 }
 
-static void Xml_Escaped (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR s, bool attr, m9_state *err)
+static void Xml_Escaped (Xml_Writer * *w, m9_pool *w_pool, m9_sl_UTF8 s, bool attr, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3851,55 +3990,51 @@ static void Xml_Escaped (Xml_Writer * *w, m9_pool *w_pool, m9_sl_CHAR s, bool at
   err->res = &m9frame;
   int64_t i = 0; (void) i;
   uint32_t c = 0; (void) c;
-  { __typeof__(i) m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  if (i <= m9t1to) for (;;) {
-    { __typeof__(c) m9v = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
-      if (err->exc) goto L_ret;
-      c = m9v;
-    }
+  { __typeof__(s) m9t1s = s;
+  for (int64_t m9t1i = 0; m9t1i < m9t1s.len; ) { c = m9_utf_next (m9t1s, &m9t1i);
     bool m9t2 = (!Xml_IsChar ((int64_t)(c), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s184, 41 }), Fmt_I64Str (i, err), err)) m9t3 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s184, 41 }), Fmt_I64Str (i, err), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+      { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s193, 41 }), Fmt_I64Str (i, err), err)) m9t3 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s193, 41 }), Fmt_I64Str (i, err), err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       m9_raise (err, &Xml_WriteError);
       goto L_ret;
     }
     if ((c == 38u)) {
-      DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s185, 5 }), err);
+      DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s194, 5 }), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c == 60u)) {
-        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s186, 4 }), err);
+        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s195, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 62u)) {
-        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s187, 4 }), err);
+        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s196, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 13u)) {
-        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s188, 5 }), err);
+        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s197, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((attr && (c == 34u))) {
-        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s189, 6 }), err);
+        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s198, 6 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((attr && (c == 9u))) {
-        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s190, 4 }), err);
+        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s199, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((attr && (c == 10u))) {
-        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s191, 5 }), err);
+        DynStr_Append (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, ((m9_sl_UTF8){ (uint8_t *) m9s200, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       DynStr_AppendChar (({ __typeof__ (&(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d)) m9v = &(({ __auto_type m9g = ((*w)); if (__builtin_expect (m9g == NULL, 0)) { m9_unset (err); goto L_ret; } m9g; })->d); if (err->exc) goto L_ret; m9v; }), w_pool, c, err);
       if (err->exc) goto L_ret;
     } } } } } } }
-    if ((uint64_t) m9t1to - (uint64_t) i < (uint64_t) 1) break;
-    i += 1;
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
   } }
 L_ret: ;
   err->res = m9res;

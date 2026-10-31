@@ -1,13 +1,14 @@
 MODULE Narrow ;
 
-(* Integer arithmetic on every width traps on overflow -- the
-   executable half of report par 2.1, run by runtime/test/build.sh.
+(* Integer arithmetic on every width traps on overflow.  This module
+   is the executable half of report par 2.1, run by
+   runtime/test/build.sh.
 
    Until 2026-09-27 it did not: every operation went through the I64
    helper and the result was assigned back into the narrow C type
    unchecked, so `I32 max + 1` was -2147483648 and `U32 3 - 5` was
-   4294967294 with no Overflow raised.  Found by an agent's review
-   (docs/agent-review-2026-09-27.md F1), which ran exactly the
+   4294967294 with no Overflow raised.  An agent's review found it
+   (docs/agent-review-2026-09-27.md F1); the review ran exactly the
    expressions below.  Each case prints `raised` or the value, and
    build.sh compares the whole text: a width that starts wrapping
    again changes a line.                                            *)
@@ -122,7 +123,8 @@ EXCEPT
 | ValueRange : Say ('U64 2^62 * 4', TRUE, 0)
 END MulU64 ;
 
-(* and the controls: in range, nothing raises, the value is right *)
+(* InRange runs the controls: in range, nothing raises, and the value
+   is right. *)
 PROCEDURE InRange () =
 VAR
   a, b : I32 ;  s, t : I16 ;  u, v : U32 ;  w, x : U64 ;

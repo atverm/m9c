@@ -10,24 +10,24 @@ extern int64_t m9_utf_find (const void *, int64_t, const void *, int64_t, int64_
 static m9_pool m9mframe = {0};
 
 static const uint8_t m9s0[49] = { 97, 32, 115, 101, 99, 111, 110, 100, 32, 112, 114, 111, 103, 114, 97, 109, 32, 109, 111, 100, 117, 108, 101, 58, 32, 97, 32, 102, 105, 108, 101, 32, 109, 97, 121, 32, 104, 97, 118, 101, 32, 111, 110, 108, 121, 32, 111, 110, 101 };
-static const uint32_t m9s1[1] = { 61u };
-static const uint32_t m9s2[1] = { 35u };
-static const uint32_t m9s3[1] = { 60u };
-static const uint32_t m9s4[2] = { 60u, 61u };
-static const uint32_t m9s5[1] = { 62u };
-static const uint32_t m9s6[2] = { 62u, 61u };
-static const uint32_t m9s7[1] = { 43u };
-static const uint32_t m9s8[1] = { 45u };
-static const uint32_t m9s9[1] = { 42u };
-static const uint32_t m9s10[1] = { 47u };
-static const uint32_t m9s11[2] = { 43u, 37u };
-static const uint32_t m9s12[2] = { 45u, 37u };
-static const uint32_t m9s13[2] = { 42u, 37u };
-static const uint32_t m9s14[3] = { 68u, 73u, 86u };
-static const uint32_t m9s15[3] = { 77u, 79u, 68u };
-static const uint32_t m9s16[2] = { 79u, 82u };
-static const uint32_t m9s17[3] = { 65u, 78u, 68u };
-static const uint32_t m9s18[1] = { 63u };
+static const uint8_t m9s1[1] = { 61 };
+static const uint8_t m9s2[1] = { 35 };
+static const uint8_t m9s3[1] = { 60 };
+static const uint8_t m9s4[2] = { 60, 61 };
+static const uint8_t m9s5[1] = { 62 };
+static const uint8_t m9s6[2] = { 62, 61 };
+static const uint8_t m9s7[1] = { 43 };
+static const uint8_t m9s8[1] = { 45 };
+static const uint8_t m9s9[1] = { 42 };
+static const uint8_t m9s10[1] = { 47 };
+static const uint8_t m9s11[2] = { 43, 37 };
+static const uint8_t m9s12[2] = { 45, 37 };
+static const uint8_t m9s13[2] = { 42, 37 };
+static const uint8_t m9s14[3] = { 68, 73, 86 };
+static const uint8_t m9s15[3] = { 77, 79, 68 };
+static const uint8_t m9s16[2] = { 79, 82 };
+static const uint8_t m9s17[3] = { 65, 78, 68 };
+static const uint8_t m9s18[1] = { 63 };
 static const uint8_t m9s19[2] = { 58, 61 };
 static const uint8_t m9s20[1] = { 61 };
 static const uint8_t m9s21[1] = { 40 };
@@ -62,29 +62,29 @@ static const uint8_t m9s49[12] = { 110, 97, 109, 101, 32, 97, 102, 116, 101, 114
 static const uint8_t m9s50[4] = { 110, 97, 109, 101 };
 static const uint8_t m9s51[4] = { 110, 97, 109, 101 };
 static const uint8_t m9s52[53] = { 97, 32, 113, 117, 97, 108, 105, 102, 105, 101, 100, 32, 110, 97, 109, 101, 32, 105, 115, 32, 77, 111, 100, 117, 108, 101, 46, 78, 97, 109, 101, 44, 32, 110, 111, 32, 102, 117, 114, 116, 104, 101, 114, 32, 115, 101, 108, 101, 99, 116, 111, 114, 115 };
-static const uint32_t m9s53[3] = { 79u, 87u, 78u };
-static const uint32_t m9s54[3] = { 78u, 79u, 84u };
+static const uint8_t m9s53[3] = { 79, 87, 78 };
+static const uint8_t m9s54[3] = { 78, 79, 84 };
 static const uint8_t m9s55[27] = { 101, 120, 112, 114, 101, 115, 115, 105, 111, 110, 32, 101, 120, 112, 101, 99, 116, 101, 100, 44, 32, 102, 111, 117, 110, 100, 32 };
-static const uint32_t m9s56[1] = { 48u };
-static const uint32_t m9s57[3] = { 65u, 78u, 68u };
-static const uint32_t m9s58[2] = { 79u, 82u };
+static const uint8_t m9s56[1] = { 48 };
+static const uint8_t m9s57[3] = { 65, 78, 68 };
+static const uint8_t m9s58[2] = { 79, 82 };
 static const uint8_t m9s59[10] = { 102, 105, 101, 108, 100, 32, 110, 97, 109, 101 };
 static const uint8_t m9s60[14] = { 97, 116, 116, 114, 105, 98, 117, 116, 101, 32, 110, 97, 109, 101 };
 static const uint8_t m9s61[39] = { 102, 105, 101, 108, 100, 32, 108, 105, 115, 116, 32, 100, 111, 101, 115, 32, 110, 111, 116, 32, 101, 110, 100, 32, 119, 104, 101, 114, 101, 32, 105, 116, 32, 115, 104, 111, 117, 108, 100 };
 static const uint8_t m9s62[12] = { 118, 97, 114, 105, 97, 110, 116, 32, 110, 97, 109, 101 };
-static const uint32_t m9s63[4] = { 80u, 79u, 79u, 76u };
+static const uint8_t m9s63[4] = { 80, 79, 79, 76 };
 static const uint8_t m9s64[18] = { 118, 97, 114, 105, 97, 110, 116, 32, 124, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
 static const uint8_t m9s65[18] = { 101, 110, 117, 109, 101, 114, 97, 116, 105, 111, 110, 32, 109, 101, 109, 98, 101, 114 };
 static const uint8_t m9s66[18] = { 101, 110, 117, 109, 101, 114, 97, 116, 105, 111, 110, 32, 109, 101, 109, 98, 101, 114 };
 static const uint8_t m9s67[21] = { 116, 121, 112, 101, 32, 101, 120, 112, 101, 99, 116, 101, 100, 44, 32, 102, 111, 117, 110, 100, 32 };
-static const uint32_t m9s68[1] = { 63u };
+static const uint8_t m9s68[1] = { 63 };
 static const uint8_t m9s69[12] = { 118, 97, 114, 105, 97, 110, 116, 32, 110, 97, 109, 101 };
 static const uint8_t m9s70[13] = { 108, 111, 111, 112, 32, 118, 97, 114, 105, 97, 98, 108, 101 };
 static const uint8_t m9s71[19] = { 99, 97, 115, 101, 32, 97, 114, 109, 32, 124, 32, 101, 120, 112, 101, 99, 116, 101, 100 };
 static const uint8_t m9s72[26] = { 115, 116, 97, 116, 101, 109, 101, 110, 116, 32, 101, 120, 112, 101, 99, 116, 101, 100, 44, 32, 102, 111, 117, 110, 100, 32 };
 static const uint8_t m9s73[39] = { 97, 116, 32, 109, 111, 115, 116, 32, 57, 32, 101, 120, 99, 101, 112, 116, 105, 111, 110, 115, 32, 105, 110, 32, 111, 110, 101, 32, 104, 97, 110, 100, 108, 101, 114, 32, 97, 114, 109 };
 static const uint8_t m9s74[27] = { 99, 97, 115, 101, 32, 108, 97, 98, 101, 108, 32, 101, 120, 112, 101, 99, 116, 101, 100, 44, 32, 102, 111, 117, 110, 100, 32 };
-static const uint32_t m9s75[1] = { 63u };
+static const uint8_t m9s75[1] = { 63 };
 static const uint8_t m9s76[4] = { 69, 78, 68, 32 };
 static const uint8_t m9s77[26] = { 32, 100, 111, 101, 115, 32, 110, 111, 116, 32, 109, 97, 116, 99, 104, 32, 80, 82, 79, 67, 69, 68, 85, 82, 69, 32 };
 static const uint8_t m9s78[33] = { 112, 114, 111, 99, 101, 100, 117, 114, 101, 32, 110, 97, 109, 101, 32, 101, 120, 112, 101, 99, 116, 101, 100, 32, 97, 102, 116, 101, 114, 32, 69, 78, 68 };
@@ -107,14 +107,14 @@ static const uint8_t m9s94[11] = { 109, 111, 100, 117, 108, 101, 32, 110, 97, 10
 static const uint8_t m9s95[21] = { 109, 111, 100, 117, 108, 101, 32, 110, 97, 109, 101, 32, 97, 102, 116, 101, 114, 32, 69, 78, 68 };
 static const uint8_t m9s96[31] = { 69, 78, 68, 32, 110, 97, 109, 101, 32, 100, 111, 101, 115, 32, 110, 111, 116, 32, 109, 97, 116, 99, 104, 32, 77, 79, 68, 85, 76, 69, 32 };
 static const uint8_t m9s97[54] = { 68, 69, 70, 73, 78, 73, 84, 73, 79, 78, 44, 32, 73, 77, 80, 76, 69, 77, 69, 78, 84, 65, 84, 73, 79, 78, 44, 32, 111, 114, 32, 77, 79, 68, 85, 76, 69, 32, 101, 120, 112, 101, 99, 116, 101, 100, 44, 32, 102, 111, 117, 110, 100, 32 };
-static const uint32_t m9s98[1] = { 63u };
+static const uint8_t m9s98[1] = { 63 };
 
 static bool Parse_InStops (int64_t sid, int64_t k, m9_state *err);
 static bool Parse_IsDeclStart (int64_t k, m9_state *err);
 static bool Parse_IsRelOp (int64_t k, m9_state *err);
 static bool Parse_IsAddOp (int64_t k, m9_state *err);
 static bool Parse_IsMulOp (int64_t k, m9_state *err);
-static m9_sl_CHAR Parse_OpText (int64_t k, m9_state *err);
+static m9_sl_UTF8 Parse_OpText (int64_t k, m9_state *err);
 static m9_sl_UTF8 Parse_Spell (int64_t k, m9_state *err);
 static void Parse_ErrAt (Parse_Parser *p, m9_pool *p_pool, int64_t ln, int64_t cl, m9_sl_UTF8 msg, m9_state *err);
 static void Parse_Rerr (Parse_Parser *p, m9_pool *p_pool, m9_sl_UTF8 msg, m9_state *err);
@@ -164,28 +164,6 @@ static void Parse_PImports (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, Ast
 static void Parse_PDecls (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, Ast_Node * *parent, m9_pool *parent_pool, m9_state *err);
 static Ast_Node * Parse_PUnit (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, m9_state *err);
 
-
-void Parse_Init (Parse_Parser *p, m9_pool *p_pool, m9_sl_CHAR src, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  Lex_Init (&((*p).lx), p_pool, src, err);
-  if (err->exc) goto L_ret;
-  Parse_Started (p, p_pool, err);
-  if (err->exc) goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9_adopt_if (&m9frame, p_pool, (*p).lx.src.p);
-  m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
-  m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
-  for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
-  }
-  m9_pool_free (&m9frame);
-  return;
-}
 
 void Parse_InitUtf (Parse_Parser *p, m9_pool *p_pool, m9_sl_UTF8 src, m9_state *err)
 {
@@ -397,126 +375,126 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Parse_OpText (int64_t k, m9_state *err)
+static m9_sl_UTF8 Parse_OpText (int64_t k, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  m9_sl_CHAR m9ret = {0};
+  m9_sl_UTF8 m9ret = {0};
   { __typeof__(k) m9t1 = k;
   switch (m9t1) {
   case INT64_C(201):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s1, 1 });
     goto L_ret;
   } break;
   case INT64_C(202):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s2, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s2, 1 });
     goto L_ret;
   } break;
   case INT64_C(203):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s3, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s3, 1 });
     goto L_ret;
   } break;
   case INT64_C(204):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s4, 2 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s4, 2 });
     goto L_ret;
   } break;
   case INT64_C(205):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s5, 1 });
     goto L_ret;
   } break;
   case INT64_C(206):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s6, 2 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s6, 2 });
     goto L_ret;
   } break;
   case INT64_C(207):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s7, 1 });
     goto L_ret;
   } break;
   case INT64_C(208):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s8, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s8, 1 });
     goto L_ret;
   } break;
   case INT64_C(209):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s9, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s9, 1 });
     goto L_ret;
   } break;
   case INT64_C(210):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s10, 1 });
     goto L_ret;
   } break;
   case INT64_C(211):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s11, 2 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s11, 2 });
     goto L_ret;
   } break;
   case INT64_C(212):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s12, 2 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s12, 2 });
     goto L_ret;
   } break;
   case INT64_C(213):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s13, 2 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s13, 2 });
     goto L_ret;
   } break;
   case INT64_C(15):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s14, 3 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s14, 3 });
     goto L_ret;
   } break;
   case INT64_C(33):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s15, 3 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s15, 3 });
     goto L_ret;
   } break;
   case INT64_C(41):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s16, 2 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s16, 2 });
     goto L_ret;
   } break;
   case INT64_C(7):
   {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s17, 3 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s17, 3 });
     goto L_ret;
   } break;
   default: {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 });
+    m9ret = ((m9_sl_UTF8){ (uint8_t *) m9s18, 1 });
     goto L_ret;
   } break;
   } }
 L_ret: ;
   err->res = m9res;
-  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -526,7 +504,7 @@ static m9_sl_UTF8 Parse_Spell (int64_t k, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = m9res;
+  err->res = &m9frame;
   m9_sl_UTF8 m9ret = {0};
   { __typeof__(k) m9t1 = k;
   switch (m9t1) {
@@ -610,14 +588,14 @@ static m9_sl_UTF8 Parse_Spell (int64_t k, m9_state *err)
   } break;
   default: {
     err->res = m9res;
-    m9ret = m9_utf_from_chars (err->res, Lex_KindName (k, err), err);
+    m9ret = Lex_KindName (k, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } break;
   } }
 L_ret: ;
   err->res = m9res;
-  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -773,7 +751,7 @@ static void Parse_Expect (Parse_Parser *p, m9_pool *p_pool, int64_t k, m9_state 
     Parse_Bump (p, p_pool, err);
     if (err->exc) goto L_ret;
   } else {
-    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Parse_Spell (k, err), ((m9_sl_UTF8){ (uint8_t *) m9s34, 17 }), err), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s35, 2 }), err), (*p).cur.text, err), ((m9_sl_UTF8){ (uint8_t *) m9s36, 1 }), err)) m9a3 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Parse_Spell (k, err), ((m9_sl_UTF8){ (uint8_t *) m9s34, 17 }), err), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err), ((m9_sl_UTF8){ (uint8_t *) m9s35, 2 }), err), (*p).cur.text, err), ((m9_sl_UTF8){ (uint8_t *) m9s36, 1 }), err);
+    { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Parse_Spell (k, err), ((m9_sl_UTF8){ (uint8_t *) m9s34, 17 }), err), Lex_KindName ((*p).cur.kind, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s35, 2 }), err), (*p).cur.text, err), ((m9_sl_UTF8){ (uint8_t *) m9s36, 1 }), err)) m9a3 = m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, m9_utf_cat (err->res, Parse_Spell (k, err), ((m9_sl_UTF8){ (uint8_t *) m9s34, 17 }), err), Lex_KindName ((*p).cur.kind, err), err), ((m9_sl_UTF8){ (uint8_t *) m9s35, 2 }), err), (*p).cur.text, err), ((m9_sl_UTF8){ (uint8_t *) m9s36, 1 }), err);
       if (err->exc) goto L_ret;
     Parse_Rerr (p, p_pool, m9a3, err);
     if (err->exc) goto L_ret;
@@ -796,7 +774,7 @@ static m9_sl_UTF8 Parse_TakeIdent (Parse_Parser *p, m9_pool *p_pool, m9_sl_UTF8 
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = m9res;
+  err->res = &m9frame;
   m9_sl_UTF8 m9ret = {0};
   m9_sl_UTF8 s = {0}; (void) s;
   if (((*p).cur.kind == Parse_TkIdent)) {
@@ -807,7 +785,7 @@ static m9_sl_UTF8 Parse_TakeIdent (Parse_Parser *p, m9_pool *p_pool, m9_sl_UTF8 
     m9ret = s;
     goto L_ret;
   }
-  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s37, 30 }), err), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err)) m9a4 = m9_utf_cat (err->res, m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s37, 30 }), err), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err);
+  { __typeof__(m9_utf_cat (err->res, m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s37, 30 }), err), Lex_KindName ((*p).cur.kind, err), err)) m9a4 = m9_utf_cat (err->res, m9_utf_cat (err->res, what, ((m9_sl_UTF8){ (uint8_t *) m9s37, 30 }), err), Lex_KindName ((*p).cur.kind, err), err);
     if (err->exc) goto L_ret;
   Parse_Rerr (p, p_pool, m9a4, err);
   if (err->exc) goto L_ret;
@@ -817,7 +795,7 @@ static m9_sl_UTF8 Parse_TakeIdent (Parse_Parser *p, m9_pool *p_pool, m9_sl_UTF8 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
-  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9ret = m9_rehome_utf (&m9frame, m9res, m9ret, err);
   m9_adopt_if (&m9frame, p_pool, (*p).lx.src.p);
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
@@ -1066,7 +1044,7 @@ static Ast_Node * Parse_PStmtSeq (m9_pool *pool, Parse_Parser *p, m9_pool *p_poo
       bool m9t3 = (!((Parse_InStops (sid, (*p).cur.kind, err) || ((*p).cur.kind == Parse_TkEOF))));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s41, 43 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err)) m9a8 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s41, 43 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s41, 43 }), Lex_KindName ((*p).cur.kind, err), err)) m9a8 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s41, 43 }), Lex_KindName ((*p).cur.kind, err), err);
           if (err->exc) goto L_ret;
         Parse_Rerr (p, p_pool, m9a8, err);
         if (err->exc) goto L_ret;
@@ -1627,7 +1605,7 @@ static Ast_Node * Parse_PNew (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, m
       if (err->exc) goto L_ret;
       d1 = m9v;
     }
-    Ast_SetA (pool, &(d1), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s53, 3 }), err);
+    Ast_SetAUtf (pool, &(d1), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s53, 3 }), err);
     if (err->exc) goto L_ret;
     Parse_Bump (p, p_pool, err);
     if (err->exc) goto L_ret;
@@ -1908,7 +1886,7 @@ static Ast_Node * Parse_PFactor (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool
         if (err->exc) goto L_ret;
         n = m9v;
       }
-      Ast_SetA (pool, &(n), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s54, 3 }), err);
+      Ast_SetAUtf (pool, &(n), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s54, 3 }), err);
       if (err->exc) goto L_ret;
       Parse_Bump (p, p_pool, err);
       if (err->exc) goto L_ret;
@@ -1977,7 +1955,7 @@ static Ast_Node * Parse_PFactor (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool
         n = d;
       }
   } else {
-    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s55, 27 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err)) m9a44 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s55, 27 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err);
+    { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s55, 27 }), Lex_KindName ((*p).cur.kind, err), err)) m9a44 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s55, 27 }), Lex_KindName ((*p).cur.kind, err), err);
       if (err->exc) goto L_ret;
     Parse_Rerr (p, p_pool, m9a44, err);
     if (err->exc) goto L_ret;
@@ -1986,7 +1964,7 @@ static Ast_Node * Parse_PFactor (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool
       if (err->exc) goto L_ret;
       n = m9v;
     }
-    Ast_SetA (pool, &(n), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s56, 1 }), err);
+    Ast_SetAUtf (pool, &(n), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s56, 1 }), err);
     if (err->exc) goto L_ret;
     bool m9t1 = (!Parse_Closes ((*p).cur.kind, err));
     if (err->exc) goto L_ret;
@@ -2046,7 +2024,7 @@ static Ast_Node * Parse_PTerm (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
     }
     { __typeof__(Parse_OpText ((*p).cur.kind, err)) m9a45 = Parse_OpText ((*p).cur.kind, err);
       if (err->exc) goto L_ret;
-    Ast_SetA (pool, &(n), err->res, m9a45, err);
+    Ast_SetAUtf (pool, &(n), err->res, m9a45, err);
     if (err->exc) goto L_ret;
     }
     Parse_Bump (p, p_pool, err);
@@ -2098,7 +2076,7 @@ static Ast_Node * Parse_PSimple (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool
     }
     { __typeof__(Parse_OpText ((*p).cur.kind, err)) m9a47 = Parse_OpText ((*p).cur.kind, err);
       if (err->exc) goto L_ret;
-    Ast_SetA (pool, &(sgn), err->res, m9a47, err);
+    Ast_SetAUtf (pool, &(sgn), err->res, m9a47, err);
     if (err->exc) goto L_ret;
     }
     Parse_Bump (p, p_pool, err);
@@ -2133,7 +2111,7 @@ static Ast_Node * Parse_PSimple (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool
     }
     { __typeof__(Parse_OpText ((*p).cur.kind, err)) m9a48 = Parse_OpText ((*p).cur.kind, err);
       if (err->exc) goto L_ret;
-    Ast_SetA (pool, &(n), err->res, m9a48, err);
+    Ast_SetAUtf (pool, &(n), err->res, m9a48, err);
     if (err->exc) goto L_ret;
     }
     Parse_Bump (p, p_pool, err);
@@ -2189,7 +2167,7 @@ static Ast_Node * Parse_PRel (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, m
     }
     { __typeof__(Parse_OpText ((*p).cur.kind, err)) m9a50 = Parse_OpText ((*p).cur.kind, err);
       if (err->exc) goto L_ret;
-    Ast_SetA (pool, &(n), err->res, m9a50, err);
+    Ast_SetAUtf (pool, &(n), err->res, m9a50, err);
     if (err->exc) goto L_ret;
     }
     Parse_Bump (p, p_pool, err);
@@ -2246,7 +2224,7 @@ static Ast_Node * Parse_PConj (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
       if (err->exc) goto L_ret;
       n = m9v;
     }
-    Ast_SetA (pool, &(n), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s57, 3 }), err);
+    Ast_SetAUtf (pool, &(n), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s57, 3 }), err);
     if (err->exc) goto L_ret;
     Parse_Bump (p, p_pool, err);
     if (err->exc) goto L_ret;
@@ -2306,7 +2284,7 @@ static Ast_Node * Parse_PDisj (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
       if (err->exc) goto L_ret;
       n = m9v;
     }
-    Ast_SetA (pool, &(n), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 2 }), err);
+    Ast_SetAUtf (pool, &(n), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s58, 2 }), err);
     if (err->exc) goto L_ret;
     Parse_Bump (p, p_pool, err);
     if (err->exc) goto L_ret;
@@ -2591,7 +2569,7 @@ static Ast_Node * Parse_PType0 (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool,
         if (err->exc) goto L_ret;
         n = m9v;
       }
-      Ast_SetA (pool, &(n), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s63, 4 }), err);
+      Ast_SetAUtf (pool, &(n), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s63, 4 }), err);
       if (err->exc) goto L_ret;
       Parse_Bump (p, p_pool, err);
       if (err->exc) goto L_ret;
@@ -2898,7 +2876,7 @@ static Ast_Node * Parse_PType0 (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool,
       m9ret = n;
       goto L_ret;
   } } } } } } } } } } } } }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s67, 21 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err)) m9a81 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s67, 21 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s67, 21 }), Lex_KindName ((*p).cur.kind, err), err)) m9a81 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s67, 21 }), Lex_KindName ((*p).cur.kind, err), err);
     if (err->exc) goto L_ret;
   Parse_Rerr (p, p_pool, m9a81, err);
   if (err->exc) goto L_ret;
@@ -2907,7 +2885,7 @@ static Ast_Node * Parse_PType0 (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool,
     if (err->exc) goto L_ret;
     n = m9v;
   }
-  Ast_SetA (pool, &(n), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s68, 1 }), err);
+  Ast_SetAUtf (pool, &(n), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s68, 1 }), err);
   if (err->exc) goto L_ret;
   Parse_Bump (p, p_pool, err);
   if (err->exc) goto L_ret;
@@ -3663,7 +3641,7 @@ static Ast_Node * Parse_PStatement0 (m9_pool *pool, Parse_Parser *p, m9_pool *p_
       m9ret = n;
       goto L_ret;
   } } } } } } } } } } } } }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s72, 26 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err)) m9a116 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s72, 26 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s72, 26 }), Lex_KindName ((*p).cur.kind, err), err)) m9a116 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s72, 26 }), Lex_KindName ((*p).cur.kind, err), err);
     if (err->exc) goto L_ret;
   Parse_Rerr (p, p_pool, m9a116, err);
   if (err->exc) goto L_ret;
@@ -3832,7 +3810,7 @@ static Ast_Node * Parse_PHandler (m9_pool *pool, Parse_Parser *p, m9_pool *p_poo
           Parse_Bump (p, p_pool, err);
           if (err->exc) goto L_ret;
       } else {
-        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s74, 27 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err)) m9a118 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s74, 27 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err);
+        { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s74, 27 }), Lex_KindName ((*p).cur.kind, err), err)) m9a118 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s74, 27 }), Lex_KindName ((*p).cur.kind, err), err);
           if (err->exc) goto L_ret;
         Parse_Rerr (p, p_pool, m9a118, err);
         if (err->exc) goto L_ret;
@@ -3841,7 +3819,7 @@ static Ast_Node * Parse_PHandler (m9_pool *pool, Parse_Parser *p, m9_pool *p_poo
           if (err->exc) goto L_ret;
           h = m9v;
         }
-        Ast_SetA (pool, &(h), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s75, 1 }), err);
+        Ast_SetAUtf (pool, &(h), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s75, 1 }), err);
         if (err->exc) goto L_ret;
         Parse_Bump (p, p_pool, err);
         if (err->exc) goto L_ret;
@@ -4564,7 +4542,7 @@ static Ast_Node * Parse_PUnit (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
     m9ret = n;
     goto L_ret;
   }
-  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s97, 54 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err)) m9a150 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s97, 54 }), m9_utf_from_chars (err->res, Lex_KindName ((*p).cur.kind, err), err), err);
+  { __typeof__(m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s97, 54 }), Lex_KindName ((*p).cur.kind, err), err)) m9a150 = m9_utf_cat (err->res, ((m9_sl_UTF8){ (uint8_t *) m9s97, 54 }), Lex_KindName ((*p).cur.kind, err), err);
     if (err->exc) goto L_ret;
   Parse_Rerr (p, p_pool, m9a150, err);
   if (err->exc) goto L_ret;
@@ -4573,7 +4551,7 @@ static Ast_Node * Parse_PUnit (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, 
     if (err->exc) goto L_ret;
     n = m9v;
   }
-  Ast_SetA (pool, &(n), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s98, 1 }), err);
+  Ast_SetAUtf (pool, &(n), err->res, ((m9_sl_UTF8){ (uint8_t *) m9s98, 1 }), err);
   if (err->exc) goto L_ret;
   Parse_Bump (p, p_pool, err);
   if (err->exc) goto L_ret;

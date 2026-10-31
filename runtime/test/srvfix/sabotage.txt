@@ -1,0 +1,433 @@
+# runtime/test/Sabotage.m9 srvfix reads this list.  Each entry is one
+# small edit to a COPY of a file.  The edit breaks one property the
+# httpserver gate (srvfix.py) claims to hold, so the gate must FAIL on it.
+# docs/httpserver-plan.md, stages 1 to 3.
+#
+# The form, one entry:
+#
+#   @name what the edit breaks
+#   @file corpus/Http.m9      (optional; corpus/HttpServer.m9 without it)
+#   @old
+#   the text to replace: it must occur in the file exactly once
+#   @new
+#   the text put in its place
+#   @end
+#
+# A text is the lines between its two markers, joined by newlines, taken
+# exactly: leading spaces count, and no escapes exist.  A text that ends
+# in a newline has one empty line before the next marker.  An empty text
+# has no lines.  A line beginning with # is a comment only outside an
+# entry.  A file under corpus/ is edited in the copied library, any other
+# in the copied runtime (by its base name).
+#
+# Not here: the directory check in SendFile.  Its removal is visible on
+# macOS only, where a directory has a size.  On Linux the size query
+# fails first and the gate answers 404 either way (measured).
+
+# stage 1
+@name no Host check
+@old
+IF Text.Eq (version, 'HTTP/1.1') AND nHost # 1 THEN
+@new
+IF FALSE AND nHost # 1 THEN
+@end
+
+@name Content-Length beside Transfer-Encoding accepted
+@old
+IF nTe > 0 AND nCl > 0 THEN
+@new
+IF FALSE THEN
+@end
+
+@name two different Content-Lengths accepted
+@old
+IF nCl > 0 AND NOT Text.Eq (value, cl1) THEN
+@new
+IF FALSE THEN
+@end
+
+@name a full ring never refused
+@old
+IF q.count >= q.cap THEN RETURN FALSE END ;
+@new
+@end
+
+@name pipelined octets dropped
+@old
+  Consume (c, hend) ;
+
+@new
+  Consume (c, hend) ;
+  c.have := 0 ;
+
+@end
+
+@name the weekday off by one
+@file corpus/Http.m9
+@old
+wd := (days + 4) MOD 7
+@new
+wd := (days + 5) MOD 7
+@end
+
+@name response headers not checked
+@old
+IF NOT HeadersOk (resp.headers) OR resp.status < 100
+@new
+IF resp.status < 100
+@end
+
+@name a handler's IndexError not caught where it is called
+@old
+          | IndexError :
+              w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+          | Overflow :
+@new
+          | Overflow :
+@end
+
+@name chunk sizes read as decimal
+@old
+size := size * 16 + v
+@new
+size := size * 10 + v
+@end
+
+@name no lingering read after a refusal
+@old
+  IF ok THEN Linger (c) END ;
+
+@new
+@end
+
+@name no 100 Continue
+@old
+      IF NOT Continue100 (c) THEN RETURN FALSE END
+
+@new
+@end
+
+@name a body after HEAD
+@old
+  IF ok AND NOT head AND NOT NoBody (status) THEN
+    ok := WriteAll (c.fd, body) ;
+@new
+  IF ok AND NOT NoBody (status) THEN
+    ok := WriteAll (c.fd, body) ;
+@end
+
+@name the per-connection limit ignored
+@old
+IF served + 1 >= w.s.cfg.perConn OR Closing (w.s.q) OR I64 (Stopping ()) # 0 THEN
+@new
+IF Closing (w.s.q) OR I64 (Stopping ()) # 0 THEN
+@end
+
+@name no header deadline
+@old
+IF (F64 (NowSec ()) - t0) * 1000.0 > F64 (w.s.cfg.headerMs) THEN
+@new
+IF FALSE THEN
+@end
+
+@name a handler's ValueRange not counted
+@old
+          | ValueRange :
+              w.s.st[w.k].faults := w.s.st[w.k].faults + 1
+          | IndexError :
+@new
+          | ValueRange :
+              w.s.st[w.k].faults := w.s.st[w.k].faults + 0
+          | IndexError :
+@end
+
+@name 405 without HEAD in Allow
+@old
+IF Text.Eq (rt.method, 'GET') THEN allow := allow + ', HEAD' END
+@new
+@end
+
+@name the absolute form not accepted
+@old
+IF Text.BLen (tg) > 7 AND SameCi (SLICE (tg, 0, 7), 'http://') THEN i := 7
+@new
+IF FALSE THEN i := 7
+@end
+
+# stage 2
+@name an unsatisfiable range answered with the whole file
+@old
+    IF k = 2 THEN
+
+@new
+    IF FALSE THEN
+
+@end
+
+@name a suffix range one octet long
+@old
+    a := size - n ;
+
+@new
+    a := size - n - 1 ;
+
+@end
+
+@name a range with its last before its first taken as unsatisfiable
+@old
+    IF last < first THEN RETURN 0 END
+@new
+    IF last < first THEN RETURN 2 END
+@end
+
+@name If-Range ignored
+@old
+ AND
+     Text.BLen (Header (q, 'If-Range')) = 0 THEN
+@new
+ THEN
+@end
+
+@name Range honoured on HEAD
+@old
+IF status = 200 AND Text.Eq (q.method, 'GET') AND Text.BLen (rng) > 0 AND
+@new
+IF status = 200 AND Text.BLen (rng) > 0 AND
+@end
+
+@name a hidden file served
+@old
+IF prev = '/' AND (c = '/' OR c = '.') THEN RETURN FALSE END
+@new
+IF prev = '/' AND (c = '/') THEN RETURN FALSE END
+@end
+
+# Io encodes a path as UTF-8 since 2026-10-09, so the name goes as its
+# text.  The sabotage encodes it twice.
+@name the file name given to Io encoded twice
+@old
+  full := rt.dir + '/' + name ;
+@new
+  full := rt.dir + '/' + DynStr.Chars (scratch, OCTETS (name)) ;
+@end
+
+@name no Vary when the body goes as it is
+@old
+    extra := 'Vary: Accept-Encoding' ;
+    IF TakesGzip
+@new
+    IF TakesGzip
+@end
+
+@name q=0 taken as a yes
+@old
+  RETURN NOT zero
+END Positive ;
+@new
+  RETURN TRUE
+END Positive ;
+@end
+
+@name * not read
+@old
+  RETURN star = 1
+END TakesGzip ;
+@new
+  RETURN FALSE
+END TakesGzip ;
+@end
+
+@name a body encoded already gzipped again
+@old
+ AND
+     Compressible (resp.ctype) AND Text.BLen (Http.Header (resp.headers, 'Content-Encoding')) = 0 THEN
+@new
+ AND
+     Compressible (resp.ctype) THEN
+@end
+
+@name gzipMin ignored
+@old
+IF w.s.cfg.gzipMin > 0 AND LEN (body) >= w.s.cfg.gzipMin AND
+@new
+IF w.s.cfg.gzipMin > 0 AND
+@end
+
+@name HEAD given the identity length of a gzipped body
+@old
+    IF TakesGzip (Header (q, 'Accept-Encoding')) THEN
+      body := Zip.Gzip (scratch, body) ;
+@new
+    IF TakesGzip (Header (q, 'Accept-Encoding')) THEN
+      IF NOT head THEN body := Zip.Gzip (scratch, body) END ;
+@end
+
+@name a stream without its last chunk
+@old
+      ok := WriteAll (c.fd, OCTETS ('0' + 0DC + 0AC + 0DC + 0AC))
+@new
+      ok := TRUE
+@end
+
+@name a stream to HTTP/1.0 left open
+@old
+    IF resp.stream IS SOME p THEN keep := FALSE END
+@new
+    IF resp.stream IS SOME p THEN END
+@end
+
+@name a producer that raised taken as done
+@old
+  | ValueRange :
+      w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN -1
+@new
+  | ValueRange :
+      w.s.st[w.k].faults := w.s.st[w.k].faults + 1 ; RETURN 1
+@end
+
+@name a file read whole
+@old
+      IF n > 65536 THEN n := 65536 END ;
+
+@new
+@end
+
+# Text past Latin-1 (Alex, 2026-10-31) goes out as UTF-8 octets and is
+# judged line by line on the way in.
+@name a head written one octet per character
+@old
+  RETURN WriteAll (fd, DynStr.Octets (d))
+END Head ;
+@new
+  RETURN WriteAll (fd, DynStr.Bytes (scratch, DynStr.View (d), FALSE))
+END Head ;
+@end
+
+@name a request head read one character per octet
+@old
+  head := HeadText (scratch, SLICE (c.cb, 0, hend)) ;
+@new
+  head := DynStr.Chars (scratch, SLICE (c.cb, 0, hend)) ;
+@end
+
+@name a request head decoded whole, not line by line
+@old
+  head := HeadText (scratch, SLICE (c.cb, 0, hend)) ;
+@new
+  head := DynStr.Decoded (scratch, SLICE (c.cb, 0, hend)) ;
+@end
+
+# stage 3 (an @file line names another file than HttpServer.m9)
+@name a stop the accepting thread never sees
+@old
+      IF I64 (Stopping ()) # 0 THEN why := Stopped ; EXIT END ;
+
+@new
+@end
+
+@name an idle kept connection held through a stop
+@old
+    IF served > 0 AND (I64 (Stopping ()) # 0 OR Closing (w.s.q)) THEN RETURN FALSE END ;
+
+@new
+@end
+
+@name the answer in flight at a stop not the last
+@old
+  IF I64 (Stopping ()) # 0 OR Closing (w.s.q) THEN keep := FALSE END ;
+
+@new
+@end
+
+@name SIGTERM not caught
+@old
+  IF cfg.signals THEN Signals (C.Int (1)) END ;
+
+@new
+@end
+
+@name Stop from a handler does nothing
+@old
+BEGIN
+  StopFlag ()
+END Stop ;
+@new
+BEGIN
+END Stop ;
+@end
+
+@name X-Forwarded-For believed from anyone
+@old
+  IF NOT InList (peer, trusted) THEN RETURN peer END ;
+
+@new
+@end
+
+@name X-Forwarded-For believed when it is not addresses
+@old
+      IF NOT IsAddress (a) THEN RETURN peer END ;
+
+@new
+@end
+
+@name a trusted proxy taken for the client
+@old
+      IF NOT InList (a, trusted) THEN RETURN a END ;
+@new
+      RETURN a ;
+@end
+
+@name the bind address ignored
+@old
+  lfd := I64 (ListenAt (ADR (addr), C.Int (cfg.port), C.Int (cfg.backlog))) ;
+@new
+  lfd := I64 (Listen (C.Int (cfg.port), C.Int (cfg.backlog))) ;
+@end
+
+@name no access line for an answer
+@old
+  IF w.s.cfg.accessLog THEN
+    AccessLine (w, q.method
+@new
+  IF FALSE THEN
+    AccessLine (w, q.method
+@end
+
+@name no access line for a refusal
+@old
+  IF w.s.cfg.accessLog THEN
+    AccessLine (w, '-'
+@new
+  IF FALSE THEN
+    AccessLine (w, '-'
+@end
+
+@name Logger.Msg through the shared builder
+@file corpus/Logger.m9
+@old
+  IF NOT Enabled (level) THEN RETURN END ;
+  IF toSyslog THEN
+    Syslog.Send (Syslog.Pri (curFacility, Syslog.FromLoggerLevel (level)), text) ;
+    RETURN
+  END ;
+@new
+  Start (level, text) ;
+  Done () ;
+  RETURN ;
+@end
+
+# Since the UTF-8 switch an error line leaves in ONE fwrite, which the C
+# library locks itself, so removing M9_LOCK alone broke nothing and this
+# entry stayed green (ct121, 2026-10-31).  It now breaks the property
+# where it lives: the line goes out an octet at a time, unlocked.
+@name stderr not locked for a whole line
+@file runtime/m9rt.c
+@old
+  M9_LOCK (stderr);
+  if (n > 0) fwrite (buf, 1, n, stderr);
+  fflush (stderr);
+  M9_UNLOCK (stderr);
+@new
+  for (size_t k = 0; k < n; k++) fputc (((const unsigned char *) buf)[k], stderr);
+  fflush (stderr);
+@end

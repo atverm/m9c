@@ -1,9 +1,9 @@
-(* EXPECT: cannot concatenate a UTF with SLICE OF CHAR -- UTF (s) converts a STR *)
+(* EXPECT: cannot concatenate a string with SLICE OF CHAR -- UTF (s) converts a SLICE OF CHAR *)
 MODULE m ;
-(* legal forms first: a UTF joins a UTF, a literal and a CHAR *)
+(* Legal forms come first: a UTF joins a UTF, a literal and a CHAR. *)
 VAR
   u, v : UTF ;
-  s : STR ;
+  s : SLICE OF CHAR ;
 BEGIN
   u := 'a' ;
   v := u + u ;

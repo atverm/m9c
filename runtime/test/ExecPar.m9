@@ -6,11 +6,11 @@ MODULE ExecPar ;
    the slow child, spawned while the fast one's pipe ends were open,
    inherited them and held echo's output open for its three seconds:
    the review's C repro took 3.0 s in 2 of 5 rounds.  Each echo must
-   come back well before that; the slow ones are waited for at the end,
-   so the run takes about three seconds either way.  The bound is 2 s,
-   between the two: it was 1 s until CI ran its gates in parallel lanes
-   (2026-10-30), where one echo took 1.01 s on a runner with every core
-   busy -- a slow fork, not a held pipe, which is three seconds. *)
+   come back well before that.  The slow ones are waited for at the
+   end, so the run takes about three seconds either way.  The bound is
+   2 s, between the two.  It was 1 s until CI ran its gates in parallel
+   lanes (2026-10-30).  There one echo took 1.01 s on a runner with
+   every core busy: a slow fork, not a held pipe (three seconds). *)
 
 IMPORT Io, Fmt, System, Time ;
 
@@ -46,8 +46,8 @@ BEGIN
   WHILE gg.n < n DO WAIT (gg) END
 END AwaitAll ;
 
-(* the slow child, outside the monitor: a bound procedure would hold
-   the lock through the whole sleep *)
+(* Slow is the slow child, outside the monitor: a bound procedure
+   would hold the lock through the whole sleep. *)
 PROCEDURE Slow (OWN job: PTR Job) =
 VAR
   p : POOL ;

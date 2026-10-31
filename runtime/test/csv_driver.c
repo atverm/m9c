@@ -1,14 +1,14 @@
-/* csv_driver.c -- Csv.m9 on the ICOS FLUXNET half-hourly file.
-   244 columns, 140,256 rows, 207 MB, 34 million fields.
+/* csv_driver.c runs Csv.m9 on the ICOS FLUXNET half-hourly file.
+   The file has 244 columns, 140,256 rows, 207 MB, 34 million fields.
 
-   Correctness first: every parsed value is compared against strtof
-   on the same bytes, which is the definition of what the reader is
-   supposed to compute.  Then the shape checks -- row count, column
-   names, the half-hour step across the whole time axis -- and the
-   sentinel mapping.
+   Correctness comes first.  Every parsed value is compared against
+   strtof on the same bytes, which is the definition of what the
+   reader is supposed to compute.  Then come the shape checks (row
+   count, column names, the half-hour step across the whole time
+   axis) and the sentinel mapping.
 
-   Set $M9CSV to point somewhere else.  Skipped out loud if the file
-   is not on this machine. */
+   Set $M9CSV to point somewhere else.  The test is skipped out loud
+   if the file is not on this machine. */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,24 +29,26 @@ static void ok (const char *what, int cond)
   if (!cond) { failed++; printf ("FAIL: %s\n", what); }
 }
 
-static uint32_t sbuf[4096];
+/* S copies a C string's octets into sbuf, and wraps when it runs
+   out.  A C literal is UTF-8 already, so no octet is widened. */
+static uint8_t sbuf[16384];
 static size_t sused = 0;
 
-static m9_sl_CHAR S (const char *s)
+static m9_sl_UTF8 S (const char *s)
 {
-  size_t i, n = strlen (s);
-  uint32_t *p;
-  if (sused + n > sizeof sbuf / sizeof sbuf[0]) sused = 0;
+  size_t n = strlen (s);
+  uint8_t *p;
+  if (sused + n > sizeof sbuf) sused = 0;
   p = sbuf + sused;
   sused += n;
-  for (i = 0; i < n; i++) p[i] = (uint32_t) (unsigned char) s[i];
-  return (m9_sl_CHAR){ p, (int64_t) n };
+  memcpy (p, s, n);
+  return (m9_sl_UTF8){ p, (int64_t) n };
 }
 
-static char *C (m9_sl_CHAR s, char *out, size_t cap)
+static char *C (m9_sl_UTF8 s, char *out, size_t cap)
 {
-  size_t i, n = (size_t) s.len < cap - 1 ? (size_t) s.len : cap - 1;
-  for (i = 0; i < n; i++) out[i] = (char) s.p[i];
+  size_t n = (size_t) s.len < cap - 1 ? (size_t) s.len : cap - 1;
+  if (n > 0) memcpy (out, s.p, n);
   out[n] = 0;
   return out;
 }
@@ -69,11 +71,11 @@ int main (void)
   int64_t ts_start, ts_end, c;
 
   /* THE WIDE COLUMN IS CHECKED ON A FIXTURE THIS FILE WRITES, so it
-     is checked at all: the battery below needs a 244-column FLUXNET
-     file that is not in any repository and skips out loud without it,
-     and a kind added under that skip would be a kind nobody ever ran.
-     The values are ones a float32 CANNOT hold apart -- pi to 15
-     digits, and two neighbours 1e-15 apart -- so a Real column and a
+     is checked at all.  The battery below needs a 244-column FLUXNET
+     file that is not in any repository, and skips out loud without
+     it.  A kind added under that skip would be a kind nobody ever
+     ran.  The values are ones a float32 CANNOT hold apart: pi to 15
+     digits, and two neighbours 1e-15 apart.  So a Real column and a
      Real64 column give visibly different answers. */
   {
     static const char *FX = "/tmp/m9csv-f64.csv";
@@ -104,8 +106,8 @@ int main (void)
     d = Csv_ColF64 (w, 1, &e);
     ok ("two neighbours 1e-15 apart stay apart",
         ((double *) d.p)[0] != ((double *) d.p)[1]);
-    /* and the SAME file through the float32 kind cannot tell them
-       apart, which is what makes the new kind worth having */
+    /* The SAME file through the float32 kind cannot tell them apart,
+       which is what makes the new kind worth having. */
     w = Csv_Open (&pool, S (FX), &o, &e);
     Csv_SetReal (&w, &pool,1, &e);
     Csv_Parse (&pool, &w, &pool, &e);
@@ -113,11 +115,11 @@ int main (void)
     ok ("float32 collapses them, as the header says it would",
         ((float *) f.p)[0] == ((float *) f.p)[1]);
     /* THE SAME BYTES WITHOUT A FILE.  OpenBytes takes what a caller
-       already holds -- a ZIP member inflated in memory, which is how
-       the FLUXNET shuttle ships its BADM tables -- and must answer
-       exactly what Open answers over the file.  The buffer is freed
-       (overwritten) before the table is read, which is the copy
-       contract shown to matter rather than stated. */
+       already holds, such as a ZIP member inflated in memory.  That
+       is how the FLUXNET shuttle ships its BADM tables.  It must
+       answer exactly what Open answers over the file.  The buffer is
+       freed (overwritten) before the table is read.  That shows the
+       copy contract to matter rather than stating it. */
     {
       FILE *h = fopen (FX, "rb");
       static unsigned char raw[512];
@@ -129,7 +131,7 @@ int main (void)
           && Csv_Cols (w, &e) == 2);
       memset (raw, 'X', sizeof raw);
       ok ("and names its columns after the source is gone",
-          strcmp (C (Csv_Name (&pool, w, 1, &e), buf, sizeof buf), "b") == 0);
+          strcmp (C (Csv_NameUtf (&pool, w, 1, &e), buf, sizeof buf), "b") == 0);
       Csv_SetReal64 (&w, &pool,0, &e);
       Csv_Parse (&pool, &w, &pool, &e);
       d = Csv_ColF64 (w, 0, &e);
@@ -141,8 +143,8 @@ int main (void)
   }
 
   /* A QUOTED FIELD MAY SPAN LINES.  The row count is taken before
-     Parse by a pass that used to count every newline; inside quotes
-     Parse already kept going, so the two disagreed and the tail rows
+     Parse by a pass that used to count every newline.  Inside quotes
+     Parse already kept going, so the two disagreed, and the tail rows
      came back as empty text with nothing said.  The FLUXNET shuttle's
      site descriptions are where it showed: 78 of 783 BADM tables. */
   {
@@ -164,27 +166,27 @@ int main (void)
     Csv_Parse (&pool, &w, &pool, &e);
     ok ("and the table parses", !e.exc);
     ok ("the field keeps its newline and undoubles its quotes",
-        strcmp (C (Csv_TextAt (&pool, w, 1, 0, &e), buf, sizeof buf),
+        strcmp (C (Csv_TextAtUtf (&pool, w, 1, 0, &e), buf, sizeof buf),
                 "first line\nsecond \"quoted\" line") == 0);
     ok ("and the row after it is intact",
-        strcmp (C (Csv_TextAt (&pool, w, 1, 1, &e), buf, sizeof buf),
+        strcmp (C (Csv_TextAtUtf (&pool, w, 1, 1, &e), buf, sizeof buf),
                 "plain") == 0);
     remove (FX);
   }
 
   /* A FIELD THAT IS NOT A NUMBER IS MISSING, NOT ZERO.
 
-     strtod answers 0 for text, so a numeric column carrying a word
-     used to read back as a measured zero -- indistinguishable from a
+     strtod answers 0 for text.  So a numeric column carrying a word
+     used to read back as a measured zero, indistinguishable from a
      real one.  The ICOS ocean store found it: pandas' duplicate-name
      mangling let a comment column past the drop rule, and 551
-     sentences became 0.0.  Shown able to fail by removing IsNumber's
-     call site: every row below reads 0 instead of NaN.
+     sentences became 0.0.  Removing IsNumber's call site shows the
+     test able to fail: every row below reads 0 instead of NaN.
 
-     The last two rows are the OTHER half -- the spellings that ARE
-     numbers and must still parse, including the ones strtod would
-     take and this deliberately refuses (0x10 is not a number here,
-     and pandas agrees). */
+     The last two rows are the OTHER half: the spellings that ARE
+     numbers and must still parse.  They include the ones strtod
+     would take and this deliberately refuses (0x10 is not a number
+     here, and pandas agrees). */
   {
     static const char *FX = "/tmp/m9csv-text.csv";
     FILE *g = fopen (FX, "wb");
@@ -226,7 +228,8 @@ int main (void)
     ok ("a leading point parses", v[8] == 0.5);
     ok ("an exponent with no digits is NaN", v[9] != v[9]);
     ok ("digits followed by letters are NaN", v[10] != v[10]);
-    /* the same rule on the float32 kind, which shares the test */
+    /* The same rule holds on the float32 kind, which shares the
+     test. */
     w = Csv_Open (&pool, S (FX), &o, &e);
     Csv_SetReal (&w, &pool,0, &e);
     Csv_Parse (&pool, &w, &pool, &e);
@@ -249,10 +252,10 @@ int main (void)
     return failed ? 1 : 0;
   }
 
-  /* every file-specific decision, in one place and none of them
-     guessed: FLUXNET is comma separated, unquoted, one header row,
-     -9999 for a gap, and its clock is the site's local standard
-     time */
+  /* Every file-specific decision is here, in one place, and none of
+     them is guessed.  FLUXNET is comma separated, unquoted, one
+     header row, -9999 for a gap, and its clock is the site's local
+     standard time. */
   opt = Csv_Defaults (&e);
   opt.missing = -9999.0f;
   opt.hasMissing = true;
@@ -268,23 +271,23 @@ int main (void)
   ok ("244 columns", Csv_Cols (t, &e) == 244);
   ok ("140256 rows", Csv_Rows (t, &e) == 140256);
   ok ("the first column is TIMESTAMP_START",
-      strcmp (C (Csv_Name (&pool, t, 0, &e), buf, sizeof buf),
+      strcmp (C (Csv_NameUtf (&pool, t, 0, &e), buf, sizeof buf),
               "TIMESTAMP_START") == 0);
-  ok ("Find agrees with Name", Csv_Find (t, S ("TIMESTAMP_END"), &e) == 1);
+  ok ("Find agrees with Name", Csv_FindUtf (t, S ("TIMESTAMP_END"), &e) == 1);
   ok ("Find answers -1 for a column that is not there",
-      Csv_Find (t, S ("NO_SUCH_COLUMN"), &e) == -1);
+      Csv_FindUtf (t, S ("NO_SUCH_COLUMN"), &e) == -1);
 
-  ts_start = Csv_Find (t, S ("TIMESTAMP_START"), &e);
-  ts_end = Csv_Find (t, S ("TIMESTAMP_END"), &e);
-  /* the layout is part of the kind: YYYYMMDDhhmm rather than
-     "a timestamp, somehow".  Both spellings, because both are API:
-     the variant for a C caller, the setter for an M9 one. */
+  ts_start = Csv_FindUtf (t, S ("TIMESTAMP_START"), &e);
+  ts_end = Csv_FindUtf (t, S ("TIMESTAMP_END"), &e);
+  /* The layout is part of the kind: YYYYMMDDhhmm rather than
+     "a timestamp, somehow".  Both spellings appear, because both are
+     API: the variant for a C caller, the setter for an M9 one. */
   Csv_SetKind (&t, &pool,ts_start,
                (Csv_Kind){ Csv_Kind_Stamp, { { Csv_StampYmdHm } } }, &e);
   Csv_SetStamp (&t, &pool,ts_end, Csv_StampYmdHm, &e);
-  /* every other column is a measurement, and that has to be SAID:
+  /* Every other column is a measurement, and that has to be SAID.
      Open leaves a column Skip until a setter names its kind, so the
-     242 of them are declared here, one by one */
+     242 of them are declared here, one by one. */
   for (int64_t c = 0; c < Csv_Cols (t, &e); c++)
     if (c != ts_start && c != ts_end) Csv_SetReal (&t, &pool,c, &e);
   ok ("the column kinds are accepted", !e.exc);
@@ -322,8 +325,8 @@ int main (void)
         if (comma) *comma = 0;
         if (col == ts_start || col == ts_end)
         {
-          /* the reference for a stamp: the digits, read as a civil
-             time in local standard, minus the offset */
+          /* The reference for a stamp is the digits, read as a civil
+             time in local standard, minus the offset. */
           long long v = atoll (p);
           struct tm tmv;
           time_t utc;
@@ -389,13 +392,13 @@ int main (void)
 
   /* ---- a value anyone can check by eye ---- */
   {
-    int64_t ta = Csv_Find (t, S ("TA_F"), &e);
+    int64_t ta = Csv_FindUtf (t, S ("TA_F"), &e);
     float *v = Csv_ColF32 (t, ta, &e).p;
     ok ("TA_F is a column", ta > 0);
     ok ("TA_F[0] is 6.341, the first row of the file",
         v[0] == 6.341f);
     ok ("TA_ERA[0] agrees with it",
-        Csv_ColF32 (t, Csv_Find (t, S ("TA_ERA"), &e), &e).p[0] == 6.341f);
+        Csv_ColF32 (t, Csv_FindUtf (t, S ("TA_ERA"), &e), &e).p[0] == 6.341f);
   }
 
   /* ---- the refusal ---- */

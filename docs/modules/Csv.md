@@ -1,9 +1,10 @@
 # Csv
 
-A reader for delimited text tables with a column header.
+Csv reads delimited text tables with a column header.
 
-WHAT IT IS FOR.  Numeric tables large enough that the reading is
-the cost: instrument timeseries, model output, station archives.
+WHAT IT IS FOR.  It is for numeric tables large enough that the
+reading is the cost: instrument timeseries, model output, station
+archives.
 It parses every column in ONE pass and hands out finished storage
 afterwards, because a column-at-a-time reader walks the whole file
 once per column and there are usually hundreds.
@@ -20,13 +21,13 @@ Everything specific to a file is an Option or a per-column Kind:
 THERE IS NO TYPE INFERENCE, deliberately.  A reader that samples the
 first rows and decides types from them will read a column of
 sentinels as an integer and fail on the first real value further
-down -- not hypothetical: polars, given the file this was first
-written for, stops 125 KB in with "could not parse `-2.03` as dtype
-`i64`".  Sampling also cannot distinguish a station code from a
-number.  So the caller states the schema, and a schema is exactly
-the kind of thing that belongs in a file next to the data rather
-than in the program (demo/icos-roundtrip has one, derived from its
-data provider's published variable dictionary).
+down.  That is not hypothetical: polars, given the file this was
+first written for, stops 125 KB in with "could not parse `-2.03` as
+dtype `i64`".  Sampling also cannot distinguish a station code from a
+number.  So the caller states the schema, and a schema is exactly the
+kind of thing that belongs in a file next to the data rather than in
+the program (demo/icos-roundtrip has one, derived from its data
+provider's published variable dictionary).
 
 MEASUREMENTS ARE F32.  That is what instruments produce and what
 NetCDF and Zarr archives of the same data store, so comparing them
@@ -37,9 +38,9 @@ it.  A caller needing F64 measurements should say so and this grows
 a kind; nobody has yet.
 
 TIME IS Time.Instant, which is UTC by construction.  A timestamp
-written without a zone -- which is most of them, in this kind of
-data -- therefore cannot become an Instant until the caller says
-what zone it was written in.  That is the point, not an
+written without a zone (most of them, in this kind of data)
+therefore cannot become an Instant until the caller says what zone
+it was written in.  That is the point, not an
 inconvenience: it is the difference between an hour of silent error
 and a line of configuration.
 
@@ -47,16 +48,16 @@ A FIELD THAT IS NOT A NUMBER IS MISSING, NOT ZERO.  A column the
 caller declared Real or Real64 is parsed only when the field looks
 like a number; anything else reads NaN, exactly as an empty field
 does.  strtod answers 0 for text, and a sentence stored as a
-measured 0.0 is the worst of the three possible answers -- found
-in the ICOS ocean store, where 551 comment cells did precisely
+measured 0.0 is the worst of the three possible answers.  The ICOS
+ocean store found this: 551 comment cells there did precisely
 that.  See IsNumber for what counts.
 
-WHAT IT IS NOT.  Not a general CSV library: no ragged rows, no
-type inference, no streaming.  A quoted field MAY carry a newline
-and a doubled "" (TextAt undoubles it) -- both arrived when a
-caller needed them, the FLUXNET shuttle's BADM tables, and each
-of the rest is a real feature for somebody and none is free, so
-they arrive the same way.
+WHAT IT IS NOT.  Csv is not a general CSV library: no ragged rows,
+no type inference, no streaming.  A quoted field MAY carry a
+newline and a doubled "" (TextAt undoubles it).  Both arrived when
+a caller needed them, the FLUXNET shuttle's BADM tables.  Each of
+the rest is a real feature for somebody and none is free, so they
+arrive the same way.
 
 ### TYPE Table
 
@@ -96,24 +97,24 @@ _(documented with the group below)_
 
 ### Defaults () : Options
 
-comma, unquoted, one header row, no preamble, no missing value,
-UTC.  Every one of those is a decision, so they are in one place
-where a reader can see all of them at once.
+Defaults answers comma, unquoted, one header row, no preamble, no
+missing value, UTC.  Every one of those is a decision, so they are
+in one place where a reader can see all of them at once.
 
 ### Open (VAR pool: POOL ; RO path: STR ; RO opt: Options) : PTR Table IN pool RAISES ParseError, ValueRange, Io.IOError
 
-reads the file and the header and counts the rows; parses no
-values, because the caller declares the column kinds first.
-Every column is Skip until a setter names it: a column nobody
-declared is scanned past, never parsed and never carried.
+Open reads the file and the header and counts the rows.  It
+parses no values, because the caller declares the column kinds
+first.  Every column is Skip until a setter names it: a column
+nobody declared is scanned past, never parsed and never carried.
 
 ### OpenBytes (VAR pool: POOL ; RO src: SLICE OF BYTE ; RO opt: Options) : PTR Table IN pool RAISES ParseError, ValueRange
 
-the same, over bytes the caller already holds -- a ZIP member
-inflated into memory, a body off the wire.  The octets are COPIED
-into the table (plus the trailing zero Open's file read carries),
-so the caller's buffer is free the moment this returns and the
-table never reaches into a pool it does not own.
+OpenBytes does the same over bytes the caller already holds: a
+ZIP member inflated into memory, a body off the wire.  The octets
+are COPIED into the table (plus the trailing zero Open's file read
+carries), so the caller's buffer is free the moment this returns
+and the table never reaches into a pool it does not own.
 
 ### Rows (t: PTR Table) : I64
 
@@ -133,8 +134,9 @@ _(documented with the group below)_
 
 **Deprecated** (the UTF transition): FindUtf is its UTF form.
 
-the column index, or -1.  Not an error: a caller choosing
-between conventions needs the question, not the diagnosis
+Find answers the column index, or -1.  That is not an error: a
+caller choosing between conventions needs the question, not the
+diagnosis.
 
 ### SetKind (VAR t: PTR Table ; c: I64 ; k: Kind) RAISES IndexError
 
@@ -146,12 +148,13 @@ _(documented with the group below)_
 
 ### SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError
 
-MEASUREMENTS ARE F32 by default and the module header says why.
-This is the exception that header names -- "a caller needing F64
-measurements should say so and this grows a kind" -- and the
+MEASUREMENTS ARE F32 by default, and the module header says why.
+SetReal64 is the exception that header names: "a caller needing
+F64 measurements should say so and this grows a kind".  The
 caller that needed it is the ICOS ocean store, whose every
-measurement array is `<f8>`: narrowing here and widening again
-to write would be two roundings where the file has one number.
+measurement array is `<f8>`.  A narrowing here and a widening
+again to write would be two roundings where the file has one
+number.
 
 ### SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError
 
@@ -167,12 +170,12 @@ _(documented with the group below)_
 
 ### SetStamp (VAR t: PTR Table ; c: I64 ; format: I64) RAISES IndexError
 
-the same thing as SetKind, said without naming the variant.
-These setters date from when a caller in another module could
+These setters say the same thing as SetKind without naming the
+variant.  They date from when a caller in another module could
 not write `Csv.Kind.Real` (the checker accepted it, the
 generator refused it).  That gap CLOSED 2026-09-15
 (`corpus/KindUse.m9` is the gendiff fixture that writes every
-form); `SetKind (t, c, Csv.Kind.Real)` works from anywhere and
+form).  `SetKind (t, c, Csv.Kind.Real)` works from anywhere and
 is the preferred spelling.  The setters stay for their callers
 and for C, which has no constructor syntax.
 
@@ -182,21 +185,21 @@ _(documented with the group below)_
 
 ### IsSet (t: PTR Table ; c: I64) : BOOL RAISES IndexError
 
-whether column c has had its kind named -- FALSE while it is
-still Skip.  The count of parsed columns, without spelling out
-every kind at the call site.
+IsSet asks whether column c has had its kind named: FALSE while
+it is still Skip.  It gives the count of parsed columns without
+spelling out every kind at the call site.
 
 ### FormatAt (t: PTR Table ; c: I64) : I64 RAISES IndexError
 
-the kind the caller set (Skip until set) and, for a Stamp
-column, its format.  A caller in another module CASEs the Kind
-directly now (the cross-module variant selector the enumeration
-work gave the generator); the integer codes it used to answer
-against are gone.
+KindAt answers the kind the caller set (Skip until set), and
+FormatAt, for a Stamp column, its format.  A caller in another
+module CASEs the Kind directly now (the cross-module variant
+selector the enumeration work gave the generator); the integer
+codes it used to answer against are gone.
 
 ### Parse (VAR pool: POOL ; VAR t: PTR Table) RAISES ParseError, RangeError, ValueRange, IndexError
 
-one pass over the whole file
+Parse makes one pass over the whole file.
 
 ### ColF32 (t: PTR Table ; c: I64) : SLICE OF F32 RAISES IndexError
 
@@ -218,9 +221,9 @@ _(documented with the group below)_
 
 **Deprecated** (the UTF transition): TextAtUtf is its UTF form.
 
-a text field, built on demand out of the file still in memory: a
-table of a hundred thousand rows does not want a hundred
-thousand strings nobody asked for
+TextAt answers a text field, built on demand out of the file
+still in memory: a table of a hundred thousand rows does not want
+a hundred thousand strings nobody asked for.
 
 ### NameUtf (VAR pool: POOL ; t: PTR Table ; c: I64) : UTF RAISES IndexError, ValueRange
 
@@ -248,7 +251,8 @@ _(documented with the group below)_
 
 ### CFieldF64 (p: C.ConstPtr ; n: C.SSizeT ; out: C.MutPtr) : C.Int [REENTRANT]
 
-IsNumber's grammar in one pass in the runtime (m9rt.h,
-2026-10-25), CFieldF64 with the value: 1 a number, 0 not one, -1
-under M9_CSV_PORTABLE -- then IsNumber and FieldF64 below decide,
-the portable twin.  IsNumber and Word were 31% of a CSV read.
+CNumber runs IsNumber's grammar in one pass in the runtime
+(m9rt.h, 2026-10-25), and CFieldF64 runs it with the value: 1 a
+number, 0 not one, -1 under M9_CSV_PORTABLE.  Then IsNumber and
+FieldF64 below decide, the portable twin.  IsNumber and Word were
+31% of a CSV read.

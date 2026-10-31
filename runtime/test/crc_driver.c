@@ -1,13 +1,14 @@
-/* crc_driver.c -- the runtime's CRC-32 fast path (m9_crc_raw) held to
-   its portable twin (m9_crc_raw_portable) and both to zlib's crc32,
-   the oracle that is not ours: 3,000 random pieces at every alignment
-   and length up to 60 KB, each as a whole and as a running update in
-   two parts, plus the empty piece and a single byte.  On an aarch64
-   build the fast path is the architecture's instructions and the twin
-   is slicing-by-eight; on x86-64 both are slicing-by-eight today and
-   zlib alone tells them wrong.  Shown able to fail: a table entry
-   flipped in m9rt.c fails 2,979 of 9,002 checks (2026-10-25).
-   Speed is printed, never gated.  Battery `crc' in build.sh. */
+/* crc_driver.c holds the runtime's CRC-32 fast path (m9_crc_raw) to
+   its portable twin (m9_crc_raw_portable), and both to zlib's crc32,
+   the oracle that is not ours.  It runs 3,000 random pieces at every
+   alignment and length up to 60 KB.  Each goes as a whole and as a
+   running update in two parts, plus the empty piece and a single
+   byte.  On an aarch64 build the fast path is the architecture's
+   instructions and the twin is slicing-by-eight.  On x86-64 both are
+   slicing-by-eight today, and zlib alone tells them wrong.  The test
+   is shown able to fail: a table entry flipped in m9rt.c fails 2,979
+   of 9,002 checks (2026-10-25).  Speed is printed, never gated.  The
+   battery is `crc' in build.sh. */
 #define _POSIX_C_SOURCE 200809L   /* clock_gettime under -std=c11 on glibc */
 #include <stdint.h>
 #include <stdio.h>
@@ -26,7 +27,8 @@ static double now (void)
   return t.tv_sec + t.tv_nsec * 1e-9;
 }
 
-/* the finished value of a raw state, as Zip finishes it */
+/* fin answers the finished value of a raw state, as Zip finishes
+   it. */
 static uint32_t fin (int64_t raw) { return (uint32_t) (raw ^ ONES); }
 
 int main (void)
@@ -61,7 +63,7 @@ int main (void)
   if (fin (m9_crc_raw (ONES, r, 0)) != 0) { bad++; printf ("FAIL empty\n"); }
   if (fin (m9_crc_raw (ONES, r, 1)) != (uint32_t) crc32 (0L, r, 1)) { bad++; printf ("FAIL one byte\n"); }
 
-  /* speed, printed: 64 MB, three rounds, the best kept */
+  /* Print the speed: 64 MB, three rounds, the best kept. */
   size_t N = 64u << 20;
   uint8_t *big = malloc (N);
   for (size_t i = 0; i < N; i++) big[i] = (uint8_t) (i * 2654435761u >> 13);

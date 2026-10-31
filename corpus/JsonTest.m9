@@ -1,11 +1,11 @@
 MODULE JsonTest ;
 
-(* Json, tested in M9 (runtime/test/m9test.sh runs every *Test.m9
-   beside its module).  The parser and the serialisers keep their C
-   driver (json_driver.c, against Python's json); this file holds what
-   came after it: NewRaw (2026-10-10), a number written as its text
-   says.  The values are read back through Fmt.ParseF64, which FmtTest
-   holds to Python's float(). *)
+(* JsonTest tests Json in M9 (runtime/test/m9test.sh runs every
+   *Test.m9 beside its module).  The parser and the serialisers keep
+   their C driver (json_driver.c, against Python's json); this file
+   holds what came after it: NewRaw (2026-10-10), a number written as
+   its text says.  The values are read back through Fmt.ParseF64, which
+   FmtTest holds to Python's float(). *)
 
 IMPORT Check ;
 IMPORT Fmt ;
@@ -75,10 +75,11 @@ EXCEPT
 END Pooled ;
 
 PROCEDURE Unicode () =
-  (* text past ASCII through the parser and the serialiser: a \u
-     escape, a surrogate pair and raw UTF-8 -- the switched Json gave
-     each octet of a raw `é' back as a character of its own until its
-     decoder copied the text between escapes as runs *)
+  (* This sends text past ASCII through the parser and the
+     serialiser: a \u escape, a surrogate pair and raw UTF-8.  The
+     switched Json gave each octet of a raw `é' back as a character of
+     its own until its decoder copied the text between escapes as
+     runs. *)
 VAR
   n : PTR Json.Node ;
 BEGIN

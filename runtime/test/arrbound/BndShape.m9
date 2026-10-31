@@ -1,9 +1,9 @@
 MODULE BndShape ;
 
-(* one value, one type: ARRAY N OF F64 with N = 3, ARRAY 3 OF F64,
-   ARRAY 2 + 1 OF F64 and BndDef's ARRAY M OF F64 (M = 3) assigned to
-   each other and lent to an RO ARRAY 3 OF F64 (a port's report M8,
-   2026-10-30: refused as two types until then) *)
+(* One value has one type: ARRAY N OF F64 with N = 3, ARRAY 3 OF F64,
+   ARRAY 2 + 1 OF F64 and BndDef's ARRAY M OF F64 (M = 3) are assigned
+   to each other and lent to an RO ARRAY 3 OF F64.  A port's report
+   M8 (2026-10-30) found them refused as two types until then. *)
 
 IMPORT Io, Fmt, BndDef ;
 

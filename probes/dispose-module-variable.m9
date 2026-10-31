@@ -1,9 +1,9 @@
 (* EXPECT: cannot DISPOSE the module variable g in a procedure *)
 MODULE m ;
-(* in a procedure a module variable is no owner: nothing there shows
+(* In a procedure a module variable is no owner.  Nothing there shows
    that no other name still holds what it points to, and the module body
    reads it after the call (the third review's ownership O2).  Legal
-   forms first: an owned local disposed, and an OWN parameter. *)
+   forms come first: an owned local disposed, and an OWN parameter. *)
 TYPE R = RECORD n : I64 END ;
 VAR g : PTR R ;
 PROCEDURE Local () =

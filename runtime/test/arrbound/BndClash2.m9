@@ -1,7 +1,7 @@
 MODULE BndClash2 ;
 
-(* refused: the same with the name inside an expression, BndDef's
-   ARRAY 2 * N (8) against this module's ARRAY 2 * N (18) *)
+(* Refused: the same clash, the name inside an expression.  BndDef's
+   ARRAY 2 * N (8) meets this module's ARRAY 2 * N (18). *)
 
 IMPORT BndDef ;
 

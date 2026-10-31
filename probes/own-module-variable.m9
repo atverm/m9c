@@ -1,9 +1,9 @@
 (* EXPECT: cannot move the module variable g into an OWN parameter in a procedure *)
 MODULE m ;
-(* as DISPOSE: a procedure cannot move what the module owns into an OWN
-   parameter, which may free it, while the body reads it after the call
-   (the third review's ownership O3).  Legal forms first: an owned local
-   moved, and the module body moving its own variable. *)
+(* As with DISPOSE, a procedure cannot move what the module owns into an
+   OWN parameter, which may free it, while the body reads it after the
+   call (the third review's ownership O3).  Legal forms come first: an
+   owned local moved, and the module body moving its own variable. *)
 TYPE R = RECORD n : I64 END ;
 VAR g, h : PTR R ;
 PROCEDURE Eat (OWN q: PTR R) =

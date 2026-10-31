@@ -1,6 +1,6 @@
 MODULE SmtpFix ;
 
-(* The driver of runtime/test/smtp.sh: sends what smtpfix.py's four
+(* The driver of runtime/test/smtp.sh sends what smtpfix.py's four
    servers should receive and prints a line per message, `sent TAG N
    FROM RCPTS | SUBJECT | BODY | ATTACH | AUTH`, which the judge holds
    the arrived .eml files to; and a line `refused NAME CODE` for each
@@ -30,12 +30,13 @@ PROCEDURE Int (RO s: STR) : I64 =
 VAR i, v : I64 ;
 BEGIN
   v := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO v := v * 10 + ORD (s[i]) - 48 END ;
+  FOR i := 0 TO Text.BLen (s) - 1 DO v := v * 10 + I64 (Text.BAt (s, i)) - 48 END ;
   RETURN v
 END Int ;
 
 PROCEDURE Pattern (n: I64) : SLICE OF BYTE RAISES ValueRange =
-  (* the octets the judge expects of an attachment of n *)
+  (* Pattern answers the octets the judge expects of an attachment of
+   n. *)
 VAR
   b : SLICE OF BYTE ;
   i : I64 ;
@@ -52,7 +53,7 @@ END Shown ;
 
 PROCEDURE Try (RO name: STR ; port: I64 ; security: I64 ; RO user: STR ;
                RO pass: STR ; m: PTR Smtp.Message) : BOOL =
-  (* TRUE when sent; else the refusal line *)
+  (* Try answers TRUE when sent; else it prints the refusal line. *)
 VAR
   why : STR ;
   c : I64 ;
@@ -66,7 +67,7 @@ EXCEPT
     Io.WriteLine ('refused ' + name + ' ' + Fmt.I64Str (c) + ' -- ' + why) ;
     RETURN FALSE
 | ValueRange :
-    Io.WriteLine ('refused ' + name + ' ValueRange') ;
+    Io.WriteLine ('FAIL ' + name + ': ValueRange') ;
     RETURN FALSE
 END Try ;
 
@@ -75,11 +76,13 @@ BEGIN
   RETURN 'octets line one' + 0AC + '.a dot line' + 0AC + 'last line without a line end'
 END OctetsBody ;
 
-PROCEDURE Octets () : SLICE OF BYTE RAISES ValueRange =
-  (* a whole message, LF line ends throughout, no final line end; in
-     the program's pool, since a local pool dies with the frame *)
+PROCEDURE Octets () : SLICE OF BYTE RAISES IndexError =
+  (* Octets answers a whole message, LF line ends throughout, no final
+     line end, in the program's pool: a local pool dies with the
+     frame.  The message is ASCII, so its UTF-8 octets are its
+     characters. *)
 BEGIN
-  RETURN DynStr.Bytes (pool,
+  RETURN DynStr.Wire (pool,
            'From: Alice <alice@test.org>' + 0AC + 'To: list@test.org' + 0AC +
            'Subject: composed' + 0AC + 'Date: Wed, 15 Oct 2026 12:00:00 +0000' + 0AC +
            'Message-ID: <composed@test.org>' + 0AC + 'Content-Type: text/plain; charset=us-ascii' + 0AC +
@@ -88,14 +91,15 @@ END Octets ;
 
 PROCEDURE TryOctets (RO name: STR ; port: I64 ; security: I64 ; RO user: STR ;
                      RO pass: STR ; RO from: STR ; RO to: STR ; RO octets: SLICE OF BYTE) : BOOL =
-  (* SendOctets to one recipient, or none when to is empty *)
+  (* TryOctets calls SendOctets with one recipient, or none when to is
+     empty. *)
 VAR
   scratch : POOL ;
   rcpts : SLICE OF STR ;
   why : STR ;
   c : I64 ;
 BEGIN
-  IF LEN (to) = 0 THEN rcpts := NEW (scratch, STR, 0)
+  IF Text.BLen (to) = 0 THEN rcpts := NEW (scratch, STR, 0)
   ELSE rcpts := NEW (scratch, STR, 1) ; rcpts[0] := to
   END ;
   Smtp.SendOctets (Host, port, security, user, pass, from, rcpts, octets) ;
@@ -107,7 +111,7 @@ EXCEPT
     Io.WriteLine ('refused ' + name + ' ' + Fmt.I64Str (c) + ' -- ' + why) ;
     RETURN FALSE
 | ValueRange :
-    Io.WriteLine ('refused ' + name + ' ValueRange') ;
+    Io.WriteLine ('FAIL ' + name + ': ValueRange') ;
     RETURN FALSE
 END TryOctets ;
 
@@ -143,7 +147,68 @@ BEGIN
   RETURN m
 END Simple ;
 
-PROCEDURE Run () RAISES ValueRange =
+PROCEDURE Snow () : STR =
+  (* Snow answers text past U+00FF: a snowman and a euro sign. *)
+BEGIN
+  RETURN 'Schnee ' + 2603C + ' ' + 20ACC
+END Snow ;
+
+PROCEDURE Snow1 () : PTR Smtp.Message IN pool RAISES ValueRange =
+VAR m : PTR Smtp.Message IN pool ;
+BEGIN
+  m := Smtp.New (pool, From, Snow ()) ;
+  Smtp.AddTo (m, 'b@test.org') ;
+  Smtp.SetText (m, Snow () + 0AC + 'zwei') ;
+  Smtp.Attach (m, SnowName (), 'application/octet-stream', Pattern (30)) ;
+  RETURN m
+END Snow1 ;
+
+PROCEDURE SnowName () : STR =
+  (* SnowName answers a file name past U+00FF.  Smtp writes it raw, as
+     UTF-8 octets in the header (RFC 6532), and Python reads it so. *)
+BEGIN
+  RETURN 'Schnee ' + 2603C + ' ' + 0E9C + '.bin'
+END SnowName ;
+
+PROCEDURE UtfRcpt () : STR =
+  (* UtfRcpt answers an address past ASCII: a snowman before the @.
+     The judge holds an address that begins bcc to the envelope. *)
+BEGIN
+  RETURN 'bcc' + 2603C + '@test.org'
+END UtfRcpt ;
+
+PROCEDURE UtfBcc () : PTR Smtp.Message IN pool =
+  (* UtfBcc answers an ASCII message with UtfRcpt as its Bcc. *)
+VAR m : PTR Smtp.Message IN pool ;
+BEGIN
+  m := Simple ('utf address', 'b@test.org') ;
+  Smtp.AddBcc (m, UtfRcpt ()) ;
+  RETURN m
+END UtfBcc ;
+
+PROCEDURE TryReply (RO name: STR ; RO rcpt: STR ; RO want: STR) =
+  (* TryReply sends to a recipient the plain server refuses with a 550
+     beyond ASCII.  It prints the refusal line.  It prints a FAIL line
+     unless the reply reads as want. *)
+VAR
+  why : STR ;
+  c : I64 ;
+BEGIN
+  Smtp.Send (Host, plain, Smtp.Plain, '', '', Simple ('x', rcpt)) ;
+  Io.WriteLine ('FAIL ' + name + ': sent')
+EXCEPT
+| Smtp.Error (msg, code) :
+    why := msg ;
+    c := code ;
+    Io.WriteLine ('refused ' + name + ' ' + Fmt.I64Str (c) + ' -- ' + why) ;
+    IF NOT Text.Eq (why, 'smtp: RCPT TO ' + rcpt + ': 550 Postfach ' + want + ' unbekannt') THEN
+      Io.WriteLine ('FAIL ' + name + ': the reply read as ' + why)
+    END
+| ValueRange :
+    Io.WriteLine ('FAIL ' + name + ': ValueRange')
+END TryReply ;
+
+PROCEDURE Run () RAISES ValueRange, IndexError =
 VAR
   m : PTR Smtp.Message IN pool ;
   longSubject : STR ;
@@ -167,6 +232,15 @@ BEGIN
     Sent ('p', np, 'b@test.org,c@test.org,bcc@test.org', longSubject, 'see the file',
           'data.bin:application/octet-stream:300', TRUE)
   END ;
+  (* The plain server does not offer SMTPUTF8.  A message that needs
+     it is refused by name, before MAIL FROM: one for its address, one
+     for its raw UTF-8 file name. *)
+  IF Try ('noutfaddr', plain, Smtp.Plain, '', '', UtfBcc ()) THEN
+    Io.WriteLine ('FAIL noutfaddr: sent')
+  END ;
+  IF Try ('noutfdata', plain, Smtp.Plain, '', '', Snow1 ()) THEN
+    Io.WriteLine ('FAIL noutfdata: sent')
+  END ;
   (* refusals on the plain server: a wrong password, a recipient the
      server rejects, a sender it defers, STARTTLS it does not offer *)
   IF Try ('badpass', plain, Smtp.Plain, 'm9', 'wrong', Simple ('x', 'b@test.org')) THEN
@@ -187,7 +261,7 @@ BEGIN
   IF Try ('tlsplain', plain, Smtp.Tls, '', '', Simple ('x', 'b@test.org')) THEN
     Io.WriteLine ('FAIL tlsplain: sent')
   END ;
-  (* p 3: SendOctets -- a message the driver composed, LF line ends
+  (* p 4: SendOctets -- a message the driver composed, LF line ends
      and a dot line, under an envelope that differs from its headers
      (a list's VERP sender, the member alone as recipient) *)
   IF TryOctets ('octets', plain, Smtp.Plain, '', '', 'list+bounce+b=test.org@test.org',
@@ -205,6 +279,19 @@ BEGIN
     nl := nl + 1 ;
     Sent ('l', nl, 'b@test.org', 'by LOGIN', Text1 (), '-', TRUE)
   END ;
+  (* l 2: the LOGIN server offers SMTPUTF8.  A subject, a body and a
+     file name past U+00FF arrive as UTF-8, under SMTPUTF8. *)
+  IF Try ('snow', login, Smtp.Plain, '', '', Snow1 ()) THEN
+    nl := nl + 1 ;
+    Sent ('l', nl, 'b@test.org', Snow (), Snow () + 0AC + 'zwei',
+          SnowName () + ':application/octet-stream:30', FALSE)
+  END ;
+  (* l 3: a Bcc address past ASCII arrives as UTF-8, under SMTPUTF8.
+     Only the envelope holds it, so the message octets stay ASCII. *)
+  IF Try ('utfaddr', login, Smtp.Plain, '', '', UtfBcc ()) THEN
+    nl := nl + 1 ;
+    Sent ('l', nl, 'b@test.org,' + UtfRcpt (), 'utf address', Text1 (), '-', FALSE)
+  END ;
   (* t 1: implicit TLS *)
   IF Try ('tls', tls, Smtp.Tls, 'm9', 'secret', Simple ('over TLS', 'b@test.org')) THEN
     nt := nt + 1 ;
@@ -217,7 +304,11 @@ BEGIN
   END ;
   IF Try ('needstarttls', starttls, Smtp.Plain, '', '', Simple ('x', 'b@test.org')) THEN
     Io.WriteLine ('FAIL needstarttls: sent')
-  END
+  END ;
+  (* replies beyond ASCII: UTF-8 octets read as UTF-8, Latin-1 octets
+     one character per octet; both read as the server's text *)
+  TryReply ('utfreply', 'utf8@test.org', '' + 2603C + ' ' + 0E9C) ;
+  TryReply ('latinreply', 'latin1@test.org', '' + 0E9C)
 END Run ;
 
 BEGIN
@@ -236,8 +327,8 @@ BEGIN
     starttls := Int (Io.Arg (pool, 4)) ;
     Run ()
   EXCEPT
-  | ValueRange :
-      Io.WriteLine ('FAIL ValueRange')
+  | ValueRange, IndexError :
+      Io.WriteLine ('FAIL ValueRange or IndexError')
   END ;
   Io.WriteLine ('done')
 END SmtpFix.

@@ -1,17 +1,17 @@
 (* SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0 *)
 DEFINITION MODULE Zip ;
 
-(* Reading a member of a ZIP archive as a STREAM.
+(* Zip reads a member of a ZIP archive as a STREAM.
 
    It exists for one file: SOCAT ships its synthesis product as a
    9 GB tab-separated table inside a zip, and the ICOS store builder
    walks it once.  Nothing may hold the archive and nothing may hold
-   the member -- which is the same constraint `Delim` is built for,
-   one layer down.
+   the member.  That is the same constraint `Delim` is built for, one
+   layer down.
 
    WHAT IS SUPPORTED, and everything else is refused BY NAME:
      * stored (method 0) and deflated (method 8) members;
-     * ZIP64, which is not optional here -- a member whose
+     * ZIP64, which is not optional here: a member whose
        UNCOMPRESSED size passes 4 GB carries 0xFFFFFFFF in the
        classic fields and its real size in an extra field, and
        SOCAT's is 9 GB;
@@ -37,8 +37,8 @@ DEFINITION MODULE Zip ;
    instructions or slicing-by-eight; the first fast path of the
    ledger's list): a gzip file's sum was 15% of its read.
 
-   `Close` frees nothing any more -- the decoder's window is in the
-   pool the member lives in and goes with it -- and is kept because
+   `Close` frees nothing any more: the decoder's window is in the
+   pool the member lives in and goes with it.  It is kept because
    callers call it: it marks the member finished.                  *)
 
 IMPORT Io ;
@@ -57,31 +57,31 @@ CONST
 PROCEDURE Open (VAR pool: POOL ; RO path: STR)
   : PTR Archive IN pool
   RAISES Error, Io.IOError, ValueRange ;
-  (* reads the central directory, nothing else. *)
+  (* Open reads the central directory, nothing else. *)
 
 PROCEDURE Count (a: PTR Archive) : I64 ;
 
 PROCEDURE NameAt (a: PTR Archive ; i: I64) : STR
   RAISES IndexError ;
-  (* the member's name as stored.  ZIP names are bytes; this decodes
-     UTF-8 when the entry's flag bit 11 says so and Latin-1 when it
-     does not, which is what the format actually means and what
+  (* NameAt answers the member's name as stored.  ZIP names are bytes;
+     this decodes UTF-8 when the entry's flag bit 11 says so and Latin-1
+     when it does not, which is what the format actually means and what
      python's zipfile does. *)
 
 PROCEDURE SizeAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError ;
-  (* the UNCOMPRESSED size. *)
+  (* SizeAt answers the UNCOMPRESSED size. *)
 
 PROCEDURE MethodAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError ;
 
 PROCEDURE CrcAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError ;
-  (* the CRC-32 the central directory states for the member, 0 ..
-     4294967295 -- zipfile's ZipInfo.CRC -- read, not computed: no
-     member is opened (cp-kernel's issue 14, 2026-10-09).  Read checks
-     a member against it as it inflates. *)
+  (* CrcAt answers the CRC-32 the central directory states for the
+     member, 0 .. 4294967295 (zipfile's ZipInfo.CRC).  It is read, not
+     computed: no member is opened (cp-kernel's issue 14, 2026-10-09).
+     Read checks a member against it as it inflates. *)
 
 PROCEDURE Find (a: PTR Archive ; RO name: STR) : I64
   RAISES ValueRange, IndexError ;
-  (* the index of that member, or -1. *)
+  (* Find answers the index of that member, or -1. *)
 
 PROCEDURE OpenMember (VAR pool: POOL ; a: PTR Archive ; i: I64 ;
                       block: I64) : PTR Member IN pool
@@ -90,10 +90,10 @@ PROCEDURE OpenMember (VAR pool: POOL ; a: PTR Archive ; i: I64 ;
 
 PROCEDURE Read (VAR m: PTR Member ; VAR dst: SLICE OF BYTE) : I64
   RAISES Error, Io.IOError, ValueRange ;
-  (* fills `dst` as far as it can, answering how many bytes; 0 means
-     the member is finished.  A short answer is NOT the end -- inflate
-     stops at its own boundaries -- so a caller wanting a full buffer
-     loops until 0. *)
+  (* Read fills `dst` as far as it can, answering how many bytes; 0
+     means the member is finished.  A short answer is NOT the end
+     (inflate stops at its own boundaries), so a caller wanting a full
+     buffer loops until 0. *)
 
 PROCEDURE Close (VAR m: PTR Member) ;
 
@@ -101,101 +101,104 @@ PROCEDURE Close (VAR m: PTR Member) ;
 
    A .gz file is not an archive: it is one stream of bytes, compressed,
    between a header and a trailer that holds the CRC-32 and the length
-   of what was compressed.  These answer the WHOLE of it, in memory --
-   which is right for the .csv.gz and .json.gz a scientist is handed
+   of what was compressed.  These answer the WHOLE of it, in memory.
+   That is right for the .csv.gz and .json.gz a scientist is handed
    and wrong for nine gigabytes, where the member reader above is the
    shape to copy.
 
-   Python's gzip.decompress.  Several members one after another -- what
-   `cat a.gz b.gz' makes, and what bgzip writes -- are one stream, as
-   they are to Python and to gunzip.  Every optional field of the
-   header is skipped by its flag.  REFUSED as Error, by name: what
-   does not begin as gzip, a method other than deflate, a stream that
-   stops early or is damaged, a CRC or a length that the bytes do not
-   bear out -- and bytes after the last member, where gunzip only
-   warns. *)
+   They are Python's gzip.decompress.  Several members one after
+   another (what `cat a.gz b.gz' makes, and what bgzip writes) are
+   one stream, as they are to Python and to gunzip.  Every optional
+   field of the header is skipped by its flag.  REFUSED as Error, by
+   name: what does not begin as gzip, a method other than deflate, a
+   stream that stops early or is damaged, a CRC or a length that the
+   bytes do not bear out, and bytes after the last member, where
+   gunzip only warns. *)
 
 PROCEDURE Gunzip (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE
   RAISES Error, Io.IOError, ValueRange ;
-  (* the uncompressed bytes of the file at path *)
+  (* Gunzip answers the uncompressed bytes of the file at path. *)
 
 PROCEDURE GunzipBytes (VAR pool: POOL ; RO data: SLICE OF BYTE)
   : SLICE OF BYTE
   RAISES Error, ValueRange ;
-  (* the same of bytes already held, an HTTP body sent with
-     Content-Encoding: gzip for one *)
+  (* GunzipBytes does the same of bytes already held, an HTTP body
+     sent with Content-Encoding: gzip for one. *)
 
 (* ---- the other way: compressing (2026-10-02) -----------------------
 
-   One compressor and its three wrappings.  It is a plain one: the
-   longest earlier occurrence of the next bytes is looked for among a
-   few candidates, and literals and matches are written in deflate's
-   FIXED code -- no code is built for the data.  That is what a
+   Zip holds one compressor and its three wrappings.  It is a plain
+   one: the longest earlier occurrence of the next bytes is looked for
+   among a few candidates, and literals and matches are written in
+   deflate's FIXED code.  No code is built for the data.  That is what a
    picture with flat areas and a table of numbers compress well with;
    zlib at its default level makes smaller files, by a code of the
    data's own.  Bytes that do not compress are STORED, so the answer
    is never more than a few bytes longer than what went in.
 
-   Whatever any inflate reads back is what went in: held by Python's
-   zlib and gzip reading what these wrote (runtime/test/deflate.sh),
-   and by Gunzip above. *)
+   Any inflate reads back what went in.  Python's zlib and gzip hold
+   this, reading what these wrote (runtime/test/deflate.sh), and so
+   does Gunzip above. *)
 
 PROCEDURE Deflate (VAR pool: POOL ; RO data: SLICE OF BYTE)
   : SLICE OF BYTE
   RAISES ValueRange ;
-  (* the bare deflate stream (RFC 1951), no header and no checksum *)
+  (* Deflate answers the bare deflate stream (RFC 1951), no header and
+     no checksum. *)
 
 PROCEDURE Compress (VAR pool: POOL ; RO data: SLICE OF BYTE)
   : SLICE OF BYTE
   RAISES ValueRange ;
-  (* the zlib wrapping (RFC 1950): two bytes of header, the stream,
-     its Adler-32.  Python's zlib.decompress reads it; a PNG's image
-     data is this. *)
+  (* Compress answers the zlib wrapping (RFC 1950): two bytes of
+     header, the stream, its Adler-32.  Python's zlib.decompress reads
+     it; a PNG's image data is this. *)
 
 PROCEDURE Decompress (VAR pool: POOL ; RO data: SLICE OF BYTE)
   : SLICE OF BYTE
   RAISES Error, ValueRange ;
-  (* what Compress, or any zlib, wrapped: Python's zlib.decompress.
-     Error by name for what does not begin as zlib, asks for a preset
-     dictionary, is damaged or stops early, has an Adler-32 its bytes
-     do not bear out, or goes on after it. *)
+  (* Decompress unwraps what Compress, or any zlib, wrapped: Python's
+     zlib.decompress.  It raises Error by name for what does not begin
+     as zlib, asks for a preset dictionary, is damaged or stops early,
+     has an Adler-32 its bytes do not bear out, or goes on after it. *)
 
 PROCEDURE Gzip (VAR pool: POOL ; RO data: SLICE OF BYTE)
   : SLICE OF BYTE
   RAISES ValueRange ;
-  (* a gzip file's bytes (RFC 1952): one member, no name, no time --
-     so the same bytes in give the same bytes out -- with its CRC-32
-     and length.  GunzipBytes undoes it. *)
+  (* Gzip answers a gzip file's bytes (RFC 1952): one member, no name,
+     no time, with its CRC-32 and length.  So the same bytes in give
+     the same bytes out.  GunzipBytes undoes it. *)
 
 PROCEDURE Crc32 (RO b: SLICE OF BYTE) : I64 ;
-  (* the CRC-32 of gzip, zip and PNG (zlib.crc32), 0 .. 4294967295;
-     the runtime's fast path (m9_crc_raw) since 2026-10-25, and no
-     longer RAISES: nothing in it can *)
+  (* Crc32 answers the CRC-32 of gzip, zip and PNG (zlib.crc32),
+     0 .. 4294967295.  It is the runtime's fast path (m9_crc_raw) since
+     2026-10-25, and no longer RAISES: nothing in it can. *)
 
 PROCEDURE Crc32Update (crc: I64 ; RO b: SLICE OF BYTE) : I64 RAISES ValueRange ;
-  (* the CRC-32 carried on over more bytes, zlib.crc32 (b, crc):
-     Crc32Update (Crc32Update (0, a), b) = Crc32 (a ++ b), and
-     Crc32Update (0, b) = Crc32 (b) -- so a member read in pieces or a
-     file read with Io.ReadFileAt is summed without gathering it
-     (cp-kernel's issue 15, 2026-10-09).  `crc' is a finished value,
-     0 .. 4294967295; anything else is ValueRange. *)
+  (* Crc32Update answers the CRC-32 carried on over more bytes,
+     zlib.crc32 (b, crc): Crc32Update (Crc32Update (0, a), b) =
+     Crc32 (a ++ b), and Crc32Update (0, b) = Crc32 (b).  So a member
+     read in pieces or a file read with Io.ReadFileAt is summed
+     without gathering it (cp-kernel's issue 15, 2026-10-09).
+     `crc' is a finished value, 0 .. 4294967295; anything else is
+     ValueRange. *)
 
 PROCEDURE Adler32 (RO b: SLICE OF BYTE) : I64 ;
-  (* the checksum of the zlib wrapping (zlib.adler32) *)
+  (* Adler32 answers the checksum of the zlib wrapping
+     (zlib.adler32). *)
 
 (* ---- writing an archive (2026-10-07; docs/library-plan-2.md, item 3)
 
    A Writer collects members and Finish lays the archive out: a local
    header and the data for each, the central directory, the end
    record.  Everything is held in memory until then, which is right
-   for an export of a few megabytes and wrong past 4 GB -- ZIP64 is
+   for an export of a few megabytes and wrong past 4 GB.  ZIP64 is
    not WRITTEN: a member, or the archive, that would need it is
    refused by name.  A deflated member goes through Deflate above
    (the plain compressor); a stored one is the bytes.  Names are
    UTF-8 with flag bit 11 set, as python's zipfile writes them.  The
    time of every member is 1980-01-01 00:00:00 until SetTime, so the
-   same members give the same bytes -- a receipt can hold an archive
-   -- and the time is said by its pieces, in DOS's 2-second steps.
+   same members give the same bytes (a receipt can hold an archive).
+   The time is said by its pieces, in DOS's 2-second steps.
 
    Python's zipfile reads what this writes (runtime/test/deflate.sh,
    the witness that is not ours: names, sizes, CRCs, times, the bytes
@@ -208,37 +211,41 @@ PROCEDURE NewWriter (VAR pool: POOL) : PTR Writer IN pool ;
 
 PROCEDURE SetTime (VAR w: PTR Writer ; year, month, day, hour, minute,
                    second: I64) RAISES Error ;
-  (* the time written for every member added AFTER this: 1980..2107,
-     a second rounded down to an even one; refused outside that *)
+  (* SetTime sets the time written for every member added AFTER this:
+     1980..2107, a second rounded down to an even one.  A time outside
+     that is refused. *)
 
 PROCEDURE AddBytes (VAR w: PTR Writer ; RO name: STR ;
                     RO data: SLICE OF BYTE ; deflate: BOOL)
   RAISES Error, ValueRange ;
-  (* a member: deflated when asked, else stored.  Refused by name: an
-     empty name, one already in the archive, one over 65535 octets of
-     UTF-8, a member or an archive past 4 GB, a 65536th member *)
+  (* AddBytes adds a member: deflated when asked, else stored.  These
+     are refused by name: an empty name, one already in the archive,
+     one over 65535 octets of UTF-8, a member or an archive past 4 GB,
+     a 65536th member. *)
 
 PROCEDURE AddFile (VAR w: PTR Writer ; RO name: STR ; RO path: STR ;
                    deflate: BOOL)
   RAISES Error, Io.IOError, ValueRange ;
-  (* AddBytes of the file at path *)
+  (* AddFile is AddBytes of the file at path. *)
 
 PROCEDURE Finish (VAR w: PTR Writer) : SLICE OF BYTE
   RAISES Error, ValueRange ;
-  (* the archive's bytes; the writer may go on adding, and a second
-     Finish lays out what there is then *)
+  (* Finish answers the archive's bytes.  The writer may go on adding,
+     and a second Finish lays out what there is then. *)
 
 PROCEDURE WriteTo (VAR w: PTR Writer ; RO path: STR)
   RAISES Error, Io.IOError, ValueRange ;
-  (* Finish, written to path *)
+  (* WriteTo is Finish, written to path. *)
 
 END Zip.
 
 
 UNSAFE IMPLEMENTATION MODULE Zip ;
 
-(* UNSAFE for ADR: the octets of a CRC run go to the runtime by
-   address (CrcRun) *)
+IMPORT Text ;
+
+(* Zip is UNSAFE for ADR: the octets of a CRC run go to the runtime by
+   address (CrcRun). *)
 
 IMPORT Bits ;
 IMPORT DynStr ;
@@ -268,8 +275,8 @@ TYPE
     e : SLICE OF Entry ;
   END ;
 
-  (* the state of one deflate stream being decoded: enough to stop
-     wherever the output is full and go on from there *)
+  (* An Infl is the state of one deflate stream being decoded: enough
+     to stop wherever the output is full and go on from there. *)
   Infl = RECORD
     inb : SLICE OF BYTE ;        (* the compressed bytes at hand *)
     inPos, inLen : I64 ;
@@ -303,14 +310,14 @@ TYPE
     usize : I64 ;                (* the directory's length *)
   END ;
 
-(* little-endian unsigned integer of `n` bytes.
+(* U reads a little-endian unsigned integer of `n` bytes.
 
-   ACCUMULATED FROM THE TOP DOWN, and the bottom-up spelling is a real
-   bug this cost a run to find: `m := m * 256` once per byte reaches
-   256^8 on an 8-byte field, which is 1.8e19 and does not fit I64, so
-   the multiply TRAPPED Overflow on the first ZIP64 field of the real
-   SOCAT archive -- after the loop had already produced the right
-   answer.  M9 traps where C would have wrapped silently.
+   It is ACCUMULATED FROM THE TOP DOWN, and the bottom-up spelling is a
+   real bug this cost a run to find.  `m := m * 256` once per byte
+   reaches 256^8 on an 8-byte field, which is 1.8e19 and does not fit
+   I64.  So the multiply TRAPPED Overflow on the first ZIP64 field of
+   the real SOCAT archive, after the loop had already produced the
+   right answer.  M9 traps where C would have wrapped silently.
 
    A genuine 8-byte value above MAX(I64) still cannot be represented,
    and is refused by name rather than trapped: no real archive has
@@ -346,8 +353,8 @@ BEGIN
   IF want > size THEN want := size END ;
   tail := Io.ReadFileAt (scratch, path, size - want, want) ;
 
-  (* the End Of Central Directory, found by scanning BACK: the record
-     is last but a comment of any length may follow the fields *)
+  (* Find the End Of Central Directory by scanning BACK: the record is
+     last but a comment of any length may follow the fields. *)
   eocd := -1 ;
   at := LEN (tail) - 22 ;
   WHILE at >= 0 AND eocd < 0 DO
@@ -412,7 +419,7 @@ BEGIN
     (* bit 11 says the name is UTF-8; without it the format says
        Latin-1, and that is what zipfile assumes too *)
     IF (flags DIV 2048) MOD 2 = 1 THEN
-      a.e[i].name := DynStr.FromUtf8 (pool, SLICE (cd, p + 46, nameLen))
+      a.e[i].name := UTF (pool, SLICE (cd, p + 46, nameLen))
     ELSE
       a.e[i].name := DynStr.Chars (pool, SLICE (cd, p + 46, nameLen))
     END ;
@@ -480,16 +487,16 @@ PROCEDURE Find (a: PTR Archive ; RO name: STR) : I64
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO a.n - 1 DO
-    IF DynStr.Eq (a.e[i].name, name) THEN RETURN i END
+    IF Text.Eq (a.e[i].name, name) THEN RETURN i END
   END ;
   RETURN -1
 END Find ;
 
 (* ---- inflate (RFC 1951) ----
 
-   The decoder is a loop over one question -- what comes next? -- and
-   it can be left wherever the caller's buffer is full: in the middle
-   of a copy, of a stored block, between two symbols.  That is all a
+   The decoder is a loop over one question: what comes next?  It can
+   be left wherever the caller's buffer is full: in the middle of a
+   copy, of a stored block, between two symbols.  That is all a
    forward-only reader needs, and it is why this is not the forty
    lines that inflate a whole buffer into another.
 
@@ -497,13 +504,13 @@ END Find ;
    than LowWater bytes of input unless they are the last there are,
    and LowWater is more than any one step can use (a dynamic block's
    header is under 300 bytes, a length and distance pair under 7).
-   So running out of bits means the stream is cut short, and no
-   state has to remember half a symbol.
+   So a stream that runs out of bits is cut short, and no state has
+   to remember half a symbol.
 
    A HUFFMAN CODE IS READ THROUGH A TABLE: the next FastBits bits
    index it, and it answers the symbol and how many of those bits
-   were its code.  A code longer than that -- rare, by the nature of
-   a Huffman code -- is read a bit at a time, as the canonical code
+   were its code.  A code longer than that (rare, by the nature of
+   a Huffman code) is read a bit at a time, as the canonical code
    is defined: codes of one length are consecutive, in symbol order.
 
    Bits come out of the stream lowest first, but a Huffman code is
@@ -523,8 +530,9 @@ CONST
 
   Mask = [0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191,
           16383, 32767, 65535] ;
-  (* a length symbol's base and how many more bits follow; a
-     distance symbol's; the order a dynamic block lists its lengths in *)
+  (* These are a length symbol's base and how many more bits follow, a
+     distance symbol's, and the order a dynamic block lists its lengths
+     in. *)
   LBase = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43,
            51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258] ;
   LExt = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4,
@@ -569,7 +577,8 @@ BEGIN
   InflReset (z)
 END InflInit ;
 
-(* bytes into the bit buffer while there is room for one and one to take *)
+(* Refill takes bytes into the bit buffer while there is room for one
+   and one to take. *)
 PROCEDURE Refill (VAR z: Infl) RAISES ValueRange =
 BEGIN
   WHILE z.bits <= 48 AND z.inPos < z.inLen DO
@@ -579,7 +588,8 @@ BEGIN
   END
 END Refill ;
 
-(* the next n bits, n <= 16; the stream is SHORT when it has not got them *)
+(* Take answers the next n bits, n <= 16; the stream is SHORT when it
+   has not got them. *)
 PROCEDURE Take (VAR z: Infl ; n: I64) : I64 RAISES ValueRange =
 VAR v : I64 ;
 BEGIN
@@ -596,7 +606,8 @@ BEGIN
   RETURN v
 END Take ;
 
-(* the next symbol of a Huffman code; -1 with z.short or z.bad set *)
+(* Sym answers the next symbol of a Huffman code, or -1 with z.short
+   or z.bad set. *)
 PROCEDURE Sym (VAR z: Infl ; RO fast, count, symbol: SLICE OF I64) : I64
   RAISES ValueRange =
 VAR e, len, code, first, index, n, k : I64 ;
@@ -633,10 +644,10 @@ BEGIN
   RETURN -1
 END Sym ;
 
-(* the tables of a canonical Huffman code, from the lengths of its n
-   symbols at lens[from ..].  Answers how many codes are left unused:
-   0 for a complete code, below 0 for one that claims more than
-   there are. *)
+(* Build makes the tables of a canonical Huffman code, from the
+   lengths of its n symbols at lens[from ..].  It answers how many
+   codes are left unused: 0 for a complete code, below 0 for one that
+   claims more than there are. *)
 PROCEDURE Build (VAR fast, count, symbol, work: SLICE OF I64 ;
                  RO lens: SLICE OF I64 ; from, n: I64) : I64
   RAISES ValueRange =
@@ -651,7 +662,8 @@ BEGIN
     left := left * 2 - count[len] ;
     IF left < 0 THEN RETURN left END
   END ;
-  (* where each length's symbols begin, then the symbols in order *)
+  (* Find where each length's symbols begin, then put the symbols in
+     order. *)
   work[1] := 0 ;
   FOR len := 1 TO 14 DO work[len + 1] := work[len] + count[len] END ;
   FOR s := 0 TO n - 1 DO
@@ -661,8 +673,9 @@ BEGIN
       work[len] := work[len] + 1
     END
   END ;
-  (* the first code of each length; then every code short enough goes
-     into the table at each index whose low bits are the code reversed *)
+  (* Find the first code of each length.  Then every code short enough
+     goes into the table at each index whose low bits are the code
+     reversed. *)
   code := 0 ;
   FOR len := 1 TO 15 DO
     IF len > 1 THEN code := (code + count[len - 1]) * 2 END ;
@@ -690,7 +703,7 @@ BEGIN
   RETURN left
 END Build ;
 
-(* the code every fixed block uses *)
+(* Fixed builds the code every fixed block uses. *)
 PROCEDURE Fixed (VAR z: Infl) RAISES ValueRange =
 VAR s, left : I64 ;
 BEGIN
@@ -703,8 +716,8 @@ BEGIN
   left := Build (z.dfast, z.dcount, z.dsym, z.work, z.lens, 0, 30)
 END Fixed ;
 
-(* the code a dynamic block brings with it: the lengths of its two
-   codes, themselves written in a third *)
+(* Dynamic reads the code a dynamic block brings with it: the lengths
+   of its two codes, themselves written in a third. *)
 PROCEDURE Dynamic (VAR z: Infl) RAISES ValueRange =
 VAR nlen, ndist, ncode, i, s, prev, rep, left : I64 ;
 BEGIN
@@ -809,24 +822,23 @@ BEGIN
   IF z.final THEN z.state := StDone ELSE z.state := StHeader END
 END EndBlock ;
 
-(* THE COMMON RUN of a block, with the decoder's state in locals: a
-   literal, or a length and a distance whose codes are both in the
-   tables, while there is room in dst for the longest copy (258) and
-   input for the most a step can take.  It stops, having taken
-   NOTHING of the symbol it stops at, for anything else -- a code too
-   long for the table, the end of the block, a symbol that is not
-   deflate -- and Step, below, deals with that one symbol by the
-   careful path and comes back here.
+(* Fast decodes THE COMMON RUN of a block, with the decoder's state in
+   locals: a literal, or a length and a distance whose codes are both
+   in the tables, while there is room in dst for the longest copy
+   (258) and input for the most a step can take.  It stops, having
+   taken NOTHING of the symbol it stops at, for anything else: a code
+   too long for the table, the end of the block, a symbol that is not
+   deflate.  Step, below, deals with that one symbol by the careful
+   path and comes back here.
 
-   What it buys, measured (a 92 MB table, 2026-10-02, this loop
+   It buys this, measured (a 92 MB table, 2026-10-02, this loop
    switched off and on): a member stream in 0.50 s without it and
-   0.40 s with, a gzip file in 0.49 s and 0.42 s -- a fifth and a
-   sixth.  The
-   careful path calls a helper for every symbol and reads the state
-   back from the record after every byte written: a byte store may
-   alias anything, so the C compiler cannot keep a field in a
-   register across one.  Two thirds of what is left of a stream's
-   time is the copy through the ring, three checked indexes a byte. *)
+   0.40 s with, a gzip file in 0.49 s and 0.42 s, a fifth and a
+   sixth.  The careful path calls a helper for every symbol and reads
+   the state back from the record after every byte written: a byte store
+   may alias anything, so the C compiler cannot keep a field in a
+   register across one.  Two thirds of what is left of a stream's time
+   is the copy through the ring, three checked indexes a byte. *)
 PROCEDURE Fast (VAR z: Infl ; VAR dst: SLICE OF BYTE ; at: I64) : I64
   RAISES ValueRange =
 VAR
@@ -873,8 +885,8 @@ BEGIN
       made := made + 1
     ELSE
       IF s = 256 OR s >= 286 THEN EXIT END ;
-      (* a length and its distance, worked out on a copy of the bits:
-         taken only when the whole pair can be *)
+      (* Work out a length and its distance on a copy of the bits, and
+         take them only when the whole pair can be taken. *)
       h2 := Bits.Shr (hold, k) ;
       b2 := bits - k ;
       s := s - 257 ;
@@ -920,16 +932,16 @@ BEGIN
   RETURN out
 END Fast ;
 
-(* decode into dst from `at' on, as far as the room in dst and the
-   input at hand allow; answers where it stopped.  It stopped for
-   good when z.state is StDone, and for a reason when z.bad or
+(* Step decodes into dst from `at' on, as far as the room in dst and
+   the input at hand allow, and answers where it stopped.  It stopped
+   for good when z.state is StDone, and for a reason when z.bad or
    z.short is set.
 
    WHERE A COPY READS FROM.  A distance reaches back into what was
    already made.  A reader of a stream hands over a fresh buffer each
    time, so the last 32768 bytes are kept in a ring of the decoder's
    own.  A caller that keeps ALL of the output in dst (z.whole) needs
-   no ring: what was made is in dst, just behind. *)
+   no ring: the bytes made are in dst, just behind. *)
 PROCEDURE Step (VAR z: Infl ; VAR dst: SLICE OF BYTE ; at: I64) : I64
   RAISES ValueRange =
 VAR
@@ -942,8 +954,8 @@ BEGIN
     IF z.bad OR z.short OR z.state = StDone THEN RETURN out END ;
     IF NOT z.last AND z.inLen - z.inPos < LowWater THEN RETURN out END ;
     IF z.copyLeft > 0 THEN
-      (* a run copied from `dist' bytes back, which may reach into
-         the bytes it is itself writing *)
+      (* Copy a run from `dist' bytes back, which may reach into the
+         bytes it is itself writing. *)
       wp := z.wpos ;
       left := z.copyLeft ;
       dist := z.copyDist ;
@@ -994,8 +1006,9 @@ BEGIN
       IF n - out > 258 AND z.inLen - z.inPos > 16 THEN
         out := Fast (z, dst, out)
       END ;
-      (* one symbol by the careful path: what the common run stopped
-         at, or all there is near the end of the buffer or the input *)
+      (* Take one symbol by the careful path: what the common run
+         stopped at, or all there is near the end of the buffer or the
+         input. *)
       IF out >= n THEN RETURN out END ;
       Refill (z) ;
       s := Sym (z, z.lfast, z.lcount, z.lsym) ;
@@ -1037,9 +1050,10 @@ BEGIN
   END
 END Step ;
 
-(* after the last block: the bits left of its last byte are dropped,
-   and the whole bytes the bit buffer took and did not use are given
-   back to the input, where a gzip trailer begins *)
+(* InflFinish runs after the last block: the bits left of its last
+   byte are dropped, and the whole bytes the bit buffer took and did
+   not use are given back to the input, where a gzip trailer
+   begins. *)
 PROCEDURE InflFinish (VAR z: Infl) =
 BEGIN
   z.inPos := z.inPos - z.bits DIV 8 ;
@@ -1073,9 +1087,9 @@ BEGIN
   RETURN Bits.Xor (CrcRun (Bits.Xor (crc, 4294967295), b), 4294967295)
 END Crc32Update ;
 
-(* the raw state carried over `b': begun at all ones, finished by the
-   same, so that a member read in pieces is summed as a whole; the
-   empty piece never reaches C (ADR of nothing) *)
+(* CrcRun carries the raw state over `b': begun at all ones, finished
+   by the same, so that a member read in pieces is summed as a whole.
+   The empty piece never reaches C (ADR of nothing). *)
 PROCEDURE CrcRun (c: I64 ; RO b: SLICE OF BYTE) : I64 =
 BEGIN
   IF LEN (b) = 0 THEN RETURN c END ;
@@ -1102,8 +1116,8 @@ BEGIN
   IF block < 4 * LowWater THEN block := 4 * LowWater END ;
 
   (* the DATA offset comes from the LOCAL header, whose name and extra
-     lengths differ from the central directory's -- a classic way to
-     read a member off by a few bytes *)
+     lengths differ from the central directory's.  The wrong one is a
+     classic way to read a member off by a few bytes. *)
   lh := Io.ReadFileAt (scratch, a.path, a.e[i].hdrOff, 30) ;
   IF LEN (lh) < 30 OR U (lh, 0, 4) # SigLoc THEN
     RAISE Error ('the local header is missing for ' + a.e[i].name)
@@ -1126,9 +1140,9 @@ BEGIN
   RETURN m
 END OpenMember ;
 
-(* more compressed bytes into the decoder's buffer when it is running
-   low: what is left unread moves to the front and the file fills the
-   rest *)
+(* Fill takes more compressed bytes into the decoder's buffer when it
+   is running low: the unread bytes move to the front and the file
+   fills the rest. *)
 PROCEDURE Fill (VAR m: PTR Member)
   RAISES Io.IOError, ValueRange =
 VAR
@@ -1155,10 +1169,11 @@ BEGIN
   m.z.last := m.cLeft = 0
 END Fill ;
 
-(* the member's end: what was read is held to the CRC-32 and the
-   length its directory states, as zipfile holds it (2026-10-03; until
-   then only gzip's trailer was checked).  A bit turned mid-stream
-   usually still DECODES, to other bytes; this is what says so. *)
+(* Finished ends the member: the bytes read are held to the CRC-32 and
+   the length its directory states, as zipfile holds them (2026-10-03;
+   until then only gzip's trailer was checked).  A bit turned
+   mid-stream usually still DECODES, to other bytes; this check is
+   what says so. *)
 PROCEDURE Finished (VAR m: PTR Member) RAISES Error, ValueRange =
 BEGIN
   m.done := TRUE ;
@@ -1217,8 +1232,9 @@ END Close ;
 
 (* ---- gzip ---- *)
 
-(* where the header of the member at `at' ends and its deflate stream
-   begins (RFC 1952): ten fixed bytes, then whatever the flags say *)
+(* GzHeader answers where the header of the member at `at' ends and
+   its deflate stream begins (RFC 1952): ten fixed bytes, then
+   whatever the flags say. *)
 PROCEDURE GzHeader (RO data: SLICE OF BYTE ; at: I64) : I64
   RAISES Error, IndexError =
 VAR
@@ -1264,14 +1280,14 @@ BEGIN
   n := LEN (data) ;
   (* the last four bytes are the length of the last member: exact for
      a file of one, which is nearly every file, and then the buffer
-     this begins with IS the answer -- so it is made in the caller's
+     this begins with IS the answer, so it is made in the caller's
      pool.  Deflate cannot expand by more than 1032, and a length
      that claims more is not believed.
 
-     ONE BYTE MORE than the length: the decoder stops at a full
-     buffer before it has read the symbol that ends the block, and a
-     buffer of exactly the length was therefore full and not done --
-     it grew, and the answer was copied twice (seen in a profile,
+     The buffer is ONE BYTE MORE than the length: the decoder stops at
+     a full buffer before it has read the symbol that ends the block.
+     A buffer of exactly the length was therefore full and not done.
+     It grew, and the answer was copied twice (seen in a profile,
      2026-10-02: two byte loops, a quarter of the run). *)
   room := 4096 ;
   IF n >= 18 THEN
@@ -1319,8 +1335,8 @@ BEGIN
     END
   END ;
   IF direct THEN RETURN SLICE (first, 0, total) END ;
-  (* several members, so that the last one's length was not the
-     whole: a copy of the right size *)
+  (* There were several members, so the last one's length was not the
+     whole.  Make a copy of the right size. *)
   out := NEW (pool, BYTE, total) ;
   FOR k := 0 TO total - 1 DO out[k] := buf[k] END ;
   RETURN out
@@ -1339,8 +1355,8 @@ END Gunzip ;
    found through a table of the last place each three-byte beginning
    was seen and a chain from each place to the one before it with the
    same beginning; MaxChain of them are tried, nearest first, and the
-   longest match wins.  Fixed code only, no lazy matching: a third of
-   what zlib does, for the data this is for. *)
+   longest match wins.  It uses the fixed code only and no lazy
+   matching: a third of what zlib does, for the data this is for. *)
 
 CONST
   HashSize = 32768 ;
@@ -1349,14 +1365,14 @@ CONST
   MaxMatch = 258 ;
 
 TYPE
-  (* the bytes written and the bits not yet a byte *)
+  (* A Sink holds the bytes written and the bits not yet a byte. *)
   Sink = RECORD
     buf : SLICE OF BYTE ;
     n : I64 ;
     hold, bits : I64 ;
   END ;
 
-(* the low n bits of v, the lowest first *)
+(* PutBits writes the low n bits of v, the lowest first. *)
 PROCEDURE PutBits (VAR o: Sink ; v, n: I64) RAISES ValueRange =
 BEGIN
   o.hold := Bits.Or (o.hold, Bits.Shl (v, o.bits)) ;
@@ -1369,7 +1385,8 @@ BEGIN
   END
 END PutBits ;
 
-(* a Huffman code of n bits: its HIGHEST bit goes out first *)
+(* PutCode writes a Huffman code of n bits: its HIGHEST bit goes out
+   first. *)
 PROCEDURE PutCode (VAR o: Sink ; code, n: I64) RAISES ValueRange =
 VAR r, i : I64 ;
 BEGIN
@@ -1380,8 +1397,8 @@ BEGIN
   PutBits (o, r, n)
 END PutCode ;
 
-(* a literal, the end of the block, or a length symbol, in the fixed
-   code *)
+(* PutSym writes a literal, the end of the block, or a length symbol,
+   in the fixed code. *)
 PROCEDURE PutSym (VAR o: Sink ; sym: I64) RAISES ValueRange =
 BEGIN
   IF sym < 144 THEN PutCode (o, 48 + sym, 8)
@@ -1391,8 +1408,8 @@ BEGIN
   END
 END PutSym ;
 
-(* a copy of len bytes from dist back: the length's symbol and extra
-   bits, then the distance's *)
+(* PutMatch writes a copy of len bytes from dist back: the length's
+   symbol and extra bits, then the distance's. *)
 PROCEDURE PutMatch (VAR o: Sink ; len, dist: I64) RAISES ValueRange =
 VAR s, d : I64 ;
 BEGIN
@@ -1414,8 +1431,9 @@ BEGIN
                    HashSize - 1)
 END Hash3 ;
 
-(* the stream in the fixed code, into scratch storage of the size it
-   can at most need: nine bits a byte and the block's two ends *)
+(* FixedBlock writes the stream in the fixed code, into scratch
+   storage of the size it can at most need: nine bits a byte and the
+   block's two ends. *)
 PROCEDURE FixedBlock (VAR pool: POOL ; RO data: SLICE OF BYTE ;
                       VAR o: Sink)
   RAISES ValueRange =
@@ -1484,8 +1502,8 @@ BEGIN
   IF o.bits > 0 THEN PutBits (o, 0, 8 - o.bits) END
 END FixedBlock ;
 
-(* the same bytes as stored blocks of at most 65535: five bytes of
-   header each *)
+(* StoredBlocks writes the same bytes as stored blocks of at most
+   65535: five bytes of header each. *)
 PROCEDURE StoredBlocks (VAR pool: POOL ; RO data: SLICE OF BYTE)
   : SLICE OF BYTE
   RAISES ValueRange =
@@ -1515,8 +1533,9 @@ BEGIN
   RETURN SLICE (out, 0, w)
 END StoredBlocks ;
 
-(* the stream with `front` bytes of room before it and `back` after,
-   for a wrapping to fill; the stream begins at out[front] *)
+(* Packed answers the stream with `front` bytes of room before it and
+   `back` after, for a wrapping to fill; the stream begins at
+   out[front]. *)
 PROCEDURE Packed (VAR pool: POOL ; RO data: SLICE OF BYTE ;
                   front, back: I64) : SLICE OF BYTE
   RAISES ValueRange =
@@ -1568,7 +1587,8 @@ BEGIN
   RETURN s * 65536 + a
 END Adler32 ;
 
-(* v as n bytes at out[at], the lowest first or the highest first *)
+(* PutLow writes v as n bytes at out[at], the lowest first or the
+   highest first. *)
 PROCEDURE PutLow (VAR out: SLICE OF BYTE ; at, v, n: I64) RAISES ValueRange =
 VAR k : I64 ;
 BEGIN
@@ -1722,7 +1742,7 @@ BEGIN
 END SetTime ;
 
 PROCEDURE Kept (VAR w: PTR Writer ; RO b: SLICE OF BYTE) : SLICE OF BYTE =
-  (* a copy in the writer's pool *)
+  (* Kept answers a copy in the writer's pool. *)
 VAR
   c : SLICE OF BYTE ;
   i : I64 ;
@@ -1743,7 +1763,7 @@ BEGIN
 END SameBytes ;
 
 PROCEDURE Laid (w: PTR Writer) : I64 =
-  (* the bytes of the local headers and data so far *)
+  (* Laid answers the bytes of the local headers and data so far. *)
 VAR i, t : I64 ;
 BEGIN
   t := 0 ;
@@ -1762,8 +1782,8 @@ VAR
   more : SLICE OF WEntry ;
   i : I64 ;
 BEGIN
-  IF LEN (name) = 0 THEN RAISE Error ('a member needs a name') END ;
-  nm := DynStr.Utf8 (scratch, name) ;
+  IF Text.BLen (name) = 0 THEN RAISE Error ('a member needs a name') END ;
+  nm := OCTETS (name) ;
   IF LEN (nm) > MaxName THEN
     RAISE Error ('a member name over 65535 octets: ' + SLICE (name, 0, 40) + '...')
   END ;

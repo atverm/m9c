@@ -1,19 +1,19 @@
 #!/usr/bin/env -S m9c --run
 MODULE MkDiagnose ;
 
-(* The M9 diagnostics table, GENERATED from probes/.
+(* MkDiagnose writes the M9 diagnostics table, GENERATED from probes/.
 
    Each file in probes/ is the smallest program that earns one checker
-   refusal, with the expected message on its first line -- and
-   probediff.sh holds both checkers to that message.  So the message
-   column of docs/diagnose.md cannot drift: it is read from the probe,
-   never typed here.
+   refusal, with the expected message on its first line.  probediff.sh
+   holds both checkers to that message.  So the message column of
+   docs/diagnose.md cannot drift: it is read from the probe, never
+   typed here.
 
-   What IS typed here is the cause and the fix, one line each, keyed by
-   probe name.  A probe without an entry makes this script FAIL, so a
-   new refusal cannot be added to the checker without also being
-   explained -- the same shape as docdiff's drift gate, applied to the
-   explanation instead of the signature.
+   This file types the cause and the fix, one line each, keyed by probe
+   name.  A probe without an entry makes this script FAIL, so a new
+   refusal cannot be added to the checker without also being
+   explained.  That is the same shape as docdiff's drift gate, applied
+   to the explanation instead of the signature.
 
        tools/MkDiagnose.m9            regenerate docs/diagnose.md
        tools/MkDiagnose.m9 --check    exit 1 if it would change
@@ -338,7 +338,8 @@ CONST
     'array-count-no-value',
     'record-inline',
     'record-extension',
-    'pool-into-var-outlives'
+    'pool-into-var-outlives',
+    'thread-utf-shared-pool'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -578,14 +579,14 @@ CONST
     'COPY writes into its first argument, and that is read-only storage -- an RO parameter, a literal, a CONST (par 2.4)',
     'a UTF is subscripted; UTF-8 has no O(1) i-th character, so a subscript would either be a byte (a trap for every character past ASCII) or a scan hidden in brackets, and M9 has neither',
     "LEN is asked of a UTF; a UTF's length has two meanings, its bytes and its characters, at two costs, and LEN would hide which",
-    'a STR is assigned to a UTF (or passed, or answered); STR is SLICE OF CHAR, a different type, and nothing converts silently -- only a string LITERAL adapts to a UTF',
-    'two UTF values are compared with = or #, or ordered with < and its kin; a UTF is a slice, as a STR is, and no operator compares two of them',
-    'UTF (x) was given what is neither a STR nor a SLICE OF BYTE; a UTF is text, and only a sequence of characters or of octets becomes one',
+    'a SLICE OF CHAR is assigned to a UTF (or passed, or answered); it is a different type, and nothing converts silently -- only a string LITERAL adapts to a UTF',
+    'two UTF values are compared with = or #, or ordered with < and its kin; a UTF is a slice of octets, and no operator compares two of them',
+    'UTF (x) was given what is neither a SLICE OF CHAR nor a SLICE OF BYTE; a UTF is text, and only a sequence of characters or of octets becomes one',
     'the octets of a UTF, OCTETS (u), are lent to a parameter that may write them, or written through a name holding them; a UTF holds valid UTF-8, and its octets are read-only so that it stays so (par 2.4)',
-    'a STR is concatenated with a UTF; the two are different types and nothing converts silently -- only a literal adapts',
+    'a SLICE OF CHAR is concatenated with a UTF; the two are different types and nothing converts silently -- only a literal adapts',
     'UTF (b) validates octets and raises ValueRange when they are not UTF-8, and the procedure neither declares nor handles it',
     'FOR IN over a UTF decodes it, so the loop variable is a CHAR, one code point a pass; it was declared as something else',
-    'a STR is assigned to a UTF (or passed, or answered); a string literal adapts to a UTF, and so does a CONST naming one (decision 66) -- a STR variable does not, nothing converts silently',
+    'a SLICE OF CHAR is assigned to a UTF (or passed, or answered); a string literal adapts to a UTF, and so does a CONST naming one (decision 66) -- a SLICE OF CHAR variable does not, nothing converts silently',
     'the two-argument UTF places its answer in a pool, as NEW (pool, T) does, and its first argument is not a POOL',
     'UTF of a SLICE of octets -- of a byte slice or of an ARRAY OF BYTE -- validates them as UTF (b) does, and the procedure neither declares nor handles ValueRange (the M9 checker read a SLICE argument as unknown until 2026-10-25)',
     'a borrowed parameter reaches module state through a record that carries it -- here a field of a field of a local record, stored whole in a module variable; storing the borrow into the local alone, at any depth through records held by value, is legal',
@@ -644,7 +645,8 @@ CONST
     "an array's count is fixed when the program is compiled; a CONST divisor of 0 or a value past MAX (I64) gives it none (par 2.2)",
     "the generator builds a record from its TYPE declaration, by name; a RECORD written as a variable's, field's or element's type had none and was `type kind unsupported yet' until 2026-10-30",
     "type extension is specified with IS tests and type guards (par 2.2, par 8) and not built: the generator knew no field of a base until 2026-10-30, when the checker began to refuse it",
-    "the callee keeps what it allocates in its POOL parameter in its VAR parameter (directly or through a further call), so the variable points into that pool; a pool local to the caller dies at the caller's END while the variable lives on -- oneflux's PeriodPool, a use after free accepted until 2026-10-30"
+    "the callee keeps what it allocates in its POOL parameter in its VAR parameter (directly or through a further call), so the variable points into that pool; a pool local to the caller dies at the caller's END while the variable lives on -- oneflux's PeriodPool, a use after free accepted until 2026-10-30",
+    "UTF (pool, s) carves its pool as NEW (pool, T) does; the threads share the one record, so they carve its POOL field at once, and the pool takes no lock (par 6). A MONITOR's POOL field, carved in a procedure bound to it, is legal: the lock is held"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -884,14 +886,14 @@ CONST
     'copy into a slice of your own: t := NEW (T, LEN (s)) ; COPY (t, s)',
     'Text.BAt (u, i) for the byte at offset i, O(1); FOR c IN u to walk the characters, O(n); Text.CpAt (u, x) for the x-th character, O(x) (docs/utf8-plan.md)',
     'Text.BLen (u) for its bytes, O(1); Text.CpCount (u) for its characters, O(n)',
-    'write the value as a literal, or convert it: UTF (s) encodes a STR (Text.ToUtf (s))',
+    'write the value as a literal, or convert it: UTF (s) encodes a SLICE OF CHAR',
     'Text.Eq (a, b) for equality -- with UTF arguments it resolves to Text.EqUtf; there is no ordering operator',
     'format the value as text first, then convert: UTF (Fmt.I64Str (n)); STR (u) and OCTETS (u) go the other way',
     'copy the octets first if they are to be changed (b := NEW (BYTE, n) ; COPY (b, OCTETS (u))), or take the parameter RO',
     'convert the STR: u + UTF (s), or keep both sides STR until the end',
     'declare RAISES ValueRange, or handle it: EXCEPT | ValueRange : ... ; Text.FromUtf8 (b) is the same call by name',
     'FOR c IN u with c a CHAR; for the octets, FOR b IN OCTETS (u) with b a BYTE -- a name holding them: o := OCTETS (u)',
-    'write the value as a literal or a string CONST, or convert it: UTF (s) encodes a STR (Text.ToUtf (s))',
+    'write the value as a literal or a string CONST, or convert it: UTF (s) encodes a SLICE OF CHAR',
     'UTF (pool, s), with the POOL first; UTF (s) for a UTF in this frame',
     'declare RAISES ValueRange, or handle it: EXCEPT | ValueRange : ... -- a helper that answers FALSE on it keeps a total procedure total',
     'declare KEPT o, or store a copy that outlives the call: Text.Keep (pool, s) into a module pool',
@@ -950,36 +952,38 @@ CONST
     'give the divisor a CONST other than 0, or count fewer elements',
     'declare the record as a TYPE, TYPE Inner = RECORD b : I64 END, and write Inner where the RECORD was',
     "write the base's fields into the record itself, or hold the base as a field: RECORD base : Base ; a1 : I64 END",
-    "hand the call a pool that lives as long as the variable -- the caller's own POOL parameter or a module pool -- or keep the result in a local of the same procedure"
+    "hand the call a pool that lives as long as the variable -- the caller's own POOL parameter or a module pool -- or keep the result in a local of the same procedure",
+    "give each worker its own record (THREAD (W, js[i])), or put the POOL in a MONITOR and build the UTF in a procedure bound to it"
   ] ;
 
 VAR
   pool : POOL ;
   root : STR ;
 
-(* the file's octets, one CHAR each *)
-(* a file as TEXT: Io.ReadFile decodes UTF-8 and Io.WriteFile encodes
-   it (since 2026-10-09).  Read as octets, one CHAR a byte, as until
-   2026-10-23, a probe's first character past ASCII came out of
-   WriteFile encoded twice ('Grüße' as 'GrÃ¼Ãe') and --check never
-   matched -- no probe had one until the UTF probes *)
+(* Octets answers the file's octets, one CHAR each. *)
+(* It reads a file as TEXT: Io.ReadFile decodes UTF-8 and Io.WriteFile
+   encodes it (since 2026-10-09).  Until 2026-10-23 a probe was read as
+   octets, one CHAR a byte.  Its first character past ASCII came out
+   of WriteFile encoded twice ('Grüße' as 'GrÃ¼Ãe'), and --check never
+   matched; no probe had one until the UTF probes. *)
 PROCEDURE Octets (RO path: STR) : STR RAISES Io.IOError, ValueRange =
 BEGIN
-  RETURN Io.ReadFile (pool, path)
+  RETURN Io.ReadFile (path)
 END Octets ;
 
-(* the index of probe n in the tables, or -1 *)
+(* Entry answers the index of probe n in the tables, or -1. *)
 PROCEDURE Entry (RO n: STR) : I64 =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO LEN (Probe) - 1 DO
-    IF DynStr.Eq (Probe[i], n) THEN RETURN i END
+    IF Text.Eq (Probe[i], n) THEN RETURN i END
   END ;
   RETURN -1
 END Entry ;
 
-(* the probe's first line: `(* EXPECT: msg *)` or `(* LEDGER: msg *)`;
-   kind and msg answered, FALSE for anything else *)
+(* Expect reads the probe's first line: `(* EXPECT: msg *)` or `(*
+   LEDGER: msg *)`.  It answers kind and msg, and FALSE for anything
+   else. *)
 PROCEDURE Expect (RO text: STR ; VAR kind, msg: STR) : BOOL =
 VAR
   k : I64 ;
@@ -995,29 +999,30 @@ BEGIN
   ELSE
     RETURN FALSE
   END ;
-  IF LEN (first) < 14 THEN RETURN FALSE END ;
-  msg := SLICE (first, 11, LEN (first) - 14) ;
+  IF Text.BLen (first) < 14 THEN RETURN FALSE END ;
+  msg := SLICE (first, 11, Text.BLen (first) - 14) ;
   RETURN TRUE
 END Expect ;
 
-(* everything after the first line, less the line feeds at its end *)
+(* Body answers everything after the first line, less the line feeds
+   at its end. *)
 PROCEDURE Body (RO text: STR) : STR =
 VAR k, n : I64 ;
 BEGIN
   k := Text.FindChar (text, 0AC) ;
   IF k < 0 THEN RETURN '' END ;
-  n := LEN (text) ;
-  WHILE (n > k + 1) AND (text[n - 1] = 0AC) DO n := n - 1 END ;
+  n := Text.BLen (text) ;
+  WHILE (n > k + 1) AND (Text.BIs (text, n - 1, 0AC)) DO n := n - 1 END ;
   RETURN SLICE (text, k + 1, n - k - 1)
 END Body ;
 
-(* the message as a table cell: a bar escaped *)
+(* Cell appends the message as a table cell, with a bar escaped. *)
 PROCEDURE Cell (VAR d: PTR DynStr.DString ; RO s: STR) =
-VAR i : I64 ;
+VAR c : CHAR ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '|' THEN DynStr.AppendChar (d, 05CC) END ;
-    DynStr.AppendChar (d, s[i])
+  FOR c IN s DO
+    IF c = '|' THEN DynStr.AppendChar (d, 05CC) END ;
+    DynStr.AppendChar (d, c)
   END
 END Cell ;
 
@@ -1035,7 +1040,7 @@ VAR
   check : BOOL ;
 
 BEGIN
-  check := (Io.ArgCount () > 1) AND DynStr.Eq (Io.Arg (pool, 1), '--check') ;
+  check := (Io.ArgCount () > 1) AND Text.Eq (Io.Arg (pool, 1), '--check') ;
   root := Text.Keep (pool, Io.Arg (pool, 0)) ;
   k := Text.LastChar (root, '/') ;
   IF k < 0 THEN
@@ -1057,7 +1062,7 @@ BEGIN
   n := 0 ;
   FOR i := 0 TO LEN (files) - 1 DO
     IF Text.EndsWith (files[i], '.m9') THEN
-      names[n] := SLICE (files[i], 0, LEN (files[i]) - 3) ;
+      names[n] := SLICE (files[i], 0, Text.BLen (files[i]) - 3) ;
       n := n + 1
     END
   END ;
@@ -1073,7 +1078,7 @@ BEGIN
   END ;
   FOR i := 0 TO LEN (Probe) - 1 DO
     k := 0 ;
-    WHILE (k < LEN (names)) AND NOT DynStr.Eq (names[k], Probe[i]) DO k := k + 1 END ;
+    WHILE (k < LEN (names)) AND NOT Text.Eq (names[k], Probe[i]) DO k := k + 1 END ;
     IF k = LEN (names) THEN
       Io.ErrLine ('mkdiagnose: explanation ' + Probe[i] + ' has no probe') ;
       bad := bad + 1
@@ -1129,7 +1134,7 @@ BEGIN
   IF check THEN
     cur := '' ;
     IF Io.Exists (out) THEN cur := Octets (out) END ;
-    IF NOT DynStr.Eq (cur, page) THEN
+    IF NOT Text.Eq (cur, page) THEN
       Io.ErrLine ('diagdiff: docs/diagnose.md is stale; run tools/MkDiagnose.m9') ;
       Io.Halt (1)
     END ;

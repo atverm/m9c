@@ -1,19 +1,22 @@
 MODULE SrvFix ;
 
-(* The server the httpserver gate talks to: HttpServer.Run with one
-   route per behaviour the gate holds (runtime/test/httpserver.sh,
-   docs/httpserver-plan.md stage 1).  Every answer is a function of
-   the request alone, never of the worker that served it, so a load
-   test can compare each body with one fetched serially.
+IMPORT Text ;
+
+(* SrvFix is the server the httpserver gate talks to: HttpServer.Run
+   with one route per behaviour the gate holds
+   (runtime/test/httpserver.sh, docs/httpserver-plan.md stage 1).
+   Every answer is a function of the request alone, never of the
+   worker that served it, so a load test can compare each body with
+   one fetched serially.
 
      SrvFix --port=P [--workers=N] [--queue=N] [--max=N]
             [--perconn=N] [--bodymax=N] [--idle=MS] [--dir=D]
             [--bind=ADDR] [--trusted=A,B] [--log]
 
-   With --dir, stage 2's routes too: D's files under /pub/, one file
+   With --dir it adds stage 2's routes: D's files under /pub/, one file
    by ReplyFile, bodies for gzip, and streams.
 
-   Prints `listening` once the routes are frozen (the gate waits for
+   It prints `listening` once the routes are frozen (the gate waits for
    the port, not for this line) and, after Run returns, the counts
    as `stats key=value ...` and the reason Run returned.            *)
 
@@ -36,14 +39,14 @@ VAR
   late, dir : STR ;
 
 PROCEDURE Int (RO s: STR ; dflt: I64) : I64 =
-  (* a decimal count, or dflt when s is empty or not one *)
+  (* Int answers a decimal count, or dflt when s is empty or not one. *)
 VAR i, v : I64 ;
 BEGIN
-  IF LEN (s) = 0 OR LEN (s) > 12 THEN RETURN dflt END ;
+  IF Text.BLen (s) = 0 OR Text.BLen (s) > 12 THEN RETURN dflt END ;
   v := 0 ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] < '0' OR s[i] > '9' THEN RETURN dflt END ;
-    v := v * 10 + ORD (s[i]) - ORD ('0')
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF I64 (Text.BAt (s, i)) < ORD ('0') OR I64 (Text.BAt (s, i)) > ORD ('9') THEN RETURN dflt END ;
+    v := v * 10 + I64 (Text.BAt (s, i)) - ORD ('0')
   END ;
   RETURN v
 END Int ;
@@ -54,9 +57,9 @@ BEGIN
 END Hello ;
 
 PROCEDURE Concat (RO q: HttpServer.Request) : HttpServer.Response =
-  (* `+` in the frame on every request: the query, forty times, with
-     the path between -- what a frame shared between workers would
-     show as another request's text *)
+  (* Concat runs `+` in the frame on every request: the query, forty
+     times, with the path between.  A frame shared between workers
+     would show it as another request's text. *)
 VAR
   s : STR ;
   k : I64 ;
@@ -85,11 +88,11 @@ BEGIN
 END Raises ;
 
 PROCEDURE OutOfRange (RO q: HttpServer.Request) : HttpServer.Response =
-  (* an IndexError the checker does not account for: the worker must
-     still catch it *)
+  (* OutOfRange raises an IndexError the checker does not account for:
+     the worker must still catch it. *)
 VAR a : ARRAY 4 OF I64 ;
 BEGIN
-  a[LEN (q.path)] := 1 ;
+  a[Text.BLen (q.path)] := 1 ;
   RETURN HttpServer.Reply (200, 'text/plain', 'unreachable')
 END OutOfRange ;
 
@@ -133,19 +136,39 @@ BEGIN
   RETURN resp
 END Closing ;
 
+PROCEDURE Utf (RO q: HttpServer.Request) : HttpServer.Response =
+  (* Utf answers a body and a header with characters past U+00FF.
+     Both go out as their UTF-8 octets (Alex, 2026-10-31). *)
+BEGIN
+  RETURN HttpServer.WithHeader (
+           HttpServer.Reply (200, 'text/plain; charset=utf-8',
+                             'pi=' + 03C0C + ' euro=' + 20ACC),
+           'X-Utf', 20ACC + '1')
+END Utf ;
+
+PROCEDURE Path (RO q: HttpServer.Request) : HttpServer.Response
+  RAISES ValueRange =
+  (* Path echoes the path it got with its count of characters.  The
+     count tells a decoded path from one read an octet a character. *)
+BEGIN
+  RETURN HttpServer.Reply (200, 'text/plain; charset=utf-8',
+                           'path=' + q.path + ' cp=' + Fmt.I64Str (Text.CpCount (q.path))
+                           + ' x=' + HttpServer.Header (q, 'X-Probe'))
+END Path ;
+
 (* ---- stage 2: files, gzip, streams ---------------------------------- *)
 
 PROCEDURE Param (RO query: STR ; RO name: STR ; dflt: I64) : I64 =
-  (* name=digits in the query, else dflt *)
+  (* Param answers name=digits in the query, else dflt. *)
 VAR i, j : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i + LEN (name) < LEN (query) DO
-    IF (i = 0 OR query[i - 1] = '&') AND query[i + LEN (name)] = '=' AND
-       Same (SLICE (query, i, LEN (name)), name) THEN
-      j := i + LEN (name) + 1 ;
-      WHILE j < LEN (query) AND query[j] # '&' DO j := j + 1 END ;
-      RETURN Int (SLICE (query, i + LEN (name) + 1, j - i - LEN (name) - 1), dflt)
+  WHILE i + Text.BLen (name) < Text.BLen (query) DO
+    IF (i = 0 OR Text.BIs (query, i - 1, '&')) AND Text.BIs (query, i + Text.BLen (name), '=') AND
+       Same (SLICE (query, i, Text.BLen (name)), name) THEN
+      j := i + Text.BLen (name) + 1 ;
+      WHILE j < Text.BLen (query) AND NOT Text.BIs (query, j, '&') DO j := j + 1 END ;
+      RETURN Int (SLICE (query, i + Text.BLen (name) + 1, j - i - Text.BLen (name) - 1), dflt)
     END ;
     i := i + 1
   END ;
@@ -155,9 +178,9 @@ END Param ;
 PROCEDURE Same (RO a: STR ; RO b: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (a) - 1 DO
-    IF a[i] # b[i] THEN RETURN FALSE END
+  IF Text.BLen (a) # Text.BLen (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (a) - 1 DO
+    IF Text.BAt (a, i) # Text.BAt (b, i) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END Same ;
@@ -173,7 +196,7 @@ BEGIN
 END Gone ;
 
 PROCEDURE Lines (n: I64) : STR RAISES ValueRange =
-  (* n numbered lines: what gzip should shrink *)
+  (* Lines answers n numbered lines: what gzip should shrink. *)
 VAR
   s : STR ;
   k : I64 ;
@@ -207,7 +230,8 @@ BEGIN
 END PreEncoded ;
 
 PROCEDURE StreamLines (RO q: HttpServer.Request ; part: I64) : STR RAISES ValueRange =
-  (* part k of n (the query's n, default 100), padded with pad x's *)
+  (* StreamLines answers part k of n (the query's n, default 100),
+   padded with pad x's. *)
 VAR
   s : STR ;
   k : I64 ;
@@ -257,8 +281,10 @@ BEGIN
   HttpServer.AddHandler (r, 'GET', '/close', Closing, 'text/plain', 'asks to close') ;
   HttpServer.AddHandler (r, 'POST', '/stop', StopNow, 'text/plain', 'HttpServer.Stop from a handler') ;
   HttpServer.AddPrefix (r, 'GET', '/files/', Files, 'text/plain', 'anything under /files/') ;
+  HttpServer.AddHandler (r, 'GET', '/utf', Utf, 'text/plain', 'text past U+00FF out') ;
+  HttpServer.AddPrefix (r, 'GET', '/u/', Path, 'text/plain', 'the path back, decoded') ;
   HttpServer.AddRoute (r, 'GET', '/static', 200, 'text/plain', 'static body', 'a data route') ;
-  IF LEN (dir) > 0 THEN
+  IF Text.BLen (dir) > 0 THEN
     HttpServer.AddFiles (r, '/pub/', dir, 'the files of --dir') ;
     HttpServer.AddHandler (r, 'GET', '/onefile', OneFile, 'application/octet-stream', 'ReplyFile') ;
     HttpServer.AddHandler (r, 'GET', '/gone', Gone, 'text/plain', 'a file that is not there') ;
@@ -312,7 +338,7 @@ BEGIN
     cfg.bodyMax := Int (System.Value ('--bodymax', ''), 1048576) ;
     cfg.idleMs := Int (System.Value ('--idle', ''), 2000) ;
     cfg.headerMs := Int (System.Value ('--headerms', ''), 3000) ;
-    IF LEN (System.Value ('--bind', '')) > 0 THEN cfg.bind := System.Value ('--bind', '') END ;
+    IF Text.BLen (System.Value ('--bind', '')) > 0 THEN cfg.bind := System.Value ('--bind', '') END ;
     cfg.trusted := System.Value ('--trusted', '') ;
     cfg.accessLog := System.Flag ('--log') ;
     Io.WriteLine ('listening on ' + Fmt.I64Str (cfg.port)) ;

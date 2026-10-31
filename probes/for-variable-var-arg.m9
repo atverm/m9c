@@ -1,9 +1,9 @@
 (* EXPECT: i is the control variable of the FOR at line 19: it cannot be handed to a VAR or OWN parameter inside the loop -- pass a copy (par 2.1) *)
 MODULE m ;
-(* a FOR's control variable handed to a VAR parameter is written by the
-   callee, which is the assignment the rule refuses (par 2.1; Alex,
-   2026-10-25).  Legal forms first: the variable to a value parameter, a
-   copy of it to the VAR parameter *)
+(* A FOR's control variable handed to a VAR parameter is written by the
+   callee.  That write is the assignment the rule refuses (par 2.1;
+   Alex, 2026-10-25).  Legal forms come first: the variable to a value
+   parameter, a copy of it to the VAR parameter. *)
 PROCEDURE Show (v: I64) : I64 =
 BEGIN
   RETURN v

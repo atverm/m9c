@@ -1,7 +1,7 @@
 MODULE R4CopyLoop ;
-(* R4FieldRowsAlias's bypass: the write at the top of a loop body, the
-   whole copy of the RO record at its end -- the second turn writes into
-   the caller's literal.  Accepted by 0.25.1 *)
+(* R4FieldRowsAlias's bypass: the write sits at the top of a loop body,
+   the whole copy of the RO record at its end, so the second turn writes
+   into the caller's literal.  0.25.1 accepted it. *)
 IMPORT Io ;
 TYPE
   Strs = SLICE OF STR ;

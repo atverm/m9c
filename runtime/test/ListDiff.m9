@@ -20,7 +20,7 @@ MODULE ListDiff ;
                  because the lexer golden was stale too and every later
                  job waits on that one.
 
-   What is checked, each rule stated with the reason it is the rule:
+   The gate checks these rules, each with the reason it is the rule:
 
      1. gentest.pas, gendiff.sh and bootstrap.sh name the SAME modules
         with the SAME dependency lists, in the same order.  gendiff.sh's
@@ -39,15 +39,16 @@ MODULE ListDiff ;
         import missing from them is an unknown callee (the 2026-09-11
         failure), and a dep the module can never reach is a dead
         include (Sem carried Fmt, Fmt carried DynStr, neither used --
-        removed the same day).  Not equality with either the direct
-        set or the closure: some lists carry the closure and some the
-        direct imports, and changing one moves the emitted #includes.
-        A dep outside the closure is refused.  There was one excuse,
-        by name with its reason: HttpServer named Http because `FROM
-        csock IMPORT` needs the foreign unit declared in Http.m9.  It
-        ended on 2026-10-06, when HttpServer began importing Http for
-        Http.Header; the excuse was then refused as stale, and the
-        mechanism went with it (an empty constant table has no type).
+        removed the same day).  The rule is not equality with either
+        the direct set or the closure: some lists carry the closure
+        and some the direct imports, and changing one moves the
+        emitted #includes.  A dep outside the closure is refused.
+        There was one excuse, by name with its reason: HttpServer
+        named Http because `FROM csock IMPORT` needs the foreign unit
+        declared in Http.m9.  It ended on 2026-10-06, when HttpServer
+        began importing Http for Http.Header; the excuse was then
+        refused as stale, and the mechanism went with it (an empty
+        constant table has no type).
 
      4. build.sh's LIBRARY is every corpus module except those named in
         NotInstalled with a reason each.  That list is what docgen and
@@ -109,7 +110,7 @@ MODULE ListDiff ;
         builds and runs it): excused from gentest and from LIBRARY by
         its name, so the name must have a module behind it.
 
-   Exit status 1 with every disagreement named; 0 when all agree.
+   The exit status is 1 with every disagreement named, 0 when all agree.
 
    It replaced runtime/test/listdiff.py on 2026-10-04, after the two
    printed the same lines over the tree and over every sabotage the
@@ -129,7 +130,8 @@ IMPORT Sort ;
 CONST
   Room = 256 ;                 (* the most names one set holds *)
 
-  (* a corpus module gentest.pas deliberately does not generate *)
+  (* NotGenerated lists each corpus module gentest.pas deliberately
+     does not generate. *)
   NotGenerated = ['LibmGate', 'KindUse', 'EnumUse', 'Palette', 'Lsp',
                   'M9fmt', 'M9elide'] ;
   NotGeneratedWhy = ['gendiff-only fixture (96 libm-named locals)',
@@ -139,7 +141,8 @@ CONST
                      'program module built by m9c --make from the library',
                      'program module built by m9c --make from the library',
                      'program module built by m9c --make from the library'] ;
-  (* a corpus module build.sh deliberately does not install *)
+  (* NotInstalled lists each corpus module build.sh deliberately does
+     not install. *)
   NotInstalled = ['LibmGate', 'KindUse', 'EnumUse', 'Palette', 'Hello',
                   'Concat', 'Narrow', 'ProcUse', 'AggUse', 'ShareUse',
                   'ExportDef', 'ExportUse', 'M9c'] ;
@@ -154,8 +157,9 @@ CONST
                      'test fixture (exported module variables, decision 28)',
                      'test program (exported module variables, decision 28)',
                      'the compiler itself, installed as a binary'] ;
-  (* a generated module no battery of runtime/test/build.sh links, and
-     the gate that holds it instead *)
+  (* NoBattery lists each generated module no battery of
+     runtime/test/build.sh links, and NoBatteryWhy the gate that holds
+     it instead. *)
   NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
                'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
                'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml', 'Hash', 'Smtp', 'Rsa', 'Map',
@@ -195,8 +199,9 @@ CONST
   GendiffFixtures = ['LibmGate', 'KindUse', 'EnumUse', 'Palette'] ;
 
 TYPE
-  (* a set of names, kept in insertion order: Python's dicts and the
-     lists it printed were ordered, and the messages follow that order *)
+  (* Names is a set of names, kept in insertion order: Python's dicts
+     and the lists it printed were ordered, and the messages follow
+     that order. *)
   Names = RECORD
     n : I64 ;
     v : SLICE OF STR ;
@@ -230,7 +235,7 @@ PROCEDURE Has (RO s: Names ; RO x: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO s.n - 1 DO
-    IF DynStr.Eq (s.v[i], x) THEN RETURN TRUE END
+    IF Text.Eq (s.v[i], x) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END Has ;
@@ -239,12 +244,13 @@ PROCEDURE HasIn (RO a: SLICE OF STR ; RO x: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO LEN (a) - 1 DO
-    IF DynStr.Eq (a[i], x) THEN RETURN TRUE END
+    IF Text.Eq (a[i], x) THEN RETURN TRUE END
   END ;
   RETURN FALSE
 END HasIn ;
 
-(* x at the end, a copy in the program's pool; a set keeps one of each *)
+(* Add puts x at the end, a copy in the program's pool; a set keeps
+   one of each. *)
 PROCEDURE Add (VAR s: Names ; RO x: STR) =
 BEGIN
   IF NOT Has (s, x) THEN
@@ -253,7 +259,8 @@ BEGIN
   END
 END Add ;
 
-(* the same, duplicates kept: a list, as gentest's deps are *)
+(* Push does the same with duplicates kept: a list, as gentest's deps
+   are. *)
 PROCEDURE Push (VAR s: Names ; RO x: STR) =
 BEGIN
   s.v[s.n] := Text.Keep (pool, x) ;
@@ -270,7 +277,8 @@ BEGIN
   RETURN s
 END FromTable ;
 
-(* a's names that are not in b, sorted -- Python's sorted (a - b) *)
+(* Minus answers a's names that are not in b, sorted: Python's
+   sorted (a - b). *)
 PROCEDURE Minus (RO a, b: Names) : Names =
 VAR
   s : Names ;
@@ -312,12 +320,12 @@ VAR i : I64 ;
 BEGIN
   IF a.n # b.n THEN RETURN FALSE END ;
   FOR i := 0 TO a.n - 1 DO
-    IF NOT DynStr.Eq (a.v[i], b.v[i]) THEN RETURN FALSE END
+    IF NOT Text.Eq (a.v[i], b.v[i]) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END SameList ;
 
-(* a list as Python's str () prints one: ['A', 'B'] *)
+(* Repr writes a list as Python's str () prints one: ['A', 'B']. *)
 PROCEDURE Repr (RO s: Names) : STR =
 VAR
   d : PTR DynStr.DString IN pool ;
@@ -347,7 +355,8 @@ BEGIN
   RETURN DynStr.Chars (pool, Io.ReadFileBytes (pool, root + '/' + path))
 END Rd ;
 
-(* the text with every backslash-newline replaced by a blank *)
+(* Joined answers the text with every backslash-newline replaced by
+   a blank. *)
 PROCEDURE Joined (RO s: STR) : STR =
 VAR
   d : PTR DynStr.DString IN pool ;
@@ -355,13 +364,12 @@ VAR
 BEGIN
   d := DynStr.New (pool) ;
   i := 0 ;
-  WHILE i < LEN (s) DO
-    IF (s[i] = 05CC) AND (i + 1 < LEN (s)) AND (s[i + 1] = 0AC) THEN
+  WHILE i < Text.BLen (s) DO
+    IF (Text.BIs (s, i, 05CC)) AND (i + 1 < Text.BLen (s)) AND (Text.BIs (s, i + 1, 0AC)) THEN
       DynStr.AppendChar (d, ' ') ;
       i := i + 2
     ELSE
-      DynStr.AppendChar (d, s[i]) ;
-      i := i + 1
+      DynStr.AppendChar (d, Text.NextCp (s, i))   (* the whole character; i moves past it *)
     END
   END ;
   RETURN DynStr.View (d)
@@ -379,7 +387,7 @@ BEGIN
          (c = 0BC) OR (c = 0CC)
 END IsBlank ;
 
-(* the blank-separated words of s, Python's split () *)
+(* Words answers the blank-separated words of s, Python's split (). *)
 PROCEDURE Words (RO s: STR) : Names =
 VAR
   w : Names ;
@@ -387,82 +395,86 @@ VAR
 BEGIN
   w := Fresh () ;
   i := 0 ;
-  WHILE i < LEN (s) DO
-    WHILE (i < LEN (s)) AND IsBlank (s[i]) DO i := i + 1 END ;
+  WHILE i < Text.BLen (s) DO
+    WHILE (i < Text.BLen (s)) AND IsBlank (Text.BChar (s, i)) DO i := i + 1 END ;
     j := i ;
-    WHILE (j < LEN (s)) AND NOT IsBlank (s[j]) DO j := j + 1 END ;
+    WHILE (j < Text.BLen (s)) AND NOT IsBlank (Text.BChar (s, j)) DO j := j + 1 END ;
     IF j > i THEN Push (w, SLICE (s, i, j - i)) END ;
     i := j
   END ;
   RETURN w
 END Words ;
 
-(* s without blanks at either end *)
+(* Strip answers s without blanks at either end. *)
 PROCEDURE Strip (RO s: STR) : STR =
 VAR a, b : I64 ;
 BEGIN
   a := 0 ;
-  b := LEN (s) ;
-  WHILE (a < b) AND IsBlank (s[a]) DO a := a + 1 END ;
-  WHILE (b > a) AND IsBlank (s[b - 1]) DO b := b - 1 END ;
+  b := Text.BLen (s) ;
+  WHILE (a < b) AND IsBlank (Text.BChar (s, a)) DO a := a + 1 END ;
+  WHILE (b > a) AND IsBlank (Text.BChar (s, b - 1)) DO b := b - 1 END ;
   RETURN SLICE (s, a, b - a)
 END Strip ;
 
-(* the source with every comment blanked, nesting honoured and the
-   line breaks kept.  Check.m9's documentation shows a test, IMPORT
-   line and all, and was read as importing itself. *)
+(* NoComments answers the source with every comment blanked, nesting
+   honoured and the line breaks kept.  Check.m9's documentation shows
+   a test, IMPORT line and all, and was read as importing itself. *)
 PROCEDURE NoComments (RO s: STR) : STR =
 VAR
   d : PTR DynStr.DString IN pool ;
   i, depth : I64 ;
+  c : CHAR ;
 BEGIN
   d := DynStr.New (pool) ;
   depth := 0 ;
   i := 0 ;
-  WHILE i < LEN (s) DO
-    IF (s[i] = '(') AND (i + 1 < LEN (s)) AND (s[i + 1] = '*') THEN
+  WHILE i < Text.BLen (s) DO
+    IF (Text.BIs (s, i, '(')) AND (i + 1 < Text.BLen (s)) AND (Text.BIs (s, i + 1, '*')) THEN
       depth := depth + 1 ;
       i := i + 2
-    ELSIF (depth > 0) AND (s[i] = '*') AND (i + 1 < LEN (s)) AND (s[i + 1] = ')') THEN
+    ELSIF (depth > 0) AND (Text.BIs (s, i, '*')) AND (i + 1 < Text.BLen (s)) AND (Text.BIs (s, i + 1, ')')) THEN
       depth := depth - 1 ;
       i := i + 2
     ELSE
-      IF (depth = 0) OR (s[i] = 0AC) THEN DynStr.AppendChar (d, s[i]) END ;
-      i := i + 1
+      c := Text.NextCp (s, i) ;   (* the whole character; i moves past it *)
+      IF (depth = 0) OR (c = 0AC) THEN DynStr.AppendChar (d, c) END
     END
   END ;
   RETURN DynStr.View (d)
 END NoComments ;
 
-(* the names of an IMPORT line, added to s: the line's start, blanks,
-   IMPORT, at least one blank, then everything to the FIRST semicolon,
-   split at commas.  FROM u IMPORT is a foreign unit and does not
-   match. *)
+(* ImportLine adds the names of an IMPORT line to s.  It matches the
+   line's start, blanks, IMPORT, at least one blank, then everything
+   to the FIRST semicolon, split at commas.  FROM u IMPORT is a
+   foreign unit and does not match. *)
 PROCEDURE ImportLine (RO line: STR ; VAR s: Names) =
 VAR
   i, j, k : I64 ;
   part : SLICE OF STR ;
 BEGIN
   i := 0 ;
-  WHILE (i < LEN (line)) AND IsBlank (line[i]) DO i := i + 1 END ;
-  IF (LEN (line) - i < 7) OR NOT Text.Eq (SLICE (line, i, 6), 'IMPORT') THEN RETURN END ;
-  IF NOT IsBlank (line[i + 6]) THEN RETURN END ;
+  WHILE (i < Text.BLen (line)) AND IsBlank (Text.BChar (line, i)) DO i := i + 1 END ;
+  (* The prefix is tested on the rest of the line: six octets of a line
+     that starts with a character past ASCII can end inside it, and a
+     UTF is not cut inside a character. *)
+  IF (Text.BLen (line) - i < 7) OR NOT Text.StartsWith (SLICE (line, i, Text.BLen (line) - i), 'IMPORT') THEN RETURN END ;
+  IF NOT IsBlank (Text.BChar (line, i + 6)) THEN RETURN END ;
   j := i + 6 ;
-  k := Text.FindChar (SLICE (line, j, LEN (line) - j), ';') ;
+  k := Text.FindChar (SLICE (line, j, Text.BLen (line) - j), ';') ;
   IF k < 0 THEN RETURN END ;
   part := Text.Split (SLICE (line, j, k), ',') ;
   FOR k := 0 TO LEN (part) - 1 DO
-    IF LEN (Strip (part[k])) > 0 THEN Add (s, Strip (part[k])) END
+    IF Text.BLen (Strip (part[k])) > 0 THEN Add (s, Strip (part[k])) END
   END
 END ImportLine ;
 
-(* the direct imports of corpus module m; the empty set for a name
-   that is not one *)
+(* Direct answers the direct imports of corpus module m, and the
+   empty set for a name that is not one. *)
 PROCEDURE Direct (RO m: STR) : Names =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO LEN (impName) - 1 DO
-    IF DynStr.Eq (impName[i], m) THEN RETURN impSet[i] END
+    IF Text.Eq (impName[i], m) THEN RETURN impSet[i] END
   END ;
   RETURN Fresh ()
 END Direct ;
@@ -484,7 +496,8 @@ BEGIN
   END
 END ReadImports ;
 
-(* every name m imports, directly or through another corpus module *)
+(* Close collects every name m imports, directly or through another
+   corpus module. *)
 PROCEDURE Close (RO m: STR ; VAR seen: Names) =
 VAR
   d : Names ;
@@ -514,7 +527,7 @@ PROCEDURE Find (RO t: SLICE OF Entry ; n: I64 ; RO m: STR) : I64 =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO n - 1 DO
-    IF DynStr.Eq (t[i].name, m) THEN RETURN i END
+    IF Text.Eq (t[i].name, m) THEN RETURN i END
   END ;
   RETURN -1
 END Find ;
@@ -529,8 +542,9 @@ BEGIN
   RETURN r
 END Shrink ;
 
-(* GenModule ('M', ['A', 'B']) lines of gentest.pas; a name seen twice
-   keeps its first place and its last list, as a dict did *)
+(* Gentest reads the GenModule ('M', ['A', 'B']) lines of gentest.pas.
+   A name seen twice keeps its first place and its last list, as a
+   dict did. *)
 PROCEDURE Gentest () : SLICE OF Entry RAISES Io.IOError, ValueRange =
 VAR
   s, body : STR ;
@@ -545,25 +559,25 @@ BEGIN
   n := 0 ;
   p := 0 ;
   LOOP
-    k := Text.Find (SLICE (s, p, LEN (s) - p), "GenModule ('") ;
+    k := Text.Find (SLICE (s, p, Text.BLen (s) - p), "GenModule ('") ;
     IF k < 0 THEN EXIT END ;
     i := p + k + 12 ;
     j := i ;
-    WHILE (j < LEN (s)) AND IsWord (s[j]) DO j := j + 1 END ;
-    IF (j > i) AND (j + 4 <= LEN (s)) AND Text.Eq (SLICE (s, j, 4), "', [") THEN
-      k := Text.FindChar (SLICE (s, j + 4, LEN (s) - j - 4), ']') ;
+    WHILE (j < Text.BLen (s)) AND IsWord (Text.BChar (s, j)) DO j := j + 1 END ;
+    IF (j > i) AND (j + 4 <= Text.BLen (s)) AND Text.Eq (SLICE (s, j, 4), "', [") THEN
+      k := Text.FindChar (SLICE (s, j + 4, Text.BLen (s) - j - 4), ']') ;
       IF k >= 0 THEN
         body := SLICE (s, j + 4, k) ;
         deps := Fresh () ;
         part := Text.Split (body, ',') ;
         FOR k := 0 TO LEN (part) - 1 DO
-          IF LEN (Strip (part[k])) > 0 THEN
+          IF Text.BLen (Strip (part[k])) > 0 THEN
             x := part[k] ;
-            WHILE (LEN (x) > 0) AND ((x[0] = "'") OR (x[0] = ' ')) DO
-              x := SLICE (x, 1, LEN (x) - 1)
+            WHILE (Text.BLen (x) > 0) AND ((Text.BIs (x, 0, "'")) OR (Text.BIs (x, 0, ' '))) DO
+              x := SLICE (x, 1, Text.BLen (x) - 1)
             END ;
-            WHILE (LEN (x) > 0) AND ((x[LEN (x) - 1] = "'") OR (x[LEN (x) - 1] = ' ')) DO
-              x := SLICE (x, 0, LEN (x) - 1)
+            WHILE (Text.BLen (x) > 0) AND ((Text.BIs (x, Text.BLen (x) - 1, "'")) OR (Text.BIs (x, Text.BLen (x) - 1, ' '))) DO
+              x := SLICE (x, 0, Text.BLen (x) - 1)
             END ;
             Push (deps, x)
           END
@@ -583,22 +597,23 @@ BEGIN
   RETURN Shrink (t, n)
 END Gentest ;
 
-(* a line of the form `KEYWORD M dep dep ...`, blanks between, nothing
-   else on it: gendiff.sh's run lines and m9c.sh's check lines *)
+(* ListLine reads a line of the form `KEYWORD M dep dep ...`, blanks
+   between, nothing else on it: gendiff.sh's run lines and m9c.sh's
+   check lines. *)
 PROCEDURE ListLine (RO line, keyword: STR ; VAR m: STR ; VAR deps: Names) : BOOL =
 VAR
   w : Names ;
   i, k : I64 ;
 BEGIN
-  IF (LEN (line) <= LEN (keyword)) OR NOT Text.StartsWith (line, keyword) THEN
+  IF (Text.BLen (line) <= Text.BLen (keyword)) OR NOT Text.StartsWith (line, keyword) THEN
     RETURN FALSE
   END ;
-  IF NOT IsBlank (line[LEN (keyword)]) THEN RETURN FALSE END ;
-  w := Words (SLICE (line, LEN (keyword), LEN (line) - LEN (keyword))) ;
+  IF NOT IsBlank (Text.BChar (line, Text.BLen (keyword))) THEN RETURN FALSE END ;
+  w := Words (SLICE (line, Text.BLen (keyword), Text.BLen (line) - Text.BLen (keyword))) ;
   IF w.n = 0 THEN RETURN FALSE END ;
   FOR i := 0 TO w.n - 1 DO
-    FOR k := 0 TO LEN (w.v[i]) - 1 DO
-      IF NOT IsWord (w.v[i][k]) THEN RETURN FALSE END
+    FOR k := 0 TO Text.BLen (w.v[i]) - 1 DO
+      IF NOT IsWord (Text.BChar (w.v[i], k)) THEN RETURN FALSE END
     END
   END ;
   m := w.v[0] ;
@@ -633,8 +648,9 @@ BEGIN
   RETURN Shrink (t, n)
 END Gendiff ;
 
-(* NAME="..." at the start of a line, the value to the next quote,
-   its backslash-newlines read as blanks, split at blanks *)
+(* ShellList reads NAME="..." at the start of a line: the value to the
+   next quote, its backslash-newlines read as blanks, split at
+   blanks. *)
 PROCEDURE ShellList (RO text, name: STR) : Names =
 VAR
   lines : SLICE OF STR ;
@@ -643,13 +659,13 @@ VAR
 BEGIN
   head := Text.Keep (pool, name + '="') ;
   start := -1 ;
-  IF Text.StartsWith (text, head) THEN start := LEN (head) END ;
+  IF Text.StartsWith (text, head) THEN start := Text.BLen (head) END ;
   IF start < 0 THEN
     k := Text.Find (text, '' + 0AC + head) ;
-    IF k >= 0 THEN start := k + 1 + LEN (head) END
+    IF k >= 0 THEN start := k + 1 + Text.BLen (head) END
   END ;
   IF start < 0 THEN RETURN Fresh () END ;
-  k := Text.FindChar (SLICE (text, start, LEN (text) - start), '"') ;
+  k := Text.FindChar (SLICE (text, start, Text.BLen (text) - start), '"') ;
   IF k < 0 THEN RETURN Fresh () END ;
   RETURN Words (Joined (SLICE (text, start, k)))
 END ShellList ;
@@ -669,7 +685,7 @@ BEGIN
   a := Text.Find (text, 'deps_of () {' + 0AC) ;
   IF a >= 0 THEN
     a := a + 13 ;
-    b := Text.Find (SLICE (text, a, LEN (text) - a), '' + 0AC + '}') ;
+    b := Text.Find (SLICE (text, a, Text.BLen (text) - a), '' + 0AC + '}') ;
     IF b >= 0 THEN
       body := SLICE (text, a, b + 1) ;
       lines := Text.Split (body, 0AC) ;
@@ -678,7 +694,7 @@ BEGIN
         k := Text.FindChar (line, ')') ;
         IF (k > 0) AND LabelChars (SLICE (line, 0, k)) THEN
           names := SLICE (line, 0, k) ;
-          rest := Strip (SLICE (line, k + 1, LEN (line) - k - 1)) ;
+          rest := Strip (SLICE (line, k + 1, Text.BLen (line) - k - 1)) ;
           IF Text.StartsWith (rest, 'echo') AND (Text.Find (rest, ';;') > 0) THEN
             rest := SLICE (rest, 4, Text.Find (rest, ';;') - 4) ;
             IF Text.FindChar (rest, ';') < 0 THEN
@@ -709,17 +725,19 @@ BEGIN
   RETURN t
 END Bootstrap ;
 
-(* a case label of deps_of: word characters and bars, as [\w|]+ *)
+(* LabelChars tests for a case label of deps_of: word characters and
+   bars, as [\w|]+. *)
 PROCEDURE LabelChars (RO s: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF NOT (IsWord (s[i]) OR (s[i] = '|')) THEN RETURN FALSE END
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF NOT (IsWord (Text.BChar (s, i)) OR (Text.BIs (s, i, '|'))) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END LabelChars ;
 
-(* the names of the generated modules a line links: every gen/NAME.c *)
+(* GenModules answers the names of the generated modules a line
+   links: every gen/NAME.c. *)
 PROCEDURE GenModules (RO line: STR) : Names =
 VAR
   s : Names ;
@@ -727,11 +745,11 @@ VAR
 BEGIN
   s := Fresh () ;
   i := 0 ;
-  WHILE i + 4 <= LEN (line) DO
+  WHILE i + 4 <= Text.BLen (line) DO
     IF Text.Eq (SLICE (line, i, 4), 'gen/') THEN
       j := i + 4 ;
-      WHILE (j < LEN (line)) AND IsWord (line[j]) DO j := j + 1 END ;
-      IF (j > i + 4) AND (j + 2 <= LEN (line)) AND (line[j] = '.') AND (line[j + 1] = 'c') THEN
+      WHILE (j < Text.BLen (line)) AND IsWord (Text.BChar (line, j)) DO j := j + 1 END ;
+      IF (j > i + 4) AND (j + 2 <= Text.BLen (line)) AND (Text.BIs (line, j, '.')) AND (Text.BIs (line, j + 1, 'c')) THEN
         Add (s, SLICE (line, i + 4, j - i - 4))
       END ;
       i := j
@@ -742,17 +760,18 @@ BEGIN
   RETURN s
 END GenModules ;
 
-(* what -o names on a line: the first `-o`, blanks, then the word *)
+(* OutName answers what -o names on a line: the first `-o`, blanks,
+   then the word. *)
 PROCEDURE OutName (RO line: STR) : STR =
 VAR i, j, k : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i + 2 < LEN (line) DO
-    IF (line[i] = '-') AND (line[i + 1] = 'o') AND IsBlank (line[i + 2]) THEN
+  WHILE i + 2 < Text.BLen (line) DO
+    IF (Text.BIs (line, i, '-')) AND (Text.BIs (line, i + 1, 'o')) AND IsBlank (Text.BChar (line, i + 2)) THEN
       j := i + 2 ;
-      WHILE (j < LEN (line)) AND IsBlank (line[j]) DO j := j + 1 END ;
+      WHILE (j < Text.BLen (line)) AND IsBlank (Text.BChar (line, j)) DO j := j + 1 END ;
       k := j ;
-      WHILE (k < LEN (line)) AND NOT IsBlank (line[k]) DO k := k + 1 END ;
+      WHILE (k < Text.BLen (line)) AND NOT IsBlank (Text.BChar (line, k)) DO k := k + 1 END ;
       IF k > j THEN RETURN SLICE (line, j, k - j) END
     END ;
     i := i + 1
@@ -760,26 +779,27 @@ BEGIN
   RETURN '?'
 END OutName ;
 
-(* the line links an m9c of its own: -o, blanks, an optional quote, an
-   optional $NAME/, m9c, an optional quote, then a blank or the end *)
+(* LinksM9c tests whether the line links an m9c of its own: -o,
+   blanks, an optional quote, an optional $NAME/, m9c, an optional
+   quote, then a blank or the end. *)
 PROCEDURE LinksM9c (RO line: STR) : BOOL =
 VAR i, j : I64 ;
 BEGIN
   i := 0 ;
-  WHILE i + 2 < LEN (line) DO
-    IF (line[i] = '-') AND (line[i + 1] = 'o') AND IsBlank (line[i + 2]) THEN
+  WHILE i + 2 < Text.BLen (line) DO
+    IF (Text.BIs (line, i, '-')) AND (Text.BIs (line, i + 1, 'o')) AND IsBlank (Text.BChar (line, i + 2)) THEN
       j := i + 2 ;
-      WHILE (j < LEN (line)) AND IsBlank (line[j]) DO j := j + 1 END ;
-      IF (j < LEN (line)) AND (line[j] = '"') THEN j := j + 1 END ;
-      IF (j < LEN (line)) AND (line[j] = '$') AND (j + 1 < LEN (line)) AND IsWord (line[j + 1]) THEN
+      WHILE (j < Text.BLen (line)) AND IsBlank (Text.BChar (line, j)) DO j := j + 1 END ;
+      IF (j < Text.BLen (line)) AND (Text.BIs (line, j, '"')) THEN j := j + 1 END ;
+      IF (j < Text.BLen (line)) AND (Text.BIs (line, j, '$')) AND (j + 1 < Text.BLen (line)) AND IsWord (Text.BChar (line, j + 1)) THEN
         j := j + 1 ;
-        WHILE (j < LEN (line)) AND IsWord (line[j]) DO j := j + 1 END ;
-        IF (j < LEN (line)) AND (line[j] = '/') THEN j := j + 1 ELSE j := LEN (line) END
+        WHILE (j < Text.BLen (line)) AND IsWord (Text.BChar (line, j)) DO j := j + 1 END ;
+        IF (j < Text.BLen (line)) AND (Text.BIs (line, j, '/')) THEN j := j + 1 ELSE j := Text.BLen (line) END
       END ;
-      IF (j + 3 <= LEN (line)) AND Text.Eq (SLICE (line, j, 3), 'm9c') THEN
+      IF (j + 3 <= Text.BLen (line)) AND Text.Eq (SLICE (line, j, 3), 'm9c') THEN
         j := j + 3 ;
-        IF (j < LEN (line)) AND (line[j] = '"') THEN j := j + 1 END ;
-        IF (j = LEN (line)) OR IsBlank (line[j]) THEN RETURN TRUE END
+        IF (j < Text.BLen (line)) AND (Text.BIs (line, j, '"')) THEN j := j + 1 END ;
+        IF (j = Text.BLen (line)) OR IsBlank (Text.BChar (line, j)) THEN RETURN TRUE END
       END
     END ;
     i := i + 1
@@ -787,8 +807,8 @@ BEGIN
   RETURN FALSE
 END LinksM9c ;
 
-(* every closure failure of one link line: each module it links whose
-   direct imports it does not *)
+(* Closed names every closure failure of one link line: each module
+   it links whose direct imports it does not. *)
 PROCEDURE Closed (RO mods: Names ; RO where, what, verb, art: STR) =
 VAR
   sm, miss : Names ;
@@ -807,7 +827,7 @@ BEGIN
   END
 END Closed ;
 
-(* the *.sh files of runtime/test, in name order *)
+(* Gates answers the *.sh files of runtime/test, in name order. *)
 PROCEDURE Gates () : SLICE OF STR RAISES Io.IOError, ValueRange =
 VAR
   all, out : SLICE OF STR ;
@@ -830,19 +850,20 @@ BEGIN
   RETURN out
 END Gates ;
 
-(* s is one or more word characters *)
+(* Word tests that s is one or more word characters. *)
 PROCEDURE Word (RO s: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
-  IF LEN (s) = 0 THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF NOT IsWord (s[i]) THEN RETURN FALSE END
+  IF Text.BLen (s) = 0 THEN RETURN FALSE END ;
+  FOR i := 0 TO Text.BLen (s) - 1 DO
+    IF NOT IsWord (Text.BChar (s, i)) THEN RETURN FALSE END
   END ;
   RETURN TRUE
 END Word ;
 
-(* the object names of a link line: every word directly before `.o`
-   that is not followed by another word character *)
+(* Objects answers the object names of a link line: every word
+   directly before `.o` that is not followed by another word
+   character. *)
 PROCEDURE Objects (RO line: STR) : Names =
 VAR
   s : Names ;
@@ -850,12 +871,12 @@ VAR
 BEGIN
   s := Fresh () ;
   i := 0 ;
-  WHILE i < LEN (line) DO
-    IF IsWord (line[i]) AND ((i = 0) OR NOT IsWord (line[i - 1])) THEN
+  WHILE i < Text.BLen (line) DO
+    IF IsWord (Text.BChar (line, i)) AND ((i = 0) OR NOT IsWord (Text.BChar (line, i - 1))) THEN
       j := i ;
-      WHILE (j < LEN (line)) AND IsWord (line[j]) DO j := j + 1 END ;
-      IF (j + 1 < LEN (line)) AND (line[j] = '.') AND (line[j + 1] = 'o') AND
-         ((j + 2 = LEN (line)) OR NOT IsWord (line[j + 2])) THEN
+      WHILE (j < Text.BLen (line)) AND IsWord (Text.BChar (line, j)) DO j := j + 1 END ;
+      IF (j + 1 < Text.BLen (line)) AND (Text.BIs (line, j, '.')) AND (Text.BIs (line, j + 1, 'o')) AND
+         ((j + 2 = Text.BLen (line)) OR NOT IsWord (Text.BChar (line, j + 2))) THEN
         Add (s, SLICE (line, i, j - i))
       END ;
       i := j
@@ -883,13 +904,13 @@ BEGIN
   notGen := FromTable (NotGenerated) ;
   notInst := FromTable (NotInstalled) ;
 
-  (* the corpus, in name order *)
+  (* Read the corpus, in name order. *)
   corpus := Fresh () ;
   files := Io.ListDir (pool, root + '/corpus') ;
   Sort.Strs (files) ;
   FOR i := 0 TO LEN (files) - 1 DO
     IF Text.EndsWith (files[i], '.m9') AND NOT Text.StartsWith (files[i], '.') THEN
-      Push (corpus, SLICE (files[i], 0, LEN (files[i]) - 3))
+      Push (corpus, SLICE (files[i], 0, Text.BLen (files[i]) - 3))
     END
   END ;
   ReadImports () ;
@@ -900,10 +921,10 @@ BEGIN
   (* 13. corpus/NAMETest.m9 is the test of corpus/NAME.m9 *)
   FOR i := 0 TO corpus.n - 1 DO
     m := corpus.v[i] ;
-    IF Text.EndsWith (m, 'Test') AND (LEN (m) > 4) THEN
-      IF NOT Has (corpus, SLICE (m, 0, LEN (m) - 4)) THEN
+    IF Text.EndsWith (m, 'Test') AND (Text.BLen (m) > 4) THEN
+      IF NOT Has (corpus, SLICE (m, 0, Text.BLen (m) - 4)) THEN
         Fail ('corpus/' + m + '.m9 is named as a test and there is no corpus/'
-              + SLICE (m, 0, LEN (m) - 4) + '.m9')
+              + SLICE (m, 0, Text.BLen (m) - 4) + '.m9')
       END ;
       Add (notGen, m) ;
       Add (notInst, m)
@@ -1030,8 +1051,8 @@ BEGIN
       IF LinksM9c (line)
          AND (Text.Contains (line, 'gen/') OR Text.Contains (line, '$COMPILERC')) THEN
         linked := GenModules (line) ;
-        (* $COMPILERC is the COMPILER set itself (lib/mods.sh); what the
-           line names beside it is still held *)
+        (* $COMPILERC is the COMPILER set itself (lib/mods.sh); any
+           module the line names beside it is still held. *)
         IF Text.Contains (line, '$COMPILERC') THEN
           FOR k := 0 TO comp.n - 1 DO Add (linked, comp.v[k]) END
         END ;
@@ -1116,7 +1137,7 @@ BEGIN
   ntut := 0 ;
   FOR j := 0 TO LEN (lines) - 1 DO
     line := Text.TrimLeft (lines[j]) ;
-    IF LEN (line) > 0 AND line[0] # '#' AND Text.Contains (line, 'gcc ') THEN
+    IF Text.BLen (line) > 0 AND NOT Text.BIs (line, 0, '#') AND Text.Contains (line, 'gcc ') THEN
       ntut := ntut + 1 ;
       Fail ('tutcommon.sh: a hand link line (' + Text.Trim (line)
             + '): the FOR "C" unit names its library with LINK, and the example links flagless')

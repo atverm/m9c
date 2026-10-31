@@ -1,8 +1,8 @@
 (* EXPECT: unhandled RAISES ValueRange from call to Check -- add it to this procedure's RAISES, or handle it: EXCEPT | ValueRange : ... *)
-(* A call's RAISES counts wherever the call stands (2026-10-11): in an
+(* A call's RAISES counts wherever the call stands (2026-10-11).  In an
    IF or ELSIF condition, a WHILE condition, a CASE selector and a FOR
-   bound the M9 checker only TYPED the expression and counted nothing --
-   from 0.14.0 at least; its Pascal twin counted them.  The legal forms
+   bound the M9 checker only TYPED the expression and counted nothing,
+   from 0.14.0 at least; its Pascal twin counted them.  Legal forms come
    first: the same calls declared and handled.  Then one undeclared. *)
 MODULE m ;
 PROCEDURE Check (n: I64) : I64 RAISES ValueRange =

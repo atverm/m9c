@@ -1,5 +1,6 @@
-/* parsedump_m9.c -- the M9-compiled parser+printer side of the
-   stage-1 differential: identical output to host/fpc/parsedump.    */
+/* parsedump_m9.c is the M9-compiled parser+printer side of the
+   stage-1 differential.  Its output is identical to
+   host/fpc/parsedump.                                              */
 #include <stdio.h>
 #include <stdlib.h>
 #include "Parse.h"
@@ -9,14 +10,13 @@
 int main (int argc, char **argv)
 {
   FILE *f;
-  long len, i;
+  long len;
   char *bytes;
-  uint32_t *chars;
   m9_pool pool = {0};
   m9_state err = {0};
   Parse_Parser p;
   Ast_Node *root;
-  m9_sl_CHAR out;
+  m9_sl_UTF8 out;
 
   if (argc < 2) { fprintf (stderr, "usage: parsedump_m9 FILE\n"); return 2; }
   f = fopen (argv[1], "rb");
@@ -25,16 +25,14 @@ int main (int argc, char **argv)
   bytes = malloc ((size_t) len + 1);
   if (fread (bytes, 1, (size_t) len, f) != (size_t) len) return 2;
   fclose (f);
-  chars = malloc (sizeof (uint32_t) * (size_t) len);
-  len = m9t_decode ((const unsigned char *) bytes, len, chars);   /* UTF-8, as m9c reads it */
 
   memset (&p, 0, sizeof p);
-  Parse_Init (&p, &pool,(m9_sl_CHAR){ chars, len }, &err);
+  Parse_InitUtf (&p, &pool,(m9_sl_UTF8){ (uint8_t *) bytes, len }, &err);   /* UTF-8, as m9c reads it */
   root = Parse_File (&pool, &p, &pool,&err);
   if (err.exc) { fprintf (stderr, "raised %s\n", err.exc->name); return 3; }
-  out = Print_Tree (&pool, root, &err);
+  out = Print_TreeUtf (&pool, root, &err);
   if (err.exc) { fprintf (stderr, "print raised %s\n", err.exc->name); return 3; }
-  for (i = 0; i < out.len; i++) m9t_putc (out.p[i]);
+  fwrite (out.p, 1, (size_t) out.len, stdout);
   if (p.nerr > 0) return 1;
   m9_pool_free (&pool);
   return 0;

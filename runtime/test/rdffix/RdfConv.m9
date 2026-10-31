@@ -1,7 +1,8 @@
 MODULE RdfConv ;
 
-(* rdf.sh's converter: each document read by Rdf and written back as
-   N-Triples, for rdflib to judge (runtime/test/rdfjudge.py).
+(* RdfConv is rdf.sh's converter.  It reads each document with Rdf
+   and writes it back as N-Triples, for rdflib to judge
+   (runtime/test/rdfjudge.py).
 
        RdfConv KIND DIR BASE OUT FILE...
 
@@ -31,10 +32,10 @@ BEGIN
       g := Rdf.ParseRdfXml (p, Io.ReadFileBytes (p, dir + '/' + file), base + file)
     ELSIF Text.Eq (kind, 'jld') THEN
       (* BASE is the document's whole IRI here: a JSON-LD test names its own *)
-      src := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, dir + '/' + file)) ;
+      src := UTF (p, Io.ReadFileBytes (p, dir + '/' + file)) ;
       g := Rdf.ParseJsonLd (p, src, base, NONE)
     ELSE
-      src := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, dir + '/' + file)) ;
+      src := UTF (p, Io.ReadFileBytes (p, dir + '/' + file)) ;
       IF Text.Eq (kind, 'nt') THEN
         g := Rdf.ParseNTriples (p, src)
       ELSE
@@ -42,21 +43,21 @@ BEGIN
       END
     END ;
     (* UTF-8: Io.WriteFile writes Latin-1 and refuses past U+00FF *)
-    Io.WriteFileBytes (out + '/' + file + '.nt', DynStr.Utf8 (p, Rdf.NTriples (g))) ;
+    Io.WriteFileBytes (out + '/' + file + '.nt', OCTETS (Rdf.NTriples (g))) ;
     (* and as Turtle, for rdflib to read back (item 2 of library plan 2) *)
-    Io.WriteFileBytes (out + '/' + file + '.ttl', DynStr.Utf8 (p, Rdf.Turtle (g, NEW (STR, 0), NEW (STR, 0)))) ;
+    Io.WriteFileBytes (out + '/' + file + '.ttl', OCTETS (Rdf.Turtle (g, NEW (STR, 0), NEW (STR, 0)))) ;
     (* and as JSON-LD, for rdflib's json-ld reader (item 7) *)
-    Io.WriteFileBytes (out + '/' + file + '.jsonld', DynStr.Utf8 (p, Rdf.JsonLd (g, NONE))) ;
+    Io.WriteFileBytes (out + '/' + file + '.jsonld', OCTETS (Rdf.JsonLd (g, NONE))) ;
     (* and as RDF/XML, for rdflib's xml reader (cp-kernel's issue 10);
        a predicate no element can carry is said in .rdf.err, which the
        judge accepts only for that reason *)
     BEGIN
-      Io.WriteFileBytes (out + '/' + file + '.rdf', DynStr.Utf8 (p, Rdf.RdfXml (g)))
+      Io.WriteFileBytes (out + '/' + file + '.rdf', OCTETS (Rdf.RdfXml (g)))
     EXCEPT
     | Rdf.NotWritable (iri) :
-        Io.WriteFileBytes (out + '/' + file + '.rdf.err', DynStr.Utf8 (p, 'no local name: ' + iri + 0AC))
+        Io.WriteFileBytes (out + '/' + file + '.rdf.err', OCTETS ('no local name: ' + iri + 0AC))
     | Xml.WriteError (m) :
-        Io.WriteFileBytes (out + '/' + file + '.rdf.err', DynStr.Utf8 (p, 'xml: ' + m + 0AC))
+        Io.WriteFileBytes (out + '/' + file + '.rdf.err', OCTETS ('xml: ' + m + 0AC))
     END
   EXCEPT
   | Rdf.SyntaxError (m, line, col) :
@@ -64,7 +65,7 @@ BEGIN
       em := m ; el := line ; ec := col ;
       (* UTF-8 too: a refusal names what it refused, which may be any text *)
       Io.WriteFileBytes (out + '/' + file + '.err',
-                         DynStr.Utf8 (p, Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em + 0AC))
+                         OCTETS (Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em + 0AC))
   | ValueRange :
       Io.WriteFile (out + '/' + file + '.err', 'ValueRange' + 0AC)
   END

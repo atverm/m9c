@@ -1,18 +1,19 @@
 #!/bin/sh
-# permute: THE CHECKER'S VERDICT DOES NOT DEPEND ON DECLARATION ORDER
-# (2026-10-26, the third review's summaries advice).  The memoised call
-# summaries read an entry still being computed as "no", so a cycle's
-# answer depended on which procedure was asked first: Cyc3, three
-# procedures calling each other, was accepted in 288 of its 720
-# declaration orders and refused in the rest, and the regions gate's E1
-# and E1n were refused only in the order they happened to be written.
-# Every program in regions/ (each refused) and genforms/ (each built and
-# run) is written in ORDERS orders by tools/Permute.m9 -- every
-# procedure body moved, a forward heading for each first -- and every
-# order must be refused, or accepted, as the program's own order is.
+# permute holds one rule: THE CHECKER'S VERDICT DOES NOT DEPEND ON
+# DECLARATION ORDER (2026-10-26, the third review's summaries advice).
+# The memoised call summaries read an entry still being computed as
+# "no".  So a cycle's answer depended on which procedure was asked
+# first.  Cyc3, three procedures calling each other, was accepted in
+# 288 of its 720 declaration orders and refused in the rest.  The
+# regions gate's E1 and E1n were refused only in the order they
+# happened to be written.  tools/Permute.m9 writes every program in
+# regions/ (each refused) and genforms/ (each built and run) in ORDERS
+# orders.  It moves every procedure body, with a forward heading for
+# each first.  Every order must be refused, or accepted, as the
+# program's own order is.
 #
-# Shown able to fail: the compiler of c3fddee6 (before the memo's
-# iteration at a cycle's head) accepts 8 of R3Cyc3's 24 orders.
+# The gate is shown able to fail: the compiler of c3fddee6 (before the
+# memo's iteration at a cycle's head) accepts 8 of R3Cyc3's 24 orders.
 cd "$(dirname "$0")" || exit 1
 . ./lib/gen.sh
 . ./lib/freshm9c.sh
@@ -24,7 +25,8 @@ export M9RUNTIME="$ROOT/runtime" M9LIBRARY="$ROOT/corpus" M9CACHE="$W/cache"
 "$M9C" --run "$ROOT/tools/Permute.m9" regions/R3Cyc3.m9 "$W/warm" 1 1 > /dev/null ||
   { echo "permute: FAIL running tools/Permute.m9"; exit 1; }
 
-# one program: its orders, and a line naming any whose verdict differs
+# one checks one program's orders and prints a line naming any whose
+# verdict differs.
 one () {
   f=$1 ; name=$(basename "$f" .m9) ; d="$W/p/$(basename "$(dirname "$f")")-$name"
   "$M9C" --run "$ROOT/tools/Permute.m9" "$f" "$d" "$ORDERS" 7 > /dev/null 2>&1 ||
@@ -40,7 +42,7 @@ n=0
 for f in regions/*.m9 genforms/*.m9; do
   one "$f" >> "$W/out" &
   n=$((n + 1))
-  # a few at a time: each order is a --check
+  # Run a few at a time: each order is a --check.
   if [ $((n % ${M9_JOBS:-4})) = 0 ]; then wait; fi
 done
 wait

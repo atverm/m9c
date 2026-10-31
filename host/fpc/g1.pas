@@ -1,9 +1,9 @@
 {$mode objfpc}{$H+}
-{ g1 -- run the generator over ONE file, wherever it lives, and print
-  its errors with line numbers.  gentest.pas only walks corpus/, and
-  m9c reports a COUNT rather than the messages (Parse.m9 counts;
-  messages are stage-2 work), so porting a module outside the corpus
-  had no way to see what the generator refused.  Scratch tool, not a
+{ g1 runs the generator over ONE file, wherever it lives, and prints
+  its errors with line numbers.  gentest.pas only walks corpus/.  m9c
+  reports a COUNT rather than the messages (Parse.m9 counts; messages
+  are stage-2 work).  So porting a module outside the corpus had no
+  way to see what the generator refused.  g1 is a scratch tool, not a
   gate: `fpc -O2 g1.pas && ./g1 FILE.m9 DEP DEP ...` }
 program g1;
 uses SysUtils, Classes, M9AST, M9Parse, M9Gen;
@@ -51,13 +51,13 @@ begin
     for i := 0 to High (droot.kids) do g.LoadExtern (droot.kids[i]);
   end;
   for i := 0 to High (root.kids) do g.LoadUnit (root.kids[i]);
-  { the module's OWN name, so the include guard is an identifier and
-    the emitted C compiles as-is -- it used to be the output path,
-    which put slashes in a #ifndef }
+  { Emit takes the module's OWN name, so the include guard is an
+    identifier and the emitted C compiles as-is.  It used to be the
+    output path, which put slashes in a #ifndef. }
   g.Emit (ChangeFileExt (ExtractFileName (ParamStr (1)), ''));
-  { the emitted C, so a construct can be INSPECTED and not merely
-    reported clean -- added while implementing par 6, where "no
-    generator errors" says nothing about whether the C is right }
+  { Save the emitted C, so a construct can be INSPECTED and not merely
+    reported clean.  This was added while implementing par 6, where
+    "no generator errors" says nothing about whether the C is right. }
   if g.Errors.Count = 0 then
   begin
     o := TStringList.Create;

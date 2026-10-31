@@ -1,21 +1,22 @@
 #!/bin/sh
-# The macOS package, end to end, the way tools/release/mac/m9.rb
-# builds it: the tarball a release would cut from HEAD (the public
-# list), Homebrew's gcc as CC, build.sh into a DESTDIR whose usr/ is
-# the keg, the two gcc-slot scripts -- and then the result used from
-# an EMPTY environment, as the formula's test and the receipt use it.
-# The winzip gate's idea, for the tap: what the reader installs is
-# rebuilt here from the tree and made to work, so a change that
-# breaks the recipe is seen before the release does.
+# This gate builds the macOS package, end to end, the way
+# tools/release/mac/m9.rb builds it.  It takes the tarball a release
+# would cut from HEAD (the public list), Homebrew's gcc as CC, build.sh
+# into a DESTDIR whose usr/ is the keg, and the two gcc-slot scripts.
+# Then it uses the result from an EMPTY environment, as the formula's
+# test and the receipt use it.  This is the winzip gate's idea, for the
+# tap.  What the reader installs is rebuilt here from the tree and made
+# to work, so a change that breaks the recipe is seen before the
+# release does.
 #
-# NOT `brew install`: that writes into the machine's Homebrew, and a
-# gate must not.  The formula's steps are repeated here by hand, and
-# the formula itself is held to them: its syntax (ruby -c), and the
-# four lines this gate depends on being there.  mactap.sh, the
-# release builder, is the one that really installs.
+# The gate does NOT run `brew install`: that writes into the machine's
+# Homebrew, and a gate must not.  The formula's steps are repeated here
+# by hand, and the formula itself is held to them: its syntax (ruby
+# -c), and the four lines this gate depends on being there.
+# mactap.sh, the release builder, is the one that really installs.
 #
-# Runs on macOS with Homebrew's gcc and openssl@3; anywhere else it
-# says so and SKIPs, as winzip does without wine.
+# The gate runs on macOS with Homebrew's gcc and openssl@3.  Anywhere
+# else it says so and SKIPs, as winzip does without wine.
 #
 # What it proves:
 #   1  the formula parses

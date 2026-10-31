@@ -6,8 +6,8 @@ END LibmGate.
 
 IMPLEMENTATION MODULE LibmGate ;
 
-(* A gate fixture, not a library anyone calls: its locals are named
-   after every libm function CN escapes (96 of them), so the
+(* This is a gate fixture, not a library anyone calls.  Its locals are
+   named after every libm function CN escapes (96 of them), so the
    generated C carries each as name_.  gendiff byte-compares both
    generators over this file, so a one-sided edit to their IsLibM lists
    becomes a byte difference; libmgate.sh then greps the output to
